@@ -1,0 +1,243 @@
+# Native Forms & Surveys App — Technical Design Specification
+
+**Product:** 100% native Salesforce Forms & Surveys engine
+**Distribution:** Standalone managed package (2GP), AppExchange ISVforce
+**Core principle:** One form-definition model + one rendering engine + three thin binding adapters. All form data lives inside the customer's own org — nothing leaves Salesforce.
+
+---
+
+## 1. Design Thesis
+
+A form is a context-agnostic description of *what to collect and how to lay it out*. It does not know where it is rendered or what happens to the data afterward. Everything that varies between use cases — who the user is, whether a starting record exists, and whether/how data is committed — is isolated into a **binding adapter**.
+
+This yields three architectural layers:
+
+| Layer | Responsibility | Shared? |
+|-------|----------------|---------|
+| **L1 — Definition** | Metadata model + builder UX. Describes sections, fields, layout, rules. | Shared |
+| **L2 — Engine** | Context-agnostic renderer. Takes a definition + a data context, produces UI, emits values. | Shared |
+| **L3 — Adapters** | Surface-specific read/write binding. The *only* place the three use cases diverge. | One per surface |
+
+The three adapters:
+
+1. **Internal Record-Page adapter** — authenticated user, has a `recordId`, reads/updates existing records.
+2. **Flow Screen adapter** — authenticated user, collects data and outputs it to flow variables; performs no DML itself.
+3. **Public/External adapter** — unauthenticated guest, no starting record, creates new records via an elevated submission handler.
+
+---
+
+## 2. The Core Constraint That Shapes Everything
+
+The builder always runs in **authenticated admin context**, where the full Salesforce UI API, Lightning Data Service, and normal sharing are available. The *player* does not always have those powers.
+
+Specifically, on a **public/guest** surface:
+
+- **UI API is blocked for guest users.** `getObjectInfo`, `getPicklistValues`, and `getPicklistValuesByRecordType` cannot be called at runtime by an anonymous visitor.
+- **Guest DML is fenced.** Guest users cannot own records; ownership must transfer to a default internal owner. Guest users get read access only through guest-user sharing rules, and those grant Read-Only.
+- **Security Review scrutinizes guest write paths and `without sharing` Apex most heavily.**
+
+**Design response:** the engine never depends on runtime schema introspection. All schema (object info, picklist values, dependency maps, record-type scoping) is resolved **at publish time** in system-context Apex and frozen into the form definition as a **schema snapshot**. The player renders from the snapshot, not from live UI API calls. This makes the engine identical across all three surfaces and removes the guest-user blocker entirely.
+
+---
+
+## 3. Data Model (L1 — Definition)
+
+All custom objects are packaged. Names illustrative.
+
+### `Form__c` (master definition)
+- `Primary_Context_Object__c` (Text) — API name of the form-level primary SObject (e.g., `Account`).
+- `Form_Type__c` (Picklist) — `Form` / `Survey`.
+- `Status__c` (Picklist) — `Draft` / `Published`.
+- `Schema_Snapshot__c` (Long Text / linked ContentVersion JSON) — frozen schema generated at publish. Contains, per referenced object: field metadata, picklist entries, dependency maps, record-type-scoped values. **This is what makes guest rendering possible.**
+- `Layout_Config__c` (Long Text JSON) — page/section/grid structure, overrides, rules. (Can be normalized into child records instead — see note.)
+
+### `Form_Section__c`
+- `Form__c` (Master-Detail)
+- `Sequence__c`, `Page_Number__c` (Number) — supports multi-page wizard.
+- `Context_Type__c` (Picklist) — `Parent` / `Related_Child`.
+- `Child_Relationship_Name__c` (Text) — populated when `Context_Type__c = Related_Child`; the relationship used to build the repeater.
+- `Is_Repeater__c` (Checkbox) — auto-set true for child-context sections.
+- `Max_Rows__c` / `Min_Rows__c` (Number) — repeater row limits.
+- `Grid_Columns__c` (Number, 1–4) — dynamic grid layout.
+
+### `Form_Element__c`
+- `Form_Section__c` (Master-Detail)
+- `Field_API_Name__c` (Text) — bound SObject field (implicit mapping target).
+- `Sequence__c`, `Grid_Position__c`
+- `Render_As__c` (Picklist) — `Default` / `Radio_Buttons` / `Custom_MultiSelect` / `Dropdown` etc. (input override)
+- `Visibility_Rule__c` (Long Text JSON) — client-side show/hide/require logic.
+- `Calculation_Formula__c` (Long Text) — cross-field calculation expression.
+- `Default_Value_Token__c` (Text) — autofill token (`$URL.*`, `$Record.*`, `$User.*`), surface-aware (see §7).
+- `Is_Required__c`, `Help_Text__c`, `Placeholder__c`
+
+> **Normalization note:** sections/elements can be modeled either as child records (queryable, report-friendly) or as a single JSON blob on `Form__c` (fewer rows, faster load, easier versioning). Recommendation: child records for builder editing, but **compile to a single JSON definition + schema snapshot at publish** so the player loads one record, not a tree of SOQL. This also dodges player-side query governor pressure.
+
+---
+
+## 4. The Builder (L1 — Schema-Driven Contextual Canvas)
+
+Runs in authenticated admin context, so it can use UI API freely.
+
+**Workflow:**
+1. **Form-level initialization.** Admin picks the primary context object (e.g., `Account`). The left palette caches all writeable fields for that object via `getObjectInfo`.
+2. **Contextual field palette.** The palette shows fields for whichever section is active. Dragging fields into a section implicitly maps them to that section's bound object — eliminating a separate mapping matrix.
+3. **Dropping a related section.** Admin drops a new section, sets `Context_Type__c = Related_Child` in the property inspector, and picks a child relationship from a schema-derived dropdown.
+4. **Sidebar context morph.** When a child-context section is active, the palette swaps from parent fields to the child object's fields.
+5. **Implicit repeater activation.** Child-context sections auto-render the `[+ Add Row]` affordance and apply `Max_Rows__c`/`Min_Rows__c`.
+
+**On Publish:**
+- Validate the definition (orphan fields, missing required fields not on form, relationship integrity).
+- Generate the **schema snapshot** in system-context Apex: object info, picklist values (per record type), dependency maps for every referenced field.
+- Compile sections/elements to the player JSON.
+- Flip `Status__c = Published`.
+
+> **Implicit mapping caveat — keep an escape hatch.** Implicit drag-mapping covers the common case but does not remove the mapping problem; it relocates it. Required fields not placed on the form, master-detail vs. lookup choices, validation rules, duplicate rules, and record types still need resolution. Provide an **Advanced Mapping** panel for: hidden default values feeding required-but-not-shown fields, record-type selection, and relationship disambiguation.
+
+---
+
+## 5. The Rendering Engine (L2 — Context-Agnostic)
+
+A core LWC, e.g. `formPlayer`, plus a `formPlayerRegistry` that maps element types to renderer components. It accepts:
+
+- **`formDefinition`** — the compiled JSON + schema snapshot.
+- **`dataContext`** — an injected object supplied by the adapter: `{ mode, recordId?, seedValues?, user? }`.
+
+The engine **must not** import UI API adapters, reference guest concepts, or perform DML. It renders, validates client-side, and emits a structured payload. The adapter decides what to do with that payload.
+
+### Feature renderers (all driven by the snapshot, never live UI API)
+
+- **Multi-Page Wizard Layout** — groups sections by `Page_Number__c`; renders step progress, directional next/back with per-page validation gating.
+- **Dynamic Grid Layouts** — `Grid_Columns__c` (1–4) controls a CSS grid; elements placed by `Grid_Position__c`.
+- **Implicit Section Repeaters** — child-context sections render a repeatable row block bound to a child collection, honoring `Min/Max_Rows__c`.
+- **Flexible Input Overrides** — `Render_As__c = Radio_Buttons`: the renderer reads picklist entries **from the snapshot** and renders styled inline/stacked radios instead of a `<select>`. (No runtime `getPicklistValues` call — that's the change from the original design.)
+- **Custom Multi-Select Container** (`formFieldCustomMultiSelect`) — single input bar + floating checkbox panel + removable selection pills. Reads options from the snapshot. On save, serializes selections to a semicolon-delimited string (`Value1;Value2;Value3`) — the native storage format for multi-select picklists.
+- **Client-Side Logical Visibility** — `Visibility_Rule__c` evaluated reactively to show/hide/require individual fields *and* whole sections.
+- **Cross-Field Calculation Engine** — `Calculation_Formula__c` evaluated client-side, reacting to field changes, handling string and numeric expressions. Use a sandboxed expression evaluator (no `eval`) for Security Review.
+- **Chunked Attachments & Signatures** — multi-MB files streamed to `ContentVersion` in chunks to stay under Apex heap (6 MB sync / 12 MB async) and request-size limits; signature capture via an HTML canvas serialized to a blob, stored the same way. (Guest file-upload permissions handled by the public adapter — see §6.3.)
+
+### Engine output contract
+```
+FormPayload {
+  primaryRecord: { objectApiName, fields: {...} }
+  childCollections: [ { relationshipName, objectApiName, rows: [ {fields:{...}}, ... ] } ]
+  files: [ { fieldRef, contentVersionId } ]
+  meta: { formId, isValid, validationErrors[] }
+}
+```
+
+---
+
+## 6. Binding Adapters (L3)
+
+Each adapter supplies a `dataContext` to the engine and consumes the `FormPayload`. This is the only layer that knows about surfaces.
+
+### 6.1 Internal Record-Page Adapter *(Phase 1 — ship first)*
+
+- **Context:** authenticated user, `recordId` from the page.
+- **Read:** hydrate `seedValues` from the record (LDS/`uiRecordApi` available here — fast, cached, FLS-aware). Renders an existing record by Id.
+- **Write:** runs in **user context** (respects sharing/FLS). Two modes:
+  - **Simple single-record edit** — lean on Lightning Data Service; minimal custom Apex.
+  - **Complex cascade** — call the shared Cascade DML handler (§8) in *user* context.
+- **Why first:** least platform resistance, fully authenticated, Security-Review-friendly, validates the engine end-to-end before tackling guests.
+
+### 6.2 Flow Screen Adapter *(Phase 2)*
+
+- **Context:** authenticated, inside a Screen Flow.
+- **Behavior:** collects and validates input, then **outputs structured values to flow variables**. It performs **no DML** — the flow's own Create/Update elements (or downstream automation) own persistence. This is what makes form output "usable on other parts of the flow."
+- **Implementation:** flow screen component contract — `@api` input/output properties, `FlowAttributeChangeEvent` to push values back, and the `validate()` callback for next-button gating.
+- **Cost:** small, because the engine already exists. Only the flow I/O contract is new.
+
+### 6.3 Public/External Adapter *(Phase 3 — hardest, ship last)*
+
+- **Context:** unauthenticated guest on a Salesforce Site / Experience Cloud page. No starting record. Creates new records.
+- **Schema:** renders entirely from the **publish-time snapshot** (UI API unavailable to guests).
+- **Write path:** an `@AuraEnabled` Apex submission controller written **`without sharing`** (or with scoped elevation) that:
+  - parses the `FormPayload`,
+  - runs the Cascade DML handler in elevated context,
+  - assigns ownership to the **configured default internal owner** (guests can't own records),
+  - returns only a minimal confirmation (do not return the created records back to the guest — they have no read access).
+- **Files:** guest `ContentVersion` insert must be validated under the org's guest configuration; surface this as a documented setup requirement.
+- **Required customer org setup (documented + ideally checked by a setup assistant):**
+  - "Secure guest user record access" enabled (it's mandatory anyway).
+  - A designated default owner for guest-created records.
+  - Guest-user sharing rules only where the form genuinely needs to surface public data (Read-Only).
+- **Security Review:** expect the most scrutiny here. Keep the `without sharing` surface as small as possible, validate/escape all input, enforce CRUD/FLS explicitly in the handler, and rate-limit/CAPTCHA the public endpoint.
+
+---
+
+## 7. Autofill Tokens — Surface-Aware (`$User.*`, `$Record.*`, `$URL.*`)
+
+Tokens resolve differently per surface; the engine treats them uniformly but the adapter populates `dataContext` correctly:
+
+| Token | Internal Record Page | Flow Screen | Public/External |
+|-------|----------------------|-------------|-----------------|
+| `$URL.*` | ✅ query params | ✅ query params | ✅ query params |
+| `$Record.*` | ✅ from `recordId` | ✅ if a record var is passed in | ⚠️ only if an Id is passed in URL **and** guest read is granted via sharing rule |
+| `$User.*` | ✅ running user | ✅ running user | ❌ resolves to the *site guest user*, not the submitter — **disable/hide** to avoid confusion and data leakage |
+
+The builder should visually flag tokens that won't resolve on the form's target surface.
+
+---
+
+## 8. Atomic Cascade DML Handler (Shared, Context-Parameterized)
+
+A single bulkified Apex service used by the record-page and public adapters, parameterized by execution context rather than forked.
+
+- **Input:** `FormPayload`.
+- **Sequence (Unit of Work):**
+  1. `Database.setSavepoint()`.
+  2. Insert/parse master record(s) for the primary context object.
+  3. Capture generated parent Ids; stamp them onto child-collection rows.
+  4. Insert child collections (bulkified, single DML per object).
+  5. Link files (`ContentDocumentLink`) to created records.
+  6. Commit, or roll back to savepoint on any failure (all-or-nothing).
+- **Context parameter:**
+  - *User context* (record-page surface) — runs with sharing, honors FLS/CRUD via the running user.
+  - *Elevated context* (public surface) — `without sharing`, assigns default owner, enforces CRUD/FLS **manually and explicitly** (Security Review requirement).
+- Written context-parameterized **from day one** so the public surface doesn't require a fork later.
+
+---
+
+## 9. Feature Coverage Checklist
+
+Every feature from the original brief, mapped to where it lives:
+
+| Original feature | Layer | Notes / change from original |
+|------------------|-------|------------------------------|
+| Schema-Driven Contextual Canvas | L1 Builder | Uses UI API in *builder* only |
+| Implicit Section Repeaters | L1 + L2 | Child-context sections → repeater rows |
+| Multi-Page Wizard Layout | L2 | `Page_Number__c` grouping + step validation |
+| Dynamic Grid Layouts (1–4 col) | L2 | `Grid_Columns__c` CSS grid |
+| Flexible Input Overrides (radio) | L2 | **Reads picklists from snapshot**, not runtime UI API |
+| Custom Multi-Select Container | L2 | Pills + checkbox panel; serializes to `a;b;c` |
+| Client-Side Logical Visibility | L2 | Field- and section-level |
+| Session & URL Autofill | L2 + L3 | **Surface-aware**; `$User` disabled on public |
+| Cross-Field Calculation Engine | L2 | Sandboxed evaluator, no `eval` |
+| Atomic Cascade DML Handler | L3 shared | **Context-parameterized** (user vs. elevated) |
+| Chunked Attachments & Signatures | L2 + L3 | Chunked `ContentVersion`; guest perms via public adapter |
+| **Survey mode** | L1 | Same engine; `Form_Type__c = Survey` |
+| **External create-records use case** | L3 | Public adapter (Phase 3) |
+| **Internal record-page render by Id** | L3 | Record-page adapter (Phase 1) |
+| **Screen Flow embed → flow outputs** | L3 | Flow adapter (Phase 2), no DML |
+
+---
+
+## 10. Delivery Phasing
+
+Sequenced by **platform resistance**, not by ambition — so each phase de-risks the next and the Security Review isn't gated on the hardest surface.
+
+- **Phase 0 — Foundations:** data model, builder, publish pipeline + schema snapshot, core engine with the engine output contract.
+- **Phase 1 — Internal Record-Page adapter:** simple + cascade modes. First sellable, Security-Review-friendly release.
+- **Phase 2 — Flow Screen adapter:** flow I/O contract; form-as-collector.
+- **Phase 3 — Public/External adapter:** guest rendering from snapshot, elevated submission handler, org setup assistant, hardening (CAPTCHA, rate limiting, manual CRUD/FLS).
+- **Cross-cutting:** survey mode rides on the engine and can ship whenever the builder supports it.
+
+---
+
+## 11. Open Decisions
+
+1. **Definition storage** — child records vs. compiled JSON blob (recommendation: both — edit as records, publish as JSON).
+2. **Form versioning** — how published forms are versioned so in-flight public submissions aren't broken by edits.
+3. **Calculation/visibility expression language** — adopt a constrained, sandboxed grammar (Security Review will reject `eval`-style execution).
+4. **Licensing path** — ISVforce assumed (selling to existing Salesforce orgs); confirm vs. OEM if targeting non-Salesforce end customers, which affects the perpetual/one-time pricing mechanics.
+5. **Submission volume / governor strategy** for high-traffic public forms (async commit? queueable? platform-event buffering?).

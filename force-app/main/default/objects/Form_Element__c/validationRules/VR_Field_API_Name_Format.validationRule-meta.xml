@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VR_Field_API_Name_Format</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+  NOT(ISBLANK(Field_API_Name__c)),
+  NOT(REGEX(Field_API_Name__c, &quot;^[A-Za-z][A-Za-z0-9_]*(__c)?$&quot;))
+)</errorConditionFormula>
+    <errorDisplayField>Field_API_Name__c</errorDisplayField>
+    <errorMessage>Field API Name must be a valid API name</errorMessage>
+</ValidationRule>

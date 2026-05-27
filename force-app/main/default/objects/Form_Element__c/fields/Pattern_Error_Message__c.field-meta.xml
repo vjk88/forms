@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pattern_Error_Message__c</fullName>
+    <description
+  >Custom error message when pattern validation fails</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Enter the error message to display when input doesn&apos;t match the pattern</inlineHelpText>
+    <label>Pattern Error Message</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Allow_Back_Navigation__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description
+  >Whether users can navigate back to this page from subsequent pages</description>
+    <inlineHelpText
+  >Check to allow users to click a Back button to return to this page</inlineHelpText>
+    <label>Allow Back Navigation</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

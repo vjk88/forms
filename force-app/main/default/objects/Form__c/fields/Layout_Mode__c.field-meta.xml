@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Layout_Mode__c</fullName>
+    <description
+  >Controls how sections are presented to the user at runtime. Single Page shows all sections on one scrollable page. Vertical Navigation shows a left sidebar menu with one section at a time, ending with a review page before save.</description>
+    <inlineHelpText
+  >Single Page: all sections on one page. Vertical Navigation: left menu with one section at a time, review page before save.</inlineHelpText>
+    <label>Layout Mode</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Single_Page</fullName>
+                <default>true</default>
+                <label>Single Page</label>
+            </value>
+            <value>
+                <fullName>Vertical_Navigation</fullName>
+                <default>false</default>
+                <label>Vertical Navigation</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

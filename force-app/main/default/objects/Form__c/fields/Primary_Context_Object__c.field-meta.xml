@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Primary_Context_Object__c</fullName>
+    <description
+  >API name of the primary SObject this form will create/update (e.g., Account, Contact, Custom__c)</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Enter the API name of the Salesforce object this form will work with. Examples: Account, Contact, MyCustomObject__c</inlineHelpText>
+    <label>Primary Context Object</label>
+    <length>255</length>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

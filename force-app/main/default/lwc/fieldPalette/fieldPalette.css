@@ -1,0 +1,55 @@
+.palette-container {
+  background: #fff;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.palette-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  cursor: grab;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  transition: background-color 0.1s;
+}
+
+.palette-item:hover {
+  background-color: #f3f3f3;
+}
+
+.palette-item:active {
+  cursor: grabbing;
+  background-color: #e0e5ee;
+}
+
+.palette-group {
+  margin-bottom: 0.25rem;
+}
+
+.palette-group-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.4rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0070d2;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.palette-group-header:hover {
+  color: #005fb2;
+}

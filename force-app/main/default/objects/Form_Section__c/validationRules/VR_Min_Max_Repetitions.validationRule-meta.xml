@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VR_Min_Max_Repetitions</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+  NOT(ISBLANK(Min_Repetitions__c)),
+  NOT(ISBLANK(Max_Repetitions__c)),
+  Min_Repetitions__c &gt; Max_Repetitions__c
+)</errorConditionFormula>
+    <errorDisplayField>Min_Repetitions__c</errorDisplayField>
+    <errorMessage>Min Repetitions cannot exceed Max Repetitions</errorMessage>
+</ValidationRule>

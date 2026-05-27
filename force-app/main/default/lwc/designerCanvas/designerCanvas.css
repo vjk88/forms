@@ -1,0 +1,133 @@
+.canvas-container {
+  min-height: 400px;
+  padding: 0.5rem;
+}
+
+.section-card {
+  background: #fff;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.section-card:hover {
+  border-color: #1b96ff;
+}
+
+.section-card.selected {
+  border-color: #0070d2;
+  box-shadow: 0 0 0 1px #0070d2;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: #f3f3f3;
+  border-bottom: 1px solid #dddbda;
+  border-radius: 4px 4px 0 0;
+}
+
+.section-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.section-header-right {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #181818;
+}
+
+.drag-handle {
+  cursor: grab;
+  opacity: 0.5;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+
+.section-body {
+  padding: 0.75rem;
+  min-height: 50px;
+}
+
+.section-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.section-grid.columns-1 {
+  grid-template-columns: 1fr;
+}
+.section-grid.columns-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.section-grid.columns-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.section-grid.columns-4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.element-chip {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  background: #f3f3f3;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  position: relative;
+  transition: background-color 0.1s;
+}
+
+.element-chip:hover {
+  background: #e0e5ee;
+}
+
+.element-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.element-remove {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.element-chip:hover .element-remove {
+  opacity: 1;
+}
+
+.drop-zone {
+  border: 2px dashed #d8dde6;
+  border-radius: 4px;
+  padding: 1.5rem;
+  text-align: center;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-canvas {
+  text-align: center;
+  padding: 4rem 2rem;
+  border: 2px dashed #d8dde6;
+  border-radius: 8px;
+  background: #fff;
+}

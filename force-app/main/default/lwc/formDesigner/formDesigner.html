@@ -1,0 +1,197 @@
+<template>
+  <div class="builder-container">
+    <!-- Header Bar -->
+    <div class="slds-page-header slds-m-bottom_small" role="banner">
+      <div class="slds-page-header__row">
+        <div class="slds-page-header__col-actions">
+          <div class="slds-page-header__controls">
+            <!-- Form Selector -->
+            <div class="slds-page-header__control">
+              <lightning-combobox
+                name="formSelector"
+                label="Select Form"
+                value={selectedFormId}
+                placeholder="Choose a form"
+                options={formOptions}
+                onchange={handleFormSelect}
+                variant="label-hidden"
+              >
+              </lightning-combobox>
+            </div>
+
+            <!-- New Form Button -->
+            <div class="slds-page-header__control">
+              <lightning-button
+                variant="neutral"
+                label="New Form"
+                icon-name="utility:add"
+                onclick={handleNewForm}
+              >
+              </lightning-button>
+            </div>
+
+            <!-- Version Selector -->
+            <template if:true={hasFormSelected}>
+              <div class="slds-page-header__control">
+                <lightning-combobox
+                  name="versionSelector"
+                  label="Select Version"
+                  value={selectedVersionId}
+                  placeholder="Choose version"
+                  options={versionOptions}
+                  onchange={handleVersionSelect}
+                  variant="label-hidden"
+                >
+                </lightning-combobox>
+              </div>
+
+              <!-- Create Draft Button -->
+              <div class="slds-page-header__control">
+                <lightning-button
+                  variant="neutral"
+                  label="New Draft"
+                  icon-name="utility:copy"
+                  onclick={handleCreateDraft}
+                  disabled={createDraftDisabled}
+                  title={createDraftTooltip}
+                >
+                </lightning-button>
+              </div>
+            </template>
+
+            <!-- Action Buttons -->
+            <template if:true={hasVersionSelected}>
+              <div class="slds-page-header__control">
+                <lightning-button-group>
+                  <lightning-button
+                    variant="neutral"
+                    label="Preview"
+                    icon-name="utility:preview"
+                    onclick={handlePreview}
+                  >
+                  </lightning-button>
+                  <template if:true={isDraft}>
+                    <lightning-button
+                      variant="brand"
+                      label="Publish"
+                      icon-name="utility:check"
+                      onclick={handlePublish}
+                      disabled={isProcessing}
+                    >
+                    </lightning-button>
+                    <lightning-button
+                      variant="destructive"
+                      label="Delete"
+                      icon-name="utility:delete"
+                      onclick={handleDeleteVersion}
+                      disabled={isProcessing}
+                    >
+                    </lightning-button>
+                  </template>
+                </lightning-button-group>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Badge Row -->
+      <template if:true={hasVersionSelected}>
+        <div class="slds-page-header__row slds-m-top_xx-small">
+          <div
+            class="slds-page-header__col-title slds-grid slds-grid_vertical-align-center"
+          >
+            <lightning-badge
+              label={versionStatusLabel}
+              class={versionBadgeClass}
+            >
+            </lightning-badge>
+            <span
+              class="slds-m-left_small slds-text-body_small slds-text-color_weak"
+            >
+              {formDetailText}
+            </span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Builder Body: 3-column layout -->
+    <template if:true={hasVersionSelected}>
+      <div class="designer-body">
+        <!-- Left: Field Palette -->
+        <div class="designer-left">
+          <c-field-palette
+            object-label={currentObjectLabel}
+            fields={objectFields}
+            relationships={childRelationships}
+          >
+          </c-field-palette>
+        </div>
+
+        <!-- Center: Canvas -->
+        <div class="designer-center">
+          <c-designer-canvas
+            section-data={canvasSections}
+            is-editable={isDraft}
+            onaddsection={handleAddSection}
+            onselectsection={handleSelectSection}
+            oneditsection={handleEditSection}
+            ondeletesection={handleDeleteSection}
+            onselectelement={handleSelectElement}
+            onremoveelement={handleRemoveElement}
+            ondropfield={handleDropField}
+            ondropcomponent={handleDropComponent}
+            ondroprelationship={handleDropRelationship}
+          >
+          </c-designer-canvas>
+        </div>
+
+        <!-- Right: Property Panel -->
+        <div class="designer-right">
+          <c-property-panel
+            selection={panelSelection}
+            onpropertychange={handlePropertyChange}
+            oneditvisibility={handleEditVisibility}
+          >
+          </c-property-panel>
+        </div>
+      </div>
+    </template>
+
+    <!-- Empty State -->
+    <template if:false={hasFormSelected}>
+      <div
+        class="slds-box slds-theme_default slds-text-align_center slds-p-around_xx-large"
+      >
+        <lightning-icon
+          icon-name="utility:form"
+          size="large"
+          class="slds-m-bottom_medium"
+        ></lightning-icon>
+        <h2 class="slds-text-heading_medium slds-m-bottom_small">
+          No Form Selected
+        </h2>
+        <p class="slds-text-body_regular slds-text-color_weak">
+          Select a form from the dropdown or create a new one.
+        </p>
+      </div>
+    </template>
+  </div>
+
+  <!-- Create Form Modal -->
+  <template if:true={showCreateModal}>
+    <c-new-form-dialog
+      object-options={objectOptions}
+      onclose={handleCloseModal}
+      onformcreated={handleFormCreated}
+    >
+    </c-new-form-dialog>
+  </template>
+
+  <!-- Spinners -->
+  <template if:true={isProcessing}>
+    <lightning-spinner alternative-text="Processing..." size="medium">
+    </lightning-spinner>
+  </template>
+</template>

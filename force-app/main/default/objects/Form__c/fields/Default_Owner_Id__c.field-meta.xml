@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Default_Owner_Id__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description
+  >Default owner for records created via guest/public form submissions. Guest users cannot own records, so submissions will be assigned to this user.</description>
+    <inlineHelpText
+  >Select a user who will own records created by guest/public form submissions. Required for public forms.</inlineHelpText>
+    <label>Default Owner</label>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Forms (Default Owner)</relationshipLabel>
+    <relationshipName>Forms_Default_Owner</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

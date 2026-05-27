@@ -1,0 +1,79 @@
+<template>
+  <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container">
+      <!-- Header -->
+      <div class="slds-modal__header">
+        <button
+          class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+          onclick={handleClose}
+        >
+          <lightning-icon
+            icon-name="utility:close"
+            size="small"
+            alternative-text="Close"
+          ></lightning-icon>
+        </button>
+        <h1 class="slds-modal__title slds-hyphenate">New Form</h1>
+      </div>
+
+      <!-- Body -->
+      <div class="slds-modal__content slds-p-around_medium">
+        <lightning-input
+          label="Form Name"
+          value={formName}
+          onchange={handleNameChange}
+          required
+          class="slds-m-bottom_small"
+        >
+        </lightning-input>
+
+        <lightning-combobox
+          label="Primary Object"
+          value={objectApiName}
+          placeholder="Select an object"
+          options={objectOptions}
+          onchange={handleObjectChange}
+          required
+          class="slds-m-bottom_small"
+        >
+        </lightning-combobox>
+
+        <lightning-combobox
+          label="Form Type"
+          value={formType}
+          options={formTypeOptions}
+          onchange={handleTypeChange}
+          class="slds-m-bottom_small"
+        >
+        </lightning-combobox>
+
+        <lightning-combobox
+          label="Layout Mode"
+          value={layoutMode}
+          options={layoutModeOptions}
+          onchange={handleLayoutChange}
+        >
+        </lightning-combobox>
+      </div>
+
+      <!-- Footer -->
+      <div class="slds-modal__footer">
+        <lightning-button
+          variant="neutral"
+          label="Cancel"
+          onclick={handleClose}
+        >
+        </lightning-button>
+        <lightning-button
+          variant="brand"
+          label="Create"
+          onclick={handleCreate}
+          disabled={createDisabled}
+          class="slds-m-left_x-small"
+        >
+        </lightning-button>
+      </div>
+    </div>
+  </section>
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Render_As__c</fullName>
+    <label>Render As</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Default</fullName>
+                <default>true</default>
+                <label>Default</label>
+            </value>
+            <value>
+                <fullName>Radio_Buttons</fullName>
+                <default>false</default>
+                <label>Radio Buttons</label>
+            </value>
+            <value>
+                <fullName>Dropdown</fullName>
+                <default>false</default>
+                <label>Dropdown</label>
+            </value>
+            <value>
+                <fullName>Checkbox_Group</fullName>
+                <default>false</default>
+                <label>Checkbox Group</label>
+            </value>
+            <value>
+                <fullName>Toggle</fullName>
+                <default>false</default>
+                <label>Toggle</label>
+            </value>
+            <value>
+                <fullName>Slider</fullName>
+                <default>false</default>
+                <label>Slider</label>
+            </value>
+            <value>
+                <fullName>Custom_MultiSelect</fullName>
+                <default>false</default>
+                <label>Custom MultiSelect</label>
+            </value>
+            <value>
+                <fullName>Lookup_Modal</fullName>
+                <default>false</default>
+                <label>Lookup Modal</label>
+            </value>
+            <value>
+                <fullName>Lookup_Typeahead</fullName>
+                <default>false</default>
+                <label>Lookup Typeahead</label>
+            </value>
+            <value>
+                <fullName>RadioGroup</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>RadioGroup</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

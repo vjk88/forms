@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Collapsed_By_Default__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Whether this collapsible section starts collapsed</description>
+    <inlineHelpText
+  >Check to start this section in collapsed state. Only applies if Collapsible is checked.</inlineHelpText>
+    <label>Collapsed By Default</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

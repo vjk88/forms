@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Layout_Config__c</fullName>
+    <description
+  >Compiled JSON layout configuration containing the complete page/section/element hierarchy. Generated at publish time for optimal runtime performance.</description>
+    <inlineHelpText
+  >System-generated layout configuration. Do not edit manually. This field is populated automatically when the form is published.</inlineHelpText>
+    <label>Layout Configuration</label>
+    <length>131072</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>10</visibleLines>
+</CustomField>

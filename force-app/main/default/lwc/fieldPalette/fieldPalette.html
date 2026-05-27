@@ -1,0 +1,176 @@
+<template>
+  <div class="palette-container">
+    <!-- Tabs: Components / Fields -->
+    <lightning-tabset
+      active-tab-value={activeTab}
+      variant="scoped"
+      onselect={handleTabChange}
+    >
+      <!-- Components Tab -->
+      <lightning-tab label="Components" value="components">
+        <div class="slds-p-around_small">
+          <h3 class="slds-text-title_caps slds-m-bottom_x-small">
+            Display Components
+          </h3>
+          <ul class="palette-list">
+            <template for:each={displayComponents} for:item="comp">
+              <li
+                key={comp.value}
+                class="palette-item"
+                draggable="true"
+                ondragstart={handleComponentDragStart}
+                data-type={comp.value}
+              >
+                <lightning-icon
+                  icon-name={comp.icon}
+                  size="x-small"
+                  class="slds-m-right_x-small"
+                ></lightning-icon>
+                <span>{comp.label}</span>
+              </li>
+            </template>
+          </ul>
+
+          <template if:true={hasRelationships}>
+            <h3
+              class="slds-text-title_caps slds-m-top_small slds-m-bottom_x-small"
+            >
+              Related Objects ({relationshipCount})
+            </h3>
+            <ul class="palette-list">
+              <template for:each={relationships} for:item="rel">
+                <li
+                  key={rel.name}
+                  class="palette-item"
+                  draggable="true"
+                  ondragstart={handleRelationshipDragStart}
+                  data-name={rel.name}
+                  data-child={rel.childObject}
+                  data-field={rel.fieldName}
+                >
+                  <lightning-icon
+                    icon-name="standard:related_list"
+                    size="x-small"
+                    class="slds-m-right_x-small"
+                  ></lightning-icon>
+                  <span>{rel.childObjectLabel}</span>
+                </li>
+              </template>
+            </ul>
+          </template>
+        </div>
+      </lightning-tab>
+
+      <!-- Fields Tab -->
+      <lightning-tab label="Fields" value="fields">
+        <div class="slds-p-horizontal_small slds-p-top_small">
+          <!-- Object label -->
+          <p
+            class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
+          >
+            {objectLabel}
+          </p>
+
+          <!-- Search -->
+          <lightning-input
+            type="search"
+            placeholder="Search..."
+            value={searchTerm}
+            onchange={handleSearch}
+            variant="label-hidden"
+            class="slds-m-bottom_small"
+          >
+          </lightning-input>
+
+          <!-- Required Fields -->
+          <template if:true={hasRequiredFields}>
+            <div class="palette-group">
+              <button
+                class="palette-group-header"
+                type="button"
+                onclick={toggleRequiredSection}
+                data-section="required"
+              >
+                <lightning-icon
+                  icon-name={requiredChevron}
+                  size="xx-small"
+                  class="slds-m-right_xx-small"
+                >
+                </lightning-icon>
+                <span class="slds-text-title_caps">
+                  Required Fields ({requiredFieldCount})
+                </span>
+              </button>
+              <template if:true={requiredExpanded}>
+                <ul class="palette-list">
+                  <template for:each={requiredFields} for:item="field">
+                    <li
+                      key={field.apiName}
+                      class="palette-item"
+                      draggable="true"
+                      ondragstart={handleFieldDragStart}
+                      data-api={field.apiName}
+                      data-label={field.label}
+                      data-type={field.type}
+                    >
+                      <lightning-icon
+                        icon-name={field.iconName}
+                        size="x-small"
+                        class="slds-m-right_x-small"
+                      >
+                      </lightning-icon>
+                      <span>{field.label}</span>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+            </div>
+          </template>
+
+          <!-- All Fields -->
+          <div class="palette-group">
+            <button
+              class="palette-group-header"
+              type="button"
+              onclick={toggleFieldsSection}
+              data-section="fields"
+            >
+              <lightning-icon
+                icon-name={fieldsChevron}
+                size="xx-small"
+                class="slds-m-right_xx-small"
+              >
+              </lightning-icon>
+              <span class="slds-text-title_caps">
+                Fields ({filteredFieldCount})
+              </span>
+            </button>
+            <template if:true={fieldsExpanded}>
+              <ul class="palette-list">
+                <template for:each={filteredFields} for:item="field">
+                  <li
+                    key={field.apiName}
+                    class="palette-item"
+                    draggable="true"
+                    ondragstart={handleFieldDragStart}
+                    data-api={field.apiName}
+                    data-label={field.label}
+                    data-type={field.type}
+                  >
+                    <lightning-icon
+                      icon-name={field.iconName}
+                      size="x-small"
+                      class="slds-m-right_x-small"
+                    >
+                    </lightning-icon>
+                    <span>{field.label}</span>
+                  </li>
+                </template>
+              </ul>
+            </template>
+          </div>
+        </div>
+      </lightning-tab>
+    </lightning-tabset>
+  </div>
+</template>

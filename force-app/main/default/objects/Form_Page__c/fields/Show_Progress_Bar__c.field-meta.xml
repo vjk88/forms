@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Show_Progress_Bar__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description
+  >Whether to display a progress indicator for this page in multi-page forms</description>
+    <inlineHelpText
+  >Check to show a progress bar indicating how far the user has progressed through the form</inlineHelpText>
+    <label>Show Progress Bar</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

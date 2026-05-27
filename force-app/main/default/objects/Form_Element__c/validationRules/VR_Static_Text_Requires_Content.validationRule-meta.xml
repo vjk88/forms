@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VR_Static_Text_Requires_Content</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+  ISPICKVAL(Type__c, &quot;Static_Text&quot;),
+  ISBLANK(Static_Text_Content__c)
+)</errorConditionFormula>
+    <errorDisplayField>Static_Text_Content__c</errorDisplayField>
+    <errorMessage
+  >Static Text Content is required for Static Text elements</errorMessage>
+</ValidationRule>

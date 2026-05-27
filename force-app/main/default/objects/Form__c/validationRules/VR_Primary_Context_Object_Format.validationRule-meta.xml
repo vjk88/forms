@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VR_Primary_Context_Object_Format</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+  NOT(ISBLANK(Primary_Context_Object__c)),
+  NOT(REGEX(Primary_Context_Object__c, &quot;^[A-Za-z][A-Za-z0-9_]*(__c)?$&quot;))
+)</errorConditionFormula>
+    <errorDisplayField>Primary_Context_Object__c</errorDisplayField>
+    <errorMessage>Primary Context Object must be a valid API name</errorMessage>
+</ValidationRule>
