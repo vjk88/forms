@@ -1,165 +1,389 @@
 <template>
-  <div class="panel-container">
-    <!-- No selection -->
-    <template if:false={hasSelection}>
-      <div class="empty-panel">
-        <lightning-icon
-          icon-name="utility:touch_action"
-          size="small"
-          class="slds-m-bottom_small"
-        ></lightning-icon>
-        <p class="slds-text-body_small slds-text-color_weak">
-          Select a section or field on the canvas to edit its properties.
-        </p>
-      </div>
-    </template>
-
-    <!-- Section properties -->
-    <template if:true={isSectionSelected}>
-      <div class="slds-p-around_small">
-        <h3 class="slds-text-title_caps slds-m-bottom_small">
-          Section Properties
-        </h3>
-
-        <lightning-input
-          label="Section Title"
-          value={sectionName}
-          onchange={handleSectionNameChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-input>
-
-        <lightning-combobox
-          label="Columns"
-          value={sectionColumns}
-          options={columnOptions}
-          onchange={handleColumnsChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-combobox>
-
-        <lightning-input
-          type="checkbox"
-          label="Collapsible"
-          checked={sectionCollapsible}
-          onchange={handleCollapsibleChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-input>
-
-        <template if:true={sectionCollapsible}>
-          <lightning-input
-            type="checkbox"
-            label="Collapsed by default"
-            checked={sectionCollapsedByDefault}
-            onchange={handleCollapsedDefaultChange}
-            class="slds-m-bottom_small"
-          >
-          </lightning-input>
+    <div class="panel-container">
+        <!-- No selection -->
+        <template if:false={hasSelection}>
+            <div class="empty-panel">
+                <lightning-icon icon-name="utility:touch_action" size="small"
+                    class="slds-m-bottom_small"></lightning-icon>
+                <p class="slds-text-body_small slds-text-color_weak">
+                    Select the form header, a section, or a field to edit its properties.
+                </p>
+            </div>
         </template>
 
-        <lightning-textarea
-          label="Description"
-          value={sectionDescription}
-          onchange={handleSectionDescChange}
-          max-length="255"
-          class="slds-m-bottom_small"
-        >
-        </lightning-textarea>
+        <!-- Header properties -->
+        <template if:true={isHeaderSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Form Header</h3>
 
-        <!-- Visibility rules summary -->
-        <div class="slds-m-top_small">
-          <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
-            Visibility Rules
-          </h4>
-          <p
-            class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
-          >
-            {visibilityRuleSummary}
-          </p>
-          <lightning-button
-            variant="neutral"
-            label="Edit Rules"
-            icon-name="utility:filter"
-            onclick={handleEditVisibilityRules}
-            size="small"
-          >
-          </lightning-button>
-        </div>
-      </div>
-    </template>
+                <lightning-input
+                    type="checkbox"
+                    label="Show Header"
+                    checked={headerVisible}
+                    onchange={handleHeaderVisibleChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
 
-    <!-- Element properties -->
-    <template if:true={isElementSelected}>
-      <div class="slds-p-around_small">
-        <h3 class="slds-text-title_caps slds-m-bottom_small">
-          Field Properties
-        </h3>
+                <template if:true={headerVisible}>
+                <lightning-input
+                    label="Title"
+                    value={headerTitle}
+                    onchange={handleHeaderPropChange}
+                    data-prop="title"
+                    class="slds-m-bottom_small">
+                </lightning-input>
 
-        <lightning-input
-          label="Label"
-          value={elementLabel}
-          onchange={handleElementLabelChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-input>
+                <lightning-input
+                    label="Subtitle"
+                    value={headerSubtitle}
+                    onchange={handleHeaderPropChange}
+                    data-prop="subtitle"
+                    class="slds-m-bottom_small">
+                </lightning-input>
 
-        <template if:true={isFieldType}>
-          <lightning-input
-            label="Field API Name"
-            value={elementFieldApi}
-            disabled
-            class="slds-m-bottom_small"
-          >
-          </lightning-input>
+                <lightning-combobox
+                    label="Alignment"
+                    value={headerAlignment}
+                    options={alignmentOptions}
+                    onchange={handleHeaderPropChange}
+                    data-prop="alignment"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
 
-          <lightning-input
-            type="checkbox"
-            label="Required"
-            checked={elementRequired}
-            onchange={handleRequiredChange}
-            class="slds-m-bottom_small"
-          >
-          </lightning-input>
+                <!-- Background Color -->
+                <div class="color-picker-row slds-m-bottom_small">
+                    <label class="slds-form-element__label">Background Color</label>
+                    <div class="color-picker-control">
+                        <input type="color"
+                            value={headerBackgroundColor}
+                            class="color-input"
+                            data-prop="backgroundColor"
+                            onchange={handleHeaderColorChange}
+                            oninput={handleHeaderColorChange}>
+                        <lightning-input
+                            value={headerBackgroundColor}
+                            variant="label-hidden"
+                            class="color-hex-input"
+                            data-prop="backgroundColor"
+                            onchange={handleHeaderPropChange}
+                            placeholder="#ffffff">
+                        </lightning-input>
+                    </div>
+                </div>
+
+                <!-- Show Logo -->
+                <lightning-input
+                    type="checkbox"
+                    label="Show Logo"
+                    checked={headerShowLogo}
+                    onchange={handleHeaderCheckboxChange}
+                    data-prop="showLogo"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Logo Upload (when show logo is checked) -->
+                <template if:true={headerShowLogo}>
+                    <div class="slds-m-bottom_small">
+                        <label class="slds-form-element__label">Logo Image</label>
+                        <template if:true={headerLogoUrl}>
+                            <div class="image-preview slds-m-bottom_xx-small">
+                                <img src={headerLogoUrl} alt="Logo preview" class="preview-img logo-preview-img">
+                                <lightning-button-icon
+                                    icon-name="utility:close"
+                                    variant="bare"
+                                    size="small"
+                                    alternative-text="Remove logo"
+                                    class="preview-remove"
+                                    onclick={handleRemoveLogo}>
+                                </lightning-button-icon>
+                            </div>
+                        </template>
+                        <lightning-input
+                            type="file"
+                            accept="image/*"
+                            label="Upload Logo"
+                            variant="label-hidden"
+                            onchange={handleLogoUpload}>
+                        </lightning-input>
+                    </div>
+                </template>
+
+                <!-- Background Image -->
+                <div class="slds-m-bottom_small">
+                    <label class="slds-form-element__label">Background Image</label>
+                    <template if:true={headerBackgroundImage}>
+                        <div class="image-preview slds-m-bottom_xx-small">
+                            <img src={headerBackgroundImage} alt="Background preview" class="preview-img bg-preview-img">
+                            <lightning-button-icon
+                                icon-name="utility:close"
+                                variant="bare"
+                                size="small"
+                                alternative-text="Remove background"
+                                class="preview-remove"
+                                onclick={handleRemoveBackground}>
+                            </lightning-button-icon>
+                        </div>
+                    </template>
+                    <lightning-input
+                        type="file"
+                        accept="image/*"
+                        label="Upload Background"
+                        variant="label-hidden"
+                        onchange={handleBackgroundUpload}>
+                    </lightning-input>
+                </div>
+                </template>
+            </div>
         </template>
 
-        <lightning-textarea
-          label="Help Text"
-          value={elementHelpText}
-          onchange={handleHelpTextChange}
-          max-length="1000"
-          class="slds-m-bottom_small"
-        >
-        </lightning-textarea>
+        <!-- Section properties -->
+        <template if:true={isSectionSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Section Properties</h3>
 
-        <lightning-input
-          label="Placeholder"
-          value={elementPlaceholder}
-          onchange={handlePlaceholderChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-input>
+                <!-- Show Header toggle -->
+                <lightning-input
+                    type="checkbox"
+                    label="Show Section Header"
+                    checked={sectionShowHeader}
+                    onchange={handleShowHeaderChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
 
-        <!-- Visibility rules -->
-        <div class="slds-m-top_small">
-          <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
-            Visibility Rules
-          </h4>
-          <p
-            class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
-          >
-            {visibilityRuleSummary}
-          </p>
-          <lightning-button
-            variant="neutral"
-            label="Edit Rules"
-            icon-name="utility:filter"
-            onclick={handleEditVisibilityRules}
-            size="small"
-          >
-          </lightning-button>
-        </div>
-      </div>
-    </template>
-  </div>
+                <lightning-input
+                    label="Section Title"
+                    value={sectionName}
+                    onchange={handleSectionNameChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Header background color (only when header visible) -->
+                <template if:true={sectionShowHeader}>
+                    <div class="color-picker-row slds-m-bottom_small">
+                        <label class="slds-form-element__label">Header Background</label>
+                        <div class="color-picker-control">
+                            <input type="color"
+                                value={sectionHeaderColor}
+                                class="color-input"
+                                data-prop="headerBackgroundColor"
+                                onchange={handleSectionColorChange}
+                                oninput={handleSectionColorChange}>
+                            <lightning-input
+                                value={sectionHeaderColor}
+                                variant="label-hidden"
+                                class="color-hex-input"
+                                data-prop="headerBackgroundColor"
+                                onchange={handleSectionPropChange}
+                                placeholder="#f3f3f3">
+                            </lightning-input>
+                        </div>
+                    </div>
+                </template>
+
+                <lightning-combobox
+                    label="Columns"
+                    value={sectionColumns}
+                    options={columnOptions}
+                    onchange={handleColumnsChange}
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <!-- Padding -->
+                <lightning-combobox
+                    label="Padding"
+                    value={sectionPadding}
+                    options={paddingOptions}
+                    onchange={handlePaddingChange}
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Collapsible"
+                    checked={sectionCollapsible}
+                    onchange={handleCollapsibleChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <template if:true={sectionCollapsible}>
+                    <lightning-input
+                        type="checkbox"
+                        label="Collapsed by default"
+                        checked={sectionCollapsedByDefault}
+                        onchange={handleCollapsedDefaultChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+
+                <lightning-textarea
+                    label="Description"
+                    value={sectionDescription}
+                    onchange={handleSectionDescChange}
+                    max-length="255"
+                    class="slds-m-bottom_small">
+                </lightning-textarea>
+
+                <div class="slds-m-top_small">
+                    <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                        Visibility Rules
+                    </h4>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                        {visibilityRuleSummary}
+                    </p>
+                    <lightning-button
+                        variant="neutral"
+                        label="Edit Rules"
+                        icon-name="utility:filter"
+                        onclick={handleEditVisibilityRules}
+                        size="small">
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <!-- Element properties -->
+        <template if:true={isElementSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Field Properties</h3>
+
+                <lightning-input
+                    label="Label"
+                    value={elementLabel}
+                    onchange={handleElementLabelChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <template if:true={isFieldType}>
+                    <lightning-input
+                        label="Field API Name"
+                        value={elementFieldApi}
+                        disabled
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+
+                    <lightning-combobox
+                        label="UI Behavior"
+                        value={elementUiBehavior}
+                        options={uiBehaviorOptions}
+                        onchange={handleUiBehaviorChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+
+                    <!-- Auto-fill config (for lookup fields) -->
+                    <template if:true={isLookupField}>
+                        <div class="slds-m-bottom_small">
+                            <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                                Auto-Fill Fields
+                            </h4>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                                When this lookup changes, auto-populate other fields from the selected record.
+                            </p>
+                            <lightning-button
+                                variant="neutral"
+                                label="Configure Auto-Fill"
+                                icon-name="utility:magicwand"
+                                onclick={handleEditAutoFill}
+                                size="small">
+                            </lightning-button>
+                        </div>
+                    </template>
+                </template>
+
+                <!-- Render Override -->
+                <template if:true={isFieldType}>
+                    <lightning-combobox
+                        label="Render As"
+                        value={elementRenderAs}
+                        options={renderAsOptions}
+                        onchange={handleRenderAsChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+
+                    <!-- Custom values editor (for picklist/radio/checkbox overrides) -->
+                    <template if:true={showCustomValues}>
+                        <div class="custom-values-section slds-m-bottom_small">
+                            <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                                Custom Values
+                            </h4>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                                {customValuesHelpText}
+                            </p>
+
+                            <!-- Existing values -->
+                            <template for:each={customOptions} for:item="opt" for:index="optIdx">
+                                <div key={opt.key} class="custom-value-row">
+                                    <lightning-input
+                                        label="Label"
+                                        value={opt.label}
+                                        variant="label-hidden"
+                                        placeholder="Label"
+                                        data-index={optIdx}
+                                        data-field="label"
+                                        onchange={handleCustomOptionChange}>
+                                    </lightning-input>
+                                    <lightning-input
+                                        label="Value"
+                                        value={opt.value}
+                                        variant="label-hidden"
+                                        placeholder="Value"
+                                        data-index={optIdx}
+                                        data-field="value"
+                                        onchange={handleCustomOptionChange}>
+                                    </lightning-input>
+                                    <lightning-button-icon
+                                        icon-name="utility:delete"
+                                        variant="bare"
+                                        size="small"
+                                        alternative-text="Remove"
+                                        data-index={optIdx}
+                                        onclick={handleRemoveCustomOption}>
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+
+                            <lightning-button
+                                variant="base"
+                                label="Add Value"
+                                icon-name="utility:add"
+                                onclick={handleAddCustomOption}
+                                size="small"
+                                class="slds-m-top_xx-small">
+                            </lightning-button>
+                        </div>
+                    </template>
+                </template>
+
+                <lightning-textarea
+                    label="Help Text"
+                    value={elementHelpText}
+                    onchange={handleHelpTextChange}
+                    max-length="1000"
+                    class="slds-m-bottom_small">
+                </lightning-textarea>
+
+                <lightning-input
+                    label="Placeholder"
+                    value={elementPlaceholder}
+                    onchange={handlePlaceholderChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <div class="slds-m-top_small">
+                    <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                        Visibility Rules
+                    </h4>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                        {visibilityRuleSummary}
+                    </p>
+                    <lightning-button
+                        variant="neutral"
+                        label="Edit Rules"
+                        icon-name="utility:filter"
+                        onclick={handleEditVisibilityRules}
+                        size="small">
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+    </div>
 </template>

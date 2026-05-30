@@ -1,5 +1,21 @@
 <template>
   <div class="builder-container">
+    <!-- Primary tabs: Forms / Surveys -->
+    <div class="primary-tabs">
+      <button type="button" class={formsTabClass}
+        data-tab="forms" onclick={handlePrimaryTabChange}>
+        <lightning-icon icon-name="utility:form" size="x-small"
+          class="slds-m-right_x-small"></lightning-icon>
+        Forms
+      </button>
+      <button type="button" class={surveysTabClass}
+        data-tab="surveys" onclick={handlePrimaryTabChange}>
+        <lightning-icon icon-name="utility:survey" size="x-small"
+          class="slds-m-right_x-small"></lightning-icon>
+        Surveys
+      </button>
+    </div>
+
     <!-- Header Bar -->
     <div class="slds-page-header slds-m-bottom_small" role="banner">
       <div class="slds-page-header__row">
@@ -23,7 +39,7 @@
             <div class="slds-page-header__control">
               <lightning-button
                 variant="neutral"
-                label="New Form"
+                label={newButtonLabel}
                 icon-name="utility:add"
                 onclick={handleNewForm}
               >
@@ -125,6 +141,10 @@
             object-label={currentObjectLabel}
             fields={objectFields}
             relationships={childRelationships}
+            related-object-fields={relatedObjectFields}
+            related-object-label={relatedObjectLabel}
+            selected-section-context={selectedSectionContext}
+            mode={primaryTab}
           >
           </c-field-palette>
         </div>
@@ -134,15 +154,25 @@
           <c-designer-canvas
             section-data={canvasSections}
             is-editable={isDraft}
+            layout-mode={currentLayoutMode}
+            relationships={childRelationships}
+            header-data={formHeader}
+            is-header-selected={isHeaderSelected}
+            onselectheader={handleSelectHeader}
             onaddsection={handleAddSection}
+            onaddrelatedtosection={handleAddRelatedToSection}
             onselectsection={handleSelectSection}
             oneditsection={handleEditSection}
             ondeletesection={handleDeleteSection}
+            ondeleterelatedsection={handleDeleteRelatedSection}
             onselectelement={handleSelectElement}
+            onselectrelatedsection={handleSelectRelatedSection}
+            onselectrelatedelement={handleSelectRelatedElement}
             onremoveelement={handleRemoveElement}
+            onremoverelatedelement={handleRemoveRelatedElement}
             ondropfield={handleDropField}
             ondropcomponent={handleDropComponent}
-            ondroprelationship={handleDropRelationship}
+            ondroprelatefield={handleDropRelateField}
           >
           </c-designer-canvas>
         </div>
@@ -170,10 +200,10 @@
           class="slds-m-bottom_medium"
         ></lightning-icon>
         <h2 class="slds-text-heading_medium slds-m-bottom_small">
-          No Form Selected
+          {emptyStateTitle}
         </h2>
         <p class="slds-text-body_regular slds-text-color_weak">
-          Select a form from the dropdown or create a new one.
+          {emptyStateMessage}
         </p>
       </div>
     </template>
@@ -183,6 +213,7 @@
   <template if:true={showCreateModal}>
     <c-new-form-dialog
       object-options={objectOptions}
+      initial-mode={primaryTab}
       onclose={handleCloseModal}
       onformcreated={handleFormCreated}
     >

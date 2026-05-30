@@ -227,9 +227,17 @@ public with sharing class FormDesignerController {
         Primary_Context_Object__c,
         Form_Type__c,
         Layout_Mode__c,
+        Submission_Storage__c,
+        Allowed_Adapters__c,
         Status__c,
         (
-          SELECT Id, Name, Version_Number__c, Is_Active__c, Published_Date__c
+          SELECT
+            Id,
+            Name,
+            Version_Number__c,
+            Is_Active__c,
+            Layout_Mode__c,
+            Published_Date__c
           FROM Form_Versions__r
           ORDER BY Version_Number__c DESC
         )
@@ -248,6 +256,7 @@ public with sharing class FormDesignerController {
         Name,
         Version_Number__c,
         Is_Active__c,
+        Layout_Mode__c,
         Published_Date__c,
         Published_By__c,
         Change_Notes__c
@@ -262,29 +271,50 @@ public with sharing class FormDesignerController {
     String formName,
     String objectApiName,
     String formType,
-    String layoutMode
+    String layoutMode,
+    String submissionStorage,
+    String allowedAdapters
   ) {
     if (String.isBlank(formName)) {
       throw new AuraHandledException('Form name is required.');
     }
-    if (String.isBlank(objectApiName)) {
-      throw new AuraHandledException('Primary object is required.');
+
+    String storage = String.isBlank(submissionStorage)
+      ? 'Primary_Object'
+      : submissionStorage;
+    Boolean requiresObject = (storage == 'Primary_Object' || storage == 'Both');
+
+    if (requiresObject && String.isBlank(objectApiName)) {
+      throw new AuraHandledException(
+        'Primary object is required when Submission Storage is Primary Object or Both.'
+      );
     }
 
-    Schema.SObjectType sObjType = Schema.getGlobalDescribe().get(objectApiName);
-    if (sObjType == null) {
-      throw new AuraHandledException('Invalid object selected.');
+    if (!String.isBlank(objectApiName)) {
+      Schema.SObjectType sObjType = Schema.getGlobalDescribe()
+        .get(objectApiName);
+      if (sObjType == null) {
+        throw new AuraHandledException('Invalid object selected.');
+      }
     }
+
+    String resolvedLayout = String.isBlank(layoutMode)
+      ? 'Single_Page'
+      : layoutMode;
 
     Savepoint sp = Database.setSavepoint();
     try {
       Form__c form = new Form__c();
       form.Name = formName.trim();
-      form.Primary_Context_Object__c = objectApiName;
+      form.Primary_Context_Object__c = String.isBlank(objectApiName)
+        ? null
+        : objectApiName;
       form.Form_Type__c = String.isBlank(formType) ? 'Form' : formType;
-      form.Layout_Mode__c = String.isBlank(layoutMode)
-        ? 'Single_Page'
-        : layoutMode;
+      form.Layout_Mode__c = resolvedLayout;
+      form.Submission_Storage__c = storage;
+      form.Allowed_Adapters__c = String.isBlank(allowedAdapters)
+        ? 'Internal_Record_Page'
+        : allowedAdapters;
       form.Status__c = 'Draft';
       insert form;
 
@@ -292,6 +322,7 @@ public with sharing class FormDesignerController {
       version.Form__c = form.Id;
       version.Version_Number__c = 1;
       version.Is_Active__c = false;
+      version.Layout_Mode__c = resolvedLayout;
       version.Published_Date__c = System.now();
       insert version;
 

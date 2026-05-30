@@ -17,7 +17,13 @@
             <value>
                 <fullName>Static_Text</fullName>
                 <default>false</default>
+                <isActive>false</isActive>
                 <label>Static Text</label>
+            </value>
+            <value>
+                <fullName>Rich_Text</fullName>
+                <default>false</default>
+                <label>Rich Text</label>
             </value>
             <value>
                 <fullName>Divider</fullName>
@@ -32,6 +38,7 @@
             <value>
                 <fullName>Signature</fullName>
                 <default>false</default>
+                <isActive>false</isActive>
                 <label>Signature</label>
             </value>
             <value>
@@ -43,6 +50,26 @@
                 <fullName>Formula</fullName>
                 <default>false</default>
                 <label>Formula</label>
+            </value>
+            <value>
+                <fullName>NPS_Score</fullName>
+                <default>false</default>
+                <label>NPS Score</label>
+            </value>
+            <value>
+                <fullName>Likert_Scale</fullName>
+                <default>false</default>
+                <label>Likert Scale</label>
+            </value>
+            <value>
+                <fullName>Star_Rating</fullName>
+                <default>false</default>
+                <label>Star Rating</label>
+            </value>
+            <value>
+                <fullName>Long_Text_Response</fullName>
+                <default>false</default>
+                <label>Long Text Response</label>
             </value>
             <value>
                 <fullName>CustomMulti</fullName>

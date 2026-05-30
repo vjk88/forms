@@ -9,7 +9,32 @@
       <!-- Components Tab -->
       <lightning-tab label="Components" value="components">
         <div class="slds-p-around_small">
-          <h3 class="slds-text-title_caps slds-m-bottom_x-small">
+          <!-- Survey-only question types -->
+          <template if:true={hasSurveyQuestionTypes}>
+            <h3 class="slds-text-title_caps slds-m-bottom_x-small">
+              Survey Questions
+            </h3>
+            <ul class="palette-list">
+              <template for:each={surveyQuestionTypes} for:item="q">
+                <li
+                  key={q.value}
+                  class="palette-item"
+                  draggable="true"
+                  ondragstart={handleComponentDragStart}
+                  data-type={q.value}
+                >
+                  <lightning-icon
+                    icon-name={q.icon}
+                    size="x-small"
+                    class="slds-m-right_x-small"
+                  ></lightning-icon>
+                  <span>{q.label}</span>
+                </li>
+              </template>
+            </ul>
+          </template>
+
+          <h3 class="slds-text-title_caps slds-m-top_small slds-m-bottom_x-small">
             Display Components
           </h3>
           <ul class="palette-list">
@@ -31,46 +56,12 @@
             </template>
           </ul>
 
-          <template if:true={hasRelationships}>
-            <h3
-              class="slds-text-title_caps slds-m-top_small slds-m-bottom_x-small"
-            >
-              Related Objects ({relationshipCount})
-            </h3>
-            <ul class="palette-list">
-              <template for:each={relationships} for:item="rel">
-                <li
-                  key={rel.name}
-                  class="palette-item"
-                  draggable="true"
-                  ondragstart={handleRelationshipDragStart}
-                  data-name={rel.name}
-                  data-child={rel.childObject}
-                  data-field={rel.fieldName}
-                >
-                  <lightning-icon
-                    icon-name="standard:related_list"
-                    size="x-small"
-                    class="slds-m-right_x-small"
-                  ></lightning-icon>
-                  <span>{rel.childObjectLabel}</span>
-                </li>
-              </template>
-            </ul>
-          </template>
         </div>
       </lightning-tab>
 
       <!-- Fields Tab -->
       <lightning-tab label="Fields" value="fields">
         <div class="slds-p-horizontal_small slds-p-top_small">
-          <!-- Object label -->
-          <p
-            class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
-          >
-            {objectLabel}
-          </p>
-
           <!-- Search -->
           <lightning-input
             type="search"
@@ -81,10 +72,15 @@
             class="slds-m-bottom_small"
           >
           </lightning-input>
-
+          <!-- Object label -->
+          <p
+            class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
+          >
+            {objectLabel}
+          </p>
           <!-- Required Fields -->
           <template if:true={hasRequiredFields}>
-            <div class="palette-group">
+            <div class="palette-gro up">
               <button
                 class="palette-group-header"
                 type="button"
@@ -169,6 +165,52 @@
               </ul>
             </template>
           </div>
+
+          <!-- Related Fields -->
+          <template if:true={showRelatedFieldsGroup}>
+            <div class="palette-group slds-m-top_small">
+              <button
+                class="palette-group-header"
+                type="button"
+                onclick={toggleRelatedSection}
+                data-section="related"
+              >
+                <lightning-icon
+                  icon-name={relatedChevron}
+                  size="xx-small"
+                  class="slds-m-right_xx-small"
+                >
+                </lightning-icon>
+                <span class="slds-text-title_caps">
+                  Related: {relatedObjectLabel} ({filteredRelatedFieldCount})
+                </span>
+              </button>
+              <template if:true={relatedExpanded}>
+                <ul class="palette-list">
+                  <template for:each={filteredRelatedFields} for:item="field">
+                    <li
+                      key={field.apiName}
+                      class="palette-item"
+                      draggable="true"
+                      ondragstart={handleFieldDragStart}
+                      data-api={field.apiName}
+                      data-label={field.label}
+                      data-type={field.type}
+                      data-source="related"
+                    >
+                      <lightning-icon
+                        icon-name={field.iconName}
+                        size="x-small"
+                        class="slds-m-right_x-small"
+                      >
+                      </lightning-icon>
+                      <span>{field.label}</span>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+            </div>
+          </template>
         </div>
       </lightning-tab>
     </lightning-tabset>

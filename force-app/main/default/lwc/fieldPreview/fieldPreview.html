@@ -1,0 +1,245 @@
+<template>
+    <!-- Field type -->
+    <template if:true={isTextField}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-input">
+                <span class="preview-placeholder">{placeholderText}</span>
+            </div>
+            <template if:true={config.helpText}>
+                <p class="preview-help">{config.helpText}</p>
+            </template>
+        </div>
+    </template>
+
+    <!-- Textarea -->
+    <template if:true={isTextArea}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-textarea">
+                <span class="preview-placeholder">{placeholderText}</span>
+            </div>
+            <template if:true={config.helpText}>
+                <p class="preview-help">{config.helpText}</p>
+            </template>
+        </div>
+    </template>
+
+    <!-- Dropdown / Picklist -->
+    <template if:true={isDropdown}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-select">
+                <span class="preview-placeholder">{dropdownPlaceholder}</span>
+                <lightning-icon icon-name="utility:down" size="xx-small"
+                    class="select-arrow"></lightning-icon>
+            </div>
+            <template if:true={config.helpText}>
+                <p class="preview-help">{config.helpText}</p>
+            </template>
+        </div>
+    </template>
+
+    <!-- Radio Buttons -->
+    <template if:true={isRadio}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-radio-group">
+                <template for:each={previewOptions} for:item="opt">
+                    <label key={opt.value} class="preview-radio">
+                        <span class="radio-circle"></span>
+                        <span>{opt.label}</span>
+                    </label>
+                </template>
+            </div>
+            <template if:true={config.helpText}>
+                <p class="preview-help">{config.helpText}</p>
+            </template>
+        </div>
+    </template>
+
+    <!-- Checkbox Group -->
+    <template if:true={isCheckboxGroup}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-checkbox-group">
+                <template for:each={previewOptions} for:item="opt">
+                    <label key={opt.value} class="preview-checkbox">
+                        <span class="checkbox-box"></span>
+                        <span>{opt.label}</span>
+                    </label>
+                </template>
+            </div>
+            <template if:true={config.helpText}>
+                <p class="preview-help">{config.helpText}</p>
+            </template>
+        </div>
+    </template>
+
+    <!-- Boolean / Toggle -->
+    <template if:true={isToggle}>
+        <div class={wrapperClass}>
+            <div class="preview-toggle-row">
+                <span class="toggle-track"><span class="toggle-knob"></span></span>
+                <label class="preview-label">{config.name}</label>
+            </div>
+        </div>
+    </template>
+
+    <!-- Boolean / Checkbox -->
+    <template if:true={isCheckbox}>
+        <div class={wrapperClass}>
+            <label class="preview-checkbox">
+                <span class="checkbox-box"></span>
+                <span>{config.name}</span>
+            </label>
+        </div>
+    </template>
+
+    <!-- Date / DateTime -->
+    <template if:true={isDate}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-input preview-date">
+                <span class="preview-placeholder">{datePlaceholder}</span>
+                <lightning-icon icon-name="utility:event" size="xx-small"
+                    class="date-icon"></lightning-icon>
+            </div>
+        </div>
+    </template>
+
+    <!-- Lookup -->
+    <template if:true={isLookup}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="preview-input preview-lookup">
+                <span class="preview-placeholder">Search...</span>
+                <lightning-icon icon-name="utility:search" size="xx-small"
+                    class="date-icon"></lightning-icon>
+            </div>
+        </div>
+    </template>
+
+    <!-- Slider -->
+    <template if:true={isSlider}>
+        <div class={wrapperClass}>
+            <label class="preview-label">{config.name}</label>
+            <div class="preview-slider">
+                <div class="slider-track"><div class="slider-fill"></div></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Rich Text -->
+    <template if:true={isRichText}>
+        <div class="preview-richtext">
+            <div class="richtext-toolbar">
+                <lightning-icon icon-name="utility:bold" size="xx-small"></lightning-icon>
+                <lightning-icon icon-name="utility:italic" size="xx-small"></lightning-icon>
+                <lightning-icon icon-name="utility:underline" size="xx-small"></lightning-icon>
+            </div>
+            <div class="richtext-body">Rich text content area</div>
+        </div>
+    </template>
+
+    <!-- Divider -->
+    <template if:true={isDivider}>
+        <div class="preview-divider"><hr></div>
+    </template>
+
+    <!-- File Upload -->
+    <template if:true={isFileUpload}>
+        <div class={wrapperClass}>
+            <label class="preview-label">{config.name}</label>
+            <div class="preview-upload">
+                <lightning-icon icon-name="utility:upload" size="small"
+                    class="slds-m-right_x-small"></lightning-icon>
+                <span>Drop files or click to upload</span>
+            </div>
+        </div>
+    </template>
+
+    <!-- NPS Score -->
+    <template if:true={isNps}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="nps-row">
+                <template for:each={npsScale} for:item="n">
+                    <span key={n.key} class="nps-cell">{n.value}</span>
+                </template>
+            </div>
+            <div class="nps-labels">
+                <span>Not at all likely</span>
+                <span>Extremely likely</span>
+            </div>
+        </div>
+    </template>
+
+    <!-- Likert Scale -->
+    <template if:true={isLikert}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="likert-row">
+                <template for:each={likertScale} for:item="opt">
+                    <div key={opt.key} class="likert-cell">
+                        <span class="radio-circle"></span>
+                        <span class="likert-label">{opt.label}</span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Star Rating -->
+    <template if:true={isStars}>
+        <div class={wrapperClass}>
+            <label class="preview-label">
+                <template if:true={isRequired}><abbr class="slds-required" title="required">*</abbr></template>
+                {config.name}
+            </label>
+            <div class="stars-row">
+                <template for:each={starsScale} for:item="s">
+                    <lightning-icon key={s.key} icon-name="utility:favorite"
+                        size="small" class="star-icon"></lightning-icon>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Fallback -->
+    <template if:true={isFallback}>
+        <div class={wrapperClass}>
+            <label class="preview-label">{config.name}</label>
+            <div class="preview-input">
+                <span class="preview-placeholder">{config.fieldType}</span>
+            </div>
+        </div>
+    </template>
+</template>

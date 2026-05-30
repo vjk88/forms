@@ -8,7 +8,7 @@
   >Enter the API name of the Salesforce object this form will work with. Examples: Account, Contact, MyCustomObject__c</inlineHelpText>
     <label>Primary Context Object</label>
     <length>255</length>
-    <required>true</required>
+    <required>false</required>
     <trackTrending>false</trackTrending>
     <type>Text</type>
     <unique>false</unique>

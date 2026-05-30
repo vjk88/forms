@@ -2,9 +2,9 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Layout_Mode__c</fullName>
     <description
-  >Controls how sections are presented to the user at runtime. Single Page shows all sections on one scrollable page. Vertical Navigation shows a left sidebar menu with one section at a time, ending with a review page before save.</description>
+  >How sections are presented at runtime for this version. Inherits the default from Form__c on creation but can be changed per version.</description>
     <inlineHelpText
-  >Single Page: all sections on one page. Vertical Navigation: left menu with one section at a time, review page before save.</inlineHelpText>
+  >Single Page: all sections on one page. Vertical Navigation: left menu, one section at a time. Multi Page Wizard: top progress bar, one page at a time.</inlineHelpText>
     <label>Layout Mode</label>
     <required>false</required>
     <trackTrending>false</trackTrending>

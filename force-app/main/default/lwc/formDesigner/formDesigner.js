@@ -12,6 +12,7 @@ import publishVersion from "@salesforce/apex/FormDesignerController.publishVersi
 import deleteDraftVersion from "@salesforce/apex/FormDesignerController.deleteDraftVersion";
 
 export default class FormDesigner extends LightningElement {
+  @track primaryTab = 'forms';
   @track selectedFormId;
   @track selectedVersionId;
   @track currentForm;
@@ -24,8 +25,26 @@ export default class FormDesigner extends LightningElement {
   @track childRelationships = [];
   @track canvasSections = [];
   @track panelSelection = null;
+  @track formHeader = {
+    visible: true,
+    title: "Form Title",
+    subtitle: "",
+    showLogo: false,
+    logoUrl: "",
+    alignment: "left",
+    backgroundColor: "#ffffff",
+    backgroundImage: ""
+  };
+  @track isHeaderSelected = false;
+  @track relatedObjectFields = [];
+  @track relatedObjectLabel = "";
+  @track selectedSectionContext = "Parent";
   showCreateModal = false;
   isProcessing = false;
+
+  get isHeaderSelected() {
+    return this.panelSelection && this.panelSelection.type === "header";
+  }
 
   wiredFormsResult;
   wiredVersionsResult;
@@ -62,11 +81,74 @@ export default class FormDesigner extends LightningElement {
 
   // --- Computed properties ---
 
+  get filteredForms() {
+    const wantType = this.primaryTab === 'surveys' ? 'Survey' : 'Form';
+    return this.forms.filter((f) => (f.Form_Type__c || 'Form') === wantType);
+  }
+
   get formOptions() {
-    return this.forms.map((f) => ({
-      label: `${f.Name} (${f.Primary_Context_Object__c})`,
+    return this.filteredForms.map((f) => ({
+      label: f.Primary_Context_Object__c
+        ? `${f.Name} (${f.Primary_Context_Object__c})`
+        : f.Name,
       value: f.Id
     }));
+  }
+
+  get formsTabClass() {
+    return `primary-tab${this.primaryTab === 'forms' ? ' active' : ''}`;
+  }
+
+  get surveysTabClass() {
+    return `primary-tab${this.primaryTab === 'surveys' ? ' active' : ''}`;
+  }
+
+  get newButtonLabel() {
+    return this.primaryTab === 'surveys' ? 'New Survey' : 'New Form';
+  }
+
+  get emptyStateTitle() {
+    return this.primaryTab === 'surveys' ? 'No Survey Selected' : 'No Form Selected';
+  }
+
+  get emptyStateMessage() {
+    const noun = this.primaryTab === 'surveys' ? 'survey' : 'form';
+    return `Select a ${noun} from the dropdown or create a new one.`;
+  }
+
+  handlePrimaryTabChange(event) {
+    const tab = event.currentTarget.dataset.tab;
+    if (tab === this.primaryTab) return;
+
+    // Remember current selection for the tab we're leaving
+    this._selectionByTab = this._selectionByTab || {};
+    this._selectionByTab[this.primaryTab] = {
+      formId: this.selectedFormId,
+      versionId: this.selectedVersionId
+    };
+
+    this.primaryTab = tab;
+
+    // Restore selection for the tab we're switching to, if any
+    const remembered = this._selectionByTab[tab];
+    if (remembered && remembered.formId) {
+      this.selectedFormId = remembered.formId;
+      this.currentForm = this.forms.find((f) => f.Id === remembered.formId);
+      this.selectedVersionId = remembered.versionId;
+      this.currentVersion = null;
+      this.canvasSections = [];
+      this.panelSelection = null;
+      if (this.currentForm) {
+        this.loadObjectMetadata();
+      }
+    } else {
+      this.selectedFormId = null;
+      this.selectedVersionId = null;
+      this.currentForm = null;
+      this.currentVersion = null;
+      this.canvasSections = [];
+      this.panelSelection = null;
+    }
   }
 
   get versionOptions() {
@@ -86,6 +168,12 @@ export default class FormDesigner extends LightningElement {
 
   get isDraft() {
     return this.currentVersion && !this.currentVersion.Is_Active__c;
+  }
+
+  get currentLayoutMode() {
+    return this.currentVersion?.Layout_Mode__c
+      || this.currentForm?.Layout_Mode__c
+      || 'Single_Page';
   }
 
   get versionStatusLabel() {
@@ -137,6 +225,17 @@ export default class FormDesigner extends LightningElement {
 
     this.canvasSections = [];
     this.panelSelection = null;
+    this.relatedObjectFields = [];
+    this.relatedObjectLabel = "";
+    this.selectedSectionContext = "Parent";
+
+    this.formHeader = {
+      title: this.currentForm ? this.currentForm.Name : "Form Title",
+      subtitle: "Please fill out this form",
+      showLogo: false,
+      alignment: "left",
+      backgroundImage: ""
+    };
 
     if (this.currentForm && this.currentForm.Form_Versions__r) {
       const draft = this.currentForm.Form_Versions__r.find(
@@ -194,7 +293,7 @@ export default class FormDesigner extends LightningElement {
 
     this.isProcessing = true;
     createDraftFromActive({ formId: this.selectedFormId })
-      .then((result) => {
+      .then(() => {
         this.showToast("Success", "Draft version created", "success");
         return refreshApex(this.wiredVersionsResult);
       })
@@ -269,6 +368,7 @@ export default class FormDesigner extends LightningElement {
   get currentObjectLabel() {
     if (!this.currentForm) return "";
     const apiName = this.currentForm.Primary_Context_Object__c;
+    if (!apiName) return "";
     const opt = this.objectOptions.find(
       (o) => o.value.toLowerCase() === apiName.toLowerCase()
     );
@@ -298,7 +398,10 @@ export default class FormDesigner extends LightningElement {
     const newSection = {
       id: "new-" + Date.now(),
       name: "New Section",
+      showHeader: true,
+      headerBackgroundColor: "#f3f3f3",
       gridColumns: 1,
+      padding: "medium",
       contextType: "Parent",
       collapsible: false,
       collapsedByDefault: false,
@@ -310,17 +413,39 @@ export default class FormDesigner extends LightningElement {
   }
 
   handleSelectSection(event) {
+    this.isHeaderSelected = false;
     const { index, section } = event.detail;
     this.panelSelection = {
       type: "section",
       index,
       name: section.name,
+      showHeader: section.showHeader,
+      headerBackgroundColor: section.headerBackgroundColor,
       gridColumns: section.gridColumns,
+      padding: section.padding,
       collapsible: section.collapsible,
       collapsedByDefault: section.collapsedByDefault,
       description: section.description,
       visibilityExpression: section.visibilityExpression
     };
+
+    if (section.contextType === "Related_Child" && section.parentSObjectApi) {
+      this.selectedSectionContext = "Related_Child";
+      this.relatedObjectLabel = section.name || section.parentSObjectApi;
+
+      getObjectFields({ objectApiName: section.parentSObjectApi })
+        .then((data) => {
+          this.relatedObjectFields = data;
+        })
+        .catch((error) => {
+          console.error("Error loading related fields:", error);
+          this.relatedObjectFields = [];
+        });
+    } else {
+      this.selectedSectionContext = "Parent";
+      this.relatedObjectFields = [];
+      this.relatedObjectLabel = "";
+    }
   }
 
   handleEditSection(event) {
@@ -331,9 +456,13 @@ export default class FormDesigner extends LightningElement {
     const { index } = event.detail;
     this.canvasSections = this.canvasSections.filter((_, i) => i !== index);
     this.panelSelection = null;
+    this.selectedSectionContext = "Parent";
+    this.relatedObjectFields = [];
+    this.relatedObjectLabel = "";
   }
 
   handleSelectElement(event) {
+    this.isHeaderSelected = false;
     const { sectionIndex, elementIndex, element } = event.detail;
     this.panelSelection = {
       type: "element",
@@ -342,10 +471,100 @@ export default class FormDesigner extends LightningElement {
       name: element.label,
       elementType: element.type,
       fieldApiName: element.fieldApiName,
-      isRequired: element.required,
+      fieldType: element.fieldType,
+      uiBehavior: element.uiBehavior || "None",
+      renderAs: element.renderAs || "Default",
+      customOptionsJson: element.customOptionsJson || "[]",
       helpText: element.helpText,
       placeholder: element.placeholder,
       visibilityExpression: element.visibilityExpression
+    };
+
+    const section = this.canvasSections[sectionIndex];
+    if (
+      section &&
+      section.contextType === "Related_Child" &&
+      section.parentSObjectApi
+    ) {
+      this.selectedSectionContext = "Related_Child";
+      this.relatedObjectLabel = section.name || section.parentSObjectApi;
+
+      getObjectFields({ objectApiName: section.parentSObjectApi })
+        .then((data) => {
+          this.relatedObjectFields = data;
+        })
+        .catch((error) => {
+          console.error("Error loading related fields:", error);
+          this.relatedObjectFields = [];
+        });
+    } else {
+      this.selectedSectionContext = "Parent";
+      this.relatedObjectFields = [];
+      this.relatedObjectLabel = "";
+    }
+  }
+
+  handleSelectHeader() {
+    this.isHeaderSelected = true;
+    this.panelSelection = {
+      type: "header",
+      ...this.formHeader
+    };
+    this.selectedSectionContext = "Parent";
+    this.relatedObjectFields = [];
+    this.relatedObjectLabel = "";
+  }
+
+  switchToRelatedContext(relatedSection) {
+    this.isHeaderSelected = false;
+    this.selectedSectionContext = "Related_Child";
+    this.relatedObjectLabel = relatedSection.name || relatedSection.parentSObjectApi;
+
+    if (relatedSection.parentSObjectApi) {
+      getObjectFields({ objectApiName: relatedSection.parentSObjectApi })
+        .then((data) => { this.relatedObjectFields = data; })
+        .catch((err) => {
+          console.error("Error loading related fields:", err);
+          this.relatedObjectFields = [];
+        });
+    }
+  }
+
+  handleSelectRelatedSection(event) {
+    const { sectionIndex, relatedIndex, relatedSection } = event.detail;
+    this.switchToRelatedContext(relatedSection);
+    this.panelSelection = {
+      type: "section",
+      index: sectionIndex,
+      relatedIndex,
+      name: relatedSection.name,
+      gridColumns: relatedSection.gridColumns || 1,
+      contextType: "Related_Child",
+      parentSObjectApi: relatedSection.parentSObjectApi,
+      linkingField: relatedSection.linkingField
+    };
+  }
+
+  handleSelectRelatedElement(event) {
+    const { sectionIndex, relatedIndex, elementIndex, element } = event.detail;
+    const relSection = this.canvasSections[sectionIndex]?.relatedSections?.[relatedIndex];
+    if (relSection) {
+      this.switchToRelatedContext(relSection);
+    }
+    this.panelSelection = {
+      type: "element",
+      sectionIndex,
+      relatedIndex,
+      elementIndex,
+      name: element.label,
+      elementType: element.type,
+      fieldApiName: element.fieldApiName,
+      fieldType: element.fieldType,
+      uiBehavior: element.uiBehavior || "None",
+      renderAs: element.renderAs || "Default",
+      customOptionsJson: element.customOptionsJson || "[]",
+      helpText: element.helpText,
+      placeholder: element.placeholder
     };
   }
 
@@ -363,7 +582,31 @@ export default class FormDesigner extends LightningElement {
   }
 
   handleDropField(event) {
-    const { apiName, label, fieldType, sectionIndex } = event.detail;
+    const { apiName, label, fieldType, sectionIndex, fieldSource } =
+      event.detail;
+
+    const targetSection = this.canvasSections[sectionIndex];
+    if (targetSection) {
+      if (
+        targetSection.contextType === "Related_Child" &&
+        fieldSource !== "related"
+      ) {
+        this.showToast(
+          "Warning",
+          `Only fields from the related object (${targetSection.parentSObjectApi}) can be added to this repeater section.`,
+          "warning"
+        );
+        return;
+      }
+      if (targetSection.contextType === "Parent" && fieldSource !== "primary") {
+        this.showToast(
+          "Warning",
+          `Only fields from the primary object (${this.currentForm?.Primary_Context_Object__c}) can be added to standard sections.`,
+          "warning"
+        );
+        return;
+      }
+    }
 
     const alreadyExists = this.canvasSections.some((s) =>
       (s.elements || []).some(
@@ -383,7 +626,7 @@ export default class FormDesigner extends LightningElement {
       name: label,
       fieldApiName: apiName,
       fieldType,
-      isRequired: false,
+      uiBehavior: "None",
       helpText: "",
       placeholder: ""
     };
@@ -412,19 +655,88 @@ export default class FormDesigner extends LightningElement {
     this.canvasSections = updated;
   }
 
-  handleDropRelationship(event) {
-    const { relationshipName, childObject, fieldName } = event.detail;
-    const newSection = {
-      id: "new-" + Date.now(),
-      name: childObject,
+  handleAddRelatedToSection(event) {
+    const { sectionIndex, name, childObject, childObjectLabel, fieldName } = event.detail;
+
+    const newRelated = {
+      id: "rel-" + Date.now(),
+      name: childObjectLabel,
       gridColumns: 1,
       contextType: "Related_Child",
       isRepeatable: true,
-      relationshipName,
+      relationshipName: name,
       parentSObjectApi: childObject,
+      linkingField: fieldName,
       elements: []
     };
-    this.canvasSections = [...this.canvasSections, newSection];
+
+    const updated = [...this.canvasSections];
+    const existing = updated[sectionIndex].relatedSections || [];
+    updated[sectionIndex] = {
+      ...updated[sectionIndex],
+      relatedSections: [...existing, newRelated]
+    };
+    this.canvasSections = updated;
+
+    getObjectFields({ objectApiName: childObject })
+      .then((data) => {
+        this.relatedObjectFields = data;
+        this.relatedObjectLabel = childObjectLabel;
+        this.selectedSectionContext = "Related_Child";
+      })
+      .catch((err) => console.error("Error loading related fields:", err));
+  }
+
+  handleDeleteRelatedSection(event) {
+    const { sectionIndex, relatedIndex } = event.detail;
+    const updated = [...this.canvasSections];
+    const relSections = [...(updated[sectionIndex].relatedSections || [])];
+    relSections.splice(relatedIndex, 1);
+    updated[sectionIndex] = { ...updated[sectionIndex], relatedSections: relSections };
+    this.canvasSections = updated;
+  }
+
+  handleRemoveRelatedElement(event) {
+    const { sectionIndex, relatedIndex, elementIndex } = event.detail;
+    const updated = [...this.canvasSections];
+    const relSections = [...(updated[sectionIndex].relatedSections || [])];
+    const elements = [...relSections[relatedIndex].elements];
+    elements.splice(elementIndex, 1);
+    relSections[relatedIndex] = { ...relSections[relatedIndex], elements };
+    updated[sectionIndex] = { ...updated[sectionIndex], relatedSections: relSections };
+    this.canvasSections = updated;
+  }
+
+  handleDropRelateField(event) {
+    const { apiName, label, fieldType, fieldSource, sectionIndex, relatedIndex } = event.detail;
+
+    if (fieldSource === "primary") {
+      this.showToast(
+        "Warning",
+        "Only related object fields can be added to a related list section.",
+        "warning"
+      );
+      return;
+    }
+
+    const updated = [...this.canvasSections];
+    const relSections = [...(updated[sectionIndex].relatedSections || [])];
+
+    const newElement = {
+      id: "elem-" + Date.now(),
+      type: "Field",
+      name: label,
+      fieldApiName: apiName,
+      fieldType,
+      uiBehavior: "None",
+      helpText: "",
+      placeholder: ""
+    };
+
+    const elements = [...(relSections[relatedIndex].elements || []), newElement];
+    relSections[relatedIndex] = { ...relSections[relatedIndex], elements };
+    updated[sectionIndex] = { ...updated[sectionIndex], relatedSections: relSections };
+    this.canvasSections = updated;
   }
 
   // --- Property panel handlers ---
@@ -432,7 +744,10 @@ export default class FormDesigner extends LightningElement {
   handlePropertyChange(event) {
     const { selectionType, property, value } = event.detail;
 
-    if (selectionType === "section") {
+    if (selectionType === "header") {
+      this.formHeader = { ...this.formHeader, [property]: value };
+      this.panelSelection = { ...this.panelSelection, [property]: value };
+    } else if (selectionType === "section") {
       const idx = event.detail.index;
       const updated = [...this.canvasSections];
       updated[idx] = { ...updated[idx], [property]: value };

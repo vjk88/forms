@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Allowed_Adapters__c</fullName>
+    <description
+  >Which surfaces this form can be rendered on. Each adapter validates this before rendering.</description>
+    <inlineHelpText
+  >Select where this form can be used: Lightning record pages, Flow screens, public/guest pages, or embedded in other LWCs.</inlineHelpText>
+    <label>Allowed Adapters</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>MultiselectPicklist</type>
+    <visibleLines>4</visibleLines>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Internal_Record_Page</fullName>
+                <default>true</default>
+                <label>Internal Record Page</label>
+            </value>
+            <value>
+                <fullName>Flow_Screen</fullName>
+                <default>false</default>
+                <label>Flow Screen</label>
+            </value>
+            <value>
+                <fullName>Public_Guest</fullName>
+                <default>false</default>
+                <label>Public / Guest</label>
+            </value>
+            <value>
+                <fullName>Embedded</fullName>
+                <default>false</default>
+                <label>Embedded</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

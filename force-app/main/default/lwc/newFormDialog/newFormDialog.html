@@ -13,7 +13,7 @@
             alternative-text="Close"
           ></lightning-icon>
         </button>
-        <h1 class="slds-modal__title slds-hyphenate">New Form</h1>
+        <h1 class="slds-modal__title slds-hyphenate">{modalTitle}</h1>
       </div>
 
       <!-- Body -->
@@ -27,33 +27,61 @@
         >
         </lightning-input>
 
+        <template if:false={isSurveyMode}>
+          <lightning-combobox
+            label="Form Type"
+            value={formType}
+            options={formTypeOptions}
+            onchange={handleTypeChange}
+            class="slds-m-bottom_small"
+          >
+          </lightning-combobox>
+        </template>
+
         <lightning-combobox
-          label="Primary Object"
-          value={objectApiName}
-          placeholder="Select an object"
-          options={objectOptions}
-          onchange={handleObjectChange}
-          required
+          label="Submission Storage"
+          value={submissionStorage}
+          options={submissionStorageOptions}
+          field-level-help={submissionStorageHelp}
+          onchange={handleStorageChange}
           class="slds-m-bottom_small"
         >
         </lightning-combobox>
 
-        <lightning-combobox
-          label="Form Type"
-          value={formType}
-          options={formTypeOptions}
-          onchange={handleTypeChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-combobox>
+        <template if:true={requiresPrimaryObject}>
+          <lightning-combobox
+            label="Primary Object"
+            value={objectApiName}
+            placeholder="Select an object"
+            options={objectOptions}
+            onchange={handleObjectChange}
+            required
+            class="slds-m-bottom_small"
+          >
+          </lightning-combobox>
+        </template>
 
         <lightning-combobox
           label="Layout Mode"
           value={layoutMode}
           options={layoutModeOptions}
           onchange={handleLayoutChange}
+          class="slds-m-bottom_small"
         >
         </lightning-combobox>
+
+        <fieldset class="slds-form-element">
+          <legend class="slds-form-element__label">Allowed Adapters</legend>
+          <div class="slds-form-element__control">
+            <template for:each={adapterOptions} for:item="opt">
+              <div key={opt.value} class="slds-checkbox">
+                <input type="checkbox" id={opt.value} value={opt.value}
+                  checked={opt.checked} onchange={handleAdapterToggle}>
+                <label for={opt.value} class="slds-m-left_x-small">{opt.label}</label>
+              </div>
+            </template>
+          </div>
+        </fieldset>
       </div>
 
       <!-- Footer -->

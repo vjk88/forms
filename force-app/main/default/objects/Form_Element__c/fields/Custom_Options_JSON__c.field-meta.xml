@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Custom_Options_JSON__c</fullName>
+    <description
+  >Stores custom picklist/radio/checkbox values when the field render type is overridden. JSON array of {label, value} objects. When present, these values are used instead of the schema snapshot values.</description>
+    <inlineHelpText
+  >Custom values for render overrides. Populated automatically by the form builder when you configure a render override.</inlineHelpText>
+    <label>Custom Options JSON</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

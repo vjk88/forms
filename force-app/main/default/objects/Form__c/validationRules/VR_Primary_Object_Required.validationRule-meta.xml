@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VR_Primary_Object_Required</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+  ISBLANK(Primary_Context_Object__c),
+  OR(
+    ISPICKVAL(Submission_Storage__c, &quot;Primary_Object&quot;),
+    ISPICKVAL(Submission_Storage__c, &quot;Both&quot;),
+    AND(
+      ISBLANK(TEXT(Submission_Storage__c)),
+      NOT(ISPICKVAL(Form_Type__c, &quot;Survey&quot;))
+    )
+  )
+)</errorConditionFormula>
+    <errorDisplayField>Primary_Context_Object__c</errorDisplayField>
+    <errorMessage
+  >Primary Context Object is required for Forms or when Submission Storage is Primary Object or Both</errorMessage>
+</ValidationRule>

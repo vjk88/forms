@@ -21,6 +21,41 @@
   padding: 0.75rem;
 }
 
+/* Primary tabs */
+.primary-tabs {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  padding: 0.25rem;
+  margin-bottom: 0.5rem;
+  width: fit-content;
+}
+
+.primary-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #514f4d;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.primary-tab:hover {
+  background: #f3f3f3;
+}
+
+.primary-tab.active {
+  background: #0070d2;
+  color: #fff;
+}
+
 .designer-body {
   display: grid;
   grid-template-columns: 260px 1fr 280px;

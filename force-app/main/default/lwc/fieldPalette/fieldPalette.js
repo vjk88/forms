@@ -18,25 +18,48 @@ const FIELD_TYPE_ICONS = {
   REFERENCE: "utility:record_lookup"
 };
 
-const DISPLAY_COMPONENTS = [
-  { label: "Static Text", value: "Static_Text", icon: "utility:text_template" },
+const COMMON_COMPONENTS = [
+  { label: "Rich Text", value: "Rich_Text", icon: "utility:richtextbulletedlist" },
   { label: "Divider", value: "Divider", icon: "utility:rules" },
-  { label: "File Upload", value: "File_Upload", icon: "utility:upload" },
-  { label: "Signature", value: "Signature", icon: "utility:signature" }
+  { label: "File Upload", value: "File_Upload", icon: "utility:upload" }
+];
+
+const SURVEY_QUESTION_TYPES = [
+  { label: "NPS Score (0-10)", value: "NPS_Score", icon: "utility:rating" },
+  { label: "Likert Scale", value: "Likert_Scale", icon: "utility:groups" },
+  { label: "Star Rating", value: "Star_Rating", icon: "utility:favorite" },
+  { label: "Long Text Response", value: "Long_Text_Response", icon: "utility:textarea" }
 ];
 
 export default class FieldPalette extends LightningElement {
   @api objectLabel = "";
   @api fields = [];
   @api relationships = [];
+  @api relatedObjectFields = [];
+  @api relatedObjectLabel = "";
+  @api selectedSectionContext = "Parent";
+  @api mode = "forms";
 
   @track activeTab = "fields";
   @track searchTerm = "";
   @track requiredExpanded = false;
   @track fieldsExpanded = true;
+  @track relatedExpanded = true;
+
+  get isSurveyMode() {
+    return this.mode === 'surveys';
+  }
+
+  get surveyQuestionTypes() {
+    return SURVEY_QUESTION_TYPES;
+  }
+
+  get hasSurveyQuestionTypes() {
+    return this.isSurveyMode;
+  }
 
   get displayComponents() {
-    return DISPLAY_COMPONENTS;
+    return COMMON_COMPONENTS;
   }
 
   get hasRelationships() {
@@ -93,6 +116,44 @@ export default class FieldPalette extends LightningElement {
     return this.fieldsExpanded ? "utility:chevrondown" : "utility:chevronright";
   }
 
+  get showRelatedFieldsGroup() {
+    return (
+      this.selectedSectionContext === "Related_Child" &&
+      this.relatedObjectFields &&
+      this.relatedObjectFields.length > 0
+    );
+  }
+
+  get relatedChevron() {
+    return this.relatedExpanded
+      ? "utility:chevrondown"
+      : "utility:chevronright";
+  }
+
+  get enrichedRelatedFields() {
+    return (this.relatedObjectFields || []).map((f) => ({
+      ...f,
+      iconName: FIELD_TYPE_ICONS[f.type] || "utility:text"
+    }));
+  }
+
+  get filteredRelatedFields() {
+    let result = this.enrichedRelatedFields;
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      result = result.filter(
+        (f) =>
+          f.label.toLowerCase().includes(term) ||
+          f.apiName.toLowerCase().includes(term)
+      );
+    }
+    return result;
+  }
+
+  get filteredRelatedFieldCount() {
+    return this.filteredRelatedFields.length;
+  }
+
   handleTabChange(event) {
     this.activeTab = event.target.value;
   }
@@ -109,12 +170,18 @@ export default class FieldPalette extends LightningElement {
     this.fieldsExpanded = !this.fieldsExpanded;
   }
 
+  toggleRelatedSection() {
+    this.relatedExpanded = !this.relatedExpanded;
+  }
+
   handleFieldDragStart(event) {
+    const source = event.currentTarget.dataset.source || "primary";
     const data = {
       dragType: "field",
       apiName: event.currentTarget.dataset.api,
       label: event.currentTarget.dataset.label,
-      fieldType: event.currentTarget.dataset.type
+      fieldType: event.currentTarget.dataset.type,
+      fieldSource: source
     };
     event.dataTransfer.setData("text/plain", JSON.stringify(data));
     event.dataTransfer.effectAllowed = "copy";
