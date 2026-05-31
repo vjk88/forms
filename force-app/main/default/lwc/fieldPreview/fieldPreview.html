@@ -151,15 +151,18 @@
         </div>
     </template>
 
-    <!-- Rich Text -->
+    <!-- Display Text (Rich Text) — renders the actual configured content -->
     <template if:true={isRichText}>
-        <div class="preview-richtext">
-            <div class="richtext-toolbar">
-                <lightning-icon icon-name="utility:bold" size="xx-small"></lightning-icon>
-                <lightning-icon icon-name="utility:italic" size="xx-small"></lightning-icon>
-                <lightning-icon icon-name="utility:underline" size="xx-small"></lightning-icon>
-            </div>
-            <div class="richtext-body">Rich text content area</div>
+        <div class="preview-displaytext">
+            <template if:true={hasRichContent}>
+                <lightning-formatted-rich-text value={config.content}>
+                </lightning-formatted-rich-text>
+            </template>
+            <template if:false={hasRichContent}>
+                <span class="preview-placeholder">
+                    Click to add display text…
+                </span>
+            </template>
         </div>
     </template>
 

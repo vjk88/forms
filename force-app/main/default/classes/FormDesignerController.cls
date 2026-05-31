@@ -370,6 +370,13 @@ public with sharing class FormDesignerController {
 
     Id activeVersionId = activeVersions[0].Id;
 
+    Form_Version__c activeFull = [
+      SELECT Id, Layout_Config__c, Schema_Snapshot__c, Layout_Mode__c
+      FROM Form_Version__c
+      WHERE Id = :activeVersionId
+      LIMIT 1
+    ];
+
     AggregateResult[] agg = [
       SELECT MAX(Version_Number__c) maxVer
       FROM Form_Version__c
@@ -383,6 +390,8 @@ public with sharing class FormDesignerController {
       draft.Form__c = formId;
       draft.Version_Number__c = nextVersion;
       draft.Is_Active__c = false;
+      draft.Layout_Config__c = activeFull.Layout_Config__c;
+      draft.Layout_Mode__c = activeFull.Layout_Mode__c;
       draft.Published_Date__c = System.now();
       insert draft;
 
@@ -562,5 +571,49 @@ public with sharing class FormDesignerController {
       }
       insert newElements;
     }
+  }
+
+  // --- Builder draft save / load ---
+  // The draft builder state (header + sections tree) is stored as JSON in
+  // Form_Version__c.Layout_Config__c. Relational Form_Section__c/Form_Element__c
+  // records are generated from this JSON at publish time.
+
+  @AuraEnabled
+  public static void saveFormLayout(Id versionId, String layoutJson) {
+    if (versionId == null) {
+      throw new AuraHandledException('Version Id is required.');
+    }
+
+    List<Form_Version__c> versions = [
+      SELECT Id, Is_Active__c
+      FROM Form_Version__c
+      WHERE Id = :versionId
+      LIMIT 1
+    ];
+    if (versions.isEmpty()) {
+      throw new AuraHandledException('Version not found.');
+    }
+    if (versions[0].Is_Active__c) {
+      throw new AuraHandledException(
+        'Published versions are read-only. Create a new draft to edit.'
+      );
+    }
+
+    versions[0].Layout_Config__c = layoutJson;
+    update versions[0];
+  }
+
+  @AuraEnabled(cacheable=false)
+  public static String getFormLayout(Id versionId) {
+    if (versionId == null) {
+      return null;
+    }
+    List<Form_Version__c> versions = [
+      SELECT Layout_Config__c
+      FROM Form_Version__c
+      WHERE Id = :versionId
+      LIMIT 1
+    ];
+    return versions.isEmpty() ? null : versions[0].Layout_Config__c;
   }
 }

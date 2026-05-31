@@ -1,136 +1,155 @@
 <template>
   <div class="builder-container">
-    <!-- Primary tabs: Forms / Surveys -->
-    <div class="primary-tabs">
-      <button type="button" class={formsTabClass}
-        data-tab="forms" onclick={handlePrimaryTabChange}>
-        <lightning-icon icon-name="utility:form" size="x-small"
-          class="slds-m-right_x-small"></lightning-icon>
-        Forms
-      </button>
-      <button type="button" class={surveysTabClass}
-        data-tab="surveys" onclick={handlePrimaryTabChange}>
-        <lightning-icon icon-name="utility:survey" size="x-small"
-          class="slds-m-right_x-small"></lightning-icon>
-        Surveys
-      </button>
-    </div>
+    <!-- Top App Bar -->
+    <header class="app-bar">
+      <!-- Left cluster -->
+      <div class="app-bar__left">
+        <span class="brand">FormBuilder Pro</span>
+        <div class="app-bar__divider"></div>
 
-    <!-- Header Bar -->
-    <div class="slds-page-header slds-m-bottom_small" role="banner">
-      <div class="slds-page-header__row">
-        <div class="slds-page-header__col-actions">
-          <div class="slds-page-header__controls">
-            <!-- Form Selector -->
-            <div class="slds-page-header__control">
-              <lightning-combobox
-                name="formSelector"
-                label="Select Form"
-                value={selectedFormId}
-                placeholder="Choose a form"
-                options={formOptions}
-                onchange={handleFormSelect}
-                variant="label-hidden"
-              >
-              </lightning-combobox>
-            </div>
+        <!-- Forms / Surveys segmented toggle -->
+        <div class="seg-toggle">
+          <button type="button" class={formsSegClass}
+            data-tab="forms" onclick={handlePrimaryTabChange}>Forms</button>
+          <button type="button" class={surveysSegClass}
+            data-tab="surveys" onclick={handlePrimaryTabChange}>Surveys</button>
+        </div>
 
-            <!-- New Form Button -->
-            <div class="slds-page-header__control">
-              <lightning-button
-                variant="neutral"
-                label={newButtonLabel}
-                icon-name="utility:add"
-                onclick={handleNewForm}
-              >
-              </lightning-button>
-            </div>
+        <div class="app-bar__divider"></div>
 
-            <!-- Version Selector -->
-            <template if:true={hasFormSelected}>
-              <div class="slds-page-header__control">
-                <lightning-combobox
-                  name="versionSelector"
-                  label="Select Version"
-                  value={selectedVersionId}
-                  placeholder="Choose version"
-                  options={versionOptions}
-                  onchange={handleVersionSelect}
-                  variant="label-hidden"
-                >
-                </lightning-combobox>
-              </div>
-
-              <!-- Create Draft Button -->
-              <div class="slds-page-header__control">
-                <lightning-button
-                  variant="neutral"
-                  label="New Draft"
-                  icon-name="utility:copy"
-                  onclick={handleCreateDraft}
-                  disabled={createDraftDisabled}
-                  title={createDraftTooltip}
-                >
-                </lightning-button>
-              </div>
-            </template>
-
-            <!-- Action Buttons -->
-            <template if:true={hasVersionSelected}>
-              <div class="slds-page-header__control">
-                <lightning-button-group>
-                  <lightning-button
-                    variant="neutral"
-                    label="Preview"
-                    icon-name="utility:preview"
-                    onclick={handlePreview}
-                  >
-                  </lightning-button>
-                  <template if:true={isDraft}>
-                    <lightning-button
-                      variant="brand"
-                      label="Publish"
-                      icon-name="utility:check"
-                      onclick={handlePublish}
-                      disabled={isProcessing}
-                    >
-                    </lightning-button>
-                    <lightning-button
-                      variant="destructive"
-                      label="Delete"
-                      icon-name="utility:delete"
-                      onclick={handleDeleteVersion}
-                      disabled={isProcessing}
-                    >
-                    </lightning-button>
+        <!-- Form title + version, both as dropdowns -->
+        <div class="form-title-area">
+          <div class="f">
+            <!-- Form name dropdown -->
+            <div class="title-dd">
+              <button type="button" class="title-dd__btn"
+                onclick={toggleFormMenu}>
+                <span class="title-dd__label">{formTitleLabel}</span>
+                <lightning-icon icon-name="utility:chevrondown" size="xx-small"
+                  class="title-dd__caret"></lightning-icon>
+              </button>
+              <template if:true={showFormMenu}>
+                <div class="dd-menu">
+                  <template for:each={formOptions} for:item="opt">
+                    <button key={opt.value} type="button" class="dd-item"
+                      data-id={opt.value} onclick={handlePickForm}>
+                      {opt.label}
+                    </button>
                   </template>
-                </lightning-button-group>
+                  <template if:true={hasNoForms}>
+                    <div class="dd-empty">No {primaryTabNoun} yet</div>
+                  </template>
+                  <div class="dd-sep"></div>
+                  <button type="button" class="dd-item dd-item_primary"
+                    onclick={handleNewFormFromMenu}>
+                    + {newButtonLabel}
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <!-- Version pill dropdown -->
+            <template if:true={hasFormSelected}>
+              <div class="ver-dd">
+                <button type="button" class={versionPillClass}
+                  onclick={toggleVersionMenu}>
+                  {versionPillLabel}
+                  <lightning-icon icon-name="utility:chevrondown" size="xx-small"
+                    class="ver-dd__caret"></lightning-icon>
+                </button>
+                <template if:true={showVersionMenu}>
+                  <div class="dd-menu dd-menu_sm">
+                    <template for:each={versionOptions} for:item="v">
+                      <button key={v.value} type="button" class="dd-item"
+                        data-id={v.value} onclick={handlePickVersion}>
+                        {v.label}
+                      </button>
+                    </template>
+                    <template if:true={canCreateDraft}>
+                      <div class="dd-sep"></div>
+                      <button type="button" class="dd-item dd-item_primary"
+                        onclick={handleCreateDraftFromMenu}>
+                        + New Draft
+                      </button>
+                    </template>
+                  </div>
+                </template>
               </div>
             </template>
           </div>
         </div>
       </div>
 
-      <!-- Status Badge Row -->
-      <template if:true={hasVersionSelected}>
-        <div class="slds-page-header__row slds-m-top_xx-small">
-          <div
-            class="slds-page-header__col-title slds-grid slds-grid_vertical-align-center"
-          >
-            <lightning-badge
-              label={versionStatusLabel}
-              class={versionBadgeClass}
-            >
-            </lightning-badge>
-            <span
-              class="slds-m-left_small slds-text-body_small slds-text-color_weak"
-            >
-              {formDetailText}
-            </span>
+      <!-- Right cluster -->
+      <div class="app-bar__right">
+        <!-- Icon buttons -->
+        <template if:true={hasVersionSelected}>
+          <div class="icon-btn-group">
+            <button type="button" class="icon-btn" title="Version History"
+              onclick={handleOpenHistory}>
+              <lightning-icon icon-name="utility:clock" size="small"
+                alternative-text="Version History"></lightning-icon>
+            </button>
+            <button type="button" class="icon-btn" title="Preview"
+              onclick={handlePreview}>
+              <lightning-icon icon-name="utility:preview" size="small"
+                alternative-text="Preview"></lightning-icon>
+            </button>
+            <button type="button" class="icon-btn" title="Settings"
+              onclick={handleSettings}>
+              <lightning-icon icon-name="utility:settings" size="small"
+                alternative-text="Settings"></lightning-icon>
+            </button>
           </div>
-        </div>
-      </template>
-    </div>
+        </template>
+
+        <!-- New Form -->
+        <button type="button" class="btn-ghost" onclick={handleNewForm}>
+          <lightning-icon icon-name="utility:add" size="xx-small"
+            class="slds-m-right_xx-small"></lightning-icon>
+          {newButtonLabel}
+        </button>
+
+        <!-- New Draft (when applicable) -->
+        <template if:true={canCreateDraft}>
+          <button type="button" class="btn-ghost" onclick={handleCreateDraft}
+            title={createDraftTooltip}>
+            <lightning-icon icon-name="utility:copy" size="xx-small"
+              class="slds-m-right_xx-small"></lightning-icon>
+            New Draft
+          </button>
+        </template>
+
+        <!-- Save / Publish -->
+        <template if:true={isDraft}>
+          <button type="button" class="btn-outline" onclick={handleSave}
+            disabled={saveDisabled}>{saveButtonLabel}</button>
+          <button type="button" class="btn-primary" onclick={handlePublish}
+            disabled={isProcessing}>Publish</button>
+        </template>
+      </div>
+    </header>
+
+    <!-- Backdrop to close dropdown menus -->
+    <template if:true={anyMenuOpen}>
+      <div class="dd-backdrop" onclick={closeMenus}></div>
+    </template>
+
+    <!-- Save status strip -->
+    <template if:true={hasVersionSelected}>
+      <div class="status-strip">
+        <span class="slds-text-body_small slds-text-color_weak">
+          {formDetailText}
+        </span>
+        <template if:true={saveStatusText}>
+          <span class={saveStatusClass}>
+            <lightning-icon icon-name={saveStatusIcon} size="xx-small"
+              class="slds-m-right_xx-small"></lightning-icon>
+            {saveStatusText}
+          </span>
+        </template>
+      </div>
+    </template>
 
     <!-- Builder Body: 3-column layout -->
     <template if:true={hasVersionSelected}>
@@ -145,17 +164,72 @@
             related-object-label={relatedObjectLabel}
             selected-section-context={selectedSectionContext}
             mode={primaryTab}
+            used-fields={usedFieldApiNames}
           >
           </c-field-palette>
         </div>
 
         <!-- Center: Canvas -->
         <div class="designer-center">
+          <!-- Tabbed page navigation -->
+          <ul class="page-tabbar" role="tablist">
+            <template for:each={pageTabs} for:item="pg">
+              <li key={pg.id} class={pg.tabClass} role="presentation"
+                data-index={pg.index}
+                onclick={handleSelectPage}
+                ondblclick={handleStartRename}>
+                <template if:true={pg.isRenaming}>
+                  <input type="text" class="page-tab__rename"
+                    value={pg.name}
+                    oninput={handleRenameInput}
+                    onblur={handleRenameCommit}
+                    onkeydown={handleRenameKey}
+                    autofocus>
+                </template>
+                <template if:false={pg.isRenaming}>
+                  <span class="page-tab__name">{pg.name}</span>
+                  <template if:true={hasMultiplePages}>
+                    <lightning-button-icon icon-name="utility:close"
+                      variant="bare" size="xx-small" alternative-text="Delete page"
+                      class="page-tab__del"
+                      data-index={pg.index} onclick={handleDeletePage}>
+                    </lightning-button-icon>
+                  </template>
+                </template>
+              </li>
+            </template>
+
+            <li class="page-tab page-tab_add" role="presentation"
+              onclick={handleAddPage} title="Add page">
+              <lightning-icon icon-name="utility:add" size="xx-small">
+              </lightning-icon>
+            </li>
+
+            <!-- Completion tab (always last) -->
+            <li class={completionTabClass} role="presentation"
+              onclick={handleSelectCompletion}>
+              <lightning-icon icon-name="utility:success" size="xx-small"
+                class="slds-m-right_xx-small completion-icon"></lightning-icon>
+              <span class="page-tab__name">Completion</span>
+            </li>
+          </ul>
+
+          <!-- Completion editor (when Completion tab active) -->
+          <template if:true={isCompletionActive}>
+            <c-completion-editor
+              settings={formSettings}
+              oncompletionchange={handleCompletionChange}>
+            </c-completion-editor>
+          </template>
+
+          <!-- Canvas (when a page tab active) -->
+          <template if:false={isCompletionActive}>
           <c-designer-canvas
             section-data={canvasSections}
             is-editable={isDraft}
             layout-mode={currentLayoutMode}
             relationships={childRelationships}
+            primary-object={currentObjectLabel}
             header-data={formHeader}
             is-header-selected={isHeaderSelected}
             onselectheader={handleSelectHeader}
@@ -173,8 +247,11 @@
             ondropfield={handleDropField}
             ondropcomponent={handleDropComponent}
             ondroprelatefield={handleDropRelateField}
+            onreorderelement={handleReorderElement}
+            onreordersection={handleReorderSection}
           >
           </c-designer-canvas>
+          </template>
         </div>
 
         <!-- Right: Property Panel -->
@@ -183,6 +260,8 @@
             selection={panelSelection}
             onpropertychange={handlePropertyChange}
             oneditvisibility={handleEditVisibility}
+            ondeleteselection={handleDeleteSelection}
+            onduplicateselection={handleDuplicateSelection}
           >
           </c-property-panel>
         </div>
@@ -192,7 +271,7 @@
     <!-- Empty State -->
     <template if:false={hasFormSelected}>
       <div
-        class="slds-box slds-theme_default slds-text-align_center slds-p-around_xx-large"
+        class="slds-box slds-theme_default slds-text-align_center slds-p-around_xx-large slds-m-around_medium"
       >
         <lightning-icon
           icon-name="utility:form"

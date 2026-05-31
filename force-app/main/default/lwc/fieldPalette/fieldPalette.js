@@ -19,7 +19,7 @@ const FIELD_TYPE_ICONS = {
 };
 
 const COMMON_COMPONENTS = [
-  { label: "Rich Text", value: "Rich_Text", icon: "utility:richtextbulletedlist" },
+  { label: "Display Text", value: "Rich_Text", icon: "utility:richtextbulletedlist" },
   { label: "Divider", value: "Divider", icon: "utility:rules" },
   { label: "File Upload", value: "File_Upload", icon: "utility:upload" }
 ];
@@ -39,6 +39,7 @@ export default class FieldPalette extends LightningElement {
   @api relatedObjectLabel = "";
   @api selectedSectionContext = "Parent";
   @api mode = "forms";
+  @api usedFields = [];
 
   @track activeTab = "fields";
   @track searchTerm = "";
@@ -70,11 +71,35 @@ export default class FieldPalette extends LightningElement {
     return this.relationships ? this.relationships.length : 0;
   }
 
-  get enrichedFields() {
-    return (this.fields || []).map((f) => ({
+  get usedSet() {
+    return new Set(
+      (this.usedFields || []).map((n) => String(n).toLowerCase())
+    );
+  }
+
+  get objectBadge() {
+    return (this.objectLabel || "").toUpperCase();
+  }
+
+  get objectSubtitle() {
+    return this.objectLabel
+      ? `Fields from ${this.objectLabel} object`
+      : "Fields";
+  }
+
+  enrich(f) {
+    const isUsed = this.usedSet.has(String(f.apiName).toLowerCase());
+    return {
       ...f,
-      iconName: FIELD_TYPE_ICONS[f.type] || "utility:text"
-    }));
+      iconName: FIELD_TYPE_ICONS[f.type] || "utility:text",
+      isUsed,
+      draggable: !isUsed,
+      itemClass: isUsed ? "palette-item is-used" : "palette-item"
+    };
+  }
+
+  get enrichedFields() {
+    return (this.fields || []).map((f) => this.enrich(f));
   }
 
   get requiredFields() {
@@ -131,10 +156,7 @@ export default class FieldPalette extends LightningElement {
   }
 
   get enrichedRelatedFields() {
-    return (this.relatedObjectFields || []).map((f) => ({
-      ...f,
-      iconName: FIELD_TYPE_ICONS[f.type] || "utility:text"
-    }));
+    return (this.relatedObjectFields || []).map((f) => this.enrich(f));
   }
 
   get filteredRelatedFields() {
@@ -175,10 +197,16 @@ export default class FieldPalette extends LightningElement {
   }
 
   handleFieldDragStart(event) {
+    const apiName = event.currentTarget.dataset.api;
+    // Block dragging fields already on the canvas
+    if (this.usedSet.has(String(apiName).toLowerCase())) {
+      event.preventDefault();
+      return;
+    }
     const source = event.currentTarget.dataset.source || "primary";
     const data = {
       dragType: "field",
-      apiName: event.currentTarget.dataset.api,
+      apiName,
       label: event.currentTarget.dataset.label,
       fieldType: event.currentTarget.dataset.type,
       fieldSource: source

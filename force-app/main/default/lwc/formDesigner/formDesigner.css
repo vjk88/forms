@@ -1,65 +1,342 @@
-.slds-page-header {
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
-  border-bottom: 1px solid #dddbda;
-}
-
-.slds-page-header__controls {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.slds-page-header__control {
-  min-width: 200px;
-}
-
 .builder-container {
-  background: #f3f3f3;
-  min-height: calc(100vh - 180px);
-  padding: 0.75rem;
+  background: #fbf9f9;
+  min-height: calc(100vh - 120px);
 }
 
-/* Primary tabs */
-.primary-tabs {
+/* ===== Top App Bar ===== */
+.app-bar {
   display: flex;
-  gap: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 1rem;
   background: #fff;
-  border: 1px solid #dddbda;
-  border-radius: 4px;
-  padding: 0.25rem;
-  margin-bottom: 0.5rem;
-  width: fit-content;
+  border-bottom: 1px solid #c0c7d4;
 }
 
-.primary-tab {
+.app-bar__left,
+.app-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-bar__divider {
+  width: 1px;
+  height: 24px;
+  background: #c0c7d4;
+  margin: 0 0.25rem;
+}
+
+.brand {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #005da9;
+  white-space: nowrap;
+}
+
+/* Forms/Surveys segmented toggle */
+.seg-toggle {
+  display: inline-flex;
+  background: #efeded;
+  border-radius: 9999px;
+  padding: 2px;
+}
+
+.seg-btn {
+  border: none;
+  background: transparent;
+  padding: 0.3rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #414752;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.seg-btn.active {
+  background: #fff;
+  color: #005da9;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Form title + version pill */
+.form-title-area {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.form-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Form name dropdown (big, bold, caret on the right) */
+.title-dd {
+  position: relative;
+}
+
+.title-dd__btn {
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 1rem;
-  background: transparent;
+  gap: 0.35rem;
   border: none;
-  border-radius: 4px;
+  background: transparent;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #514f4d;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.12s;
 }
 
-.primary-tab:hover {
+.title-dd__btn:hover {
+  background: #efeded;
+}
+
+.title-dd__label {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1b1c1c;
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title-dd__caret {
+  --slds-c-icon-color-foreground-default: #717784;
+}
+
+/* Version pill dropdown */
+.ver-dd {
+  position: relative;
+}
+
+.version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border: 1px solid #c0c7d4;
+  background: #e9e8e7;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.version-pill.is-draft {
+  color: #005da9;
+}
+
+.version-pill.is-published {
+  color: #2e844a;
+  background: #ecfbe8;
+  border-color: #a8e0b0;
+}
+
+.ver-dd__caret {
+  --slds-c-icon-color-foreground-default: currentColor;
+}
+
+/* Dropdown menus */
+.dd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+
+.dd-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #c0c7d4;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.25rem;
+}
+
+.dd-menu_sm {
+  min-width: 180px;
+}
+
+.dd-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #1b1c1c;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dd-item:hover {
   background: #f3f3f3;
 }
 
-.primary-tab.active {
-  background: #0070d2;
+.dd-item_primary {
+  color: #0176d3;
+  font-weight: 600;
+}
+
+.dd-sep {
+  height: 1px;
+  background: #e3e2e2;
+  margin: 0.25rem 0;
+}
+
+.dd-empty {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8125rem;
+  color: #717784;
+}
+
+.connected-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6875rem;
+  color: #717784;
+}
+
+.connected-icon {
+  --slds-c-icon-color-foreground-default: #2e844a;
+}
+
+/* Form / version switchers */
+.form-switcher {
+  width: 180px;
+}
+
+.version-switcher {
+  width: 120px;
+}
+
+/* Icon buttons */
+.icon-btn-group {
+  display: inline-flex;
+  gap: 0.125rem;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: #414752;
+  transition: background-color 0.12s;
+}
+
+.icon-btn:hover {
+  background: #e3e2e2;
+}
+
+/* Buttons */
+.btn-ghost,
+.btn-outline,
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s, opacity 0.12s;
+}
+
+.btn-ghost {
+  border: none;
+  background: transparent;
+  color: #005da9;
+}
+
+.btn-ghost:hover {
+  background: #e3e2e2;
+}
+
+.btn-outline {
+  border: 1px solid #717784;
+  background: #fff;
+  color: #005da9;
+}
+
+.btn-outline:hover {
+  background: #f3f3f3;
+}
+
+.btn-outline:disabled {
+  color: #aeb4be;
+  border-color: #c0c7d4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  border: 1px solid #0176d3;
+  background: #0176d3;
   color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-primary:disabled {
+  background: #c0c7d4;
+  border-color: #c0c7d4;
+  cursor: not-allowed;
+}
+
+/* Status strip below app bar */
+.status-strip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 1rem;
+  background: #f5f3f3;
+  border-bottom: 1px solid #e3e2e2;
+}
+
+.save-status {
+  display: inline-flex;
+  align-items: center;
+}
+
+.save-status.is-dirty {
+  color: #fe9339;
+}
+
+.save-status.is-saved {
+  color: #2e844a;
 }
 
 .designer-body {
   display: grid;
-  grid-template-columns: 260px 1fr 280px;
+  grid-template-columns: 300px 1fr 300px;
   gap: 0.75rem;
+  padding: 0.75rem;
   min-height: calc(100vh - 260px);
 }
 
@@ -89,14 +366,89 @@
   }
 }
 
-@media (max-width: 48rem) {
-  .slds-page-header__controls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+/* Lightning-style tabbed page navigation */
+.page-tabbar {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border-bottom: 1px solid #c0c7d4;
+  flex-wrap: wrap;
+}
 
-  .slds-page-header__control {
-    width: 100%;
-    min-width: auto;
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.9rem;
+  margin-bottom: -1px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #514f4d;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.page-tab:hover {
+  color: #0176d3;
+}
+
+.page-tab.active {
+  color: #0176d3;
+  font-weight: 600;
+  border-bottom-color: #0176d3;
+}
+
+.page-tab__name {
+  white-space: nowrap;
+}
+
+.page-tab__del {
+  --slds-c-icon-color-foreground-default: #aeb4be;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.page-tab:hover .page-tab__del,
+.page-tab.active .page-tab__del {
+  opacity: 1;
+}
+
+.page-tab__rename {
+  border: 1px solid #0176d3;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8125rem;
+  width: 110px;
+  outline: none;
+}
+
+.page-tab_add {
+  --slds-c-icon-color-foreground-default: #0176d3;
+  padding: 0.5rem 0.6rem;
+}
+
+/* Completion tab pushed to the right */
+.completion-tab {
+  margin-left: auto;
+}
+
+.completion-icon {
+  --slds-c-icon-color-foreground-default: #2e844a;
+}
+
+.completion-tab.active .completion-icon {
+  --slds-c-icon-color-foreground-default: #0176d3;
+}
+
+@media (max-width: 48rem) {
+  .app-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 0.5rem;
   }
 }

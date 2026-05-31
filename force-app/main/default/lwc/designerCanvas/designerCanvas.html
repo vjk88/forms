@@ -13,7 +13,19 @@
       </div>
     </template>
 
-    <div class="canvas-main">
+    <div class="canvas-scroll">
+      <!-- Mapped-to-object badge -->
+      <template if:true={primaryObject}>
+        <div class="mapped-badge-row">
+          <span class="mapped-badge">
+            <lightning-icon icon-name="utility:database" size="xx-small"
+              class="slds-m-right_xx-small"></lightning-icon>
+            Mapped to {primaryObject}
+          </span>
+        </div>
+      </template>
+
+    <div class="canvas-main" style={formCardStyle}>
       <!-- Form Header -->
       <template if:true={headerData}>
         <template if:true={headerData.visible}>
@@ -31,9 +43,9 @@
               </div>
             </template>
             <div class="header-text">
-              <h1 class="header-title">{headerData.title}</h1>
+              <h1 class={headerTitleClass} style={headerTitleStyle}>{headerData.title}</h1>
               <template if:true={headerData.subtitle}>
-                <p class="header-subtitle">{headerData.subtitle}</p>
+                <p class="header-subtitle" style={headerSubtitleStyle}>{headerData.subtitle}</p>
               </template>
             </div>
           </div>
@@ -51,7 +63,9 @@
       <!-- Sections -->
       <template for:each={sections} for:item="section" for:index="idx">
         <div key={section.id} class={section.cardClass} data-index={idx}
+            draggable="true"
             onclick={handleSectionClick}
+            ondragstart={handleSectionDragStart}
             ondragover={handleSectionDragOver}
             ondrop={handleSectionDrop}>
 
@@ -113,16 +127,19 @@
                       draggable="true"
                       data-section-index={idx} data-element-index={elIdx}
                       onclick={handleElementClick}
-                      ondragstart={handleElementReorderStart}>
+                      ondragstart={handleElementReorderStart}
+                      ondragover={handleElementDragOver}
+                      ondrop={handleElementChipDrop}>
+                    <button type="button" class="element-remove"
+                      title="Remove"
+                      data-section-index={idx} data-element-index={elIdx}
+                      onclick={handleRemoveElement}>
+                      <lightning-icon icon-name="utility:close" size="xx-small"
+                        alternative-text="Remove"></lightning-icon>
+                    </button>
                     <div class="element-preview-body">
                       <c-field-preview config={element}></c-field-preview>
                     </div>
-                    <lightning-button-icon icon-name="utility:close" variant="bare"
-                      size="xx-small" alternative-text="Remove"
-                      class="element-remove"
-                      data-section-index={idx} data-element-index={elIdx}
-                      onclick={handleRemoveElement}>
-                    </lightning-button-icon>
                   </div>
                 </template>
               </div>
@@ -245,6 +262,7 @@
           </p>
         </div>
       </template>
+    </div>
     </div>
   </div>
 </template>

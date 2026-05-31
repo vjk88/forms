@@ -1,0 +1,107 @@
+<template>
+  <div class="completion-card">
+    <div class="completion-badge">
+      <lightning-icon icon-name="utility:edit" size="xx-small"
+        class="slds-m-right_xx-small badge-icon"></lightning-icon>
+      Configuring State
+    </div>
+
+    <div class="completion-head">
+      <lightning-icon icon-name="utility:success" size="small"
+        class="head-icon slds-m-right_small"></lightning-icon>
+      <div>
+        <h2 class="completion-title">Completion Experience</h2>
+        <p class="completion-sub">
+          Configure what happens after a user successfully submits the form.
+        </p>
+      </div>
+    </div>
+
+    <!-- Thank-you message -->
+    <div class="field-block">
+      <label class="field-label">Thank You Message</label>
+      <lightning-input-rich-text
+        value={settings.thankYouMessage}
+        placeholder="Thank you for your submission!"
+        onchange={handleThankYouChange}>
+      </lightning-input-rich-text>
+    </div>
+
+    <!-- Redirect row -->
+    <div class="redirect-row">
+      <div class="redirect-toggle-box">
+        <div class="toggle-line">
+          <span class="field-label">Auto-Redirect</span>
+          <lightning-input type="toggle" variant="label-hidden"
+            checked={settings.autoRedirect}
+            message-toggle-active=""
+            message-toggle-inactive=""
+            onchange={handleAutoRedirectChange}>
+          </lightning-input>
+        </div>
+        <p class="hint">Send users to a new URL immediately after submission.</p>
+      </div>
+
+      <div class="redirect-url-box">
+        <label class="field-label">Redirect URL</label>
+        <lightning-input type="url" variant="label-hidden"
+          value={settings.redirectUrl}
+          placeholder="example.com/success"
+          disabled={redirectDisabled}
+          onchange={handleRedirectUrlChange}>
+        </lightning-input>
+      </div>
+    </div>
+
+    <!-- Delay + return button row -->
+    <div class="redirect-row">
+      <div class="redirect-url-box">
+        <label class="field-label">Redirect Delay (seconds)</label>
+        <lightning-input type="number" variant="label-hidden" min="0"
+          value={settings.redirectDelay}
+          disabled={redirectDisabled}
+          onchange={handleDelayChange}>
+        </lightning-input>
+      </div>
+
+      <div class="redirect-toggle-box">
+        <div class="toggle-line">
+          <span class="field-label">Show Return Button</span>
+          <lightning-input type="toggle" variant="label-hidden"
+            checked={settings.showReturnButton}
+            message-toggle-active=""
+            message-toggle-inactive=""
+            onchange={handleShowReturnChange}>
+          </lightning-input>
+        </div>
+        <p class="hint">Allow users to start a new form.</p>
+      </div>
+    </div>
+
+    <!-- Return button label -->
+    <div class="field-block">
+      <label class="field-label">Return Button Label</label>
+      <lightning-input variant="label-hidden"
+        value={settings.returnButtonLabel}
+        placeholder="Fill Out Again"
+        disabled={returnLabelDisabled}
+        onchange={handleReturnLabelChange}>
+      </lightning-input>
+    </div>
+
+    <div class="completion-divider"></div>
+
+    <!-- Submit button preview -->
+    <div class="submit-row">
+      <div class="submit-btn">
+        <span>{submitLabel}</span>
+        <lightning-icon icon-name="utility:send" size="xx-small"
+          class="slds-m-left_x-small submit-icon"></lightning-icon>
+      </div>
+    </div>
+    <p class="submit-hint">
+      This is the button label users click on the final page (set in form-level
+      Submit Label).
+    </p>
+  </div>
+</template>

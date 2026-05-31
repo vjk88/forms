@@ -3,7 +3,7 @@
 }
 
 .preview-field {
-    padding: 0.25rem 0;
+    padding: 0.1rem 0;
 }
 
 .preview-field.read-only {
@@ -13,9 +13,10 @@
 .preview-label {
     display: block;
     font-size: 0.75rem;
-    font-weight: 400;
-    color: #444;
-    margin-bottom: 0.2rem;
+    font-weight: 600;
+    color: #414752;
+    margin-bottom: 0.15rem;
+    padding-right: 1.25rem; /* room for the remove X */
 }
 
 .preview-help {
@@ -178,26 +179,12 @@
     justify-content: space-between;
 }
 
-/* Rich Text */
-.preview-richtext {
-    border: 1px solid #dddbda;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.richtext-toolbar {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.3rem 0.5rem;
-    background: #f3f3f3;
-    border-bottom: 1px solid #dddbda;
-}
-
-.richtext-body {
-    padding: 0.5rem;
-    min-height: 40px;
-    color: #b0adab;
-    font-size: 0.8125rem;
+/* Display Text (rich text content) */
+.preview-displaytext {
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #1b1c1c;
+    line-height: 1.5;
 }
 
 /* Divider */

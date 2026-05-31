@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FormBuilder Pro - Salesforce Native Support Form</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#d4e3ff",
+                    "on-primary-container": "#fefcff",
+                    "on-background": "#1b1c1c",
+                    "tertiary-container": "#bc5800",
+                    "secondary": "#2d5fa2",
+                    "inverse-primary": "#a4c9ff",
+                    "surface-variant": "#e3e2e2",
+                    "inverse-on-surface": "#f2f0f0",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed-variant": "#064688",
+                    "secondary-container": "#88b4fe",
+                    "background": "#fbf9f9",
+                    "on-tertiary-container": "#fffcff",
+                    "inverse-surface": "#303031",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#efeded",
+                    "on-tertiary-fixed": "#321200",
+                    "outline": "#717784",
+                    "tertiary-fixed-dim": "#ffb68b",
+                    "primary-container": "#0176d3",
+                    "surface": "#fbf9f9",
+                    "primary": "#005da9",
+                    "on-surface-variant": "#414752",
+                    "tertiary-fixed": "#ffdbc8",
+                    "surface-container-high": "#e9e8e7",
+                    "on-secondary-fixed": "#001b3c",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#753400",
+                    "surface-dim": "#dbdad9",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#001c39",
+                    "on-secondary-container": "#034587",
+                    "surface-container-low": "#f5f3f3",
+                    "on-primary-fixed-variant": "#004884",
+                    "secondary-fixed-dim": "#a8c8ff",
+                    "surface-tint": "#005fac",
+                    "error": "#ba1a1a",
+                    "surface-bright": "#fbf9f9",
+                    "primary-fixed-dim": "#a4c9ff",
+                    "secondary-fixed": "#d6e3ff",
+                    "on-surface": "#1b1c1c",
+                    "surface-container-highest": "#e3e2e2",
+                    "tertiary": "#964500",
+                    "on-tertiary": "#ffffff",
+                    "outline-variant": "#c0c7d4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "xl": "32px",
+                    "panel-width-fixed": "320px",
+                    "sm": "8px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "label-md": ["Hanken Grotesk"],
+                    "body-md": ["Hanken Grotesk"],
+                    "headline-md": ["Hanken Grotesk"],
+                    "display": ["Hanken Grotesk"],
+                    "label-sm": ["Hanken Grotesk"],
+                    "body-lg": ["Hanken Grotesk"],
+                    "headline-lg": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .canvas-grid {
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c0c7d4;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-fixed overflow-hidden">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 left-0 right-0 h-16 z-50 bg-surface flex justify-between items-center px-lg border-b border-outline-variant">
+<div class="flex items-center gap-md">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">FormBuilder Pro</span>
+<div class="h-6 w-px bg-outline-variant mx-sm"></div>
+<div class="flex flex-col">
+<div class="flex items-center gap-sm">
+<h1 class="font-headline-md text-headline-md text-on-surface">Salesforce Native Support</h1>
+<div class="relative group">
+<button class="flex items-center gap-xs px-2 py-0.5 bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant rounded-full text-label-sm transition-colors">
+<span class="text-primary font-bold">v1 (Draft)</span>
+<span class="material-symbols-outlined text-[14px] text-outline">arrow_drop_down</span>
+</button>
+<div class="absolute left-0 mt-1 w-40 bg-surface rounded-lg shadow-lg border border-outline-variant hidden group-hover:block z-50">
+<div class="p-1">
+<button class="w-full text-left px-sm py-2 hover:bg-surface-container-low rounded-md text-label-md text-on-surface">Manage Versions</button>
+<button class="w-full text-left px-sm py-2 hover:bg-surface-container-low rounded-md text-label-md text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                                New Version
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span>
+                Connected to Salesforce
+            </span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex gap-sm">
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center" title="View Version History">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-2 border border-outline-variant rounded-lg font-label-md text-label-md text-outline cursor-not-allowed bg-surface-container-low" disabled="">Save</button>
+<button class="px-md py-2 bg-outline-variant text-on-surface-variant rounded-lg font-label-md text-label-md cursor-not-allowed" disabled="">Publish</button>
+</div>
+</div>
+</header>
+<div class="flex h-screen pt-16">
+<!-- Left Sidebar (Object Field Library) - Locked/Disabled in History Mode -->
+<aside class="fixed left-0 top-16 bottom-0 w-panel-width-fixed flex flex-col bg-surface-container-low border-r border-outline-variant shadow-sm z-40 grayscale opacity-80 pointer-events-none">
+<div class="p-md">
+<div class="flex justify-between items-center mb-xs">
+<h2 class="font-headline-md text-headline-md font-semibold text-on-surface">Object Fields</h2>
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed-variant text-[10px] font-bold rounded uppercase">Case</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Fields from Case object</p>
+<!-- Search Bar -->
+<div class="relative mb-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full pl-10 pr-md py-2 border border-outline-variant rounded-lg bg-white text-body-md" placeholder="Search Case fields..." readonly="" type="text"/>
+</div>
+<button class="w-full py-2 mb-md bg-white border-2 border-dashed border-outline-variant rounded-lg font-label-md text-label-md text-outline flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+                Add Custom Field
+            </button>
+<!-- Field Items -->
+<div class="space-y-sm">
+<div class="flex items-center gap-md p-md bg-white rounded-lg border border-outline-variant shadow-sm">
+<span class="material-symbols-outlined text-outline">drag_indicator</span>
+<span class="material-symbols-outlined text-outline" data-icon="subject">subject</span>
+<span class="font-label-md text-label-md">Subject</span>
+</div>
+<div class="flex items-center gap-md p-md bg-white rounded-lg border border-outline-variant shadow-sm">
+<span class="material-symbols-outlined text-outline">drag_indicator</span>
+<span class="material-symbols-outlined text-outline" data-icon="rule">rule</span>
+<span class="font-label-md text-label-md">Status</span>
+</div>
+</div>
+</div>
+<div class="mt-auto border-t border-outline-variant p-md bg-surface-container">
+<div class="flex gap-md">
+<button class="flex items-center gap-xs font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">help</span> Help
+                </button>
+</div>
+</div>
+</aside>
+<!-- Main Canvas Area -->
+<main class="flex-1 ml-[320px] mr-[320px] bg-background canvas-grid p-xl overflow-y-auto min-h-full relative">
+<!-- Overlay for Locked State -->
+<div class="absolute inset-0 z-50 bg-surface/10 cursor-not-allowed group transition-all">
+<!-- Floating Lock Indicator -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-inverse-surface/90 text-inverse-on-surface px-lg py-md rounded-xl shadow-xl flex flex-col items-center gap-sm backdrop-blur-sm pointer-events-none">
+<span class="material-symbols-outlined text-[48px]">lock</span>
+<span class="font-headline-md">Version History: Read-only</span>
+<p class="text-body-md text-center max-w-xs">Edits are disabled in history mode. Switch to 'Builder Mode' on the draft version to make changes.</p>
+</div>
+</div>
+<div class="max-w-3xl mx-auto mb-md flex items-center justify-between bg-primary-container/10 border border-primary/20 rounded-lg px-md py-2 animate-in fade-in slide-in-from-top-2 relative z-[60]">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">history</span>
+<span class="font-label-md text-primary">Viewing Version History: <strong class="font-bold">v2.0 (Live)</strong></span>
+</div>
+<div class="flex items-center gap-md">
+<span class="text-body-md text-on-surface-variant italic">Snapshot taken Oct 12, 10:45 AM</span>
+<button class="text-primary hover:underline font-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">close</span> Exit History Mode
+                </button>
+</div>
+</div>
+<div class="max-w-3xl mx-auto">
+<!-- Primary Object Badge -->
+<div class="flex justify-center mb-md">
+<div class="inline-flex items-center gap-xs px-md py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                    Mapped to Case
+                </div>
+</div>
+<div class="bg-white rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.08)] min-h-[800px] p-xl border border-outline-variant relative">
+<!-- Form Header Section -->
+<div class="mb-xl border border-outline-variant rounded-lg p-md bg-surface-container-lowest group relative transition-all">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-md">
+<div class="w-16 h-16 rounded border border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-outline text-[32px]">image</span>
+</div>
+<div>
+<h2 class="font-display text-display text-on-surface">Support Request</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-xs">Please fill out the form below to help us process your request faster.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Form Content -->
+<div class="space-y-xl">
+<div class="border border-outline-variant rounded-lg bg-white overflow-hidden shadow-sm">
+<div class="bg-surface-container-low px-md py-2 border-b border-outline-variant flex justify-between items-center">
+<div class="flex items-center gap-xs">
+<span class="font-label-md text-label-md text-on-surface">Case Information</span>
+</div>
+</div>
+<div class="p-md">
+<div class="grid grid-cols-2 gap-md mb-md">
+<div class="space-y-xs">
+<label class="block font-label-md text-label-md text-on-surface-variant">Priority</label>
+<div class="relative">
+<select class="w-full px-sm py-2 border border-outline-variant rounded-lg bg-surface-container-low appearance-none pr-8" disabled="">
+<option>Medium</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline">arrow_drop_down</span>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="block font-label-md text-label-md text-on-surface-variant">Type</label>
+<div class="relative">
+<select class="w-full px-sm py-2 border border-outline-variant rounded-lg bg-surface-container-low appearance-none pr-8" disabled="">
+<option>Question</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<div class="p-md border border-outline-variant rounded-lg bg-surface-container-low mb-md">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-sm">Subject</label>
+<div class="space-y-sm">
+<input class="w-full px-sm py-2 border border-outline-variant rounded-lg font-body-md bg-white" disabled="" placeholder="Enter brief summary of issue" type="text" value="Login Issues"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Sidebar (Properties Panel) - Active/Functional -->
+<aside class="fixed right-0 top-16 bottom-0 w-panel-width-fixed flex flex-col bg-surface-container-low border-l border-outline-variant shadow-sm z-40">
+<div class="p-md border-b border-outline-variant">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-semibold text-on-surface">Properties</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Viewing Version History</p>
+</div>
+</div>
+</div>
+<!-- Panel Tabs -->
+<div class="flex border-b border-outline-variant">
+<button class="flex-1 py-3 font-label-md text-label-md text-primary border-b-2 border-primary bg-surface-container-low cursor-default">
+<span class="flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">history</span> Version History
+                </span>
+</button>
+</div>
+<div class="p-md space-y-lg custom-scrollbar overflow-y-auto">
+<section class="space-y-md">
+<div class="flex items-center justify-between mb-sm">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase text-[10px]">Version Timeline</h3>
+<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">5 VERSIONS</span>
+</div>
+<div class="space-y-md">
+<!-- Version Entry: Live (Current Selection) -->
+<div class="p-md bg-white border-2 border-primary rounded-lg shadow-sm relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex justify-between items-start mb-xs">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">v2.0</span>
+<span class="text-label-sm text-outline">2 hours ago by Alex Smith</span>
+</div>
+<span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Live</span>
+</div>
+<p class="text-body-md text-on-surface-variant mb-md">Updated support request header and field validation rules.</p>
+</div>
+<!-- Version Entry: Draft -->
+<div class="p-md bg-white border border-outline-variant rounded-lg shadow-sm hover:border-primary transition-all">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">v1.1</span>
+<span class="text-label-sm text-outline">Yesterday by Alex Smith</span>
+</div>
+<span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase">Draft</span>
+</div>
+<p class="text-body-md text-on-surface-variant mb-md">Added subject field properties and custom placeholder.</p>
+<div class="flex gap-sm">
+<button class="flex-1 py-1.5 bg-primary-container text-on-primary-container rounded font-label-sm hover:opacity-90 transition-opacity">Restore</button>
+</div>
+</div>
+<!-- Version Entry: Archived -->
+<div class="p-md bg-white border border-outline-variant rounded-lg shadow-sm opacity-80 hover:opacity-100 transition-all">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">v1.0</span>
+<span class="text-label-sm text-outline">3 days ago by Sarah Chen</span>
+</div>
+<span class="px-2 py-0.5 border border-outline-variant text-outline text-[10px] font-bold rounded uppercase">Archived</span>
+</div>
+<p class="text-body-md text-on-surface-variant mb-md">Initial Salesforce case form creation.</p>
+<div class="flex gap-sm">
+<button class="flex-1 py-1.5 bg-primary-container text-on-primary-container rounded font-label-sm hover:opacity-90 transition-opacity">Restore</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div class="mt-auto p-md bg-surface-container border-t border-outline-variant flex gap-sm grayscale opacity-50 pointer-events-none">
+<button class="flex-1 py-2 bg-error-container text-on-error-container rounded-lg font-label-md text-label-md flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">delete</span> Delete
+            </button>
+<button class="flex-1 py-2 border border-outline rounded-lg font-label-md text-label-md text-on-surface-variant flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate
+            </button>
+</div>
+</aside>
+</div>
+</body></html>

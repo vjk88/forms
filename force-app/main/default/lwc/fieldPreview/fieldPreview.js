@@ -75,6 +75,10 @@ export default class FieldPreview extends LightningElement {
         return [1, 2, 3, 4, 5].map(n => ({ value: n, key: `star-${n}` }));
     }
 
+    get hasRichContent() {
+        return !!(this.config && this.config.content);
+    }
+
     get isRequired() {
         return this.config.uiBehavior === 'Required';
     }

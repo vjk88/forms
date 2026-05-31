@@ -19,6 +19,70 @@ export default class PropertyPanel extends LightningElement {
         return this._selection && this._selection.type === 'header';
     }
 
+    get isPageSelected() {
+        return this._selection && this._selection.type === 'page';
+    }
+
+    get isFormSettingsSelected() {
+        return this._selection && this._selection.type === 'formSettings';
+    }
+
+    // Page getters
+    get pageName() { return this._selection?.name || ''; }
+    get pageShowHeader() { return this._selection?.showHeader || false; }
+    get pageShowInProgress() { return this._selection?.showInProgress !== false; }
+    get pageHeaderTitle() { return this._selection?.headerTitle || ''; }
+    get pageHeaderSubtitle() { return this._selection?.headerSubtitle || ''; }
+
+    // Form settings getters
+    get submitLabel() { return this._selection?.submitLabel || 'Submit'; }
+    get thankYouEnabled() { return this._selection?.thankYouEnabled || false; }
+    get thankYouMessage() { return this._selection?.thankYouMessage || ''; }
+    get redirectUrl() { return this._selection?.redirectUrl || ''; }
+
+    handlePagePropChange(event) {
+        const prop = event.currentTarget.dataset.prop;
+        this.firePageChange(prop, event.detail.value);
+    }
+
+    handlePageCheckboxChange(event) {
+        const prop = event.currentTarget.dataset.prop;
+        this.firePageChange(prop, event.detail.checked);
+    }
+
+    firePageChange(property, value) {
+        this._selection = { ...this._selection, [property]: value };
+        this.dispatchEvent(new CustomEvent('propertychange', {
+            detail: {
+                selectionType: 'page',
+                index: this._selection.index,
+                property,
+                value
+            }
+        }));
+    }
+
+    handleFormSettingChange(event) {
+        const prop = event.currentTarget.dataset.prop;
+        this.fireFormSettingChange(prop, event.detail.value);
+    }
+
+    handleFormSettingCheckbox(event) {
+        const prop = event.currentTarget.dataset.prop;
+        this.fireFormSettingChange(prop, event.detail.checked);
+    }
+
+    handleThankYouMessageChange(event) {
+        this.fireFormSettingChange('thankYouMessage', event.detail.value);
+    }
+
+    fireFormSettingChange(property, value) {
+        this._selection = { ...this._selection, [property]: value };
+        this.dispatchEvent(new CustomEvent('propertychange', {
+            detail: { selectionType: 'formSettings', property, value }
+        }));
+    }
+
     get isSectionSelected() {
         return this._selection && this._selection.type === 'section';
     }
@@ -27,8 +91,53 @@ export default class PropertyPanel extends LightningElement {
         return this._selection && this._selection.type === 'element';
     }
 
+    get showActionFooter() {
+        return this.isSectionSelected || this.isElementSelected;
+    }
+
+    handleDelete() {
+        this.dispatchEvent(new CustomEvent('deleteselection', {
+            detail: {
+                selectionType: this._selection.type,
+                index: this._selection.index,
+                sectionIndex: this._selection.sectionIndex,
+                relatedIndex: this._selection.relatedIndex,
+                elementIndex: this._selection.elementIndex
+            }
+        }));
+    }
+
+    handleDuplicate() {
+        this.dispatchEvent(new CustomEvent('duplicateselection', {
+            detail: {
+                selectionType: this._selection.type,
+                index: this._selection.index,
+                sectionIndex: this._selection.sectionIndex,
+                relatedIndex: this._selection.relatedIndex,
+                elementIndex: this._selection.elementIndex
+            }
+        }));
+    }
+
     get isFieldType() {
         return this._selection && this._selection.elementType === 'Field';
+    }
+
+    get isRichTextType() {
+        return this._selection && (
+            this._selection.elementType === 'Rich_Text' ||
+            this._selection.elementType === 'Static_Text'
+        );
+    }
+
+    get elementPanelTitle() {
+        if (this.isRichTextType) return 'Display Text';
+        if (this.isFieldType) return 'Field Properties';
+        return 'Element Properties';
+    }
+
+    get elementContent() {
+        return this._selection?.content || '';
     }
 
     // --- Header getters ---
@@ -40,12 +149,38 @@ export default class PropertyPanel extends LightningElement {
     get headerAlignment() { return this._selection?.alignment || 'left'; }
     get headerBackgroundColor() { return this._selection?.backgroundColor || '#ffffff'; }
     get headerBackgroundImage() { return this._selection?.backgroundImage || ''; }
+    get headerFontFamily() { return this._selection?.fontFamily || 'default'; }
+    get headerTitleSize() { return this._selection?.titleSize || 'large'; }
+    get headerTitleColor() { return this._selection?.titleColor || '#1b1c1c'; }
+    get headerSubtitleColor() { return this._selection?.subtitleColor || '#706e6b'; }
 
     get alignmentOptions() {
         return [
             { label: 'Left', value: 'left' },
             { label: 'Center', value: 'center' },
             { label: 'Right', value: 'right' }
+        ];
+    }
+
+    get fontFamilyOptions() {
+        return [
+            { label: 'Default (Salesforce Sans)', value: 'default' },
+            { label: 'Arial', value: 'Arial, sans-serif' },
+            { label: 'Helvetica', value: 'Helvetica, Arial, sans-serif' },
+            { label: 'Georgia (serif)', value: 'Georgia, serif' },
+            { label: 'Times New Roman (serif)', value: '"Times New Roman", serif' },
+            { label: 'Courier (mono)', value: '"Courier New", monospace' },
+            { label: 'Verdana', value: 'Verdana, sans-serif' },
+            { label: 'Trebuchet MS', value: '"Trebuchet MS", sans-serif' }
+        ];
+    }
+
+    get titleSizeOptions() {
+        return [
+            { label: 'Small', value: 'small' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'Large', value: 'large' },
+            { label: 'Extra Large', value: 'xlarge' }
         ];
     }
 
@@ -273,6 +408,7 @@ export default class PropertyPanel extends LightningElement {
     handleSectionDescChange(event) { this.firePropertyChange('description', event.detail.value); }
 
     handleElementLabelChange(event) { this.firePropertyChange('name', event.detail.value); }
+    handleContentChange(event) { this.firePropertyChange('content', event.detail.value); }
     handleUiBehaviorChange(event) { this.firePropertyChange('uiBehavior', event.detail.value); }
     handleRenderAsChange(event) { this.firePropertyChange('renderAs', event.detail.value); }
     handleHelpTextChange(event) { this.firePropertyChange('helpText', event.detail.value); }

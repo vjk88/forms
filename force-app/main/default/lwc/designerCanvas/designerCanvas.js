@@ -22,6 +22,7 @@ export default class DesignerCanvas extends LightningElement {
   @api isHeaderSelected = false;
   @api layoutMode = 'Single_Page';
   @api relationships = [];
+  @api primaryObject = '';
   @track sections = [];
   @track selectedSectionIndex = -1;
   @track selectedElementIndex = -1;
@@ -58,6 +59,29 @@ export default class DesignerCanvas extends LightningElement {
       }
     }
     return parts.join('; ');
+  }
+
+  get formCardStyle() {
+    const ff = this.headerData?.fontFamily;
+    if (ff && ff !== 'default') {
+      return `font-family: ${ff};`;
+    }
+    return '';
+  }
+
+  get headerTitleClass() {
+    const size = this.headerData?.titleSize || 'large';
+    return `header-title title-${size}`;
+  }
+
+  get headerTitleStyle() {
+    const color = this.headerData?.titleColor;
+    return color ? `color: ${color};` : '';
+  }
+
+  get headerSubtitleStyle() {
+    const color = this.headerData?.subtitleColor;
+    return color ? `color: ${color};` : '';
   }
 
   get headerLogoSrc() {
@@ -255,20 +279,106 @@ export default class DesignerCanvas extends LightningElement {
 
   // --- Drag & Drop ---
 
+  // --- Section drag/reorder ---
+
+  handleSectionDragStart(event) {
+    const idx = parseInt(event.currentTarget.dataset.index, 10);
+    const data = { dragType: "reorder-section", sourceIndex: idx };
+    event.dataTransfer.setData("text/plain", JSON.stringify(data));
+    event.dataTransfer.effectAllowed = "move";
+  }
+
   handleSectionDragOver(event) {
     event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
   }
 
   handleSectionDrop(event) {
     event.preventDefault();
+    const raw = event.dataTransfer.getData("text/plain");
+    if (!raw) return;
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (data.dragType !== "reorder-section") return;
+
+    event.stopPropagation();
+    const targetIndex = parseInt(event.currentTarget.dataset.index, 10);
+    if (data.sourceIndex === targetIndex) return;
+    this.dispatchEvent(
+      new CustomEvent("reordersection", {
+        detail: { fromIndex: data.sourceIndex, toIndex: targetIndex }
+      })
+    );
   }
+
+  // --- Element drag/reorder ---
 
   handleElementDragOver(event) {
+    // Just allow the drop — don't force a dropEffect, which can mismatch the
+    // drag's effectAllowed (palette = copy, reorder = move) and block the drop.
     event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
   }
 
+  handleElementReorderStart(event) {
+    event.stopPropagation(); // don't trigger section drag
+    const sIdx = parseInt(event.currentTarget.dataset.sectionIndex, 10);
+    const eIdx = parseInt(event.currentTarget.dataset.elementIndex, 10);
+    const data = {
+      dragType: "reorder-element",
+      sourceSectionIndex: sIdx,
+      sourceElementIndex: eIdx
+    };
+    event.dataTransfer.setData("text/plain", JSON.stringify(data));
+    event.dataTransfer.effectAllowed = "move";
+  }
+
+  // Drop onto a specific element chip → reorder within the section
+  handleElementChipDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const raw = event.dataTransfer.getData("text/plain");
+    if (!raw) return;
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return;
+    }
+
+    const targetSection = parseInt(event.currentTarget.dataset.sectionIndex, 10);
+    const targetElement = parseInt(event.currentTarget.dataset.elementIndex, 10);
+
+    if (data.dragType === "reorder-element") {
+      if (data.sourceSectionIndex !== targetSection) return; // same-section only
+      if (data.sourceElementIndex === targetElement) return;
+      this.dispatchEvent(
+        new CustomEvent("reorderelement", {
+          detail: {
+            sectionIndex: targetSection,
+            fromIndex: data.sourceElementIndex,
+            toIndex: targetElement
+          }
+        })
+      );
+    } else if (data.dragType === "field") {
+      this.dispatchEvent(
+        new CustomEvent("dropfield", {
+          detail: { ...data, sectionIndex: targetSection }
+        })
+      );
+    } else if (data.dragType === "component") {
+      this.dispatchEvent(
+        new CustomEvent("dropcomponent", {
+          detail: { ...data, sectionIndex: targetSection }
+        })
+      );
+    }
+  }
+
+  // Drop onto the section body (empty area) → add field/component or move to end
   handleElementDrop(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -277,36 +387,33 @@ export default class DesignerCanvas extends LightningElement {
     const raw = event.dataTransfer.getData("text/plain");
     if (!raw) return;
 
+    let data;
     try {
-      const data = JSON.parse(raw);
-      if (data.dragType === "field") {
-        this.dispatchEvent(
-          new CustomEvent("dropfield", {
-            detail: { ...data, sectionIndex }
-          })
-        );
-      } else if (data.dragType === "component") {
-        this.dispatchEvent(
-          new CustomEvent("dropcomponent", {
-            detail: { ...data, sectionIndex }
-          })
-        );
-      }
+      data = JSON.parse(raw);
     } catch {
-      // ignore
+      return;
     }
-  }
 
-  handleElementReorderStart(event) {
-    const sIdx = event.currentTarget.dataset.sectionIndex;
-    const eIdx = event.currentTarget.dataset.elementIndex;
-    const data = {
-      dragType: "reorder",
-      sourceSectionIndex: parseInt(sIdx, 10),
-      sourceElementIndex: parseInt(eIdx, 10)
-    };
-    event.dataTransfer.setData("text/plain", JSON.stringify(data));
-    event.dataTransfer.effectAllowed = "move";
+    if (data.dragType === "field") {
+      this.dispatchEvent(
+        new CustomEvent("dropfield", { detail: { ...data, sectionIndex } })
+      );
+    } else if (data.dragType === "component") {
+      this.dispatchEvent(
+        new CustomEvent("dropcomponent", { detail: { ...data, sectionIndex } })
+      );
+    } else if (data.dragType === "reorder-element") {
+      if (data.sourceSectionIndex !== sectionIndex) return;
+      this.dispatchEvent(
+        new CustomEvent("reorderelement", {
+          detail: {
+            sectionIndex,
+            fromIndex: data.sourceElementIndex,
+            toIndex: -1 // move to end
+          }
+        })
+      );
+    }
   }
 
   // --- Related section events (nested repeaters) ---

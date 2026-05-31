@@ -1,0 +1,18 @@
+/* Hide global header */
+.oneHeader {
+    display: none !important;
+}
+/* Hide standard navigation bar */
+.oneAppNavBar, nav.oneAppNavBar {
+    display: none !important;
+}
+/* Adjust layout container to full screen */
+.bodyContainer {
+    top: 0 !important;
+    height: 100vh !important;
+    margin-top: 0 !important;
+}
+.slds-brand-band {
+    padding-top: 0 !important;
+    min-height: 100vh !important;
+}

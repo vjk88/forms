@@ -11,6 +11,99 @@
             </div>
         </template>
 
+        <!-- Page properties -->
+        <template if:true={isPageSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Page Properties</h3>
+
+                <lightning-input
+                    label="Page Name"
+                    value={pageName}
+                    onchange={handlePagePropChange}
+                    data-prop="name"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Show in progress bar / nav"
+                    checked={pageShowInProgress}
+                    onchange={handlePageCheckboxChange}
+                    data-prop="showInProgress"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Show page header"
+                    checked={pageShowHeader}
+                    onchange={handlePageCheckboxChange}
+                    data-prop="showHeader"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <template if:true={pageShowHeader}>
+                    <lightning-input
+                        label="Page Header Title"
+                        value={pageHeaderTitle}
+                        onchange={handlePagePropChange}
+                        data-prop="headerTitle"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                    <lightning-input
+                        label="Page Header Subtitle"
+                        value={pageHeaderSubtitle}
+                        onchange={handlePagePropChange}
+                        data-prop="headerSubtitle"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+            </div>
+        </template>
+
+        <!-- Form settings -->
+        <template if:true={isFormSettingsSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Form Settings</h3>
+
+                <lightning-input
+                    label="Submit Button Label"
+                    value={submitLabel}
+                    onchange={handleFormSettingChange}
+                    data-prop="submitLabel"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Show Thank-You screen after submit"
+                    checked={thankYouEnabled}
+                    onchange={handleFormSettingCheckbox}
+                    data-prop="thankYouEnabled"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <template if:true={thankYouEnabled}>
+                    <label class="slds-form-element__label">Thank-You Message</label>
+                    <lightning-input-rich-text
+                        value={thankYouMessage}
+                        placeholder="Thanks for your submission!"
+                        onchange={handleThankYouMessageChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input-rich-text>
+
+                    <lightning-input
+                        label="Redirect URL (optional)"
+                        value={redirectUrl}
+                        placeholder="https://…"
+                        onchange={handleFormSettingChange}
+                        data-prop="redirectUrl"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+            </div>
+        </template>
+
         <!-- Header properties -->
         <template if:true={isHeaderSelected}>
             <div class="slds-p-around_small">
@@ -49,6 +142,65 @@
                     data-prop="alignment"
                     class="slds-m-bottom_small">
                 </lightning-combobox>
+
+                <!-- Typography -->
+                <lightning-combobox
+                    label="Overall Form Font"
+                    value={headerFontFamily}
+                    options={fontFamilyOptions}
+                    onchange={handleHeaderPropChange}
+                    data-prop="fontFamily"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <lightning-combobox
+                    label="Title Size"
+                    value={headerTitleSize}
+                    options={titleSizeOptions}
+                    onchange={handleHeaderPropChange}
+                    data-prop="titleSize"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <div class="color-picker-row slds-m-bottom_small">
+                    <label class="slds-form-element__label">Title Color</label>
+                    <div class="color-picker-control">
+                        <input type="color"
+                            value={headerTitleColor}
+                            class="color-input"
+                            data-prop="titleColor"
+                            onchange={handleHeaderColorChange}
+                            oninput={handleHeaderColorChange}>
+                        <lightning-input
+                            value={headerTitleColor}
+                            variant="label-hidden"
+                            class="color-hex-input"
+                            data-prop="titleColor"
+                            onchange={handleHeaderPropChange}
+                            placeholder="#1b1c1c">
+                        </lightning-input>
+                    </div>
+                </div>
+
+                <div class="color-picker-row slds-m-bottom_small">
+                    <label class="slds-form-element__label">Subtitle Color</label>
+                    <div class="color-picker-control">
+                        <input type="color"
+                            value={headerSubtitleColor}
+                            class="color-input"
+                            data-prop="subtitleColor"
+                            onchange={handleHeaderColorChange}
+                            oninput={handleHeaderColorChange}>
+                        <lightning-input
+                            value={headerSubtitleColor}
+                            variant="label-hidden"
+                            class="color-hex-input"
+                            data-prop="subtitleColor"
+                            onchange={handleHeaderPropChange}
+                            placeholder="#706e6b">
+                        </lightning-input>
+                    </div>
+                </div>
 
                 <!-- Background Color -->
                 <div class="color-picker-row slds-m-bottom_small">
@@ -244,14 +396,25 @@
         <!-- Element properties -->
         <template if:true={isElementSelected}>
             <div class="slds-p-around_small">
-                <h3 class="slds-text-title_caps slds-m-bottom_small">Field Properties</h3>
+                <h3 class="slds-text-title_caps slds-m-bottom_small">{elementPanelTitle}</h3>
 
                 <lightning-input
-                    label="Label"
+                    label="Label (internal)"
                     value={elementLabel}
                     onchange={handleElementLabelChange}
                     class="slds-m-bottom_small">
                 </lightning-input>
+
+                <!-- Display Text content editor -->
+                <template if:true={isRichTextType}>
+                    <label class="slds-form-element__label">Display Text</label>
+                    <lightning-input-rich-text
+                        value={elementContent}
+                        placeholder="Enter the text to display on the form…"
+                        onchange={handleContentChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input-rich-text>
+                </template>
 
                 <template if:true={isFieldType}>
                     <lightning-input
@@ -383,6 +546,24 @@
                         size="small">
                     </lightning-button>
                 </div>
+            </div>
+        </template>
+
+        <!-- Action footer: Delete / Duplicate -->
+        <template if:true={showActionFooter}>
+            <div class="panel-footer">
+                <button type="button" class="footer-btn footer-btn_delete"
+                    onclick={handleDelete}>
+                    <lightning-icon icon-name="utility:delete" size="x-small"
+                        class="slds-m-right_xx-small"></lightning-icon>
+                    Delete
+                </button>
+                <button type="button" class="footer-btn footer-btn_duplicate"
+                    onclick={handleDuplicate}>
+                    <lightning-icon icon-name="utility:copy" size="x-small"
+                        class="slds-m-right_xx-small"></lightning-icon>
+                    Duplicate
+                </button>
             </div>
         </template>
     </div>
