@@ -9,6 +9,10 @@ export default class FieldPreview extends LightningElement {
         const type = this.config.type || 'Field';
 
         if (type === 'Rich_Text' || type === 'Static_Text') return 'richtext';
+        if (type === 'Image') return 'image';
+        if (type === 'Callout') return 'callout';
+        if (type === 'Spacer') return 'spacer';
+        if (type === 'Consent') return 'consent';
         if (type === 'Divider') return 'divider';
         if (type === 'File_Upload') return 'fileupload';
 
@@ -48,8 +52,44 @@ export default class FieldPreview extends LightningElement {
     get isLookup() { return this.renderMode === 'lookup'; }
     get isSlider() { return this.renderMode === 'slider'; }
     get isRichText() { return this.renderMode === 'richtext'; }
+    get isImage() { return this.renderMode === 'image'; }
+    get isCallout() { return this.renderMode === 'callout'; }
+    get isSpacer() { return this.renderMode === 'spacer'; }
+    get isConsent() { return this.renderMode === 'consent'; }
+    get consentContent() {
+        return this.config.content || 'I agree to the terms and conditions.';
+    }
     get isDivider() { return this.renderMode === 'divider'; }
     get isFileUpload() { return this.renderMode === 'fileupload'; }
+
+    // --- Image ---
+    get imageSrc() { return this.config.imageUrl || ''; }
+    get hasImage() { return !!this.config.imageUrl; }
+    get imageAlt() { return this.config.imageAlt || this.config.name || 'Image'; }
+    get imageClass() {
+        return `preview-image img-${this.config.imageSize || 'medium'}`;
+    }
+
+    // --- Callout ---
+    get calloutClass() {
+        return `preview-callout callout-${this.config.calloutVariant || 'info'}`;
+    }
+    get calloutIcon() {
+        switch (this.config.calloutVariant) {
+            case 'success': return 'utility:success';
+            case 'warning': return 'utility:warning';
+            case 'error': return 'utility:error';
+            default: return 'utility:info';
+        }
+    }
+    get calloutContent() {
+        return this.config.content || 'Callout text — add your message in the panel on the right.';
+    }
+
+    // --- Spacer ---
+    get spacerClass() {
+        return `preview-spacer spacer-${this.config.spacerSize || 'medium'}`;
+    }
     get isNps() { return this.renderMode === 'nps'; }
     get isLikert() { return this.renderMode === 'likert'; }
     get isStars() { return this.renderMode === 'stars'; }

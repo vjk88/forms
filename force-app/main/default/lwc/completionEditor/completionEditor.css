@@ -3,7 +3,7 @@
   max-width: 768px;
   margin: 0 auto;
   background: #fff;
-  border: 1px solid #0176d3;
+  border: 1px solid var(--c-brand);
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   padding: 1.75rem;
@@ -16,7 +16,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0.2rem 0.6rem;
-  background: #0176d3;
+  background: var(--c-brand);
   color: #fff;
   border-radius: 0 0 6px 6px;
   font-size: 0.6875rem;
@@ -36,25 +36,39 @@
 }
 
 .head-icon {
-  --slds-c-icon-color-foreground-default: #2e844a;
+  --slds-c-icon-color-foreground-default: var(--c-success);
   margin-top: 0.2rem;
 }
 
 .completion-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1b1c1c;
+  color: var(--c-text);
   margin: 0;
 }
 
 .completion-sub {
   font-size: 0.8125rem;
-  color: #706e6b;
+  color: var(--c-text-weak);
   margin: 0.2rem 0 0;
 }
 
 .field-block {
   margin-bottom: 1.25rem;
+}
+
+.mode-panel {
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: #fbfcfd;
+}
+
+.indent {
+  margin-top: 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--c-border-light);
 }
 
 .field-label {
@@ -63,7 +77,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #514f4d;
+  color: var(--c-label);
   margin-bottom: 0.35rem;
 }
 
@@ -76,7 +90,7 @@
 }
 
 .redirect-toggle-box {
-  border: 1px solid #e3e2e2;
+  border: 1px solid var(--c-border-light);
   border-radius: 8px;
   padding: 0.75rem;
 }
@@ -89,39 +103,6 @@
 
 .hint {
   font-size: 0.6875rem;
-  color: #706e6b;
+  color: var(--c-text-weak);
   margin: 0.4rem 0 0;
-}
-
-.completion-divider {
-  border-top: 1px dashed #d8dde6;
-  margin: 1.25rem 0;
-}
-
-.submit-row {
-  display: flex;
-  justify-content: center;
-}
-
-.submit-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.7rem 1.75rem;
-  background: #0176d3;
-  color: #fff;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
-}
-
-.submit-icon {
-  --slds-c-icon-color-foreground-default: #fff;
-}
-
-.submit-hint {
-  text-align: center;
-  font-size: 0.6875rem;
-  color: #aeb4be;
-  margin: 0.5rem 0 0;
 }

@@ -14,6 +14,48 @@ import publishVersion from "@salesforce/apex/FormDesignerController.publishVersi
 import deleteDraftVersion from "@salesforce/apex/FormDesignerController.deleteDraftVersion";
 import saveFormLayout from "@salesforce/apex/FormDesignerController.saveFormLayout";
 import getFormLayout from "@salesforce/apex/FormDesignerController.getFormLayout";
+import getPicklistOptions from "@salesforce/apex/FormPlayerController.getPicklistOptions";
+import getLookupTargets from "@salesforce/apex/FormPlayerController.getLookupTargets";
+
+// Theme presets shared by the canvas preview — kept in sync with propertyPanel.
+const PRESET_THEMES = {
+  default: { name: "default", accent: "#0176d3", surface: "#ffffff", radius: "rounded" },
+  ocean: { name: "ocean", accent: "#0b7ba8", surface: "#f3fafd", radius: "rounded" },
+  forest: { name: "forest", accent: "#2e7d4f", surface: "#f3faf5", radius: "rounded" },
+  sunset: { name: "sunset", accent: "#d9622b", surface: "#fdf6f1", radius: "round" },
+  royal: { name: "royal", accent: "#6b4fbb", surface: "#f7f4fd", radius: "round" },
+  graphite: { name: "graphite", accent: "#5a6b7b", surface: "#f5f7f9", radius: "sharp" }
+};
+
+function themeRadiusToken(name) {
+  const map = { sharp: "2px", rounded: "8px", round: "14px", pill: "9999px" };
+  return map[name] || map.rounded;
+}
+
+const DEFAULT_HEADER_CONFIG = {
+  visible: true,
+  title: "Header Title",
+  subtitle: "Subtitle goes here",
+  showLogo: true,
+  logoUrl: "",
+  logoVersionId: "",
+  logoSize: "medium",
+  alignment: "left",
+  backgroundColor: "#6e6e6e",
+  backgroundImage: "",
+  backgroundVersionId: "",
+  fontFamily: "default",
+  titleSize: "large",
+  titleColor: "#ffffff",
+  subtitleColor: "#ffffff"
+};
+
+function getDefaultFormHeader(title) {
+  return {
+    ...DEFAULT_HEADER_CONFIG,
+    title: title || DEFAULT_HEADER_CONFIG.title
+  };
+}
 
 export default class FormDesigner extends LightningElement {
   @track primaryTab = 'forms';
@@ -27,41 +69,61 @@ export default class FormDesigner extends LightningElement {
   objectOptions = [];
   @track objectFields = [];
   @track childRelationships = [];
-  @track _canvasPages = [{ id: "page-1", name: "Page 1", showHeader: false, headerTitle: "", headerSubtitle: "", showInProgress: true, sections: [] }];
+  @track _canvasPages = [{ id: "page-1", name: "Page 1", showInProgress: true, sections: [] }];
   @track currentPageIndex = 0;
+  // Builder-editable layout mode; falls back to the version/form record value.
+  @track _layoutMode = null;
   @track panelSelection = null;
-  @track _formHeader = {
-    visible: true,
-    title: "Form Title",
-    subtitle: "",
-    showLogo: false,
-    logoUrl: "",
-    alignment: "left",
-    backgroundColor: "#ffffff",
-    backgroundImage: "",
-    fontFamily: "default",
-    titleSize: "large",
-    titleColor: "#1b1c1c",
-    subtitleColor: "#706e6b"
-  };
+  @track _formHeader = getDefaultFormHeader();
   @track _formSettings = {
     submitLabel: "Submit Form",
+    // After-submit behavior: "Screen" (thank-you screen) or "ToastAndGo"
+    afterSubmitMode: "Screen",
+    // Toast & go
+    toastAndGoTarget: "Record", // Record | Custom
+    toastAndGoUrl: "",
+    // Completion screen
     thankYouMessage:
       "Thank you for your submission! Your information has been securely recorded.",
     autoRedirect: false,
+    redirectTarget: "Record", // Record | Custom
     redirectUrl: "",
     redirectDelay: 5,
-    showReturnButton: false,
-    returnButtonLabel: "Fill Out Again"
+    showActionButton: false,
+    actionButtonLabel: "Continue",
+    actionButtonTarget: "Record", // Record | Custom
+    actionButtonUrl: ""
   };
   @track isCompletionActive = false;
   @track renamingPageIndex = -1;
+
+  // Visibility rule editor modal
+  @track showVisibilityModal = false;
+  @track visibilityRulesJson = "";
+  @track visibilityContextLabel = "component";
+  @track userFields = [];
+  @track picklistValues = {};
+  @track lookupTargets = [];
+  @track showAutofillModal = false;
+  @track autofillRulesJson = "[]";
+  _picklistObj = null;
+  visibilityTarget = null;
 
   // Dirty tracking — set whenever canvas or header changes (except during load)
   @track isDirty = false;
   @track isSaving = false;
   @track lastSavedTime = null;
   _suppressDirty = false;
+
+  // Side-panel collapse (give the canvas more room)
+  @track leftCollapsed = false;
+  @track rightCollapsed = false;
+
+  // Undo / redo — a debounced snapshot stack of the editable layout state.
+  @track _historyIndex = -1;
+  _history = [];
+  _savedHistoryIndex = 0;
+  _snapshotTimer = null;
 
   // canvasSections proxies the CURRENT page's sections, so all existing
   // section/element handlers keep working unchanged.
@@ -76,9 +138,7 @@ export default class FormDesigner extends LightningElement {
       sections: value
     };
     this._canvasPages = pages;
-    if (!this._suppressDirty) {
-      this.isDirty = true;
-    }
+    this.markDirty();
   }
 
   get formSettings() {
@@ -86,9 +146,7 @@ export default class FormDesigner extends LightningElement {
   }
   set formSettings(value) {
     this._formSettings = value;
-    if (!this._suppressDirty) {
-      this.isDirty = true;
-    }
+    this.markDirty();
   }
 
   get formHeader() {
@@ -96,9 +154,7 @@ export default class FormDesigner extends LightningElement {
   }
   set formHeader(value) {
     this._formHeader = value;
-    if (!this._suppressDirty) {
-      this.isDirty = true;
-    }
+    this.markDirty();
   }
   @track isHeaderSelected = false;
   @track relatedObjectFields = [];
@@ -130,6 +186,14 @@ export default class FormDesigner extends LightningElement {
 
   connectedCallback() {
     this.loadObjectOptions();
+    // User object fields for the "Current User" visibility source.
+    getObjectFields({ objectApiName: "User" })
+      .then((data) => {
+        this.userFields = data;
+      })
+      .catch(() => {
+        this.userFields = [];
+      });
     loadStyle(this, hideHeader)
       .then(() => {
         console.log("Global header styling overridden.");
@@ -202,6 +266,15 @@ export default class FormDesigner extends LightningElement {
     return this.showFormMenu || this.showVersionMenu;
   }
 
+  // String form for aria-expanded (reflects open/closed to assistive tech).
+  get formMenuExpanded() {
+    return String(this.showFormMenu);
+  }
+
+  get versionMenuExpanded() {
+    return String(this.showVersionMenu);
+  }
+
   toggleFormMenu() {
     this.showFormMenu = !this.showFormMenu;
     this.showVersionMenu = false;
@@ -215,6 +288,174 @@ export default class FormDesigner extends LightningElement {
   closeMenus() {
     this.showFormMenu = false;
     this.showVersionMenu = false;
+  }
+
+  // Keyboard support for the custom app-bar menus: Escape closes (and returns
+  // focus to the trigger), Arrow keys move between items. The items are real
+  // <button>s, so Tab/Enter already work.
+  handleMenuKeydown(event) {
+    if (event.key === 'Escape') {
+      const trigger = event.currentTarget.classList.contains('dd-menu')
+        ? null
+        : event.currentTarget;
+      this.closeMenus();
+      if (trigger && trigger.focus) trigger.focus();
+      return;
+    }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    if (!this.anyMenuOpen) return;
+    event.preventDefault();
+    const items = [...this.template.querySelectorAll('.dd-menu .dd-item')];
+    if (!items.length) return;
+    const active = this.template.activeElement;
+    const current = items.indexOf(active);
+    let next = event.key === 'ArrowDown' ? current + 1 : current - 1;
+    if (next < 0) next = items.length - 1;
+    if (next >= items.length) next = 0;
+    items[next].focus();
+  }
+
+  // --- Side-panel collapse ---
+  get designerBodyClass() {
+    let c = "designer-body";
+    if (this.leftCollapsed) c += " left-collapsed";
+    if (this.rightCollapsed) c += " right-collapsed";
+    return c;
+  }
+
+  toggleLeftPanel() {
+    this.leftCollapsed = !this.leftCollapsed;
+  }
+
+  toggleRightPanel() {
+    this.rightCollapsed = !this.rightCollapsed;
+  }
+
+  // --- Canvas toolbar breadcrumb (what's currently selected) ---
+  get breadcrumbItems() {
+    const items = [
+      { key: "form", label: this.currentFormName || "Form", icon: "utility:form", sep: false }
+    ];
+    const push = (key, label, icon) =>
+      items.push({ key, label, icon, sep: true });
+
+    if (this.isCompletionActive) {
+      push("completion", "Completion", "utility:success");
+      return items;
+    }
+    if (this.isMultiPageLayout) {
+      const pg = this._canvasPages[this.currentPageIndex];
+      push("page", (pg && pg.name) || `Page ${this.currentPageIndex + 1}`, "utility:page");
+    }
+    const sel = this.panelSelection;
+    if (sel) {
+      if (sel.type === "header") push("sel", "Header", "utility:header");
+      else if (sel.type === "section") push("sel", sel.name || "Section", "utility:layout");
+      else if (sel.type === "element") push("sel", sel.name || "Field", "utility:text");
+    }
+    return items;
+  }
+
+  // --- Undo / redo ---
+  get canUndo() {
+    return this._historyIndex > 0;
+  }
+  get canRedo() {
+    return this._historyIndex < this._history.length - 1;
+  }
+  get undoDisabled() {
+    return !this.canUndo;
+  }
+  get redoDisabled() {
+    return !this.canRedo;
+  }
+
+  // Set isDirty AND queue a (debounced) history snapshot. Single choke point
+  // so every committed edit is undoable without instrumenting each handler.
+  markDirty() {
+    if (this._suppressDirty) return;
+    this.isDirty = true;
+    this.scheduleSnapshot();
+  }
+
+  scheduleSnapshot() {
+    if (this._snapshotTimer) window.clearTimeout(this._snapshotTimer);
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._snapshotTimer = window.setTimeout(() => this.captureSnapshot(), 350);
+  }
+
+  flushSnapshot() {
+    if (this._snapshotTimer) {
+      window.clearTimeout(this._snapshotTimer);
+      this._snapshotTimer = null;
+      this.captureSnapshot();
+    }
+  }
+
+  currentLayoutSnapshot() {
+    return JSON.parse(
+      JSON.stringify({
+        layoutMode: this.currentLayoutMode,
+        header: this._formHeader,
+        formSettings: this._formSettings,
+        pages: this._canvasPages,
+        currentPageIndex: this.currentPageIndex
+      })
+    );
+  }
+
+  captureSnapshot() {
+    this._snapshotTimer = null;
+    const snap = this.currentLayoutSnapshot();
+    // Drop any redo branch, then append the new state.
+    this._history = this._history.slice(0, this._historyIndex + 1);
+    this._history.push(snap);
+    if (this._history.length > 60) {
+      this._history.shift();
+      if (this._savedHistoryIndex > 0) this._savedHistoryIndex -= 1;
+    }
+    this._historyIndex = this._history.length - 1;
+  }
+
+  // Establish a clean baseline after a load / save / fresh form.
+  resetHistory() {
+    this._history = [this.currentLayoutSnapshot()];
+    this._historyIndex = 0;
+    this._savedHistoryIndex = 0;
+  }
+
+  handleUndo() {
+    this.flushSnapshot();
+    if (!this.canUndo) return;
+    this._historyIndex -= 1;
+    this.restoreSnapshot(this._history[this._historyIndex]);
+  }
+
+  handleRedo() {
+    if (!this.canRedo) return;
+    this._historyIndex += 1;
+    this.restoreSnapshot(this._history[this._historyIndex]);
+  }
+
+  restoreSnapshot(snap) {
+    const s = JSON.parse(JSON.stringify(snap));
+    this._suppressDirty = true;
+    this._canvasPages = s.pages;
+    this._formHeader = s.header;
+    this._formSettings = s.formSettings;
+    this._layoutMode = s.layoutMode;
+    this.currentPageIndex = Math.min(
+      s.currentPageIndex || 0,
+      s.pages.length - 1
+    );
+    // Selection indices may no longer line up — clear to avoid stale edits.
+    this.panelSelection = null;
+    this.isHeaderSelected = false;
+    this.isCompletionActive = false;
+    this.isDirty = this._historyIndex !== this._savedHistoryIndex;
+    Promise.resolve().then(() => {
+      this._suppressDirty = false;
+    });
   }
 
   handlePickForm(event) {
@@ -231,26 +472,101 @@ export default class FormDesigner extends LightningElement {
     this.autoSaveThen(() => this.selectVersion(versionId));
   }
 
-  // --- Page management ---
-
-  get pageTabs() {
-    return (this._canvasPages || []).map((p, i) => ({
-      id: p.id,
-      name: p.name || `Page ${i + 1}`,
-      index: i,
-      isActive: !this.isCompletionActive && i === this.currentPageIndex,
-      isRenaming: i === this.renamingPageIndex,
-      tabClass:
-        !this.isCompletionActive && i === this.currentPageIndex
-          ? "page-tab active"
-          : "page-tab"
-    }));
+  get isScreenModePreview() {
+    return (this._formSettings.afterSubmitMode || "Screen") === "Screen";
   }
 
-  get completionTabClass() {
+  get isToastModePreview() {
+    return this._formSettings.afterSubmitMode === "ToastAndGo";
+  }
+
+  get toastAndGoDestination() {
+    const target = this._formSettings.toastAndGoTarget || "Record";
+    if (target === "Record") return "The new / updated record";
+    return this._formSettings.toastAndGoUrl || "Custom URL";
+  }
+
+  get redirectDestination() {
+    const target = this._formSettings.redirectTarget || "Record";
+    if (target === "Record") return "the created record";
+    return this._formSettings.redirectUrl || "custom URL";
+  }
+
+  get themeConfig() {
+    return (this._formSettings && this._formSettings.theme) || PRESET_THEMES.default;
+  }
+
+  get formCardPreviewStyle() {
+    const t = this.themeConfig;
+    const accent = t.accent || PRESET_THEMES.default.accent;
+    const surface = t.surface || "#ffffff";
+    const radius = t.radius === "pill" ? "18px" : themeRadiusToken(t.radius);
+    return `background-color: ${surface}; border-top: 4px solid ${accent}; border-radius: ${radius};`;
+  }
+
+  get accentButtonStyle() {
+    const t = this.themeConfig;
+    const accent = t.submitColor || t.accent || PRESET_THEMES.default.accent;
+    const radius = themeRadiusToken(t.radius);
+    return `background-color: ${accent}; border-color: ${accent}; color: #ffffff; border-radius: ${radius};`;
+  }
+
+  // Canvas stage style — cascades theme tokens + width into the preview so the
+  // builder looks like the rendered form.
+  get designerStageStyle() {
+    const parts = [];
+    const ff = this._formHeader && this._formHeader.fontFamily;
+    if (ff && ff !== "default") parts.push(`font-family: ${ff}`);
+    const t = this.themeConfig;
+    const accent = t.accent || PRESET_THEMES.default.accent;
+    parts.push(`--c-accent: ${accent}`);
+    parts.push(`--c-brand: ${accent}`);
+    parts.push(`--c-brand-dark: ${accent}`);
+    const radius = themeRadiusToken(t.radius);
+    parts.push(`--c-radius: ${radius}`);
+    parts.push(`--c-radius-card: ${t.radius === "pill" ? "18px" : radius}`);
+    parts.push(`--c-submit-bg: ${t.submitColor || accent}`);
+    parts.push(`--c-back-color: ${t.backColor || accent}`);
+    const width = Number(this._formSettings && this._formSettings.formWidth) || 760;
+    parts.push(`max-width: ${width}px`);
+    parts.push("margin: 0 auto");
+    return parts.join("; ");
+  }
+
+  // Background surface for the unified form card (matches the player's shell).
+  get formStageStyle() {
+    const t = this.themeConfig;
+    return t.surface ? `background: ${t.surface};` : "";
+  }
+
+  // --- Page management ---
+
+  get isMultiPageLayout() {
+    return this.currentLayoutMode !== "Single_Page";
+  }
+
+  get pageTabs() {
+    const multi = this.isMultiPageLayout;
+    return (this._canvasPages || []).map((p, i) => {
+      const active = !this.isCompletionActive && i === this.currentPageIndex;
+      return {
+        id: p.id,
+        // Single-page forms always show one fixed "Single Page" tab.
+        name: multi ? p.name || `Page ${i + 1}` : "Single Page",
+        index: i,
+        isActive: active,
+        isRenaming: multi && i === this.renamingPageIndex,
+        tabItemClass: active
+          ? "slds-tabs_default__item slds-is-active"
+          : "slds-tabs_default__item"
+      };
+    });
+  }
+
+  get completionTabItemClass() {
     return this.isCompletionActive
-      ? "page-tab completion-tab active"
-      : "page-tab completion-tab";
+      ? "slds-tabs_default__item completion-tab slds-is-active"
+      : "slds-tabs_default__item completion-tab";
   }
 
   get hasMultiplePages() {
@@ -277,26 +593,34 @@ export default class FormDesigner extends LightningElement {
       type: "page",
       index: idx,
       name: page.name,
-      showHeader: page.showHeader,
-      headerTitle: page.headerTitle,
-      headerSubtitle: page.headerSubtitle,
-      showInProgress: page.showInProgress !== false
+      showInProgress: page.showInProgress !== false,
+      nextLabel: page.nextLabel || "Next",
+      submitLabel: page.submitLabel || this._formSettings.submitLabel || "Submit",
+      isLastPage: idx === this._canvasPages.length - 1,
+      isMultiPage: this.isMultiPageLayout,
+      visibilityExpression: page.visibilityExpression
     };
   }
 
   handleSelectCompletion() {
     this.isCompletionActive = true;
     this.isHeaderSelected = false;
-    this.panelSelection = null;
+    this.panelSelection = {
+      type: "formSettings",
+      ...this._formSettings,
+      layoutMode: this.currentLayoutMode,
+      themeName: this.currentThemeName
+    };
   }
 
   handleAddPage() {
+    if (!this.isMultiPageLayout) return; // single-page forms have one page only
     const pages = [...this._canvasPages, this.blankPage(this._canvasPages.length)];
     this._canvasPages = pages;
     this.isCompletionActive = false;
     this.currentPageIndex = pages.length - 1;
     this.showPageProps(this.currentPageIndex);
-    if (!this._suppressDirty) this.isDirty = true;
+    this.markDirty();
   }
 
   handleDeletePage(event) {
@@ -312,11 +636,12 @@ export default class FormDesigner extends LightningElement {
       this.currentPageIndex = pages.length - 1;
     }
     this.panelSelection = null;
-    if (!this._suppressDirty) this.isDirty = true;
+    this.markDirty();
   }
 
   // Inline rename via double-click on a page tab
   handleStartRename(event) {
+    if (!this.isMultiPageLayout) return; // the single page can't be renamed
     const idx = parseInt(event.currentTarget.dataset.index, 10);
     this.renamingPageIndex = idx;
   }
@@ -327,7 +652,7 @@ export default class FormDesigner extends LightningElement {
     const pages = [...this._canvasPages];
     pages[idx] = { ...pages[idx], name: event.target.value };
     this._canvasPages = pages;
-    if (!this._suppressDirty) this.isDirty = true;
+    this.markDirty();
   }
 
   handleRenameCommit() {
@@ -448,9 +773,55 @@ export default class FormDesigner extends LightningElement {
   }
 
   get currentLayoutMode() {
-    return this.currentVersion?.Layout_Mode__c
+    return this._layoutMode
+      || this.currentVersion?.Layout_Mode__c
       || this.currentForm?.Layout_Mode__c
       || 'Single_Page';
+  }
+
+  // --- Theme (form-level, from the palette Settings tab) ---
+  get currentThemeName() {
+    return (this._formSettings.theme && this._formSettings.theme.name) || "default";
+  }
+
+  handleThemeChange(event) {
+    const name = event.detail.value;
+    const preset = PRESET_THEMES[name] || PRESET_THEMES.default;
+    this.formSettings = {
+      ...this._formSettings,
+      theme: { ...preset }
+    };
+  }
+
+  // --- Auto-fill rules (form-level, from the palette Settings tab) ---
+  handleOpenAutofill() {
+    this.loadPicklistValues(); // ensures lookupTargets are loaded
+    const rules = this._formSettings.autofillRules || [];
+    this.autofillRulesJson = JSON.stringify(rules);
+    this.showAutofillModal = true;
+  }
+
+  handleAutofillSave(event) {
+    let rules = [];
+    try {
+      rules = JSON.parse(event.detail.json || "[]");
+    } catch {
+      rules = [];
+    }
+    this.formSettings = { ...this._formSettings, autofillRules: rules };
+    this.showAutofillModal = false;
+  }
+
+  handleAutofillCancel() {
+    this.showAutofillModal = false;
+  }
+
+  // Navigation style switch (multi-page only) from the palette Settings tab.
+  handleNavStyleChange(event) {
+    const mode = event.detail.value;
+    if (mode === this.currentLayoutMode) return;
+    this._layoutMode = mode;
+    this.markDirty();
   }
 
   get versionStatusLabel() {
@@ -511,16 +882,8 @@ export default class FormDesigner extends LightningElement {
     this.relatedObjectFields = [];
     this.relatedObjectLabel = "";
     this.selectedSectionContext = "Parent";
-    this._formHeader = {
-      visible: true,
-      title: this.currentForm ? this.currentForm.Name : "Form Title",
-      subtitle: "",
-      showLogo: false,
-      logoUrl: "",
-      alignment: "left",
-      backgroundColor: "#ffffff",
-      backgroundImage: ""
-    };
+    const defaultTitle = this.currentForm ? this.currentForm.Name : "Header Title";
+    this._formHeader = getDefaultFormHeader(defaultTitle);
     this.isDirty = false;
     Promise.resolve().then(() => {
       this._suppressDirty = false;
@@ -588,6 +951,7 @@ export default class FormDesigner extends LightningElement {
         this.resetCanvasPages();
         this.isDirty = false;
         this.lastSavedTime = null;
+        this.resetHistory();
         Promise.resolve().then(() => {
           this._suppressDirty = false;
         });
@@ -675,8 +1039,49 @@ export default class FormDesigner extends LightningElement {
       });
   }
 
+  @track showPreview = false;
+  @track previewLayoutJson = "";
+  @track previewDevice = "desktop";
+
+  // Device preview — constrains the preview frame width. The form inside uses
+  // container queries, so it reflows to match each device width.
+  get previewDeviceStyle() {
+    const widths = { desktop: "100%", tablet: "834px", mobile: "390px" };
+    const w = widths[this.previewDevice] || "100%";
+    return `width: ${w}; max-width: 100%; margin: 0 auto;`;
+  }
+  get previewFrameClass() {
+    return `preview-frame preview-frame_${this.previewDevice}`;
+  }
+  get desktopVariant() {
+    return this.previewDevice === "desktop" ? "brand" : "neutral";
+  }
+  get tabletVariant() {
+    return this.previewDevice === "tablet" ? "brand" : "neutral";
+  }
+  get mobileVariant() {
+    return this.previewDevice === "mobile" ? "brand" : "neutral";
+  }
+  handlePreviewDevice(event) {
+    this.previewDevice = event.currentTarget.dataset.device || "desktop";
+  }
+
   handlePreview() {
-    this.showToast("Info", "Preview coming in the next phase", "info");
+    if (!this.currentForm) return;
+    if (!this.currentForm.Primary_Context_Object__c) {
+      this.showToast(
+        "Preview",
+        "Live preview needs a primary object. Survey rendering preview is coming next.",
+        "info"
+      );
+      return;
+    }
+    this.previewLayoutJson = this.buildLayoutJson();
+    this.showPreview = true;
+  }
+
+  handleClosePreview() {
+    this.showPreview = false;
   }
 
   handleOpenHistory() {
@@ -684,7 +1089,12 @@ export default class FormDesigner extends LightningElement {
   }
 
   handleSettings() {
-    this.showToast("Info", "Form settings coming soon", "info");
+    this.panelSelection = {
+      type: "formSettings",
+      ...this._formSettings,
+      layoutMode: this.currentLayoutMode,
+      themeName: this.currentThemeName
+    };
   }
 
   // --- Save / Load ---
@@ -695,6 +1105,10 @@ export default class FormDesigner extends LightningElement {
 
   get saveDisabled() {
     return !this.canSave || !this.isDirty || this.isSaving;
+  }
+
+  get showDiscard() {
+    return this.isDraft && this.isDirty && !this.isSaving;
   }
 
   get saveButtonLabel() {
@@ -735,9 +1149,6 @@ export default class FormDesigner extends LightningElement {
     return {
       id: "page-" + Date.now() + "-" + index,
       name: "Page " + (index + 1),
-      showHeader: false,
-      headerTitle: "",
-      headerSubtitle: "",
       showInProgress: true,
       sections: []
     };
@@ -752,11 +1163,29 @@ export default class FormDesigner extends LightningElement {
     return this.saveLayout(true);
   }
 
+  // Revert unsaved changes by reloading the last-saved layout from the server.
+  handleDiscard() {
+    if (!this.showDiscard) return;
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm(
+      "Discard your unsaved changes and revert to the last saved version?"
+    );
+    if (!ok) return;
+    this.panelSelection = null;
+    this.isHeaderSelected = false;
+    this.isCompletionActive = false;
+    this.loadLayout(this.selectedVersionId).then(() => {
+      this.showToast("Reverted", "Unsaved changes were discarded", "info");
+    });
+  }
+
   saveLayout(showToast) {
     if (!this.canSave || !this.isDirty) {
       return Promise.resolve();
     }
 
+    // Make sure the latest edit is in history before we baseline against it.
+    this.flushSnapshot();
     this.isSaving = true;
     const versionId = this.selectedVersionId;
     const payload = this.buildLayoutJson();
@@ -765,6 +1194,7 @@ export default class FormDesigner extends LightningElement {
       .then(() => {
         this.isSaving = false;
         this.isDirty = false;
+        this._savedHistoryIndex = this._historyIndex;
         this.lastSavedTime = new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit"
@@ -786,9 +1216,15 @@ export default class FormDesigner extends LightningElement {
       .then((json) => {
         this._suppressDirty = true;
         this.currentPageIndex = 0;
+        // Reset so currentLayoutMode falls back to the freshly-loaded record,
+        // then let the saved layout JSON override if it carries a mode.
+        this._layoutMode = null;
         if (json) {
           try {
             const parsed = JSON.parse(json);
+            if (parsed.layoutMode) {
+              this._layoutMode = parsed.layoutMode;
+            }
             if (Array.isArray(parsed.pages) && parsed.pages.length > 0) {
               this._canvasPages = parsed.pages;
             } else {
@@ -816,6 +1252,7 @@ export default class FormDesigner extends LightningElement {
           this.resetCanvasPages();
         }
         this.isDirty = false;
+        this.resetHistory();
         // Re-enable dirty tracking on next microtask so the assignments above
         // don't mark dirty
         Promise.resolve().then(() => {
@@ -841,6 +1278,10 @@ export default class FormDesigner extends LightningElement {
   }
 
   // --- Object metadata loading ---
+
+  get currentObjectApiName() {
+    return this.currentForm?.Primary_Context_Object__c || "";
+  }
 
   get usedFieldApiNames() {
     const used = [];
@@ -904,7 +1345,11 @@ export default class FormDesigner extends LightningElement {
 
   handleSelectSection(event) {
     this.isHeaderSelected = false;
-    const { index, section } = event.detail;
+    const { index } = event.detail;
+    // The section-card click passes the section; the settings (gear) icon only
+    // passes an index — fall back to the current page's section for that case.
+    const section = event.detail.section || this.canvasSections[index];
+    if (!section) return;
     this.panelSelection = {
       type: "section",
       index,
@@ -1006,6 +1451,81 @@ export default class FormDesigner extends LightningElement {
     this.relatedObjectLabel = "";
   }
 
+  // Header is previewed at the top of the canvas stage (form-level, above the
+  // page tabs). Clicking it selects it and clears any section/element highlight.
+  handleHeaderClick() {
+    this.handleSelectHeader();
+    const canvas = this.template.querySelector("c-designer-canvas");
+    if (canvas && canvas.clearSelection) canvas.clearSelection();
+  }
+
+  // --- Form header preview getters ---
+  get headerCardClass() {
+    const h = this._formHeader || {};
+    const hasBg = !!h.backgroundImage;
+    const alignment = h.alignment || "left";
+    return `canvas-header-card${this.isHeaderSelected ? " selected" : ""}${hasBg ? " has-bg" : ""} align-${alignment}`;
+  }
+
+  get headerCardStyle() {
+    const h = this._formHeader || {};
+    const parts = [];
+    if (h.backgroundColor && h.backgroundColor !== "#ffffff") {
+      parts.push(`background-color: ${h.backgroundColor}`);
+    }
+    if (h.backgroundImage) {
+      parts.push(`background-image: url('${h.backgroundImage}')`);
+      parts.push("background-size: cover");
+      parts.push("background-position: center");
+    }
+    return parts.join("; ");
+  }
+
+  get headerTitleClass() {
+    const size = (this._formHeader && this._formHeader.titleSize) || "large";
+    return `header-title title-${size}`;
+  }
+
+  get headerTitleStyle() {
+    const c = this._formHeader && this._formHeader.titleColor;
+    return c ? `color: ${c};` : "";
+  }
+
+  get headerSubtitleStyle() {
+    const c = this._formHeader && this._formHeader.subtitleColor;
+    return c ? `color: ${c};` : "";
+  }
+
+  get headerLogoSrc() {
+    return (this._formHeader && this._formHeader.logoUrl) || "";
+  }
+
+  get headerLogoImgClass() {
+    const size = (this._formHeader && this._formHeader.logoSize) || "medium";
+    return `header-logo-img logo-${size}`;
+  }
+
+  get hasLogoImage() {
+    return !!(
+      this._formHeader &&
+      this._formHeader.showLogo &&
+      this._formHeader.logoUrl
+    );
+  }
+
+  get hasLogoPlaceholder() {
+    return !!(
+      this._formHeader &&
+      this._formHeader.showLogo &&
+      !this._formHeader.logoUrl
+    );
+  }
+
+  get formFontStyle() {
+    const ff = this._formHeader && this._formHeader.fontFamily;
+    return ff && ff !== "default" ? `font-family: ${ff};` : "";
+  }
+
   switchToRelatedContext(relatedSection) {
     this.isHeaderSelected = false;
     this.selectedSectionContext = "Related_Child";
@@ -1019,6 +1539,18 @@ export default class FormDesigner extends LightningElement {
           this.relatedObjectFields = [];
         });
     }
+  }
+
+  // Related-section settings (gear) icon — passes only indices, so resolve the
+  // related section and route through the normal select handler.
+  handleEditRelatedSection(event) {
+    const { sectionIndex, relatedIndex } = event.detail;
+    const relatedSection =
+      this.canvasSections[sectionIndex]?.relatedSections?.[relatedIndex];
+    if (!relatedSection) return;
+    this.handleSelectRelatedSection({
+      detail: { sectionIndex, relatedIndex, relatedSection }
+    });
   }
 
   handleSelectRelatedSection(event) {
@@ -1243,10 +1775,13 @@ export default class FormDesigner extends LightningElement {
       const pages = [...this._canvasPages];
       pages[idx] = { ...pages[idx], [property]: value };
       this._canvasPages = pages;
-      if (!this._suppressDirty) this.isDirty = true;
+      this.markDirty();
       this.panelSelection = { ...this.panelSelection, [property]: value };
     } else if (selectionType === "formSettings") {
       this.formSettings = { ...this.formSettings, [property]: value };
+      if (property === "layoutMode") {
+        this._layoutMode = value;
+      }
       this.panelSelection = { ...this.panelSelection, [property]: value };
     } else if (selectionType === "section") {
       const idx = event.detail.index;
@@ -1265,12 +1800,74 @@ export default class FormDesigner extends LightningElement {
     }
   }
 
-  handleEditVisibility() {
-    this.showToast(
-      "Info",
-      "Visibility rule editor coming in the next phase",
-      "info"
-    );
+  // --- Visibility rules ---
+  handleEditVisibility(event) {
+    this.visibilityTarget = { ...event.detail };
+    this.visibilityRulesJson = this.panelSelection?.visibilityExpression || "";
+    this.visibilityContextLabel =
+      this.panelSelection?.name ||
+      (event.detail.selectionType === "section" ? "section" : "element");
+    this.loadPicklistValues();
+    this.showVisibilityModal = true;
+  }
+
+  // Picklist values for the form's object — drives type-aware value pickers
+  // in the visibility editor. Reuses the shared getPicklistOptions Apex.
+  loadPicklistValues() {
+    const obj = this.currentForm?.Primary_Context_Object__c;
+    if (!obj || this._picklistObj === obj) return;
+    this._picklistObj = obj;
+    getPicklistOptions({ objectApiName: obj })
+      .then((m) => {
+        this.picklistValues = m || {};
+      })
+      .catch(() => {
+        this.picklistValues = {};
+      });
+    getLookupTargets({ objectApiName: obj })
+      .then((t) => {
+        this.lookupTargets = t || [];
+      })
+      .catch(() => {
+        this.lookupTargets = [];
+      });
+  }
+
+  get visibilityFields() {
+    return this.objectFields || [];
+  }
+
+  handleVisibilitySave(event) {
+    const json = event.detail.json;
+    const t = this.visibilityTarget || {};
+    if (t.selectionType === "element") {
+      const updated = [...this.canvasSections];
+      const els = [...updated[t.sectionIndex].elements];
+      els[t.elementIndex] = {
+        ...els[t.elementIndex],
+        visibilityExpression: json
+      };
+      updated[t.sectionIndex] = { ...updated[t.sectionIndex], elements: els };
+      this.canvasSections = updated;
+    } else if (t.selectionType === "section") {
+      const updated = [...this.canvasSections];
+      updated[t.index] = { ...updated[t.index], visibilityExpression: json };
+      this.canvasSections = updated;
+    } else if (t.selectionType === "page") {
+      const pages = [...this._canvasPages];
+      pages[t.index] = { ...pages[t.index], visibilityExpression: json };
+      this._canvasPages = pages;
+      this.markDirty();
+    }
+    this.panelSelection = {
+      ...this.panelSelection,
+      visibilityExpression: json
+    };
+    this.showVisibilityModal = false;
+  }
+
+  handleVisibilityCancel() {
+    this.showVisibilityModal = false;
   }
 
   // --- Reordering ---

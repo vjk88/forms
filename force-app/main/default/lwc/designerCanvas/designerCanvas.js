@@ -4,6 +4,10 @@ const TYPE_ICONS = {
   Field: "utility:text",
   Rich_Text: "utility:richtextbulletedlist",
   Static_Text: "utility:text_template",
+  Image: "utility:image",
+  Callout: "utility:info",
+  Spacer: "utility:expand_alt",
+  Consent: "utility:check",
   Divider: "utility:rules",
   File_Upload: "utility:upload",
   Lookup: "utility:record_lookup",
@@ -14,13 +18,18 @@ const TYPE_ICONS = {
   Long_Text_Response: "utility:textarea"
 };
 
-const FULL_WIDTH_TYPES = new Set(["Rich_Text", "Static_Text", "Divider"]);
+const FULL_WIDTH_TYPES = new Set([
+  "Rich_Text",
+  "Static_Text",
+  "Image",
+  "Callout",
+  "Spacer",
+  "Consent",
+  "Divider"
+]);
 
 export default class DesignerCanvas extends LightningElement {
   @api isEditable = false;
-  @api headerData;
-  @api isHeaderSelected = false;
-  @api layoutMode = 'Single_Page';
   @api relationships = [];
   @api primaryObject = '';
   @track sections = [];
@@ -36,92 +45,16 @@ export default class DesignerCanvas extends LightningElement {
     this.sections = (value || []).map((s, idx) => this.enrichSection(s, idx));
   }
 
-  get headerClass() {
-    const isSelected = this.isHeaderSelected;
-    const hasBg = this.headerData && this.headerData.backgroundImage;
-    const alignment =
-      this.headerData && this.headerData.alignment
-        ? this.headerData.alignment
-        : "left";
-    return `canvas-header-card${isSelected ? " selected" : ""}${hasBg ? " has-bg" : ""} align-${alignment}`;
-  }
-
-  get headerStyle() {
-    const parts = [];
-    if (this.headerData) {
-      if (this.headerData.backgroundColor && this.headerData.backgroundColor !== '#ffffff') {
-        parts.push(`background-color: ${this.headerData.backgroundColor}`);
-      }
-      if (this.headerData.backgroundImage) {
-        parts.push(`background-image: url('${this.headerData.backgroundImage}')`);
-        parts.push('background-size: cover');
-        parts.push('background-position: center');
-      }
-    }
-    return parts.join('; ');
-  }
-
-  get formCardStyle() {
-    const ff = this.headerData?.fontFamily;
-    if (ff && ff !== 'default') {
-      return `font-family: ${ff};`;
-    }
-    return '';
-  }
-
-  get headerTitleClass() {
-    const size = this.headerData?.titleSize || 'large';
-    return `header-title title-${size}`;
-  }
-
-  get headerTitleStyle() {
-    const color = this.headerData?.titleColor;
-    return color ? `color: ${color};` : '';
-  }
-
-  get headerSubtitleStyle() {
-    const color = this.headerData?.subtitleColor;
-    return color ? `color: ${color};` : '';
-  }
-
-  get headerLogoSrc() {
-    return this.headerData?.logoUrl || '';
-  }
-
-  get hasLogoImage() {
-    return this.headerData?.showLogo && this.headerData?.logoUrl;
-  }
-
-  get hasLogoPlaceholder() {
-    return this.headerData?.showLogo && !this.headerData?.logoUrl;
-  }
-
+  // Clears any selected section/element highlight. Called by the designer when
+  // the form header (rendered outside this component) is selected.
   @api
-  selectHeader() {
+  clearSelection() {
     this.selectedSectionIndex = -1;
     this.selectedElementIndex = -1;
     this.sections = this.sections.map((s) => ({
       ...s,
       cardClass: `section-card`
     }));
-  }
-
-  handleHeaderClick(event) {
-    event.stopPropagation();
-    this.selectHeader();
-    this.dispatchEvent(new CustomEvent("selectheader"));
-  }
-
-  get isVerticalNav() {
-    return this.layoutMode === 'Vertical_Navigation';
-  }
-
-  get canvasClass() {
-    return `canvas-container${this.isVerticalNav ? ' vertical-nav-mode' : ''}`;
-  }
-
-  get canvasMainClass() {
-    return 'canvas-main';
   }
 
   enrichElement(el, gridColumns) {

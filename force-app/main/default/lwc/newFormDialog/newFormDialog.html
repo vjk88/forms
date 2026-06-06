@@ -1,104 +1,126 @@
 <template>
-  <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
-    <div class="slds-modal__container">
+  <section role="dialog" tabindex="-1" aria-modal="true"
+    class="slds-modal slds-fade-in-open nf-modal">
+    <div class="slds-modal__container nf-container">
       <!-- Header -->
-      <div class="slds-modal__header">
+      <div class="slds-modal__header nf-header">
         <button
           class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
           onclick={handleClose}
-        >
-          <lightning-icon
-            icon-name="utility:close"
-            size="small"
-            alternative-text="Close"
-          ></lightning-icon>
+          title="Close">
+          <lightning-icon icon-name="utility:close" size="small"
+            alternative-text="Close"></lightning-icon>
         </button>
-        <h1 class="slds-modal__title slds-hyphenate">{modalTitle}</h1>
+        <h1 class="nf-title">{modalTitle}</h1>
+        <p class="nf-subtitle">{subtitle}</p>
       </div>
 
       <!-- Body -->
-      <div class="slds-modal__content slds-p-around_medium">
-        <lightning-input
-          label="Form Name"
-          value={formName}
-          onchange={handleNameChange}
-          required
-          class="slds-m-bottom_small"
-        >
-        </lightning-input>
-
-        <template if:false={isSurveyMode}>
-          <lightning-combobox
-            label="Form Type"
-            value={formType}
-            options={formTypeOptions}
-            onchange={handleTypeChange}
-            class="slds-m-bottom_small"
-          >
-          </lightning-combobox>
-        </template>
-
-        <lightning-combobox
-          label="Submission Storage"
-          value={submissionStorage}
-          options={submissionStorageOptions}
-          field-level-help={submissionStorageHelp}
-          onchange={handleStorageChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-combobox>
-
-        <template if:true={requiresPrimaryObject}>
-          <lightning-combobox
-            label="Primary Object"
-            value={objectApiName}
-            placeholder="Select an object"
-            options={objectOptions}
-            onchange={handleObjectChange}
-            required
-            class="slds-m-bottom_small"
-          >
-          </lightning-combobox>
-        </template>
-
-        <lightning-combobox
-          label="Layout Mode"
-          value={layoutMode}
-          options={layoutModeOptions}
-          onchange={handleLayoutChange}
-          class="slds-m-bottom_small"
-        >
-        </lightning-combobox>
-
-        <fieldset class="slds-form-element">
-          <legend class="slds-form-element__label">Allowed Adapters</legend>
-          <div class="slds-form-element__control">
-            <template for:each={adapterOptions} for:item="opt">
-              <div key={opt.value} class="slds-checkbox">
-                <input type="checkbox" id={opt.value} value={opt.value}
-                  checked={opt.checked} onchange={handleAdapterToggle}>
-                <label for={opt.value} class="slds-m-left_x-small">{opt.label}</label>
-              </div>
-            </template>
+      <div class="slds-modal__content nf-body">
+        <!-- Top row: name + locked type -->
+        <div class="nf-top-row">
+          <div class="nf-top-col">
+            <lightning-input
+              label={nameLabel}
+              value={formName}
+              placeholder={namePlaceholder}
+              onchange={handleNameChange}
+              required>
+            </lightning-input>
           </div>
-        </fieldset>
+          <div class="nf-top-col">
+            <span class="nf-locked-label">Form Type</span>
+            <div class="nf-locked-field">
+              <span class="nf-locked-value">{formType}</span>
+              <lightning-icon icon-name="utility:lock" size="xx-small"
+                class="nf-locked-icon" alternative-text="Locked"></lightning-icon>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== DATA ===== -->
+        <div class="nf-section-head">
+          <lightning-icon icon-name="utility:database" size="xx-small"
+            class="nf-section-icon"></lightning-icon>
+          <span class="nf-section-label">Data</span>
+        </div>
+
+        <p class="nf-adapter-help">{dataSectionDesc}</p>
+        <lightning-combobox
+          label={objectLabel}
+          value={objectApiName}
+          placeholder="Select an object"
+          options={objectOptions}
+          field-level-help={objectHelp}
+          required={requiresObject}
+          onchange={handleObjectChange}>
+        </lightning-combobox>
+
+        <!-- ===== EXPERIENCE ===== -->
+        <div class="nf-section-head">
+          <lightning-icon icon-name="utility:desktop" size="xx-small"
+            class="nf-section-icon"></lightning-icon>
+          <span class="nf-section-label">Experience</span>
+          <template if:true={showExperienceBadge}>
+            <span class="nf-badge">Recommended for surveys</span>
+          </template>
+        </div>
+
+        <div class="nf-card-grid" role="radiogroup" aria-label="Experience">
+          <template for:each={experienceCards} for:item="card">
+            <div key={card.value} class={card.cardClass} role="radio"
+              tabindex="0" aria-checked={card.selected}
+              data-value={card.value}
+              onclick={handleExperienceSelect}
+              onkeydown={handleExperienceKey}>
+              <span class={card.dotClass}></span>
+              <div class="choice-body">
+                <lightning-icon icon-name={card.icon} size="small"
+                  class="choice-icon"></lightning-icon>
+                <span class="choice-title">{card.title}</span>
+                <span class="choice-desc">{card.desc}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- ===== ADVANCED ===== -->
+        <div class="nf-section-head">
+          <lightning-icon icon-name="utility:settings" size="xx-small"
+            class="nf-section-icon"></lightning-icon>
+          <span class="nf-section-label">Advanced</span>
+        </div>
+
+        <!-- Allowed adapters -->
+        <span class="nf-field-label nf-adapter-heading">Allowed Adapters</span>
+        <p class="nf-adapter-help">{adapterHelp}</p>
+        <div class="nf-adapter-grid">
+          <template for:each={adapterItems} for:item="ad">
+            <div key={ad.value} class="nf-adapter">
+              <lightning-input type="checkbox" variant="label-hidden"
+                label={ad.label}
+                checked={ad.checked}
+                data-value={ad.value}
+                onchange={handleAdapterChange}>
+              </lightning-input>
+              <div class="nf-adapter-text">
+                <span class="nf-adapter-title">{ad.label}</span>
+                <span class="nf-adapter-desc">{ad.desc}</span>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
 
       <!-- Footer -->
-      <div class="slds-modal__footer">
-        <lightning-button
-          variant="neutral"
-          label="Cancel"
-          onclick={handleClose}
-        >
-        </lightning-button>
+      <div class="slds-modal__footer nf-footer">
+        <button type="button" class="nf-cancel" onclick={handleClose}>Cancel</button>
         <lightning-button
           variant="brand"
-          label="Create"
+          label={createLabel}
           onclick={handleCreate}
           disabled={createDisabled}
-          class="slds-m-left_x-small"
-        >
+          class="slds-m-left_small">
         </lightning-button>
       </div>
     </div>

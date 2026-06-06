@@ -6,6 +6,127 @@
     padding: 0.1rem 0;
 }
 
+/* ===== Image ===== */
+.preview-imagewrap {
+    display: flex;
+    justify-content: center;
+}
+
+.preview-image {
+    display: block;
+    object-fit: contain;
+    max-width: 100%;
+    border-radius: 6px;
+}
+
+.preview-image.img-small { max-width: 160px; }
+.preview-image.img-medium { max-width: 320px; }
+.preview-image.img-large { max-width: 520px; }
+.preview-image.img-full { max-width: 100%; }
+
+.preview-image-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 1.25rem;
+    border: 1px dashed var(--c-border);
+    border-radius: 6px;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+    background: var(--c-surface-alt);
+}
+
+/* ===== Callout ===== */
+.preview-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 6px;
+    border-left: 4px solid var(--c-brand);
+    background: var(--c-brand-bg);
+    color: var(--c-text);
+    font-size: 0.85rem;
+}
+
+.preview-callout .callout-icon {
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+.callout-info {
+    border-left-color: var(--c-brand);
+    background: var(--c-brand-bg);
+}
+.callout-info .callout-icon { --slds-c-icon-color-foreground-default: var(--c-brand); }
+
+.callout-success {
+    border-left-color: var(--c-success);
+    background: var(--c-success-bg);
+}
+.callout-success .callout-icon { --slds-c-icon-color-foreground-default: var(--c-success); }
+
+.callout-warning {
+    border-left-color: var(--c-warning);
+    background: #fef5e7;
+}
+.callout-warning .callout-icon { --slds-c-icon-color-foreground-default: var(--c-warning); }
+
+.callout-error {
+    border-left-color: var(--c-error);
+    background: var(--c-error-bg);
+}
+.callout-error .callout-icon { --slds-c-icon-color-foreground-default: var(--c-error); }
+
+/* ===== Spacer ===== */
+.preview-spacer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--c-border-light);
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 6px,
+        var(--c-surface-alt) 6px,
+        var(--c-surface-alt) 12px
+    );
+}
+
+.preview-spacer.spacer-small { height: 12px; }
+.preview-spacer.spacer-medium { height: 28px; }
+.preview-spacer.spacer-large { height: 56px; }
+
+.preview-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text);
+}
+/* Consent's standalone checkbox square (distinct from the checkbox-GROUP row) */
+.preview-consent-box {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.15rem;
+    border: 1px solid var(--c-border-cool);
+    border-radius: 3px;
+    background: var(--c-surface);
+}
+
+.spacer-tag {
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-text-meta);
+    background: var(--c-surface);
+    padding: 0 0.4rem;
+    border-radius: 3px;
+}
+
 .preview-field.read-only {
     opacity: 0.65;
 }
@@ -14,20 +135,20 @@
     display: block;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #414752;
+    color: var(--c-label);
     margin-bottom: 0.15rem;
     padding-right: 1.25rem; /* room for the remove X */
 }
 
 .preview-help {
     font-size: 0.675rem;
-    color: #706e6b;
+    color: var(--c-text-weak);
     margin-top: 0.15rem;
 }
 
 /* Text input */
 .preview-input {
-    border: 1px solid #dddbda;
+    border: 1px solid var(--c-border);
     border-radius: 4px;
     padding: 0.4rem 0.5rem;
     background: #fff;
@@ -38,7 +159,7 @@
 }
 
 .preview-textarea {
-    border: 1px solid #dddbda;
+    border: 1px solid var(--c-border);
     border-radius: 4px;
     padding: 0.4rem 0.5rem;
     background: #fff;
@@ -46,13 +167,13 @@
 }
 
 .preview-placeholder {
-    color: #b0adab;
+    color: var(--c-text-meta);
     font-size: 0.8125rem;
 }
 
 /* Select / Dropdown */
 .preview-select {
-    border: 1px solid #dddbda;
+    border: 1px solid var(--c-border);
     border-radius: 4px;
     padding: 0.4rem 0.5rem;
     background: #fff;
@@ -95,7 +216,7 @@
 .radio-circle {
     width: 16px;
     height: 16px;
-    border: 2px solid #b0adab;
+    border: 2px solid var(--c-text-meta);
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -119,7 +240,7 @@
 .checkbox-box {
     width: 16px;
     height: 16px;
-    border: 2px solid #b0adab;
+    border: 2px solid var(--c-text-meta);
     border-radius: 3px;
     flex-shrink: 0;
 }
@@ -136,7 +257,7 @@
     display: inline-block;
     width: 44px;
     height: 22px;
-    background: #b0adab;
+    background: var(--c-text-meta);
     border-radius: 11px;
     position: relative;
     flex-shrink: 0;
@@ -159,7 +280,7 @@
 
 .slider-track {
     height: 6px;
-    background: #e5e5e5;
+    background: var(--c-border-light);
     border-radius: 3px;
     position: relative;
 }
@@ -170,7 +291,7 @@
     top: 0;
     width: 40%;
     height: 100%;
-    background: #0070d2;
+    background: var(--c-brand);
     border-radius: 3px;
 }
 
@@ -183,7 +304,7 @@
 .preview-displaytext {
     padding: 0.25rem 0;
     font-size: 0.875rem;
-    color: #1b1c1c;
+    color: var(--c-text);
     line-height: 1.5;
 }
 
@@ -194,19 +315,19 @@
 
 .preview-divider hr {
     border: none;
-    border-top: 1px solid #dddbda;
+    border-top: 1px solid var(--c-border);
     margin: 0;
 }
 
 /* File Upload */
 .preview-upload {
-    border: 2px dashed #d8dde6;
+    border: 2px dashed var(--c-border-light);
     border-radius: 4px;
     padding: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #706e6b;
+    color: var(--c-text-weak);
     font-size: 0.8125rem;
 }
 
@@ -223,7 +344,7 @@
     align-items: center;
     justify-content: center;
     height: 28px;
-    border: 1px solid #dddbda;
+    border: 1px solid var(--c-border);
     border-radius: 4px;
     font-size: 0.75rem;
     background: #fff;
@@ -234,7 +355,7 @@
     display: flex;
     justify-content: space-between;
     font-size: 0.6875rem;
-    color: #706e6b;
+    color: var(--c-text-weak);
     margin-top: 0.2rem;
 }
 
@@ -256,7 +377,7 @@
 
 .likert-label {
     font-size: 0.6875rem;
-    color: #706e6b;
+    color: var(--c-text-weak);
     line-height: 1.1;
 }
 
@@ -268,5 +389,5 @@
 }
 
 .star-icon {
-    --slds-c-icon-color-foreground-default: #c9c7c5;
+    --slds-c-icon-color-foreground-default: var(--c-text-meta);
 }

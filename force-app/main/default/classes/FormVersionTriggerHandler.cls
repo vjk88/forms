@@ -29,6 +29,9 @@ public with sharing class FormVersionTriggerHandler {
       return;
     }
 
+    // Integrity rule: enforce a single active version per form. Run in system
+    // mode so the invariant holds regardless of the running user's FLS on
+    // other versions (e.g., admin publishing a version they didn't author).
     List<Form_Version__c> existingActiveVersions = [
       SELECT Id, Form__c, Is_Active__c
       FROM Form_Version__c
@@ -36,7 +39,7 @@ public with sharing class FormVersionTriggerHandler {
         Form__c IN :formIdsBeingActivated
         AND Is_Active__c = TRUE
         AND Id NOT IN :currentRecordIds
-      WITH USER_MODE
+      WITH SYSTEM_MODE
     ];
 
     if (!existingActiveVersions.isEmpty()) {
@@ -46,7 +49,16 @@ public with sharing class FormVersionTriggerHandler {
 
       isRunning = true;
       try {
-        update existingActiveVersions;
+        update as system existingActiveVersions;
+      } catch (Exception e) {
+        // Surface the failure on the records being activated so the
+        // single-active-version rule fails loudly rather than silently.
+        for (Form_Version__c v : newVersions) {
+          v.addError(
+            'Could not deactivate the previous active version: ' +
+              e.getMessage()
+          );
+        }
       } finally {
         isRunning = false;
       }

@@ -1,64 +1,7 @@
 <template>
-  <div class={canvasClass}>
-    <!-- Vertical Nav sidebar preview -->
-    <template if:true={isVerticalNav}>
-      <div class="vnav-sidebar">
-        <h4 class="vnav-title">Sections</h4>
-        <template for:each={sections} for:item="navSection" for:index="navIdx">
-          <div key={navSection.id} class="vnav-item" data-index={navIdx}
-              onclick={handleSectionClick}>
-            <span class="vnav-item-label">{navSection.name}</span>
-          </div>
-        </template>
-      </div>
-    </template>
-
+  <div class="canvas-container">
     <div class="canvas-scroll">
-      <!-- Mapped-to-object badge -->
-      <template if:true={primaryObject}>
-        <div class="mapped-badge-row">
-          <span class="mapped-badge">
-            <lightning-icon icon-name="utility:database" size="xx-small"
-              class="slds-m-right_xx-small"></lightning-icon>
-            Mapped to {primaryObject}
-          </span>
-        </div>
-      </template>
-
-    <div class="canvas-main" style={formCardStyle}>
-      <!-- Form Header -->
-      <template if:true={headerData}>
-        <template if:true={headerData.visible}>
-          <div class={headerClass} style={headerStyle} onclick={handleHeaderClick}>
-            <div class="header-inner">
-            <template if:true={hasLogoImage}>
-              <div class="header-logo">
-                <img src={headerLogoSrc} alt="Logo" class="header-logo-img">
-              </div>
-            </template>
-            <template if:true={hasLogoPlaceholder}>
-              <div class="header-logo">
-                <lightning-icon icon-name="utility:image" size="medium"
-                  alternative-text="Logo placeholder"></lightning-icon>
-              </div>
-            </template>
-            <div class="header-text">
-              <h1 class={headerTitleClass} style={headerTitleStyle}>{headerData.title}</h1>
-              <template if:true={headerData.subtitle}>
-                <p class="header-subtitle" style={headerSubtitleStyle}>{headerData.subtitle}</p>
-              </template>
-            </div>
-          </div>
-        </div>
-        </template>
-        <template if:false={headerData.visible}>
-          <div class="header-hidden-bar" onclick={handleHeaderClick}>
-            <lightning-icon icon-name="utility:header" size="xx-small"
-              class="slds-m-right_xx-small"></lightning-icon>
-            <span class="slds-text-body_small slds-text-color_weak">Header hidden — click to configure</span>
-          </div>
-        </template>
-      </template>
+    <div class="canvas-main">
 
       <!-- Sections -->
       <template for:each={sections} for:item="section" for:index="idx">
@@ -76,6 +19,10 @@
                 <lightning-icon icon-name="utility:drag_and_drop" size="xx-small"
                   class="drag-handle slds-m-right_xx-small"
                   alternative-text="Drag"></lightning-icon>
+                <template if:true={section.icon}>
+                  <lightning-icon icon-name={section.icon} size="x-small"
+                    class="section-icon slds-m-right_xx-small"></lightning-icon>
+                </template>
                 <span class="section-title">{section.name}</span>
                 <template if:true={section.isRepeatable}>
                   <lightning-badge label="Repeater" class="slds-m-left_xx-small">
@@ -131,7 +78,7 @@
                       ondragover={handleElementDragOver}
                       ondrop={handleElementChipDrop}>
                     <button type="button" class="element-remove"
-                      title="Remove"
+                      title="Remove" aria-label="Remove field"
                       data-section-index={idx} data-element-index={elIdx}
                       onclick={handleRemoveElement}>
                       <lightning-icon icon-name="utility:close" size="xx-small"
@@ -252,14 +199,35 @@
       <template if:false={hasSections}>
         <div class="empty-canvas" ondragover={handleSectionDragOver}
             ondrop={handleSectionDrop}>
-          <lightning-icon icon-name="utility:layout" size="large"
-            class="slds-m-bottom_small"></lightning-icon>
-          <p class="slds-text-heading_small slds-m-bottom_x-small">
+          <div class="empty-canvas__illu">
+            <lightning-icon icon-name="utility:layout" size="large"></lightning-icon>
+          </div>
+          <p class="slds-text-heading_small empty-canvas__title">
             Start building your form
           </p>
-          <p class="slds-text-body_small slds-text-color_weak">
-            Add a section, then drag fields from the left panel.
+          <p class="slds-text-body_small slds-text-color_weak empty-canvas__sub">
+            Three steps to your first form
           </p>
+          <ol class="empty-steps">
+            <li class="empty-step">
+              <span class="empty-step__num">1</span>
+              <lightning-icon icon-name="utility:add" size="x-small"
+                class="empty-step__ico"></lightning-icon>
+              <span>Add a section</span>
+            </li>
+            <li class="empty-step">
+              <span class="empty-step__num">2</span>
+              <lightning-icon icon-name="utility:drag_and_drop" size="x-small"
+                class="empty-step__ico"></lightning-icon>
+              <span>Drag fields in from the left</span>
+            </li>
+            <li class="empty-step">
+              <span class="empty-step__num">3</span>
+              <lightning-icon icon-name="utility:settings" size="x-small"
+                class="empty-step__ico"></lightning-icon>
+              <span>Fine-tune each field on the right</span>
+            </li>
+          </ol>
         </div>
       </template>
     </div>

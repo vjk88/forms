@@ -1,0 +1,195 @@
+<template>
+  <section role="dialog" tabindex="-1" aria-modal="true"
+    class="slds-modal slds-fade-in-open ve-modal">
+    <div class="slds-modal__container ve-container">
+      <header class="slds-modal__header ve-header">
+        <button
+          class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+          onclick={handleCancel} title="Close">
+          <lightning-icon icon-name="utility:close" size="small"
+            alternative-text="Close"></lightning-icon>
+        </button>
+        <h1 class="slds-modal__title">{title}</h1>
+        <p class="ve-sub">
+          Show this {contextLabel} only when the conditions below are met.
+        </p>
+      </header>
+
+      <div class="slds-modal__content slds-p-around_medium ve-body">
+        <lightning-combobox
+          label="Show when"
+          options={logicOptions}
+          value={logic}
+          onchange={handleLogicChange}
+          class="slds-m-bottom_small">
+        </lightning-combobox>
+
+        <template if:true={isCustom}>
+          <lightning-input
+            label="Custom Logic"
+            value={customLogic}
+            placeholder="e.g. 1 AND (2 OR 3)"
+            field-level-help="Reference each condition by its number. Use AND, OR, NOT and parentheses."
+            onchange={handleCustomLogicChange}
+            class="slds-m-bottom_xx-small">
+          </lightning-input>
+          <template if:true={customLogicError}>
+            <p class="ve-error">
+              <lightning-icon icon-name="utility:error" size="xx-small"
+                class="slds-m-right_xx-small ve-error-icon"></lightning-icon>
+              {customLogicError}
+            </p>
+          </template>
+        </template>
+
+        <template if:false={hasConditions}>
+          <p class="ve-empty">
+            No conditions yet — this {contextLabel} is always visible.
+            Add a condition to make it conditional.
+          </p>
+        </template>
+
+        <template if:true={hasConditions}>
+          <div class="ve-row ve-head-row">
+            <span class="ve-num"></span>
+            <span class="ve-col">Source</span>
+            <span class="ve-col">Field</span>
+            <span class="ve-col">Operator</span>
+            <span class="ve-col">Value</span>
+            <span></span>
+          </div>
+        </template>
+
+        <template for:each={rows} for:item="row">
+          <div key={row.id} class="ve-row">
+            <span class="ve-num">{row.num}</span>
+            <lightning-combobox
+              variant="label-hidden"
+              placeholder="Source"
+              options={sourceOptions}
+              value={row.source}
+              data-id={row.id}
+              onchange={handleSourceChange}
+              class="ve-source">
+            </lightning-combobox>
+            <lightning-combobox
+              variant="label-hidden"
+              placeholder="Select field"
+              options={row.fieldOptions}
+              value={row.field}
+              required
+              message-when-value-missing="Select a field"
+              data-id={row.id}
+              data-prop="field"
+              onchange={handleRowChange}
+              class="ve-field">
+            </lightning-combobox>
+            <lightning-combobox
+              variant="label-hidden"
+              placeholder="Operator"
+              options={row.operatorOptions}
+              value={row.operator}
+              data-id={row.id}
+              data-prop="operator"
+              onchange={handleRowChange}
+              class="ve-op">
+            </lightning-combobox>
+            <template if:true={row.showValue}>
+              <template if:true={row.isSelectValue}>
+                <lightning-combobox
+                  variant="label-hidden"
+                  placeholder="Select value"
+                  options={row.valueOptions}
+                  value={row.value}
+                  data-id={row.id}
+                  data-prop="value"
+                  onchange={handleRowChange}
+                  class="ve-val">
+                </lightning-combobox>
+              </template>
+              <template if:true={row.isNumberValue}>
+                <lightning-input
+                  type="number"
+                  variant="label-hidden"
+                  placeholder="Enter value"
+                  value={row.value}
+                  data-id={row.id}
+                  data-prop="value"
+                  onchange={handleRowChange}
+                  class="ve-val">
+                </lightning-input>
+              </template>
+              <template if:true={row.isDateValue}>
+                <lightning-input
+                  type="date"
+                  variant="label-hidden"
+                  value={row.value}
+                  data-id={row.id}
+                  data-prop="value"
+                  onchange={handleRowChange}
+                  class="ve-val">
+                </lightning-input>
+              </template>
+              <template if:true={row.isDateTimeValue}>
+                <lightning-input
+                  type="datetime"
+                  variant="label-hidden"
+                  value={row.value}
+                  data-id={row.id}
+                  data-prop="value"
+                  onchange={handleRowChange}
+                  class="ve-val">
+                </lightning-input>
+              </template>
+              <template if:true={row.isTextValue}>
+                <lightning-input
+                  type="text"
+                  variant="label-hidden"
+                  placeholder="Enter value"
+                  value={row.value}
+                  data-id={row.id}
+                  data-prop="value"
+                  onchange={handleRowChange}
+                  class="ve-val">
+                </lightning-input>
+              </template>
+            </template>
+            <template if:false={row.showValue}>
+              <span class="ve-val"></span>
+            </template>
+            <lightning-button-icon
+              icon-name="utility:delete"
+              variant="bare"
+              alternative-text="Remove condition"
+              data-id={row.id}
+              onclick={handleRemove}
+              class="ve-del">
+            </lightning-button-icon>
+          </div>
+        </template>
+
+        <lightning-button
+          variant="base"
+          label="Add Condition"
+          icon-name="utility:add"
+          onclick={handleAddCondition}
+          class="slds-m-top_x-small">
+        </lightning-button>
+      </div>
+
+      <footer class="slds-modal__footer ve-footer">
+        <button class="slds-button slds-button_neutral" onclick={handleClear}>
+          Clear All
+        </button>
+        <button class="slds-button slds-button_neutral" onclick={handleCancel}>
+          Cancel
+        </button>
+        <button class="slds-button slds-button_brand" onclick={handleSave}
+          disabled={saveDisabled}>
+          Save
+        </button>
+      </footer>
+    </div>
+  </section>
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

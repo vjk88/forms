@@ -35,10 +35,11 @@ public with sharing class FormDesignerController {
           !d.isDeprecatedAndHidden() &&
           (d.isCustom() || isAllowedStandardObject(apiName))
         ) {
-          options.add(new OptionDTO(d.getLabel(), apiName));
+          // d.getName() is the proper-case API name; the map key is lowercase
+          options.add(new OptionDTO(d.getLabel(), d.getName()));
         }
       } catch (Exception e) {
-        // Skip inaccessible objects
+        System.debug(LoggingLevel.FINEST, 'Skipped object describe: ' + e.getMessage());
       }
     }
 
@@ -47,16 +48,30 @@ public with sharing class FormDesignerController {
   }
 
   private static Boolean isAllowedStandardObject(String apiName) {
+    if (String.isBlank(apiName)) {
+      return false;
+    }
     Set<String> allowed = new Set<String>{
-      'Account',
-      'Contact',
-      'Lead',
-      'Opportunity',
-      'Case',
-      'Task',
-      'Event'
+      'account',
+      'contact',
+      'lead',
+      'opportunity',
+      'case',
+      'task',
+      'event'
     };
-    return allowed.contains(apiName);
+    return allowed.contains(apiName.toLowerCase());
+  }
+
+  /**
+   * Returns the proper-case API name for an object. Older forms may have
+   * stored the lowercase global-describe key (e.g., "form_section__c").
+   */
+  public static String normalizeObjectName(String name) {
+    if (String.isBlank(name))
+      return name;
+    Schema.SObjectType t = Schema.getGlobalDescribe().get(name.toLowerCase());
+    return t == null ? name : t.getDescribe().getName();
   }
 
   public class FieldDTO implements Comparable {
@@ -160,7 +175,11 @@ public with sharing class FormDesignerController {
 
     for (String fname : fieldMap.keySet()) {
       Schema.DescribeFieldResult fd = fieldMap.get(fname).getDescribe();
-      if (fd.isAccessible() && supported.contains(fd.getType())) {
+      if (
+        fd.isAccessible() &&
+        supported.contains(fd.getType()) &&
+        !isSystemField(fd)
+      ) {
         result.add(
           new FieldDTO(
             fd.getName(),
@@ -175,6 +194,14 @@ public with sharing class FormDesignerController {
 
     result.sort();
     return result;
+  }
+
+  // Internal, non-user-meaningful system fields hidden everywhere in the app.
+  // Note: audit fields (CreatedDate, LastModifiedDate, LastActivityDate, etc.)
+  // are intentionally KEPT — only the purely-internal ones are excluded.
+  private static Boolean isSystemField(Schema.DescribeFieldResult fd) {
+    String n = fd.getName().toLowerCase();
+    return n == 'isdeleted' || n == 'systemmodstamp';
   }
 
   @AuraEnabled(cacheable=true)
@@ -220,7 +247,7 @@ public with sharing class FormDesignerController {
 
   @AuraEnabled(cacheable=true)
   public static List<Form__c> getAllForms() {
-    return [
+    List<Form__c> forms = [
       SELECT
         Id,
         Name,
@@ -242,8 +269,23 @@ public with sharing class FormDesignerController {
           ORDER BY Version_Number__c DESC
         )
       FROM Form__c
+      WITH USER_MODE
       ORDER BY Name ASC
     ];
+
+    // Normalize any lowercase-stored object names to proper case
+    Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+    for (Form__c f : forms) {
+      if (!String.isBlank(f.Primary_Context_Object__c)) {
+        Schema.SObjectType t = gd.get(
+          f.Primary_Context_Object__c.toLowerCase()
+        );
+        if (t != null) {
+          f.Primary_Context_Object__c = t.getDescribe().getName();
+        }
+      }
+    }
+    return forms;
   }
 
   @AuraEnabled(cacheable=true)
@@ -262,6 +304,7 @@ public with sharing class FormDesignerController {
         Change_Notes__c
       FROM Form_Version__c
       WHERE Form__c = :formId
+      WITH USER_MODE
       ORDER BY Version_Number__c DESC
     ];
   }
@@ -272,22 +315,22 @@ public with sharing class FormDesignerController {
     String objectApiName,
     String formType,
     String layoutMode,
-    String submissionStorage,
     String allowedAdapters
   ) {
     if (String.isBlank(formName)) {
       throw new AuraHandledException('Form name is required.');
     }
 
-    String storage = String.isBlank(submissionStorage)
-      ? 'Primary_Object'
-      : submissionStorage;
-    Boolean requiresObject = (storage == 'Primary_Object' || storage == 'Both');
+    // Storage is implied by type: a Form always writes to its primary
+    // SObject; a Survey always writes to the generic Response/Answer store.
+    String type = String.isBlank(formType) ? 'Form' : formType;
+    Boolean isForm = (type == 'Form');
+    String storage = isForm ? 'Primary_Object' : 'Form_Response';
 
-    if (requiresObject && String.isBlank(objectApiName)) {
-      throw new AuraHandledException(
-        'Primary object is required when Submission Storage is Primary Object or Both.'
-      );
+    // A Form must be bound to an object. A Survey's object (if any) is just
+    // the context record its responses link to, so it's optional.
+    if (isForm && String.isBlank(objectApiName)) {
+      throw new AuraHandledException('A primary object is required for a Form.');
     }
 
     if (!String.isBlank(objectApiName)) {
@@ -309,14 +352,14 @@ public with sharing class FormDesignerController {
       form.Primary_Context_Object__c = String.isBlank(objectApiName)
         ? null
         : objectApiName;
-      form.Form_Type__c = String.isBlank(formType) ? 'Form' : formType;
+      form.Form_Type__c = type;
       form.Layout_Mode__c = resolvedLayout;
       form.Submission_Storage__c = storage;
       form.Allowed_Adapters__c = String.isBlank(allowedAdapters)
         ? 'Internal_Record_Page'
         : allowedAdapters;
       form.Status__c = 'Draft';
-      insert form;
+      insert as user form;
 
       Form_Version__c version = new Form_Version__c();
       version.Form__c = form.Id;
@@ -324,13 +367,13 @@ public with sharing class FormDesignerController {
       version.Is_Active__c = false;
       version.Layout_Mode__c = resolvedLayout;
       version.Published_Date__c = System.now();
-      insert version;
+      insert as user version;
 
       Form_Page__c page = new Form_Page__c();
       page.Form_Version__c = version.Id;
       page.Name = 'Page 1';
       page.Sequence__c = 1;
-      insert page;
+      insert as user page;
 
       return new Map<String, Object>{
         'formId' => form.Id,
@@ -352,6 +395,7 @@ public with sharing class FormDesignerController {
       SELECT Id
       FROM Form_Version__c
       WHERE Form__c = :formId AND Is_Active__c = FALSE
+      WITH USER_MODE
       LIMIT 1
     ];
     if (!existingDrafts.isEmpty()) {
@@ -362,6 +406,7 @@ public with sharing class FormDesignerController {
       SELECT Id, Version_Number__c
       FROM Form_Version__c
       WHERE Form__c = :formId AND Is_Active__c = TRUE
+      WITH USER_MODE
       LIMIT 1
     ];
     if (activeVersions.isEmpty()) {
@@ -374,6 +419,7 @@ public with sharing class FormDesignerController {
       SELECT Id, Layout_Config__c, Schema_Snapshot__c, Layout_Mode__c
       FROM Form_Version__c
       WHERE Id = :activeVersionId
+      WITH USER_MODE
       LIMIT 1
     ];
 
@@ -381,6 +427,7 @@ public with sharing class FormDesignerController {
       SELECT MAX(Version_Number__c) maxVer
       FROM Form_Version__c
       WHERE Form__c = :formId
+      WITH USER_MODE
     ];
     Decimal nextVersion = ((Decimal) agg[0].get('maxVer')) + 1;
 
@@ -393,7 +440,7 @@ public with sharing class FormDesignerController {
       draft.Layout_Config__c = activeFull.Layout_Config__c;
       draft.Layout_Mode__c = activeFull.Layout_Mode__c;
       draft.Published_Date__c = System.now();
-      insert draft;
+      insert as user draft;
 
       cloneVersionChildren(activeVersionId, draft.Id);
 
@@ -414,27 +461,156 @@ public with sharing class FormDesignerController {
     }
 
     Form_Version__c version = [
-      SELECT Id, Is_Active__c, Form__c
+      SELECT Id, Is_Active__c, Form__c, Layout_Config__c, Schema_Snapshot__c
       FROM Form_Version__c
       WHERE Id = :versionId
+      WITH USER_MODE
       LIMIT 1
     ];
 
     if (version.Is_Active__c) {
       throw new AuraHandledException('This version is already published.');
     }
+    if (String.isBlank(version.Layout_Config__c)) {
+      throw new AuraHandledException(
+        'Add and save form content before publishing.'
+      );
+    }
+
+    // Capture the schema snapshot (object + fields used) once, at publish.
+    List<Form__c> forms = [
+      SELECT Id, Primary_Context_Object__c
+      FROM Form__c
+      WHERE Id = :version.Form__c
+      WITH USER_MODE
+      LIMIT 1
+    ];
+    String objectApi = forms.isEmpty()
+      ? null
+      : forms[0].Primary_Context_Object__c;
+    String snapshot = String.isNotBlank(version.Schema_Snapshot__c)
+      ? version.Schema_Snapshot__c
+      : buildSchemaSnapshot(objectApi, version.Layout_Config__c);
 
     version.Is_Active__c = true;
     version.Published_Date__c = System.now();
     version.Published_By__c = UserInfo.getUserId();
-    update version;
+    version.Schema_Snapshot__c = snapshot;
 
+    // The Form mirrors the published layout + snapshot (the runtime can read
+    // the live layout straight off the Form; satisfies the publish VRs).
     Form__c form = new Form__c(
       Id = version.Form__c,
       Status__c = 'Published',
-      Published_Date__c = System.now()
+      Published_Date__c = System.now(),
+      Layout_Config__c = version.Layout_Config__c,
+      Schema_Snapshot__c = snapshot
     );
-    update form;
+
+    // Publishing flips app-managed status/audit fields on records the user
+    // already has access to (with sharing + the AuraEnabled entry-point gate
+    // it). Run the status flip in system mode so it doesn't require the running
+    // user to hold edit FLS on these managed fields — the same approach as the
+    // single-active-version trigger.
+    Savepoint sp = Database.setSavepoint();
+    try {
+      update as system version;
+      update as system form;
+    } catch (Exception e) {
+      Database.rollback(sp);
+      throw new AuraHandledException(
+        'Error publishing version: ' + e.getMessage()
+      );
+    }
+  }
+
+  /**
+   * Builds a schema snapshot for a published form: the primary object plus the
+   * describe metadata of every SObject field used in the layout. Lets the
+   * runtime render against a frozen schema even if the org's fields later
+   * change, and satisfies the publish-time integrity rules.
+   */
+  private static String buildSchemaSnapshot(
+    String objectApiName,
+    String layoutJson
+  ) {
+    Map<String, Object> snap = new Map<String, Object>{
+      'object' => objectApiName,
+      'capturedAt' => String.valueOf(System.now())
+    };
+    Set<String> fieldApis = new Set<String>();
+    try {
+      Map<String, Object> layout = (Map<String, Object>) JSON.deserializeUntyped(
+        layoutJson
+      );
+      Object pages = layout.get('pages');
+      if (pages instanceof List<Object>) {
+        for (Object po : (List<Object>) pages) {
+          Map<String, Object> page = (Map<String, Object>) po;
+          collectFieldApis(page.get('sections'), fieldApis);
+        }
+      }
+    } catch (Exception ignored) {
+      // Unparseable layout still yields a valid (object-only) snapshot.
+    }
+
+    Map<String, Object> fieldsMap = new Map<String, Object>();
+    if (String.isNotBlank(objectApiName)) {
+      Schema.SObjectType t = Schema.getGlobalDescribe()
+        .get(objectApiName.toLowerCase());
+      if (t != null) {
+        Map<String, Schema.SObjectField> fm = t.getDescribe().fields.getMap();
+        for (String f : fieldApis) {
+          Schema.SObjectField sf = fm.get(f.toLowerCase());
+          if (sf == null) {
+            continue;
+          }
+          Schema.DescribeFieldResult d = sf.getDescribe();
+          List<String> refs = new List<String>();
+          for (Schema.SObjectType rt : d.getReferenceTo()) {
+            refs.add(rt.getDescribe().getName());
+          }
+          fieldsMap.put(
+            d.getName(),
+            new Map<String, Object>{
+              'label' => d.getLabel(),
+              'type' => d.getType().name(),
+              'required' => !d.isNillable(),
+              'createable' => d.isCreateable(),
+              'updateable' => d.isUpdateable(),
+              'referenceTo' => refs
+            }
+          );
+        }
+      }
+    }
+    snap.put('fields', fieldsMap);
+    return JSON.serialize(snap);
+  }
+
+  private static void collectFieldApis(Object sectionsObj, Set<String> out) {
+    if (!(sectionsObj instanceof List<Object>)) {
+      return;
+    }
+    for (Object so : (List<Object>) sectionsObj) {
+      Map<String, Object> section = (Map<String, Object>) so;
+      Object elements = section.get('elements');
+      if (elements instanceof List<Object>) {
+        for (Object eo : (List<Object>) elements) {
+          Map<String, Object> el = (Map<String, Object>) eo;
+          String type = (String) el.get('type');
+          String fapi = (String) el.get('fieldApiName');
+          if (
+            String.isNotBlank(fapi) &&
+            (type == null || type == 'Field')
+          ) {
+            out.add(fapi);
+          }
+        }
+      }
+      // Recurse into nested related-list sections.
+      collectFieldApis(section.get('relatedSections'), out);
+    }
   }
 
   @AuraEnabled
@@ -447,6 +623,7 @@ public with sharing class FormDesignerController {
       SELECT Id, Is_Active__c
       FROM Form_Version__c
       WHERE Id = :versionId
+      WITH USER_MODE
       LIMIT 1
     ];
 
@@ -454,7 +631,13 @@ public with sharing class FormDesignerController {
       throw new AuraHandledException('Cannot delete a published version.');
     }
 
-    delete version;
+    try {
+      delete as user version;
+    } catch (Exception e) {
+      throw new AuraHandledException(
+        'Error deleting draft version: ' + e.getMessage()
+      );
+    }
   }
 
   private static void cloneVersionChildren(
@@ -472,6 +655,7 @@ public with sharing class FormDesignerController {
         Allow_Back_Navigation__c
       FROM Form_Page__c
       WHERE Form_Version__c = :sourceVersionId
+      WITH USER_MODE
       ORDER BY Sequence__c
     ];
 
@@ -484,7 +668,7 @@ public with sharing class FormDesignerController {
       np.Form_Version__c = targetVersionId;
       newPages.add(np);
     }
-    insert newPages;
+    insert as user newPages;
 
     Map<Id, Id> pageIdMap = new Map<Id, Id>();
     for (Integer i = 0; i < sourcePages.size(); i++) {
@@ -510,6 +694,7 @@ public with sharing class FormDesignerController {
         Collapsed_By_Default__c
       FROM Form_Section__c
       WHERE Form_Page__c IN :pageIdMap.keySet()
+      WITH USER_MODE
       ORDER BY Sequence__c
     ];
 
@@ -522,7 +707,7 @@ public with sharing class FormDesignerController {
       ns.Form_Page__c = pageIdMap.get(s.Form_Page__c);
       newSections.add(ns);
     }
-    insert newSections;
+    insert as user newSections;
 
     Map<Id, Id> sectionIdMap = new Map<Id, Id>();
     for (Integer i = 0; i < sourceSections.size(); i++) {
@@ -558,6 +743,7 @@ public with sharing class FormDesignerController {
         Static_Text_Content__c
       FROM Form_Element__c
       WHERE Form_Section__c IN :sectionIdMap.keySet()
+      WITH USER_MODE
       ORDER BY Sequence__c
     ];
 
@@ -569,7 +755,7 @@ public with sharing class FormDesignerController {
         ne.Key__c = e.Key__c;
         newElements.add(ne);
       }
-      insert newElements;
+      insert as user newElements;
     }
   }
 
@@ -588,6 +774,7 @@ public with sharing class FormDesignerController {
       SELECT Id, Is_Active__c
       FROM Form_Version__c
       WHERE Id = :versionId
+      WITH USER_MODE
       LIMIT 1
     ];
     if (versions.isEmpty()) {
@@ -600,7 +787,28 @@ public with sharing class FormDesignerController {
     }
 
     versions[0].Layout_Config__c = layoutJson;
-    update versions[0];
+
+    // Keep Layout_Mode__c in sync with the nav style stored in the layout JSON
+    // (the builder can change it via the Settings tab).
+    try {
+      Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(
+        layoutJson
+      );
+      Object lm = parsed.get('layoutMode');
+      if (lm != null && String.isNotBlank(String.valueOf(lm))) {
+        versions[0].Layout_Mode__c = String.valueOf(lm);
+      }
+    } catch (Exception ignored) {
+      // Layout JSON without a parseable mode just leaves the field unchanged.
+    }
+
+    try {
+      update as user versions[0];
+    } catch (Exception e) {
+      throw new AuraHandledException(
+        'Error saving form layout: ' + e.getMessage()
+      );
+    }
   }
 
   @AuraEnabled(cacheable=false)
@@ -612,6 +820,7 @@ public with sharing class FormDesignerController {
       SELECT Layout_Config__c
       FROM Form_Version__c
       WHERE Id = :versionId
+      WITH USER_MODE
       LIMIT 1
     ];
     return versions.isEmpty() ? null : versions[0].Layout_Config__c;

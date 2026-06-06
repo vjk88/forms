@@ -1,0 +1,388 @@
+<template>
+    <!-- Loading — skeleton placeholder (no layout shift, feels faster than a
+         blank spinner, especially on public/guest first paint) -->
+    <template if:true={isLoading}>
+        <div class="player-skeleton" aria-hidden="true">
+            <div class="sk-header"></div>
+            <div class="sk-body">
+                <div class="sk-line sk-line_label"></div>
+                <div class="sk-line sk-line_input"></div>
+                <div class="sk-line sk-line_label"></div>
+                <div class="sk-line sk-line_input"></div>
+                <div class="sk-line sk-line_label"></div>
+                <div class="sk-line sk-line_input"></div>
+                <div class="sk-btn"></div>
+            </div>
+        </div>
+        <span class="slds-assistive-text" role="status">Loading form…</span>
+    </template>
+
+    <!-- Error -->
+    <template if:true={loadError}>
+        <div class="player-state">
+            <lightning-icon icon-name="utility:warning" size="small"
+                class="slds-m-bottom_x-small"></lightning-icon>
+            <p class="slds-text-body_regular">{loadError}</p>
+        </div>
+    </template>
+
+    <!-- Thank-you / completion -->
+    <template if:true={isSubmitted}>
+        <div class="player-thankyou">
+            <lightning-icon icon-name="utility:success" size="large"
+                class="ty-icon slds-m-bottom_small"></lightning-icon>
+            <div class="ty-message">
+                <lightning-formatted-rich-text value={thankYouMessage}>
+                </lightning-formatted-rich-text>
+            </div>
+            <template if:true={formSettings.showActionButton}>
+                <lightning-button variant="brand" label={actionButtonLabel}
+                    onclick={handleActionButton} class="slds-m-top_medium">
+                </lightning-button>
+            </template>
+
+            <!-- Cancellable auto-redirect — never yank a reader away silently -->
+            <template if:true={isRedirecting}>
+                <div class="ty-redirect slds-m-top_medium" role="status">
+                    <span class="ty-redirect__text">{redirectCountdownText}</span>
+                    <lightning-button variant="neutral"
+                        label="Stay on this page"
+                        onclick={handleCancelRedirect}
+                        class="slds-m-top_x-small">
+                    </lightning-button>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- The form -->
+    <template if:false={isSubmitted}>
+        <template if:false={isLoading}>
+            <template if:false={loadError}>
+                <div class="player-shell" style={formCardStyle}>
+                    <!-- Form header -->
+                    <template if:true={headerVisible}>
+                        <div class={playerHeaderClass} style={playerHeaderStyle}>
+                            <div class="player-header-inner">
+                                <template if:true={header.showLogo}>
+                                    <template if:true={header.logoUrl}>
+                                        <div class="player-header-logo player-header-logo--img">
+                                            <img src={header.logoUrl} alt="Logo"
+                                                class={playerLogoClass}>
+                                        </div>
+                                    </template>
+                                    <template if:false={header.logoUrl}>
+                                        <div class="player-header-logo">
+                                            <lightning-icon icon-name="utility:image" size="medium"
+                                                alternative-text="Logo placeholder"></lightning-icon>
+                                        </div>
+                                    </template>
+                                </template>
+                                <div class="player-header-text">
+                                    <h1 class={playerTitleClass} style={playerTitleStyle}>{header.title}</h1>
+                                    <template if:true={header.subtitle}>
+                                        <p class="player-subtitle" style={playerSubtitleStyle}>{header.subtitle}</p>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Progress bar (wizard) -->
+                    <template if:true={isWizard}>
+                        <ol class="player-progress">
+                            <template for:each={progressSteps} for:item="step">
+                                <li key={step.id} class={step.stepClass}>
+                                    <span class="progress-dot"></span>
+                                    <span class="progress-label">{step.name}</span>
+                                </li>
+                            </template>
+                        </ol>
+                    </template>
+
+                    <div class="player-body">
+                        <!-- Vertical nav menu -->
+                        <template if:true={isVerticalNav}>
+                            <div class="player-vnav">
+                                <template for:each={navItems} for:item="nav">
+                                    <div key={nav.id} class={nav.navClass}
+                                        data-index={nav.index}
+                                        onclick={handleNavSelect}>
+                                        {nav.name}
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Form content -->
+                        <div class="player-scroll">
+                            <lightning-record-edit-form
+                                object-api-name={primaryObject}
+                                record-id={effectiveRecordId}
+                                onsubmit={handleFormSubmit}
+                                onsuccess={handleSuccess}
+                                onerror={handleError}>
+
+                                <template for:each={renderedPages} for:item="page">
+                                    <div key={page.id} class={page.wrapperClass}>
+                                        <!-- Sections -->
+                                        <template for:each={page.sections}
+                                            for:item="section">
+                                            <div key={section.id}
+                                                class={section.sectionClass}>
+                                                <template if:true={section.showHeader}>
+                                                    <div class="player-section-header"
+                                                        style={section.headerStyle}>
+                                                        <template if:true={section.icon}>
+                                                            <lightning-icon icon-name={section.icon}
+                                                                size="x-small"
+                                                                class="slds-m-right_xx-small">
+                                                            </lightning-icon>
+                                                        </template>
+                                                        {section.name}
+                                                    </div>
+                                                </template>
+                                                <div class="player-section-body">
+                                                    <div class={section.gridClass}>
+                                                        <template
+                                                            for:each={section.elements}
+                                                            for:item="el">
+                                                            <div key={el.id}
+                                                                class={el.elWrapperClass}>
+                                                                <!-- Field (native render) -->
+                                                                <template if:true={el.isFieldDefault}>
+                                                                    <lightning-input-field
+                                                                        field-name={el.fieldApiName}
+                                                                        data-field={el.fieldApiName}
+                                                                        data-prefill="true"
+                                                                        required={el.effectiveRequired}
+                                                                        disabled={el.readOnly}
+                                                                        onchange={handleFieldValueChange}>
+                                                                    </lightning-input-field>
+                                                                </template>
+                                                                <!-- Field (Render As custom control) -->
+                                                                <template if:true={el.isCustomField}>
+                                                                    <lightning-input-field
+                                                                        field-name={el.fieldApiName}
+                                                                        value={el.submitValue}
+                                                                        class="slds-hide">
+                                                                    </lightning-input-field>
+                                                                    <template if:true={el.isToggle}>
+                                                                        <lightning-input type="toggle"
+                                                                            label={el.label}
+                                                                            checked={el.value}
+                                                                            disabled={el.readOnly}
+                                                                            field-level-help={el.helpText}
+                                                                            data-custom="true"
+                                                                            data-field={el.fieldApiName}
+                                                                            data-toggle="true"
+                                                                            onchange={handleCustomChange}>
+                                                                        </lightning-input>
+                                                                    </template>
+                                                                    <template if:true={el.isSlider}>
+                                                                        <lightning-slider
+                                                                            label={el.label}
+                                                                            min={el.sliderMin}
+                                                                            max={el.sliderMax}
+                                                                            step={el.sliderStep}
+                                                                            value={el.value}
+                                                                            disabled={el.readOnly}
+                                                                            data-custom="true"
+                                                                            data-field={el.fieldApiName}
+                                                                            onchange={handleCustomChange}>
+                                                                        </lightning-slider>
+                                                                    </template>
+                                                                    <template if:true={el.isRadio}>
+                                                                        <lightning-radio-group
+                                                                            type="radio"
+                                                                            label={el.label}
+                                                                            options={el.options}
+                                                                            value={el.value}
+                                                                            required={el.effectiveRequired}
+                                                                            disabled={el.readOnly}
+                                                                            data-custom="true"
+                                                                            data-field={el.fieldApiName}
+                                                                            onchange={handleCustomChange}>
+                                                                        </lightning-radio-group>
+                                                                    </template>
+                                                                    <template if:true={el.isDropdown}>
+                                                                        <lightning-combobox
+                                                                            label={el.label}
+                                                                            options={el.options}
+                                                                            value={el.value}
+                                                                            required={el.effectiveRequired}
+                                                                            disabled={el.readOnly}
+                                                                            field-level-help={el.helpText}
+                                                                            data-custom="true"
+                                                                            data-field={el.fieldApiName}
+                                                                            onchange={handleCustomChange}>
+                                                                        </lightning-combobox>
+                                                                    </template>
+                                                                    <template if:true={el.isCheckboxGroup}>
+                                                                        <lightning-checkbox-group
+                                                                            label={el.label}
+                                                                            options={el.options}
+                                                                            value={el.value}
+                                                                            required={el.effectiveRequired}
+                                                                            disabled={el.readOnly}
+                                                                            data-custom="true"
+                                                                            data-field={el.fieldApiName}
+                                                                            onchange={handleCustomChange}>
+                                                                        </lightning-checkbox-group>
+                                                                    </template>
+                                                                    <!-- Inline validation for custom controls -->
+                                                                    <template if:true={el.hasError}>
+                                                                        <div class="player-field-error" role="alert">
+                                                                            {el.errorMessage}
+                                                                        </div>
+                                                                    </template>
+                                                                </template>
+                                                                <!-- Display text -->
+                                                                <template if:true={el.isDisplayText}>
+                                                                    <lightning-formatted-rich-text
+                                                                        value={el.content}>
+                                                                    </lightning-formatted-rich-text>
+                                                                </template>
+                                                                <!-- Divider -->
+                                                                <template if:true={el.isDivider}>
+                                                                    <hr class="player-divider">
+                                                                </template>
+                                                                <!-- Image -->
+                                                                <template if:true={el.isImage}>
+                                                                    <template if:true={el.hasImage}>
+                                                                        <div class="player-imagewrap">
+                                                                            <img src={el.imageUrl}
+                                                                                alt={el.imageAlt}
+                                                                                class={el.imageClass}>
+                                                                        </div>
+                                                                    </template>
+                                                                </template>
+                                                                <!-- Callout -->
+                                                                <template if:true={el.isCallout}>
+                                                                    <div class={el.calloutClass}>
+                                                                        <lightning-icon
+                                                                            icon-name={el.calloutIcon}
+                                                                            size="x-small"
+                                                                            class="callout-icon slds-m-right_x-small">
+                                                                        </lightning-icon>
+                                                                        <lightning-formatted-rich-text
+                                                                            value={el.calloutContent}>
+                                                                        </lightning-formatted-rich-text>
+                                                                    </div>
+                                                                </template>
+                                                                <!-- Spacer -->
+                                                                <template if:true={el.isSpacer}>
+                                                                    <div class={el.spacerClass}></div>
+                                                                </template>
+                                                                <!-- Consent / Terms -->
+                                                                <template if:true={el.isConsent}>
+                                                                    <div class="player-consent">
+                                                                        <lightning-input
+                                                                            type="checkbox"
+                                                                            variant="label-hidden"
+                                                                            label="Consent"
+                                                                            required={el.consentRequired}
+                                                                            message-when-value-missing="You must accept to continue"
+                                                                            data-custom="true"
+                                                                            class="player-consent__box">
+                                                                        </lightning-input>
+                                                                        <lightning-formatted-rich-text
+                                                                            value={el.consentContent}>
+                                                                        </lightning-formatted-rich-text>
+                                                                    </div>
+                                                                </template>
+                                                                <!-- File upload (edit context) -->
+                                                                <template if:true={el.isFileUpload}>
+                                                                    <template if:false={isCreateMode}>
+                                                                        <lightning-file-upload
+                                                                            label={el.label}
+                                                                            record-id={effectiveRecordId}>
+                                                                        </lightning-file-upload>
+                                                                    </template>
+                                                                    <template if:true={isCreateMode}>
+                                                                        <p class="file-note">
+                                                                            File upload available after the record is created.
+                                                                        </p>
+                                                                    </template>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Honeypot: invisible to humans, bots fill it -->
+                                <div class="player-honeypot" aria-hidden="true">
+                                    <label>Leave this field empty</label>
+                                    <input type="text" name="hp_contact_url"
+                                        tabindex="-1" autocomplete="off"
+                                        onchange={handleHoneypotChange}>
+                                </div>
+                            </lightning-record-edit-form>
+
+                            <!-- CAPTCHA (guest sessions only, when required) -->
+                            <template if:true={needsCaptcha}>
+                                <div class="player-captcha">
+                                    <lightning-input type="checkbox"
+                                        label="I'm not a robot"
+                                        onchange={handleCaptchaChange}>
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+                            <!-- Error summary (collected near the submit button) -->
+                            <template if:true={hasSubmitErrors}>
+                                <div class="player-errors" role="alert">
+                                    <div class="player-errors__head">
+                                        <lightning-icon icon-name="utility:error"
+                                            size="x-small"
+                                            class="player-errors__icon slds-m-right_x-small">
+                                        </lightning-icon>
+                                        <span>Please review the following before submitting:</span>
+                                    </div>
+                                    <ul class="player-errors__list">
+                                        <template for:each={submitErrors} for:item="err">
+                                            <li key={err.key}>{err.text}</li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+
+                            <!-- Navigation buttons (grouped on the right) -->
+                            <div class="player-nav-buttons">
+                                <div class="nav-spacer"></div>
+                                <template if:true={showBack}>
+                                    <lightning-button variant="neutral" label="Back"
+                                        class="player-back-btn"
+                                        onclick={handleBack}></lightning-button>
+                                </template>
+                                <template if:true={showNext}>
+                                    <lightning-button variant="brand" label={nextLabel}
+                                        class="player-submit-btn"
+                                        onclick={handleNext}></lightning-button>
+                                </template>
+                                <template if:true={showSubmit}>
+                                    <div class="player-submit-wrap">
+                                        <lightning-button variant="brand"
+                                            label={submitButtonLabel}
+                                            class="player-submit-btn"
+                                            disabled={isSubmitting}
+                                            onclick={handleSubmitClick}></lightning-button>
+                                        <template if:true={isSubmitting}>
+                                            <lightning-spinner size="small"
+                                                alternative-text="Submitting">
+                                            </lightning-spinner>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </template>
+    </template>
+</template>

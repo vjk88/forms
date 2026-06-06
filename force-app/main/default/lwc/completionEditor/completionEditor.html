@@ -17,91 +17,152 @@
       </div>
     </div>
 
-    <!-- Thank-you message -->
+    <!-- After-submit mode -->
     <div class="field-block">
-      <label class="field-label">Thank You Message</label>
-      <lightning-input-rich-text
-        value={settings.thankYouMessage}
-        placeholder="Thank you for your submission!"
-        onchange={handleThankYouChange}>
-      </lightning-input-rich-text>
+      <lightning-radio-group
+        label="After Submit"
+        options={modeOptions}
+        value={afterSubmitMode}
+        type="radio"
+        onchange={handleModeChange}>
+      </lightning-radio-group>
     </div>
 
-    <!-- Redirect row -->
-    <div class="redirect-row">
-      <div class="redirect-toggle-box">
-        <div class="toggle-line">
-          <span class="field-label">Auto-Redirect</span>
-          <lightning-input type="toggle" variant="label-hidden"
-            checked={settings.autoRedirect}
-            message-toggle-active=""
-            message-toggle-inactive=""
-            onchange={handleAutoRedirectChange}>
-          </lightning-input>
+    <!-- ===== Toast & go mode ===== -->
+    <template if:true={isToastMode}>
+      <div class="mode-panel">
+        <p class="hint slds-m-bottom_small">
+          On submit, a success toast ("Record created / updated") appears and the
+          user is taken straight to the destination below.
+        </p>
+
+        <div class="field-block">
+          <lightning-combobox
+            label="Go to"
+            options={destinationOptions}
+            value={toastTarget}
+            onchange={handleToastTarget}>
+          </lightning-combobox>
         </div>
-        <p class="hint">Send users to a new URL immediately after submission.</p>
-      </div>
 
-      <div class="redirect-url-box">
-        <label class="field-label">Redirect URL</label>
-        <lightning-input type="url" variant="label-hidden"
-          value={settings.redirectUrl}
-          placeholder="example.com/success"
-          disabled={redirectDisabled}
-          onchange={handleRedirectUrlChange}>
-        </lightning-input>
+        <template if:true={toastIsCustom}>
+          <div class="field-block">
+            <lightning-input
+              type="url"
+              label="Custom URL"
+              value={toastUrl}
+              placeholder="https://example.com/path or /lightning/..."
+              field-level-help={tokenHint}
+              onchange={handleToastUrl}>
+            </lightning-input>
+          </div>
+        </template>
       </div>
-    </div>
+    </template>
 
-    <!-- Delay + return button row -->
-    <div class="redirect-row">
-      <div class="redirect-url-box">
-        <label class="field-label">Redirect Delay (seconds)</label>
-        <lightning-input type="number" variant="label-hidden" min="0"
-          value={settings.redirectDelay}
-          disabled={redirectDisabled}
-          onchange={handleDelayChange}>
-        </lightning-input>
-      </div>
-
-      <div class="redirect-toggle-box">
-        <div class="toggle-line">
-          <span class="field-label">Show Return Button</span>
-          <lightning-input type="toggle" variant="label-hidden"
-            checked={settings.showReturnButton}
-            message-toggle-active=""
-            message-toggle-inactive=""
-            onchange={handleShowReturnChange}>
-          </lightning-input>
+    <!-- ===== Completion screen mode ===== -->
+    <template if:true={isScreenMode}>
+      <div class="mode-panel">
+        <!-- Thank-you message -->
+        <div class="field-block">
+          <label class="field-label">Thank You Message</label>
+          <lightning-input-rich-text
+            value={settings.thankYouMessage}
+            placeholder="Thank you for your submission!"
+            onchange={handleThankYou}>
+          </lightning-input-rich-text>
         </div>
-        <p class="hint">Allow users to start a new form.</p>
+
+        <!-- Auto-redirect -->
+        <div class="redirect-toggle-box field-block">
+          <div class="toggle-line">
+            <span class="field-label">Auto-Redirect</span>
+            <lightning-input type="toggle" variant="label-hidden"
+              checked={autoRedirect}
+              message-toggle-active=""
+              message-toggle-inactive=""
+              onchange={handleAutoRedirect}>
+            </lightning-input>
+          </div>
+          <p class="hint">Send the user onward automatically after submission.</p>
+
+          <template if:true={autoRedirect}>
+            <div class="indent">
+              <lightning-combobox
+                label="Redirect to"
+                options={destinationOptions}
+                value={redirectTarget}
+                onchange={handleRedirectTarget}
+                class="slds-m-bottom_small">
+              </lightning-combobox>
+
+              <template if:true={redirectIsCustom}>
+                <lightning-input
+                  type="url"
+                  label="Custom URL"
+                  value={redirectUrl}
+                  placeholder="https://example.com/path"
+                  field-level-help={tokenHint}
+                  onchange={handleRedirectUrl}
+                  class="slds-m-bottom_small">
+                </lightning-input>
+              </template>
+
+              <lightning-input
+                type="number"
+                min="0"
+                label="Redirect Delay (seconds)"
+                value={redirectDelay}
+                onchange={handleDelay}>
+              </lightning-input>
+            </div>
+          </template>
+        </div>
+
+        <!-- Action button -->
+        <div class="redirect-toggle-box field-block">
+          <div class="toggle-line">
+            <span class="field-label">Action Button</span>
+            <lightning-input type="toggle" variant="label-hidden"
+              checked={showActionButton}
+              message-toggle-active=""
+              message-toggle-inactive=""
+              onchange={handleShowAction}>
+            </lightning-input>
+          </div>
+          <p class="hint">Show a button below the message that takes the user somewhere.</p>
+
+          <template if:true={showActionButton}>
+            <div class="indent">
+              <lightning-input
+                label="Button Label"
+                value={actionButtonLabel}
+                onchange={handleActionLabel}
+                class="slds-m-bottom_small">
+              </lightning-input>
+
+              <lightning-combobox
+                label="Goes to"
+                options={destinationOptions}
+                value={actionTarget}
+                onchange={handleActionTarget}
+                class="slds-m-bottom_small">
+              </lightning-combobox>
+
+              <template if:true={actionIsCustom}>
+                <lightning-input
+                  type="url"
+                  label="Custom URL"
+                  value={actionUrl}
+                  placeholder="https://example.com/path"
+                  field-level-help={tokenHint}
+                  onchange={handleActionUrl}>
+                </lightning-input>
+              </template>
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
-
-    <!-- Return button label -->
-    <div class="field-block">
-      <label class="field-label">Return Button Label</label>
-      <lightning-input variant="label-hidden"
-        value={settings.returnButtonLabel}
-        placeholder="Fill Out Again"
-        disabled={returnLabelDisabled}
-        onchange={handleReturnLabelChange}>
-      </lightning-input>
-    </div>
-
-    <div class="completion-divider"></div>
-
-    <!-- Submit button preview -->
-    <div class="submit-row">
-      <div class="submit-btn">
-        <span>{submitLabel}</span>
-        <lightning-icon icon-name="utility:send" size="xx-small"
-          class="slds-m-left_x-small submit-icon"></lightning-icon>
-      </div>
-    </div>
-    <p class="submit-hint">
-      This is the button label users click on the final page (set in form-level
-      Submit Label).
-    </p>
+    </template>
   </div>
 </template>

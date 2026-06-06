@@ -166,6 +166,48 @@
         </div>
     </template>
 
+    <!-- Image -->
+    <template if:true={isImage}>
+        <div class="preview-imagewrap">
+            <template if:true={hasImage}>
+                <img src={imageSrc} alt={imageAlt} class={imageClass}>
+            </template>
+            <template if:false={hasImage}>
+                <div class="preview-image-empty">
+                    <lightning-icon icon-name="utility:image" size="small"
+                        class="slds-m-right_x-small"></lightning-icon>
+                    <span>Add an image URL in the panel on the right…</span>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- Callout -->
+    <template if:true={isCallout}>
+        <div class={calloutClass}>
+            <lightning-icon icon-name={calloutIcon} size="x-small"
+                class="callout-icon slds-m-right_x-small"></lightning-icon>
+            <lightning-formatted-rich-text value={calloutContent}>
+            </lightning-formatted-rich-text>
+        </div>
+    </template>
+
+    <!-- Spacer -->
+    <template if:true={isSpacer}>
+        <div class={spacerClass}>
+            <span class="spacer-tag">Spacer</span>
+        </div>
+    </template>
+
+    <!-- Consent -->
+    <template if:true={isConsent}>
+        <div class="preview-consent">
+            <span class="preview-consent-box"></span>
+            <lightning-formatted-rich-text value={consentContent}>
+            </lightning-formatted-rich-text>
+        </div>
+    </template>
+
     <!-- Divider -->
     <template if:true={isDivider}>
         <div class="preview-divider"><hr></div>

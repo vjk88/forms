@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Case__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Optional Case this survey response is about (e.g. post-case CSAT).</description>
+    <label>Case</label>
+    <referenceTo>Case</referenceTo>
+    <relationshipLabel>Survey Responses</relationshipLabel>
+    <relationshipName>Survey_Responses</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

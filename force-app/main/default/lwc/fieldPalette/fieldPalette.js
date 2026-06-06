@@ -20,7 +20,11 @@ const FIELD_TYPE_ICONS = {
 
 const COMMON_COMPONENTS = [
   { label: "Display Text", value: "Rich_Text", icon: "utility:richtextbulletedlist" },
+  { label: "Image", value: "Image", icon: "utility:image" },
+  { label: "Callout", value: "Callout", icon: "utility:info" },
   { label: "Divider", value: "Divider", icon: "utility:rules" },
+  { label: "Spacer", value: "Spacer", icon: "utility:expand_alt" },
+  { label: "Consent", value: "Consent", icon: "utility:check" },
   { label: "File Upload", value: "File_Upload", icon: "utility:upload" }
 ];
 
@@ -40,6 +44,7 @@ export default class FieldPalette extends LightningElement {
   @api selectedSectionContext = "Parent";
   @api mode = "forms";
   @api usedFields = [];
+  @api layoutMode = "Single_Page";
 
   @track activeTab = "fields";
   @track searchTerm = "";

@@ -1,9 +1,36 @@
 .palette-container {
-  background: #f5f3f3;
-  border: 1px solid #c0c7d4;
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border-cool);
   border-radius: 8px;
   height: 100%;
   overflow-y: auto;
+}
+
+/* Settings tab */
+.palette-setting-block {
+  margin-bottom: 1.25rem;
+}
+
+.palette-setting-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-label);
+  margin-bottom: 0.25rem;
+}
+
+.palette-setting-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.palette-setting-help {
+  font-size: 0.6875rem;
+  color: var(--c-text-weak);
+  margin: 0.4rem 0 0;
 }
 
 /* Clean header */
@@ -20,7 +47,7 @@
 .palette-head__title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1b1c1c;
+  color: var(--c-text);
   margin: 0;
 }
 
@@ -28,15 +55,15 @@
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #004884;
-  background: #d4e3ff;
+  color: var(--c-brand-dark);
+  background: var(--c-brand-bg);
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
 }
 
 .palette-head__subtitle {
   font-size: 0.8125rem;
-  color: #717784;
+  color: var(--c-text-weak);
   margin: 0.1rem 0 0;
 }
 
@@ -51,13 +78,13 @@
   left: 0.6rem;
   top: 50%;
   transform: translateY(-50%);
-  --slds-c-icon-color-foreground-default: #717784;
+  --slds-c-icon-color-foreground-default: var(--c-text-weak);
 }
 
 .palette-search__input {
   width: 100%;
   padding: 0.5rem 0.6rem 0.5rem 2rem;
-  border: 1px solid #c0c7d4;
+  border: 1px solid var(--c-border-cool);
   border-radius: 8px;
   background: #fff;
   font-size: 0.8125rem;
@@ -66,8 +93,8 @@
 }
 
 .palette-search__input:focus {
-  border-color: #0176d3;
-  box-shadow: 0 0 0 1px #0176d3;
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 1px var(--c-brand);
 }
 
 .palette-list {
@@ -85,7 +112,7 @@
   align-items: center;
   padding: 0.6rem 0.6rem;
   cursor: grab;
-  border: 1px solid #c0c7d4;
+  border: 1px solid var(--c-border-cool);
   border-radius: 8px;
   background: #fff;
   font-size: 0.8125rem;
@@ -94,7 +121,7 @@
 }
 
 .palette-item:hover {
-  border-color: #0176d3;
+  border-color: var(--c-brand);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -104,13 +131,13 @@
 }
 
 .palette-drag-handle {
-  --slds-c-icon-color-foreground-default: #aeb4be;
+  --slds-c-icon-color-foreground-default: var(--c-text-meta);
   margin-right: 0.4rem;
   flex-shrink: 0;
 }
 
 .palette-field-icon {
-  --slds-c-icon-color-foreground-default: #0176d3;
+  --slds-c-icon-color-foreground-default: var(--c-brand);
 }
 
 .palette-field-label {
@@ -124,24 +151,24 @@
 .palette-item.is-used {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #efeded;
+  background: var(--c-surface-alt);
   box-shadow: none;
 }
 
 .palette-item.is-used:hover {
-  border-color: #c0c7d4;
+  border-color: var(--c-border-cool);
   box-shadow: none;
 }
 
 .palette-item.is-used .palette-field-icon {
-  --slds-c-icon-color-foreground-default: #aeb4be;
+  --slds-c-icon-color-foreground-default: var(--c-text-meta);
 }
 
 .palette-used-tag {
   font-size: 0.625rem;
   font-weight: 700;
-  color: #2e844a;
-  background: #ecfbe8;
+  color: var(--c-success);
+  background: var(--c-success-bg);
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
   flex-shrink: 0;
@@ -159,7 +186,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #0070d2;
+  color: var(--c-brand);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -167,7 +194,7 @@
 }
 
 .palette-group-header:hover {
-  color: #005fb2;
+  color: var(--c-brand-dark);
 }
 
 .rel-label {
@@ -178,6 +205,6 @@
 
 .rel-via {
   font-size: 0.6875rem;
-  color: #706e6b;
+  color: var(--c-text-weak);
   font-weight: 400;
 }

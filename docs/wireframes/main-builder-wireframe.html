@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1440" />
+  <title>FormBuilder Pro — Main Builder Wireframe (Annotated)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #e8eaed;
+      color: #3e3e3c;
+      font-size: 12px;
+      line-height: 1.4;
+      padding: 24px;
+    }
+
+    /* ===== Wireframe chrome ===== */
+    .wf-page-title {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #706e6b;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .wf-canvas {
+      width: 1440px;
+      margin: 0 auto;
+      background: #f4f6f9;
+      border: 2px solid #181818;
+      position: relative;
+      overflow: visible;
+    }
+
+    .wf-box {
+      border: 1.5px dashed #939393;
+      background: #fff;
+      border-radius: 4px;
+    }
+    .wf-box.filled { background: #fafafa; }
+    .wf-box.dark { background: #ecebea; border-style: solid; border-color: #c9c7c5; }
+
+    .wf-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #939393;
+    }
+
+    .wf-icon {
+      width: 20px; height: 20px;
+      border: 1.5px solid #939393;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #706e6b;
+      flex-shrink: 0;
+    }
+
+    .wf-btn {
+      border: 1.5px solid #939393;
+      border-radius: 4px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #fff;
+      color: #3e3e3c;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .wf-btn.primary { background: #0176d3; border-color: #0176d3; color: #fff; }
+    .wf-btn.ghost { border-color: transparent; background: transparent; color: #0176d3; }
+
+    .wf-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid #c9c7c5;
+      font-size: 10px;
+      font-weight: 600;
+      background: #fff;
+    }
+    .wf-pill.active { border-color: #0176d3; background: #eaf5fe; color: #0176d3; }
+
+    /* ===== Annotations ===== */
+    .anno {
+      position: absolute;
+      z-index: 100;
+      max-width: 200px;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .anno-tag {
+      display: inline-block;
+      background: #ff6b00;
+      color: #fff;
+      font-weight: 800;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-bottom: 4px;
+    }
+    .anno-body {
+      background: #fffde7;
+      border: 1.5px solid #ff6b00;
+      border-radius: 4px;
+      padding: 6px 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .anno-body strong { color: #181818; }
+    .anno-line {
+      position: absolute;
+      background: #ff6b00;
+      z-index: 99;
+    }
+
+    /* ===== 1. App Header ===== */
+    .app-header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: #fff;
+      border-bottom: 1px solid #dddbda;
+    }
+    .app-header-left { display: flex; align-items: center; gap: 12px; }
+    .logo-box {
+      width: 32px; height: 32px;
+      border: 2px solid #939393;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 700; color: #939393;
+    }
+    .app-name { font-size: 16px; font-weight: 700; color: #181818; }
+
+    .app-header-center {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3e3e3c;
+    }
+    .app-header-center span { color: #706e6b; font-weight: 400; }
+
+    .app-header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .autosave { font-size: 10px; color: #706e6b; margin-right: 4px; }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid #939393;
+      background: #ecebea;
+    }
+
+    /* ===== 2. Secondary Toolbar ===== */
+    .sec-toolbar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: #fafafa;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .page-tabs { display: flex; align-items: center; gap: 0; }
+    .page-tab {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #706e6b;
+      border-bottom: 3px solid transparent;
+      cursor: default;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .page-tab.active {
+      color: #0176d3;
+      border-bottom-color: #0176d3;
+    }
+    .page-tab .drag-h { font-size: 8px; color: #c9c7c5; }
+    .page-tab-add {
+      padding: 6px 10px;
+      margin-left: 4px;
+      border: 1.5px dashed #939393;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #706e6b;
+    }
+    .sec-toolbar-right { display: flex; align-items: center; gap: 12px; }
+    .version-dd {
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 10px;
+      background: #fff;
+    }
+
+    /* ===== 3-column body ===== */
+    .builder-body {
+      display: grid;
+      grid-template-columns: 300px 1fr 340px;
+      min-height: 720px;
+    }
+
+    /* ===== Left Panel ===== */
+    .left-panel {
+      border-right: 1px solid #dddbda;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .obj-selector {
+      padding: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .obj-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #2e844a;
+      border: 1px solid #2e844a;
+    }
+    .obj-dd {
+      flex: 1;
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+    .search-bar {
+      margin: 10px 12px;
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #939393;
+      font-size: 11px;
+    }
+    .lib-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 12px 10px;
+    }
+    .lib-tab {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid #c9c7c5;
+      font-size: 10px;
+      font-weight: 600;
+      color: #706e6b;
+    }
+    .lib-tab.active { background: #181818; color: #fff; border-color: #181818; }
+
+    .field-group { padding: 0 12px 8px; }
+    .group-head {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #706e6b;
+      padding: 6px 0;
+    }
+    .field-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      background: #fff;
+      position: relative;
+    }
+    .field-card.hover {
+      border-color: #0176d3;
+      box-shadow: 0 2px 6px rgba(1,118,211,0.15);
+      transform: translateY(-1px);
+    }
+    .field-card .drag { color: #c9c7c5; font-size: 10px; }
+    .field-card .fname { flex: 1; font-size: 11px; font-weight: 500; }
+    .tag-added {
+      font-size: 8px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: #ecebea;
+      color: #706e6b;
+      text-transform: uppercase;
+    }
+    .quick-add {
+      position: absolute;
+      right: 6px;
+      width: 18px; height: 18px;
+      border: 1.5px solid #0176d3;
+      border-radius: 50%;
+      color: #0176d3;
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+    }
+    .left-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-top: 1px solid #e5e5e5;
+    }
+    .left-footer a { font-size: 10px; color: #0176d3; }
+
+    /* ===== Center Canvas ===== */
+    .center-panel {
+      background: #ecebea;
+      padding: 16px;
+      position: relative;
+      overflow: visible;
+    }
+    .mapping-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0176d3;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    .canvas-toolbar-float {
+      position: absolute;
+      top: 16px; left: 28px;
+      display: flex;
+      gap: 4px;
+      background: #fff;
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 4px;
+      z-index: 5;
+    }
+    .canvas-toolbar-float .wf-icon { width: 24px; height: 24px; font-size: 9px; }
+
+    .canvas-actions-float {
+      position: absolute;
+      top: 16px; right: 28px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+
+    .canvas-grid {
+      background-image:
+        linear-gradient(#d8d8d8 1px, transparent 1px),
+        linear-gradient(90deg, #d8d8d8 1px, transparent 1px);
+      background-size: 24px 24px;
+      min-height: 680px;
+      padding: 48px 24px 24px;
+      position: relative;
+    }
+
+    .form-preview-card {
+      max-width: 880px;
+      margin: 0 auto;
+      background: #fff;
+      border: 2px solid #939393;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .form-header-preview {
+      padding: 20px 24px;
+      border-bottom: 1.5px dashed #c9c7c5;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-thumb {
+      width: 48px; height: 48px;
+      border: 1.5px dashed #939393;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; color: #939393;
+    }
+    .header-text h2 { font-size: 18px; font-weight: 700; color: #181818; }
+    .header-text p { font-size: 12px; color: #706e6b; margin-top: 2px; }
+
+    .section-block { padding: 16px 24px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #706e6b;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field-block label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #514f4d;
+    }
+    .field-input {
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 11px;
+      color: #939393;
+      background: #fafafa;
+    }
+    .field-input.tall { min-height: 56px; }
+    .radio-row { display: flex; gap: 12px; margin-top: 4px; font-size: 10px; color: #706e6b; }
+    .radio-row span::before { content: "○ "; }
+    .slider-bar {
+      height: 4px;
+      background: #ecebea;
+      border-radius: 2px;
+      margin-top: 8px;
+      position: relative;
+    }
+    .slider-bar::after {
+      content: "";
+      position: absolute;
+      left: 0; top: -4px;
+      width: 40%; height: 12px;
+      background: #0176d3;
+      border-radius: 6px;
+    }
+    .divider-line {
+      height: 1px;
+      background: #e5e5e5;
+      margin: 8px 24px;
+    }
+
+    .field-on-canvas {
+      position: relative;
+      border: 2px solid #0176d3;
+      border-radius: 4px;
+      padding: 2px;
+    }
+    .mini-toolbar {
+      position: absolute;
+      top: -28px; right: 0;
+      display: flex;
+      gap: 2px;
+      background: #181818;
+      border-radius: 4px;
+      padding: 3px 4px;
+    }
+    .mini-toolbar span {
+      width: 22px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 9px;
+      border-radius: 2px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #0176d3;
+      background: rgba(1,118,211,0.06);
+      border-radius: 4px;
+      padding: 16px;
+      text-align: center;
+      margin-top: 12px;
+      position: relative;
+    }
+    .drop-zone::before {
+      content: "";
+      position: absolute;
+      left: 50%; top: 0;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 3px;
+      background: #0176d3;
+      border-radius: 0 0 2px 2px;
+    }
+    .drop-zone p { font-size: 11px; color: #0176d3; font-weight: 600; }
+
+    .fab {
+      position: absolute;
+      bottom: 24px; right: 24px;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #0176d3;
+      color: #fff;
+      font-size: 24px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #005fb2;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 5;
+    }
+
+    /* Ghost drag preview */
+    .ghost-card {
+      position: absolute;
+      left: 310px; top: 380px;
+      width: 180px;
+      padding: 8px;
+      border: 2px solid #0176d3;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      font-size: 11px;
+      opacity: 0.9;
+      z-index: 50;
+      pointer-events: none;
+    }
+    .ghost-card .wf-label { margin-bottom: 4px; color: #0176d3; }
+
+    /* ===== Right Panel ===== */
+    .right-panel {
+      border-left: 1px solid #dddbda;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .props-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .props-header h3 { font-size: 13px; font-weight: 700; flex: 1; }
+    .props-hint {
+      padding: 6px 16px;
+      background: #fafafa;
+      border-bottom: 1px solid #e5e5e5;
+      font-size: 9px;
+      color: #939393;
+    }
+    .props-body { padding: 12px 16px; flex: 1; overflow-y: auto; }
+    .prop-group { margin-bottom: 14px; }
+    .prop-group .wf-label { display: block; margin-bottom: 6px; }
+    .prop-input {
+      width: 100%;
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 11px;
+      margin-bottom: 8px;
+    }
+    .prop-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .swatch {
+      width: 24px; height: 24px;
+      border-radius: 4px;
+      border: 1.5px solid #c9c7c5;
+    }
+    .toggle {
+      width: 36px; height: 20px;
+      border-radius: 10px;
+      background: #0176d3;
+      border: 1.5px solid #0176d3;
+    }
+
+    /* ===== Footer ===== */
+    .status-footer {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: #fafafa;
+      border-top: 1px solid #dddbda;
+      font-size: 10px;
+      color: #706e6b;
+    }
+    .status-footer-left, .status-footer-right { display: flex; align-items: center; gap: 16px; }
+    .a11y-pass { color: #2e844a; font-weight: 600; }
+    .collab-avatars { display: flex; }
+    .collab-avatars .avatar { width: 20px; height: 20px; margin-left: -6px; }
+
+    /* ===== Inset states ===== */
+    .insets {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-top: 32px;
+      padding-bottom: 40px;
+    }
+    .inset {
+      width: 420px;
+      border: 2px solid #181818;
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .inset-title {
+      background: #181818;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+    }
+    .inset-body { padding: 16px; background: #f4f6f9; min-height: 200px; }
+
+    .empty-canvas-inset {
+      border: 2px dashed #939393;
+      border-radius: 6px;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #fff;
+      text-align: center;
+      padding: 24px;
+    }
+    .empty-canvas-inset p { font-size: 12px; color: #706e6b; max-width: 260px; }
+    .empty-canvas-inset .wf-btn.primary { margin-top: 4px; }
+
+    .field-props-inset .props-mini {
+      background: #fff;
+      border: 1.5px solid #c9c7c5;
+      border-radius: 4px;
+      padding: 12px;
+    }
+    .field-props-inset .prop-input { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+  <p class="wf-page-title">Annotated Wireframe — Main Builder · 1440px · Form Designer Persona</p>
+
+  <div class="wf-canvas" id="main-wireframe">
+
+    <!-- ===== 1. APP HEADER ===== -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="logo-box">LOGO</div>
+        <span class="app-name">FormBuilder Pro</span>
+      </div>
+      <div class="app-header-center">
+        New Multi Form <span>— v1 (Published)</span>
+      </div>
+      <div class="app-header-right">
+        <span class="wf-icon" title="Search">⌕</span>
+        <span class="wf-icon" title="Help">?</span>
+        <span class="wf-icon" title="Preview">👁</span>
+        <span class="autosave">Autosaved 2m ago</span>
+        <button class="wf-btn">Preview</button>
+        <button class="wf-btn primary">Publish</button>
+        <div class="avatar" title="Account"></div>
+      </div>
+    </header>
+
+    <!-- ===== 2. SECONDARY TOOLBAR ===== -->
+    <div class="sec-toolbar">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="page-tabs">
+          <div class="page-tab active"><span class="drag-h">⋮⋮</span> Page 1</div>
+          <div class="page-tab"><span class="drag-h">⋮⋮</span> Page 2</div>
+          <div class="page-tab-add" title="Add page">+</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <span class="wf-icon" title="Undo">↩</span>
+          <span class="wf-icon" title="Redo">↪</span>
+        </div>
+      </div>
+      <div class="sec-toolbar-right">
+        <button class="wf-btn ghost">Duplicate</button>
+        <button class="wf-btn ghost">Export JSON</button>
+        <div class="version-dd">Version ▾ v1 (Published)</div>
+      </div>
+    </div>
+
+    <!-- ===== 3-COLUMN BODY ===== -->
+    <div class="builder-body">
+
+      <!-- LEFT: Library -->
+      <aside class="left-panel">
+        <div class="obj-selector">
+          <span class="wf-label">Salesforce Object</span>
+          <div class="obj-row">
+            <div class="status-dot" title="Connected"></div>
+            <div class="obj-dd">Account ▾</div>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <span>⌕</span>
+          <span>Search fields... <em style="font-size:9px;margin-left:auto;">/ to search</em></span>
+        </div>
+
+        <div class="lib-tabs">
+          <span class="lib-tab">Components</span>
+          <span class="lib-tab active">Fields</span>
+        </div>
+
+        <div class="field-group">
+          <div class="group-head">▾ Required Fields (3)</div>
+          <div class="field-card">
+            <span class="drag">⋮⋮</span>
+            <span class="wf-icon">Aa</span>
+            <span class="fname">Account Name</span>
+            <span class="tag-added">Added</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="group-head">▾ Fields (24)</div>
+          <div class="field-card hover">
+            <span class="drag">⋮⋮</span>
+            <span class="wf-icon">#</span>
+            <span class="fname">Account Number</span>
+            <span class="quick-add" title="Quick add">+</span>
+          </div>
+          <div class="field-card">
+            <span class="drag">⋮⋮</span>
+            <span class="wf-icon">★</span>
+            <span class="fname">Account Rating</span>
+          </div>
+          <div class="field-card">
+            <span class="drag">⋮⋮</span>
+            <span class="wf-icon">¶</span>
+            <span class="fname">Description</span>
+            <span class="tag-added">Mapped</span>
+          </div>
+          <div class="field-card">
+            <span class="drag">⋮⋮</span>
+            <span class="wf-icon">$</span>
+            <span class="fname">Annual Revenue</span>
+          </div>
+        </div>
+
+        <div class="left-footer">
+          <button class="wf-btn" style="width:100%;justify-content:center;margin-bottom:8px;">+ Add custom field</button>
+          <a href="#">Mapping guide →</a>
+        </div>
+      </aside>
+
+      <!-- CENTER: Canvas -->
+      <main class="center-panel">
+        <div class="mapping-badge">● Mapped to Account</div>
+
+        <div class="canvas-toolbar-float">
+          <span class="wf-icon">≡</span>
+          <span class="wf-icon">⊞</span>
+          <span class="wf-icon">⊟</span>
+          <span class="wf-icon">100%</span>
+        </div>
+
+        <div class="canvas-actions-float">
+          <button class="wf-btn">Preview</button>
+          <button class="wf-btn primary">Publish</button>
+        </div>
+
+        <div class="canvas-grid">
+          <div class="form-preview-card">
+            <div class="form-header-preview">
+              <div class="header-thumb">IMG</div>
+              <div class="header-text">
+                <h2>Account Registration</h2>
+                <p>Complete the details below to create a new account record.</p>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-title">Account Details</div>
+              <div class="two-col">
+                <div class="field-block field-on-canvas">
+                  <div class="mini-toolbar">
+                    <span title="Duplicate">⧉</span>
+                    <span title="Edit">⚙</span>
+                    <span title="Map">🔗</span>
+                    <span title="Delete">✕</span>
+                  </div>
+                  <label>Account Number</label>
+                  <div class="field-input">Enter account number…</div>
+                </div>
+                <div class="field-block">
+                  <label>Account Rating</label>
+                  <div class="radio-row">
+                    <span>Hot</span><span>Warm</span><span>Cold</span>
+                  </div>
+                </div>
+                <div class="field-block" style="grid-column:1/-1;">
+                  <label>Description</label>
+                  <div class="field-input tall">Enter description…</div>
+                </div>
+                <div class="field-block">
+                  <label>Annual Revenue</label>
+                  <div class="slider-bar"></div>
+                </div>
+              </div>
+
+              <div class="drop-zone">
+                <p>Drop field here to add</p>
+              </div>
+            </div>
+
+            <div class="divider-line"></div>
+            <div class="section-block" style="padding-top:8px;">
+              <div class="section-title" style="border:none;margin:0;">— Section Divider —</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fab" title="Add section">+</div>
+
+        <!-- Ghost drag preview -->
+        <div class="ghost-card">
+          <div class="wf-label">Dragging…</div>
+          Account Number
+        </div>
+      </main>
+
+      <!-- RIGHT: Properties (Form Header default) -->
+      <aside class="right-panel">
+        <div class="props-header">
+          <span class="wf-icon">←</span>
+          <h3>Form Header</h3>
+        </div>
+        <div class="props-hint">Press Esc to deselect · Form-level settings</div>
+        <div class="props-body">
+          <div class="prop-group">
+            <div class="prop-row">
+              <span class="wf-label" style="flex:1;">Show Header</span>
+              <div class="toggle"></div>
+            </div>
+          </div>
+          <div class="prop-group">
+            <span class="wf-label">Title</span>
+            <input class="prop-input" value="Account Registration" readonly />
+            <span class="wf-label">Subtitle</span>
+            <input class="prop-input" value="Complete the details below…" readonly />
+          </div>
+          <div class="prop-group">
+            <span class="wf-label">Alignment</span>
+            <input class="prop-input" value="Left ▾" readonly />
+            <span class="wf-label">Overall Form Font</span>
+            <input class="prop-input" value="Salesforce Sans ▾" readonly />
+            <span class="wf-label">Title Size</span>
+            <input class="prop-input" value="Large ▾" readonly />
+          </div>
+          <div class="prop-group">
+            <span class="wf-label">Colors</span>
+            <div class="prop-row">
+              <span style="font-size:10px;">Title</span>
+              <div class="swatch" style="background:#181818;"></div>
+              <span style="font-size:10px;">Subtitle</span>
+              <div class="swatch" style="background:#706e6b;"></div>
+              <span style="font-size:10px;">Background</span>
+              <div class="swatch" style="background:#fff;"></div>
+            </div>
+          </div>
+          <button class="wf-btn" style="width:100%;justify-content:center;">Advanced…</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="status-footer">
+      <div class="status-footer-left">
+        <span>Autosaved 2m ago</span>
+        <div class="collab-avatars">
+          <div class="avatar"></div>
+          <div class="avatar"></div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+      <div class="status-footer-right">
+        <span class="a11y-pass">✓ Accessibility check passed</span>
+        <a href="#" style="color:#0176d3;">Keyboard shortcuts</a>
+      </div>
+    </footer>
+
+    <!-- ===== ANNOTATIONS A1–A10 ===== -->
+    <div class="anno" style="left: 520px; top: 420px;">
+      <div class="anno-tag">A1</div>
+      <div class="anno-body">
+        <strong>Drag-and-drop.</strong> Ghost card follows cursor. Blue insertion bar at drop target.<br/>
+        <em>Microcopy (annotation):</em> "Drop to add field. Hold Shift to duplicate while dropping."
+      </div>
+    </div>
+
+    <div class="anno" style="left: 320px; top: 118px;">
+      <div class="anno-tag">A2</div>
+      <div class="anno-body">
+        <strong>Mapping badge.</strong> "Mapped to [Object]"<br/>
+        Tooltip: Fields dropped here map to Account by default.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 8px; top: 280px;">
+      <div class="anno-tag">A3</div>
+      <div class="anno-body">
+        <strong>Field card hover.</strong> Lift + quick-add (+). Quick-add appends field without drag.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 1120px; top: 200px;">
+      <div class="anno-tag">A4</div>
+      <div class="anno-body">
+        <strong>Contextual properties.</strong> Form settings when nothing selected. Field settings when field selected on canvas.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 980px; top: 88px;">
+      <div class="anno-tag">A5</div>
+      <div class="anno-body">
+        <strong>Preview & Publish.</strong> Duplicated in header + canvas for convenience. Primary: Publish (blue). Secondary: Preview.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 180px; top: 72px;">
+      <div class="anno-tag">A6</div>
+      <div class="anno-body">
+        <strong>Page tabs.</strong> Active = underline. Drag handle to reorder. + adds page. Shortcuts: Undo ↩ Redo ↪ (annotation only).
+      </div>
+    </div>
+
+    <div class="anno" style="left: 1180px; top: 680px;">
+      <div class="anno-tag">A7</div>
+      <div class="anno-body">
+        <strong>Accessibility.</strong> Footer icon runs lightweight scan for contrast + required labels.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 900px; top: 28px;">
+      <div class="anno-tag">A8</div>
+      <div class="anno-body">
+        <strong>Versioning & autosave.</strong> Status near header. Version dropdown opens history modal.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 620px; top: 620px;">
+      <div class="anno-tag">A9</div>
+      <div class="anno-body">
+        <strong>Empty canvas.</strong> See inset below — guidance + CTA for first-time users.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 780px; top: 340px;">
+      <div class="anno-tag">A10</div>
+      <div class="anno-body">
+        <strong>Inline field toolbar.</strong> On hover: Duplicate · Edit · Map · Delete · Drag handle.
+      </div>
+    </div>
+
+    <div class="anno" style="left: 1280px; top: 560px;">
+      <div class="anno-tag">FAB</div>
+      <div class="anno-body">
+        <strong>Floating +.</strong> Bottom-right: add section or quick-action menu.
+      </div>
+    </div>
+
+  </div><!-- /wf-canvas -->
+
+  <!-- ===== INSET STATES ===== -->
+  <div class="insets">
+    <div class="inset">
+      <div class="inset-title">Inset — Empty canvas state (A9)</div>
+      <div class="inset-body">
+        <div class="empty-canvas-inset">
+          <span style="font-size:28px;color:#c9c7c5;">⊞</span>
+          <p>Drag fields from the left panel to build your form</p>
+          <button class="wf-btn primary">Browse fields</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="inset">
+      <div class="inset-title">Inset — Field selected → Field Settings (A4)</div>
+      <div class="inset-body field-props-inset">
+        <div class="props-mini">
+          <div style="font-size:12px;font-weight:700;margin-bottom:10px;">Account Number</div>
+          <span class="wf-label">Label</span>
+          <input class="prop-input" value="Account Number" readonly />
+          <span class="wf-label">Help text</span>
+          <input class="prop-input" value="" readonly placeholder="Optional help text…" />
+          <div class="prop-row">
+            <span class="wf-label" style="flex:1;">Required</span>
+            <div class="toggle"></div>
+          </div>
+          <span class="wf-label">Placeholder</span>
+          <input class="prop-input" value="Enter account number…" readonly />
+          <span class="wf-label">Default value</span>
+          <input class="prop-input" value="" readonly />
+          <span class="wf-label">Salesforce mapping</span>
+          <input class="prop-input" value="Account · AccountNumber ▾" readonly />
+          <button class="wf-btn" style="width:100%;margin-top:6px;">Edit visibility rules</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;margin-top:16px;font-size:11px;color:#706e6b;">
+    Open this file in a browser · Print to PDF for handoff · 1440px main canvas + inset states
+  </p>
+
+</body>
+</html>
