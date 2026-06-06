@@ -16,21 +16,7 @@ import saveFormLayout from "@salesforce/apex/FormDesignerController.saveFormLayo
 import getFormLayout from "@salesforce/apex/FormDesignerController.getFormLayout";
 import getPicklistOptions from "@salesforce/apex/FormPlayerController.getPicklistOptions";
 import getLookupTargets from "@salesforce/apex/FormPlayerController.getLookupTargets";
-
-// Theme presets shared by the canvas preview — kept in sync with propertyPanel.
-const PRESET_THEMES = {
-  default: { name: "default", accent: "#0176d3", surface: "#ffffff", radius: "rounded" },
-  ocean: { name: "ocean", accent: "#0b7ba8", surface: "#f3fafd", radius: "rounded" },
-  forest: { name: "forest", accent: "#2e7d4f", surface: "#f3faf5", radius: "rounded" },
-  sunset: { name: "sunset", accent: "#d9622b", surface: "#fdf6f1", radius: "round" },
-  royal: { name: "royal", accent: "#6b4fbb", surface: "#f7f4fd", radius: "round" },
-  graphite: { name: "graphite", accent: "#5a6b7b", surface: "#f5f7f9", radius: "sharp" }
-};
-
-function themeRadiusToken(name) {
-  const map = { sharp: "2px", rounded: "8px", round: "14px", pill: "9999px" };
-  return map[name] || map.rounded;
-}
+import { PRESET_THEMES, radiusToken, themeVars, hasPageBackground } from "c/formThemes";
 
 const DEFAULT_HEADER_CONFIG = {
   visible: true,
@@ -496,47 +482,45 @@ export default class FormDesigner extends LightningElement {
     return (this._formSettings && this._formSettings.theme) || PRESET_THEMES.default;
   }
 
+  // The template's default section style, passed to the canvas so sections that
+  // aren't explicitly overridden follow the chosen template.
+  get currentSectionDefaultStyle() {
+    return this.themeConfig.sectionDefault || "card";
+  }
+
   get formCardPreviewStyle() {
     const t = this.themeConfig;
     const accent = t.accent || PRESET_THEMES.default.accent;
     const surface = t.surface || "#ffffff";
-    const radius = t.radius === "pill" ? "18px" : themeRadiusToken(t.radius);
+    const radius = t.radius === "pill" ? "18px" : radiusToken(t.radius);
     return `background-color: ${surface}; border-top: 4px solid ${accent}; border-radius: ${radius};`;
   }
 
   get accentButtonStyle() {
     const t = this.themeConfig;
     const accent = t.submitColor || t.accent || PRESET_THEMES.default.accent;
-    const radius = themeRadiusToken(t.radius);
+    const radius = radiusToken(t.radius);
     return `background-color: ${accent}; border-color: ${accent}; color: #ffffff; border-radius: ${radius};`;
   }
 
-  // Canvas stage style — cascades theme tokens + width into the preview so the
-  // builder looks like the rendered form.
+  // Canvas stage style — cascades the same theme tokens the player uses + width
+  // + the page background, so the builder looks like the rendered form.
+  get stageInnerClass() {
+    return hasPageBackground(this.themeConfig)
+      ? "stage-inner has-page-bg"
+      : "stage-inner";
+  }
+
   get designerStageStyle() {
-    const parts = [];
+    const parts = [themeVars(this.themeConfig)];
     const ff = this._formHeader && this._formHeader.fontFamily;
     if (ff && ff !== "default") parts.push(`font-family: ${ff}`);
-    const t = this.themeConfig;
-    const accent = t.accent || PRESET_THEMES.default.accent;
-    parts.push(`--c-accent: ${accent}`);
-    parts.push(`--c-brand: ${accent}`);
-    parts.push(`--c-brand-dark: ${accent}`);
-    const radius = themeRadiusToken(t.radius);
-    parts.push(`--c-radius: ${radius}`);
-    parts.push(`--c-radius-card: ${t.radius === "pill" ? "18px" : radius}`);
-    parts.push(`--c-submit-bg: ${t.submitColor || accent}`);
-    parts.push(`--c-back-color: ${t.backColor || accent}`);
     const width = Number(this._formSettings && this._formSettings.formWidth) || 760;
     parts.push(`max-width: ${width}px`);
     parts.push("margin: 0 auto");
+    // Show the template's page background behind the card in the canvas too.
+    parts.push("background: var(--c-page-bg, transparent)");
     return parts.join("; ");
-  }
-
-  // Background surface for the unified form card (matches the player's shell).
-  get formStageStyle() {
-    const t = this.themeConfig;
-    return t.surface ? `background: ${t.surface};` : "";
   }
 
   // --- Page management ---

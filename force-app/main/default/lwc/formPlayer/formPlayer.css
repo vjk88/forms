@@ -128,15 +128,117 @@
     100% { background-position: 0 50%; }
 }
 
+/* Form root — paints the template's page background behind the card. */
+.player-root {
+    background: var(--c-page-bg, transparent);
+    font-family: var(--c-font-body, "Hanken Grotesk", system-ui, sans-serif);
+}
+.player-root.has-page-bg {
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+}
+/* Display font for the prominent headings */
+.player-title,
+.player-page-title {
+    font-family: var(--c-font-display, inherit);
+}
+
+/* ===== Layout: Immersive (glass card centered on a vivid background) ===== */
+.player-root.layout-immersive {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    padding: 2.5rem 1rem;
+}
+.player-root.layout-immersive .player-shell {
+    backdrop-filter: blur(22px) saturate(165%);
+    -webkit-backdrop-filter: blur(22px) saturate(165%);
+}
+
+/* ===== Layout: Split (brand panel beside the form) ===== */
+.player-root.layout-split {
+    background: transparent;
+    padding: 0;
+}
+.player-root.layout-split .player-layout {
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+}
+.player-brand {
+    flex: 1 1 44%;
+    background: var(--c-page-bg, #0d2a22);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: clamp(2rem, 5vw, 4rem);
+    position: relative;
+    overflow: hidden;
+}
+.player-brand::after {
+    content: "";
+    position: absolute;
+    inset: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    pointer-events: none;
+}
+.player-brand__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 34ch;
+}
+.player-brand__logo {
+    max-height: 46px;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+.player-brand__title {
+    font-family: var(--c-font-display, inherit);
+    font-size: clamp(1.9rem, 3vw, 3rem);
+    line-height: 1.08;
+    margin: 0 0 0.8rem;
+    font-weight: 600;
+}
+.player-brand__sub {
+    font-size: 1.05rem;
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.5;
+}
+.player-root.layout-split .player-shell {
+    flex: 1 1 56%;
+    max-width: none !important;
+    width: auto;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--c-card-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+@media (max-width: 820px) {
+    .player-root.layout-split .player-layout {
+        flex-direction: column;
+        min-height: 0;
+    }
+    .player-brand {
+        flex-basis: auto;
+    }
+}
+
 .player-shell {
     max-width: 760px; /* overridden inline by the form width setting */
     width: 100%;
     box-sizing: border-box;
     margin: 0 auto;
-    background: var(--c-surface);
-    border: 1px solid var(--c-border-light);
+    background: var(--c-card-bg, var(--c-surface));
+    border: var(--c-card-border, 1px solid var(--c-border-light));
     border-radius: var(--c-radius-card, 12px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--c-card-shadow, 0 2px 8px rgba(0, 0, 0, 0.06));
     overflow: hidden;
 
     /* Responsiveness is based on the form's OWN width (its container), not the
@@ -399,6 +501,48 @@
 
 .player-section-body {
     padding: 0.75rem;
+}
+
+/* ===== Section style variants ===== */
+/* Card is the default look above. */
+
+/* Boxed — a stronger frame */
+.player-section.style-boxed {
+    border-color: var(--c-border-cool);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Subtle — bold header, no border, no header background */
+.player-section.style-subtle {
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+}
+.player-section.style-subtle .player-section-header {
+    background: transparent;
+    border-bottom: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.25rem 0;
+}
+.player-section.style-subtle .player-section-body {
+    padding: 0.25rem 0 0;
+}
+
+/* Plain — no border, minimal padding (like the New-Form popup) */
+.player-section.style-plain {
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    margin-bottom: 0.75rem;
+}
+.player-section.style-plain .player-section-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 0.15rem 0;
+}
+.player-section.style-plain .player-section-body {
+    padding: 0.15rem 0 0;
 }
 
 .player-grid {

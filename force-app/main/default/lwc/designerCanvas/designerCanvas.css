@@ -31,6 +31,36 @@
   box-shadow: 0 0 0 1px var(--c-brand);
 }
 
+/* ===== Section style variants (match the player) ===== */
+/* Boxed — stronger frame */
+.section-card.style-boxed {
+  border-color: var(--c-border-cool);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.section-card.style-boxed.selected {
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 1px var(--c-brand);
+}
+
+/* Subtle — bold header, no border, no header background */
+.section-card.style-subtle,
+.section-card.style-plain {
+  border-color: transparent;
+}
+.section-card.style-subtle .section-header,
+.section-card.style-plain .section-header {
+  background: transparent;
+  border-bottom: none;
+}
+.section-card.style-subtle .section-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+.section-card.style-subtle.selected,
+.section-card.style-plain.selected {
+  border-color: var(--c-brand);
+}
+
 /* Section header */
 .section-header {
   display: flex;

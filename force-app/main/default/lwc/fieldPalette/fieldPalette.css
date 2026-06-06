@@ -1,3 +1,5 @@
+@import 'c/sharedStyles';
+
 .palette-container {
   background: var(--c-surface-alt);
   border: 1px solid var(--c-border-cool);

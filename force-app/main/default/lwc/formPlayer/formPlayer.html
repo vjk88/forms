@@ -1,4 +1,5 @@
 <template>
+  <div class={playerRootClass} style={playerThemeStyle}>
     <!-- Loading — skeleton placeholder (no layout shift, feels faster than a
          blank spinner, especially on public/guest first paint) -->
     <template if:true={isLoading}>
@@ -59,9 +60,24 @@
     <template if:false={isSubmitted}>
         <template if:false={isLoading}>
             <template if:false={loadError}>
+              <div class="player-layout">
+                <!-- Split layout: brand panel beside the form (reuses header) -->
+                <template if:true={isSplitLayout}>
+                    <aside class="player-brand">
+                        <div class="player-brand__inner">
+                            <template if:true={header.logoUrl}>
+                                <img src={header.logoUrl} alt="Logo" class="player-brand__logo" />
+                            </template>
+                            <h2 class="player-brand__title">{header.title}</h2>
+                            <template if:true={header.subtitle}>
+                                <p class="player-brand__sub">{header.subtitle}</p>
+                            </template>
+                        </div>
+                    </aside>
+                </template>
                 <div class="player-shell" style={formCardStyle}>
-                    <!-- Form header -->
-                    <template if:true={headerVisible}>
+                    <!-- Form header (hidden on Split — shown in the brand panel) -->
+                    <template if:true={showInlineHeader}>
                         <div class={playerHeaderClass} style={playerHeaderStyle}>
                             <div class="player-header-inner">
                                 <template if:true={header.showLogo}>
@@ -382,7 +398,9 @@
                         </div>
                     </div>
                 </div>
+              </div>
             </template>
         </template>
     </template>
+  </div>
 </template>

@@ -1,4 +1,5 @@
 import { LightningElement, api, track } from "lwc";
+import { resolveSectionStyle } from "c/formThemes";
 
 const TYPE_ICONS = {
   Field: "utility:text",
@@ -37,12 +38,36 @@ export default class DesignerCanvas extends LightningElement {
   @track selectedElementIndex = -1;
   @track showRelatedPicker = false;
 
+  _sectionDefaultStyle = "card";
+
   @api
   get sectionData() {
     return this.sections;
   }
   set sectionData(value) {
     this.sections = (value || []).map((s, idx) => this.enrichSection(s, idx));
+  }
+
+  // The template's default section style — when it changes, re-resolve every
+  // section's style class (sections that aren't explicitly overridden follow it).
+  @api
+  get sectionDefaultStyle() {
+    return this._sectionDefaultStyle;
+  }
+  set sectionDefaultStyle(value) {
+    this._sectionDefaultStyle = value || "card";
+    if (this.sections && this.sections.length) {
+      this.sections = this.sections.map((s, idx) => this.enrichSection(s, idx));
+    }
+  }
+
+  // Build a section card's class: base + resolved style variant + selection.
+  cardClassFor(section, isSelected) {
+    const styleName = resolveSectionStyle(
+      section.sectionStyle,
+      this._sectionDefaultStyle
+    );
+    return `section-card style-${styleName}${isSelected ? " selected" : ""}`;
   }
 
   // Clears any selected section/element highlight. Called by the designer when
@@ -53,7 +78,7 @@ export default class DesignerCanvas extends LightningElement {
     this.selectedElementIndex = -1;
     this.sections = this.sections.map((s) => ({
       ...s,
-      cardClass: `section-card`
+      cardClass: this.cardClassFor(s, false)
     }));
   }
 
@@ -104,7 +129,7 @@ export default class DesignerCanvas extends LightningElement {
       headerStyle: showHeader ? `background-color: ${headerBg}` : '',
       gridClass: `section-grid columns-${cols}`,
       bodyClass: `section-body padding-${padding}`,
-      cardClass: `section-card${isSelected ? " selected" : ""}`
+      cardClass: this.cardClassFor(section, isSelected)
     };
   }
 
@@ -149,7 +174,7 @@ export default class DesignerCanvas extends LightningElement {
     this.selectedElementIndex = -1;
     this.sections = this.sections.map((s, i) => ({
       ...s,
-      cardClass: `section-card${i === idx ? " selected" : ""}`
+      cardClass: this.cardClassFor(s, i === idx)
     }));
 
     this.dispatchEvent(

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Form Style 03 — Industrial Wizard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#eceae4; --panel:#f7f6f2; --ink:#1a1a17; --muted:#74726a;
+    --line:#d6d3c9; --line-2:#c4c0b4;
+    --amber:#e6571f; --amber-soft:#fbe6da;
+    --grid:rgba(0,0,0,.035);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:"Archivo",sans-serif; color:var(--ink); background:var(--bg);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:28px 28px; -webkit-font-smoothing:antialiased}
+  .mono{font-family:"Space Mono",monospace}
+  .app{max-width:1180px; margin:0 auto; min-height:100vh; padding:2rem 1.5rem; display:grid; grid-template-columns:230px 1fr 280px; gap:1.25rem}
+
+  /* stepper */
+  .rail{border:1px solid var(--line-2); background:var(--panel); border-radius:4px; padding:1.4rem 1.2rem; align-self:start; position:sticky; top:2rem}
+  .rail h1{font-size:1.05rem; margin:0 0 .2rem}
+  .rail .sub{font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:1.6rem}
+  .steps{list-style:none; margin:0; padding:0; position:relative}
+  .steps::before{content:""; position:absolute; left:15px; top:14px; bottom:14px; width:2px; background:var(--line)}
+  .steps li{display:flex; gap:.8rem; align-items:flex-start; padding:.5rem 0; position:relative; cursor:pointer}
+  .steps .num{width:32px; height:32px; flex:none; border-radius:50%; border:2px solid var(--line-2); background:var(--panel); display:grid; place-items:center; font-family:"Space Mono"; font-size:.8rem; color:var(--muted); z-index:1; transition:.2s}
+  .steps .t{font-weight:600; font-size:.95rem; line-height:32px}
+  .steps .t small{display:block; line-height:1.2; font-weight:400; font-size:.74rem; color:var(--muted)}
+  .steps li.done .num{background:var(--ink); border-color:var(--ink); color:#fff}
+  .steps li.active .num{background:var(--amber); border-color:var(--amber); color:#fff; box-shadow:0 0 0 4px var(--amber-soft)}
+  .steps li.active .t{color:var(--ink)}
+
+  /* main panel */
+  .sheet{border:1px solid var(--line-2); background:var(--panel); border-radius:4px; min-height:520px; display:flex; flex-direction:column}
+  .sheet-top{display:flex; align-items:center; justify-content:space-between; padding:1.1rem 1.4rem; border-bottom:1px solid var(--line)}
+  .sheet-top .label{font-family:"Space Mono"; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .sheet-top .pill{font-family:"Space Mono"; font-size:.72rem; border:1px solid var(--line-2); padding:.2rem .55rem; border-radius:2px; color:var(--muted)}
+  .sheet-body{padding:1.6rem 1.4rem; flex:1}
+  .sheet-body h2{font-size:1.5rem; margin:0 0 .3rem; letter-spacing:-.01em}
+  .sheet-body .desc{color:var(--muted); margin:0 0 1.6rem; font-size:.95rem}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:1.1rem 1.2rem}
+  .fld{display:flex; flex-direction:column}
+  .fld.full{grid-column:1/-1}
+  .fld label{font-family:"Space Mono"; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:.45rem; display:flex; justify-content:space-between}
+  .fld label .req{color:var(--amber)}
+  .fld input,.fld select{font-family:"Archivo"; font-size:.98rem; padding:.7rem .8rem; border:1.5px solid var(--line-2); background:#fff; border-radius:3px; outline:none; transition:.18s}
+  .fld input:focus,.fld select:focus{border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft)}
+  .seg{display:flex; border:1.5px solid var(--line-2); border-radius:3px; overflow:hidden}
+  .seg label{flex:1; margin:0; text-align:center; padding:.6rem; cursor:pointer; background:#fff; font-family:"Archivo"; font-size:.9rem; text-transform:none; letter-spacing:0; color:var(--muted); border-right:1.5px solid var(--line-2)}
+  .seg label:last-child{border-right:none}
+  .seg input{display:none}
+  .seg input:checked + span{color:var(--ink); font-weight:600}
+  .seg label:has(input:checked){background:var(--amber-soft)}
+  .sheet-foot{display:flex; justify-content:space-between; align-items:center; padding:1.1rem 1.4rem; border-top:1px solid var(--line)}
+  .btn{font-family:"Archivo"; font-weight:600; font-size:.92rem; padding:.7rem 1.3rem; border-radius:3px; cursor:pointer; border:1.5px solid var(--ink)}
+  .btn.ghost{background:transparent; color:var(--ink)}
+  .btn.solid{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .btn.solid:hover{background:var(--amber); border-color:var(--amber)}
+
+  /* summary */
+  .summary{border:1px solid var(--line-2); background:repeating-linear-gradient(0deg,var(--panel),var(--panel) 27px,#f1efe9 27px,#f1efe9 28px); border-radius:4px; padding:1.3rem 1.2rem; align-self:start; position:sticky; top:2rem}
+  .summary h3{font-family:"Space Mono"; font-size:.74rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 1rem}
+  .kv{display:flex; justify-content:space-between; gap:.5rem; padding:.45rem 0; border-bottom:1px dashed var(--line); font-size:.85rem}
+  .kv span{color:var(--muted)} .kv b{font-weight:600; text-align:right}
+  .meta{margin-top:1.2rem; font-family:"Space Mono"; font-size:.72rem; color:var(--muted); line-height:1.7}
+  .meta .id{color:var(--amber)}
+  @media(max-width:960px){ .app{grid-template-columns:1fr} .rail,.summary{position:static} }
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- stepper -->
+    <nav class="rail">
+      <h1>New Application</h1>
+      <div class="sub">Trade Credit · 2026</div>
+      <ul class="steps">
+        <li class="done"><span class="num">✓</span><span class="t">Applicant<small>Who's applying</small></span></li>
+        <li class="active"><span class="num">02</span><span class="t">Business<small>Company details</small></span></li>
+        <li><span class="num">03</span><span class="t">Financials<small>Revenue &amp; terms</small></span></li>
+        <li><span class="num">04</span><span class="t">Documents<small>Upload &amp; verify</small></span></li>
+        <li><span class="num">05</span><span class="t">Review<small>Confirm &amp; submit</small></span></li>
+      </ul>
+    </nav>
+
+    <!-- form sheet -->
+    <section class="sheet">
+      <div class="sheet-top">
+        <span class="label">Step 02 / 05 — Business</span>
+        <span class="pill">DRAFT · autosaved 14:22</span>
+      </div>
+      <div class="sheet-body">
+        <h2>Tell us about the business.</h2>
+        <p class="desc">All fields marked with <span style="color:var(--amber)">*</span> are required to continue.</p>
+        <div class="grid">
+          <div class="fld full"><label>Legal entity name <span class="req">*</span></label><input value="Halden Group Pty Ltd" /></div>
+          <div class="fld"><label>Registration no. <span class="req">*</span></label><input class="mono" value="ABN 41 824 753" /></div>
+          <div class="fld"><label>Year founded</label><input value="2014" /></div>
+          <div class="fld"><label>Industry</label><select><option>Wholesale &amp; Distribution</option><option>Manufacturing</option><option>Construction</option><option>Logistics</option></select></div>
+          <div class="fld"><label>Employees</label><select><option>11–50</option><option>51–200</option><option>200+</option></select></div>
+          <div class="fld full"><label>Entity type</label>
+            <div class="seg">
+              <label><input type="radio" name="ent" checked/><span>Pty Ltd</span></label>
+              <label><input type="radio" name="ent"/><span>Partnership</span></label>
+              <label><input type="radio" name="ent"/><span>Sole Trader</span></label>
+              <label><input type="radio" name="ent"/><span>Trust</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-foot">
+        <button class="btn ghost">← Back</button>
+        <button class="btn solid">Continue →</button>
+      </div>
+    </section>
+
+    <!-- live summary -->
+    <aside class="summary">
+      <h3>Application summary</h3>
+      <div class="kv"><span>Applicant</span><b>R. Vos</b></div>
+      <div class="kv"><span>Entity</span><b>Halden Group</b></div>
+      <div class="kv"><span>Reg. no.</span><b class="mono">41 824 753</b></div>
+      <div class="kv"><span>Industry</span><b>Wholesale</b></div>
+      <div class="kv"><span>Progress</span><b>40%</b></div>
+      <div class="meta">
+        REF <span class="id">#TC-2026-0837</span><br/>
+        OPENED 2026-06-06 14:02<br/>
+        EXPIRES IN 13 DAYS
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

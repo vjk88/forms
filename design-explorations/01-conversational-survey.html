@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Form Style 01 — Conversational</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#f6f1e7; --paper-2:#efe7d6;
+    --ink:#231f1a; --ink-soft:#6b6358;
+    --accent:#c2502e; --accent-deep:#9c3c1f;
+    --line:#d8cdb8;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:"Hanken Grotesk",sans-serif; color:var(--ink);
+    background:
+      radial-gradient(120% 90% at 80% -10%, var(--paper-2), transparent 60%),
+      radial-gradient(100% 80% at 0% 110%, #f0e9da, transparent 55%),
+      var(--paper);
+    display:flex; flex-direction:column; min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* paper grain */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.5; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.25'/%3E%3C/svg%3E");
+  }
+  header{display:flex; align-items:center; justify-content:space-between; padding:1.6rem 2.2rem; position:relative; z-index:2}
+  .brand{font-family:"Fraunces"; font-weight:600; font-size:1.05rem; letter-spacing:.01em}
+  .brand b{color:var(--accent)}
+  .count{font-variant-numeric:tabular-nums; font-size:.78rem; letter-spacing:.18em; color:var(--ink-soft); text-transform:uppercase}
+  .progress{height:2px; background:var(--line); position:relative; z-index:2; margin:0 2.2rem}
+  .progress span{display:block; height:100%; width:25%; background:linear-gradient(90deg,var(--accent),var(--accent-deep)); transition:width .6s cubic-bezier(.2,.8,.2,1)}
+
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:2rem; position:relative; z-index:2}
+  .stage{width:min(720px,100%)}
+  .q{display:none; animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+  .q.active{display:block}
+  @keyframes rise{from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none}}
+  .tag{display:inline-flex; gap:.5rem; align-items:center; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-deep); margin-bottom:1.1rem}
+  .tag .dot{width:7px; height:7px; border-radius:50%; background:var(--accent)}
+  h1{font-family:"Fraunces"; font-weight:500; font-size:clamp(2rem,5vw,3.3rem); line-height:1.05; margin:0 0 .5rem; letter-spacing:-.01em}
+  .help{color:var(--ink-soft); font-size:1rem; max-width:46ch; margin:0 0 2rem}
+
+  .field input[type=text]{
+    width:100%; border:none; background:transparent; font-family:"Fraunces"; font-size:clamp(1.4rem,3.4vw,2rem);
+    color:var(--ink); padding:.4rem 0; border-bottom:2px solid var(--line); outline:none; transition:border-color .25s;
+  }
+  .field input::placeholder{color:#bcae93}
+  .field input:focus{border-color:var(--accent)}
+
+  .choices{display:grid; gap:.7rem; max-width:560px}
+  .choice{display:flex; gap:.9rem; align-items:center; padding:.9rem 1.1rem; border:1.5px solid var(--line); border-radius:14px; cursor:pointer; background:rgba(255,255,255,.35); transition:.2s}
+  .choice:hover{border-color:var(--accent); transform:translateX(4px)}
+  .choice input{display:none}
+  .choice .key{width:30px; height:30px; flex:none; display:grid; place-items:center; border:1.5px solid var(--ink-soft); border-radius:8px; font-weight:600; font-size:.85rem; color:var(--ink-soft); transition:.2s}
+  .choice:has(input:checked){border-color:var(--accent); background:#fbeee7}
+  .choice:has(input:checked) .key{background:var(--accent); border-color:var(--accent); color:#fff}
+  .choice span{font-size:1.05rem}
+
+  .scale{display:flex; gap:.4rem; flex-wrap:wrap}
+  .scale label{cursor:pointer}
+  .scale input{display:none}
+  .scale b{display:grid; place-items:center; width:46px; height:46px; border:1.5px solid var(--line); border-radius:10px; font-weight:500; font-family:"Hanken Grotesk"; transition:.18s}
+  .scale label:hover b{border-color:var(--accent)}
+  .scale input:checked + b{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+  .scale-ends{display:flex; justify-content:space-between; font-size:.78rem; color:var(--ink-soft); margin-top:.6rem; max-width:540px}
+
+  .field textarea{width:100%; max-width:620px; border:1.5px solid var(--line); border-radius:14px; background:rgba(255,255,255,.4); padding:1rem 1.1rem; font-family:"Hanken Grotesk"; font-size:1.05rem; min-height:120px; resize:vertical; outline:none}
+  .field textarea:focus{border-color:var(--accent)}
+
+  .actions{display:flex; align-items:center; gap:1rem; margin-top:2.4rem}
+  .ok{display:inline-flex; align-items:center; gap:.6rem; background:var(--accent); color:#fff; border:none; padding:.85rem 1.5rem; border-radius:12px; font-family:"Hanken Grotesk"; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 10px 24px -12px var(--accent-deep); transition:.2s}
+  .ok:hover{background:var(--accent-deep); transform:translateY(-1px)}
+  .ok kbd{font:inherit; background:rgba(255,255,255,.25); padding:.05rem .4rem; border-radius:5px}
+  .enter{font-size:.85rem; color:var(--ink-soft)}
+  .back{background:none; border:none; color:var(--ink-soft); font-family:inherit; font-size:.9rem; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+
+  .done{text-align:center}
+  .done .mark{font-family:"Fraunces"; font-size:3rem; color:var(--accent)}
+  footer{padding:1.2rem 2.2rem; font-size:.78rem; color:var(--ink-soft); position:relative; z-index:2}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">Camber <b>&amp;</b> Co.</div>
+    <div class="count"><span id="cur">01</span> / 04</div>
+  </header>
+  <div class="progress"><span id="bar"></span></div>
+
+  <main>
+    <div class="stage">
+      <!-- Q1 -->
+      <section class="q active" data-step="1">
+        <div class="tag"><span class="dot"></span>A few quick words</div>
+        <h1>First, what should we call you?</h1>
+        <p class="help">No formalities — just whatever name you go by.</p>
+        <div class="field"><input type="text" placeholder="Type your name…" autofocus /></div>
+        <div class="actions"><button class="ok" data-next>OK <kbd>↵</kbd></button><span class="enter">press <b>Enter</b></span></div>
+      </section>
+
+      <!-- Q2 -->
+      <section class="q" data-step="2">
+        <div class="tag"><span class="dot"></span>About you</div>
+        <h1>Which sounds most like your role?</h1>
+        <p class="help">Pick the closest one. We use this to tailor what you see.</p>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="role"/><i class="key">A</i><span>Founder / Owner</span></label>
+          <label class="choice"><input type="radio" name="role"/><i class="key">B</i><span>Operations &amp; Admin</span></label>
+          <label class="choice"><input type="radio" name="role"/><i class="key">C</i><span>Sales &amp; Marketing</span></label>
+          <label class="choice"><input type="radio" name="role"/><i class="key">D</i><span>Something else</span></label>
+        </div>
+        <div class="actions"><button class="back" data-back>← Back</button><button class="ok" data-next>OK <kbd>↵</kbd></button></div>
+      </section>
+
+      <!-- Q3 -->
+      <section class="q" data-step="3">
+        <div class="tag"><span class="dot"></span>One number</div>
+        <h1>How likely are you to recommend us?</h1>
+        <p class="help">0 means never, 10 means you already have.</p>
+        <div class="scale" id="scale"></div>
+        <div class="scale-ends"><span>Not likely</span><span>Extremely likely</span></div>
+        <div class="actions"><button class="back" data-back>← Back</button><button class="ok" data-next>OK <kbd>↵</kbd></button></div>
+      </section>
+
+      <!-- Q4 -->
+      <section class="q" data-step="4">
+        <div class="tag"><span class="dot"></span>Last one</div>
+        <h1>Anything you wish we'd build?</h1>
+        <p class="help">Dream big or keep it small — we read every one.</p>
+        <div class="field"><textarea placeholder="I'd love it if…"></textarea></div>
+        <div class="actions"><button class="back" data-back>← Back</button><button class="ok" data-next>Send <kbd>↵</kbd></button></div>
+      </section>
+
+      <!-- Done -->
+      <section class="q" data-step="5">
+        <div class="done">
+          <div class="mark">✦</div>
+          <h1>Thank you, truly.</h1>
+          <p class="help" style="margin-inline:auto">Your answers just landed on our desk. We'll be in touch before the week is out.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer>Form Style 01 · Conversational — warm editorial, one question at a time</footer>
+
+<script>
+  // build 0–10 scale
+  const scale=document.getElementById('scale');
+  for(let i=0;i<=10;i++){scale.insertAdjacentHTML('beforeend',`<label><input type="radio" name="nps"/><b>${i}</b></label>`);}
+
+  const qs=[...document.querySelectorAll('.q')];
+  const total=4; let step=1;
+  const bar=document.getElementById('bar'), cur=document.getElementById('cur');
+  function go(n){
+    step=Math.max(1,Math.min(qs.length,n));
+    qs.forEach(q=>q.classList.toggle('active',+q.dataset.step===step));
+    bar.style.width=Math.min(100,(step/total)*100)+'%';
+    cur.textContent=String(Math.min(step,total)).padStart(2,'0');
+    const inp=qs[step-1].querySelector('input[type=text],textarea'); if(inp) setTimeout(()=>inp.focus(),80);
+  }
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-next]')) go(step+1);
+    if(e.target.closest('[data-back]')) go(step-1);
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Enter' && !e.shiftKey && step<=total){e.preventDefault(); go(step+1);}
+  });
+</script>
+</body>
+</html>

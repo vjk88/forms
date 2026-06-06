@@ -197,7 +197,7 @@
     <template if:true={hasVersionSelected}>
       <div class={designerBodyClass}>
         <!-- Left: Field Palette (collapsible) -->
-        <div class="designer-left">
+        <div class="designer-left no-scrollbar">
           <template if:false={leftCollapsed}>
             <div class="panel-collapse-row panel-collapse-row_left">
               <button class="panel-collapse-btn" onclick={toggleLeftPanel}
@@ -236,8 +236,8 @@
         </div>
 
         <!-- Center: Canvas -->
-        <div class="designer-center">
-          <div class="stage-inner" style={designerStageStyle}>
+        <div class="designer-center no-scrollbar">
+          <div class={stageInnerClass} style={designerStageStyle}>
           <!-- Mapped-to-object badge (form-level) -->
           <template if:true={currentObjectLabel}>
             <div class="stage-badge-row">
@@ -354,7 +354,7 @@
 
           <!-- Form card: header + page content as one connected card -->
           <template if:false={isCompletionActive}>
-          <div class="form-stage" style={formStageStyle}>
+          <div class="form-stage">
             <!-- Header (top of the form card) -->
             <template if:true={formHeader.visible}>
               <div class={headerCardClass} style={headerCardStyle}
@@ -390,6 +390,7 @@
 
             <c-designer-canvas
               section-data={canvasSections}
+              section-default-style={currentSectionDefaultStyle}
               is-editable={isDraft}
               relationships={childRelationships}
               primary-object={currentObjectLabel}
@@ -418,7 +419,7 @@
         </div>
 
         <!-- Right: Property Panel (collapsible) -->
-        <div class="designer-right">
+        <div class="designer-right no-scrollbar">
           <template if:false={rightCollapsed}>
             <div class="panel-collapse-row panel-collapse-row_right">
               <button class="panel-collapse-btn" onclick={toggleRightPanel}

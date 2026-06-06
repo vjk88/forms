@@ -1,0 +1,68 @@
+<template>
+    <div class="tg-grid">
+        <template for:each={templates} for:item="t">
+            <button key={t.name} type="button" class={t.thumbClass}
+                data-name={t.name} onclick={handleSelect} title={t.label}>
+                <div class="tg-stage" style={t.stageStyle}>
+
+                    <!-- Classic: single centered card -->
+                    <template if:true={t.isClassic}>
+                        <div class="tg-card" style={t.cardStyle}>
+                            <div class="tg-strip" style={t.accentStyle}></div>
+                            <div class="tg-line"></div><div class="tg-line s"></div>
+                            <div class="tg-btn" style={t.accentStyle}></div>
+                        </div>
+                    </template>
+
+                    <!-- Split: brand panel + form -->
+                    <template if:true={t.isSplit}>
+                        <div class="tg-split">
+                            <div class="tg-panel" style={t.accentStyle}></div>
+                            <div class="tg-card flush" style={t.cardStyle}>
+                                <div class="tg-line"></div><div class="tg-line s"></div>
+                                <div class="tg-line"></div>
+                                <div class="tg-btn" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Immersive: glass card floating on background -->
+                    <template if:true={t.isImmersive}>
+                        <div class="tg-card glass" style={t.glassStyle}>
+                            <div class="tg-line lt"></div><div class="tg-line lt s"></div>
+                            <div class="tg-btn" style={t.accentStyle}></div>
+                        </div>
+                    </template>
+
+                    <!-- Stepped: stepper rail + form -->
+                    <template if:true={t.isStepped}>
+                        <div class="tg-split">
+                            <div class="tg-rail">
+                                <span class="tg-dot on" style={t.accentStyle}></span>
+                                <span class="tg-dot"></span><span class="tg-dot"></span>
+                            </div>
+                            <div class="tg-card flush" style={t.cardStyle}>
+                                <div class="tg-line"></div><div class="tg-line s"></div>
+                                <div class="tg-btn" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Compact: dense rows + table -->
+                    <template if:true={t.isCompact}>
+                        <div class="tg-card" style={t.cardStyle}>
+                            <div class="tg-row"><span class="tg-lbl"></span><span class="tg-inp"></span></div>
+                            <div class="tg-row"><span class="tg-lbl"></span><span class="tg-inp"></span></div>
+                            <div class="tg-table">
+                                <div class="tg-tr" style={t.accentStyle}></div>
+                                <div class="tg-tr"></div><div class="tg-tr"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                </div>
+                <span class="tg-label">{t.label}</span>
+            </button>
+        </template>
+    </div>
+</template>

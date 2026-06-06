@@ -2,17 +2,7 @@ import { LightningElement, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import uploadImage from '@salesforce/apex/FormAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FormAssetController.deleteImage';
-
-// Cohesive form theme presets — accent drives buttons/links, surface tints the
-// card, radius sets the corner softness. Per-button overrides default to accent.
-const PRESET_THEMES = {
-    default: { name: 'default', accent: '#0176d3', surface: '#ffffff', radius: 'rounded' },
-    ocean: { name: 'ocean', accent: '#0b7ba8', surface: '#f3fafd', radius: 'rounded' },
-    forest: { name: 'forest', accent: '#2e7d4f', surface: '#f3faf5', radius: 'rounded' },
-    sunset: { name: 'sunset', accent: '#d9622b', surface: '#fdf6f1', radius: 'round' },
-    royal: { name: 'royal', accent: '#6b4fbb', surface: '#f7f4fd', radius: 'round' },
-    graphite: { name: 'graphite', accent: '#5a6b7b', surface: '#f5f7f9', radius: 'sharp' }
-};
+import { PRESET_THEMES, RADIUS_OPTIONS, SECTION_STYLE_OPTIONS, LAYOUT_TEMPLATES, FONT_OPTIONS } from 'c/formThemes';
 
 // Curated set of SLDS utility icons offered for section headers.
 const SECTION_ICONS = [
@@ -97,6 +87,12 @@ export default class PropertyPanel extends LightningElement {
     get submitLabel() { return this._selection?.submitLabel || 'Submit'; }
     get captchaRequired() { return this._selection?.captchaRequired || false; }
     get formTheme() { return this._selection?.theme?.name || this._selection?.themeName || 'default'; }
+    // The gallery highlights by LAYOUT, so skin tweaks (which flip name to
+    // 'custom') don't deselect the chosen structure.
+    get formLayout() { return this._selection?.theme?.layout || 'classic'; }
+    get themeFont() { return this._selection?.theme?.font || 'enterprise'; }
+    get fontOptions() { return FONT_OPTIONS; }
+    get themeGlass() { return !!this._selection?.theme?.glass; }
     get formLayoutMode() { return this._selection?.layoutMode || 'Single_Page'; }
     get isMultiPageForm() { return this.formLayoutMode !== 'Single_Page'; }
     get isVerticalNavForm() { return this.formLayoutMode === 'Vertical_Navigation'; }
@@ -121,23 +117,20 @@ export default class PropertyPanel extends LightningElement {
 
     get themeOptions() {
         return [
-            { label: 'Salesforce Blue (Default)', value: 'default' },
-            { label: 'Ocean Teal', value: 'ocean' },
-            { label: 'Forest Green', value: 'forest' },
-            { label: 'Sunset Orange', value: 'sunset' },
-            { label: 'Royal Purple', value: 'royal' },
-            { label: 'Graphite Gray', value: 'graphite' },
+            { label: 'Classic (Default)', value: 'default' },
+            { label: 'Minimal (flat, no border)', value: 'minimal' },
+            { label: 'Boxed', value: 'boxed' },
+            { label: 'Royal (gradient)', value: 'royal' },
+            { label: 'Ocean (gradient)', value: 'ocean' },
+            { label: 'Forest', value: 'forest' },
+            { label: 'Sunset (gradient)', value: 'sunset' },
+            { label: 'Slate', value: 'graphite' },
             { label: 'Custom', value: 'custom' }
         ];
     }
 
     get radiusOptions() {
-        return [
-            { label: 'Sharp', value: 'sharp' },
-            { label: 'Rounded', value: 'rounded' },
-            { label: 'Round', value: 'round' },
-            { label: 'Pill', value: 'pill' }
-        ];
+        return RADIUS_OPTIONS;
     }
 
     // --- Theme detail getters ---
@@ -257,6 +250,15 @@ export default class PropertyPanel extends LightningElement {
         this.fireFormSettingChange('theme', PRESET_THEMES[name] || PRESET_THEMES.default);
     }
 
+    // Visual template gallery — picking a tile applies that template's preset.
+    handleTemplateSelect(event) {
+        const name = event.detail && event.detail.name;
+        this.fireFormSettingChange(
+            'theme',
+            { ...(LAYOUT_TEMPLATES[name] || LAYOUT_TEMPLATES.classic) }
+        );
+    }
+
     handlePickCustomTheme() {
         const value = { ...(this._selection?.theme || {}), name: 'custom' };
         this.fireFormSettingChange('theme', value);
@@ -313,6 +315,15 @@ export default class PropertyPanel extends LightningElement {
         const theme = {
             ...(this._selection?.theme || {}),
             [key]: value,
+            name: 'custom'
+        };
+        this.fireFormSettingChange('theme', theme);
+    }
+
+    handleThemeGlass(event) {
+        const theme = {
+            ...(this._selection?.theme || {}),
+            glass: event.detail.checked,
             name: 'custom'
         };
         this.fireFormSettingChange('theme', theme);
@@ -510,6 +521,8 @@ export default class PropertyPanel extends LightningElement {
     get sectionShowHeader() { return this._selection?.showHeader !== false; }
     get sectionHeaderColor() { return this._selection?.headerBackgroundColor || '#f3f3f3'; }
     get sectionPadding() { return this._selection?.padding || 'medium'; }
+    get sectionStyleValue() { return this._selection?.sectionStyle || 'inherit'; }
+    get sectionStyleOptions() { return SECTION_STYLE_OPTIONS; }
     get sectionCollapsible() { return this._selection?.collapsible || false; }
     get sectionCollapsedByDefault() { return this._selection?.collapsedByDefault || false; }
     get sectionDescription() { return this._selection?.description || ''; }

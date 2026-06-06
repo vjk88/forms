@@ -1,3 +1,5 @@
+@import 'c/sharedStyles';
+
 :host {
   /* ===== Forms design tokens (inherited by child components) ===== */
   --c-brand: #0176d3;
@@ -491,6 +493,13 @@
   margin: 0 auto;
 }
 
+/* When a template paints a page background, pad the column so the bg shows
+   around the card (matches the player's framed look). */
+.stage-inner.has-page-bg {
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
 /* Mapped-to-object badge */
 .stage-badge-row {
   display: flex;
@@ -510,13 +519,15 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-/* The unified form card — header + body in one shell, like the player */
+/* The unified form card — header + body in one shell, like the player.
+   Surface/border/shadow/radius come from the template tokens (themeVars). */
 .form-stage {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border-cool);
+  background: var(--c-card-bg, var(--c-surface));
+  border: var(--c-card-border, 1px solid var(--c-border-cool));
   border-radius: var(--c-radius-card, 14px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--c-card-shadow, 0 4px 14px rgba(0, 0, 0, 0.08));
   overflow: hidden;
+  font-family: var(--c-font-body, inherit);
 }
 
 .form-stage c-designer-canvas {

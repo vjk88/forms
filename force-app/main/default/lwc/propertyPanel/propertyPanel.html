@@ -1,5 +1,5 @@
 <template>
-    <div class="panel-container">
+    <div class="panel-container no-scrollbar">
         <!-- No selection -->
         <template if:false={hasSelection}>
             <div class="empty-panel">
@@ -119,29 +119,15 @@
                     <template if:true={styleExpanded}>
                     <div class="pp-group-body">
 
-                <!-- Theme — color swatches so the accent is visible at a glance -->
-                <label class="slds-form-element__label">Theme</label>
-                <div class="theme-swatches slds-m-bottom_small">
-                    <template for:each={themeSwatches} for:item="sw">
-                        <button key={sw.name} type="button" class={sw.swatchClass}
-                            data-theme={sw.name} title={sw.label}
-                            aria-label={sw.label} onclick={handleThemeSwatch}>
-                            <span class="theme-swatch__dot" style={sw.style}></span>
-                            <span class="theme-swatch__name">{sw.label}</span>
-                        </button>
-                    </template>
-                    <button type="button" class={customThemeClass}
-                        title="Custom" aria-label="Custom theme"
-                        onclick={handlePickCustomTheme}>
-                        <span class="theme-swatch__dot theme-swatch__dot_custom">
-                            <lightning-icon icon-name="utility:edit"
-                                size="xx-small"></lightning-icon>
-                        </span>
-                        <span class="theme-swatch__name">Custom</span>
-                    </button>
-                </div>
+                <!-- Layout gallery — visual mock-up of each layout's structure -->
+                <label class="slds-form-element__label">Layout</label>
+                <c-template-gallery
+                    selected={formLayout}
+                    onselect={handleTemplateSelect}
+                    class="slds-m-bottom_small">
+                </c-template-gallery>
 
-                <!-- Theme customization -->
+                <!-- Skin: colours, fonts, corners, glass -->
                 <div class="slds-box slds-box_xx-small slds-m-bottom_small theme-tweaks">
                     <div class="slds-grid slds-gutters_x-small slds-wrap">
                         <div class="slds-col slds-size_1-of-2">
@@ -156,12 +142,33 @@
                         </div>
                         <div class="slds-col slds-size_1-of-2">
                             <lightning-combobox
+                                label="Font"
+                                options={fontOptions}
+                                value={themeFont}
+                                data-themekey="font"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Type pairing for headings and body text.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-combobox
                                 label="Corners"
                                 options={radiusOptions}
                                 value={themeRadius}
                                 data-themekey="radius"
                                 onchange={handleThemeFieldChange}>
                             </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small slds-align-bottom">
+                            <lightning-input
+                                type="toggle"
+                                label="Glass effect"
+                                checked={themeGlass}
+                                onchange={handleThemeGlass}
+                                message-toggle-active="On"
+                                message-toggle-inactive="Off"
+                                field-level-help="Frosted translucent card — best on the Immersive layout with a background.">
+                            </lightning-input>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
                             <lightning-input
@@ -740,6 +747,17 @@
                     value={sectionPadding}
                     options={paddingOptions}
                     onchange={handlePaddingChange}
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <!-- Section style (overrides the template's default) -->
+                <lightning-combobox
+                    label="Section style"
+                    value={sectionStyleValue}
+                    options={sectionStyleOptions}
+                    data-prop="sectionStyle"
+                    onchange={handleSectionPropChange}
+                    field-level-help="How this section is framed. 'Match template' follows the form template; any other choice overrides it for this section only."
                     class="slds-m-bottom_small">
                 </lightning-combobox>
 

@@ -7,6 +7,7 @@ import getUserContext from '@salesforce/apex/FormPlayerController.getUserContext
 import getCurrentUserFields from '@salesforce/apex/FormPlayerController.getCurrentUserFields';
 import getPicklistOptions from '@salesforce/apex/FormPlayerController.getPicklistOptions';
 import getRecordFields from '@salesforce/apex/FormPlayerController.getRecordFields';
+import { themeVars, hasPageBackground, resolveSectionStyle, layoutOf } from 'c/formThemes';
 
 export default class FormPlayer extends NavigationMixin(LightningElement) {
     // Record-page / app-page context
@@ -562,11 +563,17 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
                     onPage && pageVisible ? 'player-page' : 'player-page is-hidden',
                 sections: (p.sections || []).map((s) => {
                     const sVisible = this.evalVisibility(s.visibilityExpression, vals);
+                    const styleName = resolveSectionStyle(
+                        s.sectionStyle,
+                        this.formSettings &&
+                            this.formSettings.theme &&
+                            this.formSettings.theme.sectionDefault
+                    );
                     return {
                         ...s,
-                        sectionClass: sVisible
-                            ? 'player-section'
-                            : 'player-section is-hidden',
+                        sectionClass: `player-section style-${styleName}${
+                            sVisible ? '' : ' is-hidden'
+                        }`,
                         elements: (s.elements || []).map((el) => {
                             const elVisible = this.evalVisibility(
                                 el.visibilityExpression,
@@ -979,46 +986,41 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
         return (this.isWizard || this.isVerticalNav) && !this.isFirstPage;
     }
 
-    // Map the theme's named radius to concrete pixel values.
-    radiusToken(name) {
-        const map = {
-            sharp: '2px',
-            rounded: '8px',
-            round: '14px',
-            pill: '9999px'
-        };
-        return map[name] || map.rounded;
+    // Theme tokens go on the form root so the whole tree (card, sections,
+    // buttons, and the page background) inherits them.
+    get playerThemeStyle() {
+        return themeVars((this.formSettings && this.formSettings.theme) || {});
     }
 
+    get playerTheme() {
+        return (this.formSettings && this.formSettings.theme) || {};
+    }
+    get playerLayout() {
+        return layoutOf(this.playerTheme);
+    }
+    get isSplitLayout() {
+        return this.playerLayout === 'split';
+    }
+    // On Split the header content moves into the brand panel.
+    get showInlineHeader() {
+        return this.headerVisible && !this.isSplitLayout;
+    }
+
+    get playerRootClass() {
+        let c = `player-root layout-${this.playerLayout}`;
+        if (hasPageBackground(this.playerTheme)) c += ' has-page-bg';
+        return c;
+    }
+
+    // The shell only carries width + font; its surface/border/shadow/radius come
+    // from the inherited theme tokens (see formPlayer.css).
     get formCardStyle() {
         const parts = [];
         const ff = this.header && this.header.fontFamily;
         if (ff && ff !== 'default') parts.push(`font-family: ${ff}`);
-
-        // Theme tokens cascade to every themed element inside the shell.
-        const t = (this.formSettings && this.formSettings.theme) || {};
-        const accent = t.accent || '#0176d3';
-        parts.push(`--c-accent: ${accent}`);
-        parts.push(`--c-brand: ${accent}`);
-        parts.push(`--c-brand-dark: ${accent}`);
-
-        const radius = this.radiusToken(t.radius);
-        parts.push(`--c-radius: ${radius}`);
-        // The card/section radius is capped so a "pill" choice (meant for
-        // buttons/inputs) doesn't balloon the whole card.
-        parts.push(`--c-radius-card: ${t.radius === 'pill' ? '18px' : radius}`);
-
-        // Submit/Back default to the accent; either can be overridden.
-        parts.push(`--c-submit-bg: ${t.submitColor || accent}`);
-        parts.push(`--c-back-color: ${t.backColor || accent}`);
-
-        if (t.surface) parts.push(`background: ${t.surface}`);
-
-        // Width is responsive: a max-width cap, full-width on smaller screens.
         const width =
             (this.formSettings && Number(this.formSettings.formWidth)) || 760;
         parts.push(`max-width: ${width}px`);
-
         return parts.join('; ');
     }
 

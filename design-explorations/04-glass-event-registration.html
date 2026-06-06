@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Form Style 04 — Glass / Immersive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --c1:#ff2e93; --c2:#7a5cff; --c3:#16e0c4; --c4:#ffb13d;
+    --glass:rgba(255,255,255,.08); --glass-strong:rgba(255,255,255,.14);
+    --stroke:rgba(255,255,255,.22); --text:#f3f0ff; --muted:#b9b4d6;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; font-family:"Manrope",sans-serif; color:var(--text); background:#08060f; overflow:hidden; -webkit-font-smoothing:antialiased}
+  /* animated gradient mesh */
+  .mesh{position:fixed; inset:-20%; z-index:0; filter:blur(60px); opacity:.9}
+  .blob{position:absolute; border-radius:50%; mix-blend-mode:screen; animation:float 18s ease-in-out infinite}
+  .b1{width:46vw; height:46vw; left:-6vw; top:-8vw; background:var(--c2); animation-delay:-2s}
+  .b2{width:40vw; height:40vw; right:-8vw; top:6vw; background:var(--c1); animation-delay:-6s}
+  .b3{width:38vw; height:38vw; left:18vw; bottom:-14vw; background:var(--c3); animation-delay:-10s}
+  .b4{width:26vw; height:26vw; right:14vw; bottom:-6vw; background:var(--c4); animation-delay:-14s}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(6vw,-4vw) scale(1.12)}66%{transform:translate(-4vw,5vw) scale(.94)}}
+  .grain{position:fixed; inset:0; z-index:1; opacity:.06; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  .scene{position:relative; z-index:2; min-height:100vh; display:grid; place-items:center; padding:2rem}
+  .card{
+    width:min(520px,100%); border-radius:26px; padding:2.4rem; position:relative;
+    background:var(--glass); border:1px solid var(--stroke);
+    backdrop-filter:blur(26px) saturate(160%); -webkit-backdrop-filter:blur(26px) saturate(160%);
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.25);
+    animation:pop .8s cubic-bezier(.2,.9,.2,1) both;
+  }
+  @keyframes pop{from{opacity:0; transform:translateY(28px) scale(.96)} to{opacity:1; transform:none}}
+  .chip{display:inline-flex; gap:.5rem; align-items:center; padding:.4rem .8rem; border-radius:999px; background:var(--glass-strong); border:1px solid var(--stroke); font-size:.78rem; font-weight:600; letter-spacing:.03em}
+  .chip .live{width:8px; height:8px; border-radius:50%; background:var(--c3); box-shadow:0 0 10px var(--c3); animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.4}}
+  h1{font-family:"Unbounded"; font-weight:800; font-size:clamp(1.8rem,5vw,2.6rem); line-height:1.02; margin:1.1rem 0 .5rem; letter-spacing:-.01em;
+     background:linear-gradient(100deg,#fff,#d9ccff 60%,var(--c3)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .lede{color:var(--muted); margin:0 0 1.8rem; font-size:1rem}
+  .lede b{color:#fff}
+
+  .field{margin-bottom:1rem}
+  .field label{display:block; font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; font-weight:600}
+  .field input{width:100%; padding:.9rem 1rem; border-radius:14px; border:1px solid var(--stroke); background:rgba(255,255,255,.06); color:#fff; font-family:"Manrope"; font-size:1rem; outline:none; transition:.2s}
+  .field input::placeholder{color:#9b96bd}
+  .field input:focus{border-color:var(--c1); background:rgba(255,255,255,.1); box-shadow:0 0 0 4px rgba(255,46,147,.18)}
+  .two{display:grid; grid-template-columns:1.4fr 1fr; gap:1rem}
+
+  .tickets{display:flex; gap:.6rem}
+  .tickets label{flex:1; cursor:pointer}
+  .tickets input{display:none}
+  .tickets .opt{padding:.8rem .6rem; border-radius:14px; border:1px solid var(--stroke); background:rgba(255,255,255,.05); text-align:center; transition:.2s}
+  .tickets .opt b{display:block; font-weight:700}
+  .tickets .opt small{color:var(--muted); font-size:.78rem}
+  .tickets input:checked + .opt{border-color:var(--c3); background:rgba(22,224,196,.14); box-shadow:0 0 0 3px rgba(22,224,196,.18)}
+
+  .qty{display:flex; align-items:center; gap:.4rem; border:1px solid var(--stroke); border-radius:14px; background:rgba(255,255,255,.06); padding:.25rem}
+  .qty button{width:40px; height:40px; border:none; border-radius:10px; background:rgba(255,255,255,.08); color:#fff; font-size:1.3rem; cursor:pointer}
+  .qty button:hover{background:rgba(255,255,255,.18)}
+  .qty input{width:48px; text-align:center; border:none; background:transparent; color:#fff; font-size:1.1rem; font-weight:700}
+
+  .reserve{margin-top:1.6rem; width:100%; border:none; cursor:pointer; padding:1.05rem; border-radius:16px; font-family:"Unbounded"; font-weight:600; font-size:1rem; color:#0a0612;
+    background:linear-gradient(100deg,var(--c3),#7af6e0); box-shadow:0 16px 40px -12px rgba(22,224,196,.6); transition:.2s}
+  .reserve:hover{transform:translateY(-2px); box-shadow:0 22px 50px -12px rgba(22,224,196,.75)}
+  .foot{margin-top:1rem; text-align:center; font-size:.82rem; color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
+  <div class="grain"></div>
+
+  <div class="scene">
+    <form class="card" onsubmit="return false">
+      <span class="chip"><span class="live"></span> Fri · Nov 14 · 7PM &nbsp;·&nbsp; 312 spots left</span>
+      <h1>NEON NIGHTS<br/>2026</h1>
+      <p class="lede">An after-hours showcase of light, sound &amp; code. <b>Reserve your spot</b> — doors close when we hit capacity.</p>
+
+      <div class="two">
+        <div class="field"><label>Your name</label><input placeholder="Ada Lovelace" /></div>
+        <div class="field"><label>Email</label><input type="email" placeholder="you@mail.com" /></div>
+      </div>
+
+      <div class="field">
+        <label>Ticket type</label>
+        <div class="tickets">
+          <label><input type="radio" name="tkt"/><div class="opt"><b>General</b><small>Free</small></div></label>
+          <label><input type="radio" name="tkt" checked/><div class="opt"><b>Plus</b><small>$29</small></div></label>
+          <label><input type="radio" name="tkt"/><div class="opt"><b>VIP</b><small>$79</small></div></label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>How many?</label>
+        <div class="qty">
+          <button type="button" onclick="step(-1)">−</button>
+          <input id="q" value="1" readonly />
+          <button type="button" onclick="step(1)">+</button>
+        </div>
+      </div>
+
+      <button class="reserve">Reserve my spot ✦</button>
+      <p class="foot">No charge until the door · transferable · instant confirmation</p>
+    </form>
+  </div>
+<script>
+  function step(d){const q=document.getElementById('q');q.value=Math.max(1,Math.min(8,(+q.value)+d));}
+</script>
+</body>
+</html>
