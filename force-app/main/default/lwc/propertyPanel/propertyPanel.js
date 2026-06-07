@@ -2,7 +2,7 @@ import { LightningElement, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import uploadImage from '@salesforce/apex/FormAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FormAssetController.deleteImage';
-import { PRESET_THEMES, RADIUS_OPTIONS, SECTION_STYLE_OPTIONS, LAYOUT_TEMPLATES, FONT_OPTIONS } from 'c/formThemes';
+import { RADIUS_OPTIONS, SECTION_STYLE_OPTIONS, LAYOUT_TEMPLATES, FONT_OPTIONS } from 'c/formThemes';
 
 // Curated set of SLDS utility icons offered for section headers.
 const SECTION_ICONS = [
@@ -17,6 +17,137 @@ const SECTION_ICONS = [
     'favorite', 'heart', 'rating', 'edit', 'form', 'list', 'rows', 'table',
     'filter', 'search', 'picklist_type'
 ];
+
+const GRADIENT_PRESETS = [
+    { label: 'Emerald Forest', value: 'linear-gradient(160deg, #059669 0%, #064e3b 100%)', style: 'background: linear-gradient(160deg, #059669, #064e3b);' },
+    { label: 'Dusk Velvet', value: 'linear-gradient(135deg, #7c3aed 0%, #1e1b4b 100%)', style: 'background: linear-gradient(135deg, #7c3aed, #1e1b4b);' },
+    { label: 'Sunset Glow', value: 'linear-gradient(135deg, #ff8fb1 0%, #7a5cff 100%)', style: 'background: linear-gradient(135deg, #ff8fb1, #7a5cff);' },
+    { label: 'Ocean Breeze', value: 'linear-gradient(135deg, #22d3ee 0%, #0652dd 100%)', style: 'background: linear-gradient(135deg, #22d3ee, #0652dd);' },
+    { label: 'Warm Amber', value: 'linear-gradient(135deg, #fbbf24 0%, #dc2626 100%)', style: 'background: linear-gradient(135deg, #fbbf24, #dc2626);' },
+    { label: 'Midnight Blue', value: 'linear-gradient(180deg, #3b82f6 0%, #0f172a 100%)', style: 'background: linear-gradient(180deg, #3b82f6, #0f172a);' },
+    { label: 'Clean Slate', value: 'linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%)', style: 'background: linear-gradient(135deg, #f1f5f9, #94a3b8);' },
+    { label: 'Orchid Dream', value: 'linear-gradient(135deg, #f472b6 0%, #6d28d9 100%)', style: 'background: linear-gradient(135deg, #f472b6, #6d28d9);' }
+];
+
+/**
+ * Convert an rgb(r, g, b) or rgba(r, g, b, a) string to a 7-char hex string.
+ * Returns null if the string isn't a valid rgb/rgba expression.
+ */
+function rgbToHex(rgbStr) {
+    const match = rgbStr.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\)/);
+    if (!match) return null;
+    const r = parseInt(match[1], 10);
+    const g = parseInt(match[2], 10);
+    const b = parseInt(match[3], 10);
+    return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+}
+
+/**
+ * Coerce any CSS colour token into a 7-char hex string that <input type="color">
+ * can accept. Handles #hex (3, 4, 6, 8 chars), rgb(), rgba(), and bare strings.
+ */
+function normalizeColor(color) {
+    if (!color || color === 'transparent' || color === 'none') return '#ffffff';
+    const trimmed = color.trim();
+    if (trimmed.startsWith('#')) {
+        if (trimmed.length === 4 || trimmed.length === 7) return trimmed.toLowerCase();
+        const hexMatch = trimmed.match(/#[0-9a-fA-F]{3,6}/);
+        if (hexMatch) return hexMatch[0].toLowerCase();
+    }
+    if (trimmed.startsWith('rgb')) {
+        const hex = rgbToHex(trimmed);
+        if (hex) return hex;
+    }
+    return '#ffffff';
+}
+
+/**
+ * Parse a CSS background value into a config object.
+ * Uses regex to extract colours (handles hex AND rgb()) instead of
+ * comma-splitting, which breaks on rgb(r, g, b) values.
+ */
+function parseBackground(bg, defaultSolid = '#f4f6f9') {
+    const defaultVal = {
+        isGradient: false,
+        type: 'linear',
+        angle: 135,
+        startColor: defaultSolid,
+        endColor: '#cbd5e1',
+        solidColor: defaultSolid
+    };
+    if (!bg) return defaultVal;
+
+    const val = bg.trim();
+    if (val.includes('gradient')) {
+        const isLinear = val.includes('linear-gradient');
+
+        // Extract angle / direction keyword
+        let angle = 135;
+        const angleMatch = val.match(/\b(\d+)deg\b/);
+        if (angleMatch) {
+            angle = parseInt(angleMatch[1], 10);
+        } else {
+            // Longer keywords first so "to top" doesn't match before "to top right"
+            const directions = [
+                ['to top right', 45],
+                ['to bottom right', 135],
+                ['to bottom left', 225],
+                ['to top left', 315],
+                ['to top', 0],
+                ['to right', 90],
+                ['to bottom', 180],
+                ['to left', 270]
+            ];
+            for (const [dir, deg] of directions) {
+                if (val.includes(dir)) { angle = deg; break; }
+            }
+        }
+
+        // Extract colours with a regex that matches #hex AND rgb()/rgba()
+        const colorRegex = /#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/g;
+        const colors = val.match(colorRegex) || [];
+
+        let startColor = defaultSolid;
+        let endColor = '#cbd5e1';
+        if (colors.length >= 2) {
+            startColor = colors[0];
+            endColor = colors[colors.length - 1];
+        } else if (colors.length === 1) {
+            startColor = colors[0];
+            endColor = colors[0];
+        }
+
+        return {
+            isGradient: true,
+            type: isLinear ? 'linear' : 'radial',
+            angle,
+            startColor: normalizeColor(startColor),
+            endColor: normalizeColor(endColor),
+            solidColor: normalizeColor(startColor)
+        };
+    }
+
+    return {
+        ...defaultVal,
+        isGradient: false,
+        solidColor: normalizeColor(val),
+        startColor: normalizeColor(val),
+        endColor: normalizeColor(val)
+    };
+}
+
+function buildBackground(config) {
+    if (!config.isGradient) {
+        return config.solidColor;
+    }
+    if (config.type === 'linear') {
+        return `linear-gradient(${config.angle}deg, ${config.startColor} 0%, ${config.endColor} 100%)`;
+    }
+    return `radial-gradient(circle, ${config.startColor} 0%, ${config.endColor} 100%)`;
+}
 
 export default class PropertyPanel extends LightningElement {
     @api formId;
@@ -47,31 +178,6 @@ export default class PropertyPanel extends LightningElement {
     }
 
     // --- Form Settings accordion (progressive disclosure) ---
-    // Groups the dense Form Settings panel into Style / Behavior / Completion,
-    // with the most-used group (Style) open by default.
-    @track _settingsGroups = { style: true, behavior: false, completion: false };
-
-    handleToggleSettingsGroup(event) {
-        const g = event.currentTarget.dataset.group;
-        this._settingsGroups = {
-            ...this._settingsGroups,
-            [g]: !this._settingsGroups[g]
-        };
-    }
-
-    get styleExpanded() { return this._settingsGroups.style; }
-    get behaviorExpanded() { return this._settingsGroups.behavior; }
-    get completionExpanded() { return this._settingsGroups.completion; }
-
-    get styleChevron() {
-        return this._settingsGroups.style ? 'utility:chevrondown' : 'utility:chevronright';
-    }
-    get behaviorChevron() {
-        return this._settingsGroups.behavior ? 'utility:chevrondown' : 'utility:chevronright';
-    }
-    get completionChevron() {
-        return this._settingsGroups.completion ? 'utility:chevrondown' : 'utility:chevronright';
-    }
 
     // Page getters
     get pageName() { return this._selection?.name || ''; }
@@ -84,6 +190,7 @@ export default class PropertyPanel extends LightningElement {
     get pageShowNextLabel() { return this.pageIsMultiPage && !this.pageIsLastPage; }
 
     // Unified Form settings getters & options
+    get formFontFamily() { return this._selection?.fontFamily || 'default'; }
     get submitLabel() { return this._selection?.submitLabel || 'Submit'; }
     get captchaRequired() { return this._selection?.captchaRequired || false; }
     get formTheme() { return this._selection?.theme?.name || this._selection?.themeName || 'default'; }
@@ -96,6 +203,7 @@ export default class PropertyPanel extends LightningElement {
     get formLayoutMode() { return this._selection?.layoutMode || 'Single_Page'; }
     get isMultiPageForm() { return this.formLayoutMode !== 'Single_Page'; }
     get isVerticalNavForm() { return this.formLayoutMode === 'Vertical_Navigation'; }
+    get isNavigationalForm() { return this.formLayoutMode === 'Vertical_Navigation' || this.formLayoutMode === 'Top_Navigation'; }
     get validateOnNavigate() { return this._selection?.validateOnNavigate || false; }
     get afterSubmitMode() { return this._selection?.afterSubmitMode || 'Screen'; }
     get isScreenMode() { return this.afterSubmitMode === 'Screen'; }
@@ -115,20 +223,6 @@ export default class PropertyPanel extends LightningElement {
     get actionUrl() { return this._selection?.actionButtonUrl || ''; }
     get thankYouMessage() { return this._selection?.thankYouMessage || ''; }
 
-    get themeOptions() {
-        return [
-            { label: 'Classic (Default)', value: 'default' },
-            { label: 'Minimal (flat, no border)', value: 'minimal' },
-            { label: 'Boxed', value: 'boxed' },
-            { label: 'Royal (gradient)', value: 'royal' },
-            { label: 'Ocean (gradient)', value: 'ocean' },
-            { label: 'Forest', value: 'forest' },
-            { label: 'Sunset (gradient)', value: 'sunset' },
-            { label: 'Slate', value: 'graphite' },
-            { label: 'Custom', value: 'custom' }
-        ];
-    }
-
     get radiusOptions() {
         return RADIUS_OPTIONS;
     }
@@ -146,8 +240,114 @@ export default class PropertyPanel extends LightningElement {
     get themeBackColor() {
         return this._selection?.theme?.backColor || this.themeAccent;
     }
+    get themePageBg() {
+        return this._selection?.theme?.pageBg || '#f4f6f9';
+    }
+
+    get themeSurface() {
+        return this._selection?.theme?.surface || '#ffffff';
+    }
+
+    get gradientTypeOptions() {
+        return [
+            { label: 'Linear', value: 'linear' },
+            { label: 'Radial', value: 'radial' }
+        ];
+    }
+
+    // --- Page Background Gradient Designer Getters ---
+    get pageBgPresets() { return GRADIENT_PRESETS; }
+    get pageBgParsed() { return parseBackground(this.themePageBg, '#f4f6f9'); }
+    get isPageBgGradient() { return this.pageBgParsed.isGradient; }
+    get pageBgMode() { return this.isPageBgGradient ? 'gradient' : 'solid'; }
+    get isPageBgLinear() { return this.pageBgParsed.type === 'linear'; }
+    get pageBgSolidColor() { return this.pageBgParsed.solidColor; }
+    get pageBgStartColor() { return this.pageBgParsed.startColor; }
+    get pageBgEndColor() { return this.pageBgParsed.endColor; }
+    get pageBgAngle() { return this.pageBgParsed.angle; }
+    get pageBgType() { return this.pageBgParsed.type; }
+
+    get pageBgSolidBtnClass() {
+        return `slds-button slds-button_neutral toggle-btn${!this.isPageBgGradient ? ' is-active' : ''}`;
+    }
+    get pageBgGradientBtnClass() {
+        return `slds-button slds-button_neutral toggle-btn${this.isPageBgGradient ? ' is-active' : ''}`;
+    }
+
+    // --- Card Background Gradient Designer Getters ---
+    get cardBgPresets() { return GRADIENT_PRESETS; }
+    get cardBgParsed() { return parseBackground(this.themeSurface, '#ffffff'); }
+    get isCardBgGradient() { return this.cardBgParsed.isGradient; }
+    get cardBgMode() { return this.isCardBgGradient ? 'gradient' : 'solid'; }
+    get isCardBgLinear() { return this.cardBgParsed.type === 'linear'; }
+    get cardBgSolidColor() { return this.cardBgParsed.solidColor; }
+    get cardBgStartColor() { return this.cardBgParsed.startColor; }
+    get cardBgEndColor() { return this.cardBgParsed.endColor; }
+    get cardBgAngle() { return this.cardBgParsed.angle; }
+    get cardBgType() { return this.cardBgParsed.type; }
+
+    get cardBgSolidBtnClass() {
+        return `slds-button slds-button_neutral toggle-btn${!this.isCardBgGradient ? ' is-active' : ''}`;
+    }
+    get cardBgGradientBtnClass() {
+        return `slds-button slds-button_neutral toggle-btn${this.isCardBgGradient ? ' is-active' : ''}`;
+    }
+    get themeHeaderStyle() {
+        return this._selection?.theme?.headerStyle || 'inherit';
+    }
+    get headerStyleOptions() {
+        return [
+            { label: 'Match template', value: 'inherit' },
+            { label: 'Clean (Transparent)', value: 'clean' },
+            { label: 'Card (Framed)', value: 'card' },
+            { label: 'Accent tint', value: 'tint' },
+            { label: 'Frosted glass', value: 'glass' }
+        ];
+    }
+    get themeSectionStyle() {
+        return this._selection?.theme?.sectionDefault || 'card';
+    }
+    get globalSectionStyleOptions() {
+        return [
+            { label: 'Card (border + header)', value: 'card' },
+            { label: 'Subtle (bold header, no border)', value: 'subtle' },
+            { label: 'Plain (no border, minimal)', value: 'plain' },
+            { label: 'Boxed (strong frame)', value: 'boxed' }
+        ];
+    }
+    get themeSectionPadding() {
+        return this._selection?.theme?.sectionPadding || 'medium';
+    }
+    get themeSectionHeaderBg() {
+        return this._selection?.theme?.sectionHeaderBg || '#f3f3f3';
+    }
+    get themeSectionHeaderBgColorOnly() {
+        const val = this.themeSectionHeaderBg;
+        if (val && val.startsWith('#') && (val.length === 4 || val.length === 7)) return val;
+        return '#f3f3f3';
+    }
+    get isWizardSelected() {
+        return this.formLayoutMode === 'Multi_Page_Wizard';
+    }
+    get progressTrackerType() {
+        return this._selection?.progressTrackerType || 'Progress_Bar';
+    }
+    get progressTrackerOptions() {
+        return [
+            { label: 'Progress Bar', value: 'Progress_Bar' },
+            { label: 'Step Circles (SLDS)', value: 'Step_Circles' },
+            { label: 'Breadcrumbs (SLDS)', value: 'Breadcrumbs' }
+        ];
+    }
+    get showSummaryPage() {
+        return !!this._selection?.showSummaryPage;
+    }
+
     get formWidth() {
-        return this._selection?.formWidth || 760;
+        const val = this._selection?.formWidth;
+        if (val === undefined || val === null) return 100;
+        if (val > 100) return 100; // treat old px widths as 100%
+        return val;
     }
 
     get navStyleOptions() {
@@ -156,7 +356,8 @@ export default class PropertyPanel extends LightningElement {
         return [
             { label: "Single page (no navigation)", value: "Single_Page" },
             { label: "Wizard (one page at a time)", value: "Multi_Page_Wizard" },
-            { label: "Vertical Navigation menu", value: "Vertical_Navigation" }
+            { label: "Vertical Navigation menu", value: "Vertical_Navigation" },
+            { label: "Top Navigation tabs", value: "Top_Navigation" }
         ];
     }
 
@@ -184,7 +385,8 @@ export default class PropertyPanel extends LightningElement {
         const defs = [
             { value: 'Single_Page', label: 'Single page', desc: 'Everything on one scroll', icon: 'utility:page' },
             { value: 'Multi_Page_Wizard', label: 'Wizard', desc: 'One step at a time', icon: 'utility:steps' },
-            { value: 'Vertical_Navigation', label: 'Vertical nav', desc: 'Side menu of pages', icon: 'utility:side_list' }
+            { value: 'Vertical_Navigation', label: 'Vertical nav', desc: 'Side menu of pages', icon: 'utility:side_list' },
+            { value: 'Top_Navigation', label: 'Top tabs', desc: 'Horizontal tab navigation', icon: 'utility:tabset' }
         ];
         return defs.map((d) => ({
             ...d,
@@ -212,56 +414,13 @@ export default class PropertyPanel extends LightningElement {
         this.fireFormSettingChange('afterSubmitMode', event.currentTarget.dataset.value);
     }
 
-    // --- Theme color swatches (show the accent, not just a name) ---
-    get themeSwatches() {
-        const current = this.formTheme;
-        return Object.keys(PRESET_THEMES).map((name) => {
-            const p = PRESET_THEMES[name];
-            const labels = {
-                default: 'Salesforce Blue',
-                ocean: 'Ocean Teal',
-                forest: 'Forest Green',
-                sunset: 'Sunset Orange',
-                royal: 'Royal Purple',
-                graphite: 'Graphite Gray'
-            };
-            return {
-                name,
-                label: labels[name] || name,
-                style: `background-color: ${p.accent};`,
-                selected: name === current,
-                swatchClass: name === current ? 'theme-swatch is-selected' : 'theme-swatch'
-            };
-        });
-    }
-
-    get isCustomTheme() {
-        return this.formTheme === 'custom';
-    }
-
-    get customThemeClass() {
-        return this.isCustomTheme
-            ? 'theme-swatch theme-swatch_custom is-selected'
-            : 'theme-swatch theme-swatch_custom';
-    }
-
-    handleThemeSwatch(event) {
-        const name = event.currentTarget.dataset.theme;
-        this.fireFormSettingChange('theme', PRESET_THEMES[name] || PRESET_THEMES.default);
-    }
-
-    // Visual template gallery — picking a tile applies that template's preset.
+    // Visual template gallery — picking a tile applies that layout's template.
     handleTemplateSelect(event) {
         const name = event.detail && event.detail.name;
         this.fireFormSettingChange(
             'theme',
             { ...(LAYOUT_TEMPLATES[name] || LAYOUT_TEMPLATES.classic) }
         );
-    }
-
-    handlePickCustomTheme() {
-        const value = { ...(this._selection?.theme || {}), name: 'custom' };
-        this.fireFormSettingChange('theme', value);
     }
 
     handlePagePropChange(event) {
@@ -288,18 +447,7 @@ export default class PropertyPanel extends LightningElement {
 
     handleFormSettingChange(event) {
         const prop = event.currentTarget.dataset.prop;
-        let value = event.detail.value;
-        if (prop === 'theme') {
-            // Picking a preset replaces the whole theme with its cohesive
-            // values (and clears any per-button overrides). "Custom" keeps the
-            // current colours but flags the name so the dropdown reflects it.
-            if (value === 'custom') {
-                value = { ...(this._selection?.theme || {}), name: 'custom' };
-            } else {
-                value = PRESET_THEMES[value] || PRESET_THEMES.default;
-            }
-        }
-        this.fireFormSettingChange(prop, value);
+        this.fireFormSettingChange(prop, event.detail.value);
     }
 
     handleFormSettingCheckbox(event) {
@@ -320,6 +468,92 @@ export default class PropertyPanel extends LightningElement {
         this.fireFormSettingChange('theme', theme);
     }
 
+    handleThemeColorChange(event) {
+        const key = event.currentTarget.dataset.themekey;
+        const value = event.target.value;
+        const theme = {
+            ...(this._selection?.theme || {}),
+            [key]: value,
+            name: 'custom'
+        };
+        this.fireFormSettingChange('theme', theme);
+    }
+
+    // --- Page Background Handlers ---
+    handlePageBgModeSelect(event) {
+        const mode = event.currentTarget.dataset.mode;
+        const config = this.pageBgParsed;
+        config.isGradient = (mode === 'gradient');
+        this.updateThemeBg('pageBg', config);
+    }
+
+    handlePageBgPresetSelect(event) {
+        const presetVal = event.currentTarget.dataset.value;
+        const theme = {
+            ...(this._selection?.theme || {}),
+            pageBg: presetVal,
+            name: 'custom'
+        };
+        this.fireFormSettingChange('theme', theme);
+    }
+
+    handlePageBgParamChange(event) {
+        const key = event.currentTarget.dataset.param;
+        // Native <input type="color"> sets event.detail to 0 (a Number),
+        // so event.detail.value would be undefined — use optional chaining.
+        // Lightning components put the value in event.detail.value.
+        let val = (event.detail && typeof event.detail === 'object' ? event.detail.value : null)
+               ?? event.target?.value;
+        if (val == null) return;
+        const config = { ...this.pageBgParsed };
+        if (key === 'angle') {
+            val = parseInt(val, 10) || 0;
+        }
+        config[key] = val;
+        this.updateThemeBg('pageBg', config);
+    }
+
+    // --- Card Background Handlers ---
+    handleCardBgModeSelect(event) {
+        const mode = event.currentTarget.dataset.mode;
+        const config = this.cardBgParsed;
+        config.isGradient = (mode === 'gradient');
+        this.updateThemeBg('surface', config);
+    }
+
+    handleCardBgPresetSelect(event) {
+        const presetVal = event.currentTarget.dataset.value;
+        const theme = {
+            ...(this._selection?.theme || {}),
+            surface: presetVal,
+            name: 'custom'
+        };
+        this.fireFormSettingChange('theme', theme);
+    }
+
+    handleCardBgParamChange(event) {
+        const key = event.currentTarget.dataset.param;
+        let val = (event.detail && typeof event.detail === 'object' ? event.detail.value : null)
+               ?? event.target?.value;
+        if (val == null) return;
+        const config = { ...this.cardBgParsed };
+        if (key === 'angle') {
+            val = parseInt(val, 10) || 0;
+        }
+        config[key] = val;
+        this.updateThemeBg('surface', config);
+    }
+
+    updateThemeBg(themekey, config) {
+        const bgVal = buildBackground(config);
+        const theme = {
+            ...(this._selection?.theme || {}),
+            [themekey]: bgVal,
+            name: 'custom'
+        };
+        this.fireFormSettingChange('theme', theme);
+    }
+
     handleThemeGlass(event) {
         const theme = {
             ...(this._selection?.theme || {}),
@@ -331,8 +565,12 @@ export default class PropertyPanel extends LightningElement {
 
     handleFormWidthChange(event) {
         let v = parseInt(event.detail.value, 10);
-        if (Number.isNaN(v)) v = 760;
-        v = Math.min(Math.max(v, 320), 1920); // keep within sane bounds
+        if (Number.isNaN(v)) v = 100;
+        if (v <= 100) {
+            v = Math.min(Math.max(v, 50), 100);
+        } else {
+            v = Math.min(Math.max(v, 320), 1920);
+        }
         this.fireFormSettingChange('formWidth', v);
     }
 

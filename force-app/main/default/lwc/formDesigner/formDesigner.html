@@ -216,10 +216,7 @@
               mode={primaryTab}
               used-fields={usedFieldApiNames}
               layout-mode={currentLayoutMode}
-              theme={currentThemeName}
-              onnavstylechange={handleNavStyleChange}
               oneditautofill={handleOpenAutofill}
-              onthemechange={handleThemeChange}
             >
             </c-field-palette>
           </template>
@@ -249,7 +246,7 @@
             </div>
           </template>
 
-          <!-- Page navigation (SLDS tabs) -->
+          <!-- Editable page tabs (builder affordance — stays outside the card) -->
           <div class="slds-tabs_default page-tabs">
             <ul class="slds-tabs_default__nav" role="tablist">
               <template for:each={pageTabs} for:item="pg">
@@ -354,39 +351,88 @@
 
           <!-- Form card: header + page content as one connected card -->
           <template if:false={isCompletionActive}>
-          <div class="form-stage">
-            <!-- Header (top of the form card) -->
-            <template if:true={formHeader.visible}>
-              <div class={headerCardClass} style={headerCardStyle}
-                onclick={handleHeaderClick}>
-                <div class="header-inner">
-                  <template if:true={hasLogoImage}>
-                    <div class="header-logo header-logo--img">
-                      <img src={headerLogoSrc} alt="Logo" class={headerLogoImgClass}>
-                    </div>
-                  </template>
-                  <template if:true={hasLogoPlaceholder}>
-                    <div class="header-logo">
-                      <lightning-icon icon-name="utility:image" size="medium"
-                        alternative-text="Logo placeholder"></lightning-icon>
-                    </div>
-                  </template>
-                  <div class="header-text">
-                    <h1 class={headerTitleClass} style={headerTitleStyle}>{formHeader.title}</h1>
+            <div class={designerLayoutContainerClass}>
+              <!-- Split Layout: brand panel beside form (reuses header) -->
+              <template if:true={isSplitLayout}>
+                <aside class="designer-brand" onclick={handleHeaderClick}>
+                  <div class="designer-brand__inner">
+                    <template if:true={hasLogoImage}>
+                      <img src={headerLogoSrc} alt="Logo" class="designer-brand__logo" />
+                    </template>
+                    <h2 class="designer-brand__title">{formHeader.title}</h2>
                     <template if:true={formHeader.subtitle}>
-                      <p class="header-subtitle" style={headerSubtitleStyle}>{formHeader.subtitle}</p>
+                      <p class="designer-brand__sub">{formHeader.subtitle}</p>
                     </template>
                   </div>
-                </div>
-              </div>
-            </template>
-            <template if:false={formHeader.visible}>
-              <div class="header-hidden-bar" onclick={handleHeaderClick}>
-                <lightning-icon icon-name="utility:header" size="xx-small"
-                  class="slds-m-right_xx-small"></lightning-icon>
-                <span class="slds-text-body_small slds-text-color_weak">Header hidden — click to configure</span>
-              </div>
-            </template>
+                </aside>
+              </template>
+
+              <div class="form-stage" style={formStageStyle}>
+                <!-- Header (top of the form card, hidden on Split) -->
+                <template if:true={showInlineHeader}>
+                  <div class={headerCardClass} style={headerCardStyle}
+                    onclick={handleHeaderClick}>
+                    <div class="header-inner">
+                      <template if:true={hasLogoImage}>
+                        <div class="header-logo header-logo--img">
+                          <img src={headerLogoSrc} alt="Logo" class={headerLogoImgClass}>
+                        </div>
+                      </template>
+                      <template if:true={hasLogoPlaceholder}>
+                        <div class="header-logo">
+                          <lightning-icon icon-name="utility:image" size="medium"
+                            alternative-text="Logo placeholder"></lightning-icon>
+                        </div>
+                      </template>
+                      <div class="header-text">
+                        <h1 class={headerTitleClass} style={headerTitleStyle}>{formHeader.title}</h1>
+                        <template if:true={formHeader.subtitle}>
+                          <p class="header-subtitle" style={headerSubtitleStyle}>{formHeader.subtitle}</p>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template if:false={showInlineHeader}>
+                  <template if:false={isSplitLayout}>
+                    <div class="header-hidden-bar" onclick={handleHeaderClick}>
+                      <lightning-icon icon-name="utility:header" size="xx-small"
+                        class="slds-m-right_xx-small"></lightning-icon>
+                      <span class="slds-text-body_small slds-text-color_weak">Header hidden — click to configure</span>
+                    </div>
+                  </template>
+                </template>
+
+                <!-- Navigation preview — mirrors the player, not interactive -->
+                <template if:true={navIsWizard}>
+                  <div class="navpv navpv--wizard">
+                    <lightning-progress-indicator current-step={navPreviewCurrentStep}
+                      type="base" variant="base">
+                      <template for:each={navPreviewItems} for:item="s">
+                        <lightning-progress-step key={s.id} label={s.name}
+                          value={s.id}></lightning-progress-step>
+                      </template>
+                    </lightning-progress-indicator>
+                  </div>
+                </template>
+                <template if:true={navIsTop}>
+                  <div class="navpv navpv--top">
+                    <template for:each={navPreviewItems} for:item="s">
+                      <span key={s.id} class={s.itemClass}>{s.name}</span>
+                    </template>
+                  </div>
+                </template>
+
+
+                <div class={cardBodyClass}>
+                <!-- Vertical nav preview (sidebar inside the card) -->
+                <template if:true={navIsVertical}>
+                  <div class="navpv navpv--vnav">
+                    <template for:each={navPreviewItems} for:item="s">
+                      <span key={s.id} class={s.itemClass}>{s.name}</span>
+                    </template>
+                  </div>
+                </template>
 
             <c-designer-canvas
               section-data={canvasSections}
@@ -413,6 +459,8 @@
               onreordersection={handleReorderSection}
             >
             </c-designer-canvas>
+            </div>
+          </div>
           </div>
           </template>
           </div>

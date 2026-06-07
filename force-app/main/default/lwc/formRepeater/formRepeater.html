@@ -1,0 +1,173 @@
+<template>
+  <div class={rootClass}>
+    <!-- Heading -->
+    <div class="repeater__head">
+      <span class="repeater__title">{title}</span>
+      <template if:true={hasRows}>
+        <span class="repeater__count">{count}</span>
+      </template>
+    </div>
+
+    <!-- ============ STACKED: a card per child ============ -->
+    <template if:true={isStacked}>
+      <template for:each={rowsView} for:item="row">
+        <article key={row.key} class="rep-card">
+          <div class="rep-card__bar">
+            <span class="rep-card__heading">{row.heading}</span>
+            <lightning-button-icon icon-name="utility:delete" variant="bare"
+              size="small" alternative-text="Remove" title="Remove"
+              class="rep-card__del" data-rowkey={row.key}
+              onclick={handleRemoveRow}></lightning-button-icon>
+          </div>
+          <lightning-record-edit-form object-api-name={childObjectApiName}>
+            <div class="rep-card__grid">
+              <template for:each={row.cells} for:item="cell">
+                <div key={cell.key} class="rep-cell">
+                  <lightning-input-field field-name={cell.fieldApiName}
+                    required={cell.required} disabled={cell.disabled}
+                    data-rowkey={row.key} data-field={cell.fieldApiName}
+                    onchange={handleCellChange}></lightning-input-field>
+                  <template if:true={cell.hasError}>
+                    <div class="rep-field-error">{cell.errorMessage}</div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </lightning-record-edit-form>
+          <template if:true={row.hasRowError}>
+            <div class="rep-row-error">{row.rowError}</div>
+          </template>
+        </article>
+      </template>
+    </template>
+
+    <!-- ============ TABLE: header row + a grid row per child ============ -->
+    <template if:true={isTable}>
+      <div class="rep-table">
+        <div class="rep-table__head" style={tableGridStyle}>
+          <template for:each={columns} for:item="col">
+            <span key={col.key} class="rep-table__th">
+              {col.label}
+              <template if:true={col.required}>
+                <abbr class="rep-req" title="Required">*</abbr>
+              </template>
+            </span>
+          </template>
+          <span class="rep-table__th"></span>
+        </div>
+
+        <template for:each={rowsView} for:item="row">
+          <div key={row.key} class="rep-table__rowwrap">
+            <lightning-record-edit-form object-api-name={childObjectApiName}>
+              <div class="rep-table__row" style={row.gridStyle}>
+                <template for:each={row.cells} for:item="cell">
+                  <div key={cell.key} class="rep-tcell">
+                    <lightning-input-field field-name={cell.fieldApiName}
+                      variant={cell.variant} required={cell.required}
+                      disabled={cell.disabled} data-rowkey={row.key}
+                      data-field={cell.fieldApiName}
+                      onchange={handleCellChange}></lightning-input-field>
+                    <template if:true={cell.hasError}>
+                      <div class="rep-field-error">{cell.errorMessage}</div>
+                    </template>
+                  </div>
+                </template>
+                <div class="rep-tcell rep-tcell--action">
+                  <lightning-button-icon icon-name="utility:delete" variant="bare"
+                    size="small" alternative-text="Remove" title="Remove"
+                    data-rowkey={row.key} onclick={handleRemoveRow}>
+                  </lightning-button-icon>
+                </div>
+              </div>
+            </lightning-record-edit-form>
+            <template if:true={row.hasRowError}>
+              <div class="rep-row-error">{row.rowError}</div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <!-- ============ TILE: read-only tiles + modal editor ============ -->
+    <template if:true={isTile}>
+      <div class="rep-tiles">
+        <template for:each={tilesView} for:item="tile">
+          <article key={tile.key} class="rep-tile" data-error={tile.hasError}>
+            <div class="rep-tile__bar">
+              <span class="rep-tile__title">{tile.title}</span>
+              <span class="rep-tile__actions">
+                <lightning-button-icon icon-name="utility:edit" variant="bare"
+                  size="small" alternative-text="Edit" title="Edit"
+                  data-rowkey={tile.key} onclick={handleEditTile}>
+                </lightning-button-icon>
+                <lightning-button-icon icon-name="utility:delete" variant="bare"
+                  size="small" alternative-text="Remove" title="Remove"
+                  data-rowkey={tile.key} onclick={handleRemoveRow}>
+                </lightning-button-icon>
+              </span>
+            </div>
+            <dl class="rep-tile__body">
+              <template for:each={tile.lines} for:item="line">
+                <div key={line.key} class="rep-tile__line">
+                  <dt>{line.label}</dt>
+                  <dd>{line.value}</dd>
+                </div>
+              </template>
+            </dl>
+            <template if:true={tile.hasError}>
+              <div class="rep-row-error">{tile.errorMessage}</div>
+            </template>
+          </article>
+        </template>
+      </div>
+    </template>
+
+    <!-- Add affordance (tile opens the modal; inline styles append a row) -->
+    <template if:true={isTile}>
+      <lightning-button variant="neutral" label={addLabel} icon-name="utility:add"
+        class="rep-add" disabled={addDisabled} onclick={handleOpenAdd}>
+      </lightning-button>
+    </template>
+    <template if:false={isTile}>
+      <lightning-button variant="neutral" label={addLabel} icon-name="utility:add"
+        class="rep-add" disabled={addDisabled} onclick={handleAddRow}>
+      </lightning-button>
+    </template>
+  </div>
+
+  <!-- Tile add/edit modal -->
+  <template if:true={modalOpen}>
+    <section role="dialog" tabindex="-1" aria-modal="true"
+      class="slds-modal slds-fade-in-open">
+      <div class="slds-modal__container">
+        <header class="slds-modal__header">
+          <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+            title="Close" onclick={handleModalCancel}>
+            <lightning-icon icon-name="utility:close" size="small"
+              alternative-text="Close"></lightning-icon>
+          </button>
+          <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
+        </header>
+        <div class="slds-modal__content slds-p-around_medium">
+          <lightning-record-edit-form object-api-name={childObjectApiName}>
+            <div class="rep-modal__grid">
+              <template for:each={modalCells} for:item="cell">
+                <lightning-input-field key={cell.key} field-name={cell.fieldApiName}
+                  required={cell.required} disabled={cell.disabled}
+                  value={cell.value} data-field={cell.fieldApiName}
+                  onchange={handleModalCellChange}></lightning-input-field>
+              </template>
+            </div>
+          </lightning-record-edit-form>
+        </div>
+        <footer class="slds-modal__footer">
+          <lightning-button label="Cancel" onclick={handleModalCancel}
+            class="slds-m-right_x-small"></lightning-button>
+          <lightning-button variant="brand" label="Save" onclick={handleModalSave}>
+          </lightning-button>
+        </footer>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+</template>

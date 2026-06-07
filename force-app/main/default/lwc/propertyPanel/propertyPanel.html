@@ -107,17 +107,8 @@
             <div class="slds-p-around_small">
                 <h3 class="slds-text-title_caps slds-m-bottom_small">Form Settings</h3>
 
-                <!-- Style group -->
-                <div class="pp-group">
-                    <button class="pp-group-header" type="button"
-                        data-group="style" aria-expanded={styleExpanded}
-                        onclick={handleToggleSettingsGroup}>
-                        <lightning-icon icon-name={styleChevron} size="xx-small"
-                            class="slds-m-right_xx-small"></lightning-icon>
-                        <span class="slds-text-title_caps">Style</span>
-                    </button>
-                    <template if:true={styleExpanded}>
-                    <div class="pp-group-body">
+                <lightning-accordion active-section-name="style" class="pp-accordion">
+                <lightning-accordion-section name="style" label="Style">
 
                 <!-- Layout gallery — visual mock-up of each layout's structure -->
                 <label class="slds-form-element__label">Layout</label>
@@ -190,38 +181,332 @@
                                 field-level-help="Overrides the Back button outline colour. Defaults to the accent colour.">
                             </lightning-input>
                         </div>
+                        <!-- Page Background -->
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <label class="slds-form-element__label bg-label">Page Background</label>
+                            
+                            <!-- Mode Toggle -->
+                            <div class="slds-button-group bg-mode-toggle" role="group">
+                                <button type="button" 
+                                    class={pageBgSolidBtnClass} 
+                                    data-mode="solid"
+                                    onclick={handlePageBgModeSelect}>Solid</button>
+                                <button type="button" 
+                                    class={pageBgGradientBtnClass} 
+                                    data-mode="gradient"
+                                    onclick={handlePageBgModeSelect}>Gradient</button>
+                            </div>
+
+                            <!-- Solid Background Panel -->
+                            <template if:false={isPageBgGradient}>
+                                <div class="color-picker-control slds-m-top_xx-small">
+                                    <input type="color"
+                                        value={pageBgSolidColor}
+                                        class="color-input"
+                                        data-param="solidColor"
+                                        aria-label="Page background color"
+                                        onchange={handlePageBgParamChange}
+                                        oninput={handlePageBgParamChange}>
+                                    <lightning-input
+                                        value={pageBgSolidColor}
+                                        label="Page Background Hex"
+                                        variant="label-hidden"
+                                        class="color-hex-input"
+                                        data-param="solidColor"
+                                        onchange={handlePageBgParamChange}
+                                        placeholder="#f4f6f9">
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+                            <!-- Gradient Background Panel -->
+                            <template if:true={isPageBgGradient}>
+                                <div class="gradient-panel slds-m-top_xx-small">
+                                    <!-- Presets -->
+                                    <div class="presets-label slds-m-bottom_xx-small">Presets</div>
+                                    <div class="presets-grid slds-m-bottom_small">
+                                        <template for:each={pageBgPresets} for:item="preset">
+                                            <button key={preset.label}
+                                                type="button"
+                                                class="preset-swatch"
+                                                title={preset.label}
+                                                style={preset.style}
+                                                data-value={preset.value}
+                                                onclick={handlePageBgPresetSelect}>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <!-- Custom controls -->
+                                    <lightning-combobox
+                                        label="Gradient Type"
+                                        value={pageBgType}
+                                        options={gradientTypeOptions}
+                                        data-param="type"
+                                        onchange={handlePageBgParamChange}
+                                        class="slds-m-bottom_x-small">
+                                    </lightning-combobox>
+
+                                    <template if:true={isPageBgLinear}>
+                                        <lightning-slider
+                                            label="Angle (Degrees)"
+                                            min="0"
+                                            max="360"
+                                            step="5"
+                                            value={pageBgAngle}
+                                            data-param="angle"
+                                            onchange={handlePageBgParamChange}
+                                            class="slds-m-bottom_x-small">
+                                        </lightning-slider>
+                                    </template>
+
+                                    <div class="slds-grid slds-gutters_xx-small">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">Start</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={pageBgStartColor}
+                                                    class="color-input"
+                                                    data-param="startColor"
+                                                    onchange={handlePageBgParamChange}
+                                                    oninput={handlePageBgParamChange}>
+                                                <lightning-input
+                                                    value={pageBgStartColor}
+                                                    label="Start"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="startColor"
+                                                    onchange={handlePageBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">End</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={pageBgEndColor}
+                                                    class="color-input"
+                                                    data-param="endColor"
+                                                    onchange={handlePageBgParamChange}
+                                                    oninput={handlePageBgParamChange}>
+                                                <lightning-input
+                                                    value={pageBgEndColor}
+                                                    label="End"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="endColor"
+                                                    onchange={handlePageBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Card Background -->
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <label class="slds-form-element__label bg-label">Card Background</label>
+                            
+                            <!-- Mode Toggle -->
+                            <div class="slds-button-group bg-mode-toggle" role="group">
+                                <button type="button" 
+                                    class={cardBgSolidBtnClass} 
+                                    data-mode="solid"
+                                    onclick={handleCardBgModeSelect}>Solid</button>
+                                <button type="button" 
+                                    class={cardBgGradientBtnClass} 
+                                    data-mode="gradient"
+                                    onclick={handleCardBgModeSelect}>Gradient</button>
+                            </div>
+
+                            <!-- Solid Background Panel -->
+                            <template if:false={isCardBgGradient}>
+                                <div class="color-picker-control slds-m-top_xx-small">
+                                    <input type="color"
+                                        value={cardBgSolidColor}
+                                        class="color-input"
+                                        data-param="solidColor"
+                                        aria-label="Card background color"
+                                        onchange={handleCardBgParamChange}
+                                        oninput={handleCardBgParamChange}>
+                                    <lightning-input
+                                        value={cardBgSolidColor}
+                                        label="Card Background Hex"
+                                        variant="label-hidden"
+                                        class="color-hex-input"
+                                        data-param="solidColor"
+                                        onchange={handleCardBgParamChange}
+                                        placeholder="#ffffff">
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+                            <!-- Gradient Background Panel -->
+                            <template if:true={isCardBgGradient}>
+                                <div class="gradient-panel slds-m-top_xx-small">
+                                    <!-- Presets -->
+                                    <div class="presets-label slds-m-bottom_xx-small">Presets</div>
+                                    <div class="presets-grid slds-m-bottom_small">
+                                        <template for:each={cardBgPresets} for:item="preset">
+                                            <button key={preset.label}
+                                                type="button"
+                                                class="preset-swatch"
+                                                title={preset.label}
+                                                style={preset.style}
+                                                data-value={preset.value}
+                                                onclick={handleCardBgPresetSelect}>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <!-- Custom controls -->
+                                    <lightning-combobox
+                                        label="Gradient Type"
+                                        value={cardBgType}
+                                        options={gradientTypeOptions}
+                                        data-param="type"
+                                        onchange={handleCardBgParamChange}
+                                        class="slds-m-bottom_x-small">
+                                    </lightning-combobox>
+
+                                    <template if:true={isCardBgLinear}>
+                                        <lightning-slider
+                                            label="Angle (Degrees)"
+                                            min="0"
+                                            max="360"
+                                            step="5"
+                                            value={cardBgAngle}
+                                            data-param="angle"
+                                            onchange={handleCardBgParamChange}
+                                            class="slds-m-bottom_x-small">
+                                        </lightning-slider>
+                                    </template>
+
+                                    <div class="slds-grid slds-gutters_xx-small">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">Start</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={cardBgStartColor}
+                                                    class="color-input"
+                                                    data-param="startColor"
+                                                    onchange={handleCardBgParamChange}
+                                                    oninput={handleCardBgParamChange}>
+                                                <lightning-input
+                                                    value={cardBgStartColor}
+                                                    label="Start"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="startColor"
+                                                    onchange={handleCardBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">End</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={cardBgEndColor}
+                                                    class="color-input"
+                                                    data-param="endColor"
+                                                    onchange={handleCardBgParamChange}
+                                                    oninput={handleCardBgParamChange}>
+                                                <lightning-input
+                                                    value={cardBgEndColor}
+                                                    label="End"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="endColor"
+                                                    onchange={handleCardBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Header Style"
+                                options={headerStyleOptions}
+                                value={themeHeaderStyle}
+                                data-themekey="headerStyle"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="How the header is rendered. 'Match template' follows the template preset.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Global Section Style"
+                                options={globalSectionStyleOptions}
+                                value={themeSectionStyle}
+                                data-themekey="sectionDefault"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Universal styling for all sections.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Global Section Padding"
+                                options={paddingOptions}
+                                value={themeSectionPadding}
+                                data-themekey="sectionPadding"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Universal padding inside all sections.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <div class="color-picker-row">
+                                <label class="slds-form-element__label">Global Section Header Background</label>
+                                <div class="color-picker-control">
+                                    <input type="color"
+                                        value={themeSectionHeaderBgColorOnly}
+                                        class="color-input"
+                                        data-themekey="sectionHeaderBg"
+                                        aria-label="Section header background color"
+                                        onchange={handleThemeColorChange}
+                                        oninput={handleThemeColorChange}>
+                                    <lightning-input
+                                        value={themeSectionHeaderBg}
+                                        label="Section header background hex value"
+                                        variant="label-hidden"
+                                        class="color-hex-input"
+                                        data-themekey="sectionHeaderBg"
+                                        onchange={handleThemeFieldChange}
+                                        placeholder="#f3f3f3">
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
+                <lightning-combobox
+                    label="Overall Form Font"
+                    value={formFontFamily}
+                    options={fontFamilyOptions}
+                    onchange={handleFormSettingChange}
+                    data-prop="fontFamily"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
                 <!-- Form width -->
                 <lightning-slider
-                    label="Form width (px)"
+                    label="Form content width (%)"
                     value={formWidth}
-                    min="320"
-                    max="1920"
-                    step="20"
+                    min="50"
+                    max="100"
+                    step="5"
                     onchange={handleFormWidthChange}
                     class="slds-m-bottom_small">
                 </lightning-slider>
                 <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
-                    Maximum width — the form stays responsive and adapts to narrower screens.
+                    Width of form contents relative to the card/outer shell.
                 </p>
 
-                    </div>
-                    </template>
-                </div>
-
-                <!-- Behavior group -->
-                <div class="pp-group">
-                    <button class="pp-group-header" type="button"
-                        data-group="behavior" aria-expanded={behaviorExpanded}
-                        onclick={handleToggleSettingsGroup}>
-                        <lightning-icon icon-name={behaviorChevron} size="xx-small"
-                            class="slds-m-right_xx-small"></lightning-icon>
-                        <span class="slds-text-title_caps">Navigation &amp; Behavior</span>
-                    </button>
-                    <template if:true={behaviorExpanded}>
-                    <div class="pp-group-body">
+                </lightning-accordion-section>
+                <lightning-accordion-section name="behavior" label="Navigation &amp; Behavior">
 
                 <!-- Page Navigation — switches the form between single and
                      multi-page (the only place this conversion is exposed). -->
@@ -238,9 +523,21 @@
                     </template>
                 </div>
 
-                <!-- Vertical Nav: optionally require valid fields before
+                <!-- Progress Tracker for Wizard -->
+                <template if:true={isWizardSelected}>
+                    <lightning-combobox
+                        label="Progress Tracker Type"
+                        options={progressTrackerOptions}
+                        value={progressTrackerType}
+                        onchange={handleFormSettingChange}
+                        data-prop="progressTrackerType"
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </template>
+
+                <!-- Vertical/Top Nav: optionally require valid fields before
                      moving forward. Wizards always enforce this. -->
-                <template if:true={isVerticalNavForm}>
+                <template if:true={isNavigationalForm}>
                     <lightning-input
                         type="checkbox"
                         label="Require fields before continuing"
@@ -251,6 +548,17 @@
                         class="slds-m-bottom_small">
                     </lightning-input>
                 </template>
+
+                <!-- Summary Page option -->
+                <lightning-input
+                    type="checkbox"
+                    label="Add a review page before submission"
+                    checked={showSummaryPage}
+                    onchange={handleFormSettingCheckbox}
+                    data-prop="showSummaryPage"
+                    field-level-help="Allows users to see all entered inputs in a single Summary screen before submitting, with edit shortcuts to jump back to individual pages."
+                    class="slds-m-bottom_small">
+                </lightning-input>
 
                 <!-- Auto-Fill Rules -->
                 <div class="slds-m-bottom_medium border-bottom slds-p-bottom_small">
@@ -284,21 +592,8 @@
                     class="slds-m-bottom_small">
                 </lightning-input>
 
-                    </div>
-                    </template>
-                </div>
-
-                <!-- Completion group -->
-                <div class="pp-group">
-                    <button class="pp-group-header" type="button"
-                        data-group="completion" aria-expanded={completionExpanded}
-                        onclick={handleToggleSettingsGroup}>
-                        <lightning-icon icon-name={completionChevron} size="xx-small"
-                            class="slds-m-right_xx-small"></lightning-icon>
-                        <span class="slds-text-title_caps">After Submit</span>
-                    </button>
-                    <template if:true={completionExpanded}>
-                    <div class="pp-group-body">
+                </lightning-accordion-section>
+                <lightning-accordion-section name="completion" label="After Submit">
 
                 <!-- After Submit Mode -->
                 <label class="slds-form-element__label">After Submit</label>
@@ -447,9 +742,8 @@
                     </div>
                 </template>
 
-                    </div>
-                    </template>
-                </div>
+                </lightning-accordion-section>
+                </lightning-accordion>
             </div>
         </template>
 
@@ -493,14 +787,6 @@
                 </lightning-combobox>
 
                 <!-- Typography -->
-                <lightning-combobox
-                    label="Overall Form Font"
-                    value={headerFontFamily}
-                    options={fontFamilyOptions}
-                    onchange={handleHeaderPropChange}
-                    data-prop="fontFamily"
-                    class="slds-m-bottom_small">
-                </lightning-combobox>
 
                 <lightning-combobox
                     label="Title Size"
@@ -708,56 +994,11 @@
                     </div>
                 </template>
 
-                <!-- Header background color (only when header visible) -->
-                <template if:true={sectionShowHeader}>
-                    <div class="color-picker-row slds-m-bottom_small">
-                        <label class="slds-form-element__label">Header Background</label>
-                        <div class="color-picker-control">
-                            <input type="color"
-                                value={sectionHeaderColor}
-                                class="color-input"
-                                data-prop="headerBackgroundColor"
-                                aria-label="Section header background color"
-                                onchange={handleSectionColorChange}
-                                oninput={handleSectionColorChange}>
-                            <lightning-input
-                                value={sectionHeaderColor}
-                                label="Section header background color hex value"
-                                variant="label-hidden"
-                                class="color-hex-input"
-                                data-prop="headerBackgroundColor"
-                                onchange={handleSectionPropChange}
-                                placeholder="#f3f3f3">
-                            </lightning-input>
-                        </div>
-                    </div>
-                </template>
-
                 <lightning-combobox
                     label="Columns"
                     value={sectionColumns}
                     options={columnOptions}
                     onchange={handleColumnsChange}
-                    class="slds-m-bottom_small">
-                </lightning-combobox>
-
-                <!-- Padding -->
-                <lightning-combobox
-                    label="Padding"
-                    value={sectionPadding}
-                    options={paddingOptions}
-                    onchange={handlePaddingChange}
-                    class="slds-m-bottom_small">
-                </lightning-combobox>
-
-                <!-- Section style (overrides the template's default) -->
-                <lightning-combobox
-                    label="Section style"
-                    value={sectionStyleValue}
-                    options={sectionStyleOptions}
-                    data-prop="sectionStyle"
-                    onchange={handleSectionPropChange}
-                    field-level-help="How this section is framed. 'Match template' follows the form template; any other choice overrides it for this section only."
                     class="slds-m-bottom_small">
                 </lightning-combobox>
 

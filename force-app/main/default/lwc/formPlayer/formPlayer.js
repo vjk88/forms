@@ -406,8 +406,109 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
         return this.layoutMode === 'Vertical_Navigation' && this.pages.length > 1;
     }
 
+    get isTopNav() {
+        return this.layoutMode === 'Top_Navigation' && this.pages.length > 1;
+    }
+
     get isSinglePage() {
-        return !this.isWizard && !this.isVerticalNav;
+        return !this.isWizard && !this.isVerticalNav && !this.isTopNav;
+    }
+
+    get isTrackerProgressBar() {
+        return !this.formSettings.progressTrackerType || this.formSettings.progressTrackerType === 'Progress_Bar';
+    }
+
+    get isTrackerStepCircles() {
+        return this.formSettings.progressTrackerType === 'Step_Circles';
+    }
+
+    get isTrackerBreadcrumbs() {
+        return this.formSettings.progressTrackerType === 'Breadcrumbs';
+    }
+
+    get currentPageId() {
+        const p = this.pages[this.activePageIndex];
+        return p ? p.id : '';
+    }
+
+    get showSummaryActive() {
+        if (!this.showSummaryPage) return false;
+        return this.currentPageIndex === this.pages.length;
+    }
+
+    get showSummaryPage() {
+        return !!(this.formSettings && this.formSettings.showSummaryPage);
+    }
+
+    get activePageIndex() {
+        return this.currentPageIndex;
+    }
+
+    get playerLayoutStyle() {
+        if (this.isSplitLayout) {
+            return 'max-width: 1080px; margin: 0 auto; width: 100%;';
+        }
+        const fw = this.formSettings && Number(this.formSettings.formWidth);
+        if (fw) {
+            if (fw <= 100) {
+                return `max-width: ${fw}%; margin: 0 auto; width: 100%;`;
+            }
+            return `max-width: ${fw}px; margin: 0 auto; width: 100%;`;
+        }
+        return 'max-width: 100%; margin: 0 auto; width: 100%;';
+    }
+
+    get formRecordClass() {
+        return this.showSummaryActive ? 'slds-hide' : '';
+    }
+
+    get summarySections() {
+        const vals = this.liveValues;
+        const sectionsList = [];
+
+        this.pages.forEach((p) => {
+            if (!this.evalVisibility(p.visibilityExpression, vals)) return;
+
+            (p.sections || []).forEach((s) => {
+                if (!this.evalVisibility(s.visibilityExpression, vals)) return;
+
+                const fields = [];
+                (s.elements || []).forEach((el) => {
+                    if (!el.isField && !el.isCustomField) return;
+                    if (!this.evalVisibility(el.visibilityExpression, vals)) return;
+                    if (el.isHidden) return;
+
+                    let displayValue = vals[el.fieldApiName];
+                    if (displayValue === undefined || displayValue === null) {
+                        displayValue = '';
+                    }
+                    if (Array.isArray(displayValue)) {
+                        displayValue = displayValue.join(', ');
+                    }
+                    if (typeof displayValue === 'boolean') {
+                        displayValue = displayValue ? 'Yes' : 'No';
+                    }
+
+                    fields.push({
+                        id: el.id,
+                        label: el.label || el.fieldApiName,
+                        value: displayValue || '—',
+                        fieldApiName: el.fieldApiName
+                    });
+                });
+
+                if (fields.length > 0) {
+                    sectionsList.push({
+                        id: s.id,
+                        name: s.name || 'Untitled Section',
+                        pageIndex: p.index,
+                        fields
+                    });
+                }
+            });
+        });
+
+        return sectionsList;
     }
 
     enrichPage(page, index) {
@@ -432,10 +533,8 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
             name: section.name,
             icon: section.icon,
             showHeader: section.showHeader !== false,
-            headerStyle:
-                section.showHeader !== false && section.headerBackgroundColor
-                    ? `background-color: ${section.headerBackgroundColor}`
-                    : '',
+            headerStyle: '', // Ignore individual background color overrides to ensure uniformity
+            gridColumns: cols,
             gridClass: `player-grid cols-${cols}`,
             hasElements: elements.length > 0,
             elements,
@@ -542,6 +641,7 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
             isHidden,
             urlPrefillParam: el.urlPrefillParam,
             helpText: el.helpText,
+            isFullWidth,
             wrapperClass:
                 (isFullWidth ? 'player-el full-width' : 'player-el') +
                 (isHidden ? ' is-hidden' : ''),
@@ -555,7 +655,7 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     get renderedPages() {
         const vals = this.liveValues;
         return this.pages.map((p) => {
-            const onPage = this.isSinglePage || p.index === this.currentPageIndex;
+            const onPage = this.isSinglePage || p.index === this.activePageIndex;
             const pageVisible = this.evalVisibility(p.visibilityExpression, vals);
             return {
                 ...p,
@@ -564,13 +664,14 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
                 sections: (p.sections || []).map((s) => {
                     const sVisible = this.evalVisibility(s.visibilityExpression, vals);
                     const styleName = resolveSectionStyle(
-                        s.sectionStyle,
+                        null, // force global uniform style
                         this.formSettings &&
                             this.formSettings.theme &&
                             this.formSettings.theme.sectionDefault
                     );
                     return {
                         ...s,
+                        headerStyle: '', // Ignore individual background color overrides to ensure uniformity
                         sectionClass: `player-section style-${styleName}${
                             sVisible ? '' : ' is-hidden'
                         }`,
@@ -588,6 +689,20 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
                                 effectiveRequired:
                                     el.required && elVisible && !el.isHidden
                             };
+                            
+                            // Compute responsive SLDS grid item class
+                            const cols = s.gridColumns || 1;
+                            let sizeClass = 'slds-size_1-of-1';
+                            if (!el.isFullWidth) {
+                                if (cols === 2) {
+                                    sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2';
+                                } else if (cols === 3) {
+                                    sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3';
+                                } else if (cols === 4) {
+                                    sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-4';
+                                }
+                            }
+                            out.gridItemClass = `slds-col ${sizeClass} ${out.elWrapperClass}`;
                             if (el.isCustomField) {
                                 const raw = vals[el.fieldApiName];
                                 out.value = el.isMulti
@@ -923,6 +1038,7 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     }
 
     get progressSteps() {
+        const activeIdx = this.activePageIndex;
         return this.pages
             .filter((p) => p.showInProgress)
             .map((p) => ({
@@ -930,24 +1046,27 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
                 name: p.name,
                 index: p.index,
                 stepClass:
-                    p.index === this.currentPageIndex
+                    p.index === activeIdx
                         ? 'progress-step active'
-                        : p.index < this.currentPageIndex
+                        : p.index < activeIdx
                         ? 'progress-step done'
                         : 'progress-step'
             }));
     }
 
     get navItems() {
-        return this.pages.map((p) => ({
-            id: p.id,
-            name: p.name,
-            index: p.index,
-            navClass:
-                p.index === this.currentPageIndex
-                    ? 'vnav-item active'
-                    : 'vnav-item'
-        }));
+        const activeIdx = this.activePageIndex;
+        return this.pages.map((p) => {
+            const active = p.index === activeIdx;
+            return {
+                id: p.id,
+                name: p.name,
+                index: p.index,
+                isActive: active,
+                navClass: active ? 'vnav-item active' : 'vnav-item',
+                navItemClass: active ? 'player-topnav__item active' : 'player-topnav__item'
+            };
+        });
     }
 
     get isFirstPage() {
@@ -955,26 +1074,29 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     }
 
     get isLastPage() {
-        return this.currentPageIndex === this.pages.length - 1;
+        const totalSteps = this.pages.length
+            + (this.showSummaryPage ? 1 : 0);
+        return this.currentPageIndex === totalSteps - 1;
     }
 
     get showSubmit() {
-        // Submit on the last page (wizard/vnav) or always (single page)
         return this.isSinglePage || this.isLastPage;
     }
 
     get showNext() {
-        return (this.isWizard || this.isVerticalNav) && !this.isLastPage;
+        return (this.isWizard || this.isVerticalNav || this.isTopNav) && !this.isLastPage;
     }
 
     get nextLabel() {
-        const p = this.pages[this.currentPageIndex];
+        if (this.showSummaryPage && this.currentPageIndex === this.pages.length - 1) {
+            return 'Review';
+        }
+        const p = this.pages[this.activePageIndex];
         return (p && p.nextLabel) || 'Next';
     }
 
     get submitButtonLabel() {
-        // Last page can override the form-level submit label.
-        const p = this.pages[this.currentPageIndex];
+        const p = this.pages[this.activePageIndex];
         return (
             (p && p.submitLabel) ||
             this.formSettings.submitLabel ||
@@ -983,13 +1105,16 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     }
 
     get showBack() {
-        return (this.isWizard || this.isVerticalNav) && !this.isFirstPage;
+        return (this.isWizard || this.isVerticalNav || this.isTopNav) && this.currentPageIndex > 0;
     }
 
     // Theme tokens go on the form root so the whole tree (card, sections,
     // buttons, and the page background) inherits them.
     get playerThemeStyle() {
-        return themeVars((this.formSettings && this.formSettings.theme) || {});
+        const parts = [themeVars((this.formSettings && this.formSettings.theme) || {})];
+        const ff = (this.formSettings && this.formSettings.fontFamily) || (this.header && this.header.fontFamily);
+        if (ff && ff !== 'default') parts.push(`font-family: ${ff}`);
+        return parts.join('; ');
     }
 
     get playerTheme() {
@@ -1015,13 +1140,7 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     // The shell only carries width + font; its surface/border/shadow/radius come
     // from the inherited theme tokens (see formPlayer.css).
     get formCardStyle() {
-        const parts = [];
-        const ff = this.header && this.header.fontFamily;
-        if (ff && ff !== 'default') parts.push(`font-family: ${ff}`);
-        const width =
-            (this.formSettings && Number(this.formSettings.formWidth)) || 760;
-        parts.push(`max-width: ${width}px`);
-        return parts.join('; ');
+        return 'max-width: 100%;';
     }
 
     get headerVisible() {
@@ -1046,7 +1165,8 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
         const h = this.header || {};
         const hasBg = !!h.backgroundImage;
         const alignment = h.alignment || 'left';
-        return `player-header${hasBg ? ' has-bg' : ''} align-${alignment}`;
+        const style = (this.formSettings && this.formSettings.theme && this.formSettings.theme.headerStyle) || 'inherit';
+        return `player-header${hasBg ? ' has-bg' : ''} align-${alignment} style-${style}`;
     }
 
     get playerTitleClass() {
@@ -1080,14 +1200,14 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     // form opts in (people often fill those out of order).
     get validateOnNavigate() {
         if (this.isWizard) return true;
-        if (this.isVerticalNav) {
+        if (this.isVerticalNav || this.isTopNav) {
             return !!(this.formSettings && this.formSettings.validateOnNavigate);
         }
         return false;
     }
 
     handleNext() {
-        if (this.currentPageIndex < this.pages.length - 1) {
+        if (!this.isLastPage) {
             if (this.validateOnNavigate && !this.validateCurrentPage()) return;
             this.currentPageIndex += 1;
             this.scrollTop();
@@ -1095,7 +1215,6 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     }
 
     handleBack() {
-        // Going back is always free — never block a user from reviewing.
         if (this.currentPageIndex > 0) {
             this.submitErrors = [];
             this.currentPageIndex -= 1;
@@ -1104,10 +1223,8 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     }
 
     handleNavSelect(event) {
-        const idx = parseInt(event.currentTarget.dataset.index, 10);
+        let idx = parseInt(event.currentTarget.dataset.index, 10);
         if (Number.isNaN(idx)) return;
-        // Jumping forward validates the current page when enabled; jumping
-        // backward (or to the current page) is always allowed.
         if (
             idx > this.currentPageIndex &&
             this.validateOnNavigate &&
@@ -1116,6 +1233,29 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
             return;
         }
         this.currentPageIndex = idx;
+        this.scrollTop();
+    }
+
+    handleProgressStepClick(event) {
+        const stepValue = event.detail.value;
+        const idx = this.pages.findIndex((p) => p.id === stepValue);
+        if (idx >= 0) {
+            if (
+                idx > this.currentPageIndex &&
+                this.validateOnNavigate &&
+                !this.validateCurrentPage()
+            ) {
+                return;
+            }
+            this.currentPageIndex = idx;
+            this.scrollTop();
+        }
+    }
+
+    handleEditSummarySection(event) {
+        const pageIndex = parseInt(event.currentTarget.dataset.pageindex, 10);
+        if (Number.isNaN(pageIndex)) return;
+        this.currentPageIndex = pageIndex;
         this.scrollTop();
     }
 

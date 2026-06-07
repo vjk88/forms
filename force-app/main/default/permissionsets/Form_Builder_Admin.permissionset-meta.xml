@@ -491,6 +491,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>FormSubmitController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>FormVersionTriggerHandler</apexClass>
         <enabled>true</enabled>
     </classAccesses>

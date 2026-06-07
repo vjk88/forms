@@ -3,6 +3,7 @@
 .canvas-container {
   min-height: 120px;
   padding: 1.25rem 1.5rem;
+  container-type: inline-size;
 }
 
 .canvas-scroll {
@@ -67,7 +68,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  background: var(--c-surface-alt);
+  background: var(--c-section-header-bg, var(--c-surface-alt));
   border-bottom: 1px solid var(--c-border);
   border-radius: 4px 4px 0 0;
 }
@@ -120,12 +121,8 @@
 /* Section body with padding variants */
 .section-body {
   min-height: 50px;
+  padding: var(--c-section-padding, 0.75rem);
 }
-
-.section-body.padding-none { padding: 0.25rem; }
-.section-body.padding-small { padding: 0.5rem; }
-.section-body.padding-medium { padding: 0.75rem; }
-.section-body.padding-large { padding: 1.25rem; }
 
 /* Grid */
 .section-grid {
@@ -319,4 +316,14 @@
 
 .empty-step__ico {
   flex-shrink: 0;
+}
+
+@container (max-width: 540px) {
+  .slds-col[class*="slds-size_"],
+  .slds-col[class*="slds-medium-size_"],
+  .slds-col[class*="slds-large-size_"] {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
 }

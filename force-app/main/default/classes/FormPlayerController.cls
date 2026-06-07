@@ -123,7 +123,7 @@ public with sharing class FormPlayerController {
     }
   }
 
-  @AuraEnabled(cacheable=true)
+  @AuraEnabled
   public static FormDef getActiveForm(Id formId) {
     if (formId == null) {
       throw new AuraHandledException('Form Id is required.');
@@ -176,7 +176,7 @@ public with sharing class FormPlayerController {
    * Returns the layout for a specific version — used by the builder's
    * Preview to render the in-progress draft.
    */
-  @AuraEnabled(cacheable=true)
+  @AuraEnabled
   public static FormDef getFormByVersion(Id versionId) {
     assertAuthenticated();
     if (versionId == null) {

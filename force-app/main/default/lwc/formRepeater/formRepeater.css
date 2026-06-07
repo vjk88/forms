@@ -1,0 +1,195 @@
+:host {
+  display: block;
+}
+
+.repeater {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Heading */
+.repeater__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.repeater__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text, #1b1c1c);
+}
+.repeater__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  background: var(--c-accent, #0176d3);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* ===== Stacked cards ===== */
+.rep-card {
+  border: 1px solid var(--c-border, #dddbda);
+  border-radius: var(--c-radius, 8px);
+  background: var(--c-card-bg, #fff);
+  overflow: hidden;
+}
+.rep-card__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.5rem 0.45rem 0.85rem;
+  background: var(--c-surface-alt, #f7f9fb);
+  border-bottom: 1px solid var(--c-border-light, #e5e5e5);
+}
+.rep-card__heading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-label, #514f4d);
+}
+.rep-card__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem 1rem;
+  padding: 0.85rem;
+}
+.rep-cell {
+  min-width: 0;
+}
+
+/* ===== Table (CSS-grid table, aligned columns without <table>) ===== */
+.rep-table {
+  border: 1px solid var(--c-border, #dddbda);
+  border-radius: var(--c-radius, 8px);
+  overflow: hidden;
+}
+.rep-table__head {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-surface-alt, #f7f9fb);
+  border-bottom: 1px solid var(--c-border, #dddbda);
+}
+.rep-table__th {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-text-meta, #6c7480);
+  align-self: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rep-req {
+  color: var(--c-error, #ba1a1a);
+  text-decoration: none;
+  margin-left: 1px;
+}
+.rep-table__rowwrap {
+  border-bottom: 1px solid var(--c-border-light, #e5e5e5);
+}
+.rep-table__rowwrap:last-child {
+  border-bottom: none;
+}
+.rep-table__row {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  align-items: start;
+}
+.rep-tcell {
+  min-width: 0;
+}
+.rep-tcell--action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+
+/* ===== Tiles ===== */
+.rep-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+.rep-tile {
+  border: 1px solid var(--c-border, #dddbda);
+  border-radius: var(--c-radius, 8px);
+  background: var(--c-card-bg, #fff);
+  overflow: hidden;
+}
+.rep-tile[data-error='true'] {
+  border-color: var(--c-error, #ba1a1a);
+}
+.rep-tile__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.4rem 0.4rem 0.75rem;
+  background: var(--c-surface-alt, #f7f9fb);
+  border-bottom: 1px solid var(--c-border-light, #e5e5e5);
+}
+.rep-tile__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-label, #514f4d);
+}
+.rep-tile__body {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.rep-tile__line {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.rep-tile__line dt {
+  color: var(--c-text-meta, #6c7480);
+  flex: 0 0 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rep-tile__line dd {
+  margin: 0;
+  color: var(--c-text, #1b1c1c);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Errors ===== */
+.rep-field-error,
+.rep-row-error {
+  font-size: 0.75rem;
+  color: var(--c-error, #ba1a1a);
+  margin-top: 0.2rem;
+}
+.rep-row-error {
+  padding: 0.25rem 0.85rem 0.6rem;
+}
+
+/* ===== Add button ===== */
+.rep-add {
+  align-self: flex-start;
+}
+
+/* ===== Modal grid ===== */
+.rep-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem 1rem;
+}

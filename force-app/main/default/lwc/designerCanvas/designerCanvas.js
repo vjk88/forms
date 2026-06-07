@@ -64,7 +64,7 @@ export default class DesignerCanvas extends LightningElement {
   // Build a section card's class: base + resolved style variant + selection.
   cardClassFor(section, isSelected) {
     const styleName = resolveSectionStyle(
-      section.sectionStyle,
+      null, // force global uniform style
       this._sectionDefaultStyle
     );
     return `section-card style-${styleName}${isSelected ? " selected" : ""}`;
@@ -85,13 +85,29 @@ export default class DesignerCanvas extends LightningElement {
   enrichElement(el, gridColumns) {
     const isFullWidth = FULL_WIDTH_TYPES.has(el.type);
     const uiBehavior = el.uiBehavior || 'None';
+    const chipClass = `element-chip${isFullWidth && gridColumns > 1 ? ' full-width' : ''}`;
+    
+    // Compute responsive SLDS grid item class
+    let sizeClass = 'slds-size_1-of-1';
+    if (!isFullWidth) {
+      if (gridColumns === 2) {
+        sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2';
+      } else if (gridColumns === 3) {
+        sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3';
+      } else if (gridColumns === 4) {
+        sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-4';
+      }
+    }
+    const gridItemClass = `slds-col ${sizeClass} ${chipClass}`;
+
     return {
       ...el,
       iconName: TYPE_ICONS[el.type] || "utility:text",
       label: el.name || el.fieldApiName || el.type,
       isRequired: uiBehavior === 'Required',
       isReadOnly: uiBehavior === 'Read_Only',
-      chipClass: `element-chip${isFullWidth && gridColumns > 1 ? ' full-width' : ''}`
+      chipClass,
+      gridItemClass
     };
   }
 
@@ -100,7 +116,7 @@ export default class DesignerCanvas extends LightningElement {
     const elements = (section.elements || []).map((el) => this.enrichElement(el, cols));
 
     const relatedSections = (section.relatedSections || []).map((rs, ri) => {
-      const relElements = (rs.elements || []).map((el) => this.enrichElement(el, 1));
+      const relElements = (rs.elements || []).map((el) => this.enrichElement(el, rs.gridColumns || 1));
       return {
         ...rs,
         id: rs.id || `rel-${idx}-${ri}`,
@@ -126,7 +142,7 @@ export default class DesignerCanvas extends LightningElement {
       hasRelatedSections: relatedSections.length > 0,
       canAddRelated: isParent && this.isEditable,
       showHeader,
-      headerStyle: showHeader ? `background-color: ${headerBg}` : '',
+      headerStyle: '', // Ignore individual background color overrides to ensure uniformity
       gridClass: `section-grid columns-${cols}`,
       bodyClass: `section-body padding-${padding}`,
       cardClass: this.cardClassFor(section, isSelected)

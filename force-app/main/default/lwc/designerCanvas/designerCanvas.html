@@ -67,10 +67,10 @@
               ondrop={handleElementDrop}>
 
             <template if:true={section.hasElements}>
-              <div class={section.gridClass}>
+              <div class="slds-grid slds-wrap slds-gutters_x-small">
                 <template for:each={section.elements} for:item="element"
                     for:index="elIdx">
-                  <div key={element.id} class={element.chipClass}
+                  <div key={element.id} class={element.gridItemClass}
                       draggable="true"
                       data-section-index={idx} data-element-index={elIdx}
                       onclick={handleElementClick}
@@ -130,10 +130,10 @@
                     ondragover={handleElementDragOver}
                     ondrop={handleRelatedElementDrop}>
                   <template if:true={relSection.hasElements}>
-                    <div class={relSection.gridClass}>
+                    <div class="slds-grid slds-wrap slds-gutters_x-small">
                       <template for:each={relSection.elements} for:item="relEl"
                           for:index="relElIdx">
-                        <div key={relEl.id} class={relEl.chipClass}
+                        <div key={relEl.id} class={relEl.gridItemClass}
                             data-section-index={idx} data-related-index={relIdx}
                             data-element-index={relElIdx}
                             onclick={handleRelatedElementClick}>

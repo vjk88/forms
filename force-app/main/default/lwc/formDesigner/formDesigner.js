@@ -111,18 +111,29 @@ export default class FormDesigner extends LightningElement {
   _savedHistoryIndex = 0;
   _snapshotTimer = null;
 
-  // canvasSections proxies the CURRENT page's sections, so all existing
+  // canvasSections proxies the CURRENT page's sections (or concatenates all sections
+  // in Single Page mode so the entire form is rendered/edited as one), so all existing
   // section/element handlers keep working unchanged.
   get canvasSections() {
+    if (this.currentLayoutMode === "Single_Page") {
+      return (this._canvasPages || []).reduce((acc, p) => [...acc, ...(p.sections || [])], []);
+    }
     const page = this._canvasPages[this.currentPageIndex];
     return page ? page.sections : [];
   }
   set canvasSections(value) {
     const pages = [...this._canvasPages];
-    pages[this.currentPageIndex] = {
-      ...pages[this.currentPageIndex],
-      sections: value
-    };
+    if (this.currentLayoutMode === "Single_Page") {
+      pages[0] = { ...pages[0], sections: value };
+      for (let i = 1; i < pages.length; i++) {
+        pages[i] = { ...pages[i], sections: [] };
+      }
+    } else {
+      pages[this.currentPageIndex] = {
+        ...pages[this.currentPageIndex],
+        sections: value
+      };
+    }
     this._canvasPages = pages;
     this.markDirty();
   }
@@ -503,24 +514,56 @@ export default class FormDesigner extends LightningElement {
     return `background-color: ${accent}; border-color: ${accent}; color: #ffffff; border-radius: ${radius};`;
   }
 
+  get designerLayout() {
+    return (this.themeConfig && this.themeConfig.layout) || "classic";
+  }
+
+  get isSplitLayout() {
+    return this.designerLayout === "split";
+  }
+
+  get showInlineHeader() {
+    return this.formHeader.visible && !this.isSplitLayout;
+  }
+
+  get designerLayoutContainerClass() {
+    return `designer-layout-container layout-${this.designerLayout}`;
+  }
+
   // Canvas stage style — cascades the same theme tokens the player uses + width
   // + the page background, so the builder looks like the rendered form.
   get stageInnerClass() {
-    return hasPageBackground(this.themeConfig)
-      ? "stage-inner has-page-bg"
-      : "stage-inner";
+    let c = "stage-inner";
+    if (hasPageBackground(this.themeConfig)) c += " has-page-bg";
+    c += ` layout-${this.designerLayout}`;
+    return c;
   }
 
   get designerStageStyle() {
     const parts = [themeVars(this.themeConfig)];
-    const ff = this._formHeader && this._formHeader.fontFamily;
+    const ff = (this._formSettings && this._formSettings.fontFamily) || (this._formHeader && this._formHeader.fontFamily);
     if (ff && ff !== "default") parts.push(`font-family: ${ff}`);
-    const width = Number(this._formSettings && this._formSettings.formWidth) || 760;
-    parts.push(`max-width: ${width}px`);
+    
+    if (this.isSplitLayout) {
+      parts.push("max-width: 1080px");
+    } else {
+      parts.push("max-width: 100%");
+    }
     parts.push("margin: 0 auto");
     // Show the template's page background behind the card in the canvas too.
     parts.push("background: var(--c-page-bg, transparent)");
     return parts.join("; ");
+  }
+
+  get formStageStyle() {
+    const fw = this._formSettings && Number(this._formSettings.formWidth);
+    if (fw) {
+      if (fw <= 100) {
+        return `max-width: ${fw}%; margin: 0 auto; width: 100%;`;
+      }
+      return `max-width: ${fw}px; margin: 0 auto; width: 100%;`;
+    }
+    return "max-width: 100%; margin: 0 auto; width: 100%;";
   }
 
   // --- Page management ---
@@ -763,18 +806,38 @@ export default class FormDesigner extends LightningElement {
       || 'Single_Page';
   }
 
-  // --- Theme (form-level, from the palette Settings tab) ---
-  get currentThemeName() {
-    return (this._formSettings.theme && this._formSettings.theme.name) || "default";
+  // --- In-card navigation PREVIEW (non-functional mirror of the player) ---
+  get navIsWizard() {
+    return this.currentLayoutMode === "Multi_Page_Wizard" && this.hasMultiplePages;
+  }
+  get navIsVertical() {
+    return this.currentLayoutMode === "Vertical_Navigation" && this.hasMultiplePages;
+  }
+  get navIsTop() {
+    return this.currentLayoutMode === "Top_Navigation" && this.hasMultiplePages;
   }
 
-  handleThemeChange(event) {
-    const name = event.detail.value;
-    const preset = PRESET_THEMES[name] || PRESET_THEMES.default;
-    this.formSettings = {
-      ...this._formSettings,
-      theme: { ...preset }
-    };
+  get cardBodyClass() {
+    return this.navIsVertical ? "canvas-card-body has-vnav" : "canvas-card-body";
+  }
+  // Page list for the previews (name + active state), built from the page tabs.
+  get navPreviewItems() {
+    return (this.pageTabs || []).map((p, i) => ({
+      id: p.id || `pp-${i}`,
+      name: p.name,
+      itemClass: p.isActive ? "navpv__item is-active" : "navpv__item"
+    }));
+  }
+  get navPreviewCurrentStep() {
+    const items = this.navPreviewItems;
+    if (!items.length) return null;
+    const idx = Math.min(this.currentPageIndex, items.length - 1);
+    return (items[idx] || items[0]).id;
+  }
+
+  // Theme name (form-level) — recorded in the saved snapshot.
+  get currentThemeName() {
+    return (this._formSettings.theme && this._formSettings.theme.name) || "default";
   }
 
   // --- Auto-fill rules (form-level, from the palette Settings tab) ---
@@ -798,14 +861,6 @@ export default class FormDesigner extends LightningElement {
 
   handleAutofillCancel() {
     this.showAutofillModal = false;
-  }
-
-  // Navigation style switch (multi-page only) from the palette Settings tab.
-  handleNavStyleChange(event) {
-    const mode = event.detail.value;
-    if (mode === this.currentLayoutMode) return;
-    this._layoutMode = mode;
-    this.markDirty();
   }
 
   get versionStatusLabel() {
@@ -1168,6 +1223,15 @@ export default class FormDesigner extends LightningElement {
       return Promise.resolve();
     }
 
+    if (this.currentLayoutMode === "Single_Page" && this._canvasPages.length > 1) {
+      const mergedSections = this._canvasPages.reduce((acc, p) => [...acc, ...(p.sections || [])], []);
+      this._canvasPages = [{
+        ...this._canvasPages[0],
+        sections: mergedSections
+      }];
+      this.currentPageIndex = 0;
+    }
+
     // Make sure the latest edit is in history before we baseline against it.
     this.flushSnapshot();
     this.isSaving = true;
@@ -1448,7 +1512,8 @@ export default class FormDesigner extends LightningElement {
     const h = this._formHeader || {};
     const hasBg = !!h.backgroundImage;
     const alignment = h.alignment || "left";
-    return `canvas-header-card${this.isHeaderSelected ? " selected" : ""}${hasBg ? " has-bg" : ""} align-${alignment}`;
+    const style = (this._formSettings && this._formSettings.theme && this._formSettings.theme.headerStyle) || "inherit";
+    return `canvas-header-card${this.isHeaderSelected ? " selected" : ""}${hasBg ? " has-bg" : ""} align-${alignment} style-${style}`;
   }
 
   get headerCardStyle() {
@@ -1503,11 +1568,6 @@ export default class FormDesigner extends LightningElement {
       this._formHeader.showLogo &&
       !this._formHeader.logoUrl
     );
-  }
-
-  get formFontStyle() {
-    const ff = this._formHeader && this._formHeader.fontFamily;
-    return ff && ff !== "default" ? `font-family: ${ff};` : "";
   }
 
   switchToRelatedContext(relatedSection) {

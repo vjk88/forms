@@ -26,7 +26,7 @@ export const LAYOUT_TEMPLATES = {
     split: {
         name: 'split', layout: 'split', label: 'Split', font: 'luxe',
         accent: '#c9a24b', surface: '#ffffff',
-        pageBg: 'linear-gradient(160deg, #103930 0%, #0a221b 100%)',
+        pageBg: 'linear-gradient(160deg, #059669 0%, #064e3b 100%)',
         radius: 'sharp', cardShadow: 'none', sectionDefault: 'plain', glass: false
     },
     immersive: {
@@ -54,6 +54,16 @@ export const PRESET_THEMES = { default: LAYOUT_TEMPLATES.classic };
 // ----- Curated font pairings (system-safe stacks; custom webfonts via static
 // resources can be layered on later without changing this contract) -----
 export const FONT_PAIRINGS = {
+    salesforce: {
+        label: 'Salesforce Sans (SLDS)',
+        display: "'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        body: "'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    },
+    system: {
+        label: 'System UI (Native)',
+        display: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    },
     enterprise: {
         label: 'Enterprise',
         display: "'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif",
@@ -135,6 +145,9 @@ export function themeVars(t) {
         ? '0 solid transparent'
         : '1px solid var(--c-border-light)';
 
+    const paddingMap = { none: '0.5rem', small: '0.75rem', medium: '1rem', large: '1.5rem' };
+    const paddingVal = paddingMap[theme.sectionPadding] || paddingMap.medium;
+
     const parts = [
         fontVars(theme.font),
         `--c-accent: ${accent}`,
@@ -147,7 +160,11 @@ export function themeVars(t) {
         `--c-card-bg: ${theme.surfaceGradient || theme.surface || '#ffffff'}`,
         `--c-card-border: ${cardBorder}`,
         `--c-card-shadow: ${cardShadow}`,
-        `--c-page-bg: ${theme.pageBg || 'transparent'}`
+        `--c-page-bg: ${theme.pageBg || 'transparent'}`,
+        `--c-section-style: ${theme.sectionDefault || 'card'}`,
+        `--c-section-header-bg: ${theme.sectionHeaderBg || 'var(--c-surface-sunken)'}`,
+        `--c-section-padding: ${paddingVal}`,
+        `--c-header-style: ${theme.headerStyle || 'inherit'}`
     ];
 
     // Dark skins (e.g. Immersive glass) flip the chrome text tokens so our

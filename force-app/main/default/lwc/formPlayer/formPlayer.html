@@ -60,13 +60,15 @@
     <template if:false={isSubmitted}>
         <template if:false={isLoading}>
             <template if:false={loadError}>
-              <div class="player-layout">
+              <div class="player-layout" style={playerLayoutStyle}>
                 <!-- Split layout: brand panel beside the form (reuses header) -->
                 <template if:true={isSplitLayout}>
                     <aside class="player-brand">
                         <div class="player-brand__inner">
-                            <template if:true={header.logoUrl}>
-                                <img src={header.logoUrl} alt="Logo" class="player-brand__logo" />
+                            <template if:true={header.showLogo}>
+                                <template if:true={header.logoUrl}>
+                                    <img src={header.logoUrl} alt="Logo" class="player-brand__logo" />
+                                </template>
                             </template>
                             <h2 class="player-brand__title">{header.title}</h2>
                             <template if:true={header.subtitle}>
@@ -104,16 +106,53 @@
                         </div>
                     </template>
 
-                    <!-- Progress bar (wizard) -->
+                    <!-- Progress bar / trackers (wizard) -->
                     <template if:true={isWizard}>
-                        <ol class="player-progress">
-                            <template for:each={progressSteps} for:item="step">
-                                <li key={step.id} class={step.stepClass}>
-                                    <span class="progress-dot"></span>
-                                    <span class="progress-label">{step.name}</span>
-                                </li>
-                            </template>
-                        </ol>
+                        <template if:true={isTrackerProgressBar}>
+                            <ol class="player-progress">
+                                <template for:each={progressSteps} for:item="step">
+                                    <li key={step.id} class={step.stepClass}>
+                                        <span class="progress-dot"></span>
+                                        <span class="progress-label">{step.name}</span>
+                                    </li>
+                                </template>
+                            </ol>
+                        </template>
+                        <template if:true={isTrackerStepCircles}>
+                            <div class="player-step-circles slds-p-horizontal_medium slds-p-top_medium">
+                                <lightning-progress-indicator current-step={currentPageId} type="base" variant="default">
+                                    <template for:each={progressSteps} for:item="step">
+                                        <lightning-progress-step key={step.id} label={step.name} value={step.id} onclick={handleProgressStepClick}></lightning-progress-step>
+                                    </template>
+                                </lightning-progress-indicator>
+                            </div>
+                        </template>
+                        <template if:true={isTrackerBreadcrumbs}>
+                            <div class="player-breadcrumbs slds-p-horizontal_medium slds-p-top_medium">
+                                <lightning-breadcrumbs>
+                                    <template for:each={progressSteps} for:item="step">
+                                        <lightning-breadcrumb key={step.id} label={step.name} href="javascript:void(0);" data-index={step.index} onclick={handleNavSelect}></lightning-breadcrumb>
+                                    </template>
+                                </lightning-breadcrumbs>
+                            </div>
+                        </template>
+                    </template>
+
+                    <!-- Top navigation (horizontal tabs) -->
+                    <template if:true={isTopNav}>
+                        <div class="player-topnav">
+                            <ul class="player-topnav__list" role="tablist">
+                                <template for:each={navItems} for:item="nav">
+                                    <li key={nav.id} class={nav.navItemClass} role="presentation">
+                                        <a class="player-topnav__link" href="javascript:void(0);"
+                                            role="tab" tabindex="0" aria-selected={nav.isActive}
+                                            data-index={nav.index} onclick={handleNavSelect}>
+                                            {nav.name}
+                                        </a>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
                     </template>
 
                     <div class="player-body">
@@ -132,12 +171,50 @@
 
                         <!-- Form content -->
                         <div class="player-scroll">
+
+
+                            <!-- Summary & Review Page -->
+                            <template if:true={showSummaryActive}>
+                                <div class="player-summary slds-p-around_large">
+                                    <h2 class="slds-text-heading_medium slds-m-bottom_medium font-weight-bold">Review Your Information</h2>
+                                    <div class="summary-cards">
+                                        <template for:each={summarySections} for:item="sec">
+                                            <div key={sec.id} class="summary-section-card slds-box slds-m-bottom_medium">
+                                                <div class="summary-section-header slds-grid slds-grid_align-spread slds-m-bottom_small">
+                                                    <h3 class="slds-text-title_bold">{sec.name}</h3>
+                                                    <lightning-button-icon
+                                                        icon-name="utility:edit"
+                                                        variant="bare"
+                                                        alternative-text="Edit section"
+                                                        data-pageindex={sec.pageIndex}
+                                                        onclick={handleEditSummarySection}>
+                                                    </lightning-button-icon>
+                                                </div>
+                                                <div class="summary-section-body">
+                                                    <dl class="slds-list_horizontal slds-wrap">
+                                                        <template for:each={sec.fields} for:item="f">
+                                                            <dt key={f.id} class="slds-item_label slds-text-color_weak slds-truncate" title={f.label} style="width: 40%; font-weight: 500;">
+                                                                {f.label}:
+                                                            </dt>
+                                                            <dd key={f.id} class="slds-item_detail slds-truncate" title={f.value} style="width: 60%; padding-left: 0.5rem; word-break: break-all;">
+                                                                {f.value}
+                                                            </dd>
+                                                        </template>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
                             <lightning-record-edit-form
                                 object-api-name={primaryObject}
                                 record-id={effectiveRecordId}
                                 onsubmit={handleFormSubmit}
                                 onsuccess={handleSuccess}
-                                onerror={handleError}>
+                                onerror={handleError}
+                                class={formRecordClass}>
 
                                 <template for:each={renderedPages} for:item="page">
                                     <div key={page.id} class={page.wrapperClass}>
@@ -158,13 +235,13 @@
                                                         {section.name}
                                                     </div>
                                                 </template>
-                                                <div class="player-section-body">
-                                                    <div class={section.gridClass}>
-                                                        <template
-                                                            for:each={section.elements}
-                                                            for:item="el">
-                                                            <div key={el.id}
-                                                                class={el.elWrapperClass}>
+                                                 <div class="player-section-body">
+                                                     <div class="slds-grid slds-wrap slds-gutters_x-small">
+                                                         <template
+                                                             for:each={section.elements}
+                                                             for:item="el">
+                                                             <div key={el.id}
+                                                                 class={el.gridItemClass}>
                                                                 <!-- Field (native render) -->
                                                                 <template if:true={el.isFieldDefault}>
                                                                     <lightning-input-field
@@ -369,6 +446,7 @@
 
                             <!-- Navigation buttons (grouped on the right) -->
                             <div class="player-nav-buttons">
+
                                 <div class="nav-spacer"></div>
                                 <template if:true={showBack}>
                                     <lightning-button variant="neutral" label="Back"
