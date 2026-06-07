@@ -564,6 +564,12 @@
     padding: var(--c-section-padding, 0.75rem);
 }
 
+/* Related-list repeater sits below the section's own fields */
+.player-repeater {
+    display: block;
+    margin-top: 1rem;
+}
+
 /* ===== Section style variants ===== */
 /* Card is the default look above. */
 

@@ -7,6 +7,7 @@ import getUserContext from '@salesforce/apex/FormPlayerController.getUserContext
 import getCurrentUserFields from '@salesforce/apex/FormPlayerController.getCurrentUserFields';
 import getPicklistOptions from '@salesforce/apex/FormPlayerController.getPicklistOptions';
 import getRecordFields from '@salesforce/apex/FormPlayerController.getRecordFields';
+import submitForm from '@salesforce/apex/FormSubmitController.submitForm';
 import { themeVars, hasPageBackground, resolveSectionStyle, layoutOf } from 'c/formThemes';
 
 export default class FormPlayer extends NavigationMixin(LightningElement) {
@@ -528,6 +529,12 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     enrichSection(section) {
         const cols = section.gridColumns || 1;
         const elements = (section.elements || []).map((e) => this.enrichElement(e));
+        // Related-list "repeaters" — a child relationship rendered once per
+        // child record. Today these live as section.relatedSections[]; the
+        // player normalises them into a single `repeaters` array.
+        const repeaters = (section.relatedSections || []).map((rs) =>
+            this.enrichRepeater(rs)
+        );
         return {
             id: section.id,
             name: section.name,
@@ -538,9 +545,46 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
             gridClass: `player-grid cols-${cols}`,
             hasElements: elements.length > 0,
             elements,
+            repeaters,
+            hasRepeaters: repeaters.length > 0,
             isRepeatable: section.contextType === 'Related_Child',
             visibilityExpression: section.visibilityExpression
         };
+    }
+
+    // Normalise a related-list section into the props c/formRepeater needs.
+    // NOTE: in the stored model `parentSObjectApi` is the CHILD object's api
+    // name and `linkingField` is the child lookup pointing back to the parent.
+    enrichRepeater(rs) {
+        const fields = (rs.elements || [])
+            .filter((e) => (e.type || 'Field') === 'Field' && e.fieldApiName)
+            .map((e) => {
+                const ui = e.uiBehavior || 'None';
+                return {
+                    fieldApiName: e.fieldApiName,
+                    label: e.name || e.label || e.fieldApiName,
+                    required: ui === 'Required',
+                    readOnly: ui === 'Read_Only',
+                    isHidden: ui === 'Hidden'
+                };
+            });
+        const title = rs.name || 'Records';
+        return {
+            id: rs.id,
+            title,
+            childObjectApiName: rs.parentSObjectApi,
+            linkingField: rs.linkingField,
+            displayStyle: rs.displayStyle || 'stacked',
+            addLabel: rs.addLabel || `Add ${this.singularLabel(title)}`,
+            minRows: rs.minRows != null ? Number(rs.minRows) : 0,
+            maxRows: rs.maxRows != null ? Number(rs.maxRows) : 0,
+            fields
+        };
+    }
+
+    singularLabel(name) {
+        const t = name || 'Record';
+        return t.endsWith('s') ? t.slice(0, -1) : t;
     }
 
     enrichElement(el) {
@@ -1193,6 +1237,14 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
         return !this.effectiveRecordId;
     }
 
+    // True when any section carries a related-list repeater — such forms save
+    // through the atomic FormSubmitController instead of the native form DML.
+    get hasRepeaters() {
+        return (this.pages || []).some((p) =>
+            (p.sections || []).some((s) => s.repeaters && s.repeaters.length)
+        );
+    }
+
     // --- Navigation ---
 
     // Whether moving forward should validate the current page first. Wizards
@@ -1375,7 +1427,23 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
 
         this.fieldErrors = fieldErrs;
 
-        if (errors.length) {
+        // Related-list rows live in child component shadow DOMs, so validate
+        // them through each repeater's own native fields.
+        let repeatersValid = true;
+        if (this.hasRepeaters) {
+            this.template.querySelectorAll('c-form-repeater').forEach((rep) => {
+                if (rep.reportValidity && !rep.reportValidity()) {
+                    repeatersValid = false;
+                }
+            });
+        }
+
+        if (errors.length || !repeatersValid) {
+            if (!errors.length && !repeatersValid) {
+                errors.push(
+                    'Please complete the required fields in the related lists.'
+                );
+            }
             this.setSubmitErrors(errors);
             // In multi-page layouts, jump to the first page that has an error
             // so its inline message is actually on screen (not on a hidden page).
@@ -1393,23 +1461,151 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
         // click can't fire another DML and create a duplicate record. Cleared
         // in handleSuccess / handleError (and on a honeypot drop).
         this._submitting = true;
+        this.clearFieldValidity();
 
-        // Clear any stale server (validation-rule) errors still attached to
-        // fields from a previous submit so the record-edit-form re-validates
-        // from scratch and re-fires onerror if a rule still fails.
-        this.template
-            .querySelectorAll('lightning-input-field')
-            .forEach((f) => {
-                if (typeof f.setCustomValidity === 'function') {
-                    f.setCustomValidity('');
-                }
-            });
-
-        const form = this.template.querySelector('lightning-record-edit-form');
-        if (form) {
-            // Fires onsubmit (merge of custom values) then native DML.
-            form.submit();
+        if (this.hasRepeaters) {
+            // Parent + children in one atomic transaction via Apex.
+            this.submitViaEngine();
+        } else {
+            const form = this.template.querySelector(
+                'lightning-record-edit-form'
+            );
+            if (form) {
+                // Fires onsubmit (merge of custom values) then native DML.
+                form.submit();
+            }
         }
+    }
+
+    // Clear any stale server (validation-rule) errors left on fields from a
+    // previous submit so a resubmit re-validates from scratch.
+    clearFieldValidity() {
+        this.template.querySelectorAll('lightning-input-field').forEach((f) => {
+            if (typeof f.setCustomValidity === 'function') {
+                f.setCustomValidity('');
+            }
+        });
+        if (this.hasRepeaters) {
+            this.template.querySelectorAll('c-form-repeater').forEach((rep) => {
+                if (rep.clearErrors) rep.clearErrors();
+            });
+        }
+    }
+
+    // --- Atomic submit (forms with related-list repeaters) ---
+
+    submitViaEngine() {
+        const parentValues = this.collectParentValues();
+        const children = [];
+        this._repForBlock = [];
+        this.template.querySelectorAll('c-form-repeater').forEach((rep) => {
+            const block = rep.collectRows ? rep.collectRows() : null;
+            if (block && block.rows && block.rows.length) {
+                children.push(block);
+                this._repForBlock.push(rep);
+            }
+        });
+
+        submitForm({
+            objectApiName: this.primaryObject,
+            parentValues,
+            existingRecordId: this.effectiveRecordId || null,
+            children
+        })
+            .then((res) => this.handleEngineResult(res))
+            .catch((e) => this.handleEngineCatch(e));
+    }
+
+    // Parent field values for the engine: native fields + custom-control values
+    // (the same merge the native onsubmit path does), excluding the hidden
+    // carriers that back custom controls and the child fields (those are in the
+    // repeaters' shadow DOMs, so this query never reaches them).
+    collectParentValues() {
+        const values = {};
+        this.template.querySelectorAll('lightning-input-field').forEach((f) => {
+            if (!f.fieldName) return;
+            if (f.classList && f.classList.contains('slds-hide')) return;
+            values[f.fieldName] = f.value;
+        });
+        this.allCustomElements.forEach((el) => {
+            const v = this.liveValues[el.fieldApiName];
+            if (v === undefined) return;
+            values[el.fieldApiName] = el.isMulti
+                ? Array.isArray(v)
+                    ? v.join(';')
+                    : v
+                : v;
+        });
+        return values;
+    }
+
+    handleEngineResult(res) {
+        this._submitting = false;
+        if (res && res.success) {
+            this.savedRecordId = res.recordId;
+            this.afterSuccess();
+            return;
+        }
+        this.applyEngineErrors((res && res.errors) || []);
+    }
+
+    handleEngineCatch(e) {
+        this._submitting = false;
+        const msg =
+            (e && e.body && e.body.message) ||
+            (e && e.message) ||
+            'There was a problem saving the form.';
+        this.setSubmitErrors([msg]);
+    }
+
+    // Route a SubmitResult's structured errors back to the exact place:
+    // parent native fields inline, parent custom controls to fieldErrors, and
+    // child rows to their repeater via applyRowErrors().
+    applyEngineErrors(errors) {
+        const summary = [];
+        const nativeFieldErrs = {};
+        const customFieldErrs = {};
+        const byBlock = {};
+        const customApis = new Set(
+            this.allCustomElements.map((el) => el.fieldApiName)
+        );
+
+        (errors || []).forEach((e) => {
+            if (e.message) summary.push(e.message);
+            if (e.scope === 'child') {
+                (byBlock[e.blockIndex] = byBlock[e.blockIndex] || []).push(e);
+            } else {
+                (e.fields || []).forEach((api) => {
+                    if (customApis.has(api)) customFieldErrs[api] = e.message;
+                    else nativeFieldErrs[api] = e.message;
+                });
+            }
+        });
+
+        this.template.querySelectorAll('lightning-input-field').forEach((f) => {
+            if (f.fieldName && nativeFieldErrs[f.fieldName] && f.setCustomValidity) {
+                f.setCustomValidity(nativeFieldErrs[f.fieldName]);
+                if (f.reportValidity) f.reportValidity();
+            }
+        });
+
+        if (Object.keys(customFieldErrs).length) {
+            this.fieldErrors = { ...this.fieldErrors, ...customFieldErrs };
+        }
+
+        Object.keys(byBlock).forEach((bi) => {
+            const rep = this._repForBlock && this._repForBlock[Number(bi)];
+            if (rep && rep.applyRowErrors) rep.applyRowErrors(byBlock[bi]);
+        });
+
+        if (!summary.length) {
+            summary.push('There was a problem saving the form.');
+        }
+        this.setSubmitErrors(summary);
+        this.goToFirstErrorPage([
+            ...Object.keys(nativeFieldErrs),
+            ...Object.keys(customFieldErrs)
+        ]);
     }
 
     isEmptyValue(v) {
@@ -1534,6 +1730,12 @@ export default class FormPlayer extends NavigationMixin(LightningElement) {
     handleSuccess(event) {
         this.savedRecordId = event.detail.id;
         this._submitting = false;
+        this.afterSuccess();
+    }
+
+    // Shared post-save behavior (native form path + atomic engine path):
+    // toast-and-go, or the completion screen with optional auto-redirect.
+    afterSuccess() {
         const created = this.isCreateMode;
         const s = this.formSettings;
 

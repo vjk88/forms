@@ -401,6 +401,23 @@
                                                             </div>
                                                         </template>
                                                     </div>
+                                                    <!-- Related-list repeaters -->
+                                                    <template if:true={section.hasRepeaters}>
+                                                        <template for:each={section.repeaters}
+                                                            for:item="rep">
+                                                            <c-form-repeater key={rep.id}
+                                                                class="player-repeater"
+                                                                child-object-api-name={rep.childObjectApiName}
+                                                                linking-field={rep.linkingField}
+                                                                title={rep.title}
+                                                                add-label={rep.addLabel}
+                                                                display-style={rep.displayStyle}
+                                                                fields={rep.fields}
+                                                                min-rows={rep.minRows}
+                                                                max-rows={rep.maxRows}>
+                                                            </c-form-repeater>
+                                                        </template>
+                                                    </template>
                                                 </div>
                                             </div>
                                         </template>
