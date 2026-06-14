@@ -1,0 +1,126 @@
+<template>
+    <div class={sectionClass}>
+        <div class="section-header">
+            <h2 class="section-title">{section.title}</h2>
+            <template if:true={section.description}>
+                <p class="section-desc">{section.description}</p>
+            </template>
+        </div>
+
+        <!-- Standard Section: Grid of Elements -->
+        <template if:false={isRelatedList}>
+            <div class={gridClass}>
+                <template for:each={computedElements} for:item="element">
+                    <c-z-form-element
+                        key={element.key}
+                        element={element}
+                        value={element.value}
+                        schema-field={element.schemaField}
+                        error-message={element.errorMessage}
+                        onvaluechange={handleValueChange}
+                    ></c-z-form-element>
+                </template>
+            </div>
+        </template>
+
+        <!-- Related List Section (Repeater) -->
+        <template if:true={isRelatedList}>
+            <div class="related-list-container">
+                
+                <!-- Display Mode: Table -->
+                <template if:true={isTableMode}>
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered custom-table">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <template for:each={relatedListConfig.fields} for:item="fld">
+                                    <th key={fld.key} scope="col">
+                                        <div class="slds-truncate">{fld.label}</div>
+                                    </th>
+                                </template>
+                                <th scope="col" style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={computedRepeaterRows} for:item="row">
+                                <tr key={row.rowId} class="slds-hint-parent">
+                                    <template for:each={row.fields} for:item="fld">
+                                        <td key={fld.key}>
+                                            <c-z-form-element
+                                                element={fld}
+                                                value={fld.value}
+                                                schema-field={fld.schemaField}
+                                                onvaluechange={handleRowValueChange}
+                                                data-row-id={row.rowId}
+                                            ></c-z-form-element>
+                                        </td>
+                                    </template>
+                                    <td>
+                                        <button class="delete-btn" onclick={handleDeleteRow} data-row-id={row.rowId}>&times;</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+
+                <!-- Display Mode: Tile Menu -->
+                <template if:true={isTileMode}>
+                    <div class="tile-grid">
+                        <template for:each={computedRepeaterRows} for:item="row">
+                            <div key={row.rowId} class="tile-card">
+                                <div class="tile-header">
+                                    <span>Record #{row.index}</span>
+                                    <button class="delete-btn-inline" onclick={handleDeleteRow} data-row-id={row.rowId}>&times;</button>
+                                </div>
+                                <div class="tile-body">
+                                    <template for:each={row.fields} for:item="fld">
+                                        <c-z-form-element
+                                            key={fld.key}
+                                            element={fld}
+                                            value={fld.value}
+                                            schema-field={fld.schemaField}
+                                            onvaluechange={handleRowValueChange}
+                                            data-row-id={row.rowId}
+                                        ></c-z-form-element>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Display Mode: Full Sub-section -->
+                <template if:true={isSubSectionMode}>
+                    <div class="subsection-stack">
+                        <template for:each={computedRepeaterRows} for:item="row">
+                            <div key={row.rowId} class="subsection-item">
+                                <div class="subsection-header">
+                                    <h3>{relatedListConfig.childSObject} Entry #{row.index}</h3>
+                                    <button class="slds-button slds-button_destructive btn-small" onclick={handleDeleteRow} data-row-id={row.rowId}>Delete</button>
+                                </div>
+                                <div class="subsection-body">
+                                    <template for:each={row.fields} for:item="fld">
+                                        <c-z-form-element
+                                            key={fld.key}
+                                            element={fld}
+                                            value={fld.value}
+                                            schema-field={fld.schemaField}
+                                            onvaluechange={handleRowValueChange}
+                                            data-row-id={row.rowId}
+                                        ></c-z-form-element>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Action Button to Add Row -->
+                <div class="repeater-actions">
+                    <button class="slds-button slds-button_neutral add-row-btn" onclick={handleAddRow}>+ Add Record</button>
+                </div>
+
+            </div>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Form Viewer</masterLabel>
+    <description>Renders a published form (new layout-engine stack) for filling and submission.</description>
+    <targets>
+        <target>lightning__RecordPage</target>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <property name="formId" type="String" label="Form"
+                datasource="apex://FormChoices"
+                description="Form to render. The active published version is used."/>
+        </targetConfig>
+        <targetConfig targets="lightning__AppPage,lightning__HomePage">
+            <property name="formId" type="String" label="Form"
+                datasource="apex://FormChoices"
+                description="Form to render. A ?formId= URL parameter overrides this."/>
+            <property name="recordId" type="String" label="Record Id (optional)"
+                description="Optional record Id for prefill/edit context. A ?recordId= URL parameter overrides this."/>
+            <property name="versionId" type="String" label="Version Id (optional)"
+                description="Render a specific version instead of the active published one."/>
+            <property name="mode" type="String" label="Mode" default="published"
+                description="published (saves on submit) or test (validates only, no save)."/>
+        </targetConfig>
+        <targetConfig targets="lightningCommunity__Default">
+            <property name="formId" type="String" label="Form Id"
+                description="Id of the Form (Form__c) to render."/>
+            <property name="recordId" type="String" label="Record Id"
+                description="Optional record Id for prefill/edit context."/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

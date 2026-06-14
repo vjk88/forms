@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>New-stack live section renderer: one record-edit-form per section, all 14 element kinds, repeater hosting (PHASE2_WORKPLAN T2.1).</description>
+</LightningComponentBundle>

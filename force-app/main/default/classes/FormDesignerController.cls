@@ -416,7 +416,7 @@ public with sharing class FormDesignerController {
     Id activeVersionId = activeVersions[0].Id;
 
     Form_Version__c activeFull = [
-      SELECT Id, Layout_Config__c, Schema_Snapshot__c, Layout_Mode__c
+      SELECT Id, Layout_Config__c, Schema_Snapshot__c, Layout_Mode__c, Layout_Spec__c
       FROM Form_Version__c
       WHERE Id = :activeVersionId
       WITH USER_MODE
@@ -439,6 +439,8 @@ public with sharing class FormDesignerController {
       draft.Is_Active__c = false;
       draft.Layout_Config__c = activeFull.Layout_Config__c;
       draft.Layout_Mode__c = activeFull.Layout_Mode__c;
+      // Spec references stable keys (copied verbatim below), so it clones as-is.
+      draft.Layout_Spec__c = activeFull.Layout_Spec__c;
       draft.Published_Date__c = System.now();
       insert as user draft;
 
@@ -648,6 +650,7 @@ public with sharing class FormDesignerController {
       SELECT
         Id,
         Name,
+        Key__c,
         Sequence__c,
         Description__c,
         Skip_Condition_Expression__c,
@@ -679,6 +682,7 @@ public with sharing class FormDesignerController {
       SELECT
         Id,
         Name,
+        Key__c,
         Form_Page__c,
         Sequence__c,
         Context_Type__c,
@@ -757,6 +761,159 @@ public with sharing class FormDesignerController {
       }
       insert as user newElements;
     }
+  }
+
+  // --- Layout Spec (redesign) ---
+  // THE single persistence path for Form_Version__c.Layout_Spec__c
+  // (LAYOUT_SPEC §6, COPILOT_PANEL §5). Designer save, copilot Apply and
+  // import all call this; do not write Layout_Spec__c anywhere else.
+
+  private static final Integer SPEC_HISTORY_LIMIT = 20;
+
+  /**
+   * Validate-then-write a new Layout Spec for a DRAFT version, pushing the
+   * prior spec onto the Spec_History__c undo ring buffer (last 20).
+   *
+   * The new spec is computed client-side by c/layoutModel applyOps (the same
+   * code that renders the ghost preview); the server re-runs the FULL
+   * validator before persisting, so an invalid spec can never be stored no
+   * matter what the client sends. `opsJson` is audit metadata for the
+   * changelog ("Moved Address beside Contact Info"), not the write input.
+   *
+   * @param formVersionId draft Form_Version__c
+   * @param specJson      complete new Layout Spec JSON (or null/blank to clear → legacy path)
+   * @param opsJson       optional LAYOUT_SPEC §10 ops applied (changelog/audit)
+   * @param source        Manual | Copilot | Wizard | Import
+   * @return { spec, warnings[] }
+   */
+  @AuraEnabled
+  public static Map<String, Object> applySpecPatch(
+    Id formVersionId,
+    String specJson,
+    String opsJson,
+    String source
+  ) {
+    if (formVersionId == null) {
+      throw new AuraHandledException('Version Id is required.');
+    }
+
+    List<Form_Version__c> versions = [
+      SELECT Id, Is_Active__c, Layout_Spec__c
+      FROM Form_Version__c
+      WHERE Id = :formVersionId
+      WITH USER_MODE
+      LIMIT 1
+    ];
+    if (versions.isEmpty()) {
+      throw new AuraHandledException('Version not found.');
+    }
+    Form_Version__c version = versions[0];
+    if (version.Is_Active__c) {
+      throw new AuraHandledException(
+        'Layout changes are only allowed on draft versions.'
+      );
+    }
+
+    FormLayoutSpecValidator.Result vr;
+    if (String.isBlank(specJson)) {
+      // Clearing the spec = explicit return to the legacy rendering path.
+      vr = new FormLayoutSpecValidator.Result();
+      vr.ok = true;
+      specJson = null;
+    } else {
+      vr = FormLayoutSpecValidator.validateForVersion(specJson, formVersionId);
+      if (!vr.ok) {
+        // Machine-readable for agent self-correction (COPILOT_PANEL §6).
+        throw new AuraHandledException(
+          'INVALID_SPEC:' + JSON.serialize(vr.errors)
+        );
+      }
+    }
+
+    String resolvedSource = String.isBlank(source) ? 'Manual' : source;
+
+    Savepoint sp = Database.setSavepoint();
+    try {
+      pushSpecHistory(version, opsJson, resolvedSource);
+
+      version.Layout_Spec__c = specJson;
+      update as user version;
+
+      return new Map<String, Object>{
+        'spec' => specJson,
+        'warnings' => vr.warnings
+      };
+    } catch (AuraHandledException e) {
+      Database.rollback(sp);
+      throw e;
+    } catch (Exception e) {
+      Database.rollback(sp);
+      throw new AuraHandledException(
+        'Error applying layout change: ' + e.getMessage()
+      );
+    }
+  }
+
+  /** Ring buffer: insert prior state, trim to the newest SPEC_HISTORY_LIMIT. */
+  private static void pushSpecHistory(
+    Form_Version__c version,
+    String opsJson,
+    String source
+  ) {
+    List<Spec_History__c> existing = [
+      SELECT Id, Sequence__c
+      FROM Spec_History__c
+      WHERE Form_Version__c = :version.Id
+      WITH USER_MODE
+      ORDER BY Sequence__c DESC
+    ];
+    Decimal nextSeq = existing.isEmpty() ? 1 : existing[0].Sequence__c + 1;
+
+    Spec_History__c entry = new Spec_History__c(
+      Form_Version__c = version.Id,
+      Spec_JSON__c = version.Layout_Spec__c,
+      Ops_JSON__c = opsJson,
+      Source__c = source,
+      Sequence__c = nextSeq
+    );
+    insert as user entry;
+
+    // Keep the newest SPEC_HISTORY_LIMIT (the new entry + LIMIT-1 existing).
+    if (existing.size() >= SPEC_HISTORY_LIMIT) {
+      List<Spec_History__c> stale = new List<Spec_History__c>();
+      for (Integer i = SPEC_HISTORY_LIMIT - 1; i < existing.size(); i++) {
+        stale.add(existing[i]);
+      }
+      delete as user stale;
+    }
+  }
+
+  /** Undo data for the designer/copilot changelog (newest first). */
+  @AuraEnabled
+  public static List<Map<String, Object>> getSpecHistory(Id formVersionId) {
+    if (formVersionId == null) {
+      throw new AuraHandledException('Version Id is required.');
+    }
+    List<Map<String, Object>> out = new List<Map<String, Object>>();
+    for (Spec_History__c h : [
+      SELECT Id, Sequence__c, Source__c, Ops_JSON__c, Spec_JSON__c, CreatedDate
+      FROM Spec_History__c
+      WHERE Form_Version__c = :formVersionId
+      WITH USER_MODE
+      ORDER BY Sequence__c DESC
+    ]) {
+      out.add(
+        new Map<String, Object>{
+          'id' => h.Id,
+          'sequence' => h.Sequence__c,
+          'source' => h.Source__c,
+          'ops' => h.Ops_JSON__c,
+          'priorSpec' => h.Spec_JSON__c,
+          'createdDate' => h.CreatedDate
+        }
+      );
+    }
+    return out;
   }
 
   // --- Builder draft save / load ---

@@ -1,0 +1,38 @@
+<template>
+    <div class="layout">
+        <!-- Sticky brand panel -->
+        <aside class="panel" style={panelStyle}>
+            <div class="panel-inner">
+                <span lwc:if={model.header.logo} class="panel-logo">
+                    <img src={model.header.logo} alt="" />
+                </span>
+                <div class="panel-body">
+                    <p lwc:if={showTitle} class="panel-title">{model.header.title}</p>
+                    <p lwc:if={showDesc} class="panel-desc">{model.header.description}</p>
+                </div>
+                <!-- Step progress dots (multi-page stepper) -->
+                <div lwc:if={isMultiPage} class="step-dots" role="img" aria-label={progressLabel}>
+                    <template for:each={stepItems} for:item="s">
+                        <span key={s.key} class={s.dotClass} title={s.label}></span>
+                    </template>
+                </div>
+            </div>
+        </aside>
+        <!-- Scrolling form pane -->
+        <div class="pane">
+            <template for:each={panePages} for:item="page">
+                <div key={page.pageKey} class="page">
+                    <c-layout-zones
+                        zones={page.zones}
+                        mode={mode}>
+                    </c-layout-zones>
+                </div>
+            </template>
+            <div class={submitClass}>
+                <button lwc:if={showBack} type="button" class="btn-ghost" onclick={fireBack}><span aria-hidden="true">←&nbsp;</span>{model.labels.back}</button>
+                <button lwc:if={showNext} type="button" class="btn-primary" onclick={fireNext}>{model.labels.next}<span aria-hidden="true">&nbsp;→</span></button>
+                <button lwc:if={showSubmit} type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+            </div>
+        </div>
+    </div>
+</template>

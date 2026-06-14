@@ -82,6 +82,22 @@ public with sharing class FormSubmitController {
     List<ChildBlock> children
   ) {
     assertAuthenticated();
+    return submitCore(objectApiName, parentValues, existingRecordId, children);
+  }
+
+  /**
+   * Same engine without the guest assert — the entry points own audience
+   * gating: submitForm (authenticated) above, and FormViewerGuest's
+   * hard-gated guest path (Published + Public_Guest, insert-only). Always
+   * AccessLevel.USER_MODE, so the RUNNING user's CRUD/FLS applies — for a
+   * guest that is the guest profile's create access, nothing more.
+   */
+  public static SubmitResult submitCore(
+    String objectApiName,
+    Map<String, Object> parentValues,
+    Id existingRecordId,
+    List<ChildBlock> children
+  ) {
     if (String.isBlank(objectApiName)) {
       throw new AuraHandledException('A primary object is required.');
     }

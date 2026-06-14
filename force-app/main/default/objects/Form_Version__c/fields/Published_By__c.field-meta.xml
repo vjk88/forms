@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Published_By__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description>User who published this version</description>
-    <inlineHelpText
-  >The user who published this version of the form</inlineHelpText>
+    <inlineHelpText>The user who published this version of the form</inlineHelpText>
     <label>Published By</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>Form Versions Published</relationshipLabel>

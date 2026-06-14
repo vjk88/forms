@@ -1,0 +1,203 @@
+<template>
+    <div class="gallery-root">
+        <!-- ============================ GALLERY (Screen 1) ============================ -->
+        <template lwc:if={isGalleryView}>
+            <header class="g-head">
+                <div>
+                    <h1 class="g-title">Create a form</h1>
+                    <p class="g-sub">Start from a ready-made template, or pick a layout and make it your own.</p>
+                </div>
+                <button class="g-close" type="button" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" size="x-small" alternative-text="Close"></lightning-icon>
+                </button>
+            </header>
+
+            <!-- Entry mode toggle -->
+            <div class="entry-bar" role="tablist">
+                <button class={templateTabClass} type="button" role="tab" onclick={handleEntryTemplate}>
+                    <lightning-icon icon-name="utility:apps" size="x-small"></lightning-icon>
+                    <span>Start from a template</span>
+                </button>
+                <button class={scratchTabClass} type="button" role="tab" onclick={handleEntryScratch}>
+                    <lightning-icon icon-name="utility:layout" size="x-small"></lightning-icon>
+                    <span>Start from scratch</span>
+                </button>
+            </div>
+
+            <!-- Mode A: templates -->
+            <div lwc:if={isTemplateMode} class="card-grid">
+                <template for:each={templateCards} for:item="card">
+                    <div key={card.id} class="t-card" role="button" tabindex="0"
+                        data-id={card.id} onclick={handlePick} onkeydown={handlePickKey}>
+                        <div class="t-thumb" aria-hidden="true">
+                            <c-form-layout-engine lwc:if={card.showPreview}
+                                spec={card.spec} pages={card.pages} sections={card.sections}
+                                elements={card.elements} skin={card.skin} mode="preview"
+                                preview-scale={card.previewScale} form-title={card.title}
+                            ></c-form-layout-engine>
+                            <div lwc:else class="t-thumb-skel"></div>
+                        </div>
+                        <div class="t-meta">
+                            <div class="t-meta-top">
+                                <lightning-icon icon-name={card.icon} size="small"></lightning-icon>
+                                <span class="t-name">{card.name}</span>
+                            </div>
+                            <p class="t-desc">{card.description}</p>
+                            <span class="t-tag">{card.objectTag}</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Mode B: layouts, grouped -->
+            <div lwc:if={isScratchMode} class="scratch">
+                <template for:each={scratchGroups} for:item="grp">
+                    <section key={grp.id} class="lg-group">
+                        <div class="lg-head">
+                            <h2 class="lg-title">{grp.label}</h2>
+                            <span class="lg-hint">{grp.hint}</span>
+                        </div>
+                        <div class="card-grid">
+                            <template for:each={grp.cards} for:item="card">
+                                <div key={card.id} class="t-card" role="button" tabindex="0"
+                                    data-id={card.id} onclick={handlePick} onkeydown={handlePickKey}>
+                                    <div class="t-thumb" aria-hidden="true">
+                                        <c-form-layout-engine lwc:if={card.showPreview}
+                                            spec={card.spec} pages={card.pages} sections={card.sections}
+                                            elements={card.elements} skin={card.skin} mode="preview"
+                                            preview-scale={card.previewScale} form-title={card.title}
+                                        ></c-form-layout-engine>
+                                        <div lwc:else class="t-thumb-skel"></div>
+                                    </div>
+                                    <div class="t-meta">
+                                        <div class="t-meta-top">
+                                            <lightning-icon icon-name={card.icon} size="small"></lightning-icon>
+                                            <span class="t-name">{card.name}</span>
+                                        </div>
+                                        <p class="t-desc">{card.description}</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </section>
+                </template>
+            </div>
+        </template>
+
+        <!-- ============================ DETAIL (Screen 2) ============================= -->
+        <template lwc:elseif={isDetailView}>
+            <header class="d-head">
+                <button class="d-back" type="button" onclick={handleBack}>
+                    <lightning-icon icon-name="utility:back" size="x-small" alternative-text="Back"></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button class="g-close" type="button" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" size="x-small" alternative-text="Close"></lightning-icon>
+                </button>
+            </header>
+
+            <div class="d-body">
+                <!-- Left: configure -->
+                <div class="d-config">
+                    <lightning-input class="d-input" label="Form name" value={formName}
+                        placeholder="Name your form…" onchange={handleName}></lightning-input>
+
+                    <template lwc:if={showBoundObject}>
+                        <div class="d-bound">
+                            <span class="d-bound-label">Creates records on</span>
+                            <span class="d-bound-obj">{boundObjectLabel}</span>
+                        </div>
+                    </template>
+                    <template lwc:if={needsObjectPicker}>
+                        <lightning-combobox class="d-input" label="Primary object"
+                            placeholder="Choose an object…" value={chosenObject}
+                            options={objectOptions} onchange={handleObjectChange}></lightning-combobox>
+                    </template>
+
+                    <div class="d-section-label">Appearance</div>
+                    <lightning-combobox class="d-input" label="Layout"
+                        value={chosenLayout} options={layoutOptions}
+                        onchange={handleLayout}></lightning-combobox>
+                    <lightning-combobox class="d-input" label="Theme"
+                        value={chosenThemeId} options={themeOptions}
+                        onchange={handleTheme}></lightning-combobox>
+                    <lightning-combobox class="d-input" label="Skin"
+                        value={chosenSkinId} options={skinOptions}
+                        onchange={handleSkin}></lightning-combobox>
+
+                    <div class="d-accent">
+                        <span class="d-accent-label">Accent</span>
+                        <div class="d-swatches">
+                            <template for:each={accentSwatches} for:item="sw">
+                                <button key={sw.hex} class={sw.cls} type="button"
+                                    style={sw.style} data-hex={sw.hex} title={sw.hex}
+                                    onclick={handleAccentSwatch}></button>
+                            </template>
+                            <input type="color" class="d-color" value={chosenAccent}
+                                onchange={handleAccentInput} title="Custom accent" />
+                            <button class="link-btn" type="button" onclick={handleAccentClear}
+                                title="Use skin default">Reset</button>
+                        </div>
+                    </div>
+
+                    <div lwc:if={errorMessage} class="d-error" role="alert">
+                        <lightning-icon icon-name="utility:error" variant="error" size="x-small"></lightning-icon>
+                        <span>{errorMessage}</span>
+                    </div>
+
+                    <div class="d-actions">
+                        <lightning-button label="Create form" variant="brand"
+                            disabled={createDisabled} onclick={handleCreate}></lightning-button>
+                        <lightning-spinner lwc:if={isCreating} size="small"
+                            alternative-text="Creating"></lightning-spinner>
+                    </div>
+                    <div lwc:if={isCustomSelected} class="d-actions-secondary">
+                        <button type="button" class="link-btn link-danger" onclick={handleDeleteTemplate}>
+                            <lightning-icon icon-name="utility:delete" size="xx-small"></lightning-icon>
+                            <span>Delete template</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: live preview -->
+                <div class="d-preview">
+                    <div class="d-preview-bar">
+                        <span class="d-preview-label">Live preview</span>
+                        <div class="dev-toggle">
+                            <button class={desktopBtnClass} type="button" onclick={handleDesktop} title="Desktop">
+                                <lightning-icon icon-name="utility:desktop" size="x-small" alternative-text="Desktop"></lightning-icon>
+                            </button>
+                            <button class={mobileBtnClass} type="button" onclick={handleMobile} title="Mobile">
+                                <lightning-icon icon-name="utility:phone_portrait" size="x-small" alternative-text="Mobile"></lightning-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-stage" aria-hidden="true">
+                        <div style={stageStyle}>
+                            <c-form-layout-engine
+                                spec={detailCard.spec} pages={detailCard.pages}
+                                sections={detailCard.sections} elements={detailCard.elements}
+                                skin={detailCard.skin} mode="preview" preview-scale={detailScale}
+                                form-title={detailCard.title} form-description={detailCard.subtitle}
+                                form-logo={detailCard.logo}
+                            ></c-form-layout-engine>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ============================== DONE ============================= -->
+        <template lwc:elseif={isDoneView}>
+            <div class="done">
+                <lightning-icon icon-name="utility:success" variant="success" size="large"></lightning-icon>
+                <h2 class="done-title">Your form is ready</h2>
+                <p class="done-sub">It opens in the builder so you can make it yours.</p>
+                <div class="done-actions">
+                    <lightning-button label="Create another" onclick={handleStartOver}></lightning-button>
+                    <lightning-button label="Done" variant="brand" onclick={handleClose}></lightning-button>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

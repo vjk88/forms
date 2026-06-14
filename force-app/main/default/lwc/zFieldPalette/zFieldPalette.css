@@ -1,0 +1,212 @@
+@import 'c/sharedStyles';
+
+.palette-container {
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border-cool);
+  border-radius: 8px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Settings tab */
+.palette-setting-block {
+  margin-bottom: 1.25rem;
+}
+
+.palette-setting-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-label);
+  margin-bottom: 0.25rem;
+}
+
+.palette-setting-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.palette-setting-help {
+  font-size: 0.6875rem;
+  color: var(--c-text-weak);
+  margin: 0.4rem 0 0;
+}
+
+/* Clean header */
+.palette-head {
+  margin-bottom: 0.75rem;
+}
+
+.palette-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.palette-head__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.palette-head__badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--c-brand-dark);
+  background: var(--c-brand-bg);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.palette-head__subtitle {
+  font-size: 0.8125rem;
+  color: var(--c-text-weak);
+  margin: 0.1rem 0 0;
+}
+
+/* Search */
+.palette-search {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.palette-search__icon {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  --slds-c-icon-color-foreground-default: var(--c-text-weak);
+}
+
+.palette-search__input {
+  width: 100%;
+  padding: 0.5rem 0.6rem 0.5rem 2rem;
+  border: 1px solid var(--c-border-cool);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8125rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.palette-search__input:focus {
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 1px var(--c-brand);
+}
+
+.palette-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Field card */
+.palette-item {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.6rem;
+  cursor: grab;
+  border: 1px solid var(--c-border-cool);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8125rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.palette-item:hover {
+  border-color: var(--c-brand);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.palette-item:active {
+  cursor: grabbing;
+  transform: scale(0.99) rotate(0.5deg);
+}
+
+.palette-drag-handle {
+  --slds-c-icon-color-foreground-default: var(--c-text-meta);
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+}
+
+.palette-field-icon {
+  --slds-c-icon-color-foreground-default: var(--c-brand);
+}
+
+.palette-field-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Used / already-on-canvas state */
+.palette-item.is-used {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--c-surface-alt);
+  box-shadow: none;
+}
+
+.palette-item.is-used:hover {
+  border-color: var(--c-border-cool);
+  box-shadow: none;
+}
+
+.palette-item.is-used .palette-field-icon {
+  --slds-c-icon-color-foreground-default: var(--c-text-meta);
+}
+
+.palette-used-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--c-success);
+  background: var(--c-success-bg);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.palette-group {
+  margin-bottom: 0.25rem;
+}
+
+.palette-group-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.4rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--c-brand);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.palette-group-header:hover {
+  color: var(--c-brand-dark);
+}
+
+.rel-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.rel-via {
+  font-size: 0.6875rem;
+  color: var(--c-text-weak);
+  font-weight: 400;
+}

@@ -1,0 +1,627 @@
+<template>
+  <div class="builder-container">
+    <!-- Top App Bar -->
+    <header class="app-bar">
+      <!-- Left cluster -->
+      <div class="app-bar__left">
+        <span class="brand">FormBuilder Pro</span>
+        <div class="app-bar__divider"></div>
+
+        <!-- Forms / Surveys segmented toggle -->
+        <div class="seg-toggle">
+          <button type="button" class={formsSegClass}
+            data-tab="forms" onclick={handlePrimaryTabChange}>
+            <lightning-icon icon-name="utility:form" size="xx-small"
+              class="seg-ico"></lightning-icon>Forms</button>
+          <button type="button" class={surveysSegClass}
+            data-tab="surveys" onclick={handlePrimaryTabChange}>
+            <lightning-icon icon-name="utility:rating" size="xx-small"
+              class="seg-ico"></lightning-icon>Surveys</button>
+        </div>
+
+        <div class="app-bar__divider"></div>
+
+        <!-- Form title + version, both as dropdowns -->
+        <div class="form-title-area">
+          <div class="form-title-row">
+            <!-- Form name dropdown -->
+            <div class="title-dd">
+              <button type="button" class="title-dd__btn"
+                aria-haspopup="menu" aria-expanded={formMenuExpanded}
+                onclick={toggleFormMenu} onkeydown={handleMenuKeydown}>
+                <span class="title-dd__label">{formTitleLabel}</span>
+                <lightning-icon icon-name="utility:chevrondown" size="xx-small"
+                  class="title-dd__caret"></lightning-icon>
+              </button>
+              <template if:true={showFormMenu}>
+                <div class="dd-menu" role="menu" onkeydown={handleMenuKeydown}>
+                  <template for:each={formOptions} for:item="opt">
+                    <button key={opt.value} type="button" class="dd-item"
+                      role="menuitem"
+                      data-id={opt.value} onclick={handlePickForm}>
+                      {opt.label}
+                    </button>
+                  </template>
+                  <template if:true={hasNoForms}>
+                    <div class="dd-empty">No {primaryTabNoun} yet</div>
+                  </template>
+                  <div class="dd-sep"></div>
+                  <button type="button" class="dd-item dd-item_primary"
+                    role="menuitem"
+                    onclick={handleNewFormFromMenu}>
+                    + {newButtonLabel}
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <!-- Version pill dropdown -->
+            <template if:true={hasFormSelected}>
+              <div class="ver-dd">
+                <button type="button" class={versionPillClass}
+                  aria-haspopup="menu" aria-expanded={versionMenuExpanded}
+                  onclick={toggleVersionMenu} onkeydown={handleMenuKeydown}>
+                  {versionPillLabel}
+                  <lightning-icon icon-name="utility:chevrondown" size="xx-small"
+                    class="ver-dd__caret"></lightning-icon>
+                </button>
+                <template if:true={showVersionMenu}>
+                  <div class="dd-menu dd-menu_sm" role="menu"
+                    onkeydown={handleMenuKeydown}>
+                    <template for:each={versionOptions} for:item="v">
+                      <button key={v.value} type="button" class="dd-item"
+                        role="menuitem"
+                        data-id={v.value} onclick={handlePickVersion}>
+                        {v.label}
+                      </button>
+                    </template>
+                    <template if:true={canCreateDraft}>
+                      <div class="dd-sep"></div>
+                      <button type="button" class="dd-item dd-item_primary"
+                        role="menuitem"
+                        onclick={handleCreateDraftFromMenu}>
+                        + New Draft
+                      </button>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right cluster -->
+      <div class="app-bar__right">
+        <!-- Icon buttons -->
+        <template if:true={hasVersionSelected}>
+          <div class="icon-btn-group">
+            <button type="button" class="icon-btn" title="Version History"
+              onclick={handleOpenHistory}>
+              <lightning-icon icon-name="utility:clock" size="small"
+                alternative-text="Version History"></lightning-icon>
+            </button>
+            <button type="button" class="icon-btn" title="Preview"
+              onclick={handlePreview}>
+              <lightning-icon icon-name="utility:preview" size="small"
+                alternative-text="Preview"></lightning-icon>
+            </button>
+            <button type="button" class="icon-btn" title="Settings"
+              onclick={handleSettings}>
+              <lightning-icon icon-name="utility:settings" size="small"
+                alternative-text="Settings"></lightning-icon>
+            </button>
+            <!-- Upload JSON Layout -->
+            <button type="button" class="icon-btn" title="Upload JSON Layout"
+              onclick={triggerJsonUpload}>
+              <lightning-icon icon-name="utility:upload" size="small"
+                alternative-text="Upload JSON Layout"></lightning-icon>
+            </button>
+            <input type="file" accept=".json" class="slds-hide"
+              data-id="jsonLayoutFile" onchange={handleJsonUpload} />
+          </div>
+        </template>
+
+        <!-- New Form -->
+        <button type="button" class="btn-ghost" onclick={handleNewForm}>
+          <lightning-icon icon-name="utility:add" size="xx-small"
+            class="slds-m-right_xx-small"></lightning-icon>
+          {newButtonLabel}
+        </button>
+
+        <!-- New Draft (when applicable) -->
+        <template if:true={canCreateDraft}>
+          <button type="button" class="btn-ghost" onclick={handleCreateDraft}
+            title={createDraftTooltip}>
+            <lightning-icon icon-name="utility:copy" size="xx-small"
+              class="slds-m-right_xx-small"></lightning-icon>
+            New Draft
+          </button>
+        </template>
+
+        <!-- Save / Publish -->
+        <template if:true={isDraft}>
+          <template if:true={showDiscard}>
+            <button type="button" class="btn-ghost" onclick={handleDiscard}
+              title="Discard unsaved changes and revert to the last saved version">
+              Discard
+            </button>
+          </template>
+          <button type="button" class="btn-outline" onclick={handleSave}
+            disabled={saveDisabled}>{saveButtonLabel}</button>
+          <button type="button" class="btn-primary" onclick={handlePublish}
+            disabled={isProcessing}>Publish</button>
+        </template>
+      </div>
+    </header>
+
+    <!-- Backdrop to close dropdown menus -->
+    <template if:true={anyMenuOpen}>
+      <div class="dd-backdrop" onclick={closeMenus}></div>
+    </template>
+
+    <!-- Canvas toolbar: where am I (breadcrumb) + undo/redo + save status -->
+    <template if:true={hasVersionSelected}>
+      <div class="canvas-toolbar">
+        <nav class="breadcrumb" aria-label="Selection breadcrumb">
+          <template for:each={breadcrumbItems} for:item="bc">
+            <span key={bc.key} class="bc-item">
+              <template if:true={bc.sep}>
+                <lightning-icon icon-name="utility:chevronright" size="xx-small"
+                  class="bc-sep"></lightning-icon>
+              </template>
+              <lightning-icon icon-name={bc.icon} size="xx-small"
+                class="bc-ico"></lightning-icon>
+              <span class="bc-label">{bc.label}</span>
+            </span>
+          </template>
+        </nav>
+
+        <div class="toolbar-right">
+          <div class="undo-redo">
+            <button type="button" class="tb-btn" title="Undo"
+              aria-label="Undo" disabled={undoDisabled} onclick={handleUndo}>
+              <lightning-icon icon-name="utility:undo" size="xx-small"
+                alternative-text="Undo"></lightning-icon>
+            </button>
+            <button type="button" class="tb-btn" title="Redo"
+              aria-label="Redo" disabled={redoDisabled} onclick={handleRedo}>
+              <lightning-icon icon-name="utility:redo" size="xx-small"
+                alternative-text="Redo"></lightning-icon>
+            </button>
+          </div>
+          <template if:true={saveStatusText}>
+            <span class={saveStatusClass}>
+              <lightning-icon icon-name={saveStatusIcon} size="xx-small"
+                class="slds-m-right_xx-small"></lightning-icon>
+              {saveStatusText}
+            </span>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <!-- Builder Body: 3-column layout -->
+    <template if:true={hasVersionSelected}>
+      <div class={designerBodyClass}>
+        <!-- Left: Field Palette (collapsible) -->
+        <div class="designer-left no-scrollbar">
+          <template if:false={leftCollapsed}>
+            <div class="panel-collapse-row panel-collapse-row_left">
+              <button class="panel-collapse-btn" onclick={toggleLeftPanel}
+                title="Collapse fields panel" aria-label="Collapse fields panel">
+                <lightning-icon icon-name="utility:chevronleft"
+                  size="xx-small"></lightning-icon>
+              </button>
+            </div>
+            <c-z-field-palette
+              object-label={currentObjectLabel}
+              fields={objectFields}
+              relationships={childRelationships}
+              related-object-fields={relatedObjectFields}
+              related-object-label={relatedObjectLabel}
+              selected-section-context={selectedSectionContext}
+              mode={primaryTab}
+              used-fields={usedFieldApiNames}
+              layout-mode={currentLayoutMode}
+              oneditautofill={handleOpenAutofill}
+            >
+            </c-z-field-palette>
+          </template>
+          <template if:true={leftCollapsed}>
+            <button class="panel-rail" onclick={toggleLeftPanel}
+              title="Expand fields panel" aria-label="Expand fields panel">
+              <lightning-icon icon-name="utility:chevronright"
+                size="xx-small"></lightning-icon>
+              <lightning-icon icon-name="utility:apps" size="x-small"
+                class="panel-rail__ico"></lightning-icon>
+              <span class="panel-rail__label">Fields</span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Center: Canvas -->
+        <div class="designer-center no-scrollbar">
+          <div class={stageInnerClass} style={designerStageStyle}>
+          <!-- Mapped-to-object badge (form-level) -->
+          <template if:true={currentObjectLabel}>
+            <div class="stage-badge-row">
+              <span class="stage-badge">
+                <lightning-icon icon-name="utility:database" size="xx-small"
+                  class="slds-m-right_xx-small"></lightning-icon>
+                Mapped to {currentObjectLabel}
+              </span>
+            </div>
+          </template>
+
+          <!-- Editable page tabs (builder affordance — stays outside the card) -->
+          <div class="slds-tabs_default page-tabs">
+            <ul class="slds-tabs_default__nav" role="tablist">
+              <template for:each={pageTabs} for:item="pg">
+                <li key={pg.id} class={pg.tabItemClass} role="presentation"
+                  data-index={pg.index} ondblclick={handleStartRename}>
+                  <template if:true={pg.isRenaming}>
+                    <input type="text" class="page-tab__rename"
+                      value={pg.name}
+                      oninput={handleRenameInput}
+                      onblur={handleRenameCommit}
+                      onkeydown={handleRenameKey}
+                      autofocus>
+                  </template>
+                  <template if:false={pg.isRenaming}>
+                    <a class="slds-tabs_default__link" href="javascript:void(0);"
+                      role="tab" tabindex="0" aria-selected={pg.isActive}
+                      data-index={pg.index} onclick={handleSelectPage}>
+                      {pg.name}
+                    </a>
+                    <template if:true={hasMultiplePages}>
+                      <lightning-button-icon icon-name="utility:close"
+                        variant="bare" size="xx-small" alternative-text="Delete page"
+                        class="page-tab__del"
+                        data-index={pg.index} onclick={handleDeletePage}>
+                      </lightning-button-icon>
+                    </template>
+                  </template>
+                </li>
+              </template>
+
+              <!-- Completion tab (always last) -->
+              <li class={completionTabItemClass} role="presentation">
+                <a class="slds-tabs_default__link" href="javascript:void(0);"
+                  role="tab" tabindex="0" aria-selected={isCompletionActive}
+                  onclick={handleSelectCompletion}>
+                  <lightning-icon icon-name="utility:success" size="xx-small"
+                    class="slds-m-right_xx-small completion-icon"></lightning-icon>
+                  Completion
+                </a>
+              </li>
+
+              <template if:true={isMultiPageLayout}>
+                <li class="slds-tabs_default__item page-tab_add"
+                  role="presentation" onclick={handleAddPage} title="Add page">
+                  <a class="slds-tabs_default__link" href="javascript:void(0);"
+                    role="tab" tabindex="0">
+                    <lightning-icon icon-name="utility:add" size="xx-small">
+                    </lightning-icon>
+                  </a>
+                </li>
+              </template>
+            </ul>
+          </div>
+
+          <!-- Completion preview (when Completion tab active) -->
+          <template if:true={isCompletionActive}>
+            <div class="completion-preview-container">
+              <!-- Toast & Go Preview -->
+              <template if:true={isToastModePreview}>
+                <div class="toast-preview-bar">
+                  <div class="toast-preview-content">
+                    <lightning-icon icon-name="utility:success" size="small" variant="inverse"
+                      class="slds-m-right_small toast-icon"></lightning-icon>
+                    <span class="toast-text">Success! Your submission was recorded.</span>
+                  </div>
+                </div>
+                <div class="toast-redirect-banner">
+                  <lightning-icon icon-name="utility:forward" size="small" class="slds-m-right_x-small"></lightning-icon>
+                  <span>Redirecting respondent to <strong>{toastAndGoDestination}</strong>...</span>
+                </div>
+              </template>
+
+              <!-- Screen Mode Preview -->
+              <template if:true={isScreenModePreview}>
+                <div class="completion-preview-card" style={formCardPreviewStyle}>
+                  <div class="completion-success-ring">
+                    <lightning-icon icon-name="utility:success" size="large" class="success-icon"></lightning-icon>
+                  </div>
+                  <div class="completion-message slds-m-top_medium">
+                    <lightning-formatted-rich-text value={formSettings.thankYouMessage}>
+                    </lightning-formatted-rich-text>
+                  </div>
+                  
+                  <template if:true={formSettings.showActionButton}>
+                    <div class="slds-m-top_large">
+                      <button type="button" class="btn-primary" style={accentButtonStyle}>
+                        {formSettings.actionButtonLabel}
+                      </button>
+                    </div>
+                  </template>
+
+                  <template if:true={formSettings.autoRedirect}>
+                    <div class="redirect-indicator slds-m-top_medium">
+                      <lightning-icon icon-name="utility:sync" size="xx-small" class="slds-m-right_xx-small spinner-icon"></lightning-icon>
+                      <span>Redirecting to {redirectDestination} in {formSettings.redirectDelay} seconds...</span>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Form card: header + page content as one connected card -->
+          <template if:false={isCompletionActive}>
+            <div class={designerLayoutContainerClass}>
+              <!-- Split Layout: brand panel beside form (reuses header) -->
+              <template if:true={isSplitLayout}>
+                <aside class="designer-brand" onclick={handleHeaderClick}>
+                  <div class="designer-brand__inner">
+                    <template if:true={hasLogoImage}>
+                      <img src={headerLogoSrc} alt="Logo" class="designer-brand__logo" />
+                    </template>
+                    <h2 class="designer-brand__title">{formHeader.title}</h2>
+                    <template if:true={formHeader.subtitle}>
+                      <p class="designer-brand__sub">{formHeader.subtitle}</p>
+                    </template>
+                  </div>
+                </aside>
+              </template>
+
+              <div class="form-stage" style={formStageStyle}>
+                <!-- Header (top of the form card, hidden on Split) -->
+                <template if:true={showInlineHeader}>
+                  <div class={headerCardClass} style={headerCardStyle}
+                    onclick={handleHeaderClick}>
+                    <div class="header-inner">
+                      <template if:true={hasLogoImage}>
+                        <div class="header-logo header-logo--img">
+                          <img src={headerLogoSrc} alt="Logo" class={headerLogoImgClass}>
+                        </div>
+                      </template>
+                      <template if:true={hasLogoPlaceholder}>
+                        <div class="header-logo">
+                          <lightning-icon icon-name="utility:image" size="medium"
+                            alternative-text="Logo placeholder"></lightning-icon>
+                        </div>
+                      </template>
+                      <div class="header-text">
+                        <h1 class={headerTitleClass} style={headerTitleStyle}>{formHeader.title}</h1>
+                        <template if:true={formHeader.subtitle}>
+                          <p class="header-subtitle" style={headerSubtitleStyle}>{formHeader.subtitle}</p>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template if:false={showInlineHeader}>
+                  <template if:false={isSplitLayout}>
+                    <div class="header-hidden-bar" onclick={handleHeaderClick}>
+                      <lightning-icon icon-name="utility:header" size="xx-small"
+                        class="slds-m-right_xx-small"></lightning-icon>
+                      <span class="slds-text-body_small slds-text-color_weak">Header hidden — click to configure</span>
+                    </div>
+                  </template>
+                </template>
+
+                <!-- Navigation preview — mirrors the player, not interactive -->
+                <template if:true={navIsWizard}>
+                  <div class="navpv navpv--wizard">
+                    <lightning-progress-indicator current-step={navPreviewCurrentStep}
+                      type="base" variant="base">
+                      <template for:each={navPreviewItems} for:item="s">
+                        <lightning-progress-step key={s.id} label={s.name}
+                          value={s.id}></lightning-progress-step>
+                      </template>
+                    </lightning-progress-indicator>
+                  </div>
+                </template>
+                <template if:true={navIsTop}>
+                  <div class="navpv navpv--top">
+                    <template for:each={navPreviewItems} for:item="s">
+                      <span key={s.id} class={s.itemClass}>{s.name}</span>
+                    </template>
+                  </div>
+                </template>
+
+
+                <div class={cardBodyClass}>
+                <!-- Vertical nav preview (sidebar inside the card) -->
+                <template if:true={navIsVertical}>
+                  <div class="navpv navpv--vnav">
+                    <template for:each={navPreviewItems} for:item="s">
+                      <span key={s.id} class={s.itemClass}>{s.name}</span>
+                    </template>
+                  </div>
+                </template>
+
+            <c-z-designer-canvas
+              section-data={canvasSections}
+              section-default-style={currentSectionDefaultStyle}
+              is-editable={isDraft}
+              relationships={childRelationships}
+              primary-object={currentObjectLabel}
+              onaddsection={handleAddSection}
+              onaddrelatedtosection={handleAddRelatedToSection}
+              onselectsection={handleSelectSection}
+              oneditsection={handleEditSection}
+              ondeleteselection={handleDeleteSection}
+              ondeleterelatedsection={handleDeleteRelatedSection}
+              onselectelement={handleSelectElement}
+              onselectrelatedsection={handleSelectRelatedSection}
+              oneditrelatedsection={handleEditRelatedSection}
+              onselectrelatedelement={handleSelectRelatedElement}
+              onremoveelement={handleRemoveElement}
+              onremoverelatedelement={handleRemoveRelatedElement}
+              ondropfield={handleDropField}
+              ondropcomponent={handleDropComponent}
+              ondroprelatefield={handleDropRelateField}
+              onreorderelement={handleReorderElement}
+              onreordersection={handleReorderSection}
+            >
+            </c-z-designer-canvas>
+            </div>
+          </div>
+          </div>
+          </template>
+          </div>
+        </div>
+
+        <!-- Right: Property Panel (collapsible) -->
+        <div class="designer-right no-scrollbar">
+          <template if:false={rightCollapsed}>
+            <div class="panel-collapse-row panel-collapse-row_right">
+              <button class="panel-collapse-btn" onclick={toggleRightPanel}
+                title="Collapse properties panel"
+                aria-label="Collapse properties panel">
+                <lightning-icon icon-name="utility:chevronright"
+                  size="xx-small"></lightning-icon>
+              </button>
+            </div>
+            <c-z-property-panel
+              selection={panelSelection}
+              form-id={selectedFormId}
+              onpropertychange={handlePropertyChange}
+              oneditvisibility={handleEditVisibility}
+              oneditautofill={handleOpenAutofill}
+              ondeleteselection={handleDeleteSelection}
+              onduplicateselection={handleDuplicateSelection}
+              onaistyle={handleApplyAiStyle}
+            >
+            </c-z-property-panel>
+          </template>
+          <template if:true={rightCollapsed}>
+            <button class="panel-rail" onclick={toggleRightPanel}
+              title="Expand properties panel" aria-label="Expand properties panel">
+              <lightning-icon icon-name="utility:chevronleft"
+                size="xx-small"></lightning-icon>
+              <lightning-icon icon-name="utility:settings" size="x-small"
+                class="panel-rail__ico"></lightning-icon>
+              <span class="panel-rail__label">Properties</span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <!-- Empty State -->
+    <template if:false={hasFormSelected}>
+      <div
+        class="slds-box slds-theme_default slds-text-align_center slds-p-around_xx-large slds-m-around_medium"
+      >
+        <lightning-icon
+          icon-name="utility:form"
+          size="large"
+          class="slds-m-bottom_medium"
+        ></lightning-icon>
+        <h2 class="slds-text-heading_medium slds-m-bottom_small">
+          {emptyStateTitle}
+        </h2>
+        <p class="slds-text-body_regular slds-text-color_weak">
+          {emptyStateMessage}
+        </p>
+      </div>
+    </template>
+  </div>
+
+  <!-- Create Form Modal -->
+  <template if:true={showCreateModal}>
+    <c-z-new-form-dialog
+      object-options={objectOptions}
+      initial-mode={primaryTab}
+      onclose={handleCloseModal}
+      onformcreated={handleFormCreated}
+    >
+    </c-z-new-form-dialog>
+  </template>
+
+  <!-- Auto-Fill Editor Modal -->
+  <template if:true={showAutofillModal}>
+    <c-z-autofill-editor
+      object-fields={objectFields}
+      lookup-targets={lookupTargets}
+      object-options={objectOptions}
+      rules-json={autofillRulesJson}
+      onsave={handleAutofillSave}
+      oncancel={handleAutofillCancel}
+    >
+    </c-z-autofill-editor>
+  </template>
+
+  <!-- Visibility Rule Editor Modal -->
+  <template if:true={showVisibilityModal}>
+    <c-z-visibility-editor
+      context-label={visibilityContextLabel}
+      object-label={currentObjectLabel}
+      fields={visibilityFields}
+      user-fields={userFields}
+      picklist-values={picklistValues}
+      lookup-targets={lookupTargets}
+      rules-json={visibilityRulesJson}
+      onsave={handleVisibilitySave}
+      oncancel={handleVisibilityCancel}
+    >
+    </c-z-visibility-editor>
+  </template>
+
+  <!-- Preview Modal -->
+  <template if:true={showPreview}>
+    <section role="dialog" tabindex="-1"
+      class="slds-modal slds-fade-in-open slds-modal_large">
+      <div class="slds-modal__container">
+        <div class="slds-modal__header">
+          <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+            onclick={handleClosePreview}>
+            <lightning-icon icon-name="utility:close" size="small"
+              alternative-text="Close"></lightning-icon>
+          </button>
+          <h1 class="slds-modal__title">Preview — {currentFormName}</h1>
+          <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+            This is a preview. Submitting here does not create any records.
+          </p>
+          <!-- Device preview toggle -->
+          <div class="preview-devices slds-m-top_small">
+            <lightning-button-group>
+              <lightning-button label="Desktop" icon-name="utility:desktop"
+                data-device="desktop" variant={desktopVariant}
+                onclick={handlePreviewDevice}></lightning-button>
+              <lightning-button label="Tablet" icon-name="utility:tablet_portrait"
+                data-device="tablet" variant={tabletVariant}
+                onclick={handlePreviewDevice}></lightning-button>
+              <lightning-button label="Mobile" icon-name="utility:phone_portrait"
+                data-device="mobile" variant={mobileVariant}
+                onclick={handlePreviewDevice}></lightning-button>
+            </lightning-button-group>
+          </div>
+        </div>
+        <div class="slds-modal__content slds-p-around_medium preview-body">
+          <div class={previewFrameClass} style={previewDeviceStyle}>
+            <c-z-form-player
+              preview-mode="true"
+              layout-json={previewLayoutJson}
+              object-api-name={currentObjectApiName}>
+            </c-z-form-player>
+          </div>
+        </div>
+        <div class="slds-modal__footer">
+          <lightning-button label="Close" onclick={handleClosePreview}>
+          </lightning-button>
+        </div>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+
+  <!-- Spinners -->
+  <template if:true={isProcessing}>
+    <lightning-spinner alternative-text="Processing..." size="medium">
+    </lightning-spinner>
+  </template>
+</template>

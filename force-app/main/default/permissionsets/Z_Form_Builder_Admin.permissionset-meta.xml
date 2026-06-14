@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Z_Form_Builder_Admin</fullName>
+    <label>Z Form Builder Admin</label>
+    <description>Permission set for Z Form Builder Administrators giving Modify All and Edit permissions to custom Z_ objects and fields.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Z_Form__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Z_Form_Version__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Z_Form_Submission__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <!-- Z_Form__c fields -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form__c.Z_Active_Version__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form__c.Z_Form_Definition_JSON__c</field>
+    </fieldPermissions>
+    <!-- Z_Form_Version__c fields -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Version__c.Z_Form_Definition_JSON__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Version__c.Z_Is_Active__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Version__c.Z_Published_Date__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Version__c.Z_Schema_Snapshot__c</field>
+    </fieldPermissions>
+    <!-- Z_Form_Submission__c fields -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Submission__c.Z_Form_Version__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Submission__c.Z_Primary_Record_Id__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Submission__c.Z_Submission_Payload__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Z_Form_Submission__c.Z_Submitted_Date__c</field>
+    </fieldPermissions>
+</PermissionSet>

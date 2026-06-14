@@ -1,0 +1,157 @@
+:host { display: block; container-type: inline-size; }
+
+.layout {
+    display: flex;
+    min-height: 100%;
+}
+
+/* ── Brand panel ── */
+.panel {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--c-header-bg, var(--c-page-bg, #0f4c81));
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+.panel-inner {
+    padding: var(--c-space-5, 24px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-4, 16px);
+    flex: 1;
+}
+.panel-logo {
+    align-self: flex-start;
+    background: #ffffff;
+    border-radius: var(--c-radius, 8px);
+    padding: 6px 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.panel-logo img {
+    display: block;
+    max-height: 28px;
+    width: auto;
+}
+.panel-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--c-space-3, 12px);
+}
+.panel-title {
+    margin: 0;
+    font-family: var(--c-font-display, inherit);
+    font-size: 1.9rem;
+    line-height: 1.15;
+    font-weight: 700;
+    text-wrap: balance;
+    color: var(--c-header-text, #ffffff);
+}
+.panel-desc {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    max-width: 38ch;
+    color: var(--c-header-text-weak, rgba(255, 255, 255, 0.82));
+}
+.step-dots {
+    display: flex;
+    gap: var(--c-space-2, 8px);
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: var(--c-space-5, 24px);
+}
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--c-border-light, #e6e8ec);
+    transition: background var(--c-dur-1, 150ms) var(--c-ease, ease-out);
+}
+.dot-active { background: var(--c-accent, #0176d3); }
+.dot-done   { background: color-mix(in srgb, var(--c-accent, #0176d3) 55%, white); }
+.dot-error  { background: var(--c-error, #ea001e); }
+
+/* ── Form pane ── */
+.pane {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: var(--c-space-5, 24px);
+    background: var(--c-card-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-5, 24px);
+    overflow-y: auto;
+}
+.page { display: flex; flex-direction: column; }
+
+/* ── Nav bar / Submit ── */
+.nav-bar { display: flex; gap: var(--c-space-3, 12px); }
+.align-left    { justify-content: flex-start; }
+.align-center  { justify-content: center; }
+.align-right   { justify-content: flex-end; }
+.align-stretch .submit-btn { width: 100%; }
+
+.btn-ghost {
+    font: inherit;
+    font-weight: 500;
+    background: transparent;
+    border: 1.5px solid var(--c-border, #d8dde6);
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-4, 16px);
+    height: var(--c-control-h, 40px);
+    color: var(--c-text, #101319);
+    cursor: pointer;
+    transition: border-color var(--c-dur-1, 150ms);
+}
+.btn-ghost:hover { border-color: var(--c-accent, #0176d3); }
+
+.btn-primary,
+.submit-btn {
+    font: inherit;
+    font-weight: 600;
+    color: #fff;
+    background: var(--c-submit-bg, var(--c-accent, #0176d3));
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-5, 24px);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+}
+.btn-primary:focus-visible,
+.submit-btn:focus-visible,
+.btn-ghost:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
+}
+
+/* ── Narrow container: brand panel → compact top band ──
+   Container query (the shell reads its OWN width) replaces the old
+   JS `model.collapsed` flag, which misread width inside Lightning columns. */
+@container (max-width: 768px) {
+    .layout {
+        flex-direction: column;
+    }
+    .panel {
+        position: static;
+        height: auto;
+        min-height: 0;
+        min-width: 0 !important;
+        /* Inline style sets flex-basis 38% (a HEIGHT in column direction) — neutralize. */
+        flex: none !important;
+    }
+    .panel-inner {
+        flex-direction: row;
+        align-items: center;
+        padding: var(--c-space-3, 12px) var(--c-space-4, 16px);
+        flex-wrap: wrap;
+        gap: var(--c-space-2, 8px);
+    }
+    .panel-body { flex: 0 1 auto; justify-content: center; }
+    .panel-desc { display: none; }
+    .step-dots  { margin-top: 0; padding-top: 0; }
+}

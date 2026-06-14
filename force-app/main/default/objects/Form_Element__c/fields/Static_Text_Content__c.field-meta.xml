@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Static_Text_Content__c</fullName>
-    <description
-  >HTML/text content for static text elements (required when Type = Static_Text)</description>
-    <inlineHelpText
-  >Enter the content to display for this static text element. Supports basic HTML.</inlineHelpText>
+    <description>HTML/text content for static text elements (required when Type = Static_Text)</description>
+    <inlineHelpText>Enter the content to display for this static text element. Supports basic HTML.</inlineHelpText>
     <label>Static Text Content</label>
     <length>32768</length>
     <trackTrending>false</trackTrending>

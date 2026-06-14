@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Single_Page",
+  "header": {
+    "visible": true,
+    "title": "Join Our Developer Community",
+    "subtitle": "Sign up to get access to early drafts, SDK releases, and developer forums.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "center",
+    "backgroundColor": "#0f172a",
+    "titleColor": "#f8fafc",
+    "subtitleColor": "#94a3b8"
+  },
+  "formSettings": {
+    "submitLabel": "Register Now",
+    "afterSubmitMode": "ToastAndGo",
+    "toastAndGoTarget": "Record",
+    "formWidth": 90,
+    "theme": {
+      "name": "custom",
+      "layout": "classic",
+      "accent": "#ec4899",
+      "surface": "#1e293b",
+      "pageBg": "#0f172a",
+      "radius": "round",
+      "cardShadow": "strong",
+      "sectionDefault": "plain",
+      "glass": false,
+      "dark": true,
+      "customCss": "--form-bg: #1e293b;\n--form-text-color: #f8fafc;\n--form-input-bg: #0f172a;\n--form-input-border: #334155;\n--form-label-color: #94a3b8;\n--c-submit-bg: #ec4899;\nborder: 1px solid #334155;"
+    }
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Sign Up",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-dev-profile",
+          "name": "Personal Profile",
+          "showHeader": false,
+          "gridColumns": 2,
+          "padding": "large",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-fname",
+              "type": "Field",
+              "name": "First Name",
+              "fieldApiName": "FirstName",
+              "fieldType": "String",
+              "uiBehavior": "None"
+            },
+            {
+              "id": "el-lname",
+              "type": "Field",
+              "name": "Last Name",
+              "fieldApiName": "LastName",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-email",
+              "type": "Field",
+              "name": "Developer Email",
+              "fieldApiName": "Email",
+              "fieldType": "Email",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-company",
+              "type": "Field",
+              "name": "Company / Organization",
+              "fieldApiName": "Company",
+              "fieldType": "String",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

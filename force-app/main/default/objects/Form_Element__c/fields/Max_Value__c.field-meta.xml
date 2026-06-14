@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Max_Value__c</fullName>
     <description>Maximum allowed value for numeric fields</description>
     <externalId>false</externalId>
-    <inlineHelpText
-  >For number fields, specify the maximum allowed value</inlineHelpText>
+    <inlineHelpText>For number fields, specify the maximum allowed value</inlineHelpText>
     <label>Max Value</label>
     <precision>18</precision>
     <required>false</required>

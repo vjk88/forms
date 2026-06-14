@@ -1,0 +1,80 @@
+:host {
+    display: block;
+}
+
+.viewer-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2, 0.5rem);
+    min-height: 8rem;
+    color: var(--c-text-weak, #5e6e82);
+}
+
+.viewer-state_error {
+    color: var(--c-error, #ba0517);
+}
+
+.viewer-errors {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-space-2, 0.5rem);
+    border: 1px solid var(--c-error, #ba0517);
+    border-radius: var(--c-radius-card, 0.5rem);
+    background: var(--c-error-bg, #fef1f1);
+    color: var(--c-error, #ba0517);
+    padding: var(--c-space-3, 0.75rem);
+    margin-bottom: var(--c-space-3, 0.75rem);
+}
+
+.viewer-errors ul {
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.viewer-captcha {
+    margin-top: var(--c-space-3, 0.75rem);
+}
+
+/* Honeypot: off-screen, never display:none (some bots skip hidden inputs). */
+.viewer-hp {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.viewer-done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--c-space-3, 0.75rem);
+    padding: var(--c-space-8, 3rem) var(--c-space-4, 1rem);
+    text-align: center;
+}
+
+.done-title {
+    font-family: var(--c-font-display, inherit);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--c-text, #0b1320);
+    margin: 0;
+}
+
+.done-redirect {
+    color: var(--c-text-weak, #5e6e82);
+    margin: 0;
+}
+
+.done-cancel {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: var(--c-space-2, 0.5rem);
+    color: var(--c-accent, #0176d3);
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+}

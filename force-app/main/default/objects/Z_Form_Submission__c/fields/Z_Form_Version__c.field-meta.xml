@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Z_Form_Version__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Form Version</label>
+    <referenceTo>Z_Form_Version__c</referenceTo>
+    <relationshipLabel>Z Form Submissions</relationshipLabel>
+    <relationshipName>Z_Form_Submissions</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

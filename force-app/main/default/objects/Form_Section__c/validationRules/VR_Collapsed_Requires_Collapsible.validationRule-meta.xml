@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>VR_Collapsed_Requires_Collapsible</fullName>
     <active>true</active>
@@ -7,6 +7,5 @@
   Collapsible__c = FALSE
 )</errorConditionFormula>
     <errorDisplayField>Collapsed_By_Default__c</errorDisplayField>
-    <errorMessage
-  >Section must be Collapsible to be Collapsed by Default</errorMessage>
+    <errorMessage>Section must be Collapsible to be Collapsed by Default</errorMessage>
 </ValidationRule>

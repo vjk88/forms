@@ -1,0 +1,329 @@
+/* The canvas now sits inside the unified form card (the stage + dotted grid
+   live in the parent), so it stays transparent and just provides body padding. */
+.canvas-container {
+  min-height: 120px;
+  padding: 1.25rem 1.5rem;
+  container-type: inline-size;
+}
+
+.canvas-scroll {
+  margin: 0;
+}
+
+/* Sections container — transparent; the parent form card provides the surface */
+.canvas-main {
+  background: transparent;
+  padding: 0;
+}
+
+/* Section card */
+.section-card {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: var(--c-radius, 6px);
+  margin-bottom: 0.75rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.section-card:hover { border-color: var(--c-brand-light); }
+
+.section-card.selected {
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 1px var(--c-brand);
+}
+
+/* ===== Section style variants (match the player) ===== */
+/* Boxed — stronger frame */
+.section-card.style-boxed {
+  border-color: var(--c-border-cool);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.section-card.style-boxed.selected {
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 1px var(--c-brand);
+}
+
+/* Subtle — bold header, no border, no header background */
+.section-card.style-subtle,
+.section-card.style-plain {
+  border-color: transparent;
+}
+.section-card.style-subtle .section-header,
+.section-card.style-plain .section-header {
+  background: transparent;
+  border-bottom: none;
+}
+.section-card.style-subtle .section-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+.section-card.style-subtle.selected,
+.section-card.style-plain.selected {
+  border-color: var(--c-brand);
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-section-header-bg, var(--c-surface-alt));
+  border-bottom: 1px solid var(--c-border);
+  border-radius: 4px 4px 0 0;
+}
+
+.section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.section-header-right {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.section-via {
+  font-size: 0.6875rem;
+  color: var(--c-text-weak);
+  margin-left: 0.25rem;
+}
+
+/* Headerless section toolbar */
+.section-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  opacity: 0.4; /* faintly visible so it's discoverable without hover */
+  transition: opacity 0.15s;
+}
+
+.section-card:hover .section-toolbar {
+  opacity: 1;
+}
+
+/* Drag handle */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.5;
+}
+
+.drag-handle:hover { opacity: 1; }
+
+/* Section body with padding variants */
+.section-body {
+  min-height: 50px;
+  padding: var(--c-section-padding, 0.75rem);
+}
+
+/* Grid */
+.section-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.section-grid.columns-1 { grid-template-columns: 1fr; }
+.section-grid.columns-2 { grid-template-columns: 1fr 1fr; }
+.section-grid.columns-3 { grid-template-columns: 1fr 1fr 1fr; }
+.section-grid.columns-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+/* Element chip */
+.element-chip {
+  position: relative;
+  padding: 0.375rem 0.5rem;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: var(--c-radius, 4px);
+  cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.element-chip:hover {
+  border-color: var(--c-brand-light);
+  box-shadow: 0 0 0 1px var(--c-brand-light);
+}
+
+.element-chip:active {
+  cursor: grabbing;
+}
+
+.element-preview-body {
+  pointer-events: none;
+}
+
+/* Remove X — pinned tight to the top-right, near the field label */
+.element-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: var(--c-error-bg);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  --slds-c-icon-color-foreground-default: var(--c-error);
+  transition: opacity 0.12s;
+}
+
+.element-chip:hover .element-remove {
+  opacity: 1;
+}
+
+.element-remove:hover {
+  background: #fdd0c8;
+}
+
+/* Full-width element (Rich Text, Divider) spans all columns */
+.element-chip.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Nested related section */
+.related-section-card {
+  margin: 0.5rem 0.75rem 0.75rem;
+  border: 1px dashed var(--c-brand-light);
+  border-radius: 4px;
+  background: #f8fbfe;
+}
+
+.related-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--c-brand-bg);
+  border-bottom: 1px solid var(--c-brand-bg);
+  border-radius: 4px 4px 0 0;
+  font-size: 0.8125rem;
+}
+
+.related-section-body {
+  padding: 0.5rem;
+  min-height: 40px;
+}
+
+.drop-zone-small {
+  padding: 0.75rem;
+  min-height: 40px;
+}
+
+.add-related-bar {
+  padding: 0.25rem 0.75rem 0.5rem;
+  border-top: 1px dashed var(--c-border);
+  margin-top: 0.25rem;
+}
+
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed var(--c-border-light);
+  border-radius: 4px;
+  padding: 1.5rem;
+  text-align: center;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Add section bar */
+.add-section-bar {
+  text-align: center;
+  margin-top: 0.75rem;
+}
+
+.empty-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  border: 2px dashed var(--c-border-light);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.empty-canvas__illu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--c-brand-bg);
+  margin-bottom: 1rem;
+  --slds-c-icon-color-foreground-default: var(--c-brand);
+}
+
+.empty-canvas__title {
+  margin-bottom: 0.15rem;
+}
+
+.empty-canvas__sub {
+  margin-bottom: 1.25rem;
+}
+
+.empty-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+  width: 100%;
+  max-width: 280px;
+}
+
+.empty-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-surface-alt);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--c-text);
+  --slds-c-icon-color-foreground-default: var(--c-brand);
+}
+
+.empty-step__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-brand);
+  color: var(--c-surface);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.empty-step__ico {
+  flex-shrink: 0;
+}
+
+@container (max-width: 540px) {
+  .slds-col[class*="slds-size_"],
+  .slds-col[class*="slds-medium-size_"],
+  .slds-col[class*="slds-large-size_"] {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}

@@ -1,0 +1,102 @@
+<template>
+  <section role="dialog" tabindex="-1" aria-modal="true"
+    class="slds-modal slds-fade-in-open nf-modal">
+    <div class="slds-modal__container nf-container">
+      <!-- Header -->
+      <div class="slds-modal__header nf-header">
+        <button
+          class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+          onclick={handleClose}
+          title="Close">
+          <lightning-icon icon-name="utility:close" size="small"
+            alternative-text="Close"></lightning-icon>
+        </button>
+        <h1 class="nf-title">{modalTitle}</h1>
+        <p class="nf-subtitle">{subtitle}</p>
+      </div>
+
+      <!-- Body -->
+      <div class="slds-modal__content nf-body">
+        <!-- Top row: name + locked type -->
+        <div class="nf-top-row">
+          <div class="nf-top-col">
+            <lightning-input
+              label={nameLabel}
+              value={formName}
+              placeholder={namePlaceholder}
+              onchange={handleNameChange}
+              required>
+            </lightning-input>
+          </div>
+          <div class="nf-top-col">
+            <span class="nf-locked-label">Form Type</span>
+            <div class="nf-locked-field">
+              <span class="nf-locked-value">{formType}</span>
+              <lightning-icon icon-name="utility:lock" size="xx-small"
+                class="nf-locked-icon" alternative-text="Locked"></lightning-icon>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== DATA ===== -->
+        <div class="nf-section-head">
+          <lightning-icon icon-name="utility:database" size="xx-small"
+            class="nf-section-icon"></lightning-icon>
+          <span class="nf-section-label">Data Mapping</span>
+        </div>
+
+        <p class="nf-adapter-help">{dataSectionDesc}</p>
+        <lightning-combobox
+          label={objectLabel}
+          value={objectApiName}
+          placeholder="Select an object"
+          options={objectOptions}
+          field-level-help={objectHelp}
+          required={requiresObject}
+          onchange={handleObjectChange}>
+        </lightning-combobox>
+
+        <!-- ===== EXPERIENCE ===== -->
+        <div class="nf-section-head">
+          <lightning-icon icon-name="utility:desktop" size="xx-small"
+            class="nf-section-icon"></lightning-icon>
+          <span class="nf-section-label">Experience Layout</span>
+          <template if:true={showExperienceBadge}>
+            <span class="nf-badge">Recommended for surveys</span>
+          </template>
+        </div>
+
+        <div class="nf-card-grid" role="radiogroup" aria-label="Experience">
+          <template for:each={experienceCards} for:item="card">
+            <div key={card.value} class={card.cardClass} role="radio"
+              tabindex="0" aria-checked={card.selected}
+              data-value={card.value}
+              onclick={handleExperienceSelect}
+              onkeydown={handleExperienceKey}>
+              <span class={card.dotClass}></span>
+              <div class="choice-body">
+                <lightning-icon icon-name={card.icon} size="small"
+                  class="choice-icon"></lightning-icon>
+                <span class="choice-title">{card.title}</span>
+                <span class="choice-desc">{card.desc}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="slds-modal__footer nf-footer">
+        <button type="button" class="nf-cancel" onclick={handleClose}>Cancel</button>
+        <lightning-button
+          variant="brand"
+          label={createLabel}
+          onclick={handleCreate}
+          disabled={createDisabled}
+          class="slds-m-left_small">
+        </lightning-button>
+      </div>
+    </div>
+  </section>
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

@@ -1,0 +1,30 @@
+﻿<template>
+    <div class="grid">
+        <template for:each={zoneList} for:item="zone">
+            <div key={zone.key} class={zone.cls} style={zone.style}>
+                <template for:each={zone.children} for:item="child">
+                    <div lwc:if={child.isStack} key={child.key} class="stack">
+                        <template for:each={child.sections} for:item="sec">
+                            <c-layout-section-host key={sec.key} section={sec} mode={mode}
+                                object-api-name={sec.objectApiName}
+                                record-type-id={sec.recordTypeId}
+                                record-id={sec.recordId}></c-layout-section-host>
+                        </template>
+                    </div>
+                    <div lwc:elseif={child.isColumns} key={child.key} class="columns" style={child.style}>
+                        <template for:each={child.tracks} for:item="track">
+                            <div key={track.key} class="track">
+                                <template for:each={track.sections} for:item="sec">
+                                    <c-layout-section-host key={sec.key} section={sec} mode={mode}
+                                        object-api-name={sec.objectApiName}
+                                        record-type-id={sec.recordTypeId}
+                                        record-id={sec.recordId}></c-layout-section-host>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

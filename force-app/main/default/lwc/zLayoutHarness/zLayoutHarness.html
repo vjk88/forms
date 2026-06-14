@@ -1,0 +1,76 @@
+<template>
+    <div class="harness">
+        <!-- Sticky control bar — always visible -->
+        <header class="bar">
+            <lightning-combobox label="Archetype" value={archetype} options={archetypeOptions} onchange={handleArchetype}></lightning-combobox>
+            <lightning-combobox label="Skin" value={skinName} options={skinOptions} onchange={handleSkin}></lightning-combobox>
+            <lightning-combobox label="Density" value={density} options={densityOptions} onchange={handleDensity}></lightning-combobox>
+            <lightning-combobox label="Seed" value={seedName} options={seedOptions} onchange={handleSeed}></lightning-combobox>
+            <lightning-combobox label="Viewport" value={viewport} options={viewportOptions} onchange={handleViewport}></lightning-combobox>
+            <lightning-input class="live-toggle" type="checkbox" label="Live"
+                checked={liveMode} disabled={liveDisabled}
+                onchange={handleLiveToggle}></lightning-input>
+            <lightning-input class="viewer-id" type="text" label="Viewer formId"
+                value={viewerFormId} placeholder="Form__c Id → c-form-viewer"
+                onchange={handleViewerFormId}></lightning-input>
+            <lightning-input class="gallery-toggle" type="checkbox" label="Create gallery"
+                checked={galleryMode} onchange={handleGalleryToggle}></lightning-input>
+            <lightning-button class="toggle" label={matrixLabel} onclick={toggleMatrix}></lightning-button>
+        </header>
+
+        <!-- Scrollable content area -->
+        <div class="content-area">
+            <template lwc:if={galleryMode}>
+                <p lwc:if={lastValueEvent} class="perf">{lastValueEvent}</p>
+                <c-form-creation-gallery
+                    onformcreated={handleGalleryCreated}></c-form-creation-gallery>
+            </template>
+
+            <template lwc:elseif={viewerMode}>
+                <p class="perf">c-form-viewer → formId {viewerFormId}</p>
+                <div class="stage" style={stageStyle}>
+                    <c-form-viewer form-id={viewerFormId} mode="published"></c-form-viewer>
+                </div>
+            </template>
+
+            <template lwc:elseif={matrixMode}>
+                <p lwc:if={matrixMs} class="perf">Matrix render: {matrixMs} ms ({seed.label}, {density})</p>
+                <div class="matrix">
+                    <template for:each={matrixItems} for:item="item">
+                        <figure key={item.id} class="cell">
+                            <figcaption>{item.id}</figcaption>
+                            <c-form-layout-engine
+                                spec={item.spec}
+                                pages={seed.pages}
+                                sections={seed.sections}
+                                elements={seed.elements}
+                                skin={skin}
+                                mode="preview"
+                                preview-scale="0.18"
+                                form-title={seed.formTitle}
+                            ></c-form-layout-engine>
+                        </figure>
+                    </template>
+                </div>
+            </template>
+
+            <template lwc:else>
+                <p lwc:if={lastValueEvent} class="perf">sectionvalue → {lastValueEvent}</p>
+                <div class="stage" style={stageStyle}>
+                    <c-form-layout-engine
+                        spec={spec}
+                        pages={seed.pages}
+                        sections={seed.sections}
+                        elements={seed.elements}
+                        skin={skin}
+                        mode={engineMode}
+                        object-api-name={seed.objectApiName}
+                        form-title={seed.formTitle}
+                        form-description={seed.formDescription}
+                        onsectionvalue={handleSectionValue}
+                    ></c-form-layout-engine>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

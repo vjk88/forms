@@ -590,6 +590,53 @@ export default class PropertyPanel extends LightningElement {
         return this._selection && this._selection.type === 'section';
     }
 
+    // A related-list ("repeater") section — a section bound to a child
+    // relationship, rendered once per child record in the player.
+    get isRelatedSection() {
+        return (
+            this.isSectionSelected &&
+            (this._selection?.contextType === 'Related_Child' ||
+                this._selection?.relatedIndex != null)
+        );
+    }
+
+    get repeaterDisplayStyle() {
+        return this._selection?.displayStyle || 'stacked';
+    }
+    get repeaterAddLabel() {
+        return this._selection?.addLabel || '';
+    }
+    get repeaterMinRows() {
+        return this._selection?.minRows != null ? this._selection.minRows : 0;
+    }
+    get repeaterMaxRows() {
+        return this._selection?.maxRows != null ? this._selection.maxRows : 0;
+    }
+    get repeaterStyleOptions() {
+        return [
+            { label: 'Stacked cards', value: 'stacked' },
+            { label: 'Table / grid', value: 'table' },
+            { label: 'Tiles + modal', value: 'tile' }
+        ];
+    }
+
+    handleRepeaterStyleChange(event) {
+        this.firePropertyChange('displayStyle', event.detail.value);
+    }
+    handleRepeaterAddLabelChange(event) {
+        this.firePropertyChange('addLabel', event.detail.value);
+    }
+    handleRepeaterMinRowsChange(event) {
+        this.firePropertyChange('minRows', this.toRowInt(event.detail.value));
+    }
+    handleRepeaterMaxRowsChange(event) {
+        this.firePropertyChange('maxRows', this.toRowInt(event.detail.value));
+    }
+    toRowInt(v) {
+        const n = parseInt(v, 10);
+        return Number.isNaN(n) ? 0 : Math.max(0, n);
+    }
+
     get isElementSelected() {
         return this._selection && this._selection.type === 'element';
     }
@@ -1117,6 +1164,12 @@ export default class PropertyPanel extends LightningElement {
 
         if (this._selection.type === 'section') {
             detail.index = this._selection.index;
+            // Related-list sections live nested in the parent's
+            // relatedSections[]; carry the index so the change routes there.
+            if (this._selection.relatedIndex != null) {
+                detail.sectionIndex = this._selection.index;
+                detail.relatedIndex = this._selection.relatedIndex;
+            }
         } else if (this._selection.type === 'element') {
             detail.sectionIndex = this._selection.sectionIndex;
             detail.elementIndex = this._selection.elementIndex;

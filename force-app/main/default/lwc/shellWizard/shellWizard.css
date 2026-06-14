@@ -1,0 +1,234 @@
+/* :host is the container query context — forms render in variable-width
+   regions, so we adapt to OUR width, not the viewport. */
+:host {
+    display: block;
+    background: var(--c-page-bg, #eceae4);
+    container-type: inline-size;
+    container-name: wizard;
+}
+
+.wizard {
+    display: flex;
+    min-height: 100%;
+}
+.mode-vertical { flex-direction: row; }
+.mode-horizontal,
+.mode-progress { flex-direction: column; }
+
+/* ── Numbered stepper (vertical rail by default) ── */
+.stepper {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.mode-vertical .stepper {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: var(--c-rail-w, 240px);
+    min-width: var(--c-rail-w, 240px);
+    overflow-y: auto;
+    padding: var(--c-space-5, 24px) var(--c-space-4, 16px);
+    background: var(--c-page-bg, #eceae4);
+    border-right: 1px solid var(--c-border-light, #e6e8ec);
+}
+/* Horizontal: steps in a row across the top */
+.mode-horizontal .stepper {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-space-2, 8px);
+    padding: var(--c-space-3, 12px) var(--c-space-5, 24px);
+    background: var(--c-page-bg, #eceae4);
+    border-bottom: 1px solid var(--c-border-light, #e6e8ec);
+}
+/* progress mode: no per-step nodes at all */
+.mode-progress .stepper { display: none; }
+
+.rail-node {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-space-3, 12px);
+    padding: var(--c-space-3, 12px) var(--c-space-2, 8px);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    position: relative;
+    color: var(--c-text-weak, #646b78);
+    font: inherit;
+    border-radius: var(--c-radius, 8px);
+    transition: background var(--c-dur-1, 150ms);
+}
+.mode-horizontal .rail-node {
+    width: auto;
+    align-items: center;
+    padding: var(--c-space-2, 8px) var(--c-space-3, 12px);
+}
+.rail-node:hover { background: color-mix(in srgb, var(--c-text, #101319) 5%, transparent); }
+.rail-node:disabled { cursor: default; opacity: 0.55; }
+.rail-node:disabled:hover { background: transparent; }
+.rail-node.is-active { color: var(--c-text, #101319); background: color-mix(in srgb, var(--c-text, #101319) 7%, transparent); }
+.rail-node.is-done   { color: var(--c-text-weak, #646b78); }
+.rail-node.is-error  { color: var(--c-error, #ea001e); }
+
+.node-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border: 2px solid currentColor;
+    background: transparent;
+    transition: background var(--c-dur-1, 150ms), border-color var(--c-dur-1, 150ms);
+}
+.is-active .node-num {
+    background: var(--c-accent, #0176d3);
+    border-color: var(--c-accent, #0176d3);
+    color: var(--c-on-accent, #fff);
+}
+.is-done .node-num {
+    background: color-mix(in srgb, var(--c-accent, #0176d3) 20%, transparent);
+    border-color: color-mix(in srgb, var(--c-accent, #0176d3) 50%, transparent);
+}
+.node-label { font-size: 0.875rem; line-height: 1.4; padding-top: 4px; }
+.mode-horizontal .node-label { padding-top: 0; }
+.node-check { margin-left: auto; color: var(--c-accent, #0176d3); font-size: 0.8rem; padding-top: 6px; }
+
+/* ── Progress bar (progress mode + narrow-container fallback) ── */
+.progressbar {
+    display: none;
+    flex-direction: column;
+    gap: var(--c-space-2, 8px);
+    padding: var(--c-space-3, 12px) var(--c-space-5, 24px);
+    background: var(--c-page-bg, #eceae4);
+    border-bottom: 1px solid var(--c-border-light, #e6e8ec);
+}
+.mode-progress .progressbar { display: flex; }
+.pb-text {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-weak, #646b78);
+    font-family: var(--c-label-font, ui-monospace, 'Cascadia Code', Menlo, monospace);
+}
+.pb-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--c-text, #101319) 10%, transparent);
+    overflow: hidden;
+}
+.pb-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--c-accent, #0176d3);
+    transition: width var(--c-dur-2, 250ms) var(--c-ease, ease);
+}
+
+/* ── Form sheet ── */
+.sheet {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--c-card-bg, #f7f6f2);
+}
+.sheet-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-2, 8px);
+    padding: var(--c-space-4, 16px) var(--c-space-5, 24px) 0;
+}
+.sheet-logo { max-height: 40px; width: auto; }
+.sheet-title { margin: 0; font-family: var(--c-font-display, inherit); font-size: 1.35rem; color: var(--c-text, #101319); }
+.sheet-sub { margin: 0; color: var(--c-text-weak, #646b78); }
+.meta-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-3, 12px);
+    padding: var(--c-space-2, 8px) var(--c-space-5, 24px);
+    border-bottom: 1px solid var(--c-border-light, #e6e8ec);
+    background: var(--c-card-bg, #f7f6f2);
+}
+.meta-step {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-weak, #646b78);
+    font-family: var(--c-label-font, ui-monospace, 'Cascadia Code', Menlo, monospace);
+}
+.meta-pill {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-accent, #0176d3);
+    border: 1px solid var(--c-accent, #0176d3);
+    border-radius: 9999px;
+    padding: 2px 8px;
+    opacity: 0.7;
+}
+.sheet-content { flex: 1; padding: var(--c-space-5, 24px); overflow-y: auto; }
+.sheet-footer {
+    display: flex;
+    gap: var(--c-space-3, 12px);
+    justify-content: flex-end;
+    padding: var(--c-space-4, 16px) var(--c-space-5, 24px);
+    border-top: 1px solid var(--c-border-light, #e6e8ec);
+    background: var(--c-card-bg, #f7f6f2);
+}
+
+/* ── Buttons ── */
+.btn-ghost {
+    font: inherit;
+    font-weight: 500;
+    background: transparent;
+    border: 1.5px solid var(--c-border, #d8dde6);
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-4, 16px);
+    height: var(--c-control-h, 40px);
+    color: var(--c-text, #101319);
+    cursor: pointer;
+}
+.btn-primary,
+.submit-btn {
+    font: inherit;
+    font-weight: 600;
+    color: var(--c-on-accent, #fff);
+    background: var(--c-submit-bg, var(--c-accent, #0176d3));
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-5, 24px);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+}
+.btn-primary:focus-visible,
+.submit-btn:focus-visible,
+.btn-ghost:focus-visible,
+.rail-node:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
+}
+
+/* ── Container collapse: below ~520px OUR width, the text-heavy vertical /
+      horizontal steppers give way to the progress bar (spec §5.1/§9.8). ── */
+@container wizard (max-width: 520px) {
+    .mode-vertical,
+    .mode-horizontal { flex-direction: column; }
+    .mode-vertical .stepper,
+    .mode-horizontal .stepper { display: none; }
+    .mode-vertical .progressbar,
+    .mode-horizontal .progressbar { display: flex; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pb-fill { transition: none; }
+}

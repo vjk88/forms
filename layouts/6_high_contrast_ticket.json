@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Single_Page",
+  "header": {
+    "visible": true,
+    "title": "URGENT Technical Support",
+    "subtitle": "Submit this ticket immediately to alert our critical incidence response team.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "left",
+    "backgroundColor": "#1e293b",
+    "titleColor": "#fbbf24",
+    "subtitleColor": "#e2e8f0"
+  },
+  "formSettings": {
+    "submitLabel": "Trigger Alert Escalation",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Incident Escaled!</strong> Response team notified. Ticket reference generated.</p>",
+    "formWidth": 95,
+    "theme": {
+      "name": "custom",
+      "layout": "classic",
+      "accent": "#f59e0b",
+      "surface": "#ffffff",
+      "pageBg": "#fffbeb",
+      "radius": "sharp",
+      "cardShadow": "none",
+      "sectionDefault": "boxed",
+      "glass": false,
+      "customCss": "--form-input-border: #1e293b;\n--c-accent: #f59e0b;\n--c-radius: 0px;\nborder: 2px solid #1e293b;\nbox-shadow: 6px 6px 0px #1e293b;"
+    }
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Incident Details",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-severity",
+          "name": "Incident Severity & Classification",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-subject",
+              "type": "Field",
+              "name": "Brief Summary / Subject",
+              "fieldApiName": "Subject",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-priority",
+              "type": "Field",
+              "name": "Severity Level",
+              "fieldApiName": "Priority",
+              "fieldType": "Picklist",
+              "uiBehavior": "Required"
+            }
+          ]
+        },
+        {
+          "id": "sec-desc",
+          "name": "Technical Description & Steps to Reproduce",
+          "showHeader": true,
+          "gridColumns": 1,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-description",
+              "type": "Long_Text_Response",
+              "name": "Detailed Description",
+              "placeholder": "What services are affected? Paste error traces or describe system misbehavior..."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

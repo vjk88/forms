@@ -1,0 +1,54 @@
+<template>
+    <div class="layout">
+        <!-- Mobile top bar (visible when collapsed) -->
+        <div class="mobile-bar">
+            <span class="mobile-summary">{mobileSummary}</span>
+            <div class="mobile-progress">
+                <div class="mobile-progress-bar" style={progressStyle}></div>
+            </div>
+        </div>
+        <!-- Nav rail -->
+        <nav class="rail" aria-label="Form sections">
+            <div class="rail-header">
+                <img lwc:if={model.header.logo} src={model.header.logo} alt="" style="max-height:32px; width:auto; display:block; margin-bottom:8px;" />
+                <span lwc:if={model.header.title} class="rail-title">{model.header.title}</span>
+            </div>
+            <ul class="rail-list" role="list">
+                <template for:each={railItems} for:item="item">
+                    <li key={item.key} class={item.itemClass} role="listitem">
+                        <button
+                            type="button"
+                            class="nav-btn"
+                            data-key={item.key}
+                            onclick={handleRailClick}
+                            title={item.label}
+                            aria-label={item.label}
+                            aria-current={item.ariaCurrent}>
+                            <span class="nav-icon" aria-hidden="true">{item.stateLabel}</span>
+                            <span class="nav-num" aria-hidden="true">{item.num}</span>
+                            <span class="nav-label">{item.label}</span>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+            <div class="rail-footer">
+                <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+            </div>
+        </nav>
+        <!-- Content pane (multi-page: current page only; single: scroll) -->
+        <div class="content">
+            <template for:each={panePages} for:item="page">
+                <div key={page.pageKey} class="page-block" data-page={page.pageKey}>
+                    <c-layout-zones
+                        zones={page.zones}
+                        mode={mode}
+                        collapsed={model.collapsed}>
+                    </c-layout-zones>
+                </div>
+            </template>
+            <div class="content-submit">
+                <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+            </div>
+        </div>
+    </div>
+</template>

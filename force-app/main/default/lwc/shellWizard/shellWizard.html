@@ -1,0 +1,66 @@
+<template>
+    <div class={wizardClass}>
+        <!-- Progress bar: shown in `progress` mode and when the container is
+             too narrow for the per-step nodes (container query in CSS). -->
+        <div
+            class="progressbar"
+            role="progressbar"
+            aria-valuemin="1"
+            aria-valuenow={progressNow}
+            aria-valuemax={progressTotal}
+            aria-label={metaStepLabel}
+        >
+            <div class="pb-text">{metaStepLabel}</div>
+            <div class="pb-track">
+                <div class="pb-fill" style={progressStyle}></div>
+            </div>
+        </div>
+
+        <!-- Numbered steps: vertical rail OR horizontal row (CSS by mode). -->
+        <nav class="stepper" aria-label="Form steps">
+            <template for:each={railItems} for:item="item">
+                <button
+                    key={item.key}
+                    class={item.nodeClass}
+                    type="button"
+                    data-key={item.key}
+                    onclick={handleRailClick}
+                    disabled={item.isFuture}
+                    aria-current={item.ariaCurrent}
+                >
+                    <span class="node-num">{item.num}</span>
+                    <span class="node-label">{item.label}</span>
+                    <span lwc:if={item.isDone} class="node-check" aria-hidden="true">✓</span>
+                </button>
+            </template>
+        </nav>
+
+        <!-- Form sheet -->
+        <div class="sheet">
+            <header lwc:if={showHeader} class="sheet-head">
+                <img lwc:if={model.header.logo} src={model.header.logo} alt="" class="sheet-logo" />
+                <h1 lwc:if={model.header.title} class="sheet-title">{model.header.title}</h1>
+                <p lwc:if={model.header.description} class="sheet-sub">{model.header.description}</p>
+            </header>
+            <div class="meta-bar">
+                <span class="meta-step">{metaStepLabel}</span>
+                <span class="meta-pill">{model.labels.draftBadge}</span>
+            </div>
+            <div class="sheet-content">
+                <template for:each={panePages} for:item="page">
+                    <div key={page.pageKey}>
+                        <c-layout-zones
+                            zones={page.zones}
+                            mode={mode}
+                        ></c-layout-zones>
+                    </div>
+                </template>
+            </div>
+            <div class="sheet-footer">
+                <button lwc:if={showBack} type="button" class="btn-ghost" onclick={fireBack}><span aria-hidden="true">←&nbsp;</span>{model.labels.back}</button>
+                <button lwc:if={showNext} type="button" class="btn-primary" onclick={fireNext}>{model.labels.next}<span aria-hidden="true">&nbsp;→</span></button>
+                <button lwc:if={showSubmit} type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+            </div>
+        </div>
+    </div>
+</template>

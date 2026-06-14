@@ -1,0 +1,19 @@
+<template>
+    <div class="wrap">
+        <p class="status">{status}</p>
+        <p>
+            <button onclick={handleSplit}>Split page 1 into columns (applyOps)</button>
+            <button onclick={handleMissingShell}>Switch to mosaicGrid (missing-shell path)</button>
+        </p>
+        <c-form-layout-engine
+            spec={spec}
+            pages={pages}
+            sections={sections}
+            elements={elements}
+            skin={skin}
+            mode="preview"
+            form-title="Contact Request"
+            form-description="Layout engine spike — seeded data, no Apex."
+        ></c-form-layout-engine>
+    </div>
+</template>

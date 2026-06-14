@@ -1,0 +1,157 @@
+:host {
+    display: block;
+}
+
+/* Section chrome — token-driven so every theme/skin restyles it. The
+   archetype shell owns page chrome; this owns only the section box. */
+.sec {
+    background: var(--c-card-bg, #ffffff);
+    border: 1px solid var(--c-card-border, var(--c-border-light, #e5e7eb));
+    border-radius: var(--c-radius-card, var(--c-radius, 12px));
+    box-shadow: var(--c-card-shadow, none);
+    padding: var(--c-section-padding, var(--c-space-5, 1.25rem));
+}
+
+.sec-style-flat {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: var(--c-space-2, 0.5rem) 0;
+}
+
+.sec-style-outline {
+    background: transparent;
+    box-shadow: none;
+}
+
+.sec-header {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-2, 0.5rem);
+    margin-bottom: var(--c-space-4, 1rem);
+}
+
+.sec-icon {
+    --slds-c-icon-color-foreground-default: var(--c-accent, #2563eb);
+}
+
+.sec-title {
+    font-family: var(--c-font-display, inherit);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text, #0b1320);
+    margin: 0;
+}
+
+.den-compact .sec-body {
+    --lwc-spacingSmall: 0.5rem;
+}
+
+.el.is-hidden {
+    display: none;
+}
+
+/* Whole section hidden by a visibility rule — mounted but invisible. */
+.sec.is-hidden {
+    display: none;
+}
+
+.el-field-error {
+    color: var(--c-error, #ba0517);
+    font-size: 0.75rem;
+    margin-top: var(--c-space-1, 0.25rem);
+}
+
+.el-divider {
+    border: 0;
+    border-top: 1px solid var(--c-border-light, #e5e7eb);
+    margin: var(--c-space-3, 0.75rem) 0;
+}
+
+.el-imagewrap {
+    text-align: center;
+}
+
+.el-image {
+    border-radius: var(--c-radius, 8px);
+    max-width: 100%;
+}
+
+.img-small {
+    max-height: 120px;
+}
+
+.img-medium {
+    max-height: 240px;
+}
+
+.img-large {
+    max-height: 420px;
+}
+
+.el-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-space-2, 0.5rem);
+    border-radius: var(--c-radius, 8px);
+    padding: var(--c-space-3, 0.75rem);
+    font-size: 0.85rem;
+    color: var(--c-text, #0b1320);
+}
+
+.callout-info {
+    background: var(--c-callout-info-bg, #eef4ff);
+}
+
+.callout-success {
+    background: var(--c-callout-success-bg, #ebf7ee);
+}
+
+.callout-warning {
+    background: var(--c-callout-warning-bg, #fdf6e3);
+}
+
+.callout-error {
+    background: var(--c-callout-error-bg, #fdeded);
+}
+
+.callout-icon {
+    flex: none;
+    margin-top: 2px;
+}
+
+.spacer-small {
+    height: var(--c-space-3, 0.75rem);
+}
+
+.spacer-medium {
+    height: var(--c-space-5, 1.5rem);
+}
+
+.spacer-large {
+    height: var(--c-space-7, 3rem);
+}
+
+.el-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-space-2, 0.5rem);
+    font-size: 0.85rem;
+    color: var(--c-text-weak, #6b7280);
+}
+
+.el-consent__box {
+    flex: none;
+}
+
+.el-file-note {
+    font-size: 0.8rem;
+    color: var(--c-text-weak, #6b7280);
+    font-style: italic;
+    margin: 0;
+}
+
+.sec-repeater {
+    display: block;
+    margin-top: var(--c-space-4, 1rem);
+}

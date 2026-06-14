@@ -1,0 +1,118 @@
+<template>
+    <div class={elementClass}>
+        <!-- Type: Field -->
+        <template if:true={isField}>
+            <div class="slds-form-element">
+                <label class="slds-form-element__label" for="input-field">
+                    <template if:true={element.required}>
+                        <abbr class="slds-required" title="required">* </abbr>
+                    </template>
+                    {element.label}
+                </label>
+                <div class="slds-form-element__control">
+                    
+                    <!-- Standard text / input types -->
+                    <template if:true={isStandardInput}>
+                        <input 
+                            type={inputType} 
+                            id="input-field" 
+                            class="slds-input custom-input" 
+                            placeholder={element.placeholder} 
+                            value={value} 
+                            required={element.required}
+                            min={element.minValue}
+                            max={element.maxValue}
+                            minlength={element.minLength}
+                            maxlength={element.maxLength}
+                            pattern={element.pattern}
+                            oninput={handleInputChange} 
+                        />
+                    </template>
+
+                    <!-- Textarea -->
+                    <template if:true={isTextarea}>
+                        <textarea 
+                            id="textarea-field" 
+                            class="slds-textarea custom-input" 
+                            placeholder={element.placeholder} 
+                            required={element.required}
+                            minlength={element.minLength}
+                            maxlength={element.maxLength}
+                            oninput={handleInputChange}
+                        >{value}</textarea>
+                    </template>
+
+                    <!-- Toggle (checkbox render override) -->
+                    <template if:true={isToggle}>
+                        <label class="slds-checkbox_toggle slds-grid">
+                            <input 
+                                type="checkbox" 
+                                checked={value} 
+                                aria-describedby="toggle-desc" 
+                                onchange={handleCheckboxChange} 
+                            />
+                            <span id="toggle-desc" class="slds-checkbox_faux_container" aria-live="assertive">
+                                <span class="slds-checkbox_faux"></span>
+                            </span>
+                        </label>
+                    </template>
+
+                    <!-- Slider (number render override) -->
+                    <template if:true={isSlider}>
+                        <input 
+                            type="range" 
+                            class="slds-slider custom-slider" 
+                            min={element.minValue} 
+                            max={element.maxValue} 
+                            value={value} 
+                            oninput={handleInputChange} 
+                        />
+                        <span class="slider-value">{value}</span>
+                    </template>
+
+                    <!-- Picklist (dropdown) -->
+                    <template if:true={isPicklist}>
+                        <select class="slds-select custom-input" onchange={handleInputChange}>
+                            <option value="">-- Select Option --</option>
+                            <template for:each={picklistOptions} for:item="opt">
+                                <option key={opt.value} value={opt.value} selected={opt.selected}>{opt.label}</option>
+                            </template>
+                        </select>
+                    </template>
+
+                    <!-- Salesforce Lookup (RenderAs Lookup) -->
+                    <template if:true={isLookup}>
+                        <div class="lookup-container">
+                            <input 
+                                type="text" 
+                                class="slds-input custom-input lookup-input" 
+                                placeholder="Search records..." 
+                                value={lookupSearchTerm}
+                                oninput={handleLookupSearch}
+                            />
+                        </div>
+                    </template>
+
+                </div>
+                <template if:true={element.helpText}>
+                    <div class="slds-form-element__help">{element.helpText}</div>
+                </template>
+                <template if:true={errorMessage}>
+                    <div class="slds-form-element__help slds-has-error">{errorMessage}</div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Type: Static Text -->
+        <template if:true={isStaticText}>
+            <div class="static-text-content">
+                <lightning-formatted-rich-text value={element.staticTextContent}></lightning-formatted-rich-text>
+            </div>
+        </template>
+
+        <!-- Type: Divider -->
+        <template if:true={isDivider}>
+            <hr class="form-divider" />
+        </template>
+    </div>
+</template>

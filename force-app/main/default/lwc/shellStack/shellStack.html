@@ -1,0 +1,38 @@
+<template>
+    <div class={wrapperClass}>
+        <article class={surfaceClass}>
+            <div lwc:if={isPaper} class="paper-rule" aria-hidden="true"></div>
+            <header lwc:if={showHeader} class={headClass}>
+                <img
+                    lwc:if={model.header.logo}
+                    src={model.header.logo}
+                    alt=""
+                    class="logo"
+                />
+                <h1 lwc:if={model.header.title} class="title">{model.header.title}</h1>
+                <p lwc:if={model.header.description} class="desc">
+                    {model.header.description}
+                </p>
+            </header>
+            <template for:each={pages} for:item="page">
+                <section key={page.pageKey} class="page">
+                    <h2 lwc:if={page.showLabel} class="page-label">{page.label}</h2>
+                    <c-layout-zones
+                        zones={page.zones}
+                        mode={mode}
+                    ></c-layout-zones>
+                </section>
+            </template>
+            <footer lwc:if={isFlowSubmit} class={submitClass}>
+                <button type="button" class="submit-btn" onclick={fireSubmit}>
+                    {submitLabel}
+                </button>
+            </footer>
+        </article>
+        <div lwc:if={isStickySubmit} class="savebar" role="toolbar" aria-label="Save actions">
+            <button type="button" class="submit-btn" onclick={fireSubmit}>
+                {submitLabel}
+            </button>
+        </div>
+    </div>
+</template>

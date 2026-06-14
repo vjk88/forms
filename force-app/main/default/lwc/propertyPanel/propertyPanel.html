@@ -943,6 +943,50 @@
             <div class="slds-p-around_small">
                 <h3 class="slds-text-title_caps slds-m-bottom_small">Section Properties</h3>
 
+                <!-- Related-list (repeater) config -->
+                <template if:true={isRelatedSection}>
+                    <div class="slds-box slds-box_xx-small slds-theme_shade slds-m-bottom_small">
+                        <p class="slds-text-title_caps slds-m-bottom_x-small">Related List</p>
+                        <lightning-combobox
+                            label="Display style"
+                            value={repeaterDisplayStyle}
+                            options={repeaterStyleOptions}
+                            onchange={handleRepeaterStyleChange}
+                            class="slds-m-bottom_small">
+                        </lightning-combobox>
+                        <lightning-input
+                            label="Add button label"
+                            placeholder="Add"
+                            value={repeaterAddLabel}
+                            onchange={handleRepeaterAddLabelChange}
+                            class="slds-m-bottom_small">
+                        </lightning-input>
+                        <div class="slds-grid slds-gutters_xx-small">
+                            <div class="slds-col">
+                                <lightning-input
+                                    type="number"
+                                    label="Min rows"
+                                    min="0"
+                                    value={repeaterMinRows}
+                                    onchange={handleRepeaterMinRowsChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col">
+                                <lightning-input
+                                    type="number"
+                                    label="Max rows"
+                                    min="0"
+                                    value={repeaterMaxRows}
+                                    onchange={handleRepeaterMaxRowsChange}>
+                                </lightning-input>
+                            </div>
+                        </div>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                            Max rows 0 = unlimited.
+                        </p>
+                    </div>
+                </template>
+
                 <!-- Show Header toggle -->
                 <lightning-input
                     type="checkbox"

@@ -1,0 +1,207 @@
+<template>
+    <div class="tg-grid">
+        <template for:each={templates} for:item="t">
+            <button key={t.name} type="button" class={t.thumbClass}
+                data-name={t.name} onclick={handleSelect} title={t.label}>
+                <div class="tg-stage" style={t.stageStyle}>
+
+                    <!-- Classic: single centered card -->
+                    <template if:true={t.isClassic}>
+                        <div class="tg-card" style={t.cardStyle}>
+                            <div class="tg-strip" style={t.accentStyle}></div>
+                            <div class="tg-line"></div><div class="tg-line s"></div>
+                            <div class="tg-btn" style={t.accentStyle}></div>
+                        </div>
+                    </template>
+
+                    <!-- Split: brand panel + form -->
+                    <template if:true={t.isSplit}>
+                        <div class="tg-split">
+                            <div class="tg-panel" style={t.accentStyle}></div>
+                            <div class="tg-card flush" style={t.cardStyle}>
+                                <div class="tg-line"></div><div class="tg-line s"></div>
+                                <div class="tg-line"></div>
+                                <div class="tg-btn" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Immersive: glass card floating on background -->
+                    <template if:true={t.isImmersive}>
+                        <div class="tg-card glass" style={t.glassStyle}>
+                            <div class="tg-line lt"></div><div class="tg-line lt s"></div>
+                            <div class="tg-btn" style={t.accentStyle}></div>
+                        </div>
+                    </template>
+
+                    <!-- Stepped: stepper rail + form -->
+                    <template if:true={t.isStepped}>
+                        <div class="tg-split">
+                            <div class="tg-rail">
+                                <span class="tg-dot on" style={t.accentStyle}></span>
+                                <span class="tg-dot"></span><span class="tg-dot"></span>
+                            </div>
+                            <div class="tg-card flush" style={t.cardStyle}>
+                                <div class="tg-line"></div><div class="tg-line s"></div>
+                                <div class="tg-btn" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Compact: dense rows + table -->
+                    <template if:true={t.isCompact}>
+                        <div class="tg-card" style={t.cardStyle}>
+                            <div class="tg-row"><span class="tg-lbl"></span><span class="tg-inp"></span></div>
+                            <div class="tg-row"><span class="tg-lbl"></span><span class="tg-inp"></span></div>
+                            <div class="tg-table">
+                                <div class="tg-tr" style={t.accentStyle}></div>
+                                <div class="tg-tr"></div><div class="tg-tr"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Split Sidebar Image -->
+                    <template if:true={t.isSplitSidebarImg}>
+                        <div class="tg-split">
+                            <div class="tg-panel sidebar-img" style={t.accentStyle}>
+                                <div class="tg-mini-img"></div>
+                            </div>
+                            <div class="tg-card flush" style={t.cardStyle}>
+                                <div class="tg-line s"></div>
+                                <div class="tg-line"></div>
+                                <div class="tg-btn-sm" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Floating Card Split -->
+                    <template if:true={t.isFloatingCardSplit}>
+                        <div class="tg-floating-split" style={t.cardStyle}>
+                            <div class="tg-split-half img" style={t.accentStyle}></div>
+                            <div class="tg-split-half fields">
+                                <div class="tg-line s"></div>
+                                <div class="tg-btn-sm" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Split Background Overlay -->
+                    <template if:true={t.isSplitBgOverlay}>
+                        <div class="tg-split bg-overlay">
+                            <div class="tg-panel bg-solid" style={t.accentStyle}>
+                                <div class="tg-card overlay" style={t.cardStyle}>
+                                    <div class="tg-line s"></div>
+                                    <div class="tg-btn-sm" style={t.accentStyle}></div>
+                                </div>
+                            </div>
+                            <div class="tg-panel bg-dim"></div>
+                        </div>
+                    </template>
+
+                    <!-- Asymmetric Landing -->
+                    <template if:true={t.isAsymmetricLanding}>
+                        <div class="tg-split asymmetric">
+                            <div class="tg-panel landing-left">
+                                <div class="tg-line headline"></div>
+                                <div class="tg-mini-mockup" style={t.accentStyle}></div>
+                            </div>
+                            <div class="tg-card flush landing-right" style={t.cardStyle}>
+                                <div class="tg-line s"></div>
+                                <div class="tg-btn-sm" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Vertical Stacked Informational -->
+                    <template if:true={t.isVerticalStackedInfo}>
+                        <div class="tg-card stacked-info" style={t.cardStyle}>
+                            <div class="tg-hero-cover" style={t.accentStyle}></div>
+                            <div class="tg-stacked-content">
+                                <div class="tg-line center"></div>
+                                <div class="tg-split-mini">
+                                    <div class="tg-line xs"></div>
+                                    <div class="tg-line xs"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Vertical Stacked Inputs -->
+                    <template if:true={t.isVerticalStackedInputs}>
+                        <div class="tg-card stacked-inputs" style={t.cardStyle}>
+                            <div class="tg-hero-cover" style={t.accentStyle}>
+                                <div class="tg-line lt center"></div>
+                            </div>
+                            <div class="tg-stacked-content">
+                                <div class="tg-line"></div>
+                                <div class="tg-btn-sm" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Multi-Step Segmented Wizard -->
+                    <template if:true={t.isMultiStepWizard}>
+                        <div class="tg-wizard" style={t.cardStyle}>
+                            <div class="tg-stepper-top">
+                                <span class="tg-dot on" style={t.accentStyle}></span>
+                                <span class="tg-dot"></span>
+                                <span class="tg-dot"></span>
+                            </div>
+                            <div class="tg-wizard-body">
+                                <div class="tg-line"></div>
+                                <div class="tg-btn" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Three-Column Dashboard -->
+                    <template if:true={t.isThreeColumnDashboard}>
+                        <div class="tg-three-col">
+                            <div class="tg-nav-col">
+                                <div class="tg-line xs"></div>
+                                <div class="tg-line xs"></div>
+                            </div>
+                            <div class="tg-card flush main-col" style={t.cardStyle}>
+                                <div class="tg-line"></div>
+                                <div class="tg-btn-sm" style={t.accentStyle}></div>
+                            </div>
+                            <div class="tg-help-col">
+                                <div class="tg-line xs"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Focus Modal Popup -->
+                    <template if:true={t.isFocusModalPopup}>
+                        <div class="tg-modal-bg">
+                            <div class="tg-modal-card" style={t.cardStyle}>
+                                <div class="tg-line s"></div>
+                                <div class="tg-btn-sm" style={t.accentStyle}></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Multi-Card Grid -->
+                    <template if:true={t.isMultiCardGrid}>
+                        <div class="tg-grid-layout">
+                            <div class="tg-grid-cell" style={t.cardStyle}>
+                                <div class="tg-line xs"></div>
+                            </div>
+                            <div class="tg-grid-cell" style={t.cardStyle}>
+                                <div class="tg-line xs"></div>
+                            </div>
+                            <div class="tg-grid-cell" style={t.cardStyle}>
+                                <div class="tg-line xs"></div>
+                            </div>
+                            <div class="tg-grid-cell" style={t.cardStyle}>
+                                <div class="tg-line xs"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                </div>
+                <span class="tg-label">{t.label}</span>
+            </button>
+        </template>
+    </div>
+</template>

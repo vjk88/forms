@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Vertical_Navigation",
+  "header": {
+    "visible": true,
+    "title": "Employment Portfolio & References",
+    "subtitle": "Please provide your professional timeline and contact references.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "left",
+    "backgroundColor": "#ffffff",
+    "titleColor": "#1e293b",
+    "subtitleColor": "#475569"
+  },
+  "formSettings": {
+    "submitLabel": "Submit Portfolio",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Portfolio Received!</strong> Thank you for completing your employment history and reference details.</p>",
+    "formWidth": 100,
+    "theme": {
+      "name": "classic",
+      "layout": "classic",
+      "accent": "#2563eb",
+      "surface": "#ffffff",
+      "pageBg": "#f8fafc",
+      "radius": "rounded",
+      "cardShadow": "medium",
+      "sectionDefault": "card",
+      "glass": false,
+      "customCss": "--c-accent: #2563eb; --c-brand: #1d4ed8; font-family: 'Inter', sans-serif;"
+    }
+  },
+  "pages": [
+    {
+      "id": "pg-profile",
+      "name": "Applicant Profile",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-profile",
+          "name": "Personal Profile",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-first-name",
+              "type": "Field",
+              "name": "First Name",
+              "fieldApiName": "FirstName",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-last-name",
+              "type": "Field",
+              "name": "Last Name",
+              "fieldApiName": "LastName",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-title",
+              "type": "Field",
+              "name": "Current Job Title",
+              "fieldApiName": "Title",
+              "fieldType": "String",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pg-history",
+      "name": "Employment History",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-history",
+          "name": "Prior Employment",
+          "showHeader": true,
+          "gridColumns": 1,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-company",
+              "type": "Field",
+              "name": "Company Name",
+              "fieldApiName": "Company__c",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-years",
+              "type": "Field",
+              "name": "Years of Service",
+              "fieldApiName": "YearsActive__c",
+              "fieldType": "Integer",
+              "uiBehavior": "None"
+            },
+            {
+              "id": "el-summary",
+              "type": "Field",
+              "name": "Responsibilities Summary",
+              "fieldApiName": "Summary__c",
+              "fieldType": "TextArea",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pg-references",
+      "name": "References",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-references",
+          "name": "Professional References",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-ref-name",
+              "type": "Field",
+              "name": "Reference Name",
+              "fieldApiName": "RefName__c",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-ref-email",
+              "type": "Field",
+              "name": "Reference Contact Email",
+              "fieldApiName": "RefEmail__c",
+              "fieldType": "Email",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-ref-relation",
+              "type": "Field",
+              "name": "Relationship / Title",
+              "fieldApiName": "RefRelation__c",
+              "fieldType": "String",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

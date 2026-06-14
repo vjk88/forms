@@ -1,0 +1,68 @@
+Here is the updated, detailed breakdown of the layout structures, incorporating the specific visual split ratios.
+
+**Important App Requirement:** When building your form builder app, **the split in the split-column layouts needs to be configurable by the user**. Providing a draggable or adjustable setting is essential so users can alter the ratios (e.g., changing a balanced 50:50 split into a 30:70 split) to fit their specific image dimensions and the complexity of their forms.
+
+### Split Layouts (User-Configurable Ratios)
+
+**1. Split-Column Layout with Sidebar Image**
+
+- **Split Ratio:** Uses an asymmetric split of roughly **25:75 or 30:70**, with the narrower column dedicated to the image.
+- **Left Column (Media):** A static vertical image filling the full height of the column.
+- **Right Column (Form Content):**
+  - **Header Area:** Main title with a subtitle beneath it, separated from the form by a horizontal line.
+  - **Section Headers:** Categorized groups using bolded text (e.g., "CONTACT INFORMATION").
+  - **Field Layouts:** Mixes side-by-side inputs (First/Last name horizontally adjacent) and stacked/composite layouts (full-width Street Address fields stacked above a side-by-side City/State row).
+
+**2. Floating Card Layout with Split Content**
+
+- **Split Ratio:** Inside the floating, rounded card, the layout uses a balanced, symmetrical **50:50 split**.
+- **Left Half:** A square or promotional graphic.
+- **Right Half (Form Content):**
+  - **Header:** Centered title and subtitle.
+  - **Field Layouts (Single Column):** Full-width, vertically stacked text boxes for Name and E-mail.
+  - **Inline Choices:** Radio buttons ("Yes", "No") placed horizontally next to each other rather than stacked.
+  - **Action Button:** A solid-colored "Submit" button aligned to the bottom right of the form container.
+
+**3. Split-Background Overlay Layout**
+
+- **Split Ratio:** The background is divided vertically at approximately **40:60 or 50:50**, where the left solid-colored side is slightly narrower or equal in width to the right photograph.
+- **Visual Structure:** A large title and subtitle span the top center. The form is overlaid directly onto the left solid-color background.
+- **Form Content (Left Column constraints):**
+  - **Section Headers:** Uses large titles and smaller subtitles for sections.
+  - **Required Indicators:** Red asterisks next to labels.
+  - **Field Layouts:** White input boxes directly on the background color, using side-by-side inputs for names and cities/states, and full-width inputs for street addresses.
+- **Footer Element:** A bottom bar with selectable color swatches, functioning as a theme-picker.
+
+**4. Asymmetric Two-Column Landing Page Layout**
+
+- **Split Ratio:** Heavily favors the marketing material, utilizing a split of roughly **60:40 or 65:35**.
+- **Left Column (Marketing):** Wide area containing a large headline, sub-headline, and an interface mockup.
+- **Right Column (Form Block):** A narrow, fixed-width interactive form column.
+  - **Navigation:** Horizontal tabs ("Log in", "Create account") at the top.
+  - **Social Sign-On Stack:** Three full-width, pill-shaped buttons stacked vertically for third-party logins.
+  - **Divider:** A horizontal line with text separating social logins from standard email login.
+  - **Standard Inputs & Actions:** Vertically stacked inputs with internal icons, a right-aligned "Forgot password?" link, and a full-width submit button.
+
+### Vertical Stacked & Multi-Step Layouts
+
+**5. Vertical Stacked Card Layout - Informational**
+
+- **Structure:** Acts as a landing page card before data input.
+- **Top Half (Media):** A landscape hero image filling the top.
+- **Bottom Half (Content Container):** A solid-colored block containing a full-width centered title.
+- **Text Layout:** Divided into two text columns below the title: promotional text/pricing on the left, and a structured list/schedule on the right.
+
+**6. Vertical Stacked Layout - Standard Inputs**
+
+- **Hero Image Header:** Large landscape image spanning the top width with overlay text.
+- **Form Content (Centered Container):**
+  - **Header:** Centered main title directly below the image.
+  - **Field Layouts:** Side-by-side input row for First/Last Name.
+  - **Large Input Area:** A tall, multi-line "Text Area" box spanning the full width to allow for long user responses.
+
+**7. Multi-Step Wizard Layout**
+
+- **Top Navigation:** A visual progress bar or "stepper" to indicate the user's current step (e.g., EMAIL, PREFERENCES).
+- **Header:** Centered title with a descriptive paragraph beneath.
+- **Interactive Field Layouts:** Replaces standard text boxes with **horizontal segmented controls** (groups of connected clickable blocks). Selected options are highlighted in a contrasting color.
+- **Helper Text:** Positioned directly beneath the interactive elements to provide context or tips.

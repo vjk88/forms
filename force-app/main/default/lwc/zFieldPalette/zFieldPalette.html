@@ -1,0 +1,240 @@
+<template>
+  <div class="palette-container no-scrollbar">
+    <!-- Tabs: Components / Fields -->
+    <lightning-tabset
+      active-tab-value={activeTab}
+      variant="scoped"
+      onselect={handleTabChange}
+    >
+      <!-- Components Tab -->
+      <lightning-tab label="Components" value="components">
+        <div class="slds-p-around_small">
+          <!-- Survey-only question types -->
+          <template if:true={hasSurveyQuestionTypes}>
+            <h3 class="slds-text-title_caps slds-m-bottom_x-small">
+              Survey Questions
+            </h3>
+            <ul class="palette-list">
+              <template for:each={surveyQuestionTypes} for:item="q">
+                <li
+                  key={q.value}
+                  class="palette-item"
+                  draggable="true"
+                  ondragstart={handleComponentDragStart}
+                  data-type={q.value}
+                >
+                  <lightning-icon
+                    icon-name={q.icon}
+                    size="x-small"
+                    class="slds-m-right_x-small"
+                  ></lightning-icon>
+                  <span>{q.label}</span>
+                </li>
+              </template>
+            </ul>
+          </template>
+
+          <h3 class="slds-text-title_caps slds-m-top_small slds-m-bottom_x-small">
+            Display Components
+          </h3>
+          <ul class="palette-list">
+            <template for:each={displayComponents} for:item="comp">
+              <li
+                key={comp.value}
+                class="palette-item"
+                draggable="true"
+                ondragstart={handleComponentDragStart}
+                data-type={comp.value}
+              >
+                <lightning-icon
+                  icon-name={comp.icon}
+                  size="x-small"
+                  class="slds-m-right_x-small"
+                ></lightning-icon>
+                <span>{comp.label}</span>
+              </li>
+            </template>
+          </ul>
+
+        </div>
+      </lightning-tab>
+
+      <!-- Fields Tab -->
+      <lightning-tab label="Fields" value="fields">
+        <div class="slds-p-horizontal_small slds-p-top_small">
+          <!-- Clean header -->
+          <div class="palette-head">
+            <div class="palette-head__row">
+              <h2 class="palette-head__title">Object Fields</h2>
+              <template if:true={objectBadge}>
+                <span class="palette-head__badge">{objectBadge}</span>
+              </template>
+            </div>
+            <p class="palette-head__subtitle">{objectSubtitle}</p>
+          </div>
+
+          <!-- Search -->
+          <div class="palette-search">
+            <lightning-icon icon-name="utility:search" size="xx-small"
+              class="palette-search__icon"></lightning-icon>
+            <input
+              type="search"
+              class="palette-search__input"
+              placeholder="Search fields..."
+              value={searchTerm}
+              oninput={handleSearch}
+            />
+          </div>
+          <!-- Required Fields -->
+          <template if:true={hasRequiredFields}>
+            <div class="palette-group">
+              <button
+                class="palette-group-header"
+                type="button"
+                onclick={toggleRequiredSection}
+                data-section="required"
+              >
+                <lightning-icon
+                  icon-name={requiredChevron}
+                  size="xx-small"
+                  class="slds-m-right_xx-small"
+                >
+                </lightning-icon>
+                <span class="slds-text-title_caps">
+                  Required Fields ({requiredFieldCount})
+                </span>
+              </button>
+              <template if:true={requiredExpanded}>
+                <ul class="palette-list">
+                  <template for:each={requiredFields} for:item="field">
+                    <li
+                      key={field.apiName}
+                      class={field.itemClass}
+                      draggable={field.draggable}
+                      ondragstart={handleFieldDragStart}
+                      data-api={field.apiName}
+                      data-label={field.label}
+                      data-type={field.type}
+                    >
+                      <lightning-icon icon-name="utility:drag_and_drop"
+                        size="xx-small" class="palette-drag-handle"></lightning-icon>
+                      <lightning-icon
+                        icon-name={field.iconName}
+                        size="x-small"
+                        class="slds-m-right_x-small palette-field-icon"
+                      >
+                      </lightning-icon>
+                      <span class="palette-field-label">{field.label}</span>
+                      <template if:true={field.isUsed}>
+                        <span class="palette-used-tag">Added</span>
+                      </template>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+            </div>
+          </template>
+
+          <!-- All Fields -->
+          <div class="palette-group">
+            <button
+              class="palette-group-header"
+              type="button"
+              onclick={toggleFieldsSection}
+              data-section="fields"
+            >
+              <lightning-icon
+                icon-name={fieldsChevron}
+                size="xx-small"
+                class="slds-m-right_xx-small"
+              >
+              </lightning-icon>
+              <span class="slds-text-title_caps">
+                Fields ({filteredFieldCount})
+              </span>
+            </button>
+            <template if:true={fieldsExpanded}>
+              <ul class="palette-list">
+                <template for:each={filteredFields} for:item="field">
+                  <li
+                    key={field.apiName}
+                    class={field.itemClass}
+                    draggable={field.draggable}
+                    ondragstart={handleFieldDragStart}
+                    data-api={field.apiName}
+                    data-label={field.label}
+                    data-type={field.type}
+                  >
+                    <lightning-icon icon-name="utility:drag_and_drop"
+                      size="xx-small" class="palette-drag-handle"></lightning-icon>
+                    <lightning-icon
+                      icon-name={field.iconName}
+                      size="x-small"
+                      class="slds-m-right_x-small palette-field-icon"
+                    >
+                    </lightning-icon>
+                    <span class="palette-field-label">{field.label}</span>
+                    <template if:true={field.isUsed}>
+                      <span class="palette-used-tag">Added</span>
+                    </template>
+                  </li>
+                </template>
+              </ul>
+            </template>
+          </div>
+
+          <!-- Related Fields -->
+          <template if:true={showRelatedFieldsGroup}>
+            <div class="palette-group slds-m-top_small">
+              <button
+                class="palette-group-header"
+                type="button"
+                onclick={toggleRelatedSection}
+                data-section="related"
+              >
+                <lightning-icon
+                  icon-name={relatedChevron}
+                  size="xx-small"
+                  class="slds-m-right_xx-small"
+                >
+                </lightning-icon>
+                <span class="slds-text-title_caps">
+                  Related: {relatedObjectLabel} ({filteredRelatedFieldCount})
+                </span>
+              </button>
+              <template if:true={relatedExpanded}>
+                <ul class="palette-list">
+                  <template for:each={filteredRelatedFields} for:item="field">
+                    <li
+                      key={field.apiName}
+                      class={field.itemClass}
+                      draggable={field.draggable}
+                      ondragstart={handleFieldDragStart}
+                      data-api={field.apiName}
+                      data-label={field.label}
+                      data-type={field.type}
+                      data-source="related"
+                    >
+                      <lightning-icon icon-name="utility:drag_and_drop"
+                        size="xx-small" class="palette-drag-handle"></lightning-icon>
+                      <lightning-icon
+                        icon-name={field.iconName}
+                        size="x-small"
+                        class="slds-m-right_x-small palette-field-icon"
+                      >
+                      </lightning-icon>
+                      <span class="palette-field-label">{field.label}</span>
+                      <template if:true={field.isUsed}>
+                        <span class="palette-used-tag">Added</span>
+                      </template>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+            </div>
+          </template>
+        </div>
+      </lightning-tab>
+    </lightning-tabset>
+  </div>
+</template>

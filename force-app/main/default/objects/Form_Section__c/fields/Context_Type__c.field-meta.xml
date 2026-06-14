@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Context_Type__c</fullName>
-    <description
-  >Determines if this section is for the parent record context or represents a child relationship. Related_Child sections are automatically set as repeatable.</description>
-    <inlineHelpText
-  >Select Parent for sections that display/collect parent record fields. Select Related_Child for sections that create/edit child records via a lookup/master-detail relationship.</inlineHelpText>
+    <description>Determines if this section is for the parent record context or represents a child relationship. Related_Child sections are automatically set as repeatable.</description>
+    <inlineHelpText>Select Parent for sections that display/collect parent record fields. Select Related_Child for sections that create/edit child records via a lookup/master-detail relationship.</inlineHelpText>
     <label>Context Type</label>
     <required>true</required>
     <trackTrending>false</trackTrending>

@@ -1,0 +1,364 @@
+:host {
+    display: block;
+    --form-bg: #ffffff;
+    --form-text-color: #1e293b;
+    --form-input-bg: #f8fafc;
+    --form-input-border: #cbd5e1;
+    --form-label-color: #475569;
+    --form-font-family: sans-serif;
+    --form-border-radius: 8px;
+}
+
+.form-wrapper-outer {
+    background-color: var(--form-bg);
+    color: var(--form-text-color);
+    font-family: var(--form-font-family);
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.form-wrapper {
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+/* -------------------------------------------------------------
+   Layout 1: Single Page (Continuous scroll)
+   ------------------------------------------------------------- */
+.layout-single-page .form-wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+/* -------------------------------------------------------------
+   Layout 2: Multi-Page (Linear Steps)
+   ------------------------------------------------------------- */
+.layout-multi-page .form-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+}
+
+.progress-bar-container {
+    background-color: var(--form-input-border, #cbd5e1);
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: #3b82f6;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* -------------------------------------------------------------
+   Layout 3: Split-Page (Side context + side inputs)
+   ------------------------------------------------------------- */
+.layout-split-page {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    min-height: 100vh;
+}
+
+.layout-split-page .context-panel {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.layout-split-page .input-panel {
+    padding: 4rem;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .layout-split-page {
+        grid-template-columns: 1fr;
+    }
+    .layout-split-page .context-panel {
+        padding: 2rem 1rem;
+    }
+}
+
+/* -------------------------------------------------------------
+   Layout 4: Sidebar Navigation
+   ------------------------------------------------------------- */
+.layout-sidebar {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+}
+
+.layout-sidebar .sidebar-menu {
+    border-right: 1px solid var(--form-input-border, #cbd5e1);
+    padding: 2rem 1rem;
+}
+
+.layout-sidebar .main-content {
+    padding: 3rem;
+}
+
+.sidebar-nav-item {
+    padding: 0.75rem 1rem;
+    border-radius: var(--form-border-radius, 8px);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--form-label-color, #475569);
+    margin-bottom: 0.5rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-nav-item.active {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.sidebar-nav-item:hover:not(.active) {
+    background-color: rgba(59, 130, 246, 0.08);
+    color: #3b82f6;
+}
+
+/* -------------------------------------------------------------
+   Layout 5: Modal Layout
+   ------------------------------------------------------------- */
+.layout-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.layout-modal-content {
+    background-color: var(--form-bg);
+    border-radius: var(--form-border-radius);
+    max-width: 650px;
+    width: 90%;
+    padding: 2.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+/* Action button configurations */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-top: 1px solid var(--form-input-border, #cbd5e1);
+    padding-top: 1.5rem;
+}
+
+.submit-btn {
+    border-radius: var(--form-border-radius, 8px) !important;
+}
+
+/* -------------------------------------------------------------
+   New Layouts: Split / Image Sidebar / Floating Card / Overlay / Dashboard
+   ------------------------------------------------------------- */
+
+.layout-splitSidebarImg {
+    display: grid;
+    grid-template-columns: var(--split-left-ratio, 30%) var(--split-right-ratio, 70%);
+    min-height: 100vh;
+}
+.layout-splitSidebarImg .context-panel {
+    background: var(--form-page-bg-image) center/cover no-repeat;
+    padding: 0;
+    min-height: 100vh;
+}
+.layout-splitSidebarImg .input-panel {
+    padding: 4rem 3rem;
+    background: var(--form-bg, #ffffff);
+}
+
+.layout-floatingCardSplit {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: var(--form-page-bg-image) center/cover no-repeat;
+    padding: 2rem;
+}
+.layout-floatingCardSplit .form-wrapper {
+    display: grid;
+    grid-template-columns: var(--split-left-ratio, 50%) var(--split-right-ratio, 50%);
+    border-radius: var(--form-border-radius, 16px);
+    box-shadow: var(--c-card-shadow, 0 20px 25px -5px rgba(0,0,0,0.15));
+    background: var(--form-bg, #ffffff);
+    overflow: hidden;
+    max-width: 1000px;
+    width: 100%;
+    padding: 0;
+}
+.layout-floatingCardSplit .context-panel {
+    background: var(--form-card-bg-image) center/cover no-repeat;
+    min-height: 500px;
+}
+.layout-floatingCardSplit .input-panel {
+    padding: 3rem;
+}
+
+.layout-splitBgOverlay {
+    display: grid;
+    grid-template-columns: var(--split-left-ratio, 40%) var(--split-right-ratio, 60%);
+    min-height: 100vh;
+    background: var(--form-page-bg-image) center/cover no-repeat;
+}
+.layout-splitBgOverlay .context-panel {
+    background: var(--form-bg, rgba(15, 23, 42, 0.9));
+    padding: 4rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.layout-splitBgOverlay .input-panel {
+    background: transparent;
+    padding: 4rem 3rem;
+}
+
+.layout-asymmetricLanding {
+    display: grid;
+    grid-template-columns: var(--split-left-ratio, 65%) var(--split-right-ratio, 35%);
+    min-height: 100vh;
+    background: var(--form-page-bg-image) center/cover no-repeat;
+}
+.layout-asymmetricLanding .context-panel {
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.45);
+}
+.layout-asymmetricLanding .input-panel {
+    background: var(--form-bg, #ffffff);
+    padding: 4rem 3rem;
+    box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+}
+
+.layout-verticalStackedInfo .form-wrapper {
+    max-width: 960px;
+    margin: 2rem auto;
+    border-radius: var(--form-border-radius, 12px);
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    background: var(--form-bg, #ffffff);
+    padding: 0;
+}
+.layout-verticalStackedInfo c-z-form-header {
+    min-height: 350px;
+    background: var(--form-header-bg-image) center/cover no-repeat;
+    display: block;
+}
+.layout-verticalStackedInfo .form-body {
+    padding: 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.layout-verticalStackedInputs .form-wrapper {
+    max-width: 800px;
+    margin: 2rem auto;
+    border-radius: var(--form-border-radius, 8px);
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    background: var(--form-bg, #ffffff);
+    padding: 0;
+}
+.layout-verticalStackedInputs c-z-form-header {
+    min-height: 250px;
+    background: var(--form-header-bg-image) center/cover no-repeat;
+    display: block;
+}
+.layout-verticalStackedInputs .form-body {
+    padding: 2rem;
+}
+
+.layout-multiStepWizard .form-wrapper {
+    max-width: 850px;
+    margin: 3rem auto;
+    padding: 3rem;
+    background: var(--form-bg, #ffffff);
+    border-radius: var(--form-border-radius, 16px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.layout-threeColumnDashboard .form-wrapper {
+    display: grid;
+    grid-template-columns: var(--split-left-ratio, 20%) 1fr var(--split-right-ratio, 20%);
+    min-height: 100vh;
+    background: var(--form-page-bg-image) center/cover no-repeat;
+    padding: 0;
+}
+.layout-threeColumnDashboard .sidebar-menu {
+    border-right: 1px solid var(--form-input-border, #cbd5e1);
+    background: var(--form-bg, #ffffff);
+    padding: 2rem 1rem;
+}
+.layout-threeColumnDashboard .main-content {
+    padding: 3rem;
+    background: transparent;
+}
+.layout-threeColumnDashboard .right-sidebar {
+    border-left: 1px solid var(--form-input-border, #cbd5e1);
+    background: var(--form-bg, #ffffff);
+    padding: 2rem 1rem;
+}
+
+.layout-focusModalPopup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--form-page-bg-image) center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.layout-focusModalPopup .form-wrapper {
+    background: var(--form-bg, rgba(255,255,255,0.95));
+    backdrop-filter: blur(12px);
+    border-radius: var(--form-border-radius, 16px);
+    max-width: 600px;
+    width: 90%;
+    padding: 3rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
+
+.layout-multiCardGrid .form-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+.layout-multiCardGrid .form-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .layout-splitSidebarImg, .layout-splitBgOverlay, .layout-asymmetricLanding, .layout-threeColumnDashboard {
+        grid-template-columns: 1fr !important;
+    }
+    .layout-floatingCardSplit .form-wrapper {
+        grid-template-columns: 1fr !important;
+    }
+    .layout-verticalStackedInfo .form-body {
+        grid-template-columns: 1fr !important;
+    }
+}
+

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>T20 shared layout-spec fixtures: seeds, valid/invalid spec matrix, orphan and conflict cases. Consumed by Jest suites and the z layout harness.</description>
+</LightningComponentBundle>

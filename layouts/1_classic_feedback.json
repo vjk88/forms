@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Single_Page",
+  "header": {
+    "visible": true,
+    "title": "Customer Feedback Survey",
+    "subtitle": "We value your input. Please tell us about your experience.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "left",
+    "backgroundColor": "#ffffff",
+    "titleColor": "#1e293b",
+    "subtitleColor": "#64748b"
+  },
+  "formSettings": {
+    "submitLabel": "Submit Feedback",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Thank you!</strong> Your feedback has been recorded successfully.</p>",
+    "formWidth": 100,
+    "theme": {
+      "name": "classic",
+      "layout": "classic",
+      "accent": "#0176d3",
+      "surface": "#ffffff",
+      "pageBg": "#f1f5f9",
+      "radius": "rounded",
+      "cardShadow": "soft",
+      "sectionDefault": "card",
+      "glass": false,
+      "customCss": ""
+    }
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Feedback Details",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-feedback-info",
+          "name": "Contact Information",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-name",
+              "type": "Field",
+              "name": "Full Name",
+              "fieldApiName": "Name",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-email",
+              "type": "Field",
+              "name": "Email Address",
+              "fieldApiName": "Email",
+              "fieldType": "Email",
+              "uiBehavior": "None"
+            }
+          ]
+        },
+        {
+          "id": "sec-ratings",
+          "name": "Your Experience",
+          "showHeader": true,
+          "gridColumns": 1,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-rating",
+              "type": "Star_Rating",
+              "name": "Overall Satisfaction",
+              "content": "Rate your experience from 1 to 5 stars."
+            },
+            {
+              "id": "el-comments",
+              "type": "Long_Text_Response",
+              "name": "Comments",
+              "placeholder": "What did you like or dislike about our service?"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

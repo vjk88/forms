@@ -1,0 +1,20 @@
+<template>
+    <div class={rootClass} style={rootStyle}>
+        <template lwc:if={shellCtor}>
+            <lwc:component
+                lwc:is={shellCtor}
+                model={model}
+                nav={navView}
+                mode={mode}
+                onnavrequest={handleNavRequest}
+                onsubmitrequest={handleSubmitRequest}
+            ></lwc:component>
+        </template>
+        <template lwc:elseif={loadError}>
+            <div class="engine-error">{loadError}</div>
+        </template>
+        <template lwc:else>
+            <div class="engine-loading"></div>
+        </template>
+    </div>
+</template>

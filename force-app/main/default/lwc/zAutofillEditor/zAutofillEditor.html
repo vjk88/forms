@@ -1,0 +1,98 @@
+<template>
+  <section role="dialog" tabindex="-1" aria-modal="true"
+    class="slds-modal slds-fade-in-open af-modal">
+    <div class="slds-modal__container af-container">
+      <header class="slds-modal__header af-header">
+        <button
+          class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+          onclick={handleCancel} title="Close">
+          <lightning-icon icon-name="utility:close" size="small"
+            alternative-text="Close"></lightning-icon>
+        </button>
+        <h1 class="slds-modal__title">Auto-Fill Rules</h1>
+        <p class="af-sub">
+          Copy field values from a related record into this form. The source can
+          be a lookup on the form or a record Id passed in the URL.
+        </p>
+      </header>
+
+      <div class="slds-modal__content slds-p-around_medium af-body">
+        <template if:false={hasRules}>
+          <p class="af-empty">No auto-fill rules yet. Add one to prefill fields
+            from a related record.</p>
+        </template>
+
+        <template for:each={displayRules} for:item="rule">
+          <div key={rule.id} class="af-rule">
+            <div class="af-rule-head">
+              <span class="af-rule-num">Rule {rule.num}</span>
+              <lightning-button-icon icon-name="utility:delete" variant="bare"
+                alternative-text="Remove rule" data-id={rule.id}
+                onclick={handleRemoveRule}></lightning-button-icon>
+            </div>
+
+            <div class="af-source-row">
+              <lightning-combobox label="Source" options={sourceTypeOptions}
+                value={rule.sourceType} data-id={rule.id}
+                onchange={handleSourceTypeChange}></lightning-combobox>
+
+              <template if:true={rule.isLookup}>
+                <lightning-combobox label="Lookup field"
+                  placeholder="Select a lookup" options={lookupOptions}
+                  value={rule.lookupField} data-id={rule.id}
+                  onchange={handleLookupChange}></lightning-combobox>
+              </template>
+              <template if:true={rule.isUrl}>
+                <lightning-input label="URL parameter" value={rule.urlParam}
+                  placeholder="e.g. contactId" data-id={rule.id}
+                  onchange={handleUrlParamChange}></lightning-input>
+                <lightning-combobox label="Source object"
+                  placeholder="Select an object" options={objectOptions}
+                  value={rule.sourceObject} data-id={rule.id}
+                  onchange={handleSourceObjectChange}></lightning-combobox>
+              </template>
+            </div>
+
+            <span class="af-map-label">Field mapping</span>
+            <template for:each={rule.mappingRows} for:item="map">
+              <div key={map.id} class="af-map-row">
+                <lightning-combobox variant="label-hidden" placeholder="Source field"
+                  options={rule.sourceFieldOptions} value={map.from}
+                  data-rule={rule.id} data-id={map.id} data-prop="from"
+                  onchange={handleMappingChange}></lightning-combobox>
+                <lightning-icon icon-name="utility:forward" size="xx-small"
+                  class="af-arrow"></lightning-icon>
+                <lightning-combobox variant="label-hidden" placeholder="Form field"
+                  options={targetFieldOptions} value={map.to}
+                  data-rule={rule.id} data-id={map.id} data-prop="to"
+                  onchange={handleMappingChange}></lightning-combobox>
+                <lightning-button-icon icon-name="utility:delete" variant="bare"
+                  alternative-text="Remove mapping" data-rule={rule.id}
+                  data-id={map.id} onclick={handleRemoveMapping}>
+                </lightning-button-icon>
+              </div>
+            </template>
+            <lightning-button variant="base" label="Add mapping"
+              icon-name="utility:add" data-id={rule.id}
+              onclick={handleAddMapping} class="slds-m-top_xx-small">
+            </lightning-button>
+          </div>
+        </template>
+
+        <lightning-button variant="neutral" label="Add Rule"
+          icon-name="utility:add" onclick={handleAddRule}
+          class="slds-m-top_small"></lightning-button>
+      </div>
+
+      <footer class="slds-modal__footer af-footer">
+        <button class="slds-button slds-button_neutral" onclick={handleCancel}>
+          Cancel
+        </button>
+        <button class="slds-button slds-button_brand" onclick={handleSave}>
+          Save
+        </button>
+      </footer>
+    </div>
+  </section>
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

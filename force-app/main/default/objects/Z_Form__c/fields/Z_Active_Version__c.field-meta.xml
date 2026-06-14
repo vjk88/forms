@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Z_Active_Version__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Active Version</label>
+    <referenceTo>Z_Form_Version__c</referenceTo>
+    <relationshipLabel>Z Forms (Active Version)</relationshipLabel>
+    <relationshipName>Z_Forms_Active_Version</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

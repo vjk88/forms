@@ -1,0 +1,1461 @@
+<template>
+    <div class="panel-container no-scrollbar">
+        <!-- No selection -->
+        <template if:false={hasSelection}>
+            <div class="empty-panel">
+                <div class="empty-illu">
+                    <lightning-icon icon-name="utility:touch_action" size="small"
+                        class="empty-illu__main"></lightning-icon>
+                </div>
+                <p class="empty-panel__title">Nothing selected</p>
+                <p class="slds-text-body_small slds-text-color_weak">
+                    Click something on the canvas to edit it.
+                </p>
+                <ul class="empty-hints">
+                    <li>
+                        <lightning-icon icon-name="utility:header" size="xx-small"></lightning-icon>
+                        the header
+                    </li>
+                    <li>
+                        <lightning-icon icon-name="utility:layout" size="xx-small"></lightning-icon>
+                        a section
+                    </li>
+                    <li>
+                        <lightning-icon icon-name="utility:text" size="xx-small"></lightning-icon>
+                        a field
+                    </li>
+                </ul>
+            </div>
+        </template>
+
+        <!-- Page properties -->
+        <template if:true={isPageSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Page Properties</h3>
+
+                <template if:true={pageIsMultiPage}>
+                    <lightning-input
+                        label="Page Name"
+                        value={pageName}
+                        onchange={handlePagePropChange}
+                        data-prop="name"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+
+                <template if:true={pageIsMultiPage}>
+                    <lightning-input
+                        type="checkbox"
+                        label="Show in progress bar / nav"
+                        checked={pageShowInProgress}
+                        onchange={handlePageCheckboxChange}
+                        data-prop="showInProgress"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+
+                <!-- Navigation button labels -->
+                <template if:true={pageShowNextLabel}>
+                    <lightning-input
+                        label="Next Button Label"
+                        value={pageNextLabel}
+                        onchange={handlePagePropChange}
+                        data-prop="nextLabel"
+                        field-level-help="Text shown on the button that advances to the next page."
+                        class="slds-m-top_small">
+                    </lightning-input>
+                </template>
+
+                <template if:true={pageIsLastPage}>
+                    <lightning-input
+                        label="Submit Button Label"
+                        value={pageSubmitLabel}
+                        onchange={handlePagePropChange}
+                        data-prop="submitLabel"
+                        field-level-help="Text shown on the submit button for this final page."
+                        class="slds-m-top_small">
+                    </lightning-input>
+                </template>
+
+                <div class="slds-m-top_small">
+                    <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                        Visibility Rules
+                    </h4>
+                    <template if:true={visibilityDisplay}>
+                        <p class="vis-logic">{visibilityDisplay.logicText}</p>
+                        <ul class="vis-rules">
+                            <template for:each={visibilityDisplay.items} for:item="vr">
+                                <li key={vr.key} class="vis-rule">{vr.text}</li>
+                            </template>
+                        </ul>
+                    </template>
+                    <template if:false={visibilityDisplay}>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                            Always visible
+                        </p>
+                    </template>
+                    <lightning-button variant="neutral" label="Edit Rules"
+                        icon-name="utility:filter" size="small"
+                        onclick={handleEditVisibilityRules}>
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <!-- Form settings -->
+        <template if:true={isFormSettingsSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Form Settings</h3>
+
+                <lightning-accordion active-section-name="style" class="pp-accordion">
+                <lightning-accordion-section name="style" label="Style">
+
+                <!-- Layout gallery — visual mock-up of each layout's structure -->
+                <label class="slds-form-element__label">Layout</label>
+                <c-z-template-gallery
+                    selected={formLayout}
+                    onselect={handleTemplateSelect}
+                    class="slds-m-bottom_small">
+                </c-z-template-gallery>
+
+                <!-- Skin: colours, fonts, corners, glass -->
+                <div class="slds-box slds-box_xx-small slds-m-bottom_small theme-tweaks">
+                    <div class="slds-grid slds-gutters_x-small slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input
+                                type="color"
+                                label="Accent"
+                                value={themeAccent}
+                                data-themekey="accent"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Primary colour for buttons, links and highlights across the form.">
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox
+                                label="Font"
+                                options={fontOptions}
+                                value={themeFont}
+                                data-themekey="font"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Type pairing for headings and body text.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Corners"
+                                options={radiusOptions}
+                                value={themeRadius}
+                                data-themekey="radius"
+                                onchange={handleThemeFieldChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small slds-align-bottom">
+                            <lightning-input
+                                type="toggle"
+                                label="Glass effect"
+                                checked={themeGlass}
+                                onchange={handleThemeGlass}
+                                message-toggle-active="On"
+                                message-toggle-inactive="Off"
+                                field-level-help="Frosted translucent card — best on the Immersive layout with a background.">
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-input
+                                type="color"
+                                label="Submit button"
+                                value={themeSubmitColor}
+                                data-themekey="submitColor"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Overrides the Submit/Next button colour. Defaults to the accent colour.">
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-input
+                                type="color"
+                                label="Back button"
+                                value={themeBackColor}
+                                data-themekey="backColor"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Overrides the Back button outline colour. Defaults to the accent colour.">
+                            </lightning-input>
+                        </div>
+                        <!-- Page Background -->
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <label class="slds-form-element__label bg-label">Page Background</label>
+                            
+                            <!-- Mode Toggle -->
+                            <div class="slds-button-group bg-mode-toggle" role="group">
+                                <button type="button" 
+                                    class={pageBgSolidBtnClass} 
+                                    data-mode="solid"
+                                    onclick={handlePageBgModeSelect}>Solid</button>
+                                <button type="button" 
+                                    class={pageBgGradientBtnClass} 
+                                    data-mode="gradient"
+                                    onclick={handlePageBgModeSelect}>Gradient</button>
+                            </div>
+
+                            <!-- Solid Background Panel -->
+                            <template if:false={isPageBgGradient}>
+                                <div class="color-picker-control slds-m-top_xx-small">
+                                    <input type="color"
+                                        value={pageBgSolidColor}
+                                        class="color-input"
+                                        data-param="solidColor"
+                                        aria-label="Page background color"
+                                        onchange={handlePageBgParamChange}
+                                        oninput={handlePageBgParamChange}>
+                                    <lightning-input
+                                        value={pageBgSolidColor}
+                                        label="Page Background Hex"
+                                        variant="label-hidden"
+                                        class="color-hex-input"
+                                        data-param="solidColor"
+                                        onchange={handlePageBgParamChange}
+                                        placeholder="#f4f6f9">
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+                            <!-- Gradient Background Panel -->
+                            <template if:true={isPageBgGradient}>
+                                <div class="gradient-panel slds-m-top_xx-small">
+                                    <!-- Presets -->
+                                    <div class="presets-label slds-m-bottom_xx-small">Presets</div>
+                                    <div class="presets-grid slds-m-bottom_small">
+                                        <template for:each={pageBgPresets} for:item="preset">
+                                            <button key={preset.label}
+                                                type="button"
+                                                class="preset-swatch"
+                                                title={preset.label}
+                                                style={preset.style}
+                                                data-value={preset.value}
+                                                onclick={handlePageBgPresetSelect}>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <!-- Custom controls -->
+                                    <lightning-combobox
+                                        label="Gradient Type"
+                                        value={pageBgType}
+                                        options={gradientTypeOptions}
+                                        data-param="type"
+                                        onchange={handlePageBgParamChange}
+                                        class="slds-m-bottom_x-small">
+                                    </lightning-combobox>
+
+                                    <template if:true={isPageBgLinear}>
+                                        <lightning-slider
+                                            label="Angle (Degrees)"
+                                            min="0"
+                                            max="360"
+                                            step="5"
+                                            value={pageBgAngle}
+                                            data-param="angle"
+                                            onchange={handlePageBgParamChange}
+                                            class="slds-m-bottom_x-small">
+                                        </lightning-slider>
+                                    </template>
+
+                                    <div class="slds-grid slds-gutters_xx-small">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">Start</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={pageBgStartColor}
+                                                    class="color-input"
+                                                    data-param="startColor"
+                                                    onchange={handlePageBgParamChange}
+                                                    oninput={handlePageBgParamChange}>
+                                                <lightning-input
+                                                    value={pageBgStartColor}
+                                                    label="Start"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="startColor"
+                                                    onchange={handlePageBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">End</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={pageBgEndColor}
+                                                    class="color-input"
+                                                    data-param="endColor"
+                                                    onchange={handlePageBgParamChange}
+                                                    oninput={handlePageBgParamChange}>
+                                                <lightning-input
+                                                    value={pageBgEndColor}
+                                                    label="End"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="endColor"
+                                                    onchange={handlePageBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Card Background -->
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <label class="slds-form-element__label bg-label">Card Background</label>
+                            
+                            <!-- Mode Toggle -->
+                            <div class="slds-button-group bg-mode-toggle" role="group">
+                                <button type="button" 
+                                    class={cardBgSolidBtnClass} 
+                                    data-mode="solid"
+                                    onclick={handleCardBgModeSelect}>Solid</button>
+                                <button type="button" 
+                                    class={cardBgGradientBtnClass} 
+                                    data-mode="gradient"
+                                    onclick={handleCardBgModeSelect}>Gradient</button>
+                            </div>
+
+                            <!-- Solid Background Panel -->
+                            <template if:false={isCardBgGradient}>
+                                <div class="color-picker-control slds-m-top_xx-small">
+                                    <input type="color"
+                                        value={cardBgSolidColor}
+                                        class="color-input"
+                                        data-param="solidColor"
+                                        aria-label="Card background color"
+                                        onchange={handleCardBgParamChange}
+                                        oninput={handleCardBgParamChange}>
+                                    <lightning-input
+                                        value={cardBgSolidColor}
+                                        label="Card Background Hex"
+                                        variant="label-hidden"
+                                        class="color-hex-input"
+                                        data-param="solidColor"
+                                        onchange={handleCardBgParamChange}
+                                        placeholder="#ffffff">
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+                            <!-- Gradient Background Panel -->
+                            <template if:true={isCardBgGradient}>
+                                <div class="gradient-panel slds-m-top_xx-small">
+                                    <!-- Presets -->
+                                    <div class="presets-label slds-m-bottom_xx-small">Presets</div>
+                                    <div class="presets-grid slds-m-bottom_small">
+                                        <template for:each={cardBgPresets} for:item="preset">
+                                            <button key={preset.label}
+                                                type="button"
+                                                class="preset-swatch"
+                                                title={preset.label}
+                                                style={preset.style}
+                                                data-value={preset.value}
+                                                onclick={handleCardBgPresetSelect}>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <!-- Custom controls -->
+                                    <lightning-combobox
+                                        label="Gradient Type"
+                                        value={cardBgType}
+                                        options={gradientTypeOptions}
+                                        data-param="type"
+                                        onchange={handleCardBgParamChange}
+                                        class="slds-m-bottom_x-small">
+                                    </lightning-combobox>
+
+                                    <template if:true={isCardBgLinear}>
+                                        <lightning-slider
+                                            label="Angle (Degrees)"
+                                            min="0"
+                                            max="360"
+                                            step="5"
+                                            value={cardBgAngle}
+                                            data-param="angle"
+                                            onchange={handleCardBgParamChange}
+                                            class="slds-m-bottom_x-small">
+                                        </lightning-slider>
+                                    </template>
+
+                                    <div class="slds-grid slds-gutters_xx-small">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">Start</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={cardBgStartColor}
+                                                    class="color-input"
+                                                    data-param="startColor"
+                                                    onchange={handleCardBgParamChange}
+                                                    oninput={handleCardBgParamChange}>
+                                                <lightning-input
+                                                    value={cardBgStartColor}
+                                                    label="Start"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="startColor"
+                                                    onchange={handleCardBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <label class="slds-form-element__label">End</label>
+                                            <div class="color-picker-control">
+                                                <input type="color"
+                                                    value={cardBgEndColor}
+                                                    class="color-input"
+                                                    data-param="endColor"
+                                                    onchange={handleCardBgParamChange}
+                                                    oninput={handleCardBgParamChange}>
+                                                <lightning-input
+                                                    value={cardBgEndColor}
+                                                    label="End"
+                                                    variant="label-hidden"
+                                                    class="color-hex-input"
+                                                    data-param="endColor"
+                                                    onchange={handleCardBgParamChange}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Header Style"
+                                options={headerStyleOptions}
+                                value={themeHeaderStyle}
+                                data-themekey="headerStyle"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="How the header is rendered. 'Match template' follows the template preset.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Global Section Style"
+                                options={globalSectionStyleOptions}
+                                value={themeSectionStyle}
+                                data-themekey="sectionDefault"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Universal styling for all sections.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_x-small">
+                            <lightning-combobox
+                                label="Global Section Padding"
+                                options={paddingOptions}
+                                value={themeSectionPadding}
+                                data-themekey="sectionPadding"
+                                onchange={handleThemeFieldChange}
+                                field-level-help="Universal padding inside all sections.">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                            <div class="color-picker-row">
+                                <label class="slds-form-element__label">Global Section Header Background</label>
+                                <div class="color-picker-control">
+                                    <input type="color"
+                                        value={themeSectionHeaderBgColorOnly}
+                                        class="color-input"
+                                        data-themekey="sectionHeaderBg"
+                                        aria-label="Section header background color"
+                                        onchange={handleThemeColorChange}
+                                        oninput={handleThemeColorChange}>
+                                    <lightning-input
+                                        value={themeSectionHeaderBg}
+                                        label="Section header background hex value"
+                                        variant="label-hidden"
+                                        class="color-hex-input"
+                                        data-themekey="sectionHeaderBg"
+                                        onchange={handleThemeFieldChange}
+                                        placeholder="#f3f3f3">
+                                    </lightning-input>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <lightning-combobox
+                    label="Overall Form Font"
+                    value={formFontFamily}
+                    options={fontFamilyOptions}
+                    onchange={handleFormSettingChange}
+                    data-prop="fontFamily"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <!-- Form width -->
+                <lightning-slider
+                    label="Form content width (%)"
+                    value={formWidth}
+                    min="50"
+                    max="100"
+                    step="5"
+                    onchange={handleFormWidthChange}
+                    class="slds-m-bottom_small">
+                </lightning-slider>
+                <!-- Split Layout Ratio -->
+                <template if:true={isSplitLayout}>
+                    <lightning-slider
+                        label="Split Left Ratio (%)"
+                        value={themeSplitRatio}
+                        min="10"
+                        max="90"
+                        step="5"
+                        onchange={handleSplitRatioChange}
+                        class="slds-m-bottom_small">
+                    </lightning-slider>
+                </template>
+
+                <!-- Background Image URLs -->
+                <div class="slds-m-bottom_small">
+                    <lightning-input
+                        type="url"
+                        label="Page Background Image URL"
+                        value={themePageBgImage}
+                        data-themekey="pageBgImage"
+                        onchange={handleThemeFieldChange}
+                        placeholder="https://example.com/image.png"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                    <lightning-input
+                        type="url"
+                        label="Card Background Image URL"
+                        value={themeCardBgImage}
+                        data-themekey="cardBgImage"
+                        onchange={handleThemeFieldChange}
+                        placeholder="https://example.com/image.png"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                    <lightning-input
+                        type="url"
+                        label="Header Background Image URL"
+                        value={themeHeaderBgImage}
+                        data-themekey="headerBgImage"
+                        onchange={handleThemeFieldChange}
+                        placeholder="https://example.com/image.png"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </div>
+
+                <!-- Custom CSS Overrides -->
+                <lightning-textarea
+                    label="Custom CSS Overrides"
+                    value={themeCustomCss}
+                    data-themekey="customCss"
+                    placeholder="e.g. --form-bg: #1e293b;&#10;border: 2px solid red;"
+                    field-level-help="Directly override CSS variables or style properties. Semicolons separate properties. Input is sanitized."
+                    onchange={handleThemeFieldChange}
+                    class="slds-m-bottom_small custom-css-input">
+                </lightning-textarea>
+
+                </lightning-accordion-section>
+
+                <lightning-accordion-section name="aiStyle" label="AI Styling Assistant">
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                        Describe the look you want (e.g. "dark mode with emerald green buttons", "clean flat look with rounded inputs") and Einstein will style it.
+                    </p>
+                    <lightning-textarea
+                        label="Style Instructions"
+                        placeholder="e.g. Create a dark mode theme with green buttons and rounded corners..."
+                        value={aiPrompt}
+                        onchange={handleAiPromptChange}
+                        class="slds-m-bottom_small">
+                    </lightning-textarea>
+                    <lightning-button
+                        label="Ask AI to Style"
+                        variant="brand"
+                        icon-name="utility:einstein"
+                        onclick={handleApplyAiStyle}
+                        disabled={isAiProcessing}>
+                    </lightning-button>
+                </lightning-accordion-section>
+                <lightning-accordion-section name="behavior" label="Navigation &amp; Behavior">
+
+                <!-- Page Navigation — switches the form between single and
+                     multi-page (the only place this conversion is exposed). -->
+                <label class="slds-form-element__label">Page Navigation</label>
+                <div class="pick-cards slds-m-bottom_small">
+                    <template for:each={navStyleCards} for:item="c">
+                        <button key={c.value} type="button" class={c.cardClass}
+                            data-value={c.value} onclick={handleNavStyleCard}>
+                            <lightning-icon icon-name={c.icon} size="small"
+                                class="pick-card__ico"></lightning-icon>
+                            <span class="pick-card__label">{c.label}</span>
+                            <span class="pick-card__desc">{c.desc}</span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Progress Tracker for Wizard -->
+                <template if:true={isWizardSelected}>
+                    <lightning-combobox
+                        label="Progress Tracker Type"
+                        options={progressTrackerOptions}
+                        value={progressTrackerType}
+                        onchange={handleFormSettingChange}
+                        data-prop="progressTrackerType"
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </template>
+
+                <!-- Vertical/Top Nav: optionally require valid fields before
+                     moving forward. Wizards always enforce this. -->
+                <template if:true={isNavigationalForm}>
+                    <lightning-input
+                        type="checkbox"
+                        label="Require fields before continuing"
+                        checked={validateOnNavigate}
+                        onchange={handleFormSettingCheckbox}
+                        data-prop="validateOnNavigate"
+                        field-level-help="When on, users must complete the current page's required fields before moving to a later page. Going back is always allowed. (Wizard navigation always enforces this regardless of this setting.)"
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+
+                <!-- Summary Page option -->
+                <lightning-input
+                    type="checkbox"
+                    label="Add a review page before submission"
+                    checked={showSummaryPage}
+                    onchange={handleFormSettingCheckbox}
+                    data-prop="showSummaryPage"
+                    field-level-help="Allows users to see all entered inputs in a single Summary screen before submitting, with edit shortcuts to jump back to individual pages."
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Auto-Fill Rules -->
+                <div class="slds-m-bottom_medium border-bottom slds-p-bottom_small">
+                    <label class="slds-form-element__label">Auto-Fill</label>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_xx-small">
+                        Prefill fields from a related record or URL parameter.
+                    </p>
+                    <lightning-button variant="neutral" label="Edit Auto-Fill Rules"
+                        icon-name="utility:magicwand" size="small"
+                        onclick={handleEditAutoFill}>
+                    </lightning-button>
+                </div>
+
+                <!-- Spam protection -->
+                <lightning-input
+                    type="checkbox"
+                    label="Require CAPTCHA on public submissions"
+                    checked={captchaRequired}
+                    onchange={handleFormSettingCheckbox}
+                    data-prop="captchaRequired"
+                    field-level-help="Shows a verification challenge to guest users before submitting. Only applies to public/guest sessions; internal users are never challenged. (A honeypot already blocks bots on all public submissions automatically.)"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Submit Button Label -->
+                <lightning-input
+                    label="Submit Button Label"
+                    value={submitLabel}
+                    onchange={handleFormSettingChange}
+                    data-prop="submitLabel"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                </lightning-accordion-section>
+                <lightning-accordion-section name="completion" label="After Submit">
+
+                <!-- After Submit Mode -->
+                <label class="slds-form-element__label">After Submit</label>
+                <div class="pick-cards slds-m-bottom_small">
+                    <template for:each={afterSubmitCards} for:item="c">
+                        <button key={c.value} type="button" class={c.cardClass}
+                            data-value={c.value} onclick={handleAfterSubmitCard}>
+                            <lightning-icon icon-name={c.icon} size="small"
+                                class="pick-card__ico"></lightning-icon>
+                            <span class="pick-card__label">{c.label}</span>
+                            <span class="pick-card__desc">{c.desc}</span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Toast & Go Destination -->
+                <template if:true={isToastMode}>
+                    <div class="slds-box slds-theme_shade slds-m-bottom_small">
+                        <lightning-combobox
+                            label="Go to"
+                            options={destinationOptions}
+                            value={toastTarget}
+                            onchange={handleFormSettingChange}
+                            data-prop="toastAndGoTarget"
+                            class="slds-m-bottom_small">
+                        </lightning-combobox>
+
+                        <template if:true={toastIsCustom}>
+                            <lightning-input
+                                type="url"
+                                label="Custom URL"
+                                value={toastUrl}
+                                placeholder="https://example.com or /lightning/..."
+                                field-level-help={tokenHint}
+                                onchange={handleFormSettingChange}
+                                data-prop="toastAndGoUrl"
+                                class="slds-m-bottom_small">
+                            </lightning-input>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Screen Mode Destination -->
+                <template if:true={isScreenMode}>
+                    <div class="slds-box slds-theme_shade slds-m-bottom_small">
+                        <!-- Thank You Message -->
+                        <div class="slds-m-bottom_small">
+                            <label class="slds-form-element__label">Thank-You Message</label>
+                            <lightning-input-rich-text
+                                value={thankYouMessage}
+                                placeholder="Thanks for your submission!"
+                                onchange={handleThankYouMessageChange}
+                                class="slds-m-bottom_small">
+                            </lightning-input-rich-text>
+                        </div>
+
+                        <!-- Auto-Redirect -->
+                        <div class="slds-m-bottom_small border-bottom slds-p-bottom_small">
+                            <lightning-input
+                                type="toggle"
+                                label="Auto-Redirect"
+                                checked={autoRedirect}
+                                onchange={handleFormSettingCheckbox}
+                                data-prop="autoRedirect"
+                                class="slds-m-bottom_small">
+                            </lightning-input>
+
+                            <template if:true={autoRedirect}>
+                                <lightning-combobox
+                                    label="Redirect to"
+                                    options={destinationOptions}
+                                    value={redirectTarget}
+                                    onchange={handleFormSettingChange}
+                                    data-prop="redirectTarget"
+                                    class="slds-m-bottom_small">
+                                </lightning-combobox>
+
+                                <template if:true={redirectIsCustom}>
+                                    <lightning-input
+                                        type="url"
+                                        label="Custom URL"
+                                        value={redirectUrl}
+                                        placeholder="https://example.com"
+                                        field-level-help={tokenHint}
+                                        onchange={handleFormSettingChange}
+                                        data-prop="redirectUrl"
+                                        class="slds-m-bottom_small">
+                                    </lightning-input>
+                                </template>
+
+                                <lightning-input
+                                    type="number"
+                                    min="0"
+                                    label="Redirect Delay (seconds)"
+                                    value={redirectDelay}
+                                    onchange={handleFormSettingChange}
+                                    data-prop="redirectDelay"
+                                    class="slds-m-bottom_small">
+                                </lightning-input>
+                            </template>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="slds-m-bottom_small">
+                            <lightning-input
+                                type="toggle"
+                                label="Action Button"
+                                checked={showActionButton}
+                                onchange={handleFormSettingCheckbox}
+                                data-prop="showActionButton"
+                                class="slds-m-bottom_small">
+                            </lightning-input>
+
+                            <template if:true={showActionButton}>
+                                <lightning-input
+                                    label="Button Label"
+                                    value={actionButtonLabel}
+                                    onchange={handleFormSettingChange}
+                                    data-prop="actionButtonLabel"
+                                    class="slds-m-bottom_small">
+                                </lightning-input>
+
+                                <lightning-combobox
+                                    label="Goes to"
+                                    options={destinationOptions}
+                                    value={actionTarget}
+                                    onchange={handleFormSettingChange}
+                                    data-prop="actionButtonTarget"
+                                    class="slds-m-bottom_small">
+                                </lightning-combobox>
+
+                                <template if:true={actionIsCustom}>
+                                    <lightning-input
+                                        type="url"
+                                        label="Custom URL"
+                                        value={actionUrl}
+                                        placeholder="https://example.com"
+                                        field-level-help={tokenHint}
+                                        onchange={handleFormSettingChange}
+                                        data-prop="actionButtonUrl"
+                                        class="slds-m-bottom_small">
+                                    </lightning-input>
+                                </template>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                </lightning-accordion-section>
+                </lightning-accordion>
+            </div>
+        </template>
+
+        <!-- Header properties -->
+        <template if:true={isHeaderSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Form Header</h3>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Show Header"
+                    checked={headerVisible}
+                    onchange={handleHeaderVisibleChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <template if:true={headerVisible}>
+                <lightning-input
+                    label="Title"
+                    value={headerTitle}
+                    onchange={handleHeaderPropChange}
+                    data-prop="title"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <lightning-input
+                    label="Subtitle"
+                    value={headerSubtitle}
+                    onchange={handleHeaderPropChange}
+                    data-prop="subtitle"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <lightning-combobox
+                    label="Alignment"
+                    value={headerAlignment}
+                    options={alignmentOptions}
+                    onchange={handleHeaderPropChange}
+                    data-prop="alignment"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <!-- Typography -->
+
+                <lightning-combobox
+                    label="Title Size"
+                    value={headerTitleSize}
+                    options={titleSizeOptions}
+                    onchange={handleHeaderPropChange}
+                    data-prop="titleSize"
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <div class="color-picker-row slds-m-bottom_small">
+                    <label class="slds-form-element__label">Title Color</label>
+                    <div class="color-picker-control">
+                        <input type="color"
+                            value={headerTitleColor}
+                            class="color-input"
+                            data-prop="titleColor"
+                            aria-label="Title color"
+                            onchange={handleHeaderColorChange}
+                            oninput={handleHeaderColorChange}>
+                        <lightning-input
+                            value={headerTitleColor}
+                            label="Title color hex value"
+                            variant="label-hidden"
+                            class="color-hex-input"
+                            data-prop="titleColor"
+                            onchange={handleHeaderPropChange}
+                            placeholder="#1b1c1c">
+                        </lightning-input>
+                    </div>
+                </div>
+
+                <div class="color-picker-row slds-m-bottom_small">
+                    <label class="slds-form-element__label">Subtitle Color</label>
+                    <div class="color-picker-control">
+                        <input type="color"
+                            value={headerSubtitleColor}
+                            class="color-input"
+                            data-prop="subtitleColor"
+                            aria-label="Subtitle color"
+                            onchange={handleHeaderColorChange}
+                            oninput={handleHeaderColorChange}>
+                        <lightning-input
+                            value={headerSubtitleColor}
+                            label="Subtitle color hex value"
+                            variant="label-hidden"
+                            class="color-hex-input"
+                            data-prop="subtitleColor"
+                            onchange={handleHeaderPropChange}
+                            placeholder="#706e6b">
+                        </lightning-input>
+                    </div>
+                </div>
+
+                <!-- Background Color -->
+                <div class="color-picker-row slds-m-bottom_small">
+                    <label class="slds-form-element__label">Background Color</label>
+                    <div class="color-picker-control">
+                        <input type="color"
+                            value={headerBackgroundColor}
+                            class="color-input"
+                            data-prop="backgroundColor"
+                            aria-label="Header background color"
+                            onchange={handleHeaderColorChange}
+                            oninput={handleHeaderColorChange}>
+                        <lightning-input
+                            value={headerBackgroundColor}
+                            label="Header background color hex value"
+                            variant="label-hidden"
+                            class="color-hex-input"
+                            data-prop="backgroundColor"
+                            onchange={handleHeaderPropChange}
+                            placeholder="#ffffff">
+                        </lightning-input>
+                    </div>
+                </div>
+
+                <!-- Show Logo -->
+                <lightning-input
+                    type="checkbox"
+                    label="Show Logo"
+                    checked={headerShowLogo}
+                    onchange={handleHeaderCheckboxChange}
+                    data-prop="showLogo"
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Logo Upload (when show logo is checked) -->
+                <template if:true={headerShowLogo}>
+                    <div class="slds-m-bottom_small">
+                        <label class="slds-form-element__label">Logo Image</label>
+                        <template if:true={headerLogoUrl}>
+                            <div class="image-preview slds-m-bottom_xx-small">
+                                <img src={headerLogoUrl} alt="Logo preview" class="preview-img logo-preview-img">
+                                <lightning-button-icon
+                                    icon-name="utility:close"
+                                    variant="bare"
+                                    size="small"
+                                    alternative-text="Remove logo"
+                                    class="preview-remove"
+                                    onclick={handleRemoveLogo}>
+                                </lightning-button-icon>
+                            </div>
+                        </template>
+                        <lightning-input
+                            type="file"
+                            accept="image/*"
+                            label="Upload Logo"
+                            variant="label-hidden"
+                            onchange={handleLogoUpload}>
+                        </lightning-input>
+                    </div>
+
+                    <lightning-combobox
+                        label="Logo Size"
+                        value={headerLogoSize}
+                        options={logoSizeOptions}
+                        onchange={handleHeaderPropChange}
+                        data-prop="logoSize"
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </template>
+
+                <!-- Background Image -->
+                <div class="slds-m-bottom_small">
+                    <label class="slds-form-element__label">Background Image</label>
+                    <template if:true={headerBackgroundImage}>
+                        <div class="image-preview slds-m-bottom_xx-small">
+                            <img src={headerBackgroundImage} alt="Background preview" class="preview-img bg-preview-img">
+                            <lightning-button-icon
+                                icon-name="utility:close"
+                                variant="bare"
+                                size="small"
+                                alternative-text="Remove background"
+                                class="preview-remove"
+                                onclick={handleRemoveBackground}>
+                            </lightning-button-icon>
+                        </div>
+                    </template>
+                    <lightning-input
+                        type="file"
+                        accept="image/*"
+                        label="Upload Background"
+                        variant="label-hidden"
+                        onchange={handleBackgroundUpload}>
+                    </lightning-input>
+                </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Section properties -->
+        <template if:true={isSectionSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">Section Properties</h3>
+
+                <!-- Related-list (repeater) config -->
+                <template if:true={isRelatedSection}>
+                    <div class="slds-box slds-box_xx-small slds-theme_shade slds-m-bottom_small">
+                        <p class="slds-text-title_caps slds-m-bottom_x-small">Related List</p>
+                        <lightning-combobox
+                            label="Display style"
+                            value={repeaterDisplayStyle}
+                            options={repeaterStyleOptions}
+                            onchange={handleRepeaterStyleChange}
+                            class="slds-m-bottom_small">
+                        </lightning-combobox>
+                        <lightning-input
+                            label="Add button label"
+                            placeholder="Add"
+                            value={repeaterAddLabel}
+                            onchange={handleRepeaterAddLabelChange}
+                            class="slds-m-bottom_small">
+                        </lightning-input>
+                        <div class="slds-grid slds-gutters_xx-small">
+                            <div class="slds-col">
+                                <lightning-input
+                                    type="number"
+                                    label="Min rows"
+                                    min="0"
+                                    value={repeaterMinRows}
+                                    onchange={handleRepeaterMinRowsChange}>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col">
+                                <lightning-input
+                                    type="number"
+                                    label="Max rows"
+                                    min="0"
+                                    value={repeaterMaxRows}
+                                    onchange={handleRepeaterMaxRowsChange}>
+                                </lightning-input>
+                            </div>
+                        </div>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                            Max rows 0 = unlimited.
+                        </p>
+                    </div>
+                </template>
+
+                <!-- Show Header toggle -->
+                <lightning-input
+                    type="checkbox"
+                    label="Show Section Header"
+                    checked={sectionShowHeader}
+                    onchange={handleShowHeaderChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <lightning-input
+                    label="Section Title"
+                    value={sectionName}
+                    onchange={handleSectionNameChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Header icon picker (only when header visible) -->
+                <template if:true={sectionShowHeader}>
+                    <div class="slds-m-bottom_small">
+                        <label class="slds-form-element__label">Header Icon</label>
+                        <template if:true={hasSectionIcon}>
+                            <div class="icon-current">
+                                <lightning-icon icon-name={sectionIcon} size="small">
+                                </lightning-icon>
+                                <button type="button" class="icon-clear"
+                                    onclick={handleClearSectionIcon}>Clear</button>
+                            </div>
+                        </template>
+                        <lightning-input
+                            type="search"
+                            variant="label-hidden"
+                            placeholder="Search icons…"
+                            value={iconSearch}
+                            onchange={handleIconSearch}
+                            oninput={handleIconSearch}
+                            class="slds-m-bottom_xx-small">
+                        </lightning-input>
+                        <div class="icon-grid">
+                            <template for:each={iconChoices} for:item="ic">
+                                <button key={ic.key} type="button"
+                                    class={ic.buttonClass}
+                                    data-icon={ic.name} title={ic.name}
+                                    onclick={handleSelectSectionIcon}>
+                                    <lightning-icon icon-name={ic.name} size="small">
+                                    </lightning-icon>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <lightning-combobox
+                    label="Columns"
+                    value={sectionColumns}
+                    options={columnOptions}
+                    onchange={handleColumnsChange}
+                    class="slds-m-bottom_small">
+                </lightning-combobox>
+
+                <lightning-input
+                    type="checkbox"
+                    label="Collapsible"
+                    checked={sectionCollapsible}
+                    onchange={handleCollapsibleChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <template if:true={sectionCollapsible}>
+                    <lightning-input
+                        type="checkbox"
+                        label="Collapsed by default"
+                        checked={sectionCollapsedByDefault}
+                        onchange={handleCollapsedDefaultChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+
+                <lightning-textarea
+                    label="Description"
+                    value={sectionDescription}
+                    onchange={handleSectionDescChange}
+                    max-length="255"
+                    class="slds-m-bottom_small">
+                </lightning-textarea>
+
+                <div class="slds-m-top_small">
+                    <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                        Visibility Rules
+                    </h4>
+                    <template if:true={visibilityDisplay}>
+                        <p class="vis-logic">{visibilityDisplay.logicText}</p>
+                        <ul class="vis-rules">
+                            <template for:each={visibilityDisplay.items} for:item="vr">
+                                <li key={vr.key} class="vis-rule">{vr.text}</li>
+                            </template>
+                        </ul>
+                        <template if:true={visibilityDisplay.isCustom}>
+                            <p class="vis-custom">Logic: {visibilityDisplay.customLogic}</p>
+                        </template>
+                    </template>
+                    <template if:false={visibilityDisplay}>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                            Always visible
+                        </p>
+                    </template>
+                    <lightning-button
+                        variant="neutral"
+                        label="Edit Rules"
+                        icon-name="utility:filter"
+                        onclick={handleEditVisibilityRules}
+                        size="small">
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <!-- Element properties -->
+        <template if:true={isElementSelected}>
+            <div class="slds-p-around_small">
+                <h3 class="slds-text-title_caps slds-m-bottom_small">{elementPanelTitle}</h3>
+
+                <lightning-input
+                    label="Label (internal)"
+                    value={elementLabel}
+                    onchange={handleElementLabelChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <!-- Display Text content editor -->
+                <template if:true={isRichTextType}>
+                    <label class="slds-form-element__label">Display Text</label>
+                    <lightning-input-rich-text
+                        value={elementContent}
+                        placeholder="Enter the text to display on the form…"
+                        onchange={handleContentChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input-rich-text>
+                </template>
+
+                <!-- Image config -->
+                <template if:true={isImageType}>
+                    <div class="slds-m-bottom_small">
+                        <label class="slds-form-element__label">Image</label>
+                        <template if:true={elementImageUrl}>
+                            <div class="image-preview slds-m-bottom_xx-small">
+                                <img src={elementImageUrl} alt="Image preview"
+                                    class="preview-img">
+                                <lightning-button-icon
+                                    icon-name="utility:close"
+                                    variant="bare"
+                                    size="small"
+                                    alternative-text="Remove image"
+                                    class="preview-remove"
+                                    onclick={handleRemoveElementImage}>
+                                </lightning-button-icon>
+                            </div>
+                        </template>
+                        <lightning-input
+                            type="file"
+                            accept="image/*"
+                            label="Upload Image"
+                            variant="label-hidden"
+                            onchange={handleElementImageUpload}>
+                        </lightning-input>
+                    </div>
+                    <lightning-input
+                        label="Alt Text"
+                        value={elementImageAlt}
+                        field-level-help="Describes the image for screen readers."
+                        onchange={handleImageAltChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                    <lightning-combobox
+                        label="Size"
+                        value={elementImageSize}
+                        options={imageSizeOptions}
+                        onchange={handleImageSizeChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </template>
+
+                <!-- Callout config -->
+                <template if:true={isCalloutType}>
+                    <lightning-combobox
+                        label="Style"
+                        value={elementCalloutVariant}
+                        options={calloutVariantOptions}
+                        onchange={handleCalloutVariantChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                    <label class="slds-form-element__label">Message</label>
+                    <lightning-input-rich-text
+                        value={elementContent}
+                        placeholder="Callout message…"
+                        onchange={handleCalloutContentChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input-rich-text>
+                </template>
+
+                <!-- Spacer config -->
+                <template if:true={isSpacerType}>
+                    <lightning-combobox
+                        label="Height"
+                        value={elementSpacerSize}
+                        options={spacerSizeOptions}
+                        onchange={handleSpacerSizeChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </template>
+
+                <!-- Consent config -->
+                <template if:true={isConsentType}>
+                    <label class="slds-form-element__label">Consent Text</label>
+                    <lightning-input-rich-text
+                        value={elementContent}
+                        placeholder="I agree to the terms and conditions…"
+                        onchange={handleConsentContentChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input-rich-text>
+                    <lightning-input
+                        type="checkbox"
+                        label="Required to submit"
+                        checked={consentRequired}
+                        onchange={handleConsentRequiredChange}
+                        field-level-help="The user must check this box before the form can be submitted."
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+                </template>
+
+                <template if:true={isFieldType}>
+                    <lightning-input
+                        label="Field API Name"
+                        value={elementFieldApi}
+                        disabled
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+
+                    <lightning-combobox
+                        label="UI Behavior"
+                        value={elementUiBehavior}
+                        options={uiBehaviorOptions}
+                        onchange={handleUiBehaviorChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+
+                    <lightning-input
+                        label="Prefill from URL parameter"
+                        value={elementUrlPrefill}
+                        placeholder="e.g. contactId"
+                        field-level-help="Sets this field's value from a URL query parameter (e.g. ?contactId=…). Pair with 'Hidden' to carry an Id without showing it."
+                        onchange={handleUrlPrefillChange}
+                        class="slds-m-bottom_small">
+                    </lightning-input>
+
+                    <!-- Auto-fill config (for lookup fields) -->
+                    <template if:true={isLookupField}>
+                        <div class="slds-m-bottom_small">
+                            <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                                Auto-Fill Fields
+                            </h4>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                                When this lookup changes, auto-populate other fields from the selected record.
+                            </p>
+                            <lightning-button
+                                variant="neutral"
+                                label="Configure Auto-Fill"
+                                icon-name="utility:magicwand"
+                                onclick={handleEditAutoFill}
+                                size="small">
+                            </lightning-button>
+                        </div>
+                    </template>
+                </template>
+
+                <!-- Render Override -->
+                <template if:true={isFieldType}>
+                    <lightning-combobox
+                        label="Render As"
+                        value={elementRenderAs}
+                        options={renderAsOptions}
+                        onchange={handleRenderAsChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+
+                    <!-- Custom values editor (for picklist/radio/checkbox overrides) -->
+                    <template if:true={showCustomValues}>
+                        <div class="custom-values-section slds-m-bottom_small">
+                            <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                                Custom Values
+                            </h4>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                                {customValuesHelpText}
+                            </p>
+
+                            <!-- Existing values -->
+                            <template for:each={customOptions} for:item="opt" for:index="optIdx">
+                                <div key={opt.key} class="custom-value-row">
+                                    <lightning-input
+                                        label="Label"
+                                        value={opt.label}
+                                        variant="label-hidden"
+                                        placeholder="Label"
+                                        data-index={optIdx}
+                                        data-field="label"
+                                        onchange={handleCustomOptionChange}>
+                                    </lightning-input>
+                                    <lightning-input
+                                        label="Value"
+                                        value={opt.value}
+                                        variant="label-hidden"
+                                        placeholder="Value"
+                                        data-index={optIdx}
+                                        data-field="value"
+                                        onchange={handleCustomOptionChange}>
+                                    </lightning-input>
+                                    <lightning-button-icon
+                                        icon-name="utility:delete"
+                                        variant="bare"
+                                        size="small"
+                                        alternative-text="Remove"
+                                        data-index={optIdx}
+                                        onclick={handleRemoveCustomOption}>
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+
+                            <lightning-button
+                                variant="base"
+                                label="Add Value"
+                                icon-name="utility:add"
+                                onclick={handleAddCustomOption}
+                                size="small"
+                                class="slds-m-top_xx-small">
+                            </lightning-button>
+                        </div>
+                    </template>
+
+                    <!-- Slider range config -->
+                    <template if:true={isSliderRender}>
+                        <div class="slider-range-row slds-m-bottom_small">
+                            <lightning-input type="number" label="Min"
+                                value={elementSliderMin}
+                                onchange={handleSliderMin}></lightning-input>
+                            <lightning-input type="number" label="Max"
+                                value={elementSliderMax}
+                                onchange={handleSliderMax}></lightning-input>
+                            <lightning-input type="number" label="Step"
+                                value={elementSliderStep}
+                                onchange={handleSliderStep}></lightning-input>
+                        </div>
+                    </template>
+                </template>
+
+                <lightning-textarea
+                    label="Help Text"
+                    value={elementHelpText}
+                    onchange={handleHelpTextChange}
+                    max-length="1000"
+                    class="slds-m-bottom_small">
+                </lightning-textarea>
+
+                <lightning-input
+                    label="Placeholder"
+                    value={elementPlaceholder}
+                    onchange={handlePlaceholderChange}
+                    class="slds-m-bottom_small">
+                </lightning-input>
+
+                <div class="slds-m-top_small">
+                    <h4 class="slds-text-title_caps slds-m-bottom_xx-small">
+                        Visibility Rules
+                    </h4>
+                    <template if:true={visibilityDisplay}>
+                        <p class="vis-logic">{visibilityDisplay.logicText}</p>
+                        <ul class="vis-rules">
+                            <template for:each={visibilityDisplay.items} for:item="vr">
+                                <li key={vr.key} class="vis-rule">{vr.text}</li>
+                            </template>
+                        </ul>
+                        <template if:true={visibilityDisplay.isCustom}>
+                            <p class="vis-custom">Logic: {visibilityDisplay.customLogic}</p>
+                        </template>
+                    </template>
+                    <template if:false={visibilityDisplay}>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                            Always visible
+                        </p>
+                    </template>
+                    <lightning-button
+                        variant="neutral"
+                        label="Edit Rules"
+                        icon-name="utility:filter"
+                        onclick={handleEditVisibilityRules}
+                        size="small">
+                    </lightning-button>
+                </div>
+            </div>
+        </template>
+
+    </div>
+</template>

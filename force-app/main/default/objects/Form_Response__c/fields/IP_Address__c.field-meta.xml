@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>IP_Address__c</fullName>
-    <description
-  >IP address of the submitter (for anonymous tracking and rate limiting).</description>
+    <description>IP address of the submitter (for anonymous tracking and rate limiting).</description>
+    <externalId>false</externalId>
     <label>IP Address</label>
     <length>45</length>
     <required>false</required>

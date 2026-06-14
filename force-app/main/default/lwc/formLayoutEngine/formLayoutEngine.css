@@ -1,0 +1,42 @@
+/* Block host so the engine fills its region's width and that width reaches the
+   shells — their responsiveness is CSS container queries on each shell's :host,
+   which only fire when a real width propagates down from here. */
+:host {
+    display: block;
+    width: 100%;
+}
+
+.engine {
+    font-family: var(--c-font-body, system-ui, sans-serif);
+    color: var(--c-text, #101319);
+    background: var(--c-page-bg, transparent);
+    min-height: 100%;
+}
+.engine.mode-preview {
+    pointer-events: none;
+    user-select: none;
+}
+.engine.ghost {
+    outline: 2px dashed var(--c-accent, #0176d3);
+    outline-offset: 2px;
+}
+.engine-error {
+    padding: 1rem;
+    border: 1px dashed var(--c-border, #d3d7de);
+    border-radius: var(--c-radius, 8px);
+    color: var(--c-text-weak, #646b78);
+    font-size: 0.85rem;
+}
+.engine-loading {
+    min-height: 120px;
+    border-radius: var(--c-radius, 8px);
+    background: linear-gradient(100deg, var(--c-surface-sunken, #f1f2f5) 40%, var(--c-surface-alt, #fafbfc) 50%, var(--c-surface-sunken, #f1f2f5) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+    to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .engine-loading { animation: none; }
+}

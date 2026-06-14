@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Key__c</fullName>
-    <caseSensitive>false</caseSensitive>
+    <description>Stable element key, unique PER FORM VERSION (enforced case-insensitively by FormElementTriggerHandler), copied verbatim on version clone — so it must NOT be globally unique (LAYOUT_SPEC §9 stable-key design; global unique=true broke createDraftFromActive with DUPLICATE_VALUE).</description>
     <externalId>true</externalId>
     <label>Key</label>
     <length>100</length>
     <required>true</required>
     <trackTrending>false</trackTrending>
     <type>Text</type>
-    <unique>true</unique>
+    <unique>false</unique>
 </CustomField>

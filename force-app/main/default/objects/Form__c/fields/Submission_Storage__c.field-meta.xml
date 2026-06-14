@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Submission_Storage__c</fullName>
-    <description
-  >Determines where form submissions are stored. Primary Object writes to the form's primary SObject. Form Response stores answers in the Form_Response object (for surveys). Both writes to both targets.</description>
-    <inlineHelpText
-  >Primary Object: writes to the SObject (e.g., creates an Account). Form Response: stores answers as Form_Response records (for surveys). Both: writes to both.</inlineHelpText>
+    <description>Determines where form submissions are stored. Primary Object writes to the form&apos;s primary SObject. Form Response stores answers in the Form_Response object (for surveys). Both writes to both targets.</description>
+    <inlineHelpText>Primary Object: writes to the SObject (e.g., creates an Account). Form Response: stores answers as Form_Response records (for surveys). Both: writes to both.</inlineHelpText>
     <label>Submission Storage</label>
     <required>false</required>
     <trackTrending>false</trackTrending>

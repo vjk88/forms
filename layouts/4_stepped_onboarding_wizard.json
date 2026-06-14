@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Multi_Page_Wizard",
+  "header": {
+    "visible": true,
+    "title": "New Account Setup",
+    "subtitle": "Complete these three quick steps to configure your personal profile settings.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "left",
+    "backgroundColor": "#ffffff",
+    "titleColor": "#0f172a",
+    "subtitleColor": "#475569"
+  },
+  "formSettings": {
+    "submitLabel": "Finalize Setup",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Account Configured!</strong> Your profile setup is complete. You can now log in.</p>",
+    "progressTrackerType": "Step_Circles",
+    "formWidth": 85,
+    "theme": {
+      "name": "classic",
+      "layout": "classic",
+      "accent": "#4f46e5",
+      "surface": "#ffffff",
+      "pageBg": "#f8fafc",
+      "radius": "rounded",
+      "cardShadow": "soft",
+      "sectionDefault": "card",
+      "glass": false,
+      "customCss": ""
+    }
+  },
+  "pages": [
+    {
+      "id": "pg-account",
+      "name": "Account Credentials",
+      "showInProgress": true,
+      "nextLabel": "Next: Profile Info",
+      "sections": [
+        {
+          "id": "sec-credentials",
+          "name": "Login Details",
+          "showHeader": true,
+          "gridColumns": 1,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-username",
+              "type": "Field",
+              "name": "Desired Username",
+              "fieldApiName": "Username__c",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-password",
+              "type": "Field",
+              "name": "Password",
+              "fieldApiName": "Password__c",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pg-profile",
+      "name": "Profile Details",
+      "showInProgress": true,
+      "nextLabel": "Next: Preferences",
+      "sections": [
+        {
+          "id": "sec-info",
+          "name": "Personal Details",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-first",
+              "type": "Field",
+              "name": "First Name",
+              "fieldApiName": "FirstName",
+              "fieldType": "String",
+              "uiBehavior": "None"
+            },
+            {
+              "id": "el-last",
+              "type": "Field",
+              "name": "Last Name",
+              "fieldApiName": "LastName",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pg-preferences",
+      "name": "Preferences",
+      "showInProgress": true,
+      "submitLabel": "Complete Sign Up",
+      "sections": [
+        {
+          "id": "sec-pref",
+          "name": "Communications Preferences",
+          "showHeader": true,
+          "gridColumns": 1,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-optin",
+              "type": "Consent",
+              "name": "Newsletter Opt-in",
+              "content": "I agree to receive monthly newsletters and marketing emails.",
+              "consentRequired": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

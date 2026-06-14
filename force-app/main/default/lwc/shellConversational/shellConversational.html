@@ -1,0 +1,45 @@
+<template>
+    <div class="conv" tabindex="0">
+        <!-- Brand header (logo + title + subtitle), shown when the form has any -->
+        <header lwc:if={showHeader} class="conv-head">
+            <img lwc:if={model.header.logo} src={model.header.logo} alt="" style="max-height:36px; width:auto;" />
+            <h1 lwc:if={model.header.title} class="conv-title">{model.header.title}</h1>
+            <p lwc:if={model.header.description} class="conv-sub">{model.header.description}</p>
+        </header>
+        <!-- Top progress: hairline bar + counter -->
+        <div class="progress-bar-wrap" aria-label="Progress" role="progressbar" aria-valuenow={progressPct}>
+            <div class="progress-bar-fill" style={progressStyle}></div>
+        </div>
+        <div class="progress-counter" aria-live="polite">{counter}</div>
+
+        <!-- Question screen (key = section key → CSS animation on section change) -->
+        <div class="screen-wrap">
+            <template for:each={currentScreenArr} for:item="sec">
+                <div key={sec.key} class="screen">
+                    <p lwc:if={eyebrow} class="eyebrow">{eyebrow}</p>
+                    <c-layout-section-host section={sec} mode={mode}></c-layout-section-host>
+                    <div class="ok-row">
+                        <button type="button" class="ok-btn" onclick={handleOk}>
+                            {model.labels.ok} <span class="ok-check" aria-hidden="true">✓</span>
+                        </button>
+                        <span class="hint">press <kbd>Enter</kbd></span>
+                        <button
+                            lwc:if={canGoBack}
+                            type="button"
+                            class="back-link"
+                            onclick={handleBack}
+                            title="Go back to the previous question (Shift+Enter)"
+                        >
+                            <span aria-hidden="true">←</span> Back
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Final submit (only on last section of last page) -->
+        <div lwc:if={isLastSection} class={submitClass}>
+            <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+        </div>
+    </div>
+</template>

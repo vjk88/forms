@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Multi_Page_Wizard",
+  "header": {
+    "visible": true,
+    "title": "Corporate Purchase Request",
+    "subtitle": "Procurement Intake Form — System-level authorization protocol.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "left",
+    "backgroundColor": "#eceae4",
+    "titleColor": "#1c1917",
+    "subtitleColor": "#78716c"
+  },
+  "formSettings": {
+    "submitLabel": "Submit Requisition",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Request Logged!</strong> Purchase request sent to the finance review queue.</p>",
+    "progressTrackerType": "Breadcrumbs",
+    "formWidth": 100,
+    "theme": {
+      "name": "stepped",
+      "layout": "stepped",
+      "accent": "#d97706",
+      "surface": "#f5f5f4",
+      "pageBg": "#e7e5e4",
+      "radius": "sharp",
+      "cardShadow": "none",
+      "sectionDefault": "boxed",
+      "glass": false,
+      "customCss": ""
+    }
+  },
+  "pages": [
+    {
+      "id": "pg-req",
+      "name": "Requisition Details",
+      "showInProgress": true,
+      "nextLabel": "Next: Department Code",
+      "sections": [
+        {
+          "id": "sec-po-info",
+          "name": "General Requisition",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-po-title",
+              "type": "Field",
+              "name": "Purchase Order Title",
+              "fieldApiName": "Name",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-po-amount",
+              "type": "Field",
+              "name": "Total Estimated Amount",
+              "fieldApiName": "Amount__c",
+              "fieldType": "Currency",
+              "uiBehavior": "Required"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pg-accounting",
+      "name": "Billing Codes",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-accounting",
+          "name": "Cost Center Allocation",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-dept",
+              "type": "Field",
+              "name": "Department Code",
+              "fieldApiName": "Department__c",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-project",
+              "type": "Field",
+              "name": "Project Code Allocation",
+              "fieldApiName": "ProjectCode__c",
+              "fieldType": "String",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

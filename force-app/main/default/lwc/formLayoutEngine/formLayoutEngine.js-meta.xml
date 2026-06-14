@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <capabilities>
+        <capability>lightning__dynamicComponent</capability>
+    </capabilities>
+    <isExposed>false</isExposed>
+    <description>Layout engine orchestrator: normalize spec, lazy-load archetype shell, own nav state. Contract: PHASE1_WORKPLAN §2.2</description>
+</LightningComponentBundle>

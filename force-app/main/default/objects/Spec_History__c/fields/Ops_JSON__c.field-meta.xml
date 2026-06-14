@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Ops_JSON__c</fullName>
+    <description>Semantic ops applied in this patch (LAYOUT_SPEC §10), for the changelog. Optional (manual full-spec saves may omit).</description>
+    <label>Ops JSON</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

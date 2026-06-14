@@ -1,0 +1,30 @@
+<template>
+    <template lwc:if={isLive}>
+        <c-form-section-renderer
+            section={section}
+            object-api-name={objectApiName}
+            record-type-id={recordTypeId}
+            record-id={recordId}
+            prefill-values={prefillValues}
+            mode="live"
+            density={density}>
+        </c-form-section-renderer>
+    </template>
+    <template lwc:else>
+        <div class={hostClass}>
+            <div lwc:if={section.title} class="sec-head">
+                <lightning-icon lwc:if={section.icon} icon-name={section.icon}
+                    size="x-small" class="sec-ico"></lightning-icon>
+                <h3 class="sec-title">{section.title}</h3>
+            </div>
+            <div class="fields">
+                <template for:each={elements} for:item="el">
+                    <div key={el.key} class={el.cls}>
+                        <label class="lbl">{el.label}<span lwc:if={el.required} class="req">&nbsp;*</span></label>
+                        <div class="ctrl" data-type={el.type}></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+</template>

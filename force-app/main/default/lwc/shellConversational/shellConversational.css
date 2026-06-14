@@ -1,0 +1,169 @@
+:host { display: block; }
+
+.conv {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    background: var(--c-page-bg, #faf7f2);
+    padding: 0;
+    outline: none; /* focus managed programmatically */
+}
+
+/* ── Brand header ── */
+.conv-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-2, 8px);
+    padding: var(--c-space-4, 16px) var(--c-space-5, 24px) var(--c-space-3, 12px);
+}
+.conv-title {
+    margin: 0;
+    font-family: var(--c-font-display, inherit);
+    font-size: 1.25rem;
+    color: var(--c-text, #101319);
+}
+.conv-sub {
+    margin: 0;
+    color: var(--c-text-weak, #646b78);
+}
+
+/* ── Progress bar + counter ── */
+.progress-bar-wrap {
+    height: 3px;
+    background: var(--c-border-light, #e6e8ec);
+    width: 100%;
+    flex-shrink: 0;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: var(--c-accent, #e8590c);
+    transition: width var(--c-dur-2, 250ms) var(--c-ease, ease-out);
+}
+.progress-counter {
+    align-self: flex-end;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    color: var(--c-text-weak, #646b78);
+    padding: var(--c-space-2, 8px) var(--c-space-4, 16px) 0;
+}
+
+/* ── Question screen ── */
+.screen-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--c-space-5, 24px);
+}
+.screen {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-4, 16px);
+    animation: slideIn var(--c-dur-2, 250ms) var(--c-ease, ease-out) both;
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .screen { animation: none; }
+}
+.eyebrow {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-accent, #e8590c);
+}
+
+/* ── OK row ── */
+.ok-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--c-space-3, 12px);
+}
+.ok-btn {
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: #fff;
+    background: var(--c-submit-bg, var(--c-accent, #e8590c));
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-4, 16px);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+}
+.ok-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(232, 89, 12, 0.25));
+}
+.ok-check { margin-left: 4px; }
+.hint {
+    font-size: 0.8125rem;
+    color: var(--c-text-weak, #646b78);
+}
+
+/* Subtle back link — pushed to the far end of the OK row */
+.back-link {
+    margin-left: auto;
+    font: inherit;
+    font-size: 0.8125rem;
+    color: var(--c-text-weak, #646b78);
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: var(--c-radius-sm, 6px);
+    transition: color var(--c-dur-1, 150ms) var(--c-ease, ease-out);
+}
+.back-link:hover { color: var(--c-text, #101319); }
+.back-link:focus-visible {
+    outline: none;
+    color: var(--c-text, #101319);
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(232, 89, 12, 0.25));
+}
+kbd {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 0.75rem;
+    background: var(--c-border-light, #e6e8ec);
+    border-radius: 4px;
+    padding: 1px 5px;
+    border: 1px solid var(--c-border, #d8dde6);
+}
+
+/* ── Final submit ── */
+.submit-wrap {
+    display: flex;
+    padding: var(--c-space-4, 16px) var(--c-space-5, 24px) var(--c-space-5, 24px);
+    margin: 0 auto;
+    width: 100%;
+    max-width: 640px; /* match .screen column */
+    box-sizing: border-box;
+}
+.align-left    { justify-content: flex-start; }
+.align-center  { justify-content: center; }
+.align-right   { justify-content: flex-end; }
+.align-stretch .submit-btn { width: 100%; }
+.submit-btn {
+    font: inherit;
+    font-weight: 600;
+    color: #fff;
+    background: var(--c-submit-bg, var(--c-accent, #e8590c));
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-5, 24px);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+}
+.submit-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(232, 89, 12, 0.25));
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Key__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description>Stable slug referenced by Layout Spec sectionKey (LAYOUT_SPEC §9). Unique per version (enforced by trigger slug generation), copied verbatim on version clone. NOT globally unique.</description>
+    <externalId>true</externalId>
+    <label>Key</label>
+    <length>80</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

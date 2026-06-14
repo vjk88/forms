@@ -1,0 +1,78 @@
+.ve-container {
+  max-width: 50rem;
+  width: 95vw;
+}
+
+.ve-header {
+  text-align: left;
+}
+
+.ve-sub {
+  font-size: 0.8125rem;
+  color: var(--c-text-weak, #706e6b);
+  margin: 0.25rem 0 0;
+}
+
+.ve-body {
+  min-height: 8rem;
+}
+
+.ve-empty {
+  font-size: 0.8125rem;
+  color: var(--c-text-weak, #706e6b);
+  padding: 0.5rem 0;
+}
+
+.ve-error {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--c-error, #ba1a1a);
+  margin: 0 0 0.75rem;
+}
+
+.ve-error-icon {
+  --slds-c-icon-color-foreground-default: var(--c-error, #ba1a1a);
+}
+
+.ve-row {
+  display: grid;
+  grid-template-columns: 1rem 0.95fr 1.2fr 1.05fr 1.2fr auto;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.ve-num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-text-meta, #aeb4be);
+  text-align: center;
+}
+
+.ve-head-row {
+  margin-bottom: 0.25rem;
+}
+
+.ve-col {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-label, #514f4d);
+}
+
+.ve-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 36rem) {
+  .ve-row {
+    grid-template-columns: 1fr;
+  }
+  .ve-num {
+    text-align: left;
+  }
+}

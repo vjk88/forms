@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Grid_Columns__c</fullName>
     <defaultValue>1</defaultValue>
     <description>Number of columns for grid layout (1-4)</description>
     <externalId>false</externalId>
-    <inlineHelpText
-  >Choose how many columns to display elements in. 1 = stacked (default), 2-4 = side-by-side grid layout.</inlineHelpText>
+    <inlineHelpText>Choose how many columns to display elements in. 1 = stacked (default), 2-4 = side-by-side grid layout.</inlineHelpText>
     <label>Grid Columns</label>
     <precision>1</precision>
     <required>false</required>

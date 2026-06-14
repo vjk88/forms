@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Single_Page",
+  "header": {
+    "visible": true,
+    "title": "Quarterly Employee Feedback",
+    "subtitle": "Help us improve our workspace, culture, and benefits policies.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "center",
+    "backgroundColor": "transparent",
+    "titleColor": "#ffffff",
+    "subtitleColor": "#fdf2f8"
+  },
+  "formSettings": {
+    "submitLabel": "Submit Responses",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Thank you for your responses!</strong> Your submission is anonymous and helps guide policy choices.</p>",
+    "formWidth": 80,
+    "theme": {
+      "name": "immersive",
+      "layout": "immersive",
+      "accent": "#ec4899",
+      "surface": "rgba(255, 255, 255, 0.45)",
+      "pageBg": "linear-gradient(135deg, #f472b6 0%, #6d28d9 100%)",
+      "radius": "round",
+      "cardShadow": "strong",
+      "sectionDefault": "plain",
+      "glass": true,
+      "customCss": "--form-bg: rgba(255, 255, 255, 0.25);\nbackdrop-filter: blur(16px);\n-webkit-backdrop-filter: blur(16px);\nborder: 1px solid rgba(255, 255, 255, 0.25);"
+    }
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Feedback",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-workplace",
+          "name": "Workplace Environment",
+          "showHeader": true,
+          "gridColumns": 1,
+          "padding": "large",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-nps",
+              "type": "NPS_Score",
+              "name": "Likelihood to Recommend",
+              "content": "How likely are you to recommend working here to a friend or colleague?"
+            },
+            {
+              "id": "el-balance",
+              "type": "Likert_Scale",
+              "name": "Work-Life Balance",
+              "content": "Rate: 'I am satisfied with my current work-life balance.'"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

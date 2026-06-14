@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>VR_Layout_Config_Required</fullName>
     <active>true</active>
@@ -7,6 +7,5 @@
   ISBLANK(Layout_Config__c)
 )</errorConditionFormula>
     <errorDisplayField>Layout_Config__c</errorDisplayField>
-    <errorMessage
-  >Layout Configuration is required for published forms</errorMessage>
+    <errorMessage>Layout Configuration is required for published forms</errorMessage>
 </ValidationRule>

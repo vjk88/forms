@@ -1608,7 +1608,11 @@ export default class FormDesigner extends LightningElement {
       gridColumns: relatedSection.gridColumns || 1,
       contextType: "Related_Child",
       parentSObjectApi: relatedSection.parentSObjectApi,
-      linkingField: relatedSection.linkingField
+      linkingField: relatedSection.linkingField,
+      displayStyle: relatedSection.displayStyle || "stacked",
+      addLabel: relatedSection.addLabel || "",
+      minRows: relatedSection.minRows != null ? relatedSection.minRows : 0,
+      maxRows: relatedSection.maxRows != null ? relatedSection.maxRows : 0
     };
   }
 
@@ -1828,10 +1832,21 @@ export default class FormDesigner extends LightningElement {
       }
       this.panelSelection = { ...this.panelSelection, [property]: value };
     } else if (selectionType === "section") {
-      const idx = event.detail.index;
-      const updated = [...this.canvasSections];
-      updated[idx] = { ...updated[idx], [property]: value };
-      this.canvasSections = updated;
+      if (event.detail.relatedIndex != null) {
+        // Related-list section nested under a parent section.
+        const si = event.detail.sectionIndex;
+        const ri = event.detail.relatedIndex;
+        const updated = [...this.canvasSections];
+        const rels = [...(updated[si].relatedSections || [])];
+        rels[ri] = { ...rels[ri], [property]: value };
+        updated[si] = { ...updated[si], relatedSections: rels };
+        this.canvasSections = updated;
+      } else {
+        const idx = event.detail.index;
+        const updated = [...this.canvasSections];
+        updated[idx] = { ...updated[idx], [property]: value };
+        this.canvasSections = updated;
+      }
       this.panelSelection = { ...this.panelSelection, [property]: value };
     } else if (selectionType === "element") {
       const { sectionIndex, elementIndex } = event.detail;

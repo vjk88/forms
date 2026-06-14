@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Type__c</fullName>
     <label>Type</label>
@@ -15,12 +15,6 @@
                 <label>Field</label>
             </value>
             <value>
-                <fullName>Static_Text</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>Static Text</label>
-            </value>
-            <value>
                 <fullName>Rich_Text</fullName>
                 <default>false</default>
                 <label>Rich Text</label>
@@ -34,12 +28,6 @@
                 <fullName>File_Upload</fullName>
                 <default>false</default>
                 <label>File Upload</label>
-            </value>
-            <value>
-                <fullName>Signature</fullName>
-                <default>false</default>
-                <isActive>false</isActive>
-                <label>Signature</label>
             </value>
             <value>
                 <fullName>Lookup</fullName>
@@ -88,6 +76,18 @@
                 <default>false</default>
                 <isActive>false</isActive>
                 <label>Radio</label>
+            </value>
+            <value>
+                <fullName>Signature</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Signature</label>
+            </value>
+            <value>
+                <fullName>Static_Text</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Static Text</label>
             </value>
             <value>
                 <fullName>Text</fullName>

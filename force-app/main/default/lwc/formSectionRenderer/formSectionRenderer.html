@@ -1,0 +1,205 @@
+<template>
+    <div class={hostClass}>
+        <template lwc:if={sec.showHeader}>
+            <div class="sec-header">
+                <template lwc:if={sec.icon}>
+                    <lightning-icon icon-name={sec.icon} size="x-small"
+                        class="sec-icon"></lightning-icon>
+                </template>
+                <h3 class="sec-title">{sec.title}</h3>
+            </div>
+        </template>
+
+        <lightning-record-edit-form
+            object-api-name={objectApiName}
+            record-id={recordId}
+            record-type-id={recordTypeId}
+            onload={handleFormLoad}>
+
+            <div class="slds-grid slds-wrap slds-gutters_x-small sec-body">
+                <template for:each={vmElements} for:item="el">
+                    <div key={el.key} class={el.gridItemClass}>
+
+                        <!-- Field (native render) -->
+                        <template lwc:if={el.isFieldDefault}>
+                            <lightning-input-field
+                                field-name={el.fieldApiName}
+                                data-field={el.fieldApiName}
+                                required={el.effectiveRequired}
+                                disabled={el.readOnly}
+                                onchange={handleFieldChange}>
+                            </lightning-input-field>
+                        </template>
+
+                        <!-- Field (Render As custom control). The hidden
+                             carrier keeps the field registered in the
+                             record-edit-form for FLS + record-value load. -->
+                        <template lwc:elseif={el.isCustomField}>
+                            <lightning-input-field
+                                field-name={el.fieldApiName}
+                                class="carrier slds-hide">
+                            </lightning-input-field>
+                            <template lwc:if={el.isToggle}>
+                                <lightning-input type="toggle"
+                                    label={el.label}
+                                    checked={el.value}
+                                    disabled={el.readOnly}
+                                    field-level-help={el.helpText}
+                                    data-custom="true"
+                                    data-field={el.fieldApiName}
+                                    data-toggle="true"
+                                    onchange={handleCustomChange}>
+                                </lightning-input>
+                            </template>
+                            <template lwc:elseif={el.isSlider}>
+                                <lightning-slider
+                                    label={el.label}
+                                    min={el.sliderMin}
+                                    max={el.sliderMax}
+                                    step={el.sliderStep}
+                                    value={el.value}
+                                    disabled={el.readOnly}
+                                    data-custom="true"
+                                    data-field={el.fieldApiName}
+                                    onchange={handleCustomChange}>
+                                </lightning-slider>
+                            </template>
+                            <template lwc:elseif={el.isRadio}>
+                                <lightning-radio-group
+                                    type="radio"
+                                    label={el.label}
+                                    options={el.options}
+                                    value={el.value}
+                                    required={el.effectiveRequired}
+                                    disabled={el.readOnly}
+                                    data-custom="true"
+                                    data-field={el.fieldApiName}
+                                    onchange={handleCustomChange}>
+                                </lightning-radio-group>
+                            </template>
+                            <template lwc:elseif={el.isDropdown}>
+                                <lightning-combobox
+                                    label={el.label}
+                                    options={el.options}
+                                    value={el.value}
+                                    required={el.effectiveRequired}
+                                    disabled={el.readOnly}
+                                    field-level-help={el.helpText}
+                                    data-custom="true"
+                                    data-field={el.fieldApiName}
+                                    onchange={handleCustomChange}>
+                                </lightning-combobox>
+                            </template>
+                            <template lwc:elseif={el.isCheckboxGroup}>
+                                <lightning-checkbox-group
+                                    label={el.label}
+                                    options={el.options}
+                                    value={el.value}
+                                    required={el.effectiveRequired}
+                                    disabled={el.readOnly}
+                                    data-custom="true"
+                                    data-field={el.fieldApiName}
+                                    onchange={handleCustomChange}>
+                                </lightning-checkbox-group>
+                            </template>
+                            <template lwc:if={el.hasError}>
+                                <div class="el-field-error" role="alert">
+                                    {el.errorMessage}
+                                </div>
+                            </template>
+                        </template>
+
+                        <!-- Display text -->
+                        <template lwc:elseif={el.isDisplayText}>
+                            <lightning-formatted-rich-text value={el.content}>
+                            </lightning-formatted-rich-text>
+                        </template>
+
+                        <!-- Divider -->
+                        <template lwc:elseif={el.isDivider}>
+                            <hr class="el-divider">
+                        </template>
+
+                        <!-- Image -->
+                        <template lwc:elseif={el.isImage}>
+                            <template lwc:if={el.hasImage}>
+                                <div class="el-imagewrap">
+                                    <img src={el.imageUrl} alt={el.imageAlt}
+                                        class={el.imageClass}>
+                                </div>
+                            </template>
+                        </template>
+
+                        <!-- Callout -->
+                        <template lwc:elseif={el.isCallout}>
+                            <div class={el.calloutClass}>
+                                <lightning-icon icon-name={el.calloutIcon}
+                                    size="x-small" class="callout-icon">
+                                </lightning-icon>
+                                <lightning-formatted-rich-text value={el.content}>
+                                </lightning-formatted-rich-text>
+                            </div>
+                        </template>
+
+                        <!-- Spacer -->
+                        <template lwc:elseif={el.isSpacer}>
+                            <div class={el.spacerClass}></div>
+                        </template>
+
+                        <!-- Consent / Terms -->
+                        <template lwc:elseif={el.isConsent}>
+                            <div class="el-consent">
+                                <lightning-input
+                                    type="checkbox"
+                                    variant="label-hidden"
+                                    label="Consent"
+                                    required={el.consentRequired}
+                                    message-when-value-missing="You must accept to continue"
+                                    data-custom="true"
+                                    class="el-consent__box">
+                                </lightning-input>
+                                <lightning-formatted-rich-text
+                                    value={el.consentContent}>
+                                </lightning-formatted-rich-text>
+                            </div>
+                        </template>
+
+                        <!-- File upload (needs a saved record) -->
+                        <template lwc:elseif={el.isFileUpload}>
+                            <template lwc:if={hasRecordId}>
+                                <lightning-file-upload
+                                    label={el.label}
+                                    record-id={recordId}>
+                                </lightning-file-upload>
+                            </template>
+                            <template lwc:else>
+                                <p class="el-file-note">
+                                    File upload available after the record is created.
+                                </p>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </lightning-record-edit-form>
+
+        <!-- Related-list repeaters (outside the record-edit-form: child rows
+             never touch the parent form; collected via collectRepeaterBlocks) -->
+        <template lwc:if={hasRepeaters}>
+            <template for:each={vmRepeaters} for:item="rep">
+                <c-form-repeater key={rep.id}
+                    data-rep={rep.id}
+                    class="sec-repeater"
+                    child-object-api-name={rep.childObjectApiName}
+                    linking-field={rep.linkingField}
+                    title={rep.title}
+                    add-label={rep.addLabel}
+                    display-style={rep.displayStyle}
+                    fields={rep.fields}
+                    min-rows={rep.minRows}
+                    max-rows={rep.maxRows}>
+                </c-form-repeater>
+            </template>
+        </template>
+    </div>
+</template>

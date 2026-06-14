@@ -1,0 +1,138 @@
+.tg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.tg-thumb {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.12s, border-color 0.12s;
+}
+.tg-thumb:hover { background: var(--c-surface-alt, #f3f3f3); }
+.tg-thumb.is-selected {
+    border-color: var(--c-brand, #0176d3);
+    box-shadow: 0 0 0 1px var(--c-brand, #0176d3);
+    background: var(--c-brand-bg, #eaf5fe);
+}
+
+.tg-stage {
+    height: 76px;
+    border-radius: 6px;
+    padding: 7px;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Card (form body) */
+.tg-card {
+    width: 100%;
+    height: 100%;
+    padding: 6px 7px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.tg-card.flush { box-shadow: none; border-radius: 0 4px 4px 0; }
+.tg-card.glass {
+    border: 1px solid rgba(255,255,255,0.4);
+    backdrop-filter: blur(3px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    width: 72%;
+}
+
+.tg-strip { height: 11px; border-radius: 3px; margin-bottom: 2px; }
+.tg-line { height: 5px; border-radius: 3px; background: #dfe3e8; }
+.tg-line.s { width: 60%; }
+.tg-line.lt { background: rgba(255,255,255,0.55); }
+.tg-btn { height: 8px; width: 36%; border-radius: 3px; margin-top: auto; }
+
+/* Split / stepped two-pane */
+.tg-split { display: flex; width: 100%; height: 100%; }
+.tg-panel { width: 42%; border-radius: 4px 0 0 4px; }
+.tg-rail {
+    width: 26%; display: flex; flex-direction: column; gap: 6px;
+    padding: 6px 0 0 4px; background: rgba(0,0,0,0.04); border-radius: 4px 0 0 4px;
+}
+.tg-dot { width: 9px; height: 9px; border-radius: 50%; background: #cfd3da; }
+.tg-dot.on { box-shadow: 0 0 0 2px rgba(0,0,0,0.06); }
+
+/* Compact rows + table */
+.tg-row { display: flex; align-items: center; gap: 5px; }
+.tg-lbl { width: 26%; height: 5px; border-radius: 2px; background: #c7ccd3; }
+.tg-inp { flex: 1; height: 9px; border-radius: 2px; background: #eef0f3; border: 1px solid #e1e4e9; }
+.tg-table { margin-top: 3px; display: flex; flex-direction: column; gap: 2px; }
+.tg-tr { height: 6px; border-radius: 1px; background: #edeff2; }
+.tg-tr:first-child { opacity: 0.9; }
+
+.tg-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--c-label, #514f4d);
+}
+
+/* Custom additions for 10 new templates */
+.tg-btn-sm { height: 6px; width: 28%; border-radius: 2px; margin-top: auto; }
+
+/* splitSidebarImg */
+.tg-panel.sidebar-img { display: flex; align-items: center; justify-content: center; }
+.tg-mini-img { width: 14px; height: 14px; background: rgba(255,255,255,0.4); border-radius: 2px; }
+
+/* floatingCardSplit */
+.tg-floating-split { display: flex; width: 88%; height: 86%; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.tg-split-half { width: 50%; height: 100%; display: flex; flex-direction: column; gap: 4px; padding: 4px; box-sizing: border-box; }
+.tg-split-half.img { opacity: 0.8; }
+.tg-split-half.fields { background: #ffffff; }
+
+/* splitBgOverlay */
+.tg-split.bg-overlay { position: relative; }
+.tg-panel.bg-solid { width: 50%; background: var(--c-accent, #0d9488); display: flex; align-items: center; justify-content: center; }
+.tg-panel.bg-dim { width: 50%; background: #cfd3da; opacity: 0.3; }
+.tg-card.overlay { position: absolute; width: 66%; height: 74%; left: 17%; top: 13%; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+/* asymmetricLanding */
+.tg-split.asymmetric .landing-left { width: 60%; padding: 4px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; }
+.tg-line.headline { width: 80%; height: 6px; background: #9fa8b3; }
+.tg-mini-mockup { width: 90%; height: 26px; border-radius: 2px; opacity: 0.7; }
+.tg-split.asymmetric .landing-right { width: 40%; }
+
+/* verticalStackedInfo & verticalStackedInputs */
+.tg-card.stacked-info, .tg-card.stacked-inputs { padding: 0; }
+.tg-hero-cover { width: 100%; height: 24px; opacity: 0.8; display: flex; align-items: center; justify-content: center; }
+.tg-stacked-content { padding: 4px 6px; display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: space-between; background: #ffffff; }
+.tg-line.center { margin: 0 auto; }
+.tg-line.xs { width: 35%; height: 4px; }
+.tg-split-mini { display: flex; gap: 4px; justify-content: center; }
+
+/* multiStepWizard */
+.tg-wizard { width: 100%; height: 100%; display: flex; flex-direction: column; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.tg-stepper-top { height: 16px; background: #f3f3f3; display: flex; align-items: center; justify-content: center; gap: 4px; border-bottom: 1px solid #dfe3e8; }
+.tg-wizard-body { flex: 1; padding: 4px 6px; display: flex; flex-direction: column; gap: 4px; background: #ffffff; }
+
+/* threeColumnDashboard */
+.tg-three-col { display: flex; width: 100%; height: 100%; gap: 2px; }
+.tg-nav-col { width: 22%; background: rgba(0,0,0,0.04); padding: 4px 2px; display: flex; flex-direction: column; gap: 4px; }
+.tg-three-col .main-col { flex: 1; padding: 4px; }
+.tg-help-col { width: 20%; background: rgba(0,0,0,0.02); padding: 4px 2px; }
+
+/* focusModalPopup */
+.tg-modal-bg { width: 100%; height: 100%; background: rgba(15,23,42,0.4); display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.tg-modal-card { width: 70%; height: 74%; background: #ffffff; border-radius: 4px; padding: 4px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+/* multiCardGrid */
+.tg-grid-layout { width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 3px; }
+.tg-grid-cell { background: #ffffff; border-radius: 2px; padding: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); display: flex; align-items: center; }

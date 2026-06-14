@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Single_Page",
+  "header": {
+    "visible": true,
+    "title": "Annual Tech Summit RSVP",
+    "subtitle": "Secure your spot and customize your session track preference.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "center",
+    "backgroundColor": "#f8fafc",
+    "titleColor": "#0f172a",
+    "subtitleColor": "#475569"
+  },
+  "formSettings": {
+    "submitLabel": "Confirm RSVP",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Thank you!</strong> Your RSVP is registered. See you at the Summit.</p>",
+    "formWidth": 60,
+    "theme": {
+      "name": "compact",
+      "layout": "compact",
+      "accent": "#4f46e5",
+      "surface": "#ffffff",
+      "pageBg": "#f8fafc",
+      "radius": "rounded",
+      "cardShadow": "soft",
+      "sectionDefault": "plain",
+      "glass": false,
+      "customCss": "--form-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
+    }
+  },
+  "pages": [
+    {
+      "id": "pg-rsvp",
+      "name": "RSVP Details",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-rsvp",
+          "name": "Attendance & Details",
+          "showHeader": false,
+          "gridColumns": 1,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-name",
+              "type": "Field",
+              "name": "Full Name",
+              "fieldApiName": "Name",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-attending",
+              "type": "Field",
+              "name": "Will you be attending in person?",
+              "fieldApiName": "Attending__c",
+              "fieldType": "Boolean",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-dietary",
+              "type": "Field",
+              "name": "Dietary Restrictions",
+              "fieldApiName": "Dietary__c",
+              "fieldType": "Picklist",
+              "uiBehavior": "None"
+            },
+            {
+              "id": "el-comments",
+              "type": "Field",
+              "name": "Additional Special Requests",
+              "fieldApiName": "Description",
+              "fieldType": "TextArea",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+<template>
+    <div class={containerClass} data-id="formContainer">
+        
+        <!-- MODAL BACKDROP (when variant = modal) -->
+        <template if:true={isModal}>
+            <div class="layout-modal-backdrop">
+                <div class="layout-modal-content">
+                    <!-- Form Header inside modal -->
+                    <c-z-form-header config={headerConfig}></c-z-form-header>
+
+                    <!-- Render active page's sections -->
+                    <div class="form-body">
+                        <template for:each={activeSections} for:item="sec">
+                            <c-z-form-section
+                                key={sec.sectionId}
+                                section={sec}
+                                values={formValues}
+                                schema={schemaSnapshot}
+                                errors={fieldErrors}
+                                onelementvaluechange={handleElementValueChange}
+                            ></c-z-form-section>
+                        </template>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions">
+                        <button class="slds-button slds-button_brand submit-btn" onclick={handleSubmit}>Submit</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- SPLIT-PAGE / SIDEBAR / SINGLE / MULTI LAYOUTS -->
+        <template if:false={isModal}>
+            <div class="form-wrapper">
+                
+                <!-- If Split-Page variant: Left/Right layout -->
+                <template if:true={isSplitPage}>
+                    <div class="context-panel">
+                        <c-z-form-header config={headerConfig}></c-z-form-header>
+                    </div>
+                    <div class="input-panel">
+                        <!-- Sections -->
+                        <div class="form-body">
+                            <template for:each={activeSections} for:item="sec">
+                                <c-z-form-section
+                                    key={sec.sectionId}
+                                    section={sec}
+                                    values={formValues}
+                                    schema={schemaSnapshot}
+                                    errors={fieldErrors}
+                                    onelementvaluechange={handleElementValueChange}
+                                ></c-z-form-section>
+                            </template>
+
+                            <!-- Related lists if not embedded in sections -->
+                            <template for:each={relatedLists} for:item="rel">
+                                <c-z-form-section
+                                    key={rel.relationshipName}
+                                    related-list-config={rel}
+                                    schema={schemaSnapshot}
+                                    onrepeaterchange={handleRepeaterChange}
+                                ></c-z-form-section>
+                            </template>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-actions slds-m-top_large">
+                            <template if:true={isMultiPage}>
+                                <button class="slds-button slds-button_neutral" onclick={handlePrev} disabled={isFirstPage}>Previous</button>
+                                <button class="slds-button slds-button_brand slds-m-left_small" onclick={handleNext} if:false={isLastPage}>Next</button>
+                            </template>
+                            <button class="slds-button slds-button_brand submit-btn slds-m-left_small" onclick={handleSubmit} if:true={showSubmitButton}>Submit</button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Standard layouts: Single-page, Multi-page, Sidebar -->
+                <template if:false={isSplitPage}>
+                    <!-- Header -->
+                    <c-z-form-header config={headerConfig}></c-z-form-header>
+
+                    <!-- Sidebar Navigation Layout (Left Sidebar, Right Content) -->
+                    <template if:true={isSidebar}>
+                        <div class="layout-sidebar">
+                            <div class="sidebar-menu">
+                                <template for:each={pages} for:item="pg" for:index="idx">
+                                    <div 
+                                        key={pg.pageId} 
+                                        class={pg.navClass} 
+                                        onclick={handlePageNavClick} 
+                                        data-index={idx}
+                                    >
+                                        {pg.title}
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="main-content">
+                                <div class="form-body">
+                                    <template for:each={activeSections} for:item="sec">
+                                        <c-z-form-section
+                                            key={sec.sectionId}
+                                            section={sec}
+                                            values={formValues}
+                                            schema={schemaSnapshot}
+                                            errors={fieldErrors}
+                                            onelementvaluechange={handleElementValueChange}
+                                        ></c-z-form-section>
+                                    </template>
+
+                                    <!-- Related Lists -->
+                                    <template for:each={relatedLists} for:item="rel">
+                                        <c-z-form-section
+                                            key={rel.relationshipName}
+                                            related-list-config={rel}
+                                            schema={schemaSnapshot}
+                                            onrepeaterchange={handleRepeaterChange}
+                                        ></c-z-form-section>
+                                    </template>
+                                </div>
+
+                                <div class="form-actions slds-m-top_large">
+                                    <button class="slds-button slds-button_brand submit-btn" onclick={handleSubmit}>Submit</button>
+                                </div>
+                            </div>
+
+                            <!-- Right Sidebar for Three-Column Dashboard -->
+                            <template if:true={showRightSidebar}>
+                                <div class="right-sidebar">
+                                    <div class="slds-box slds-theme_shade">
+                                        <h3 class="slds-text-heading_small slds-m-bottom_small">Help & Info</h3>
+                                        <p class="slds-text-body_small">Please complete the form in the center panel. Fields marked with an asterisk are required.</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Single / Multi Page Regular flow -->
+                    <template if:false={isSidebar}>
+                        <div class="form-body">
+                            <!-- Multi-page Step Progress -->
+                            <template if:true={isMultiPage}>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style={progressBarStyle}></div>
+                                </div>
+                            </template>
+
+                            <template for:each={activeSections} for:item="sec">
+                                <c-z-form-section
+                                    key={sec.sectionId}
+                                    section={sec}
+                                    values={formValues}
+                                    schema={schemaSnapshot}
+                                    errors={fieldErrors}
+                                    onelementvaluechange={handleElementValueChange}
+                                ></c-z-form-section>
+                            </template>
+
+                            <!-- Related Lists -->
+                            <template for:each={relatedLists} for:item="rel">
+                                <c-z-form-section
+                                    key={rel.relationshipName}
+                                    related-list-config={rel}
+                                    schema={schemaSnapshot}
+                                    onrepeaterchange={handleRepeaterChange}
+                                ></c-z-form-section>
+                            </template>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-actions slds-m-top_large">
+                            <template if:true={isMultiPage}>
+                                <button class="slds-button slds-button_neutral" onclick={handlePrev} disabled={isFirstPage}>Previous</button>
+                                <button class="slds-button slds-button_brand slds-m-left_small" onclick={handleNext} if:false={isLastPage}>Next</button>
+                            </template>
+                            <button class="slds-button slds-button_brand submit-btn slds-m-left_small" onclick={handleSubmit} if:true={showSubmitButton}>Submit</button>
+                        </div>
+                    </template>
+                </template>
+
+            </div>
+        </template>
+        
+    </div>
+</template>

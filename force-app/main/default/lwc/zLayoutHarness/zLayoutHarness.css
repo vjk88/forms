@@ -1,0 +1,64 @@
+/* Plain page flow — no overflow/height tricks (they clip combobox dropdowns
+   and break in unbounded flexipage regions). Bar is sticky instead. */
+/* LEX chrome (global nav, page header) sits at z-index ~4-6 — anything
+   higher paints OVER Salesforce's own header when scrolling. Stay below. */
+.bar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: #fff;
+}
+.bar lightning-combobox {
+    min-width: 11rem;
+}
+.toggle {
+    margin-left: auto;
+}
+
+.content-area {
+    padding: 1rem;
+    /* Trap every shell's internal z-index in one context BELOW the bar,
+       so no shell element can ever paint over the bar or LEX chrome. */
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
+}
+
+.perf {
+    font-size: 0.8125rem;
+    opacity: 0.7;
+    margin: 0 0 0.75rem;
+}
+.stage {
+    transition: width 200ms ease;
+}
+.matrix {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+.cell {
+    margin: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.02);
+}
+.cell figcaption {
+    font: 600 0.75rem/1 system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.cell c-form-layout-engine {
+    display: block;
+    height: 220px;
+    overflow: hidden;
+}

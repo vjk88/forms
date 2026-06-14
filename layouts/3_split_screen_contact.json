@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "2.0",
+  "layoutMode": "Single_Page",
+  "header": {
+    "visible": true,
+    "title": "Vendor Application",
+    "subtitle": "Provide your vendor credentials to register in our global supplier database.",
+    "showLogo": false,
+    "logoUrl": "",
+    "alignment": "left",
+    "backgroundColor": "#022c22",
+    "titleColor": "#f0fdf4",
+    "subtitleColor": "#a7f3d0"
+  },
+  "formSettings": {
+    "submitLabel": "Submit Application",
+    "afterSubmitMode": "Screen",
+    "thankYouMessage": "<p><strong>Registration Submitted!</strong> We will contact you after reviewing your credentials.</p>",
+    "formWidth": 100,
+    "theme": {
+      "name": "split",
+      "layout": "split",
+      "accent": "#059669",
+      "surface": "#ffffff",
+      "pageBg": "linear-gradient(160deg, #059669 0%, #064e3b 100%)",
+      "radius": "sharp",
+      "cardShadow": "none",
+      "sectionDefault": "plain",
+      "glass": false,
+      "customCss": ""
+    }
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Supplier Profile",
+      "showInProgress": true,
+      "sections": [
+        {
+          "id": "sec-org",
+          "name": "Company Information",
+          "showHeader": true,
+          "gridColumns": 2,
+          "padding": "medium",
+          "contextType": "Parent",
+          "elements": [
+            {
+              "id": "el-comp-name",
+              "type": "Field",
+              "name": "Legal Entity Name",
+              "fieldApiName": "Name",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-tax-id",
+              "type": "Field",
+              "name": "Federal Tax ID (EIN)",
+              "fieldApiName": "TaxId__c",
+              "fieldType": "String",
+              "uiBehavior": "Required"
+            },
+            {
+              "id": "el-website",
+              "type": "Field",
+              "name": "Corporate Website",
+              "fieldApiName": "Website",
+              "fieldType": "Url",
+              "uiBehavior": "None"
+            },
+            {
+              "id": "el-phone",
+              "type": "Field",
+              "name": "Main Office Phone",
+              "fieldApiName": "Phone",
+              "fieldType": "Phone",
+              "uiBehavior": "None"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

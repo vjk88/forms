@@ -1,0 +1,223 @@
+:host {
+    display: block;
+    /* Shell reads its OWN width — the rail adapts to the region it's dropped
+       into, not the viewport (forms render in variable-width Lightning columns). */
+    container-type: inline-size;
+    container-name: sidenav;
+}
+
+.layout {
+    display: flex;
+    min-height: 100%;
+    background: var(--c-page-bg, #f6f7fa);
+}
+
+/* ── Mobile top bar (progress; only in the narrow container) ── */
+.mobile-bar { display: none; }
+
+/* ── Nav rail ── */
+.rail {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: var(--c-rail-w, 240px);
+    min-width: var(--c-rail-w, 240px);
+    flex-shrink: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--c-card-bg, #fff);
+    border-right: 1px solid var(--c-border-light, #e6e8ec);
+    box-shadow: var(--c-card-shadow, none);
+}
+.rail-header {
+    padding: var(--c-space-5, 24px) var(--c-space-4, 16px) var(--c-space-3, 12px);
+    border-bottom: 1px solid var(--c-border-light, #e6e8ec);
+}
+.rail-title {
+    font-family: var(--c-font-display, inherit);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--c-text, #101319);
+}
+.rail-list {
+    list-style: none;
+    margin: 0;
+    padding: var(--c-space-2, 8px) 0;
+    flex: 1;
+}
+.nav-item { display: block; }
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-2, 8px);
+    width: 100%;
+    padding: var(--c-space-2, 8px) var(--c-space-4, 16px);
+    background: transparent;
+    border: none;
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--c-text-weak, #646b78);
+    cursor: pointer;
+    text-align: left;
+    border-left: 3px solid transparent;
+    transition: background var(--c-dur-1, 150ms), border-color var(--c-dur-1, 150ms);
+}
+.nav-btn:hover { background: rgba(0, 0, 0, 0.04); }
+.nav-item.is-current .nav-btn {
+    border-left-color: var(--c-accent, #0176d3);
+    color: var(--c-text, #101319);
+    background: color-mix(in srgb, var(--c-accent, #0176d3) 6%, transparent);
+    font-weight: 600;
+}
+.nav-item.is-complete .nav-icon { color: var(--c-accent, #0176d3); }
+.nav-item.is-error .nav-icon    { color: var(--c-error, #ea001e); }
+.nav-icon {
+    font-size: 0.75rem;
+    width: 1em;
+    flex-shrink: 0;
+}
+/* The number is the narrow-mode chip identity — hidden in the wide rail. */
+.nav-num { display: none; }
+.nav-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
+}
+
+.rail-footer {
+    padding: var(--c-space-4, 16px);
+    border-top: 1px solid var(--c-border-light, #e6e8ec);
+}
+
+/* ── Content pane ── */
+.content {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: var(--c-space-5, 24px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-5, 24px);
+}
+.page-block { display: flex; flex-direction: column; }
+/* The wide rail owns the submit (in its footer); the in-content submit is the
+   narrow-mode fallback, hidden until the rail becomes a top bar. */
+.content-submit { display: none; justify-content: flex-end; }
+
+/* ── Submit button ── */
+.submit-btn {
+    font: inherit;
+    font-weight: 600;
+    color: #fff;
+    background: var(--c-submit-bg, var(--c-accent, #0176d3));
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    padding: 0 var(--c-space-5, 24px);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+}
+.rail-footer .submit-btn { width: 100%; }
+.submit-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
+}
+
+.mobile-summary {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--c-text, #101319);
+}
+.mobile-progress {
+    height: 3px;
+    background: var(--c-border-light, #e6e8ec);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+.mobile-progress-bar {
+    height: 100%;
+    background: var(--c-accent, #0176d3);
+    transition: width var(--c-dur-2, 250ms) var(--c-ease, ease-out);
+}
+
+/* ── Narrow container → adaptive scrollable top bar of step chips ──
+   The rail flips from a vertical sidebar to a horizontal, scrollable strip.
+   Each step is a chip; the ACTIVE chip keeps its label, the rest collapse to
+   numbered dots (full label on hover/SR via title + aria-label). */
+@container sidenav (max-width: 768px) {
+    .layout { flex-direction: column; }
+
+    /* Progress bar above the chips */
+    .mobile-bar {
+        display: flex;
+        flex-direction: column;
+        gap: var(--c-space-1, 4px);
+        padding: var(--c-space-2, 8px) var(--c-space-4, 16px) 0;
+        background: var(--c-card-bg, #fff);
+    }
+
+    .rail {
+        position: static;
+        height: auto;
+        width: auto;
+        min-width: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--c-space-2, 8px);
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: var(--c-space-2, 8px) var(--c-space-4, 16px);
+        border-right: none;
+        border-bottom: 1px solid var(--c-border-light, #e6e8ec);
+        /* Edge fades cue that the strip scrolls */
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+        scrollbar-width: none;
+    }
+    .rail::-webkit-scrollbar { display: none; }
+
+    .rail-header,
+    .rail-footer { display: none; }
+
+    .rail-list {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: var(--c-space-2, 8px);
+        padding: 0;
+    }
+
+    .nav-btn {
+        flex-direction: row;
+        width: auto;
+        gap: 6px;
+        padding: 0 var(--c-space-2, 8px);
+        height: var(--c-tap-min, 36px);
+        min-width: var(--c-tap-min, 36px);
+        justify-content: center;
+        border-left: none;
+        border-radius: 9999px;
+        border: 1.5px solid var(--c-border-light, #e6e8ec);
+        white-space: nowrap;
+    }
+    .nav-item.is-current .nav-btn {
+        border-color: var(--c-accent, #0176d3);
+        background: color-mix(in srgb, var(--c-accent, #0176d3) 10%, transparent);
+    }
+    .nav-item.is-complete .nav-btn { border-color: color-mix(in srgb, var(--c-accent, #0176d3) 45%, var(--c-border-light, #e6e8ec)); }
+    .nav-item.is-error .nav-btn    { border-color: var(--c-error, #ea001e); }
+
+    /* Inactive chips = number dot; active chip = label. */
+    .nav-icon  { display: none; width: auto; }
+    .nav-num   { display: inline; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .nav-label { display: none; }
+    .nav-item.is-current .nav-num   { display: none; }
+    .nav-item.is-current .nav-label { display: inline; }
+    /* State glyph (✓/⚠) replaces the number on touched, inactive chips. */
+    .nav-item.is-complete .nav-icon,
+    .nav-item.is-error .nav-icon { display: inline; }
+    .nav-item.is-complete .nav-num,
+    .nav-item.is-error .nav-num  { display: none; }
+
+    .content { padding: var(--c-space-4, 16px); }
+    .content-submit { display: flex; }
+}

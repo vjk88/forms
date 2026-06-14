@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Layout_Mode__c</fullName>
-    <description
-  >How sections are presented at runtime for this version. Inherits the default from Form__c on creation but can be changed per version.</description>
-    <inlineHelpText
-  >Single Page: all sections on one page. Vertical Navigation: left menu, one section at a time. Multi Page Wizard: top progress bar, one page at a time.</inlineHelpText>
+    <description>How sections are presented at runtime for this version. Inherits the default from Form__c on creation but can be changed per version.</description>
+    <inlineHelpText>Single Page: all sections on one page. Vertical Navigation: left menu, one section at a time. Multi Page Wizard: top progress bar, one page at a time.</inlineHelpText>
     <label>Layout Mode</label>
     <required>false</required>
     <trackTrending>false</trackTrending>
@@ -27,6 +25,17 @@
                 <fullName>Multi_Page_Wizard</fullName>
                 <default>false</default>
                 <label>Multi Page Wizard</label>
+            </value>
+            <value>
+                <fullName>Top_Navigation</fullName>
+                <default>false</default>
+                <label>Top_Navigation</label>
+            </value>
+            <value>
+                <fullName>JumpLinks</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>JumpLinks</label>
             </value>
         </valueSetDefinition>
     </valueSet>

@@ -1,12 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Min_Repetitions__c</fullName>
     <defaultValue>0</defaultValue>
-    <description
-  >Minimum number of rows required for repeatable sections</description>
+    <description>Minimum number of rows required for repeatable sections</description>
     <externalId>false</externalId>
-    <inlineHelpText
-  >For repeater sections, specify the minimum number of rows users must complete. 0 = optional.</inlineHelpText>
+    <inlineHelpText>For repeater sections, specify the minimum number of rows users must complete. 0 = optional.</inlineHelpText>
     <label>Min Repetitions</label>
     <precision>3</precision>
     <required>false</required>

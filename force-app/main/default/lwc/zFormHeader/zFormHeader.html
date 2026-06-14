@@ -1,0 +1,25 @@
+<template>
+    <div class="header-container">
+        <template if:true={config.logoUrl}>
+            <div class="header-logo">
+                <img src={config.logoUrl} alt="Logo" class="logo-image" />
+            </div>
+        </template>
+        <div class="header-text">
+            <h1 class="header-title">{config.title}</h1>
+            <template if:true={config.subtitle}>
+                <p class="header-subtitle">{config.subtitle}</p>
+            </template>
+            <template if:true={config.highlights}>
+                <div class="header-highlights">
+                    <span class="highlights-text">{config.highlights}</span>
+                </div>
+            </template>
+            <template if:true={config.richText}>
+                <div class="header-rich-text">
+                    <lightning-formatted-rich-text value={config.richText}></lightning-formatted-rich-text>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

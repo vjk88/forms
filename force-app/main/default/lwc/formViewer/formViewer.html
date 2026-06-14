@@ -1,0 +1,87 @@
+<template>
+    <div class="viewer">
+        <template lwc:if={isLoading}>
+            <div class="viewer-state">
+                <lightning-spinner alternative-text="Loading form" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template lwc:elseif={loadError}>
+            <div class="viewer-state viewer-state_error" role="alert">
+                <lightning-icon icon-name="utility:error" variant="error" size="small"></lightning-icon>
+                <p>{loadError}</p>
+            </div>
+        </template>
+
+        <template lwc:elseif={noActiveVersion}>
+            <div class="viewer-state" role="status">
+                <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                <p>This form doesn&#39;t have a published version yet.</p>
+            </div>
+        </template>
+
+        <template lwc:elseif={isSubmitted}>
+            <div class="viewer-done" role="status">
+                <lightning-icon icon-name="utility:success" variant="success" size="large"></lightning-icon>
+                <h2 class="done-title">{thankYouMessage}</h2>
+                <p lwc:if={isRedirecting} class="done-redirect">
+                    {redirectCountdownText}
+                    <button type="button" class="done-cancel" onclick={handleCancelRedirect}>Stay on this page</button>
+                </p>
+                <lightning-button
+                    lwc:if={showReturnButton}
+                    label={returnButtonLabel}
+                    onclick={handleReturnClick}
+                    class="done-return"></lightning-button>
+            </div>
+        </template>
+
+        <template lwc:else>
+            <div lwc:if={hasSubmitErrors} class="viewer-errors" role="alert">
+                <lightning-icon icon-name="utility:error" variant="error" size="x-small"></lightning-icon>
+                <ul>
+                    <template for:each={submitErrors} for:item="err">
+                        <li key={err.key}>{err.text}</li>
+                    </template>
+                </ul>
+            </div>
+
+            <c-form-layout-engine
+                spec={spec}
+                pages={enginePages}
+                sections={engineSections}
+                elements={engineElements}
+                skin={skin}
+                mode="live"
+                form-title={headerTitle}
+                form-description={headerDescription}
+                labels={engineLabels}
+                object-api-name={primaryObject}
+                record-id={effectiveRecordId}
+                prefill-values={enginePrefill}
+                validate-page={pageValidator}
+                onsectionregister={handleSectionRegister}
+                onsectionvalue={handleSectionValue}
+                onpagechange={handlePageChange}
+                onsubmitrequest={handleSubmitRequest}
+            ></c-form-layout-engine>
+
+            <div lwc:if={needsCaptcha} class="viewer-captcha">
+                <lightning-input
+                    type="checkbox"
+                    label="I'm not a robot"
+                    onchange={handleCaptchaChange}></lightning-input>
+            </div>
+
+            <!-- Honeypot: invisible to humans; bots that fill it are dropped. -->
+            <div class="viewer-hp" aria-hidden="true">
+                <input
+                    type="text"
+                    name="website"
+                    tabindex="-1"
+                    autocomplete="off"
+                    onchange={handleHoneypotChange} />
+            </div>
+        </template>
+    </div>
+</template>
