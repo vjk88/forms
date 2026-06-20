@@ -29,6 +29,20 @@ public with sharing class FormSubmitController {
     public List<Map<String, Object>> rows;
   }
 
+  /** One respondent-uploaded file (base64) to attach to the saved record. */
+  public class FileUpload {
+    @AuraEnabled
+    public String fileName;
+    @AuraEnabled
+    public String base64; // may carry a data: URI prefix (stripped on save)
+    @AuraEnabled
+    public String contentType;
+  }
+
+  // Per-file ceiling — keeps base64 decode + the Aura request under sync heap /
+  // request-size limits. ~4.3 MB of actual file.
+  private static final Integer MAX_FILE_BYTES = 4500000;
+
   // ---- Outputs -----------------------------------------------------------
 
   public class SubmitResult {
@@ -82,7 +96,7 @@ public with sharing class FormSubmitController {
     List<ChildBlock> children
   ) {
     assertAuthenticated();
-    return submitCore(objectApiName, parentValues, existingRecordId, children);
+    return submitCore(objectApiName, parentValues, existingRecordId, children, null);
   }
 
   /**
@@ -96,7 +110,8 @@ public with sharing class FormSubmitController {
     String objectApiName,
     Map<String, Object> parentValues,
     Id existingRecordId,
-    List<ChildBlock> children
+    List<ChildBlock> children,
+    List<FileUpload> files
   ) {
     if (String.isBlank(objectApiName)) {
       throw new AuraHandledException('A primary object is required.');
@@ -176,6 +191,15 @@ public with sharing class FormSubmitController {
           result.errors = childErrs;
           return result;
         }
+      }
+
+      // 4) Attach respondent file uploads as Salesforce Files on the parent.
+      //    FirstPublishLocationId auto-creates the ContentDocumentLink. Inside the
+      //    same savepoint, so files roll back with the record if anything fails.
+      List<RowError> fileErrs = attachFiles(parentId, files, sp);
+      if (fileErrs != null) {
+        result.errors = fileErrs;
+        return result; // rollback already done in attachFiles
       }
 
       result.success = true;
@@ -264,6 +288,79 @@ public with sharing class FormSubmitController {
         return s;
       }
     }
+  }
+
+  // ---- File attachments --------------------------------------------------
+
+  /**
+   * Attach respondent uploads to the saved parent as Salesforce Files.
+   * FirstPublishLocationId auto-creates the ContentDocumentLink. Returns null on
+   * success (or nothing to attach); on failure it rolls the transaction back to
+   * `sp` and returns the errors so the player can surface them.
+   */
+  private static List<RowError> attachFiles(
+    Id parentId,
+    List<FileUpload> files,
+    System.Savepoint sp
+  ) {
+    if (files == null || files.isEmpty()) {
+      return null;
+    }
+    List<ContentVersion> cvs = new List<ContentVersion>();
+    for (FileUpload fu : files) {
+      if (fu == null || String.isBlank(fu.base64)) {
+        continue;
+      }
+      String cleaned = fu.base64.contains(',')
+        ? fu.base64.substringAfter(',')
+        : fu.base64;
+      Blob body = EncodingUtil.base64Decode(cleaned);
+      if (body.size() > MAX_FILE_BYTES) {
+        Database.rollback(sp);
+        RowError re = new RowError();
+        re.scope = 'file';
+        re.message =
+          (String.isBlank(fu.fileName) ? 'A file' : '"' + fu.fileName + '"') +
+          ' exceeds the ' +
+          (MAX_FILE_BYTES / 1000000) +
+          ' MB limit.';
+        return new List<RowError>{ re };
+      }
+      String nm = String.isBlank(fu.fileName) ? 'upload' : fu.fileName;
+      ContentVersion cv = new ContentVersion();
+      cv.Title = nm;
+      cv.PathOnClient = nm;
+      cv.VersionData = body;
+      cv.IsMajorVersion = true;
+      cv.FirstPublishLocationId = parentId;
+      cvs.add(cv);
+    }
+    if (cvs.isEmpty()) {
+      return null;
+    }
+    Database.SaveResult[] srs = Database.insert(
+      cvs,
+      false,
+      AccessLevel.USER_MODE
+    );
+    List<RowError> errs = new List<RowError>();
+    for (Database.SaveResult sr : srs) {
+      if (sr.isSuccess()) {
+        continue;
+      }
+      for (Database.Error e : sr.getErrors()) {
+        RowError re = new RowError();
+        re.scope = 'file';
+        re.fields = e.getFields();
+        re.message = e.getMessage();
+        errs.add(re);
+      }
+    }
+    if (!errs.isEmpty()) {
+      Database.rollback(sp);
+      return errs;
+    }
+    return null;
   }
 
   // ---- Error mapping -----------------------------------------------------

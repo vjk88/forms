@@ -1,0 +1,278 @@
+<template>
+    <div class={rootClass} role="button" tabindex="0"
+        aria-pressed={pressed} aria-label={label}
+        onclick={handleClick} onkeydown={handleKey}>
+
+        <!-- Themed preview — token string sets every --c-* the mock reads. -->
+        <div class="tc-preview" style={tokenStyle}>
+            <div class="tc-stage">
+                <!-- If split layout -->
+                <template lwc:if={isSplitLayout}>
+                    <div class="tc-card tc-layout-split">
+                        <!-- Split Hero Brand Panel (Left) -->
+                        <div class="tc-split-rail" style="background: var(--c-header-bg, var(--c-accent, #6366f1)); background-size: cover; background-position: center; border-right: 1px solid var(--c-border, #d8dde6);">
+                            <!-- Highlight badge if needed -->
+                            <template lwc:if={highlightHtml}>
+                                <div class="tc-highlight" style={highlightSplitStyle}>
+                                    {highlightText}
+                                </div>
+                            </template>
+
+                            <!-- Inline arrangement -->
+                            <template lwc:if={isArrangementInline}>
+                                <div class="tc-inline-header">
+                                    <template lwc:if={showLogo}>
+                                        <img src={targetLogoUrlSplit} alt="Logo" class="tc-logo-img tc-logo-inline" />
+                                    </template>
+                                    <h4 class="tc-h">{brand.title}</h4>
+                                </div>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </template>
+                            <!-- Beside arrangement -->
+                            <template lwc:elseif={isArrangementLogoBeside}>
+                                <div class="tc-beside-header">
+                                    <template lwc:if={showLogo}>
+                                        <img src={targetLogoUrlSplit} alt="Logo" class="tc-logo-img tc-logo-beside" />
+                                    </template>
+                                    <div>
+                                        <h4 class="tc-h">{brand.title}</h4>
+                                        <p class="tc-p">{brand.subtitle}</p>
+                                    </div>
+                                </div>
+                            </template>
+                            <!-- Stacked / default arrangement -->
+                            <template lwc:else>
+                                <div class="tc-stacked-header">
+                                    <template lwc:if={showLogo}>
+                                        <img src={targetLogoUrlSplit} alt="Logo" class="tc-logo-img tc-logo-stacked" />
+                                    </template>
+                                    <h4 class="tc-h">{brand.title}</h4>
+                                </div>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </template>
+                        </div>
+
+                        <!-- Form Fields Panel (Right) -->
+                        <div class="tc-split-fields">
+                            <div class="tc-body">
+                                <div class="tc-field">
+                                    <span class="tc-label">Full Name</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                                <div class="tc-field">
+                                    <span class="tc-label">Email Address</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                                <div class="tc-checkrow">
+                                    <span class="tc-box"></span>
+                                    <span class="tc-muted">Terms & Conditions</span>
+                                </div>
+                                <button class="tc-btn" type="button" tabindex="-1">Submit Form</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- If stepped layout -->
+                <template lwc:elif={isSteppedLayout}>
+                    <div class="tc-card tc-layout-stepped">
+                        <!-- Stepper Indicator -->
+                        <div class="tc-stepper" style="border-bottom: 1px solid var(--c-border-light, var(--c-border, #e5e7eb));">
+                            <div class="tc-step-item tc-step-active">
+                                <div class="tc-step-circle" style="background: var(--c-accent, #6366f1); color: var(--c-on-accent, #ffffff);">1</div>
+                                <span class="tc-step-label">Profile</span>
+                            </div>
+                            <div class="tc-step-line" style="background: var(--c-border-light, var(--c-border, #e5e7eb));"></div>
+                            <div class="tc-step-item tc-step-inactive" style="opacity: 0.5;">
+                                <div class="tc-step-circle" style="background: var(--c-border, #d8dde6); color: var(--c-text, #16325c);">2</div>
+                                <span class="tc-step-label">Review</span>
+                            </div>
+                        </div>
+
+                        <!-- Header content -->
+                        <template lwc:if={highlightHtml}>
+                            <div class="tc-highlight" style={highlightStyle}>
+                                {highlightText}
+                            </div>
+                        </template>
+
+                        <!-- Inline arrangement -->
+                        <template lwc:if={isArrangementInline}>
+                            <div class="tc-inline-header">
+                                <template lwc:if={showLogo}>
+                                    <img src={targetLogoUrl} alt="Logo" class="tc-logo-img tc-logo-inline" />
+                                </template>
+                                <h4 class="tc-h">{brand.title}</h4>
+                            </div>
+                            <p class="tc-p">{brand.subtitle}</p>
+                        </template>
+                        <!-- Beside arrangement -->
+                        <template lwc:elseif={isArrangementLogoBeside}>
+                            <div class="tc-beside-header">
+                                <template lwc:if={showLogo}>
+                                    <img src={targetLogoUrl} alt="Logo" class="tc-logo-img tc-logo-beside" />
+                                </template>
+                                <div>
+                                    <h4 class="tc-h">{brand.title}</h4>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </div>
+                            </div>
+                        </template>
+                        <!-- Stacked / default arrangement -->
+                        <template lwc:else>
+                            <div class="tc-stacked-header">
+                                <template lwc:if={showLogo}>
+                                    <img src={targetLogoUrl} alt="Logo" class="tc-logo-img tc-logo-stacked" />
+                                </template>
+                                <h4 class="tc-h">{brand.title}</h4>
+                            </div>
+                            <p class="tc-p">{brand.subtitle}</p>
+                        </template>
+
+                        <!-- Form fields -->
+                        <div class="tc-body">
+                            <div class="tc-field">
+                                <span class="tc-label">Full Name</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <div class="tc-field">
+                                <span class="tc-label">Email Address</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <div class="tc-checkrow">
+                                <span class="tc-box"></span>
+                                <span class="tc-muted">Terms & Conditions</span>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">Submit Form</button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Classic / Standard layout -->
+                <template lwc:else>
+                    <div class="tc-card">
+                        <!-- If has banner -->
+                        <template lwc:if={hasBanner}>
+                            <div class="tc-banner" style="background: var(--c-header-bg); background-size: cover; background-position: center; border-bottom: 1px solid var(--c-border, #d8dde6);">
+                                <template lwc:if={highlightHtml}>
+                                    <div class="tc-highlight" style={highlightBannerStyle}>
+                                        {highlightText}
+                                    </div>
+                                </template>
+
+                                <!-- Inline arrangement -->
+                                <template lwc:if={isArrangementInline}>
+                                    <div class="tc-inline-header">
+                                        <template lwc:if={showLogo}>
+                                            <img src={targetLogoUrlBanner} alt="Logo" class="tc-logo-img tc-logo-inline" />
+                                        </template>
+                                        <h4 class="tc-h">{brand.title}</h4>
+                                    </div>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </template>
+                                <!-- Beside arrangement -->
+                                <template lwc:elseif={isArrangementLogoBeside}>
+                                    <div class="tc-beside-header">
+                                        <template lwc:if={showLogo}>
+                                            <img src={targetLogoUrlBanner} alt="Logo" class="tc-logo-img tc-logo-beside" />
+                                        </template>
+                                        <div>
+                                            <h4 class="tc-h">{brand.title}</h4>
+                                            <p class="tc-p">{brand.subtitle}</p>
+                                        </div>
+                                    </div>
+                                </template>
+                                <!-- Stacked / default arrangement -->
+                                <template lwc:else>
+                                    <div class="tc-stacked-header">
+                                        <template lwc:if={showLogo}>
+                                            <img src={targetLogoUrlBanner} alt="Logo" class="tc-logo-img tc-logo-stacked" />
+                                        </template>
+                                        <h4 class="tc-h">{brand.title}</h4>
+                                    </div>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Standard header (no banner) -->
+                        <template lwc:else>
+                            <div class="tc-head">
+                                <template lwc:if={highlightHtml}>
+                                    <div class="tc-highlight" style={highlightStyle}>
+                                        {highlightText}
+                                    </div>
+                                </template>
+
+                                <!-- Inline arrangement -->
+                                <template lwc:if={isArrangementInline}>
+                                    <div class="tc-inline-header">
+                                        <template lwc:if={showLogo}>
+                                            <img src={targetLogoUrl} alt="Logo" class="tc-logo-img tc-logo-inline" />
+                                        </template>
+                                        <h4 class="tc-h">{brand.title}</h4>
+                                    </div>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </template>
+                                <!-- Beside arrangement -->
+                                <template lwc:elseif={isArrangementLogoBeside}>
+                                    <div class="tc-beside-header">
+                                        <template lwc:if={showLogo}>
+                                            <img src={targetLogoUrl} alt="Logo" class="tc-logo-img tc-logo-beside" />
+                                        </template>
+                                        <div>
+                                            <h4 class="tc-h">{brand.title}</h4>
+                                            <p class="tc-p">{brand.subtitle}</p>
+                                        </div>
+                                    </div>
+                                </template>
+                                <!-- Stacked / default arrangement -->
+                                <template lwc:else>
+                                    <div class="tc-stacked-header">
+                                        <template lwc:if={showLogo}>
+                                            <img src={targetLogoUrl} alt="Logo" class="tc-logo-img tc-logo-stacked" />
+                                        </template>
+                                        <h4 class="tc-h">{brand.title}</h4>
+                                    </div>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Form fields -->
+                        <div class="tc-body">
+                            <div class="tc-field">
+                                <span class="tc-label">Full Name</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <div class="tc-field">
+                                <span class="tc-label">Email Address</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <div class="tc-checkrow">
+                                <span class="tc-box"></span>
+                                <span class="tc-muted">Terms & Conditions</span>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">Submit Form</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Admin-chrome meta (NOT themed) -->
+        <div class="tc-meta">
+            <div class="tc-meta-top">
+                <span class="tc-name">{label}</span>
+                <lightning-icon lwc:if={selected} icon-name="utility:check"
+                    size="xx-small" class="tc-check"></lightning-icon>
+            </div>
+            <p class="tc-desc">{description}</p>
+            <div class="tc-swatches" aria-hidden="true">
+                <template for:each={swatches} for:item="sw">
+                    <span key={sw.key} class="tc-swatch" style={sw.style} title={sw.name}></span>
+                </template>
+            </div>
+        </div>
+    </div>
+</template>

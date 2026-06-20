@@ -22,6 +22,11 @@
                 <label>Vertical Navigation</label>
             </value>
             <value>
+                <fullName>Multi_Page</fullName>
+                <default>false</default>
+                <label>Multi Page</label>
+            </value>
+            <value>
                 <fullName>Multi_Page_Wizard</fullName>
                 <default>false</default>
                 <label>Multi Page Wizard</label>

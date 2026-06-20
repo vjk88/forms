@@ -19,6 +19,15 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
+        <object>Form__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
         <object>Form_Element__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -37,7 +46,7 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>Form_Response_Answer__c</object>
+        <object>Form_Response__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -46,7 +55,7 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>Form_Response__c</object>
+        <object>Form_Response_Answer__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -82,15 +91,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>Form__c</object>
-        <viewAllRecords>true</viewAllRecords>
-    </objectPermissions>
-    <objectPermissions>
-        <allowCreate>true</allowCreate>
-        <allowDelete>true</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>true</modifyAllRecords>
         <object>Spec_History__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -102,17 +102,57 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form_Template__c.Category__c</field>
+        <field>Form__c.Allowed_Adapters__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form_Template__c.Definition__c</field>
+        <field>Form__c.Default_Owner_Id__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form_Template__c.Is_Active__c</field>
+        <field>Form__c.Description__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Global_Styles_JSON__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Layout_Config__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Layout_Mode__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Primary_Context_Object__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Published_Date__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Schema_Snapshot__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Status__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Submission_Storage__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -182,12 +222,12 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form_Element__c.Pattern_Error_Message__c</field>
+        <field>Form_Element__c.Pattern__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form_Element__c.Pattern__c</field>
+        <field>Form_Element__c.Pattern_Error_Message__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -237,82 +277,17 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
+        <field>Form_Page__c.Key__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
         <field>Form_Page__c.Show_Progress_Bar__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
         <field>Form_Page__c.Skip_Condition_Expression__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Page__c.Key__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Section__c.Key__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Version__c.Layout_Spec__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Spec_History__c.Spec_JSON__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Spec_History__c.Ops_JSON__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Spec_History__c.Source__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Boolean_Value__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.DateTime_Value__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Date_Value__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Element_Key__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Lookup_Reference_Id__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Numeric_Value__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Selected_Options_JSON__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form_Response_Answer__c.Text_Value__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -392,6 +367,46 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
+        <field>Form_Response_Answer__c.Boolean_Value__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Date_Value__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.DateTime_Value__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Element_Key__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Lookup_Reference_Id__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Numeric_Value__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Selected_Options_JSON__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Text_Value__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
         <field>Form_Section__c.Collapsed_By_Default__c</field>
     </fieldPermissions>
     <fieldPermissions>
@@ -422,6 +437,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
+        <field>Form_Section__c.Key__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
         <field>Form_Section__c.Max_Repetitions__c</field>
     </fieldPermissions>
     <fieldPermissions>
@@ -447,6 +467,21 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
+        <field>Form_Template__c.Category__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Template__c.Definition__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Template__c.Is_Active__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
         <field>Form_Version__c.Change_Notes__c</field>
     </fieldPermissions>
     <fieldPermissions>
@@ -467,6 +502,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
+        <field>Form_Version__c.Layout_Spec__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
         <field>Form_Version__c.Published_By__c</field>
     </fieldPermissions>
     <fieldPermissions>
@@ -477,57 +517,17 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form__c.Allowed_Adapters__c</field>
+        <field>Spec_History__c.Ops_JSON__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form__c.Default_Owner_Id__c</field>
+        <field>Spec_History__c.Source__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
-        <field>Form__c.Description__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Global_Styles_JSON__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Layout_Config__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Layout_Mode__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Primary_Context_Object__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Published_Date__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Schema_Snapshot__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Status__c</field>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <readable>true</readable>
-        <field>Form__c.Submission_Storage__c</field>
+        <field>Spec_History__c.Spec_JSON__c</field>
     </fieldPermissions>
     <classAccesses>
         <apexClass>FormAssetController</apexClass>

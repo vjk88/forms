@@ -1,0 +1,422 @@
+<template>
+    <div class="dp">
+
+        <!-- ===================== PILLAR 1 · CANVAS & FRAME ===================== -->
+        <template lwc:if={isCanvas}>
+            <div class="dp-divider">Theme</div>
+            <div class="ctl">
+                <span class="ctl-l">Theme</span>
+                <select class="inp" onchange={onThemePick}>
+                    <template for:each={themeOptions} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+                <p class="dp-note">Switching themes resets custom colors to that theme’s defaults.</p>
+            </div>
+
+            <div class="dp-divider">Form layout shell</div>
+
+            <div class="ctl">
+                <span class="ctl-l">Layout archetype</span>
+                <select class="inp" onchange={onLayout}>
+                    <template for:each={layoutOptions} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Max content width</span>
+                <div class="seg-row">
+                    <template for:each={maxWidthSeg} for:item="o">
+                        <button key={o.value} class={o.cls} data-key="maxWidth" data-value={o.value} onclick={onShellSeg}>{o.label}</button>
+                    </template>
+                </div>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Card chrome style</span>
+                <div class="seg-row">
+                    <template for:each={chromeSeg} for:item="o">
+                        <button key={o.value} class={o.cls} data-key="chrome" data-value={o.value} onclick={onShellSeg}>{o.label}</button>
+                    </template>
+                </div>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Section look &amp; style</span>
+                <select class="inp" data-key="sectionDefault" onchange={onTheme}>
+                    <template for:each={sectionStyleOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Section inner padding</span>
+                <select class="inp" data-key="sectionPadding" onchange={onTheme}>
+                    <template for:each={sectionPadOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Sizing scale (density)</span>
+                <div class="seg-row">
+                    <template for:each={densitySeg} for:item="o">
+                        <button key={o.value} class={o.cls} data-value={o.value} onclick={onDensity}>{o.label}</button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- stepper-only -->
+            <template lwc:if={isStepper}>
+                <div class="dp-sub">
+                    <div class="ctl">
+                        <span class="ctl-l">Stepper placement</span>
+                        <div class="seg-row">
+                            <template for:each={stepperPlacementSeg} for:item="o">
+                                <button key={o.value} class={o.cls} data-key="stepperPlacement" data-value={o.value} onclick={onShellSeg}>{o.label}</button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="ctl">
+                        <span class="ctl-l">Stepper mode</span>
+                        <select class="inp" data-key="stepperMode" onchange={onShell}>
+                            <template for:each={stepperModeOpts} for:item="o">
+                                <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+            </template>
+
+            <div class="ctl">
+                <span class="ctl-l">Progress indicator</span>
+                <select class="inp" data-key="progress" onchange={onShell}>
+                    <template for:each={progressOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Responsive breakpoint</span>
+                <select class="inp" onchange={onBreakpoint}>
+                    <template for:each={breakpointOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="dp-divider">Frame styling</div>
+
+            <div class="ctl">
+                <span class="ctl-l">Corner rounding</span>
+                <div class="slider-row">
+                    <input type="range" min="0" max="24" value={radiusVal} class="rng" oninput={onRadius} />
+                    <span class="rng-v">{radiusLabel}</span>
+                </div>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Card shadow</span>
+                <select class="inp" data-key="shadow" onchange={onTheme}>
+                    <template for:each={shadowOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="switch-row">
+                <div class="switch-l"><span class="switch-t">Glassmorphism</span><span class="switch-d">Frosted translucent cards</span></div>
+                <label class="switch"><input type="checkbox" checked={glassOn} onchange={onGlass} /><span class="track"></span></label>
+            </div>
+
+            <div class="dp-divider">Canvas colors</div>
+            <div class="color-row">
+                <span class="color-l">Page background</span>
+                <span class="color-pick"><span class="hex">{cPageBg}</span><input type="color" value={cPageBg} data-key="pageBg" oninput={onTheme} /></span>
+            </div>
+            <div class="color-row">
+                <span class="color-l">Card background</span>
+                <span class="color-pick"><span class="hex">{cSurface}</span><input type="color" value={cSurface} data-key="surface" oninput={onTheme} /></span>
+            </div>
+        </template>
+
+        <!-- ===================== PILLAR 2 · BRAND & IDENTITY ===================== -->
+        <template lwc:elseif={isBrand}>
+            <div class="dp-divider">Form branding</div>
+
+            <div class="ctl">
+                <span class="ctl-l">Header style</span>
+                <select class="inp" data-key="headerStyle" onchange={onShell}>
+                    <template for:each={headerStyleOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Header arrangement</span>
+                <select class="inp" data-key="arrangement" onchange={onHeader}>
+                    <template for:each={arrangementOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Built-in logo emblem</span>
+                <select class="inp" data-key="emblem" onchange={onHeader}>
+                    <template for:each={emblemOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Logo</span>
+                <div lwc:if={_hdr.logo} class="dp-thumb"><img src={_hdr.logo} alt="" /></div>
+                <div class="dp-upload-row">
+                    <label class="dp-upload-btn">
+                        <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" data-kind="logo" onchange={onHeaderFile} disabled={uploading} />
+                        <span>{logoUploadLabel}</span>
+                    </label>
+                    <button lwc:if={_hdr.logo} class="dp-remove" type="button" data-kind="logo" onclick={onHeaderAssetRemove}>Remove</button>
+                </div>
+                <input class="inp" type="text" value={_hdr.logo} data-key="logo" placeholder="…or paste a URL" onchange={onHeader} />
+            </div>
+
+            <div class="ctl">
+                <span class="ctl-l">Header banner image</span>
+                <div lwc:if={_hdr.bgImage} class="dp-thumb dp-thumb-wide"><img src={_hdr.bgImage} alt="" /></div>
+                <div class="dp-upload-row">
+                    <label class="dp-upload-btn">
+                        <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-kind="banner" onchange={onHeaderFile} disabled={uploading} />
+                        <span>{bannerUploadLabel}</span>
+                    </label>
+                    <button lwc:if={_hdr.bgImage} class="dp-remove" type="button" data-kind="banner" onclick={onHeaderAssetRemove}>Remove</button>
+                </div>
+                <p class="dp-note">Shows as a full-width banner when Header style is “Hero”.</p>
+            </div>
+
+            <div class="color-row">
+                <span class="color-l">Header background color</span>
+                <span class="color-pick"><span class="hex">{cHeaderBg}</span><input type="color" value={cHeaderBg} data-key="headerBg" oninput={onTheme} /></span>
+            </div>
+
+            <div class="dp-divider">Introduction content</div>
+            <div class="ctl">
+                <span class="ctl-l">Form title</span>
+                <input class="inp" type="text" value={titleVal} data-key="title" onchange={onHeader} />
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Description / subtitle</span>
+                <textarea class="inp" rows="2" data-key="description" onchange={onHeader}>{descVal}</textarea>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Highlight message badge</span>
+                <input class="inp" type="text" value={highlightVal} data-key="highlight" placeholder="e.g. Closes Friday!" onchange={onHeader} />
+            </div>
+
+            <!-- brand-panel only -->
+            <template lwc:if={hasBrandPanel}>
+                <div class="dp-divider">Brand rail</div>
+                <div class="switch-row">
+                    <div class="switch-l"><span class="switch-t">Rail on right side</span><span class="switch-d">Default is left</span></div>
+                    <label class="switch"><input type="checkbox" checked={brandSideRight} data-key="brandSide" onchange={onShellToggle} /><span class="track"></span></label>
+                </div>
+                <div class="ctl">
+                    <span class="ctl-l">Rail panel width</span>
+                    <div class="slider-row">
+                        <input type="range" min="25" max="50" value={brandWidthVal} class="rng" data-key="brandWidth" oninput={onShell} />
+                        <span class="rng-v">{brandWidthLabel}</span>
+                    </div>
+                </div>
+                <div class="ctl">
+                    <span class="ctl-l">Brand rail content</span>
+                    <div class="checks">
+                        <template for:each={brandContent} for:item="c">
+                            <label key={c.key} class="check"><input type="checkbox" class="brand-content-cb" data-key={c.key} checked={c.checked} onchange={onBrandContent} /><span>{c.label}</span></label>
+                        </template>
+                    </div>
+                </div>
+                <div class="switch-row">
+                    <div class="switch-l"><span class="switch-t">Sticky brand panel</span><span class="switch-d">Pin rail during scroll</span></div>
+                    <label class="switch"><input type="checkbox" checked={brandSticky} data-key="brandSticky" onchange={onShellToggle} /><span class="track"></span></label>
+                </div>
+            </template>
+        </template>
+
+        <!-- ===================== PILLAR 3 · TYPOGRAPHY & FIELDS ===================== -->
+        <template lwc:elseif={isType}>
+            <div class="dp-divider">Typography colors</div>
+            <div class="color-row">
+                <span class="color-l">Main text</span>
+                <span class="color-pick"><span class="hex">{cText}</span><input type="color" value={cText} data-key="text" oninput={onTheme} /></span>
+            </div>
+            <div class="color-row">
+                <span class="color-l">Muted text</span>
+                <span class="color-pick"><span class="hex">{cTextMuted}</span><input type="color" value={cTextMuted} data-key="textMuted" oninput={onTheme} /></span>
+            </div>
+            <div class="color-row">
+                <span class="color-l">Header text</span>
+                <span class="color-pick"><span class="hex">{cHeaderText}</span><input type="color" value={cHeaderText} data-key="headerText" oninput={onTheme} /></span>
+            </div>
+            <p class="dp-note">Font pairing — coming later (using the Salesforce default for now).</p>
+
+            <div class="dp-divider">Input fields</div>
+            <div class="ctl">
+                <span class="ctl-l">Input style</span>
+                <select class="inp" data-key="inputStyle" onchange={onTheme}>
+                    <template for:each={inputStyleOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Label style</span>
+                <select class="inp" data-key="labelStyle" onchange={onTheme}>
+                    <template for:each={labelStyleOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Label position</span>
+                <div class="seg-row">
+                    <template for:each={labelPosSeg} for:item="o">
+                        <button key={o.value} class={o.cls} data-key="labelPosition" data-value={o.value} onclick={onThemeSeg}>{o.label}</button>
+                    </template>
+                </div>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Control scale (sizing)</span>
+                <div class="slider-row">
+                    <input type="range" min="1" max="1.5" step="0.1" value={controlScaleVal} class="rng" oninput={onControlScale} />
+                    <span class="rng-v">{controlScaleLabel}</span>
+                </div>
+            </div>
+
+            <div class="dp-divider">Card borders &amp; FX</div>
+            <div class="color-row">
+                <span class="color-l">Border (strong)</span>
+                <span class="color-pick"><span class="hex">{cBorder}</span><input type="color" value={cBorder} data-key="border" oninput={onTheme} /></span>
+            </div>
+            <div class="color-row">
+                <span class="color-l">Border (light)</span>
+                <span class="color-pick"><span class="hex">{cBorderLight}</span><input type="color" value={cBorderLight} data-key="borderLight" oninput={onTheme} /></span>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Card border width</span>
+                <div class="slider-row">
+                    <input type="range" min="0" max="6" value={borderWidthVal} class="rng" oninput={onBorderWidth} />
+                    <span class="rng-v">{borderWidthLabel}</span>
+                </div>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Card border style</span>
+                <select class="inp" data-key="borderStyle" onchange={onTheme}>
+                    <template for:each={borderStyleOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Background texture</span>
+                <select class="inp" data-key="texture" onchange={onTheme}>
+                    <template for:each={textureOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+            <div class="switch-row">
+                <div class="switch-l"><span class="switch-t">Animated mesh background</span><span class="switch-d">Flowing color hues</span></div>
+                <label class="switch"><input type="checkbox" checked={meshOn} onchange={onMesh} /><span class="track"></span></label>
+            </div>
+            <div class="switch-row">
+                <div class="switch-l"><span class="switch-t">Top accent band</span><span class="switch-d">Branded frame strip</span></div>
+                <label class="switch"><input type="checkbox" checked={panelDecorOn} onchange={onPanelDecor} /><span class="track"></span></label>
+            </div>
+        </template>
+
+        <!-- ===================== PILLAR 4 · INTERACTION & FLOW ===================== -->
+        <template lwc:elseif={isFlow}>
+            <div class="dp-divider">Color accent palette</div>
+            <div class="color-row">
+                <span class="color-l">Accent color</span>
+                <span class="color-pick"><span class="hex">{cAccent}</span><input type="color" value={cAccent} oninput={onAccent} /></span>
+            </div>
+            <div class="color-row">
+                <span class="color-l">Button text</span>
+                <span class="color-pick"><span class="hex">{cAccentText}</span><input type="color" value={cAccentText} data-key="accentText" oninput={onTheme} /></span>
+            </div>
+            <div class={contrast.cls}><span class="dot"></span><span>{contrast.text}</span></div>
+
+            <div class="dp-divider">Quick presets</div>
+            <div class="preset-row">
+                <template for:each={presets} for:item="p">
+                    <button key={p.id} class={p.cls} data-id={p.id} onclick={onPreset}>{p.label}</button>
+                </template>
+            </div>
+
+            <div class="dp-divider">Action buttons</div>
+            <div class="ctl">
+                <span class="ctl-l">Submit label</span>
+                <input class="inp" type="text" value={submitLabelVal} data-key="submitLabel" onchange={onButtons} />
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Button alignment</span>
+                <div class="seg-row">
+                    <template for:each={alignSeg} for:item="o">
+                        <button key={o.value} class={o.cls} data-value={o.value} onclick={onBtnAlign}>{o.label}</button>
+                    </template>
+                </div>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Submit button placement</span>
+                <select class="inp" data-key="submitPlacement" onchange={onShell}>
+                    <template for:each={submitPlacementOpts} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                </select>
+            </div>
+            <template lwc:if={isMultiPage}>
+                <div class="dp-sub">
+                    <div class="ctl">
+                        <span class="ctl-l">Next button label</span>
+                        <input class="inp" type="text" value={nextLabelVal} data-key="nextLabel" onchange={onButtons} />
+                    </div>
+                    <div class="ctl">
+                        <span class="ctl-l">Back button label</span>
+                        <input class="inp" type="text" value={backLabelVal} data-key="backLabel" onchange={onButtons} />
+                    </div>
+                </div>
+            </template>
+
+            <div class="dp-divider">After submit</div>
+            <div class="ctl">
+                <span class="ctl-l">Completion outcome</span>
+                <div class="seg-row">
+                    <template for:each={afterSeg} for:item="o">
+                        <button key={o.value} class={o.cls} data-value={o.value} onclick={onAfterAction}>{o.label}</button>
+                    </template>
+                </div>
+            </div>
+            <template lwc:if={afterIsRedirect}>
+                <div class="ctl">
+                    <span class="ctl-l">Redirect URL</span>
+                    <input class="inp" type="text" value={redirectUrlVal} data-key="redirectUrl" onchange={onAfter} />
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="ctl">
+                    <span class="ctl-l">Thank-you message</span>
+                    <textarea class="inp" rows="3" data-key="message" onchange={onAfter}>{afterMessageVal}</textarea>
+                </div>
+            </template>
+        </template>
+    </div>
+</template>

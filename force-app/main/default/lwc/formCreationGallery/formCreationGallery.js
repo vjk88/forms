@@ -1,4 +1,4 @@
-import { LightningElement, track, wire } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { refreshApex } from '@salesforce/apex';
 import { materialize, LAYOUT_GROUPS, LAYOUT_LABELS } from 'c/layoutModel';
 import {
@@ -13,6 +13,8 @@ import {
 } from 'c/formTemplates';
 import {
     THEME_OPTIONS,
+    THEME_CATALOG,
+    THEME_FILTERS,
     skinsForTheme,
     resolveTheme,
     THEMES
@@ -40,7 +42,11 @@ const ACCENT_SWATCHES = [
  * Emits `formcreated` {formId, versionId} and `close`.
  */
 export default class FormCreationGallery extends LightningElement {
-    @track entryMode = 'template'; // 'template' | 'scratch'
+    // 'form' | 'survey' — set by the host (formStudio's active tab). Drives the
+    // create noun/labels and the formType for type-agnostic (layout/scratch) picks.
+    @api mode = 'form';
+
+    @track entryMode = 'scratch'; // 'template' | 'scratch' — scratch is the default tab
     @track selectedId = null;
     @track formName = '';
     @track chosenObject = '';
@@ -50,6 +56,10 @@ export default class FormCreationGallery extends LightningElement {
     @track chosenThemeId = 'cloud';
     @track chosenSkinId = 'light';
     @track chosenAccent = '';
+
+    // Theme-picker step (scratch path: layout → theme → details).
+    @track pickingTheme = false;
+    @track themeFilter = ''; // '' = All; else a tag value from THEME_FILTERS
 
     @track isCreating = false;
     @track errorMessage = '';
@@ -72,6 +82,20 @@ export default class FormCreationGallery extends LightningElement {
     }
     get objectOptions() {
         return this._objectOptions;
+    }
+
+    // ---- noun / labels (form vs survey) ----
+    get isSurveyMode() {
+        return this.mode === 'survey';
+    }
+    get noun() {
+        return this.isSurveyMode ? 'survey' : 'form';
+    }
+    get gTitle() {
+        return this.isSurveyMode ? 'Create a survey' : 'Create a form';
+    }
+    get createLabel() {
+        return this.isSurveyMode ? 'Create survey' : 'Create form';
     }
 
     @wire(listTemplates)
@@ -97,6 +121,13 @@ export default class FormCreationGallery extends LightningElement {
     }
     get scratchTabClass() {
         return this.isScratchMode ? 'entry-tab is-active' : 'entry-tab';
+    }
+    // aria-selected reflects the active entry tab (string per ARIA).
+    get templateSelected() {
+        return this.isTemplateMode ? 'true' : 'false';
+    }
+    get scratchSelected() {
+        return this.isScratchMode ? 'true' : 'false';
     }
     handleEntryTemplate() {
         this._visibleKeys = [];
@@ -183,11 +214,19 @@ export default class FormCreationGallery extends LightningElement {
             name: tpl.name,
             description: tpl.description,
             icon: tpl.icon,
+            // Layout + theme for the scratch grid's CSS mini-mockup (c/layoutThumb).
+            archetype: tpl.archetype,
+            themeId: tpl.themeId,
+            skinId: tpl.skinId,
             isCustom: tpl.source === 'custom',
             objectTag:
                 tpl.source === 'layout'
                     ? 'Layout'
                     : tpl.suggestedObjectLabel || (tpl.formType === 'Survey' ? 'Survey' : 'Pick an object'),
+            ariaLabel:
+                tpl.source === 'layout'
+                    ? `${tpl.name} — layout`
+                    : `${tpl.name} — ${tpl.suggestedObjectLabel || (tpl.formType === 'Survey' ? 'Survey' : 'pick an object')}`,
             showPreview,
             previewScale: '0.18'
         };
@@ -206,9 +245,36 @@ export default class FormCreationGallery extends LightningElement {
         };
     }
 
+    // ------------------------------------------------- focus management
+    // Move focus on view transitions so keyboard/SR users don't lose their place.
+    _pendingFocus;
+    _lastOpenedId;
+    _manageFocus() {
+        if (!this._pendingFocus) return;
+        let el = null;
+        if (this._pendingFocus === 'detail') {
+            el = this.template.querySelector('.d-back');
+        } else if (this._pendingFocus === 'done') {
+            el = this.template.querySelector('.done-title');
+        } else if (this._pendingFocus === 'gallery') {
+            el =
+                (this._lastOpenedId &&
+                    this.template.querySelector(`.t-card[data-id="${this._lastOpenedId}"]`)) ||
+                this.template.querySelector('.entry-tab.is-active') ||
+                this.template.querySelector('.entry-tab');
+        } else if (this._pendingFocus === 'theme') {
+            el = this.template.querySelector('.thm-back');
+        }
+        if (el) {
+            el.focus();
+            this._pendingFocus = null;
+        }
+    }
+
     // ------------------------------------------------- lazy preview mounting
     renderedCallback() {
-        if (!this.isGalleryView) return;
+        this._manageFocus();
+        if (!this.isGalleryView) return; // only the gallery's live-engine cards lazy-mount
         if (!this._observer && typeof IntersectionObserver !== 'undefined') {
             this._observer = new IntersectionObserver(
                 (entries) => this.onCardsIntersect(entries),
@@ -237,20 +303,33 @@ export default class FormCreationGallery extends LightningElement {
     }
 
     handlePick(event) {
-        this.openDetail(event.currentTarget.dataset.id);
+        this.selectCard(event.currentTarget.dataset.id);
     }
     handlePickKey(event) {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            this.openDetail(event.currentTarget.dataset.id);
+            this.selectCard(event.currentTarget.dataset.id);
         }
     }
 
-    // --------------------------------------------------------- detail (Screen 2)
-    openDetail(id) {
+    // A card pick routes by source: the "scratch" layouts go through the theme
+    // step first (layout → theme → details); real templates carry their own
+    // theme, so they jump straight to details.
+    selectCard(id) {
         const tpl = this.templateByIdLocal(id);
         if (!tpl) return;
+        this._initDetail(id, tpl);
+        const scratch = tpl.source === 'layout';
+        this.pickingTheme = scratch;
+        this._pendingFocus = scratch ? 'theme' : 'detail';
+        if (scratch) this._visibleKeys = [];
+    }
+
+    // --------------------------------------------------------- detail (Screen 2)
+    // Seed all of Screen-2's state from the picked card (shared by both paths).
+    _initDetail(id, tpl) {
         this.selectedId = id;
+        this._lastOpenedId = id;
         this.formName = tpl.name === `${LAYOUT_LABELS[tpl.archetype]} layout` ? '' : tpl.name;
         this.chosenObject = tpl.suggestedObject || '';
         this.chosenLayout = tpl.archetype || 'stacked';
@@ -265,11 +344,66 @@ export default class FormCreationGallery extends LightningElement {
     get selectedTemplate() {
         return this.selectedId ? this.templateByIdLocal(this.selectedId) : null;
     }
+    get isThemeStep() {
+        return !!this.selectedId && this.pickingTheme && !this.createdInfo;
+    }
     get isDetailView() {
-        return !!this.selectedId && !this.createdInfo;
+        return !!this.selectedId && !this.pickingTheme && !this.createdInfo;
     }
     get isDoneView() {
         return !!this.createdInfo;
+    }
+
+    // --------------------------------------------------- theme step (cards)
+    get themeFilterPills() {
+        const all = [{ value: '', label: 'All' }, ...THEME_FILTERS];
+        return all.map((f) => ({
+            ...f,
+            cls: this.themeFilter === f.value ? 'thm-pill is-on' : 'thm-pill'
+        }));
+    }
+    get themeStepTitle() {
+        return 'Pick a theme';
+    }
+    // One c/formThemeCard per theme (filtered). The card renders its own themed
+    // mock preview from the engine tokens — no live form engine per card.
+    get themeCards() {
+        const filter = this.themeFilter;
+        return THEME_CATALOG.filter(
+            (t) => !filter || (t.tags || []).includes(filter)
+        ).map((t) => ({
+            id: t.id,
+            label: t.label,
+            description: t.description || '',
+            skinId: t.defaultSkin,
+            selected: t.id === this.chosenThemeId
+        }));
+    }
+    handleThemeFilter(e) {
+        this.themeFilter = e.currentTarget.dataset.value || '';
+    }
+    handlePickTheme(e) {
+        this._applyTheme(e.detail && e.detail.themeId);
+    }
+    _applyTheme(themeId) {
+        if (!themeId) return;
+        this.chosenThemeId = themeId;
+        this.chosenSkinId = THEMES[themeId]?.defaultSkin || 'light';
+        this.pickingTheme = false;
+        this._pendingFocus = 'detail';
+    }
+    // Back from the theme step → the gallery.
+    handleThemeBack() {
+        this.selectedId = null;
+        this.pickingTheme = false;
+        this._visibleKeys = [];
+        this._pendingFocus = 'gallery';
+    }
+    // From details, reopen the theme step to change the theme.
+    handleChangeTheme() {
+        this.pickingTheme = true;
+        this._visibleKeys = [];
+        this._pendingFocus = 'theme';
     }
 
     // ---- Screen-2 dropdowns ----
@@ -283,6 +417,12 @@ export default class FormCreationGallery extends LightningElement {
     }
     get skinOptions() {
         return skinsForTheme(this.chosenThemeId);
+    }
+    get hasMultipleSkins() {
+        return this.skinOptions.length > 1;
+    }
+    get chosenThemeLabel() {
+        return THEMES[this.chosenThemeId]?.label || this.chosenThemeId;
     }
     get accentSwatches() {
         return ACCENT_SWATCHES.map((hex) => ({
@@ -337,20 +477,35 @@ export default class FormCreationGallery extends LightningElement {
         };
     }
 
-    get detailScale() {
-        return this.previewDevice === 'mobile' ? '0.5' : '0.42';
-    }
+    // Device preview — SAME pattern as the working FormDesigner preview: pin the
+    // frame to a REAL device width and let the form reflow via its own container
+    // queries. NO transform:scale (scale + width:calc(100%/scale) inflated the
+    // width the @container rules measured, so they never hit the mobile bp).
+    // Desktop renders at a true 1024px (the detail pane is only ~760px, below the
+    // 768 structure bp, so it would self-collapse at 100%) and the stage scrolls.
     get stageStyle() {
-        const w = this.previewDevice === 'mobile' ? '390px' : '100%';
-        return `width:${w}; max-width:100%; margin:0 auto;`;
+        if (this.previewDevice === 'mobile') {
+            return 'width:390px; max-width:100%; margin:0 auto;';
+        }
+        if (this.previewDevice === 'tablet') {
+            return 'width:834px; max-width:100%; margin:0 auto;';
+        }
+        return 'width:1024px; margin:0 auto;'; // no max-width → .d-stage scrolls
+    }
+    get previewFrameClass() {
+        return `pv-frame pv-frame_${this.previewDevice}`;
     }
     get desktopBtnClass() {
         return this.previewDevice === 'desktop' ? 'dev-btn is-on' : 'dev-btn';
+    }
+    get tabletBtnClass() {
+        return this.previewDevice === 'tablet' ? 'dev-btn is-on' : 'dev-btn';
     }
     get mobileBtnClass() {
         return this.previewDevice === 'mobile' ? 'dev-btn is-on' : 'dev-btn';
     }
     handleDesktop() { this.previewDevice = 'desktop'; }
+    handleTablet() { this.previewDevice = 'tablet'; }
     handleMobile() { this.previewDevice = 'mobile'; }
 
     // ---- object + name ----
@@ -381,15 +536,46 @@ export default class FormCreationGallery extends LightningElement {
     }
 
     handleBack() {
-        this.selectedId = null;
         this.errorMessage = '';
         this._visibleKeys = [];
+        // Scratch path went layout → theme → details, so Back returns to the
+        // theme step; template path returns straight to the gallery.
+        if (this.selectedTemplate && this.selectedTemplate.source === 'layout') {
+            this.pickingTheme = true;
+            this._pendingFocus = 'theme';
+        } else {
+            this.selectedId = null;
+            this._pendingFocus = 'gallery';
+        }
     }
     handleClose() {
         this.dispatchEvent(new CustomEvent('close'));
     }
 
     // ---- payload + create ----
+    // Editor design-state block the builder (c/formStudio) reloads from on open.
+    // MUST mirror formStudio.serializeForm()'s `studioMeta` shape — without it the
+    // builder restores nothing and the chosen Layout/Theme/Skin/Accent are lost
+    // (only the form name carries, via the Form record).
+    studioMetaFor(header) {
+        const h = header || {};
+        return {
+            layout: this.chosenLayout,
+            themeId: this.chosenThemeId,
+            skinId: this.chosenSkinId,
+            accent: this.chosenAccent || '',
+            spacing: 'comfortable',
+            header: {
+                arrangement: 'stacked',
+                title: h.title || '',
+                description: h.subtitle || h.description || '',
+                logo: h.logo || '',
+                highlight: ''
+            },
+            autofill: []
+        };
+    }
+
     buildPayload(tpl, object) {
         const skin = this.effectiveSkin;
         if (tpl.source === 'custom') {
@@ -398,6 +584,7 @@ export default class FormCreationGallery extends LightningElement {
                 const body = JSON.parse(tpl.bodyJson || '{}');
                 body.formSettings = body.formSettings || {};
                 body.formSettings.theme = { ...skin };
+                body.studioMeta = this.studioMetaFor(body.header);
                 bodyJson = JSON.stringify(body);
             } catch { /* keep original */ }
             let specJson = tpl.specJson;
@@ -414,6 +601,7 @@ export default class FormCreationGallery extends LightningElement {
         } catch { specJson = ''; }
         const body = toBodyJson(tpl, object, null);
         body.formSettings.theme = { ...skin, layout: body.formSettings.theme && body.formSettings.theme.layout };
+        body.studioMeta = this.studioMetaFor(body.header);
         return { bodyJson: JSON.stringify(body), specJson };
     }
 
@@ -425,11 +613,16 @@ export default class FormCreationGallery extends LightningElement {
         this.errorMessage = '';
         const object = this.chosenObject || '';
         const payload = this.buildPayload(tpl, object);
+        // Type-agnostic picks (the "Start from scratch" layouts) follow the host
+        // mode; real templates carry their own formType.
+        const formType = tpl.source === 'layout'
+            ? (this.isSurveyMode ? 'Survey' : 'Form')
+            : tpl.formType;
 
         createFromTemplate({
             formName: this.formName.trim(),
             objectApiName: object || null,
-            formType: tpl.formType,
+            formType,
             layoutMode: tpl.layoutMode,
             allowedAdapters: (tpl.adapters || ['Internal_Record_Page']).join(';'),
             bodyJson: payload.bodyJson,
@@ -438,6 +631,7 @@ export default class FormCreationGallery extends LightningElement {
             .then((res) => {
                 this.isCreating = false;
                 this.createdInfo = res;
+                this._pendingFocus = 'done';
                 this.dispatchEvent(
                     new CustomEvent('formcreated', {
                         detail: { formId: res.formId, versionId: res.versionId }
@@ -468,5 +662,6 @@ export default class FormCreationGallery extends LightningElement {
     handleStartOver() {
         this.selectedId = null;
         this.createdInfo = null;
+        this._pendingFocus = 'gallery';
     }
 }

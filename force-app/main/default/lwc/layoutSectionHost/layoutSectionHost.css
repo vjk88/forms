@@ -1,3 +1,17 @@
+/* Section measures its OWN width so the field grid collapses whenever the
+   section box is narrow — inside a narrow column, a mobile shell, or a scaled
+   preview — not only when the viewport is small (@media was the bug). */
+:host {
+    display: block;
+    /* width:100% is REQUIRED, not cosmetic: this host is a flex item inside
+       .stack/.track (and shellConversational's .screen). container-type:inline-size
+       applies inline-size containment, which breaks the flex default stretch and
+       collapses the host to 0px — taking the whole field grid down with it. A
+       definite width gives containment something to resolve against. */
+    width: 100%;
+    container-type: inline-size;
+}
+
 .sec {
     border-radius: var(--c-radius, 8px);
     padding: var(--c-section-padding, 1rem);
@@ -33,20 +47,14 @@
 .sec-subtle .sec-title {
     font-weight: 700;
 }
-.fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--c-space-3, 12px) var(--c-space-4, 16px);
-}
+/* SLDS grid for structure (slds-grid/slds-col/slds-size_* set in the JS, same
+   as c/formSectionRenderer); row-gap spaces wrapped rows without pushing
+   columns over 100% (gutters give the horizontal spacing). */
+.sec-body { row-gap: var(--c-space-3, 12px); }
 .field {
     display: flex;
     flex-direction: column;
     gap: var(--c-space-1, 4px);
-}
-.field.span2,
-.field.type-textarea,
-.field.type-richtext {
-    grid-column: 1 / -1;
 }
 .lbl {
     font-size: 0.78rem;
@@ -72,8 +80,42 @@
     height: calc(var(--c-control-h, 40px) * 0.55);
     border-radius: 999px;
 }
-@media (max-width: 640px) {
-    .fields {
-        grid-template-columns: 1fr;
+/* Hero element — schematic stub (preview/canvas). The live render is the real
+   thing (c/formSectionRenderer); this is the lightweight placeholder. */
+.stub-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-2, 8px);
+}
+.stub-hero__img {
+    height: 64px;
+    border-radius: var(--c-radius, 8px);
+    background: var(--c-surface-sunken, #eef1f5);
+}
+.stub-hero__h {
+    font-family: var(--c-font-display, inherit);
+    font-size: 1.2rem;
+    color: var(--c-text, #101319);
+}
+.stub-hero__s {
+    color: var(--c-label, #646b78);
+    font-size: 0.85rem;
+}
+.stub-hero__cta {
+    align-self: flex-start;
+    padding: 6px 14px;
+    border-radius: var(--c-radius, 8px);
+    background: var(--c-accent, #0176d3);
+    color: var(--c-on-accent, #fff);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Stack columns when the SECTION's own box is narrow — SLDS size classes are
+   viewport-based and can't see this. Mirrors c/formSectionRenderer. */
+@container (max-width: 480px) {
+    .sec-body > .slds-col {
+        flex: 0 0 100%;
+        max-width: 100%;
     }
 }

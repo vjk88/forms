@@ -9,8 +9,9 @@
         </div>
         <!-- Nav rail -->
         <nav class="rail" aria-label="Form sections">
-            <div class="rail-header">
-                <img lwc:if={model.header.logo} src={model.header.logo} alt="" style="max-height:32px; width:auto; display:block; margin-bottom:8px;" />
+            <div lwc:if={showRailHeader} class="rail-header">
+                <c-form-highlight message={model.header.highlight}></c-form-highlight>
+                <img lwc:if={showLogo} src={model.header.logo} alt="" style="max-height:32px; width:auto; display:block; margin-bottom:8px;" />
                 <span lwc:if={model.header.title} class="rail-title">{model.header.title}</span>
             </div>
             <ul class="rail-list" role="list">
@@ -31,22 +32,21 @@
                     </li>
                 </template>
             </ul>
-            <div class="rail-footer">
+            <div lwc:if={showRailSubmit} class="rail-footer">
                 <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
             </div>
         </nav>
         <!-- Content pane (multi-page: current page only; single: scroll) -->
-        <div class="content">
+        <div class={contentClass}>
             <template for:each={panePages} for:item="page">
                 <div key={page.pageKey} class="page-block" data-page={page.pageKey}>
                     <c-layout-zones
                         zones={page.zones}
-                        mode={mode}
-                        collapsed={model.collapsed}>
+                        mode={mode}>
                     </c-layout-zones>
                 </div>
             </template>
-            <div class="content-submit">
+            <div class={contentSubmitClass}>
                 <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
             </div>
         </div>

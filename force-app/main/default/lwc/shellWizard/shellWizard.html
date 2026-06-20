@@ -1,5 +1,16 @@
 <template>
-    <div class={wizardClass}>
+    <div class={wrapperClass}>
+        <!-- Explicit "Progress indicator" override (shell.progress): the shared
+             navigator renders the chosen display; native rail/bar are hidden. -->
+        <c-form-nav
+            lwc:if={useFormNav}
+            pages={model.pages}
+            nav={nav}
+            display-mode={navDisplayMode}
+            labels={model.labels}
+            onnavrequest={handleChildNav}
+        ></c-form-nav>
+
         <!-- Progress bar: shown in `progress` mode and when the container is
              too narrow for the per-step nodes (container query in CSS). -->
         <div
@@ -36,9 +47,11 @@
         </nav>
 
         <!-- Form sheet -->
-        <div class="sheet">
-            <header lwc:if={showHeader} class="sheet-head">
-                <img lwc:if={model.header.logo} src={model.header.logo} alt="" class="sheet-logo" />
+        <div class={sheetClass}>
+            <div lwc:if={isPaper} class="paper-rule" aria-hidden="true"></div>
+            <header lwc:if={showHeader} class={headClass}>
+                <c-form-highlight message={model.header.highlight} variant={highlightVariant}></c-form-highlight>
+                <img lwc:if={showLogo} src={model.header.logo} alt="" class="sheet-logo" />
                 <h1 lwc:if={model.header.title} class="sheet-title">{model.header.title}</h1>
                 <p lwc:if={model.header.description} class="sheet-sub">{model.header.description}</p>
             </header>
@@ -56,7 +69,7 @@
                     </div>
                 </template>
             </div>
-            <div class="sheet-footer">
+            <div class={footerClass}>
                 <button lwc:if={showBack} type="button" class="btn-ghost" onclick={fireBack}><span aria-hidden="true">←&nbsp;</span>{model.labels.back}</button>
                 <button lwc:if={showNext} type="button" class="btn-primary" onclick={fireNext}>{model.labels.next}<span aria-hidden="true">&nbsp;→</span></button>
                 <button lwc:if={showSubmit} type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>

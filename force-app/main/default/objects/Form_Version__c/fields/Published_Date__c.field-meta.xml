@@ -4,7 +4,7 @@
     <description>Timestamp when this version was published</description>
     <inlineHelpText>The date and time when this version was published</inlineHelpText>
     <label>Published Date</label>
-    <required>true</required>
+    <required>false</required>
     <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

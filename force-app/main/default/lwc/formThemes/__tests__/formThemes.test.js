@@ -106,15 +106,21 @@ describe('c-form-themes themeVars v2', () => {
 });
 
 describe('c-form-themes Theme → Skin → Accent model (v2)', () => {
-    it('ships 7 themes, each with ≥2 skins and a valid defaultSkin', () => {
-        expect(Object.keys(THEMES)).toHaveLength(7);
-        expect(THEME_OPTIONS).toHaveLength(7);
+    const STRUCTURAL = ['lightning', 'cloud', 'immersive', 'luxe', 'editorial', 'blueprint', 'kiosk'];
+
+    it('ships 7 structural themes + 30 imported presets (37), each with a valid defaultSkin', () => {
+        expect(Object.keys(THEMES)).toHaveLength(37);
+        expect(THEME_OPTIONS).toHaveLength(37);
         Object.keys(THEMES).forEach((id) => {
             const skins = SKINS[id];
-            expect(Object.keys(skins).length).toBeGreaterThanOrEqual(2);
+            expect(Object.keys(skins).length).toBeGreaterThanOrEqual(1);
             expect(skins[THEMES[id].defaultSkin]).toBeDefined();
             expect(skinsForTheme(id).length).toBe(Object.keys(skins).length);
         });
+        // the 7 structural themes keep their multi-skin moods
+        STRUCTURAL.forEach((id) =>
+            expect(Object.keys(SKINS[id]).length).toBeGreaterThanOrEqual(2)
+        );
     });
 
     it('resolves theme structure + skin mood into one merged object', () => {
@@ -137,7 +143,7 @@ describe('c-form-themes Theme → Skin → Accent model (v2)', () => {
         const bad = resolveTheme('nope', 'nope');
         const cloud = resolveTheme('cloud', 'light');
         expect(bad.font).toBe(cloud.font); // cloud structure
-        expect(resolveTheme('midnight', 'nope').skin).toBe('noir'); // theme default
+        expect(resolveTheme('immersive', 'nope').skin).toBe('prism'); // theme default
     });
 
     it('applies accent + overrides in the right order (lowest scope wins)', () => {
@@ -153,7 +159,7 @@ describe('c-form-themes Theme → Skin → Accent model (v2)', () => {
         const viaIds = tokenMap(themeVars('cloud', 'light'));
         const viaObj = tokenMap(themeVars(resolveTheme('cloud', 'light')));
         expect(viaIds).toEqual(viaObj);
-        expect(viaIds['--c-accent']).toBe('#0176d3');
+        expect(viaIds['--c-accent']).toBe('#6366f1');
     });
 
     it('honors the density arg in the 4th position (v2 signature)', () => {
@@ -169,8 +175,16 @@ describe('c-form-themes Theme → Skin → Accent model (v2)', () => {
         expect(legacy['--c-space-4']).toBe('12px'); // density still 2nd arg
     });
 
+    it('resolves raw selection object passed as a single object', () => {
+        const rawSel = { theme: 'kiosk', skin: 'spotlight', accent: '#ff5a1f' };
+        const tokens = tokenMap(themeVars(rawSel, 'comfortable'));
+        expect(tokens['--c-accent']).toBe('#ff5a1f');
+        expect(tokens['--c-label']).toBe('#d7d2ee'); // high-contrast dark theme label
+        expect(tokens['--c-control-h']).toBe('60px'); // kiosk controlScale 1.5 -> 40 * 1.5
+    });
+
     it('dark skins flip the chrome text tokens', () => {
-        const dark = tokenMap(themeVars('midnight', 'noir'));
+        const dark = tokenMap(themeVars('immersive', 'noir'));
         expect(dark['--c-text']).toBe('#f3f0ff');
         expect(dark['--c-mesh-1']).toBe('#7a5cff');
     });
@@ -236,5 +250,117 @@ describe('c-form-themes four-lane palette + OKLCH ramps (T3.2)', () => {
         const m = tokenMap(themeVars('cloud', 'light'));
         expect(m['--c-secondary']).toBeUndefined();
         expect(m['--c-tertiary']).toBeUndefined();
+    });
+});
+
+describe('c-form-themes explicit-override layer + enum-or-raw keys (Phase 0)', () => {
+    const HEX = /^#[0-9a-f]{6}$/i;
+
+    it('emits explicit chrome values when present and skips them when absent', () => {
+        const raw = tokenMap(
+            themeVars('cloud', 'light', {
+                overrides: {
+                    text: '#101820',
+                    textMuted: '#5a6472',
+                    borderColor: '#c8ccd4',
+                    borderLight: '#e6e9ef',
+                    headerText: '#0a0f14',
+                    headerTextMuted: '#445',
+                    accentText: '#fffafa',
+                    cardBorder: '2px solid #c8ccd4'
+                }
+            })
+        );
+        expect(raw['--c-text']).toBe('#101820');
+        expect(raw['--c-text-weak']).toBe('#5a6472'); // textMuted → both weak…
+        expect(raw['--c-text-meta']).toBe('#5a6472'); // …and meta
+        expect(raw['--c-border']).toBe('#c8ccd4');
+        expect(raw['--c-border-light']).toBe('#e6e9ef');
+        expect(raw['--c-header-text']).toBe('#0a0f14');
+        expect(raw['--c-header-text-weak']).toBe('#445');
+        expect(raw['--c-on-accent']).toBe('#fffafa');
+        expect(raw['--c-card-border']).toBe('2px solid #c8ccd4');
+    });
+
+    it('cardShadow + radius accept an enum OR a raw value (one key, dual-mode)', () => {
+        const rawShadow = tokenMap(
+            themeVars('cloud', 'light', { overrides: { cardShadow: '4px 4px 0px #000000' } })
+        );
+        expect(rawShadow['--c-card-shadow']).toBe('4px 4px 0px #000000');
+        const enumShadow = tokenMap(
+            themeVars('cloud', 'light', { overrides: { cardShadow: 'strong' } })
+        );
+        expect(enumShadow['--c-card-shadow']).toBe('0 24px 60px -20px rgba(0, 0, 0, 0.55)');
+
+        const rawR = tokenMap(themeVars('cloud', 'light', { overrides: { radius: '11px' } }));
+        expect(rawR['--c-radius']).toBe('11px');
+        expect(rawR['--c-radius-card']).toBe('11px');
+        const enumR = tokenMap(themeVars('cloud', 'light', { overrides: { radius: 'pill' } }));
+        expect(enumR['--c-radius']).toBe('9999px');
+    });
+
+    it('borderLight defaults to borderColor when omitted (old SLDS-border behavior)', () => {
+        const m = tokenMap(themeVars('cloud', 'light', { overrides: { borderColor: '#abcabc' } }));
+        expect(m['--c-border']).toBe('#abcabc');
+        expect(m['--c-border-light']).toBe('#abcabc');
+    });
+
+    it('explicit text beats the palette-seeded neutral ramp (explicit > palette)', () => {
+        const seeded = tokenMap(themeVars('cloud', 'light', { palette: { neutral: '#79767d' } }));
+        expect(seeded['--c-text']).toMatch(HEX); // palette seeds a derived text
+        const overridden = tokenMap(
+            themeVars('cloud', 'light', {
+                palette: { neutral: '#79767d' },
+                overrides: { text: '#000000' }
+            })
+        );
+        expect(overridden['--c-text']).toBe('#000000'); // explicit wins
+    });
+
+    it('explicit chrome beats the dark-skin flip (explicit > dark default)', () => {
+        const dark = tokenMap(themeVars('immersive', 'noir'));
+        expect(dark['--c-text']).toBe('#f3f0ff'); // dark default
+        const overridden = tokenMap(
+            themeVars('immersive', 'noir', {
+                overrides: { text: '#abcabc', borderColor: '#222222' }
+            })
+        );
+        expect(overridden['--c-text']).toBe('#abcabc');
+        expect(overridden['--c-border']).toBe('#222222');
+    });
+});
+
+describe('c-form-themes 30 imported preset themes', () => {
+    it('Neo-Brutalism resolves its flat look (raw radius/shadow/border/accent-text)', () => {
+        const m = tokenMap(themeVars('neoBrutalism', 'default'));
+        expect(m['--c-radius']).toBe('0px');
+        expect(m['--c-card-shadow']).toBe('4px 4px 0px #000000');
+        expect(m['--c-card-border']).toBe('2px solid #000000');
+        expect(m['--c-text']).toBe('#000000');
+        expect(m['--c-accent']).toBe('#d946ef');
+        expect(m['--c-on-accent']).toBe('#ffffff');
+        expect(m['--c-page-bg']).toBe('#fef08a');
+    });
+
+    it('Tokyo Midnight pins a dark accent-text for legibility on cyan', () => {
+        const m = tokenMap(themeVars('tokyo', 'default'));
+        expect(m['--c-accent']).toBe('#06b6d4');
+        expect(m['--c-on-accent']).toBe('#0c0f1d'); // explicit, not white
+        expect(m['--c-text']).toBe('#e2e8f0');
+    });
+
+    it('glass presets get the blur token and a background image path', () => {
+        const m = tokenMap(themeVars('sunsetDunes', 'default'));
+        expect(m['--c-glass-blur']).toBe('26px');
+        expect(m['--c-page-bg']).toContain('/resource/formThemeAssets/sunset.jpg');
+        expect(m['--c-card-bg']).toBe('rgba(255,255,255,0.78)');
+    });
+
+    it('Nordic ships a dark skin variant', () => {
+        const light = tokenMap(themeVars('nordic', 'light'));
+        const dark = tokenMap(themeVars('nordic', 'dark'));
+        expect(light['--c-page-bg']).toBe('#f3f4f6');
+        expect(dark['--c-page-bg']).toBe('#0f172a');
+        expect(dark['--c-text']).toBe('#f8fafc');
     });
 });

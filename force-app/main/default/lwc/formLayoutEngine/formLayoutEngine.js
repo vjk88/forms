@@ -54,9 +54,13 @@ export default class FormLayoutEngine extends LightningElement {
     @api skin;            // theme spec (c/formThemes shape)
     @api mode = 'live';   // live | preview | canvas
     @api previewScale;    // 0.1–1 (preview mode)
+    @api previewWidth;    // CSS width (e.g. '390px') — render at a TRUE width so
+                          // container queries see it; scale only shrinks visually.
     @api formTitle;
     @api formDescription;
     @api formLogo;        // header logo URL (optional)
+    @api formArrangement; // header layout: stacked|inline|logoBeside|textOnly
+    @api formHighlight;   // header highlight banner text (optional)
     @api labels;          // {submit,next,back,…} form-configurable shell copy
     @api proposedSpec;    // ghost preview (copilot) — takes render precedence
 
@@ -74,6 +78,12 @@ export default class FormLayoutEngine extends LightningElement {
 
     @track shellCtor;
     @track loadError;
+    // _navState is a plain object built lazily inside get model(); reassigning it
+    // doesn't re-render on its own, so nav actions bump this reactive tick to force
+    // navView (and the shell's `nav` prop) to recompute. Without it, Next/Back move
+    // the state but the view never updates in modes with no external re-render driver
+    // (e.g. the builder preview).
+    @track _navTick = 0;
     _spec;
     _navState;
     _loadedArchetype;
@@ -119,9 +129,35 @@ export default class FormLayoutEngine extends LightningElement {
     get rootStyle() {
         const spec = this.effectiveSpec;
         let style = themeVars(this.skin || {}, spec && spec.density);
-        if (this.mode === 'preview' && this.previewScale) {
-            const s = Math.min(Math.max(Number(this.previewScale), 0.1), 1);
-            style += `; transform: scale(${s}); transform-origin: top left; width: calc(100% / ${s});`;
+        // Apply preview sizing for the dedicated preview mode OR whenever a
+        // previewWidth is supplied (the builder embeds this engine inside a LIVE
+        // c/formViewer but still drives the device-width toggle through it).
+        if (this.mode === 'preview' || this.previewWidth) {
+            // Shells fill their host (min-height:100%, viewport-tall rails) so a
+            // LIVE form reaches the bottom of the page. In the builder preview the
+            // host pane is taller than the content, which strands flex-pinned /
+            // centered action buttons far below (or off-screen). Tell the shells to
+            // size to content instead — they read these vars (default to the
+            // full-height live behavior when unset).
+            style += '; --c-shell-min-h: auto; --c-shell-rail-h: auto;';
+            const s = this.previewScale
+                ? Math.min(Math.max(Number(this.previewScale), 0.1), 1)
+                : 1;
+            if (this.previewWidth) {
+                // TRUE-width mode: render the layout at its real width so the
+                // shells' @container queries measure it honestly, then shrink it
+                // purely visually with scale (no width inflation). This is what a
+                // mobile preview MUST use — calc(100%/scale) would lie.
+                style += `; width: ${this.previewWidth};`;
+                if (s !== 1) {
+                    style += ` transform: scale(${s}); transform-origin: top left;`;
+                }
+            } else if (this.previewScale) {
+                // Fit-to-box mode (desktop thumbnails): inflate then shrink so the
+                // wide layout fills the smaller preview pane. These previews aren't
+                // meant to collapse, so the inflated width is acceptable here.
+                style += `; transform: scale(${s}); transform-origin: top left; width: calc(100% / ${s});`;
+            }
         }
         return style;
     }
@@ -180,7 +216,9 @@ export default class FormLayoutEngine extends LightningElement {
             header: {
                 title: this.formTitle,
                 description: this.formDescription,
-                logo: this.formLogo
+                logo: this.formLogo,
+                arrangement: this.formArrangement || 'stacked',
+                highlight: this.formHighlight || ''
             },
             labels: {
                 ...DEFAULT_LABELS,
@@ -200,7 +238,9 @@ export default class FormLayoutEngine extends LightningElement {
     }
 
     get navView() {
-        return this._navState ? toView(this._navState) : null;
+        // Read _navTick so this getter recomputes when nav advances (the navState
+        // field itself isn't reactive — see the _navTick note above).
+        return this._navTick >= 0 && this._navState ? toView(this._navState) : null;
     }
 
     // --------------------------------------------------------------- events
@@ -214,6 +254,7 @@ export default class FormLayoutEngine extends LightningElement {
         if (dir === 'next') this._navState = next(this._navState, gate);
         else if (dir === 'back') this._navState = back(this._navState);
         else if (pageKey) this._navState = goTo(this._navState, pageKey, gate);
+        this._navTick++;
         const v = toView(this._navState);
         this.dispatchEvent(new CustomEvent('pagechange', { detail: v }));
     }
@@ -223,6 +264,7 @@ export default class FormLayoutEngine extends LightningElement {
     goToPage(pageKey) {
         if (!this._navState) return;
         this._navState = goTo(this._navState, pageKey);
+        this._navTick++;
         const v = toView(this._navState);
         this.dispatchEvent(new CustomEvent('pagechange', { detail: v }));
     }

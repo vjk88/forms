@@ -8,7 +8,7 @@
     display: block;
 }
 .chrome-fullbleed {
-    min-height: 100%;
+    min-height: var(--c-shell-min-h, 100%);
     background: var(--c-page-bg, transparent);
     display: flex;
     align-items: center;
@@ -81,10 +81,35 @@
     margin: 0;
     color: var(--c-text-weak, #646b78);
 }
-/* hero: bigger, heavier — the ex-immersive look */
-.head-hero .title { font-size: 1.9rem; font-weight: 800; line-height: 1.15; }
+/* hero: a full banner painted with the header background — a solid color OR an
+   uploaded image (which carries its own scrim in the token) — with contrast-
+   checked header text layered on top. */
+.head-hero {
+    background: var(--c-header-bg, var(--c-accent, #1e3a8a)) center / cover no-repeat;
+    color: var(--c-header-text, #ffffff);
+    padding: var(--c-space-6, 32px) var(--c-space-5, 24px);
+    border-radius: var(--c-radius-card, 12px);
+    margin-bottom: var(--c-space-4, 16px);
+}
+.head-hero .title { font-size: 1.9rem; font-weight: 800; line-height: 1.15; color: var(--c-header-text, #ffffff); }
+.head-hero .desc { color: var(--c-header-text, #ffffff); opacity: 0.92; }
 /* minimal: compact header, used by paginated/nav layouts */
 .head-minimal .title { font-size: 1.3rem; }
+
+/* ---- Header arrangement (editor Header panel: stacked|inline|logoBeside|textOnly) ---- */
+.head.arrange-logoBeside {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--c-space-3, 12px);
+    align-items: center;
+}
+.head.arrange-logoBeside .logo { grid-row: 1 / span 2; align-self: start; }
+.head.arrange-inline {
+    flex-flow: row wrap;
+    align-items: baseline;
+    column-gap: var(--c-space-3, 12px);
+    row-gap: var(--c-space-1, 4px);
+}
 
 /* ---- Pages ---- */
 .page {

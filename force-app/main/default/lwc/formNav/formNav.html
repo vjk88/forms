@@ -1,0 +1,61 @@
+<template>
+    <!-- Progress bar (default) -->
+    <div
+        lwc:if={isProgress}
+        class="form-nav fn-progress"
+        role="progressbar"
+        aria-valuemin="1"
+        aria-valuenow={progressNow}
+        aria-valuemax={progressTotal}
+        aria-label={stepLabel}
+    >
+        <div lwc:if={showBarText} class="fn-text">{stepLabel}</div>
+        <div class="fn-track">
+            <div class="fn-fill" style={progressStyle}></div>
+        </div>
+    </div>
+
+    <!-- Horizontal stepper -->
+    <nav lwc:if={isHorizontal} class="form-nav fn-steps" aria-label="Form steps">
+        <template for:each={stepItems} for:item="s">
+            <button
+                key={s.key}
+                class={s.stepClass}
+                type="button"
+                data-key={s.key}
+                onclick={handleStep}
+                disabled={s.disabled}
+                aria-current={s.ariaCurrent}
+            >
+                <span class="fn-num">{s.num}</span>
+                <span class="fn-label">{s.label}</span>
+                <span lwc:if={s.isDone} class="fn-check" aria-hidden="true">✓</span>
+            </button>
+        </template>
+    </nav>
+
+    <!-- Step dots -->
+    <nav lwc:if={isDots} class="form-nav fn-dots" aria-label="Form steps">
+        <template for:each={stepItems} for:item="s">
+            <button
+                key={s.key}
+                class={s.stepClass}
+                type="button"
+                data-key={s.key}
+                onclick={handleStep}
+                disabled={s.disabled}
+                aria-current={s.ariaCurrent}
+                aria-label={s.label}
+                title={s.label}
+            >
+                <span class="fn-dot" aria-hidden="true"></span>
+            </button>
+        </template>
+    </nav>
+
+    <!-- Fractional (text only) -->
+    <div lwc:if={isFraction} class="form-nav fn-fraction" aria-label={stepLabel}>
+        <span class="fn-frac-num">{fractionText}</span>
+        <span lwc:if={currentTitle} class="fn-frac-label">— {currentTitle}</span>
+    </div>
+</template>

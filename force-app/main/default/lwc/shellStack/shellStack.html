@@ -3,8 +3,9 @@
         <article class={surfaceClass}>
             <div lwc:if={isPaper} class="paper-rule" aria-hidden="true"></div>
             <header lwc:if={showHeader} class={headClass}>
+                <c-form-highlight message={model.header.highlight} variant={highlightVariant}></c-form-highlight>
                 <img
-                    lwc:if={model.header.logo}
+                    lwc:if={showLogo}
                     src={model.header.logo}
                     alt=""
                     class="logo"

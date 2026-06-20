@@ -1,5 +1,5 @@
 <template>
-    <div class="viewer">
+    <div class="viewer" style={viewerStyle}>
         <template lwc:if={isLoading}>
             <div class="viewer-state">
                 <lightning-spinner alternative-text="Loading form" size="medium"></lightning-spinner>
@@ -53,8 +53,12 @@
                 elements={engineElements}
                 skin={skin}
                 mode="live"
+                preview-width={previewWidth}
                 form-title={headerTitle}
                 form-description={headerDescription}
+                form-logo={headerLogo}
+                form-arrangement={headerArrangement}
+                form-highlight={headerHighlight}
                 labels={engineLabels}
                 object-api-name={primaryObject}
                 record-id={effectiveRecordId}

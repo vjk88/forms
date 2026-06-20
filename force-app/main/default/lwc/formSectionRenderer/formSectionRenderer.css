@@ -1,5 +1,22 @@
 :host {
     display: block;
+    /* width:100% is REQUIRED: as a flex item (shellAccordion/shellConversational,
+       .stack/.track) container-type:inline-size breaks flex stretch and collapses
+       the host to 0px. A definite width keeps inline-size containment resolvable.
+       Section then measures its OWN width (container query) so fields stack when
+       the box is narrow — a Lightning region, a mobile shell, a scaled preview. */
+    width: 100%;
+    container-type: inline-size;
+}
+
+/* SLDS size classes (slds-medium-size_1-of-2 …) reflow on the VIEWPORT, which
+   misses the cases above. Force the columns full-width when the section's box
+   is narrow; higher specificity than the SLDS size class, so no !important. */
+@container (max-width: 480px) {
+    .sec-body > .slds-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
 }
 
 /* Section chrome — token-driven so every theme/skin restyles it. The
@@ -16,12 +33,58 @@
     background: transparent;
     border: 0;
     box-shadow: none;
-    padding: var(--c-space-2, 0.5rem) 0;
+    /* Borderless, but the "Section inner padding" control still drives the block
+       padding — only the inline padding is zeroed for the frameless look. */
+    padding-block: var(--c-section-padding, var(--c-space-2, 0.5rem));
+    padding-inline: 0;
 }
 
 .sec-style-outline {
     background: transparent;
     box-shadow: none;
+}
+
+/* Subtle — a soft filled panel, no border. */
+.sec-style-subtle {
+    background: var(--c-surface-sunken, #f6f7f9);
+    border: 0;
+    box-shadow: none;
+}
+
+/* Plain — a container with no frame, so the form reads as headed groups of
+   fields on the page. Inner-padding control drives the block padding; inline is
+   zeroed so the fields sit flush with the page. */
+.sec-style-plain {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding-block: var(--c-section-padding, var(--c-space-3, 0.75rem));
+    padding-inline: 0;
+}
+
+/* Card / Boxed — for standalone content blocks that opt into a frame. */
+.sec-style-card {
+    background: var(--c-card-bg, #ffffff);
+    border: 1px solid var(--c-card-border, var(--c-border-light, #e5e7eb));
+    box-shadow: var(--c-card-shadow, none);
+}
+.sec-style-boxed {
+    background: var(--c-card-bg, #ffffff);
+    border: 2px solid var(--c-border, #cbd5e1);
+    box-shadow: none;
+}
+
+/* Empty space — occupies its grid cell(s) at roughly a field's height so it
+   visibly holds the column open. Invisible (no border/bg) by design. */
+.el-emptyspace {
+    min-height: var(--c-input-height, 2.5rem);
+}
+
+/* Display text — give it breathing room so it aligns with field rows instead of
+   sitting flush at the very top of its cell. */
+.el-text {
+    display: block;
+    padding: var(--c-space-2, 0.5rem) 0;
 }
 
 .sec-header {
@@ -41,6 +104,26 @@
     font-weight: 700;
     color: var(--c-text, #0b1320);
     margin: 0;
+}
+.sec-headtext { flex: 1; min-width: 0; }
+/* Section description — a quieter line under the title. */
+.sec-desc {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--c-text-muted, #64748b);
+}
+/* Collapsible section header — whole row is the toggle. */
+.sec-header_toggle {
+    cursor: pointer;
+    user-select: none;
+}
+.sec-chevron {
+    --slds-c-icon-color-foreground-default: var(--c-text-muted, #64748b);
+    flex: 0 0 auto;
+}
+.sec-content.is-collapsed {
+    display: none;
 }
 
 .den-compact .sec-body {
@@ -87,6 +170,14 @@
 
 .img-large {
     max-height: 420px;
+}
+
+/* Fit to block — the image fills the full width of its cell/block (no max-height
+   cap), so it sizes to whatever column it sits in. */
+.img-fit {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
 .el-callout {
@@ -151,7 +242,95 @@
     margin: 0;
 }
 
+/* Selected files (create-mode upload) */
+.el-file-list {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.el-file-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--c-border, #e5e7eb);
+    border-radius: var(--c-radius-sm, 6px);
+    background: var(--c-surface-2, #f9fafb);
+    font-size: 0.85rem;
+}
+.el-file-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--c-text, #1f2937);
+}
+.el-file-x {
+    flex: 0 0 auto;
+    appearance: none;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--c-text-weak, #6b7280);
+    padding: 0 0.25rem;
+}
+.el-file-x:hover {
+    color: var(--c-danger, #b91c1c);
+}
+
 .sec-repeater {
     display: block;
     margin-top: var(--c-space-4, 1rem);
+}
+
+/* Hero element (HEADER_HERO_DND_SPEC): inline media + text + optional CTA.
+   Token-driven so every theme/skin restyles it. */
+.el-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-3, 0.75rem);
+}
+.el-hero__img {
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: var(--c-radius, 8px);
+}
+.el-hero__headline {
+    margin: 0;
+    font-family: var(--c-font-display, inherit);
+    font-size: 1.6rem;
+    line-height: 1.15;
+    color: var(--c-text, #0b1320);
+    text-wrap: balance;
+}
+.el-hero__subtext {
+    margin: 0;
+    color: var(--c-text-weak, #6b7280);
+    max-width: 60ch;
+}
+.el-hero__cta {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    height: var(--c-control-h, 40px);
+    padding: 0 var(--c-space-5, 1.25rem);
+    border: 0;
+    border-radius: var(--c-radius, 8px);
+    background: var(--c-submit-bg, var(--c-accent, #2563eb));
+    color: var(--c-on-accent, #fff);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+.el-hero__cta:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(37, 99, 235, 0.25));
 }

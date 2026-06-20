@@ -1,9 +1,15 @@
-:host { display: block; }
+:host {
+    display: block;
+    /* Measures its OWN width so the narrow-width rules below fire inside a
+       column / scaled preview, not just on a small viewport (768px = app-wide
+       STRUCTURE tier; see layoutZones.css). */
+    container-type: inline-size;
+}
 
 .conv {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    min-height: var(--c-shell-min-h, 100%);
     background: var(--c-page-bg, #faf7f2);
     padding: 0;
     outline: none; /* focus managed programmatically */
@@ -25,6 +31,31 @@
 .conv-sub {
     margin: 0;
     color: var(--c-text-weak, #646b78);
+}
+/* hero: full banner (header bg color or uploaded image w/ scrim) + contrast text */
+.conv-head.head-hero {
+    background: var(--c-header-bg, var(--c-accent, #1e3a8a)) center / cover no-repeat;
+    color: var(--c-header-text, #ffffff);
+    padding: var(--c-space-6, 32px) var(--c-space-5, 24px);
+    border-radius: var(--c-radius-card, 12px);
+}
+.head-hero .conv-title { color: var(--c-header-text, #ffffff); font-size: 1.5rem; font-weight: 800; }
+.head-hero .conv-sub { color: var(--c-header-text, #ffffff); opacity: 0.92; }
+/* minimal: condensed header */
+.head-minimal .conv-title { font-size: 1.05rem; }
+.conv-head.arrange-logoBeside {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--c-space-3, 12px);
+    align-items: center;
+}
+.conv-head.arrange-logoBeside img { grid-row: 1 / span 2; align-self: start; }
+.conv-head.arrange-inline {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: baseline;
+    column-gap: var(--c-space-3, 12px);
+    row-gap: var(--c-space-1, 4px);
 }
 
 /* ── Progress bar + counter ── */
@@ -137,6 +168,13 @@ kbd {
     border-radius: 4px;
     padding: 1px 5px;
     border: 1px solid var(--c-border, #d8dde6);
+}
+
+/* Narrow / touch container: the "press Enter" keyboard hint is meaningless
+   without a keyboard — hide it and give the OK button a real tap target. */
+@container (max-width: 768px) {
+    .hint { display: none; }
+    .ok-btn { min-height: var(--c-tap-min, 44px); }
 }
 
 /* ── Final submit ── */

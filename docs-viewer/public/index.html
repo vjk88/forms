@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroMD | Premium Markdown & File Viewer</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- PrismJS for syntax highlighting (Tomorrow Night Theme) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar: Directory Tree & Controls -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-area">
+          <div class="logo-icon">
+            <i data-lucide="book-open"></i>
+          </div>
+          <span class="logo-text">Aero<span>MD</span></span>
+        </div>
+        <button id="theme-toggle-btn" class="icon-btn" title="Toggle Theme">
+          <i data-lucide="sun" class="sun-icon"></i>
+          <i data-lucide="moon" class="moon-icon"></i>
+        </button>
+      </div>
+
+      <!-- Path Input Form -->
+      <div class="path-section">
+        <label for="folder-path-input" class="section-label">Local Folder Path</label>
+        <div class="input-group">
+          <button id="browse-btn" class="icon-btn-inline" title="Select Folder Dialog">
+            <i data-lucide="folder-open"></i>
+          </button>
+          <input type="text" id="folder-path-input" placeholder="e.g. C:\Users\Username\Documents" autocomplete="off" />
+          <button id="favorite-btn" class="icon-btn-inline-right" title="Bookmark Folder">
+            <i data-lucide="star"></i>
+          </button>
+          <button id="scan-btn" class="primary-btn" title="Scan Folder">
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Section -->
+      <div class="search-section">
+        <div class="search-group">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-input" placeholder="Filter files by name..." />
+          <button id="clear-search-btn" class="clear-btn" style="display:none;">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bookmarked Folders Section -->
+      <div class="favorites-section" id="favorites-section" style="display: none;">
+        <div class="section-header">
+          <span class="section-label">Favorites</span>
+        </div>
+        <div id="favorites-list" class="favorites-list">
+          <!-- Dynamically generated bookmarks -->
+        </div>
+      </div>
+
+      <!-- Directory Tree Area -->
+      <div class="tree-section">
+        <div class="section-header">
+          <span class="section-label">Explorer</span>
+          <span id="file-count" class="badge">0 files</span>
+        </div>
+        <div id="tree-container" class="tree-container">
+          <div class="empty-tree-state">
+            <i data-lucide="folder-open" class="state-icon"></i>
+            <p>Enter a folder path above to begin exploring.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Breadcrumbs and Action Header -->
+      <header class="workspace-header">
+        <div class="header-left">
+          <button id="toggle-sidebar-btn" class="icon-btn sidebar-toggle" title="Toggle Sidebar">
+            <i data-lucide="menu"></i>
+          </button>
+          <div id="breadcrumbs" class="breadcrumbs">
+            <span class="breadcrumb-item active">Select a file from the explorer</span>
+          </div>
+        </div>
+        <div class="header-right" id="file-meta-container" style="display: none;">
+          <span id="read-time-badge" class="meta-badge">
+            <i data-lucide="clock"></i>
+            <span id="read-time-text">0 min read</span>
+          </span>
+          <span id="file-size-badge" class="meta-badge">
+            <i data-lucide="hard-drive"></i>
+            <span id="file-size-text">0 KB</span>
+          </span>
+          <div class="text-size-controls">
+            <button id="decrease-font" class="text-size-btn" title="Decrease font size">-</button>
+            <span class="text-size-label">Aa</span>
+            <button id="increase-font" class="text-size-btn" title="Increase font size">+</button>
+          </div>
+          <button id="edit-btn" class="icon-btn" title="Edit File" style="margin-left: 0.5rem;">
+            <i data-lucide="edit-3"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Reader -->
+      <div class="content-container">
+        
+        <!-- Welcome Screen -->
+        <div id="welcome-view" class="welcome-view">
+          <div class="welcome-card">
+            <div class="welcome-icon-wrapper">
+              <i data-lucide="file-text" class="welcome-icon"></i>
+            </div>
+            <h1>Welcome to AeroMD</h1>
+            <p class="subtitle">A premium local directory and markdown rendering tool.</p>
+            <div class="welcome-features">
+              <div class="feature-item">
+                <i data-lucide="folder" class="feature-icon"></i>
+                <div class="feature-info">
+                  <h3>Interactive File Tree</h3>
+                  <p>Browse directories, toggle folders, and filter files instantly.</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <i data-lucide="code" class="feature-icon"></i>
+                <div class="feature-info">
+                  <h3>Rich Markdown Rendering</h3>
+                  <p>Styled code highlighting, tables, callouts, and clean formatting.</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <i data-lucide="compass" class="feature-icon"></i>
+                <div class="feature-info">
+                  <h3>Document Outline</h3>
+                  <p>Auto-generated table of contents for seamless document navigation.</p>
+                </div>
+              </div>
+            </div>
+            <div class="quick-start">
+              <p>Type a directory path in the sidebar input and click scan to load your local files.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Markdown Viewer Pane -->
+        <div id="viewer-view" class="viewer-view" style="display: none;">
+          <article id="markdown-body" class="markdown-body">
+            <!-- Rendered HTML goes here -->
+          </article>
+        </div>
+
+        <!-- Markdown Editor Pane -->
+        <div id="editor-view" class="editor-view" style="display: none;">
+          <div class="editor-toolbar">
+            <button id="save-btn" class="action-btn save-btn" title="Save Changes">
+              <i data-lucide="check"></i> Save
+            </button>
+            <button id="cancel-btn" class="action-btn cancel-btn" title="Cancel Changes">
+              <i data-lucide="x"></i> Cancel
+            </button>
+          </div>
+          <textarea id="editor-textarea" placeholder="Start typing your Markdown here..." spellcheck="false"></textarea>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Document Outline / TOC Sidebar (Right Side) -->
+    <aside class="outline-sidebar" id="outline-sidebar" style="display: none;">
+      <div class="outline-header">
+        <i data-lucide="align-left"></i>
+        <span>On This Page</span>
+      </div>
+      <div id="toc-container" class="toc-container">
+        <!-- Generated links go here -->
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Third-party Markdown parser and Prism syntax highlighter -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <!-- Prism components for markup, css, javascript, clike, java, python, bash, json, sql, xml, yaml -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+  <!-- App logic -->
+  <script src="app.js"></script>
+</body>
+</html>

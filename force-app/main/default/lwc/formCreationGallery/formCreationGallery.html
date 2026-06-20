@@ -4,7 +4,7 @@
         <template lwc:if={isGalleryView}>
             <header class="g-head">
                 <div>
-                    <h1 class="g-title">Create a form</h1>
+                    <h1 class="g-title">{gTitle}</h1>
                     <p class="g-sub">Start from a ready-made template, or pick a layout and make it your own.</p>
                 </div>
                 <button class="g-close" type="button" title="Close" onclick={handleClose}>
@@ -13,12 +13,14 @@
             </header>
 
             <!-- Entry mode toggle -->
-            <div class="entry-bar" role="tablist">
-                <button class={templateTabClass} type="button" role="tab" onclick={handleEntryTemplate}>
+            <div class="entry-bar" role="tablist" aria-label="How to start">
+                <button class={templateTabClass} type="button" role="tab"
+                    aria-selected={templateSelected} onclick={handleEntryTemplate}>
                     <lightning-icon icon-name="utility:apps" size="x-small"></lightning-icon>
                     <span>Start from a template</span>
                 </button>
-                <button class={scratchTabClass} type="button" role="tab" onclick={handleEntryScratch}>
+                <button class={scratchTabClass} type="button" role="tab"
+                    aria-selected={scratchSelected} onclick={handleEntryScratch}>
                     <lightning-icon icon-name="utility:layout" size="x-small"></lightning-icon>
                     <span>Start from scratch</span>
                 </button>
@@ -28,6 +30,7 @@
             <div lwc:if={isTemplateMode} class="card-grid">
                 <template for:each={templateCards} for:item="card">
                     <div key={card.id} class="t-card" role="button" tabindex="0"
+                        aria-label={card.ariaLabel}
                         data-id={card.id} onclick={handlePick} onkeydown={handlePickKey}>
                         <div class="t-thumb" aria-hidden="true">
                             <c-form-layout-engine lwc:if={card.showPreview}
@@ -60,14 +63,12 @@
                         <div class="card-grid">
                             <template for:each={grp.cards} for:item="card">
                                 <div key={card.id} class="t-card" role="button" tabindex="0"
+                                    aria-label={card.ariaLabel}
                                     data-id={card.id} onclick={handlePick} onkeydown={handlePickKey}>
-                                    <div class="t-thumb" aria-hidden="true">
-                                        <c-form-layout-engine lwc:if={card.showPreview}
-                                            spec={card.spec} pages={card.pages} sections={card.sections}
-                                            elements={card.elements} skin={card.skin} mode="preview"
-                                            preview-scale={card.previewScale} form-title={card.title}
-                                        ></c-form-layout-engine>
-                                        <div lwc:else class="t-thumb-skel"></div>
+                                    <div class="t-thumb t-thumb-mock" aria-hidden="true">
+                                        <c-layout-thumb layout={card.archetype}
+                                            theme-id={card.themeId} skin-id={card.skinId}
+                                        ></c-layout-thumb>
                                     </div>
                                     <div class="t-meta">
                                         <div class="t-meta-top">
@@ -81,6 +82,43 @@
                         </div>
                     </section>
                 </template>
+            </div>
+        </template>
+
+        <!-- ======================= THEME STEP (scratch path) ======================= -->
+        <template lwc:elseif={isThemeStep}>
+            <header class="d-head">
+                <button class="d-back thm-back" type="button" onclick={handleThemeBack}>
+                    <lightning-icon icon-name="utility:back" size="x-small" alternative-text="Back"></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button class="g-close" type="button" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" size="x-small" alternative-text="Close"></lightning-icon>
+                </button>
+            </header>
+
+            <div class="thm-wrap">
+                <div class="thm-head">
+                    <h1 class="thm-title">{themeStepTitle}</h1>
+                    <p class="thm-sub">Each preview uses your chosen layout — fine-tune skin &amp; accent next.</p>
+                </div>
+
+                <div class="thm-filters" role="group" aria-label="Filter themes">
+                    <template for:each={themeFilterPills} for:item="pill">
+                        <button key={pill.value} class={pill.cls} type="button"
+                            data-value={pill.value} onclick={handleThemeFilter}>{pill.label}</button>
+                    </template>
+                </div>
+
+                <div class="thm-grid">
+                    <template for:each={themeCards} for:item="card">
+                        <c-form-theme-card key={card.id}
+                            theme-id={card.id} skin-id={card.skinId} accent={chosenAccent}
+                            label={card.label} description={card.description}
+                            selected={card.selected} onselect={handlePickTheme}
+                        ></c-form-theme-card>
+                    </template>
+                </div>
             </div>
         </template>
 
@@ -118,10 +156,19 @@
                     <lightning-combobox class="d-input" label="Layout"
                         value={chosenLayout} options={layoutOptions}
                         onchange={handleLayout}></lightning-combobox>
-                    <lightning-combobox class="d-input" label="Theme"
-                        value={chosenThemeId} options={themeOptions}
-                        onchange={handleTheme}></lightning-combobox>
-                    <lightning-combobox class="d-input" label="Skin"
+
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Theme</span>
+                        <button class="d-theme-chip" type="button" onclick={handleChangeTheme}>
+                            <span class="d-theme-name">{chosenThemeLabel}</span>
+                            <span class="d-theme-change">
+                                <lightning-icon icon-name="utility:image" size="xx-small"></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
+
+                    <lightning-combobox lwc:if={hasMultipleSkins} class="d-input" label="Skin"
                         value={chosenSkinId} options={skinOptions}
                         onchange={handleSkin}></lightning-combobox>
 
@@ -146,7 +193,7 @@
                     </div>
 
                     <div class="d-actions">
-                        <lightning-button label="Create form" variant="brand"
+                        <lightning-button label={createLabel} variant="brand"
                             disabled={createDisabled} onclick={handleCreate}></lightning-button>
                         <lightning-spinner lwc:if={isCreating} size="small"
                             alternative-text="Creating"></lightning-spinner>
@@ -167,17 +214,20 @@
                             <button class={desktopBtnClass} type="button" onclick={handleDesktop} title="Desktop">
                                 <lightning-icon icon-name="utility:desktop" size="x-small" alternative-text="Desktop"></lightning-icon>
                             </button>
+                            <button class={tabletBtnClass} type="button" onclick={handleTablet} title="Tablet">
+                                <lightning-icon icon-name="utility:tablet_portrait" size="x-small" alternative-text="Tablet"></lightning-icon>
+                            </button>
                             <button class={mobileBtnClass} type="button" onclick={handleMobile} title="Mobile">
                                 <lightning-icon icon-name="utility:phone_portrait" size="x-small" alternative-text="Mobile"></lightning-icon>
                             </button>
                         </div>
                     </div>
                     <div class="d-stage" aria-hidden="true">
-                        <div style={stageStyle}>
+                        <div class={previewFrameClass} style={stageStyle}>
                             <c-form-layout-engine
                                 spec={detailCard.spec} pages={detailCard.pages}
                                 sections={detailCard.sections} elements={detailCard.elements}
-                                skin={detailCard.skin} mode="preview" preview-scale={detailScale}
+                                skin={detailCard.skin} mode="preview"
                                 form-title={detailCard.title} form-description={detailCard.subtitle}
                                 form-logo={detailCard.logo}
                             ></c-form-layout-engine>
@@ -191,7 +241,7 @@
         <template lwc:elseif={isDoneView}>
             <div class="done">
                 <lightning-icon icon-name="utility:success" variant="success" size="large"></lightning-icon>
-                <h2 class="done-title">Your form is ready</h2>
+                <h2 class="done-title" tabindex="-1">Your form is ready</h2>
                 <p class="done-sub">It opens in the builder so you can make it yours.</p>
                 <div class="done-actions">
                     <lightning-button label="Create another" onclick={handleStartOver}></lightning-button>

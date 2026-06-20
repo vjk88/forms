@@ -2,9 +2,9 @@
     <template lwc:if={isLive}>
         <c-form-section-renderer
             section={section}
-            object-api-name={objectApiName}
-            record-type-id={recordTypeId}
-            record-id={recordId}
+            object-api-name={effObjectApiName}
+            record-type-id={effRecordTypeId}
+            record-id={effRecordId}
             prefill-values={prefillValues}
             mode="live"
             density={density}>
@@ -17,11 +17,21 @@
                     size="x-small" class="sec-ico"></lightning-icon>
                 <h3 class="sec-title">{section.title}</h3>
             </div>
-            <div class="fields">
+            <div class="slds-grid slds-wrap slds-gutters_x-small sec-body">
                 <template for:each={elements} for:item="el">
                     <div key={el.key} class={el.cls}>
-                        <label class="lbl">{el.label}<span lwc:if={el.required} class="req">&nbsp;*</span></label>
-                        <div class="ctrl" data-type={el.type}></div>
+                        <template lwc:if={el.isHero}>
+                            <div class="stub-hero">
+                                <div lwc:if={el.heroHasImage} class="stub-hero__img"></div>
+                                <div lwc:if={el.heroHeadline} class="stub-hero__h">{el.heroHeadline}</div>
+                                <div lwc:if={el.heroSubtext} class="stub-hero__s">{el.heroSubtext}</div>
+                                <div lwc:if={el.heroHasCta} class="stub-hero__cta">{el.heroCtaLabel}</div>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <label class="lbl">{el.label}<span lwc:if={el.required} class="req">&nbsp;*</span></label>
+                            <div class="ctrl" data-type={el.type}></div>
+                        </template>
                     </div>
                 </template>
             </div>

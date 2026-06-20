@@ -1,8 +1,9 @@
 <template>
     <div class="conv" tabindex="0">
-        <!-- Brand header (logo + title + subtitle), shown when the form has any -->
-        <header lwc:if={showHeader} class="conv-head">
-            <img lwc:if={model.header.logo} src={model.header.logo} alt="" style="max-height:36px; width:auto;" />
+        <!-- Brand header (highlight + logo + title + subtitle), shown when the form has any -->
+        <header lwc:if={showHeader} class={headClass}>
+            <c-form-highlight message={model.header.highlight} variant={highlightVariant}></c-form-highlight>
+            <img lwc:if={showLogo} src={model.header.logo} alt="" style="max-height:36px; width:auto;" />
             <h1 lwc:if={model.header.title} class="conv-title">{model.header.title}</h1>
             <p lwc:if={model.header.description} class="conv-sub">{model.header.description}</p>
         </header>

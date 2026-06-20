@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormBuilder Pro - Theme Comparison & Showcase</title>
+    
+    <!-- Modern Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Modern Design System Tokens & Base styling */
+        :root {
+            --app-bg: #09090b;
+            --app-card-bg: rgba(20, 20, 23, 0.65);
+            --app-border: rgba(255, 255, 255, 0.08);
+            --app-text: #f4f4f5;
+            --app-text-muted: #a1a1aa;
+            --app-accent: #6366f1;
+            --app-accent-glow: rgba(99, 102, 241, 0.15);
+            --app-radius: 16px;
+            
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            background-color: var(--app-bg);
+            color: var(--app-text);
+            scroll-behavior: smooth;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(217, 70, 239, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            padding: 2rem;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Container Layout */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        /* Header Dashboard Card */
+        header {
+            background: var(--app-card-bg);
+            border: 1px solid var(--app-border);
+            border-radius: var(--app-radius);
+            padding: 2.5rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .header-left h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-left p {
+            color: var(--app-text-muted);
+            font-size: 1rem;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        /* Global Control Panel */
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.25rem 2rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+            backdrop-filter: blur(8px);
+            justify-content: space-between;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .control-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--app-text-muted);
+            font-weight: 600;
+        }
+
+        /* Toggle Buttons */
+        .btn-toggle {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .btn-toggle button {
+            background: transparent;
+            border: none;
+            color: var(--app-text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-toggle button.active {
+            background: var(--app-accent);
+            color: white;
+            box-shadow: 0 4px 12px var(--app-accent-glow);
+        }
+
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--app-text-muted);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pill:hover, .pill.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--app-accent);
+            color: white;
+        }
+
+        /* Comparison Grid */
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .themes-grid.mobile-mode {
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        }
+
+        /* Theme Card */
+        .theme-card {
+            background: var(--app-card-bg);
+            border: 1px solid var(--app-border);
+            border-radius: var(--app-radius);
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .theme-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .theme-title h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .theme-title p {
+            font-size: 0.85rem;
+            color: var(--app-text-muted);
+            line-height: 1.4;
+        }
+
+        .theme-meta-badges {
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .badge-contrast {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-style {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--app-text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Mock Form Container */
+        .mock-form-stage {
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            transition: all 0.3s ease;
+        }
+
+        /* Rendered Mock Form inside the theme */
+        .mock-form {
+            width: 100%;
+            max-width: 360px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mock-form-header-banner {
+            margin: -1.5rem -1.5rem 0.5rem -1.5rem;
+            padding: 1.25rem;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .mock-form-header h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .mock-form-header p {
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .mock-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .mock-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .mock-input {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .mock-input-error-text {
+            display: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Error States for Inputs */
+        .mock-form-stage.error-state .mock-field-group.error-target .mock-input-error-text {
+            display: block;
+        }
+
+        .mock-checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .mock-checkbox {
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+        }
+
+        .mock-button-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .mock-btn {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        /* Specs section inside Theme Card */
+        .theme-specs {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .spec-label {
+            color: var(--app-text-muted);
+            font-weight: 500;
+        }
+
+        .spec-value {
+            font-weight: 600;
+        }
+
+        /* Swatches */
+        .color-swatches {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        .swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            position: relative;
+            transition: transform 0.15s ease;
+        }
+
+        .swatch:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+
+        .swatch-tooltip {
+            visibility: hidden;
+            background: #18181b;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .swatch:hover .swatch-tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        /* Skin Toggle in specs */
+        .skin-toggle-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .btn-skin-toggle {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--app-text);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-skin-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #18181b;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media(max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            header {
+                padding: 1.5rem;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .controls-panel {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .themes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header>
+            <div class="header-left">
+                <h1>Theme Comparison Dashboard</h1>
+                <p>Compare our 30 curated themes in real-time. This preview includes **custom company logos** dynamically styled to match the identity and layout of each design theme.</p>
+            </div>
+            
+            <div class="btn-toggle">
+                <!-- Navigation back link -->
+                <button onclick="window.history.back()" style="display: flex; align-items: center; gap: 0.35rem;">
+                    ← Back to Project
+                </button>
+            </div>
+        </header>
+
+        <!-- Controls Area -->
+        <div class="controls-panel">
+            <div class="control-group">
+                <span class="control-label">Viewport Mode</span>
+                <div class="btn-toggle" id="viewport-toggle">
+                    <button class="active" data-mode="desktop">Desktop</button>
+                    <button data-mode="mobile">Mobile View</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Form Data State</span>
+                <div class="btn-toggle" id="state-toggle">
+                    <button class="active" data-state="empty">Empty</button>
+                    <button data-state="filled">Filled</button>
+                    <button data-state="error">Error State</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Filters</span>
+                <div class="filter-pills" id="filters-container">
+                    <span class="pill active" data-filter="all">All (30)</span>
+                    <span class="pill" data-filter="stepped">Steppers</span>
+                    <span class="pill" data-filter="split">Split Layouts</span>
+                    <span class="pill" data-filter="bgimage">Background Images</span>
+                    <span class="pill" data-filter="minimalist">Minimalist</span>
+                    <span class="pill" data-filter="creative">Creative</span>
+                    <span class="pill" data-filter="editorial">Editorial</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Themes Comparison Grid -->
+        <div class="themes-grid" id="themes-grid">
+            <!-- Theme cards will be rendered dynamically by JavaScript -->
+        </div>
+
+    </div>
+
+    <!-- Clipboard Alert Toast -->
+    <div class="toast" id="toast-alert">
+        <span>✓</span> Hex code copied to clipboard!
+    </div>
+
+    <!-- Themes Configuration & Rendering Engine -->
+    <script>
+        const themesData = [
+            {
+                id: 'nordic',
+                name: 'Nordic Minimalist',
+                description: 'Scandinavian clean — high contrast, muted cool grays. Focuses on content, reduces screen fatigue.',
+                tags: ['light', 'minimalist'],
+                fontFamilyDisplay: "'Inter', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '8px',
+                shadow: '0 4px 14px rgba(0, 0, 0, 0.05)',
+                border: '1px solid #d1d5db',
+                styleType: 'Classic Standard',
+                layout: 'classic',
+                logoType: 'triangle',
+                contrastRatio: '15.2:1 (AAA)',
+                colors: {
+                    pageBg: '#f3f4f6',
+                    surface: '#ffffff',
+                    accent: '#1e3a8a',
+                    accentText: '#ffffff',
+                    text: '#1f2937',
+                    textMuted: '#6b7280',
+                    border: '#d1d5db',
+                    borderLight: '#e5e7eb'
+                },
+                hasDark: true,
+                darkColors: {
+                    pageBg: '#0f172a',
+                    surface: '#1e293b',
+                    accent: '#38bdf8',
+                    accentText: '#0f172a',
+                    text: '#f8fafc',
+                    textMuted: '#94a3b8',
+                    border: '#334155',
+                    borderLight: '#1e293b'
+                }
+            },
+            {
+                id: 'neoBrutalism',
+                name: 'Neo-Brutalism',
+                description: 'Bold Gumroad/Figma inspired styling. Thick black borders, flat primary tones, high-impact flat cards.',
+                tags: ['light', 'creative'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '0px',
+                shadow: '4px 4px 0px #000000',
+                border: '2px solid #000000',
+                styleType: 'Neo-Brutal',
+                layout: 'classic',
+                logoType: 'shield',
+                contrastRatio: '21:1 (AAA)',
+                colors: {
+                    pageBg: '#fef08a',
+                    surface: '#ffffff',
+                    accent: '#d946ef',
+                    accentText: '#ffffff',
+                    text: '#000000',
+                    textMuted: '#4b5563',
+                    border: '#000000',
+                    borderLight: '#000000'
+                },
+                hasDark: false
+            },
+            {
+                id: 'dracula',
+                name: 'Dracula Dark',
+                description: 'Classic programmer dark mode. Deep purples, rich slate surfaces, and vibrant high-contrast neon accents.',
+                tags: ['dark', 'creative'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '8px',
+                shadow: '0 8px 30px rgba(0, 0, 0, 0.4)',
+                border: '1px solid #44475a',
+                styleType: 'Midnight Pro',
+                layout: 'classic',
+                logoType: 'aperture',
+                contrastRatio: '9.1:1 (AAA)',
+                colors: {
+                    pageBg: '#1e1f29',
+                    surface: '#282a36',
+                    accent: '#ff79c6',
+                    accentText: '#1e1f29',
+                    text: '#f8f8f2',
+                    textMuted: '#6272a4',
+                    border: '#44475a',
+                    borderLight: '#383a59'
+                },
+                hasDark: false
+            },
+            {
+                id: 'terracotta',
+                name: 'Warm Terracotta',
+                description: 'Warm, cozy boutique publication style. Soft ivory combined with organic clay orange accents.',
+                tags: ['light', 'editorial'],
+                fontFamilyDisplay: "'Playfair Display', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '4px',
+                shadow: '0 6px 20px rgba(194, 65, 12, 0.05)',
+                border: '1px solid #e4e4e7',
+                styleType: 'Elegant Editorial',
+                layout: 'classic',
+                logoType: 'coffee',
+                contrastRatio: '13.5:1 (AAA)',
+                colors: {
+                    pageBg: '#faf7f2',
+                    surface: '#ffffff',
+                    accent: '#c2410c',
+                    accentText: '#ffffff',
+                    text: '#27272a',
+                    textMuted: '#71717a',
+                    border: '#d4d4d8',
+                    borderLight: '#e4e4e7'
+                },
+                hasDark: false
+            },
+            {
+                id: 'forest',
+                name: 'Forest Moss',
+                description: 'Nature-infused palette featuring deep forest green accents and soothing sand/sage backdrops.',
+                tags: ['light', 'minimalist'],
+                fontFamilyDisplay: "'Lora', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '12px',
+                shadow: '0 4px 12px rgba(20, 83, 45, 0.04)',
+                border: '1px solid #cbd5e1',
+                styleType: 'Organic Soft',
+                layout: 'classic',
+                logoType: 'leaf',
+                contrastRatio: '14.2:1 (AAA)',
+                colors: {
+                    pageBg: '#f4f7f5',
+                    surface: '#ffffff',
+                    accent: '#14532d',
+                    accentText: '#ffffff',
+                    text: '#1e293b',
+                    textMuted: '#64748b',
+                    border: '#cbd5e1',
+                    borderLight: '#e2e8f0'
+                },
+                hasDark: false
+            },
+            {
+                id: 'slate',
+                name: 'Steel Slate',
+                description: 'Corporate SaaS redefined. Pure slate greys and professional steel accents. Highly authoritative.',
+                tags: ['light', 'minimalist'],
+                fontFamilyDisplay: "'Inter', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '6px',
+                shadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+                border: '1px solid #cbd5e1',
+                styleType: 'Professional Slate',
+                layout: 'classic',
+                logoType: 'globe',
+                contrastRatio: '14.8:1 (AAA)',
+                colors: {
+                    pageBg: '#f1f5f9',
+                    surface: '#ffffff',
+                    accent: '#0f172a',
+                    accentText: '#ffffff',
+                    text: '#334155',
+                    textMuted: '#64748b',
+                    border: '#cbd5e1',
+                    borderLight: '#e2e8f0'
+                },
+                hasDark: false
+            },
+            {
+                id: 'tokyo',
+                name: 'Tokyo Midnight',
+                description: 'Neon cyberpunk setting. Sharp glow effects, ice-white text, and deep cosmic void gradients.',
+                tags: ['dark', 'creative'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '2px',
+                shadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
+                border: '1px solid #1e293b',
+                styleType: 'Cyberpunk Frame',
+                layout: 'classic',
+                logoType: 'shield',
+                contrastRatio: '10.5:1 (AAA)',
+                colors: {
+                    pageBg: '#0c0f1d',
+                    surface: '#161b33',
+                    accent: '#06b6d4',
+                    accentText: '#0c0f1d',
+                    text: '#e2e8f0',
+                    textMuted: '#64748b',
+                    border: '#1e293b',
+                    borderLight: '#161b33'
+                },
+                hasDark: false
+            },
+            {
+                id: 'sandstone',
+                name: 'Sandstone & Copper',
+                description: 'High-end warm minimalist desert design. Completely shifts away from corporate cold tones.',
+                tags: ['light', 'editorial'],
+                fontFamilyDisplay: "'Lora', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '14px',
+                shadow: '0 4px 20px rgba(124, 45, 18, 0.04)',
+                border: '1px solid #e7d5c7',
+                styleType: 'Warm Premium',
+                layout: 'classic',
+                logoType: 'coffee',
+                contrastRatio: '11.8:1 (AAA)',
+                colors: {
+                    pageBg: '#f5e0d3',
+                    surface: '#fffdfa',
+                    accent: '#7c2d12',
+                    accentText: '#ffffff',
+                    text: '#3c1508',
+                    textMuted: '#8c6250',
+                    border: '#e7d5c7',
+                    borderLight: '#f2e8e1'
+                },
+                hasDark: false
+            },
+            {
+                id: 'terminal',
+                name: 'Retro Terminal',
+                description: 'Authentic 1980s green terminal. Monospaced typography, flat retro grids, and ultra-high glow values.',
+                tags: ['dark', 'minimalist'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'JetBrains Mono', monospace",
+                borderRadius: '0px',
+                shadow: 'none',
+                border: '1px solid #22c55e',
+                styleType: 'Phosphor Classic',
+                layout: 'classic',
+                logoType: 'shield',
+                contrastRatio: '10.1:1 (AAA)',
+                colors: {
+                    pageBg: '#000000',
+                    surface: '#000000',
+                    accent: '#22c55e',
+                    accentText: '#000000',
+                    text: '#22c55e',
+                    textMuted: '#15803d',
+                    border: '#22c55e',
+                    borderLight: '#166534'
+                },
+                hasDark: false
+            },
+            {
+                id: 'lavender',
+                name: 'Lavender Mist',
+                description: 'Soothing violet themes. Creative, feminine, or soft healthcare designs with deep amethyst typography.',
+                tags: ['light', 'creative'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '16px',
+                shadow: '0 8px 24px rgba(126, 34, 206, 0.05)',
+                border: '1px solid #e9d5ff',
+                styleType: 'Playful Round',
+                layout: 'classic',
+                logoType: 'cross',
+                contrastRatio: '13.8:1 (AAA)',
+                colors: {
+                    pageBg: '#f3e8ff',
+                    surface: '#ffffff',
+                    accent: '#7e22ce',
+                    accentText: '#ffffff',
+                    text: '#3b0764',
+                    textMuted: '#7b3a9c',
+                    border: '#e9d5ff',
+                    borderLight: '#f3e8ff'
+                },
+                hasDark: false
+            },
+
+            // =========================================================================
+            // 10 STEPPER, SPLIT, & NAV SPECIFIC LAYOUT THEMES
+            // =========================================================================
+            {
+                id: 'mintStepper',
+                name: 'Neo-Mint Stepper',
+                description: 'Vibrant mint green accents set against dark charcoal cards. A modern multi-step tech wizard style.',
+                tags: ['dark', 'stepped', 'minimalist'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '6px',
+                shadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                border: '1px solid #374151',
+                styleType: 'Modern Stepper',
+                layout: 'stepped',
+                logoType: 'shield',
+                contrastRatio: '11.8:1 (AAA)',
+                colors: {
+                    pageBg: '#111827',
+                    surface: '#1f2937',
+                    accent: '#10b981',
+                    accentText: '#111827',
+                    text: '#f9fafc',
+                    textMuted: '#9ca3af',
+                    border: '#374151',
+                    borderLight: '#4b5563'
+                },
+                hasDark: false
+            },
+            {
+                id: 'retroStepper',
+                name: 'Amber Terminal Stepper',
+                description: 'Nostalgic monospaced orange/amber glows on black terminal panels. Complete retro stepped wizard styling.',
+                tags: ['dark', 'stepped', 'creative'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'JetBrains Mono', monospace",
+                borderRadius: '0px',
+                shadow: 'none',
+                border: '1px solid #ea580c',
+                styleType: 'Retro Stepper',
+                layout: 'stepped',
+                logoType: 'shield',
+                contrastRatio: '10.2:1 (AAA)',
+                colors: {
+                    pageBg: '#0c0703',
+                    surface: '#1a0e05',
+                    accent: '#f97316',
+                    accentText: '#0c0703',
+                    text: '#fb923c',
+                    textMuted: '#c2410c',
+                    border: '#ea580c',
+                    borderLight: '#9a3412'
+                },
+                hasDark: false
+            },
+            {
+                id: 'snowStepper',
+                name: 'Nordic Snow Stepper',
+                description: 'Glacial white card with soft outlines and ice-blue accents. Minimalist clean multi-step experience.',
+                tags: ['light', 'stepped', 'minimalist'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '16px',
+                shadow: '0 4px 20px rgba(59, 130, 246, 0.03)',
+                border: '1px solid #e2e8f0',
+                styleType: 'Glacial Stepper',
+                layout: 'stepped',
+                logoType: 'triangle',
+                contrastRatio: '14.5:1 (AAA)',
+                colors: {
+                    pageBg: '#f0f4f8',
+                    surface: '#ffffff',
+                    accent: '#3b82f6',
+                    accentText: '#ffffff',
+                    text: '#1e293b',
+                    textMuted: '#64748b',
+                    border: '#cbd5e1',
+                    borderLight: '#e2e8f0'
+                },
+                hasDark: false
+            },
+            {
+                id: 'marbleSplit',
+                name: 'Marble Split-Hero',
+                description: 'Luxury white marble brand rail paired with golden button accents and premium serif headings.',
+                tags: ['light', 'split', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Playfair Display', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '4px',
+                shadow: '0 8px 30px rgba(0,0,0,0.06)',
+                border: '1px solid #e7e5e4',
+                styleType: 'Split Luxury',
+                layout: 'split',
+                logoType: 'award',
+                contrastRatio: '13.1:1 (AAA)',
+                colors: {
+                    pageBg: '#fafaf9',
+                    surface: '#ffffff',
+                    headerBg: "url('https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    headerText: '#1c1917',
+                    headerTextMuted: '#78716c',
+                    accent: '#d97706',
+                    accentText: '#ffffff',
+                    text: '#1c1917',
+                    textMuted: '#78716c',
+                    border: '#e7e5e4',
+                    borderLight: '#f5f5f4'
+                },
+                hasDark: false
+            },
+            {
+                id: 'cyberSplit',
+                name: 'Cyber Midnight Split-Hero',
+                description: 'Deep cyberpunk pitch-black layouts with a glowing network banner brand panel and hot pink accents.',
+                tags: ['dark', 'split', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '2px',
+                shadow: '0 12px 40px rgba(0,0,0,0.4)',
+                border: '1px solid #27272a',
+                styleType: 'Split Tech',
+                layout: 'split',
+                logoType: 'shield',
+                contrastRatio: '9.8:1 (AAA)',
+                colors: {
+                    pageBg: '#09090b',
+                    surface: '#18181b',
+                    headerBg: "url('https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=300&q=80') center/cover no-repeat",
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.7)',
+                    accent: '#ec4899',
+                    accentText: '#ffffff',
+                    text: '#fafafa',
+                    textMuted: '#a1a1aa',
+                    border: '#27272a',
+                    borderLight: '#18181b'
+                },
+                hasDark: false
+            },
+            {
+                id: 'claySplit',
+                name: 'Terracotta Split-Hero',
+                description: 'Organic desert sunset brand rail paired with linen card pages and clean pottery rust highlights.',
+                tags: ['light', 'split', 'editorial', 'bgimage'],
+                fontFamilyDisplay: "'Lora', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '8px',
+                shadow: '0 6px 16px rgba(0,0,0,0.04)',
+                border: '1px solid #e7d5c7',
+                styleType: 'Split Editorial',
+                layout: 'split',
+                logoType: 'coffee',
+                contrastRatio: '12.5:1 (AAA)',
+                colors: {
+                    pageBg: '#fdfbf7',
+                    surface: '#ffffff',
+                    headerBg: "url('https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=300&q=80') center/cover no-repeat",
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.85)',
+                    accent: '#c2410c',
+                    accentText: '#ffffff',
+                    text: '#292524',
+                    textMuted: '#78716c',
+                    border: '#e7d5c7',
+                    borderLight: '#f5efe6'
+                },
+                hasDark: false
+            },
+            {
+                id: 'botanicalSplit',
+                name: 'Botanical Split-Hero',
+                description: 'Environmental calm mist forest brand panel hosting organic white card forms and rich forest-green controls.',
+                tags: ['light', 'split', 'minimalist', 'bgimage'],
+                fontFamilyDisplay: "'Lora', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '12px',
+                shadow: '0 8px 24px rgba(0,0,0,0.05)',
+                border: '1px solid #e2e8f0',
+                styleType: 'Split Organic',
+                layout: 'split',
+                logoType: 'leaf',
+                contrastRatio: '13.9:1 (AAA)',
+                colors: {
+                    pageBg: '#f4f7f5',
+                    surface: '#ffffff',
+                    headerBg: "url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=300&q=80') center/cover no-repeat",
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.85)',
+                    accent: '#15803d',
+                    accentText: '#ffffff',
+                    text: '#1e293b',
+                    textMuted: '#64748b',
+                    border: '#e2e8f0',
+                    borderLight: '#f1f5f9'
+                },
+                hasDark: false
+            },
+            {
+                id: 'execNav',
+                name: 'Steel Side-Nav',
+                description: 'Steel slate layouts matching professional navigation headers. Sharp corporate styling.',
+                tags: ['light', 'minimalist'],
+                fontFamilyDisplay: "'Inter', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '6px',
+                shadow: '0 4px 12px rgba(15, 23, 42, 0.05)',
+                border: '1px solid #cbd5e1',
+                styleType: 'Executive Classic',
+                layout: 'classic',
+                logoType: 'globe',
+                contrastRatio: '14.2:1 (AAA)',
+                colors: {
+                    pageBg: '#f1f5f9',
+                    surface: '#ffffff',
+                    accent: '#1e40af',
+                    accentText: '#ffffff',
+                    text: '#0f172a',
+                    textMuted: '#475569',
+                    border: '#cbd5e1',
+                    borderLight: '#e2e8f0'
+                },
+                hasDark: false
+            },
+            {
+                id: 'startupNav',
+                name: 'Tech Startup Nav',
+                description: 'Dark charcoal side navigation headers with clean white card layouts and energetic indigo details.',
+                tags: ['light', 'minimalist'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '12px',
+                shadow: '0 8px 24px rgba(0,0,0,0.06)',
+                border: '1px solid #e2e8f0',
+                styleType: 'Startup Modern',
+                layout: 'classic',
+                logoType: 'globe',
+                contrastRatio: '15.1:1 (AAA)',
+                colors: {
+                    pageBg: '#f8fafc',
+                    surface: '#ffffff',
+                    accent: '#4f46e5',
+                    accentText: '#ffffff',
+                    text: '#0f172a',
+                    textMuted: '#64748b',
+                    border: '#e2e8f0',
+                    borderLight: '#f1f5f9'
+                },
+                hasDark: false
+            },
+            {
+                id: 'auraSplit',
+                name: 'Bioluminescent Split',
+                description: 'Frosted content panel situated beside a glowing neon teal/purple gradient brand panel. Dreamy tech.',
+                tags: ['dark', 'split', 'creative'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '16px',
+                shadow: '0 12px 40px rgba(0,0,0,0.4)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                styleType: 'Split Glass',
+                layout: 'split',
+                logoType: 'aperture',
+                contrastRatio: '9.6:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: '#090d16',
+                    surface: 'rgba(255, 255, 255, 0.08)',
+                    headerBg: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.8)',
+                    accent: '#2dd4bf',
+                    accentText: '#090d16',
+                    text: '#f8fafc',
+                    textMuted: '#a1a1aa',
+                    border: 'rgba(255,255,255,0.15)',
+                    borderLight: 'rgba(255,255,255,0.1)'
+                },
+                hasDark: false
+            },
+
+            // =========================================================================
+            // SECTION E: THEMES WITH CURATED BACKGROUND IMAGES (10 Original Image Showcase)
+            // =========================================================================
+            {
+                id: 'sunsetDunes',
+                name: 'Sunset Dunes',
+                description: 'Sunset abstract liquid wallpaper with frosted content panels. A warm, cinematic aesthetic.',
+                tags: ['light', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '16px',
+                shadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                styleType: 'Glassmorphism',
+                layout: 'classic',
+                logoType: 'aperture',
+                contrastRatio: '11.5:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(255, 255, 255, 0.78)',
+                    headerBg: 'linear-gradient(135deg, #f97316 0%, #facc15 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.8)',
+                    accent: '#f97316',
+                    accentText: '#ffffff',
+                    text: '#27272a',
+                    textMuted: '#52525b',
+                    border: 'rgba(255, 255, 255, 0.3)',
+                    borderLight: 'rgba(255, 255, 255, 0.2)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'forestMist',
+                name: 'Forest Mist',
+                description: 'Soothing nature scene of misty pine trees. Frosted panels and organic deep green details.',
+                tags: ['light', 'editorial', 'bgimage'],
+                fontFamilyDisplay: "'Lora', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '12px',
+                shadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.20)',
+                styleType: 'Glassmorphism',
+                layout: 'classic',
+                logoType: 'leaf',
+                contrastRatio: '12.2:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(255, 255, 255, 0.85)',
+                    headerBg: 'linear-gradient(to right, #052e16 0%, #15803d 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.8)',
+                    accent: '#15803d',
+                    accentText: '#ffffff',
+                    text: '#1e293b',
+                    textMuted: '#475569',
+                    border: 'rgba(255, 255, 255, 0.3)',
+                    borderLight: 'rgba(255, 255, 255, 0.2)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'marbleLuxury',
+                name: 'Marble Luxury',
+                description: 'Luxury white marble background paired with solid white content panels and wood-textured brand headers.',
+                tags: ['light', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Playfair Display', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '4px',
+                shadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+                border: '1px solid #e4e4e7',
+                styleType: 'Flat Overlay',
+                layout: 'classic',
+                logoType: 'award',
+                contrastRatio: '15.8:1 (AAA)',
+                glass: false,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: '#ffffff',
+                    headerBg: "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=300&q=80') center/cover no-repeat",
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.9)',
+                    accent: '#18181b',
+                    accentText: '#ffffff',
+                    text: '#18181b',
+                    textMuted: '#71717a',
+                    border: '#e4e4e7',
+                    borderLight: '#f4f4f5'
+                },
+                hasDark: false
+            },
+            {
+                id: 'carbonMatrix',
+                name: 'Carbon Matrix',
+                description: 'Tech-focused dark matrix mesh with obsidian glass panels and glowing green phosphor accents.',
+                tags: ['dark', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '4px',
+                shadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                styleType: 'Obsidian Glass',
+                layout: 'classic',
+                logoType: 'shield',
+                contrastRatio: '9.9:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(15, 23, 42, 0.88)',
+                    headerBg: 'linear-gradient(to right, #090d16 0%, #0f172a 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.7)',
+                    accent: '#22c55e',
+                    accentText: '#0f172a',
+                    text: '#f8fafc',
+                    textMuted: '#94a3b8',
+                    border: 'rgba(255, 255, 255, 0.15)',
+                    borderLight: 'rgba(255, 255, 255, 0.1)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'oceanBreeze',
+                name: 'Ocean Breeze',
+                description: 'Aerial turquoise ocean wave photography. Light seafoam-tinted frosted glass panels.',
+                tags: ['light', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '20px',
+                shadow: '0 12px 36px rgba(0, 0, 0, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                styleType: 'Glassmorphism',
+                layout: 'classic',
+                logoType: 'aperture',
+                contrastRatio: '12.8:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(255, 255, 255, 0.72)',
+                    headerBg: 'linear-gradient(135deg, #0891b2 0%, #0d9488 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.8)',
+                    accent: '#06b6d4',
+                    accentText: '#ffffff',
+                    text: '#0e7490',
+                    textMuted: '#4b5563',
+                    border: 'rgba(255, 255, 255, 0.35)',
+                    borderLight: 'rgba(255, 255, 255, 0.25)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'cosmicVortex',
+                name: 'Cosmic Vortex',
+                description: 'Enigmatic purple nebula sky. Frosted deep amethyst panels highlighted by bioluminescent details.',
+                tags: ['dark', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '16px',
+                shadow: '0 12px 40px rgba(0,0,0,0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                styleType: 'Amethyst Glass',
+                layout: 'classic',
+                logoType: 'aperture',
+                contrastRatio: '9.4:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1464802686167-b939a6910659?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(15, 10, 30, 0.8)',
+                    headerBg: 'linear-gradient(135deg, #7c3aed 0%, #c084fc 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.7)',
+                    accent: '#a855f7',
+                    accentText: '#ffffff',
+                    text: '#f3e8ff',
+                    textMuted: '#c084fc',
+                    border: 'rgba(255, 255, 255, 0.15)',
+                    borderLight: 'rgba(255, 255, 255, 0.1)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'desertOasis',
+                name: 'Desert Oasis',
+                description: 'Orange desert sand dunes background. Warm linen glass card holding clay-rust interactive elements.',
+                tags: ['light', 'editorial', 'bgimage'],
+                fontFamilyDisplay: "'Lora', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '12px',
+                shadow: '0 8px 24px rgba(124, 45, 18, 0.08)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                styleType: 'Warm Editorial',
+                layout: 'classic',
+                logoType: 'coffee',
+                contrastRatio: '11.1:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(253, 251, 247, 0.85)',
+                    headerBg: 'linear-gradient(to right, #ea580c 0%, #c2410c 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.8)',
+                    accent: '#ea580c',
+                    accentText: '#ffffff',
+                    text: '#3f2b18',
+                    textMuted: '#7c5f43',
+                    border: 'rgba(255,255,255,0.25)',
+                    borderLight: 'rgba(255,255,255,0.15)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'vintagePaper',
+                name: 'Vintage Paper',
+                description: 'Aged paper textures with monospaced keys, resembling traditional typewriter templates.',
+                tags: ['light', 'minimalist', 'bgimage'],
+                fontFamilyDisplay: "'JetBrains Mono', monospace",
+                fontFamilyBody: "'JetBrains Mono', monospace",
+                borderRadius: '0px',
+                shadow: '2px 2px 10px rgba(0,0,0,0.1)',
+                border: '1px solid #78716c',
+                styleType: 'Flat Texture',
+                layout: 'classic',
+                logoType: 'coffee',
+                contrastRatio: '13.2:1 (AAA)',
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(255, 253, 247, 0.95)',
+                    headerBg: 'transparent',
+                    headerText: '#1c1917',
+                    headerTextMuted: '#78716c',
+                    accent: '#4b5563',
+                    accentText: '#ffffff',
+                    text: '#1c1917',
+                    textMuted: '#44403c',
+                    border: '#78716c',
+                    borderLight: '#d6d3d1'
+                },
+                hasDark: false
+            },
+            {
+                id: 'auroraBorealis',
+                name: 'Northern Lights',
+                description: 'Deep green and blue aurora streaks. Dark pine content panels offset with neon teals.',
+                tags: ['dark', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Outfit', sans-serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '10px',
+                shadow: '0 12px 40px rgba(0,0,0,0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                styleType: 'Aurora Scrim',
+                layout: 'classic',
+                logoType: 'shield',
+                contrastRatio: '10.8:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1483168527879-c66136b56105?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(15, 23, 25, 0.85)',
+                    headerBg: 'linear-gradient(to right, #041b18 0%, #155e54 100%)',
+                    headerText: '#ffffff',
+                    headerTextMuted: 'rgba(255, 255, 255, 0.8)',
+                    accent: '#2dd4bf',
+                    accentText: '#041d1a',
+                    text: '#ccfbf1',
+                    textMuted: '#14b8a6',
+                    border: 'rgba(255, 255, 255, 0.15)',
+                    borderLight: 'rgba(255, 255, 255, 0.1)'
+                },
+                hasDark: false
+            },
+            {
+                id: 'silkLuxury',
+                name: 'Silk Luxury',
+                description: 'Soft pink abstract silk waves page background. Highly premium cosmetics and fashion aesthetic.',
+                tags: ['light', 'creative', 'bgimage'],
+                fontFamilyDisplay: "'Playfair Display', serif",
+                fontFamilyBody: "'Inter', sans-serif",
+                borderRadius: '16px',
+                shadow: '0 8px 30px rgba(219, 39, 119, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                styleType: 'Glassmorphism',
+                layout: 'classic',
+                logoType: 'aperture',
+                contrastRatio: '12.4:1 (AAA)',
+                glass: true,
+                colors: {
+                    pageBg: "url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=600&q=80') center/cover no-repeat",
+                    surface: 'rgba(255, 255, 255, 0.85)',
+                    headerBg: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%)',
+                    headerText: '#4c0519',
+                    headerTextMuted: '#9d174d',
+                    accent: '#db2777',
+                    accentText: '#ffffff',
+                    text: '#4c0519',
+                    textMuted: '#be185d',
+border: 'rgba(255, 255, 255, 0.4)',
+                    borderLight: 'rgba(255, 255, 255, 0.25)'
+                },
+                hasDark: false
+            }
+        ];
+
+        // Parse hex or rgb/rgba to rgb object
+        function parseToRgb(colorStr) {
+            if (!colorStr) return null;
+            colorStr = colorStr.trim().toLowerCase();
+            
+            // Hex match (#fff, #ffffff, #ffffffaa)
+            if (colorStr.startsWith('#')) {
+                let hex = colorStr.replace(/^#/, '');
+                if (hex.length === 3 || hex.length === 4) {
+                    hex = hex.split('').map(c => c + c).join('');
+                }
+                if (hex.length === 8) {
+                    hex = hex.slice(0, 6);
+                }
+                const num = parseInt(hex, 16);
+                if (isNaN(num)) return null;
+                return {
+                    r: (num >> 16) & 255,
+                    g: (num >> 8) & 255,
+                    b: num & 255
+                };
+            }
+            
+            // Rgb/rgba match
+            const rgbMatch = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+            if (rgbMatch) {
+                return {
+                    r: parseInt(rgbMatch[1], 10),
+                    g: parseInt(rgbMatch[2], 10),
+                    b: parseInt(rgbMatch[3], 10)
+                };
+            }
+            
+            return null;
+        }
+
+        // Get relative luminance of a color
+        function getLuminance(rgb) {
+            if (!rgb) return 0;
+            const a = [rgb.r, rgb.g, rgb.b].map(v => {
+                v /= 255;
+                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            });
+            return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+        }
+
+        // Calculate contrast ratio between two colors
+        function getContrastRatio(color1, color2) {
+            const rgb1 = parseToRgb(color1);
+            const rgb2 = parseToRgb(color2);
+            if (!rgb1 || !rgb2) return 1;
+            const lum1 = getLuminance(rgb1);
+            const lum2 = getLuminance(rgb2);
+            const brightest = Math.max(lum1, lum2);
+            const darkest = Math.min(lum1, lum2);
+            return (brightest + 0.05) / (darkest + 0.05);
+        }
+
+        // Determine if a color is dark
+        function isColorDark(colorStr) {
+            const rgb = parseToRgb(colorStr);
+            if (!rgb) return true;
+            return getLuminance(rgb) < 0.5;
+        }
+
+        // Helper to extract a solid hex background color from dynamic properties (gradients, images)
+        function getBackgroundHex(bgValue, textColor) {
+            if (!bgValue) {
+                return isColorDark(textColor) ? '#ffffff' : '#1e1e24';
+            }
+            
+            // Try to find a hex color in the background string
+            const hexMatch = bgValue.match(/#[0-9a-fA-F]{3,8}/);
+            if (hexMatch) {
+                return hexMatch[0];
+            }
+            
+            // Try to find an rgb/rgba color in the background string
+            const rgbMatch = bgValue.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+            if (rgbMatch) {
+                return rgbMatch[0];
+            }
+            
+            // If it's a URL or transparent, infer from text color (which is designed for the background)
+            return isColorDark(textColor) ? '#ffffff' : '#1e1e24';
+        }
+
+        // Dynamically generate SVG Data URI with embedded logo emblem and brand name
+        // styled to match the theme's typography, accent, and header text color.
+        // This mirrors FormStudio's image-based header logo rendering contract.
+        function getLogoUrl(logoType, accent, text, name, font) {
+            if (!logoType) return '';
+            
+            // Clean up font name for SVG text element
+            const fontName = font ? font.split(',')[0].replace(/'/g, '').trim() : 'system-ui';
+            
+            let svg = '';
+            const strokeColor = accent;
+            const fillMark = accent;
+            const fillText = text;
+            
+            switch (logoType) {
+                case 'triangle':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <path d="M16 4L6 26h20L16 4z" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 12l-5 10h10l-5-10z" fill="${fillMark}"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'shield':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <path d="M16 26s7-3.5 7-9V9l-7-2.5L9 9v8c0 5.5 7 9 7 9z" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 21.5s4.5-2.5 4.5-6v-4l-4-1.5-4 1.5v4c0 3.5 4.5 6 4.5 6z" fill="${fillMark}"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'globe':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <circle cx="16" cy="16" r="9" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 16h18M16 7a13 13 0 0 1 3.5 9 13 13 0 0 1-3.5 9 13 13 0 0 1-3.5-9 13 13 0 0 1 3.5-9z" fill="none" stroke="${strokeColor}" stroke-width="1.2"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'leaf':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <path d="M16 25A7 7 0 0 1 14.8 11c5.5-1 7-1.5 9-4 1 2 2 3.5 1 8a7 7 0 0 1-9 10zm0 0v-5" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 21A4 4 0 0 1 15.3 14c3-0.5 4-1 5-2.5v1.5c0 1.5-2.5 3-3.7 3z" fill="${fillMark}"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'aperture':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <circle cx="16" cy="16" r="9" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="18" y1="9.3" x2="22.7" y2="17.3" stroke="${strokeColor}" stroke-width="1.5"/>
+                        <line x1="14" y1="9.3" x2="23.7" y2="9.3" stroke="${strokeColor}" stroke-width="1.5"/>
+                        <line x1="12" y1="12.8" x2="16.5" y2="4.8" stroke="${strokeColor}" stroke-width="1.5"/>
+                        <line x1="14" y1="20" x2="9.3" y2="12" stroke="${strokeColor}" stroke-width="1.5"/>
+                        <line x1="18" y1="20" x2="8.3" y2="20" stroke="${strokeColor}" stroke-width="1.5"/>
+                        <line x1="20" y1="16.5" x2="15.5" y2="24.5" stroke="${strokeColor}" stroke-width="1.5"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'award':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <circle cx="16" cy="12" r="6" fill="none" stroke="${strokeColor}" stroke-width="2"/>
+                        <polyline points="12.6 17 11.5 25 16 22.5 20.5 25 19.4 17" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="16" cy="12" r="2.5" fill="${fillMark}"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'coffee':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <path d="M21 12h1a2.5 2.5 0 0 1 0 5h-1M7 12h14v8a3.5 3.5 0 0 1-3.5 3.5h-7A3.5 3.5 0 0 1 7 20v-8z" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="10" y1="6" x2="10" y2="9" stroke="${strokeColor}" stroke-width="1.2" stroke-linecap="round"/>
+                        <line x1="14" y1="6" x2="14" y2="9" stroke="${strokeColor}" stroke-width="1.2" stroke-linecap="round"/>
+                        <line x1="18" y1="6" x2="18" y2="9" stroke="${strokeColor}" stroke-width="1.2" stroke-linecap="round"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                case 'cross':
+                    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="32" viewBox="0 0 140 32">
+                        <line x1="16" y1="6" x2="16" y2="26" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="6" y1="16" x2="26" y2="16" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="38" y="21" font-family="'${fontName}', system-ui, sans-serif" font-size="14" font-weight="700" fill="${fillText}">${name}</text>
+                    </svg>`;
+                    break;
+                default:
+                    return '';
+            }
+            return 'data:image/svg+xml,' + encodeURIComponent(svg.trim());
+        }
+
+        // Render mock form header dynamically based on the chosen arrangement and highlight message
+        function renderMockHeader(theme, colors, brand, logoUrl, isBanner = false) {
+            const arrangement = theme.headerArrangement || 'stacked';
+            const highlight = theme.headerHighlight || '';
+            const textColor = isBanner ? (colors.headerText || colors.text) : colors.text;
+            const textMutedColor = isBanner ? (colors.headerTextMuted || colors.textMuted) : colors.textMuted;
+            const accentColor = colors.accent;
+            
+            // Determine background value of this header context
+            const bgValue = isBanner ? (colors.headerBg || colors.surface) : colors.surface;
+            
+            // Determine if the background is complex (gradient or image)
+            const isComplexBg = bgValue && (bgValue.includes('url(') || bgValue.includes('gradient') || bgValue.includes('-gradient'));
+            
+            let emblemColor = accentColor;
+            
+            if (isComplexBg) {
+                // For gradients and image backgrounds, default to monochrome high-contrast logo (matching textColor)
+                emblemColor = textColor;
+            } else {
+                // For solid backgrounds, calculate contrast
+                const bgHex = getBackgroundHex(bgValue, textColor);
+                const contrast = getContrastRatio(accentColor, bgHex);
+                // If contrast is less than 3.5, use the high-contrast textColor instead
+                if (contrast < 3.5) {
+                    emblemColor = textColor;
+                }
+            }
+            
+            // Re-generate logoUrl dynamically with the exact text and emblem colors needed for this background context
+            const targetLogoUrl = theme.logoType ? getLogoUrl(theme.logoType, emblemColor, textColor, brand.name, theme.fontFamilyDisplay) : '';
+            const showLogo = targetLogoUrl && arrangement !== 'textOnly';
+            
+            let highlightHtml = '';
+            if (highlight) {
+                const highlightBg = isBanner ? 'rgba(255, 255, 255, 0.15)' : `${accentColor}18`;
+                const highlightText = isBanner ? '#ffffff' : accentColor;
+                const highlightBorder = isBanner ? 'rgba(255, 255, 255, 0.3)' : accentColor;
+                highlightHtml = `
+                    <div style="
+                        display: inline-block;
+                        padding: 3px 8px;
+                        background: ${highlightBg};
+                        color: ${highlightText};
+                        border-left: 3px solid ${highlightBorder};
+                        font-size: 0.65rem;
+                        font-weight: 700;
+                        margin-bottom: 0.6rem;
+                        border-radius: 2px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        width: fit-content;
+                    ">
+                        ${highlight}
+                    </div>
+                `;
+            }
+
+            let innerHeaderHtml = '';
+            if (arrangement === 'inline' && showLogo) {
+                innerHeaderHtml = `
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <img src="${targetLogoUrl}" alt="Logo" style="height: 20px; width: auto; max-width: 110px; display: block;" />
+                        <h4 style="font-family: ${theme.fontFamilyDisplay}; color: ${textColor}; margin: 0; line-height: 1.2; font-weight: 700; font-size: 1.05rem;">${brand.title}</h4>
+                    </div>
+                    <p style="color: ${textMutedColor}; font-size: 0.75rem; margin-top: 0.25rem; margin-bottom: 0;">${brand.subtitle}</p>
+                `;
+            } else if (arrangement === 'logoBeside' && showLogo) {
+                innerHeaderHtml = `
+                    <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                        <img src="${targetLogoUrl}" alt="Logo" style="height: 24px; width: auto; max-width: 90px; display: block; flex-shrink: 0; margin-top: 0.15rem;" />
+                        <div>
+                            <h4 style="font-family: ${theme.fontFamilyDisplay}; color: ${textColor}; margin: 0; line-height: 1.2; font-weight: 700; font-size: 1.05rem;">${brand.title}</h4>
+                            <p style="color: ${textMutedColor}; font-size: 0.75rem; margin-top: 0.15rem; margin-bottom: 0;">${brand.subtitle}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                innerHeaderHtml = `
+                    <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                        ${showLogo ? `
+                        <img src="${targetLogoUrl}" alt="Logo" style="height: 24px; width: auto; max-width: 120px; display: block; margin-bottom: 0.25rem;" />
+                        ` : ''}
+                        <h4 style="font-family: ${theme.fontFamilyDisplay}; color: ${textColor}; margin: 0; line-height: 1.2; font-weight: 700; font-size: 1.05rem;">${brand.title}</h4>
+                    </div>
+                    <p style="color: ${textMutedColor}; font-size: 0.75rem; margin-top: 0.25rem; margin-bottom: 0;">${brand.subtitle}</p>
+                `;
+            }
+
+            return `
+                <div class="mock-form-header" style="margin-bottom: 0.85rem; width: 100%;">
+                    ${highlightHtml}
+                    ${innerHeaderHtml}
+                </div>
+            `;
+        }
+
+        // Realistic Brand Lockups mapped to Theme IDs for higher fidelity branding
+        const COMPANY_BRAND_MAP = {
+            nordic: { name: 'AeroSpace', title: 'Pre-Flight Manifest', subtitle: 'Verify passenger and crew credentials.' },
+            neoBrutalism: { name: 'Gumroad Inc.', title: 'Creator Application', subtitle: 'Apply for the early access billing program.' },
+            dracula: { name: 'Cyberdyne Systems', title: 'Central Core Uplink', subtitle: 'Authorize security token to initiate sync.' },
+            terracotta: { name: 'Clay & Co.', title: 'Workshop Registry', subtitle: 'Join our pottery classes in Austin, TX.' },
+            forest: { name: 'EcoProtect', title: 'Ranger Application', subtitle: 'Register for seasonal conservation patrols.' },
+            slate: { name: 'Acme Logistics', title: 'Customs Declaration', subtitle: 'Declare global freight and cargo manifests.' },
+            tokyo: { name: 'NetSec Division', title: 'Node Connection', subtitle: 'Enter credentials for terminal 4-G.' },
+            sandstone: { name: 'Dunes Resort', title: 'Guest Concierge', subtitle: 'Submit preferences for your desert stay.' },
+            terminal: { name: 'Mainframe 88', title: 'SYSOP Authentication', subtitle: 'INPUT SECURE TOKENS FOR KERNEL ACCESS.' },
+            lavender: { name: 'Apex Health', title: 'Patient Admittance', subtitle: 'Provide medical information prior to arrival.' },
+            mintStepper: { name: 'Veloce Coding', title: 'Developer Setup', subtitle: 'Initialize developer environment parameters.' },
+            retroStepper: { name: 'Vax Host', title: 'Bootloader Wizard', subtitle: 'Mounting virtual system image sectors.' },
+            snowStepper: { name: 'Alta Air', title: 'Flight Check-in', subtitle: 'Confirm seat assignments and baggage.' },
+            marbleSplit: { name: 'Aurelia Jewelers', title: 'VIP Lounge Sign-in', subtitle: 'Enter luxury rewards portal.' },
+            cyberSplit: { name: 'Specter Net', title: 'Infiltration Gate', subtitle: 'Establishing remote SSH session.' },
+            claySplit: { name: 'Terracotta Boutique', title: 'Artisan Membership', subtitle: 'Receive special discounts and invites.' },
+            botanicalSplit: { name: 'Green Canopy', title: 'Forest Preservation', subtitle: 'Join our carbon offsets program.' },
+            execNav: { name: 'Stark Finance', title: 'Corporate Onboarding', subtitle: 'Complete employee compliance checklists.' },
+            startupNav: { name: 'Prism AI', title: 'API Key Generation', subtitle: 'Generate production credentials.' },
+            auraSplit: { name: 'Aura Studio', title: 'Artist Portfolio', subtitle: 'Upload your creative collection submissions.' },
+            sunsetDunes: { name: 'Solaris Journeys', title: 'Desert Expedition', subtitle: 'Book a luxury guided safari across Dunes.' },
+            forestMist: { name: 'Evergreen Lodge', title: 'Retreat Enrollment', subtitle: 'Escape the city in our off-grid cabins.' },
+            marbleLuxury: { name: 'Helsinki Fine Arts', title: 'Exhibition RSVP', subtitle: 'Reserve private viewing passes.' },
+            carbonMatrix: { name: 'Securitas Corp', title: 'Threat Assessment', subtitle: 'File a physical infrastructure hazard report.' },
+            oceanBreeze: { name: 'Reef Explorers', title: 'Dive Charter Signup', subtitle: 'Confirm equipment rental and experience level.' },
+            cosmicVortex: { name: 'StarGaze', title: 'Telescope Booking', subtitle: 'Reserve viewing time on deep space optics.' },
+            desertOasis: { name: 'Sahara Glamping', title: 'Booking Request', subtitle: 'Check availability for luxury canvas tents.' },
+            vintagePaper: { name: 'The Typist Café', title: 'Literary Submission', subtitle: 'Send poems or short stories for our zine.' },
+            auroraBorealis: { name: 'Polar Research', title: 'Expedition Registry', subtitle: 'Register scientific equipment for cold storage.' },
+            silkLuxury: { name: 'Maison de Rose', title: 'Atelier Booking', subtitle: 'Schedule custom fittings with our design team.' }
+        };
+
+        // Active States configuration
+        let currentViewportMode = 'desktop'; // desktop | mobile
+        let currentFormState = 'empty'; // empty | filled | error
+        let currentFilter = 'all'; // all | light | dark | etc.
+        const activeSkins = {}; // Map of themeId -> 'light' | 'dark'
+
+        // DOM elements
+        const themesGrid = document.getElementById('themes-grid');
+        const viewportToggle = document.getElementById('viewport-toggle');
+        const stateToggle = document.getElementById('state-toggle');
+        const filtersContainer = document.getElementById('filters-container');
+        const toast = document.getElementById('toast-alert');
+
+        // Initial setup
+        function init() {
+            const arrangements = ['stacked', 'logoBeside', 'inline', 'textOnly'];
+            const highlights = [
+                'Closes Friday!', 
+                '', 
+                'SPECIAL EVENT', 
+                '', 
+                'DRAFT COPY', 
+                '', 
+                '2026 EDITION', 
+                '', 
+                'REQUIRED SIGN-IN', 
+                ''
+            ];
+            
+            themesData.forEach((t, i) => {
+                activeSkins[t.id] = 'default';
+                // Dynamically distribute arrangements and highlights for rich variance
+                t.headerArrangement = arrangements[i % arrangements.length];
+                t.headerHighlight = highlights[i % highlights.length];
+            });
+            renderGrid();
+        }
+
+        // Render card grids based on filters
+        function renderGrid() {
+            themesGrid.innerHTML = '';
+            
+            // Apply Viewport layout class
+            if (currentViewportMode === 'mobile') {
+                themesGrid.classList.add('mobile-mode');
+            } else {
+                themesGrid.classList.remove('mobile-mode');
+            }
+
+            const filteredThemes = themesData.filter(t => {
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'light') return !t.dark && (activeSkins[t.id] !== 'dark') && !t.tags.includes('dark');
+                if (currentFilter === 'dark') return t.tags.includes('dark') || (t.hasDark && activeSkins[t.id] === 'dark');
+                if (currentFilter === 'stepped') return t.layout === 'stepped';
+                if (currentFilter === 'split') return t.layout === 'split';
+                return t.tags.includes(currentFilter);
+            });
+
+            filteredThemes.forEach(theme => {
+                const isDarkActive = activeSkins[theme.id] === 'dark';
+                const colors = isDarkActive ? theme.darkColors : theme.colors;
+                const card = createThemeCard(theme, colors, isDarkActive);
+                themesGrid.appendChild(card);
+            });
+        }
+
+        // Create HTML structure for a single theme card
+        function createThemeCard(theme, colors, isDarkActive) {
+            const card = document.createElement('div');
+            card.className = `theme-card`;
+            card.setAttribute('data-id', theme.id);
+
+            // Title & Header section
+            const isThemeDarkDesign = theme.tags.includes('dark') || isDarkActive;
+            
+            // Build dynamic swatch set HTML
+            let swatchesHtml = '';
+            const swatchKeys = ['pageBg', 'surface', 'accent', 'text', 'border'];
+            swatchKeys.forEach(key => {
+                const rawValue = colors[key] || '';
+                const isImage = rawValue.includes('url(');
+                const displayValue = isImage ? 'Image URL' : rawValue;
+                const swatchStyle = isImage ? `background: ${rawValue}; background-size: cover;` : `background-color: ${rawValue}`;
+                
+                swatchesHtml += `
+                    <div class="swatch" style="${swatchStyle}" onclick="copyToClipboard('${rawValue.replace(/'/g, "\\'")}')">
+                        <span class="swatch-tooltip">${key}: ${displayValue}</span>
+                    </div>
+                `;
+            });
+
+            // Skin toggler if applicable
+            let skinToggleHtml = '';
+            if (theme.hasDark) {
+                skinToggleHtml = `
+                    <div class="skin-toggle-area">
+                        <span class="spec-label">Alternate Mode</span>
+                        <button class="btn-skin-toggle" onclick="toggleThemeSkin('${theme.id}')">
+                            ${isDarkActive ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Build mock values based on state switcher
+            let nameVal = '';
+            let emailVal = '';
+            let checkState = '';
+            let validationErrorClass = '';
+            
+            if (currentFormState === 'filled' || currentFormState === 'error') {
+                nameVal = 'Jane Doe';
+                emailVal = currentFormState === 'error' ? 'jane.doe@' : 'jane.doe@example.com';
+                checkState = 'checked';
+            }
+            if (currentFormState === 'error') {
+                validationErrorClass = 'error-state';
+            }
+
+            // --- Layout Rendering Configurations ---
+            let mockStageHtml = '';
+            const cardRadius = theme.borderRadius;
+            const cardShadow = theme.shadow;
+            const cardBorder = theme.border;
+            const inputRadius = `calc(${cardRadius} * 0.6 || 4px)`;
+            const inputBg = isThemeDarkDesign ? 'rgba(255,255,255,0.05)' : '#ffffff';
+            const textMutedColor = colors.textMuted;
+            const textColor = colors.text;
+            const accentColor = colors.accent;
+            const accentTextColor = colors.accentText;
+
+            // Get brand identity details for this theme
+            const brand = COMPANY_BRAND_MAP[theme.id] || { name: 'Company', title: 'Registration Form', subtitle: 'Please complete all details below.' };
+
+            // Determine appropriate logo text/foreground color
+            const logoTextColor = colors.headerText || textColor;
+
+            // Generate company logo Data URI exactly like FormStudio's logoUrl
+            const logoUrl = theme.logoType ? getLogoUrl(theme.logoType, accentColor, logoTextColor, brand.name, theme.fontFamilyDisplay) : '';
+
+            // Inside Mock Form (fields & buttons)
+            const formInnerContentHtml = `
+                <div class="mock-field-group">
+                    <label class="mock-label" style="color: ${textColor};">Full Name</label>
+                    <input class="mock-input" type="text" value="${nameVal}" placeholder="Enter name..." style="
+                        background: ${inputBg};
+                        border: 1px solid ${colors.border};
+                        border-radius: ${inputRadius};
+                        color: ${textColor};
+                        font-family: ${theme.fontFamilyBody};" readonly>
+                </div>
+
+                <div class="mock-field-group ${currentFormState === 'error' ? 'error-target' : ''}">
+                    <label class="mock-label" style="color: ${textColor};">Email Address</label>
+                    <input class="mock-input" type="email" value="${emailVal}" placeholder="you@domain.com" style="
+                        background: ${inputBg};
+                        border: 1px solid ${currentFormState === 'error' ? '#ef4444' : colors.border};
+                        border-radius: ${inputRadius};
+                        color: ${textColor};
+                        font-family: ${theme.fontFamilyBody};" readonly>
+                    <span class="mock-input-error-text" style="color: #ef4444;">Please enter a valid email address.</span>
+                </div>
+
+                <div class="mock-checkbox-group">
+                    <input class="mock-checkbox" type="checkbox" ${checkState} id="check-${theme.id}" style="accent-color: ${accentColor};" disabled>
+                    <label for="check-${theme.id}" style="color: ${textMutedColor}; cursor: pointer; font-size: 0.75rem;">Terms & Conditions</label>
+                </div>
+
+                <div class="mock-button-row">
+                    <button class="mock-btn" style="
+                        background: ${accentColor}; 
+                        color: ${accentTextColor}; 
+                        border-radius: ${inputRadius};
+                        font-family: ${theme.fontFamilyBody};">
+                        Submit Form
+                    </button>
+                </div>
+            `;
+
+            // A. STEPPED (WIZARD STEPPER) LAYOUT
+            if (theme.layout === 'stepped') {
+                mockStageHtml = `
+                    <div class="mock-form" style="
+                        background: ${colors.surface}; 
+                        border: ${cardBorder}; 
+                        border-radius: ${cardRadius}; 
+                        box-shadow: ${cardShadow}; 
+                        color: ${textColor};
+                        padding: 1.25rem;
+                        ${theme.glass ? 'backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);' : ''}">
+                        
+                        <!-- Stepper Indicator -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; border-bottom: 1px solid ${colors.borderLight || colors.border}; padding-bottom: 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 20px; height: 20px; border-radius: 50%; background: ${accentColor}; color: ${accentTextColor}; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;">1</div>
+                                <span style="font-size: 0.75rem; font-weight: 600; color: ${textColor};">Profile</span>
+                            </div>
+                            <div style="flex: 1; height: 2px; background: ${colors.borderLight || colors.border}; margin: 0 0.5rem;"></div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; opacity: 0.5;">
+                                <div style="width: 20px; height: 20px; border-radius: 50%; background: ${colors.border}; color: ${textColor}; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;">2</div>
+                                <span style="font-size: 0.75rem; color: ${textColor};">Review</span>
+                            </div>
+                        </div>
+
+                        ${renderMockHeader(theme, colors, brand, logoUrl, false)}
+
+                        ${formInnerContentHtml}
+                    </div>
+                `;
+            }
+            // B. SPLIT (SPLIT HERO) LAYOUT
+            else if (theme.layout === 'split') {
+                const headerBgVal = colors.headerBg || accentColor;
+                const splitHeaderColors = {
+                    text: colors.headerText || '#ffffff',
+                    textMuted: colors.headerTextMuted || 'rgba(255,255,255,0.8)',
+                    accent: accentColor,
+                    headerText: colors.headerText || '#ffffff',
+                    headerTextMuted: colors.headerTextMuted || 'rgba(255,255,255,0.8)'
+                };
+                
+                mockStageHtml = `
+                    <div class="mock-form" style="
+                        background: ${colors.surface}; 
+                        border: ${cardBorder}; 
+                        border-radius: ${cardRadius}; 
+                        box-shadow: ${cardShadow}; 
+                        color: ${textColor};
+                        display: grid;
+                        grid-template-columns: 42% 58%;
+                        padding: 0;
+                        min-height: 350px;
+                        ${theme.glass ? 'backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);' : ''}">
+                        
+                        <!-- Split Hero Brand Panel -->
+                        <div style="
+                            background: ${headerBgVal}; 
+                            background-size: cover; 
+                            background-position: center; 
+                            padding: 1.25rem; 
+                            display: flex; 
+                            flex-direction: column; 
+                            justify-content: center;
+                            position: relative;
+                            overflow: hidden;
+                            border-right: 1px solid ${colors.border};">
+                            
+                            ${renderMockHeader(theme, splitHeaderColors, brand, logoUrl, true)}
+                        </div>
+
+                        <!-- Form Fields Panel -->
+                        <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; justify-content: center;">
+                            ${formInnerContentHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            // C. CLASSIC & COMPACT DEFAULT LAYOUTS
+            else {
+                let headerBannerHtml = '';
+                if (colors.headerBg) {
+                    headerBannerHtml = `
+                        <div class="mock-form-header-banner" style="
+                            background: ${colors.headerBg};
+                            background-size: cover;
+                            background-position: center;
+                            border-bottom: 1px solid ${colors.border};
+                            margin: -1.5rem -1.5rem 0.75rem -1.5rem;
+                            padding: 1.25rem;">
+                            
+                            ${renderMockHeader(theme, colors, brand, logoUrl, true)}
+                        </div>
+                    `;
+                } else {
+                    headerBannerHtml = renderMockHeader(theme, colors, brand, logoUrl, false);
+                }
+
+                mockStageHtml = `
+                    <div class="mock-form" style="
+                        background: ${colors.surface}; 
+                        border: ${cardBorder}; 
+                        border-radius: ${cardRadius}; 
+                        box-shadow: ${cardShadow}; 
+                        color: ${textColor};
+                        ${theme.glass ? 'backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);' : ''}">
+                        
+                        ${headerBannerHtml}
+                        <div style="display: flex; flex-direction: column; gap: 0.85rem; padding: ${colors.headerBg ? '0 0 0.5rem 0' : '0'};">
+                            ${formInnerContentHtml}
+                        </div>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="theme-header">
+                    <div class="theme-title">
+                        <h3>${theme.name}</h3>
+                        <p>${theme.description}</p>
+                    </div>
+                    <div class="theme-meta-badges">
+                        <span class="badge badge-contrast" title="WCAG Contrast Value">${theme.contrastRatio}</span>
+                        <span class="badge badge-style">${theme.styleType}</span>
+                    </div>
+                </div>
+
+                <!-- Form Stage Previews -->
+                <div class="mock-form-stage ${validationErrorClass}" style="
+                    background: ${colors.pageBg}; 
+                    background-size: cover;
+                    background-position: center;
+                    font-family: ${theme.fontFamilyBody};">
+                    
+                    ${mockStageHtml}
+                </div>
+
+                <!-- Theme Specs area -->
+                <div class="theme-specs">
+                    <div class="spec-item">
+                        <span class="spec-label">Swatches (Click to copy)</span>
+                        <div class="color-swatches">
+                            ${swatchesHtml}
+                        </div>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Layout Type</span>
+                        <span class="spec-value" style="text-transform: capitalize;">${theme.layout || 'Classic'}</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Header Arrangement</span>
+                        <span class="spec-value" style="text-transform: capitalize;">${theme.headerArrangement}</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Highlight Message</span>
+                        <span class="spec-value">${theme.headerHighlight || 'None'}</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Logo Emblem</span>
+                        <span class="spec-value" style="text-transform: capitalize;">${theme.logoType || 'None'}</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Headlines</span>
+                        <span class="spec-value">${theme.fontFamilyDisplay.split(',')[0].replace(/'/g, '')}</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Border Radius</span>
+                        <span class="spec-value">${theme.borderRadius === '0px' ? 'Sharp' : theme.borderRadius}</span>
+                    </div>
+                    ${skinToggleHtml}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Toggle skin logic for dynamic elements
+        window.toggleThemeSkin = function(themeId) {
+            const current = activeSkins[themeId];
+            activeSkins[themeId] = current === 'dark' ? 'light' : 'dark';
+            renderGrid();
+        }
+
+        // Copy Hex colors to clipboard
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        // Handle viewport mode toggling
+        viewportToggle.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            
+            viewportToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            currentViewportMode = btn.dataset.mode;
+            renderGrid();
+        });
+
+        // Handle form data state toggling
+        stateToggle.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            stateToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            currentFormState = btn.dataset.state;
+            renderGrid();
+        });
+
+        // Handle Filters selection
+        filtersContainer.addEventListener('click', (e) => {
+            const pill = e.target.closest('.pill');
+            if (!pill) return;
+
+            filtersContainer.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+
+            currentFilter = pill.dataset.filter;
+            renderGrid();
+        });
+
+        // Run
+        init();
+    </script>
+</body>
+</html>

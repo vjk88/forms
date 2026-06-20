@@ -30,12 +30,20 @@
     min-width: 0;
 }
 
-/* Narrow container → everything stacks to a single column. */
-@container (max-width: 640px) {
-    .grid,
+/* Narrow container → everything stacks to a single column.
+   768px is the app-wide STRUCTURE tier (shells + zones all use it); the tighter
+   480px tier is reserved for the section field grid, which is nested and narrower. */
+@container (max-width: 768px) {
+    /* Stay GRID and just flatten every track to ONE column. Do NOT switch to
+       display:flex here: a flex parent makes its container-type children
+       (c-layout-section-host) lose their stretch and collapse to 0px, which
+       takes the whole field grid down with it. Grid keeps definite track widths,
+       so the hosts keep their width and simply stack. */
+    .grid {
+        grid-template-columns: 1fr;
+    }
     .columns {
-        display: flex;
-        flex-direction: column;
+        grid-template-columns: 1fr !important; /* beat the inline Xfr Yfr ratio */
     }
     .zone.sticky {
         position: static;

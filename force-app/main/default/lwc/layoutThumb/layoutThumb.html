@@ -1,0 +1,111 @@
+<template>
+    <div class={stageClass} style={stageStyle}>
+        <!-- Stacked: one card, lines, button -->
+        <template lwc:if={isStacked}>
+            <div class="lt-card" style={cardStyle}>
+                <div class="lt-strip" style={accentStyle}></div>
+                <div class="lt-line"></div>
+                <div class="lt-line s"></div>
+                <div class="lt-btn" style={accentStyle}></div>
+            </div>
+        </template>
+
+        <!-- Bento: 2×2 tile grid -->
+        <template lwc:elseif={isBento}>
+            <div class="lt-bento">
+                <div class="lt-cell" style={cardStyle}><span class="lt-chip" style={accentStyle}></span></div>
+                <div class="lt-cell" style={cardStyle}></div>
+                <div class="lt-cell" style={cardStyle}></div>
+                <div class="lt-cell" style={cardStyle}><span class="lt-chip" style={accentStyle}></span></div>
+            </div>
+        </template>
+
+        <!-- Stepper: step rail across the top, then body -->
+        <template lwc:elseif={isStepper}>
+            <div class="lt-wizard" style={cardStyle}>
+                <div class="lt-stepper-top">
+                    <span class="lt-dot on" style={accentStyle}></span>
+                    <span class="lt-bar"></span>
+                    <span class="lt-dot"></span>
+                    <span class="lt-bar"></span>
+                    <span class="lt-dot"></span>
+                </div>
+                <div class="lt-wizard-body">
+                    <div class="lt-line"></div>
+                    <div class="lt-line s"></div>
+                    <div class="lt-btn" style={accentStyle}></div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Split Hero: brand panel beside the form -->
+        <template lwc:elseif={isSplitHero}>
+            <div class="lt-split">
+                <div class="lt-panel" style={accentStyle}>
+                    <span class="lt-panel-line"></span>
+                    <span class="lt-panel-line s"></span>
+                </div>
+                <div class="lt-card flush" style={cardStyle}>
+                    <div class="lt-line"></div>
+                    <div class="lt-line s"></div>
+                    <div class="lt-btn" style={accentStyle}></div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Side Nav: vertical step rail beside the form -->
+        <template lwc:elseif={isSideNav}>
+            <div class="lt-split">
+                <div class="lt-rail">
+                    <span class="lt-dot on" style={accentStyle}></span>
+                    <span class="lt-dot"></span>
+                    <span class="lt-dot"></span>
+                </div>
+                <div class="lt-card flush" style={cardStyle}>
+                    <div class="lt-line"></div>
+                    <div class="lt-line s"></div>
+                    <div class="lt-btn" style={accentStyle}></div>
+                </div>
+            </div>
+        </template>
+
+        <!-- One at a time: single centered question + progress -->
+        <template lwc:elseif={isOneAtATime}>
+            <div class="lt-card center" style={cardStyle}>
+                <div class="lt-progress"><span class="lt-progress-fill" style={accentStyle}></span></div>
+                <div class="lt-line lg"></div>
+                <div class="lt-line s"></div>
+                <div class="lt-btn" style={accentStyle}></div>
+            </div>
+        </template>
+
+        <!-- Tabbed: tab strip on top of a card -->
+        <template lwc:elseif={isTabbed}>
+            <div class="lt-card pad0" style={cardStyle}>
+                <div class="lt-tabs">
+                    <span class="lt-tab on" style={accentStyle}></span>
+                    <span class="lt-tab"></span>
+                    <span class="lt-tab"></span>
+                </div>
+                <div class="lt-tab-body">
+                    <div class="lt-line"></div>
+                    <div class="lt-line s"></div>
+                    <div class="lt-btn" style={accentStyle}></div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Accordion: stacked rows, first expanded -->
+        <template lwc:elseif={isAccordion}>
+            <div class="lt-card pad-sm" style={cardStyle}>
+                <div class="lt-acc-row open">
+                    <span class="lt-acc-head" style={accentStyle}></span>
+                    <div class="lt-line"></div>
+                    <div class="lt-line s"></div>
+                </div>
+                <div class="lt-acc-row"><span class="lt-acc-head"></span></div>
+                <div class="lt-acc-row"><span class="lt-acc-head"></span></div>
+            </div>
+        </template>
+    </div>
+</template>

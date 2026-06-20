@@ -1,26 +1,30 @@
 <template>
-    <article class="card">
-        <header lwc:if={showHeader} class="head">
-            <img lwc:if={model.header.logo} src={model.header.logo} alt="" style="max-height:40px; width:auto;" />
-            <h1 lwc:if={model.header.title} class="title">{model.header.title}</h1>
-            <p lwc:if={model.header.description} class="desc">{model.header.description}</p>
-        </header>
-        <lightning-tabset
-            active-tab-value={currentTabValue}
-            ontabselect={handleTabSelect}
-            class="tabs">
-            <template for:each={tabs} for:item="tab">
-                <lightning-tab key={tab.pageKey} value={tab.pageKey} label={tab._tabLabel}>
-                    <c-layout-zones
-                        zones={tab.zones}
-                        mode={mode}>
-                    </c-layout-zones>
-                </lightning-tab>
-            </template>
-        </lightning-tabset>
-        <footer class={submitClass}>
-            <span class="progress-frac">{progressLabel}</span>
-            <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
-        </footer>
-    </article>
+    <div class={wrapperClass}>
+        <article class={cardClass}>
+            <div lwc:if={isPaper} class="paper-rule" aria-hidden="true"></div>
+            <header lwc:if={showHeader} class={headClass}>
+                <c-form-highlight message={model.header.highlight} variant={highlightVariant}></c-form-highlight>
+                <img lwc:if={showLogo} src={model.header.logo} alt="" class="logo" style="max-height:40px; width:auto;" />
+                <h1 lwc:if={model.header.title} class="title">{model.header.title}</h1>
+                <p lwc:if={model.header.description} class="desc">{model.header.description}</p>
+            </header>
+            <lightning-tabset
+                active-tab-value={currentTabValue}
+                ontabselect={handleTabSelect}
+                class="tabs">
+                <template for:each={tabs} for:item="tab">
+                    <lightning-tab key={tab.pageKey} value={tab.pageKey} label={tab._tabLabel}>
+                        <c-layout-zones
+                            zones={tab.zones}
+                            mode={mode}>
+                        </c-layout-zones>
+                    </lightning-tab>
+                </template>
+            </lightning-tabset>
+            <footer class={footerClass}>
+                <span lwc:if={showProgressFraction} class="progress-frac">{progressLabel}</span>
+                <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+            </footer>
+        </article>
+    </div>
 </template>

@@ -1,36 +1,40 @@
 <template>
-    <article class="card">
-        <header lwc:if={showHeader} class="head">
-            <img lwc:if={model.header.logo} src={model.header.logo} alt="" style="max-height:40px; width:auto;" />
-            <div class="head-row">
-                <h1 lwc:if={model.header.title} class="title">{model.header.title}</h1>
-                <span lwc:if={progressLabel} class="progress-frac">{progressLabel}</span>
-            </div>
-            <p lwc:if={model.header.description} class="desc">{model.header.description}</p>
-        </header>
-        <lightning-accordion
-            active-section-name={openSection}
-            onsectiontoggle={handleSectionToggle}>
-            <template for:each={accordionPanels} for:item="panel">
-                <lightning-accordion-section
-                    key={panel.key}
-                    name={panel.key}
-                    label={panel._panelLabel}>
-                    <c-layout-section-host section={panel} mode={mode}></c-layout-section-host>
-                    <div lwc:if={panel._hasNext} class="panel-footer">
-                        <button
-                            type="button"
-                            class="btn-continue"
-                            data-key={panel.key}
-                            onclick={handleContinue}>
-                            {model.labels.continue}<span aria-hidden="true">&nbsp;↓</span>
-                        </button>
-                    </div>
-                </lightning-accordion-section>
-            </template>
-        </lightning-accordion>
-        <footer class="card-footer">
-            <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
-        </footer>
-    </article>
+    <div class={wrapperClass}>
+        <article class={cardClass}>
+            <div lwc:if={isPaper} class="paper-rule" aria-hidden="true"></div>
+            <header lwc:if={showHeader} class={headClass}>
+                <c-form-highlight message={model.header.highlight} variant={highlightVariant}></c-form-highlight>
+                <img lwc:if={showLogo} src={model.header.logo} alt="" class="logo" style="max-height:40px; width:auto;" />
+                <div class="head-row">
+                    <h1 lwc:if={model.header.title} class="title">{model.header.title}</h1>
+                    <span lwc:if={progressLabel} class="progress-frac">{progressLabel}</span>
+                </div>
+                <p lwc:if={model.header.description} class="desc">{model.header.description}</p>
+            </header>
+            <lightning-accordion
+                active-section-name={openSection}
+                onsectiontoggle={handleSectionToggle}>
+                <template for:each={accordionPanels} for:item="panel">
+                    <lightning-accordion-section
+                        key={panel.key}
+                        name={panel.key}
+                        label={panel._panelLabel}>
+                        <c-layout-section-host section={panel} mode={mode}></c-layout-section-host>
+                        <div lwc:if={panel._hasNext} class="panel-footer">
+                            <button
+                                type="button"
+                                class="btn-continue"
+                                data-key={panel.key}
+                                onclick={handleContinue}>
+                                {model.labels.continue}<span aria-hidden="true">&nbsp;↓</span>
+                            </button>
+                        </div>
+                    </lightning-accordion-section>
+                </template>
+            </lightning-accordion>
+            <footer class={footerClass}>
+                <button type="button" class="submit-btn" onclick={fireSubmit}>{model.labels.submit}</button>
+            </footer>
+        </article>
+    </div>
 </template>

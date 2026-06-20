@@ -161,6 +161,19 @@
     pointer-events: none;
     position: relative;
 }
+/* Scratch layouts render a CSS mini-mockup (c/layoutThumb) instead of a live
+   engine preview — frame it with padding so it reads as a centered diagram. */
+.t-thumb-mock {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.t-thumb-mock c-layout-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
 /* Placeholder shown until a card scrolls into view and mounts its live preview. */
 .t-thumb-skel {
     height: 100%;
@@ -444,8 +457,23 @@
 .d-stage {
     padding: 1rem;
     max-height: 560px;
-    overflow: auto;
+    overflow: auto; /* desktop 1024px frame scrolls horizontally inside the pane */
     background: #fafafa;
+}
+/* The frame renders at a REAL device width (set inline); the form inside reflows
+   via its own container queries — no scale transform (mirrors FormDesigner). */
+.pv-frame {
+    transition: width 0.2s ease;
+}
+/* Tablet & phone chrome around the mobile/tablet preview, like the FormDesigner device frame. */
+.pv-frame_tablet,
+.pv-frame_mobile {
+    border: 1px solid var(--g-line);
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+    padding: 0.75rem;
+    overflow: hidden;
 }
 
 /* ------------------------------------------------------------------- done */
@@ -473,8 +501,115 @@
     margin-top: 0.75rem;
 }
 
+/* ------------------------------------------------------- theme step (cards) */
+.thm-wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+}
+.thm-head {
+    margin-bottom: 1rem;
+}
+.thm-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--g-ink);
+    margin: 0;
+}
+.thm-sub {
+    color: var(--g-muted);
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+}
+.thm-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 1rem 0 1.25rem;
+    position: sticky;
+    top: 0;
+    background: var(--g-bg);
+    padding: 0.35rem 0;
+    z-index: 1;
+}
+.thm-pill {
+    min-height: var(--g-tap);
+    border: 1px solid var(--g-line);
+    background: var(--g-surface);
+    color: var(--g-muted);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.thm-pill:hover {
+    color: var(--g-ink);
+    border-color: #c7c7cc;
+}
+.thm-pill.is-on {
+    background: var(--g-ink);
+    border-color: var(--g-ink);
+    color: #ffffff;
+}
+
+/* The card itself is c/formThemeCard; the grid just lays them out. */
+.thm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+.thm-pill:focus-visible,
+.thm-back:focus-visible,
+.d-theme-chip:focus-visible {
+    outline: 2px solid var(--g-accent);
+    outline-offset: 2px;
+}
+
+/* ---- detail: theme "chip" (opens the theme step instead of a dropdown) ---- */
+.d-theme-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.d-field-label {
+    font-size: 0.78rem;
+    color: var(--g-ink);
+}
+.d-theme-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: var(--g-tap);
+    border: 1px solid #d4d4d8;
+    background: var(--g-surface);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    color: var(--g-ink);
+    font-size: 0.9rem;
+}
+.d-theme-chip:hover {
+    border-color: #a1a1aa;
+}
+.d-theme-name {
+    font-weight: 600;
+}
+.d-theme-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--g-accent-ink);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 @media (max-width: 768px) {
     .d-body {
         grid-template-columns: 1fr;
+    }
+    .thm-grid {
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     }
 }

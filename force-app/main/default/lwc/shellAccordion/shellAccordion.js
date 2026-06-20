@@ -46,14 +46,56 @@ export default class ShellAccordion extends LightningElement {
             _hasNext: i < this.allSections.length - 1
         }));
     }
+    get shell() {
+        return (this.model && this.model.shell) || {};
+    }
+    get wrapperClass() {
+        return `wrap chrome-${this.shell.chrome || 'card'}`;
+    }
+    get cardClass() {
+        return `card maxw-${this.shell.maxWidth || 'narrow'}`;
+    }
+    get isPaper() {
+        return this.shell.chrome === 'paper';
+    }
+    get submitInfo() {
+        return this.shell.submit || { placement: 'flow', alignment: 'right' };
+    }
+    get isStickySubmit() {
+        return this.submitInfo.placement === 'stickyBottom';
+    }
+    get footerClass() {
+        const a = this.submitInfo.alignment || 'right';
+        return `card-footer align-${a}${this.isStickySubmit ? ' is-sticky' : ''}`;
+    }
+    get progressSetting() {
+        return this.shell.progress || 'auto';
+    }
+    get showProgressFraction() {
+        return this.progressSetting !== 'none';
+    }
     get showHeader() {
-        const h = this.model && this.model.shell && this.model.shell.header;
-        return h !== 'none' && !!(this.model && (this.model.header.title || this.model.header.description));
+        const h = this.shell.header;
+        const hd = (this.model && this.model.header) || {};
+        return h !== 'none' && !!(hd.title || hd.description || hd.logo || hd.highlight);
+    }
+    get highlightVariant() {
+        return this.shell.header === 'hero' ? 'banner' : '';
+    }
+    get headerArrangement() {
+        return (this.model && this.model.header && this.model.header.arrangement) || 'stacked';
+    }
+    get showLogo() {
+        const hd = (this.model && this.model.header) || {};
+        return this.headerArrangement !== 'textOnly' && !!hd.logo;
+    }
+    get headClass() {
+        return `head head-${this.shell.header || 'standard'} arrange-${this.headerArrangement}`;
     }
     get progressLabel() {
         // Completion fraction needs live validation (Phase 2) — until then a
         // hardcoded "0 / N ✓" reads as broken, so show the panel count only.
-        if (!this.model) return '';
+        if (!this.showProgressFraction || !this.model) return '';
         const total = this.allSections.length;
         return total > 1 ? `${total} sections` : '';
     }

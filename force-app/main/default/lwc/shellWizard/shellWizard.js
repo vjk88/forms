@@ -27,9 +27,47 @@ export default class ShellWizard extends LightningElement {
         if (s.stepperPlacement === 'top') return 'horizontal';
         return 'vertical';
     }
-    get wizardClass() {
-        // mode-* drives the layout; container queries handle the narrow collapse.
-        return `wizard mode-${this.stepperMode}`;
+    // The "Progress indicator" lever (shell.progress). 'auto' keeps the native
+    // stepper rail (stepperMode); any explicit value overrides the display and
+    // is rendered by the shared c/formNav ('none' hides the indicator entirely).
+    get progressSetting() {
+        const s = (this.model && this.model.shell) || {};
+        return s.progress || 'auto';
+    }
+    get useFormNav() {
+        const p = this.progressSetting;
+        return p !== 'auto' && p !== 'none';
+    }
+    get hideNativeNav() {
+        return this.progressSetting !== 'auto';
+    }
+    get navDisplayMode() {
+        return this.progressSetting; // bar | dots | fraction | horizontal
+    }
+    get wrapperClass() {
+        const chr = (this.model && this.model.shell && this.model.shell.chrome) || 'card';
+        return `wizard mode-${this.stepperMode}${this.hideNativeNav ? ' nav-external' : ''} chrome-${chr}`;
+    }
+    get sheetClass() {
+        const mw = (this.model && this.model.shell && this.model.shell.maxWidth) || 'narrow';
+        return `sheet maxw-${mw}`;
+    }
+    get isPaper() {
+        return (this.model && this.model.shell && this.model.shell.chrome) === 'paper';
+    }
+    handleChildNav(e) {
+        this.dispatchEvent(new CustomEvent('navrequest', { detail: e.detail }));
+    }
+    get headerArrangement() {
+        return (this.model && this.model.header && this.model.header.arrangement) || 'stacked';
+    }
+    get showLogo() {
+        const h = (this.model && this.model.header) || {};
+        return this.headerArrangement !== 'textOnly' && !!h.logo;
+    }
+    get headClass() {
+        const style = (this.model && this.model.shell && this.model.shell.header) || 'standard';
+        return `sheet-head head-${style} arrange-${this.headerArrangement}`;
     }
 
     // ---- progress display (progress mode + the narrow-container fallback) ----
@@ -73,7 +111,13 @@ export default class ShellWizard extends LightningElement {
     }
     get showHeader() {
         const h = this.model && this.model.header;
-        return !!(h && (h.title || h.description || h.logo));
+        const style = (this.model && this.model.shell && this.model.shell.header) || 'standard';
+        return style !== 'none' && !!(h && (h.title || h.description || h.logo || h.highlight));
+    }
+    get highlightVariant() {
+        return ((this.model && this.model.shell && this.model.shell.header) || 'standard') === 'hero'
+            ? 'banner'
+            : '';
     }
     get metaStepLabel() {
         if (!this.nav) return '';
@@ -99,6 +143,16 @@ export default class ShellWizard extends LightningElement {
     }
     get showSubmit() {
         return !!(this.nav && this.nav.isLast);
+    }
+    get submitInfo() {
+        return (this.model && this.model.shell && this.model.shell.submit) || { placement: 'flow', alignment: 'right' };
+    }
+    get isStickySubmit() {
+        return this.submitInfo.placement === 'stickyBottom';
+    }
+    get footerClass() {
+        const a = this.submitInfo.alignment || 'right';
+        return `sheet-footer align-${a}${this.isStickySubmit ? ' is-sticky' : ''}`;
     }
 
     fireBack() {

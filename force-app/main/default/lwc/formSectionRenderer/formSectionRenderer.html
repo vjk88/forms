@@ -1,15 +1,25 @@
 <template>
     <div class={hostClass}>
         <template lwc:if={sec.showHeader}>
-            <div class="sec-header">
+            <div class={headerClass} onclick={toggleCollapse}>
+                <template lwc:if={sec.collapsible}>
+                    <lightning-icon icon-name={collapseChevron} size="x-small"
+                        class="sec-chevron"></lightning-icon>
+                </template>
                 <template lwc:if={sec.icon}>
                     <lightning-icon icon-name={sec.icon} size="x-small"
                         class="sec-icon"></lightning-icon>
                 </template>
-                <h3 class="sec-title">{sec.title}</h3>
+                <div class="sec-headtext">
+                    <h3 class="sec-title">{sec.title}</h3>
+                    <template lwc:if={sec.description}>
+                        <p class="sec-desc">{sec.description}</p>
+                    </template>
+                </div>
             </div>
         </template>
 
+        <div class={bodyClass}>
         <lightning-record-edit-form
             object-api-name={objectApiName}
             record-id={recordId}
@@ -111,7 +121,7 @@
 
                         <!-- Display text -->
                         <template lwc:elseif={el.isDisplayText}>
-                            <lightning-formatted-rich-text value={el.content}>
+                            <lightning-formatted-rich-text value={el.content} class="el-text">
                             </lightning-formatted-rich-text>
                         </template>
 
@@ -141,9 +151,40 @@
                             </div>
                         </template>
 
+                        <!-- Hero -->
+                        <template lwc:elseif={el.isHero}>
+                            <div class="el-hero">
+                                <template lwc:if={el.heroHasImage}>
+                                    <img src={el.heroImageUrl} alt={el.heroImageAlt}
+                                        class="el-hero__img">
+                                </template>
+                                <template lwc:if={el.heroHeadline}>
+                                    <h2 class="el-hero__headline">{el.heroHeadline}</h2>
+                                </template>
+                                <template lwc:if={el.heroSubtext}>
+                                    <p class="el-hero__subtext">{el.heroSubtext}</p>
+                                </template>
+                                <template lwc:if={el.heroHasCta}>
+                                    <template lwc:if={el.heroCtaIsLink}>
+                                        <a href={el.heroCtaHref} target="_blank"
+                                            rel="noopener" class="el-hero__cta">{el.heroCtaLabel}</a>
+                                    </template>
+                                    <template lwc:else>
+                                        <button type="button" class="el-hero__cta"
+                                            onclick={handleHeroStart}>{el.heroCtaLabel}</button>
+                                    </template>
+                                </template>
+                            </div>
+                        </template>
+
                         <!-- Spacer -->
                         <template lwc:elseif={el.isSpacer}>
                             <div class={el.spacerClass}></div>
+                        </template>
+
+                        <!-- Empty space (blank grid cell — sizing via colSpan) -->
+                        <template lwc:elseif={el.isEmptySpace}>
+                            <div class="el-emptyspace" aria-hidden="true"></div>
                         </template>
 
                         <!-- Consent / Terms -->
@@ -164,18 +205,38 @@
                             </div>
                         </template>
 
-                        <!-- File upload (needs a saved record) -->
+                        <!-- File upload -->
                         <template lwc:elseif={el.isFileUpload}>
+                            <!-- Edit mode (record exists): native chunked upload. -->
                             <template lwc:if={hasRecordId}>
                                 <lightning-file-upload
                                     label={el.label}
                                     record-id={recordId}>
                                 </lightning-file-upload>
                             </template>
+                            <!-- Create mode: capture to memory, attach atomically on submit. -->
                             <template lwc:else>
-                                <p class="el-file-note">
-                                    File upload available after the record is created.
-                                </p>
+                                <lightning-input
+                                    type="file"
+                                    label={el.label}
+                                    multiple={el.fileMultiple}
+                                    accept={el.fileAccept}
+                                    data-el-id={el.fileElId}
+                                    onchange={handleFilePick}>
+                                </lightning-input>
+                                <template lwc:if={el.fileNames.length}>
+                                    <ul class="el-file-list">
+                                        <template for:each={el.fileNames} for:item="f">
+                                            <li key={f.key} class="el-file-item">
+                                                <lightning-icon icon-name="doctype:attachment" size="x-small" class="el-file-ico"></lightning-icon>
+                                                <span class="el-file-name">{f.name}</span>
+                                                <button type="button" class="el-file-x" title="Remove"
+                                                        data-el-id={el.fileElId} data-idx={f.idx}
+                                                        onclick={handleFileRemove}>×</button>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </template>
                             </template>
                         </template>
                     </div>
@@ -201,5 +262,6 @@
                 </c-form-repeater>
             </template>
         </template>
+        </div>
     </div>
 </template>

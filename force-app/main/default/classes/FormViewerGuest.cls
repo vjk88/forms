@@ -82,7 +82,8 @@ public without sharing class FormViewerGuest {
   public static FormSubmitController.SubmitResult submitGuestForm(
     Id formId,
     Map<String, Object> parentValues,
-    List<FormSubmitController.ChildBlock> children
+    List<FormSubmitController.ChildBlock> children,
+    List<FormSubmitController.FileUpload> files
   ) {
     if (formId == null) {
       throw new AuraHandledException('Form Id is required.');
@@ -137,8 +138,128 @@ public without sharing class FormViewerGuest {
       FormViewerController.normalizeObjectName(f.Primary_Context_Object__c),
       parentValues,
       null, // guests never update
-      safeChildren
+      safeChildren,
+      files
     );
+  }
+
+  /**
+   * Guest autofill source-record fetch. Read-widening for an unauthenticated user,
+   * so it is fenced on every axis:
+   *  - the form must be Published AND allow Public_Guest (same trust gate as render);
+   *  - the source object + EACH requested field must appear in the PUBLISHED body's
+   *    autofill rules (a guest can't fish arbitrary objects/fields by crafting args);
+   *  - only those allow-listed fields are ever selected or returned.
+   * Runs `without sharing` (class-level) so the published record is readable, but the
+   * allow-list — not sharing — is what bounds exposure.
+   */
+  public static Map<String, Object> getGuestAutofillRecord(
+    Id formId,
+    String objectApiName,
+    Id recordId,
+    List<String> fieldApiNames
+  ) {
+    Map<String, Object> out = new Map<String, Object>();
+    if (formId == null || recordId == null || String.isBlank(objectApiName) || fieldApiNames == null || fieldApiNames.isEmpty()) {
+      return out;
+    }
+    List<Form__c> forms = [
+      SELECT Status__c, Allowed_Adapters__c, Layout_Config__c
+      FROM Form__c
+      WHERE Id = :formId
+      LIMIT 1
+    ];
+    if (forms.isEmpty()) {
+      return out;
+    }
+    Form__c f = forms[0];
+    Boolean isPublic =
+      String.isNotBlank(f.Allowed_Adapters__c) &&
+      f.Allowed_Adapters__c.contains('Public_Guest');
+    if (f.Status__c != 'Published' || !isPublic) {
+      return out;
+    }
+
+    // Allow-list of source fields per source object, from the published rules.
+    Map<String, Set<String>> allowed = allowedAutofillFields(f.Layout_Config__c);
+    Set<String> allowFields = allowed.get(objectApiName.toLowerCase());
+    if (allowFields == null || allowFields.isEmpty()) {
+      return out;
+    }
+    Schema.SObjectType t = Schema.getGlobalDescribe().get(objectApiName.toLowerCase());
+    if (t == null) {
+      return out;
+    }
+    Map<String, Schema.SObjectField> fmap = t.getDescribe().fields.getMap();
+    List<String> safe = new List<String>();
+    for (String fn : fieldApiNames) {
+      if (String.isBlank(fn) || !allowFields.contains(fn.toLowerCase())) {
+        continue; // not declared by the published rules ⇒ never read
+      }
+      Schema.SObjectField sf = fmap.get(fn.toLowerCase());
+      if (sf != null) {
+        safe.add(sf.getDescribe().getName());
+      }
+    }
+    if (safe.isEmpty()) {
+      return out;
+    }
+    String q =
+      'SELECT ' + String.join(safe, ',') +
+      ' FROM ' + t.getDescribe().getName() +
+      ' WHERE Id = :recordId LIMIT 1';
+    List<SObject> rows = Database.query(q);
+    if (!rows.isEmpty()) {
+      for (String fn : safe) {
+        out.put(fn, rows[0].get(fn));
+      }
+    }
+    return out;
+  }
+
+  /** sourceObject(lower) → set of mapping source-field(lower) the published rules declare. */
+  private static Map<String, Set<String>> allowedAutofillFields(String bodyJson) {
+    Map<String, Set<String>> out = new Map<String, Set<String>>();
+    if (String.isBlank(bodyJson)) {
+      return out;
+    }
+    try {
+      Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(bodyJson);
+      Object fsObj = parsed.get('formSettings');
+      if (!(fsObj instanceof Map<String, Object>)) {
+        return out;
+      }
+      Object rulesObj = ((Map<String, Object>) fsObj).get('autofillRules');
+      if (!(rulesObj instanceof List<Object>)) {
+        return out;
+      }
+      for (Object rObj : (List<Object>) rulesObj) {
+        if (!(rObj instanceof Map<String, Object>)) {
+          continue;
+        }
+        Map<String, Object> rule = (Map<String, Object>) rObj;
+        Object srcObj = rule.get('sourceObject');
+        Object mapsObj = rule.get('mappings');
+        if (!(srcObj instanceof String) || !(mapsObj instanceof List<Object>)) {
+          continue;
+        }
+        String src = ((String) srcObj).toLowerCase();
+        Set<String> fields = out.containsKey(src) ? out.get(src) : new Set<String>();
+        for (Object mObj : (List<Object>) mapsObj) {
+          if (!(mObj instanceof Map<String, Object>)) {
+            continue;
+          }
+          Object fromVal = ((Map<String, Object>) mObj).get('from');
+          if (fromVal instanceof String) {
+            fields.add(((String) fromVal).toLowerCase());
+          }
+        }
+        out.put(src, fields);
+      }
+    } catch (Exception e) {
+      // Unparseable snapshot ⇒ nothing allowed.
+    }
+    return out;
   }
 
   /** "childObject|linkingField" pairs the published body actually defines. */

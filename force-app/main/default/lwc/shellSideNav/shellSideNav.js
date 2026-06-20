@@ -30,6 +30,46 @@ export default class ShellSideNav extends LightningElement {
         rail.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
     }
 
+    get headerOn() {
+        return ((this.model && this.model.shell && this.model.shell.header) || 'standard') !== 'none';
+    }
+    get showRailHeader() {
+        const h = (this.model && this.model.header) || {};
+        return this.headerOn && (!!h.title || !!h.logo || !!h.highlight);
+    }
+    get showLogo() {
+        const h = (this.model && this.model.header) || {};
+        return this.headerOn && (h.arrangement || 'stacked') !== 'textOnly' && !!h.logo;
+    }
+
+    get contentClass() {
+        const mw = (this.model && this.model.shell && this.model.shell.maxWidth) || 'narrow';
+        return `content maxw-${mw}`;
+    }
+
+    get submitInfo() {
+        return (this.model && this.model.shell && this.model.shell.submit) || { placement: 'brandPanel', alignment: 'right' };
+    }
+    get submitPlacement() {
+        return this.submitInfo.placement || 'brandPanel';
+    }
+    get showRailSubmit() {
+        return this.submitPlacement === 'brandPanel';
+    }
+    get showContentSubmit() {
+        return this.submitPlacement !== 'brandPanel';
+    }
+    get isStickySubmit() {
+        return this.submitPlacement === 'stickyBottom';
+    }
+    get contentSubmitClass() {
+        const a = this.submitInfo.alignment || 'right';
+        let cls = `content-submit align-${a}`;
+        if (this.isStickySubmit) cls += ' is-sticky';
+        if (this.submitPlacement === 'brandPanel') cls += ' brand-placement-fallback';
+        return cls;
+    }
+
     get railItems() {
         if (!this.model || !this.nav) return [];
         return this.model.pages.map((p, i) => {

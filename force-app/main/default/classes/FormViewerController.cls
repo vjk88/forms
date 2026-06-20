@@ -155,13 +155,14 @@ public with sharing class FormViewerController {
     Id formId,
     Map<String, Object> parentValues,
     Id existingRecordId,
-    List<FormSubmitController.ChildBlock> children
+    List<FormSubmitController.ChildBlock> children,
+    List<FormSubmitController.FileUpload> files
   ) {
     if (formId == null) {
       throw new AuraHandledException('Form Id is required.');
     }
     if (UserInfo.getUserType() == 'Guest') {
-      return FormViewerGuest.submitGuestForm(formId, parentValues, children);
+      return FormViewerGuest.submitGuestForm(formId, parentValues, children, files);
     }
     List<Form__c> forms = [
       SELECT Primary_Context_Object__c
@@ -177,8 +178,61 @@ public with sharing class FormViewerController {
       normalizeObjectName(forms[0].Primary_Context_Object__c),
       parentValues,
       existingRecordId,
-      children
+      children,
+      files
     );
+  }
+
+  /**
+   * Autofill source-record fetch — reads the mapped fields off a source record so
+   * c/formViewer can copy them into form fields (lookup-driven or URL-param driven).
+   * Internal users read WITH USER_MODE (sharing + FLS govern what's returned).
+   * Guests are delegated to FormViewerGuest's hard-gated, allow-listed path — only
+   * the object/fields the PUBLISHED form's autofill rules declare are ever exposed.
+   */
+  @AuraEnabled
+  public static Map<String, Object> getAutofillRecord(
+    Id formId,
+    String objectApiName,
+    Id recordId,
+    List<String> fieldApiNames
+  ) {
+    Map<String, Object> out = new Map<String, Object>();
+    if (recordId == null || String.isBlank(objectApiName) || fieldApiNames == null || fieldApiNames.isEmpty()) {
+      return out;
+    }
+    if (UserInfo.getUserType() == 'Guest') {
+      return FormViewerGuest.getGuestAutofillRecord(formId, objectApiName, recordId, fieldApiNames);
+    }
+    Schema.SObjectType t = Schema.getGlobalDescribe().get(objectApiName.toLowerCase());
+    if (t == null) {
+      return out;
+    }
+    Map<String, Schema.SObjectField> fmap = t.getDescribe().fields.getMap();
+    List<String> safe = new List<String>();
+    for (String fn : fieldApiNames) {
+      if (String.isBlank(fn)) {
+        continue;
+      }
+      Schema.SObjectField sf = fmap.get(fn.toLowerCase());
+      if (sf != null && sf.getDescribe().isAccessible()) {
+        safe.add(sf.getDescribe().getName());
+      }
+    }
+    if (safe.isEmpty()) {
+      return out;
+    }
+    String q =
+      'SELECT ' + String.join(safe, ',') +
+      ' FROM ' + t.getDescribe().getName() +
+      ' WHERE Id = :recordId WITH USER_MODE LIMIT 1';
+    List<SObject> rows = Database.query(q);
+    if (!rows.isEmpty()) {
+      for (String fn : safe) {
+        out.put(fn, rows[0].get(fn));
+      }
+    }
+    return out;
   }
 
   /** Case-corrects an object API name via describe (e.g. "contact" → "Contact"). */

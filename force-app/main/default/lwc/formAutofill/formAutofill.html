@@ -1,0 +1,113 @@
+<template>
+    <div class="afm">
+        <header class="afm-head">
+            <h2 class="afm-title">{title}</h2>
+            <lightning-button-icon
+                icon-name="utility:close"
+                variant="bare"
+                size="small"
+                alternative-text="Close"
+                onclick={handleCancel}
+                class="afm-close">
+            </lightning-button-icon>
+        </header>
+
+        <div class="afm-body">
+            <p class="af-intro">
+                Copy field values from a source record into this form — when a lookup is
+                filled in, or from a record Id passed in the URL.
+            </p>
+
+            <lightning-combobox
+                label="Source"
+                variant="label-stacked"
+                value={sel.sourceType}
+                options={sourceTypeOptions}
+                onchange={handleSourceTypeChange}>
+            </lightning-combobox>
+
+            <template lwc:if={isLookup}>
+                <lightning-combobox
+                    label="Lookup on the form"
+                    variant="label-stacked"
+                    value={sel.lookupField}
+                    options={lookupOptions}
+                    placeholder="Select a lookup field"
+                    onchange={handleLookupChange}>
+                </lightning-combobox>
+                <p lwc:if={hasNoLookups} class="af-hint">
+                    This object has no usable lookup fields.
+                </p>
+            </template>
+
+            <template lwc:if={isUrl}>
+                <lightning-input
+                    label="URL parameter"
+                    variant="label-stacked"
+                    value={sel.urlParam}
+                    placeholder="e.g. accountId"
+                    onchange={handleUrlParamChange}>
+                </lightning-input>
+                <lightning-combobox
+                    label="Source object"
+                    variant="label-stacked"
+                    value={sel.sourceObject}
+                    options={objectOptions}
+                    placeholder="Select an object"
+                    onchange={handleSourceObjectChange}>
+                </lightning-combobox>
+            </template>
+
+            <div class="af-maps">
+                <span class="af-maps__title">Field mappings</span>
+                <template for:each={mappingRows} for:item="m">
+                    <div key={m.id} class="af-map">
+                        <lightning-combobox
+                            variant="label-hidden"
+                            label="Source field"
+                            value={m.from}
+                            placeholder="Source field"
+                            options={sourceFieldOptions}
+                            data-id={m.id}
+                            data-prop="from"
+                            onchange={handleMappingChange}
+                            class="af-map__sel">
+                        </lightning-combobox>
+                        <lightning-icon
+                            icon-name="utility:forward"
+                            size="xx-small"
+                            class="af-map__arrow">
+                        </lightning-icon>
+                        <lightning-combobox
+                            variant="label-hidden"
+                            label="Form field"
+                            value={m.to}
+                            placeholder="Form field"
+                            options={targetFieldOptions}
+                            data-id={m.id}
+                            data-prop="to"
+                            onchange={handleMappingChange}
+                            class="af-map__sel">
+                        </lightning-combobox>
+                        <lightning-button-icon
+                            icon-name="utility:close"
+                            variant="bare"
+                            size="small"
+                            alternative-text="Remove mapping"
+                            data-id={m.id}
+                            onclick={handleRemoveMapping}>
+                        </lightning-button-icon>
+                    </div>
+                </template>
+                <button class="af-link" onclick={handleAddMapping}>+ Add mapping</button>
+            </div>
+        </div>
+
+        <footer class="afm-foot">
+            <button class="slds-button slds-button_neutral" onclick={handleCancel}>Cancel</button>
+            <button class="slds-button slds-button_brand" onclick={handleSave} disabled={saveDisabled}>
+                Save rule
+            </button>
+        </footer>
+    </div>
+</template>

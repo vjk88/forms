@@ -52,9 +52,25 @@ export default class ShellConversational extends LightningElement {
         }
     }
 
+    get headerStyle() {
+        return (this.model && this.model.shell && this.model.shell.header) || 'standard';
+    }
     get showHeader() {
         const h = this.model && this.model.header;
-        return !!(h && (h.title || h.description || h.logo));
+        return this.headerStyle !== 'none' && !!(h && (h.title || h.description || h.logo || h.highlight));
+    }
+    get highlightVariant() {
+        return this.headerStyle === 'hero' ? 'banner' : '';
+    }
+    get headerArrangement() {
+        return (this.model && this.model.header && this.model.header.arrangement) || 'stacked';
+    }
+    get showLogo() {
+        const h = (this.model && this.model.header) || {};
+        return this.headerArrangement !== 'textOnly' && !!h.logo;
+    }
+    get headClass() {
+        return `conv-head head-${this.headerStyle} arrange-${this.headerArrangement}`;
     }
     get allSections() {
         return this.model ? extractSections(this.model) : [];

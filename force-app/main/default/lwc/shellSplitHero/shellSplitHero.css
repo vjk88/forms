@@ -2,16 +2,17 @@
 
 .layout {
     display: flex;
-    min-height: 100%;
+    min-height: var(--c-shell-min-h, 100%);
 }
 
 /* ── Brand panel ── */
 .panel {
     position: sticky;
     top: 0;
-    height: 100vh;
+    align-self: flex-start;
+    height: var(--c-shell-rail-h, 100vh);
     overflow-y: auto;
-    background: var(--c-header-bg, var(--c-page-bg, #0f4c81));
+    background: var(--c-header-bg, var(--c-page-bg, #0f4c81)) center / cover no-repeat;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -58,24 +59,6 @@
     max-width: 38ch;
     color: var(--c-header-text-weak, rgba(255, 255, 255, 0.82));
 }
-.step-dots {
-    display: flex;
-    gap: var(--c-space-2, 8px);
-    flex-wrap: wrap;
-    margin-top: auto;
-    padding-top: var(--c-space-5, 24px);
-}
-.dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--c-border-light, #e6e8ec);
-    transition: background var(--c-dur-1, 150ms) var(--c-ease, ease-out);
-}
-.dot-active { background: var(--c-accent, #0176d3); }
-.dot-done   { background: color-mix(in srgb, var(--c-accent, #0176d3) 55%, white); }
-.dot-error  { background: var(--c-error, #ea001e); }
-
 /* ── Form pane ── */
 .pane {
     flex: 1 1 0;
@@ -129,6 +112,62 @@
     box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
 }
 
+.layout.side-right {
+    flex-direction: row-reverse;
+}
+
+/* ── Panel Submit (desktop) ── */
+.panel-submit {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-2, 8px);
+    width: 100%;
+}
+.btn-brand-back {
+    font: inherit;
+    font-weight: 500;
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--c-radius, 8px);
+    color: var(--c-header-text, #fff);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    transition: border-color var(--c-dur-1, 150ms);
+}
+.btn-brand-back:hover {
+    border-color: var(--c-header-text, #fff);
+    background: rgba(255, 255, 255, 0.1);
+}
+.btn-brand-next {
+    font: inherit;
+    font-weight: 600;
+    color: var(--c-on-accent, #fff);
+    background: var(--c-accent, #0176d3);
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    height: var(--c-control-h, 40px);
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+}
+
+/* ── Sticky submit bar ── */
+.nav-bar.is-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--c-card-bg, #fff);
+    border-top: 1px solid var(--c-border-light, #e6e8ec);
+    padding: var(--c-space-3, 12px) 0;
+    margin-top: auto;
+}
+.nav-bar.brand-placement {
+    display: none;
+}
+
 /* ── Narrow container: brand panel → compact top band ──
    Container query (the shell reads its OWN width) replaces the old
    JS `model.collapsed` flag, which misread width inside Lightning columns. */
@@ -153,5 +192,20 @@
     }
     .panel-body { flex: 0 1 auto; justify-content: center; }
     .panel-desc { display: none; }
-    .step-dots  { margin-top: 0; padding-top: 0; }
+    .panel-submit { display: none !important; }
+    .pane {
+        flex: none;
+        height: auto;
+        overflow-y: visible;
+    }
+    .nav-bar.brand-placement {
+        display: flex !important;
+    }
+    .nav-bar.is-sticky {
+        position: static !important;
+        border-top: none !important;
+        padding: 0 !important;
+        margin-top: var(--c-space-4, 16px) !important;
+        background: transparent !important;
+    }
 }

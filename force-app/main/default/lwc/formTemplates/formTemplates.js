@@ -346,9 +346,10 @@ export function toBodyJson(tpl, objectApiName, validApis) {
         schemaVersion: 1,
         layoutMode: tpl.layoutMode,
         header: {
-            visible: !!(tpl.header && tpl.header.title),
+            visible: !!(tpl.header && (tpl.header.title || tpl.header.logo)),
             title: (tpl.header && tpl.header.title) || tpl.name,
-            subtitle: (tpl.header && tpl.header.subtitle) || ''
+            subtitle: (tpl.header && tpl.header.subtitle) || '',
+            logo: (tpl.header && tpl.header.logo) || ''
         },
         formSettings: {
             submitLabel: 'Submit',
@@ -451,8 +452,24 @@ export function sampleLayoutParts() {
 }
 
 /** "Start from a layout" — an empty form in the chosen shell, object picked on use. */
+// Each canonical layout previews in a DISTINCT, flattering theme so the
+// "Start from scratch" grid reads as a varied gallery — not eight cloud-blue
+// clones. Spans all 7 themes (incl. both Immersive moods: Prism light + Noir
+// dark) so the grid shows the full range of looks at a glance.
+const LAYOUT_DEFAULT_THEME = {
+    stacked:    { themeId: 'lightning', skinId: 'light' },
+    bento:      { themeId: 'immersive', skinId: 'prism' },     // candy glass grid
+    stepper:    { themeId: 'blueprint', skinId: 'blueprint' },
+    sideNav:    { themeId: 'cloud',     skinId: 'light' },     // indigo app shell
+    splitHero:  { themeId: 'luxe',      skinId: 'emerald' },
+    oneAtATime: { themeId: 'editorial', skinId: 'paper' },     // warm conversational
+    tabbed:     { themeId: 'kiosk',     skinId: 'daylight' },
+    accordion:  { themeId: 'immersive', skinId: 'noir' }       // dark glass
+};
+
 export function bareLayoutTemplate(archetype) {
     const label = LAYOUT_LABELS[archetype] || archetype;
+    const dt = LAYOUT_DEFAULT_THEME[archetype] || { themeId: 'cloud', skinId: 'light' };
     return {
         id: `layout-${archetype}`,
         source: 'layout',
@@ -465,7 +482,7 @@ export function bareLayoutTemplate(archetype) {
         suggestedObjectLabel: '',
         layoutMode: 'Single_Page',
         archetype,
-        themeId: 'cloud', skinId: 'light',
+        themeId: dt.themeId, skinId: dt.skinId,
         adapters: ['Internal_Record_Page'],
         header: { title: 'New form', subtitle: '' },
         sections: [{ title: 'Details', gridColumns: 1, elements: [] }]

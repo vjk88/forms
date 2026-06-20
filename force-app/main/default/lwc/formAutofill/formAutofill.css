@@ -1,0 +1,103 @@
+:host {
+    display: block;
+}
+
+/* Modal content — sits inside formStudio's .vis-mcard chrome. */
+.afm {
+    display: flex;
+    flex-direction: column;
+    max-height: 88vh;
+}
+
+.afm-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e4e7ec;
+}
+
+.afm-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #16181d;
+}
+
+.afm-body {
+    padding: 16px 20px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.afm-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid #e4e7ec;
+}
+
+.af-intro {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #5c6b80;
+    margin: 0 0 0.25rem;
+}
+
+.af-hint {
+    font-size: 0.72rem;
+    color: #b94a48;
+    margin: 0.25rem 0 0;
+}
+
+/* Mappings block */
+.af-maps {
+    border-top: 1px dashed #e3e7ee;
+    padding-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.af-maps__title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #6b7688;
+}
+
+.af-map {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.af-map__sel {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.af-map__arrow {
+    flex: 0 0 auto;
+    --slds-c-icon-color-foreground-default: #aab2c0;
+}
+
+.af-link {
+    appearance: none;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    color: #2563eb;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0;
+    text-align: left;
+}
+
+.af-link:hover {
+    color: #1d4ed8;
+}

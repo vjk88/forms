@@ -3,7 +3,7 @@
     display: none !important;
 }
 /* Hide standard navigation bar */
-.oneAppNavBar, nav.oneAppNavBar {
+.oneAppNavBar, nav.oneAppNavBar, .slds-context-bar, one-app-nav-bar {
     display: none !important;
 }
 /* Adjust layout container to full screen */

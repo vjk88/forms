@@ -4,9 +4,11 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import isGuest from '@salesforce/user/isGuest';
 import { materialize } from 'c/layoutModel';
 import { evalVisibility } from 'c/formVisibility';
+import { getEmblemMarkUrl, getContrastRatio, getBackgroundHex } from 'c/brandEmblem';
 import getViewerForm from '@salesforce/apex/FormViewerController.getViewerForm';
 import getViewerFormByVersion from '@salesforce/apex/FormViewerController.getViewerFormByVersion';
 import submitViewerForm from '@salesforce/apex/FormViewerController.submitViewerForm';
+import getAutofillRecord from '@salesforce/apex/FormViewerController.getAutofillRecord';
 
 /**
  * c/formViewer — the NEW respondent experience (PHASE2_WORKPLAN §2.3).
@@ -60,7 +62,23 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
     @api formId;
     @api versionId; // render a specific version (wizard preview / test)
     @api recordId; // edit-mode context (record pages, URL)
-    @api mode = 'published'; // published | test (test = validate, no DML)
+    @api mode = 'published'; // published | test | preview (test/preview = validate, no DML)
+    @api previewWidth; // CSS width for the device toggle (passed to the engine)
+
+    // In-memory definition injection (builder live preview): when set, render
+    // THIS definition directly and skip the Apex load entirely. Shape mirrors
+    // the FormViewerController payload: { formName, primaryObject, formType,
+    // hasActiveVersion, bodyJson, layoutSpecJson }. Re-applies live on edits,
+    // preserving the page you're on so typing doesn't bounce you to page 1.
+    _previewDef;
+    @api get previewDefinition() {
+        return this._previewDef;
+    }
+    set previewDefinition(v) {
+        this._previewDef = v;
+        if (v && this._connected) this.applyDefinition(v, true);
+    }
+    _connected = false;
 
     @track isLoading = true;
     @track loadError = '';
@@ -82,6 +100,7 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
     _sections = [];
     _elements = [];
     _urlPrefill = {};
+    _autofillDone = {}; // autofill rule key → source recordId already applied (anti-loop)
     _sectionValues = {}; // sectionKey → last 'sectionvalue' payload
     _renderers = new Map(); // sectionKey → section-renderer host element
     _pendingFieldErrors = {}; // sectionKey → {fieldApi: msg} applied on register
@@ -98,6 +117,11 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
     // ------------------------------------------------------------------ load
 
     connectedCallback() {
+        this._connected = true;
+        if (this._previewDef) {
+            this.applyDefinition(this._previewDef, true);
+            return;
+        }
         this.load();
     }
 
@@ -149,8 +173,10 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
             });
     }
 
-    applyDefinition(vf) {
+    applyDefinition(vf, isLiveReapply) {
         this.isLoading = false;
+        this.loadError = '';
+        this.noActiveVersion = false;
         this.formName = vf.formName || '';
         this.primaryObject = vf.primaryObject || '';
         this.formType = vf.formType || '';
@@ -166,20 +192,34 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
             this.loadError = 'The form layout could not be read.';
             return;
         }
-        if (body.header) this.header = body.header;
-        if (body.formSettings) {
-            this.formSettings = { ...this.formSettings, ...body.formSettings };
-        }
+        // A fresh definition starts clean; a live re-apply (builder preview) keeps
+        // the header/settings defaults only as the floor.
+        this.header = body.header || {};
+        this.formSettings = { ...SETTINGS_DEFAULTS, ...(body.formSettings || {}) };
         this.layoutMode = body.layoutMode || 'Single_Page';
 
         const rawPages = Array.isArray(body.pages)
             ? body.pages
             : [{ id: 'p1', name: 'Page 1', sections: body.sections || [] }];
 
+        const prevPage = this._currentPageKey;
         this.flattenBody(rawPages);
         this.applyUrlPrefills();
+        // A fresh load re-runs autofill from scratch; a live re-apply (builder
+        // preview) keeps what's already been fetched so edits don't re-fire it.
+        if (!isLiveReapply) this._autofillDone = {};
+        this.runAllAutofill();
         this.resolveSpec(vf.layoutSpecJson);
-        this._currentPageKey = this._pages.length ? this._pages[0].key : null;
+        // Preserve the page you're on across live edits; otherwise start at page 1.
+        const keep =
+            isLiveReapply &&
+            prevPage &&
+            this._pages.some((p) => p.key === prevPage);
+        this._currentPageKey = keep
+            ? prevPage
+            : this._pages.length
+            ? this._pages[0].key
+            : null;
     }
 
     /**
@@ -335,11 +375,53 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
     get headerDescription() {
         return (this.header && this.header.visible && this.header.subtitle) || '';
     }
+    get headerLogo() {
+        if (!(this.header && this.header.visible)) return '';
+        // An uploaded logo always wins; otherwise fall back to a built-in emblem
+        // mark — but only when the user explicitly picked one (no retroactive change).
+        return this.header.logo || this.emblemUrl;
+    }
+    // Built-in logo emblem (c/brandEmblem) rendered as a contrast-aware SVG mark.
+    // Same engine the theme-picker card uses, so the live header matches the themes.
+    get emblemUrl() {
+        const h = this.header || {};
+        const emblem = h.emblem;
+        if (!emblem || emblem === 'none') return '';
+        if ((h.arrangement || 'stacked') === 'textOnly') return '';
+        const skin = this.skin || {};
+        const onBanner =
+            ((this.spec && this.spec.shell && this.spec.shell.header) || 'standard') === 'hero';
+        const bg = onBanner ? skin.headerBg || skin.surface : skin.surface || skin.pageBg;
+        const text = onBanner ? skin.headerText || '#ffffff' : skin.text || '#16325c';
+        const accent = skin.accent || '#6366f1';
+        const complexBg = bg && (String(bg).includes('url(') || String(bg).includes('gradient'));
+        let color = accent;
+        if (complexBg) {
+            color = text;
+        } else if (getContrastRatio(accent, getBackgroundHex(bg, text)) < 3.5) {
+            color = text;
+        }
+        return getEmblemMarkUrl(emblem, color);
+    }
+    get headerArrangement() {
+        return (this.header && this.header.arrangement) || 'stacked';
+    }
+    get headerHighlight() {
+        return (this.header && this.header.visible && this.header.highlight) || '';
+    }
 
     get pageValidator() {
         return this._pageValidator;
     }
 
+    get isPreview() {
+        return this.mode === 'preview';
+    }
+    // Builder preview: the host pane is taller than the form, so tell the shells
+    // to size to content (else flex-pinned action buttons drift to the bottom).
+    get viewerStyle() {
+        return this.isPreview ? '--c-shell-min-h: auto; --c-shell-rail-h: auto;' : '';
+    }
     get showEngine() {
         return (
             !this.isLoading &&
@@ -377,6 +459,71 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
         if (!sectionKey) return;
         this._sectionValues[sectionKey] = values || {};
         this.liveValues = { ...this.liveValues, ...values };
+        // A lookup may have just been filled — run any autofill rule keyed off it.
+        this.runAutofillFor(values || {});
+    }
+
+    // ------------------------------------------------------------ autofill
+    // Copy mapped fields from a source record into form fields. Source is either a
+    // lookup the respondent filled in, or a record Id passed via a URL parameter.
+    get autofillRules() {
+        return (this.formSettings && this.formSettings.autofillRules) || [];
+    }
+
+    // Run every rule whose source record is already known (URL param, or a lookup
+    // that's been prefilled/seeded). Called once on load.
+    runAllAutofill() {
+        this.autofillRules.forEach((rule) => {
+            let recId;
+            if (rule.sourceType === 'url') {
+                recId = this.urlParams[(rule.urlParam || '').toLowerCase()];
+            } else if (rule.sourceType === 'lookup') {
+                recId = this.liveValues[rule.lookupField];
+            }
+            if (recId) this.applyAutofill(rule, recId);
+        });
+    }
+
+    // Run lookup-driven rules whose lookup field is in this batch of changed values.
+    runAutofillFor(values) {
+        this.autofillRules.forEach((rule) => {
+            if (rule.sourceType !== 'lookup') return;
+            if (!Object.prototype.hasOwnProperty.call(values, rule.lookupField)) return;
+            const recId = values[rule.lookupField];
+            if (recId) this.applyAutofill(rule, recId);
+        });
+    }
+
+    applyAutofill(rule, recId) {
+        const mappings = (rule.mappings || []).filter((m) => m.from && m.to);
+        if (!mappings.length || !rule.sourceObject) return;
+        // Guard against re-fetch loops: applying values re-renders sections, which
+        // re-emits sectionvalue. Skip if we've already pulled this record for this rule.
+        const ruleKey = rule.sourceType === 'url' ? `url:${rule.urlParam}` : `lkp:${rule.lookupField}`;
+        if (this._autofillDone[ruleKey] === recId) return;
+        this._autofillDone = { ...this._autofillDone, [ruleKey]: recId };
+        getAutofillRecord({
+            formId: this.effectiveFormId,
+            objectApiName: rule.sourceObject,
+            recordId: recId,
+            fieldApiNames: mappings.map((m) => m.from)
+        })
+            .then((res) => {
+                if (!res) return;
+                const lv = { ...this.liveValues };
+                const pf = { ...this._urlPrefill };
+                mappings.forEach((m) => {
+                    if (res[m.from] !== undefined && res[m.from] !== null) {
+                        lv[m.to] = res[m.from];
+                        pf[m.to] = res[m.from];
+                    }
+                });
+                this.liveValues = lv;
+                this._urlPrefill = pf;
+            })
+            .catch(() => {
+                /* a failed source read just leaves fields blank */
+            });
     }
 
     handlePageChange(event) {
@@ -478,8 +625,8 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
             return;
         }
 
-        // Test mode: full validation, no DML.
-        if (this.mode === 'test') {
+        // Test / builder-preview: full validation, no DML — just show the ending.
+        if (this.mode === 'test' || this.mode === 'preview') {
             this.isSubmitted = true;
             return;
         }
@@ -514,7 +661,8 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
             formId: this.effectiveFormId,
             parentValues,
             existingRecordId: this.effectiveRecordId || null,
-            children
+            children,
+            files: this.collectFiles()
         })
             .then((res) => this.handleSubmitResult(res))
             .catch((e) => {
@@ -524,6 +672,17 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
                         'There was a problem saving the form.'
                 ]);
             });
+    }
+
+    /** Respondent file uploads across all sections → [{fileName, base64, contentType}]. */
+    collectFiles() {
+        const files = [];
+        this._sections.forEach((s) => {
+            const host = this.sectionHost(s.key);
+            if (!host || !host.collectFiles) return;
+            (host.collectFiles() || []).forEach((f) => files.push(f));
+        });
+        return files;
     }
 
     /** Cached values (covers unmounted pages) overlaid with live ones. */
@@ -725,7 +884,7 @@ export default class FormViewer extends NavigationMixin(LightningElement) {
 
     /** 'Record' → saved record; 'Custom' → URL with {recordId} tokens. */
     navigateTo(target, url) {
-        if (this.mode === 'test') return;
+        if (this.mode === 'test' || this.mode === 'preview') return;
         if (target === 'Custom') {
             const resolved = (url || '')
                 .replace(/{recordId}/g, this.savedRecordId || '')

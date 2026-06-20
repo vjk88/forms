@@ -1,0 +1,32 @@
+:host {
+    display: block;
+}
+
+/* Compact uppercase accent chip — faithful to the finalized theme design
+   (theme-comparison.html renderMockHeader + c/formThemeCard .tc-highlight):
+   inline, fit-content, accent-tinted with a 3px accent left-stripe. Token-driven
+   so it recolors with the theme accent. */
+.fh-badge {
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 var(--c-space-3, 0.6rem);
+    padding: 3px 8px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--c-accent, #0176d3) 12%, transparent);
+    color: var(--c-accent, #0176d3);
+    border-left: 3px solid var(--c-accent, #0176d3);
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* On a dark hero header / brand rail: white-translucent chip (matches the theme
+   reference's banner highlight) so it reads on the coloured background. */
+.fh-badge.fh-on-banner {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--c-header-text, #ffffff);
+    border-left-color: rgba(255, 255, 255, 0.35);
+}

@@ -152,14 +152,16 @@ export const PRESET_THEMES = { default: LAYOUT_TEMPLATES.classic };
  *   adds zero new token plumbing and the legacy LAYOUT_TEMPLATES skins above
  *   keep rendering byte-identical (regression-tested).
  *
- * The 7 themes are seeded from the proven legacy skins per the spec table.
+ * Roster = 7 STRUCTURAL themes (seeded from the proven legacy skins; each ships
+ * 2–4 mood skins) + 30 imported PRESET themes (flat single-look presets from
+ * theme-comparison.html, one skin each). Same resolution path for both.
  * ==========================================================================*/
 
 export const THEMES = {
     lightning: {
         id: 'lightning', label: 'Lightning',
-        identity: 'SLDS-faithful, native Salesforce',
-        defaultSkin: 'light',
+        identity: 'Dead-faithful SLDS — looks native inside Salesforce',
+        defaultSkin: 'light', tags: ['light', 'minimalist'],
         // structural design-language keys (constant across this theme's skins)
         structure: {
             font: 'salesforce', radius: 'slds', cardShadow: 'none', sectionDefault: 'card'
@@ -167,25 +169,27 @@ export const THEMES = {
     },
     cloud: {
         id: 'cloud', label: 'Cloud',
-        identity: 'Friendly enterprise blue, rounded, soft shadow',
-        defaultSkin: 'light',
+        identity: 'Modern SaaS — indigo, generous rounding, soft elevation (NOT SLDS blue)',
+        defaultSkin: 'light', tags: ['light', 'minimalist'],
         structure: {
-            font: 'enterprise', radius: 'rounded', cardShadow: 'soft', sectionDefault: 'card'
+            font: 'enterprise', radius: 'round', cardShadow: 'soft', sectionDefault: 'card'
         }
     },
-    midnight: {
-        id: 'midnight', label: 'Midnight',
-        identity: 'Dark, glass, mesh gradient',
-        defaultSkin: 'noir',
+    immersive: {
+        id: 'immersive', label: 'Immersive',
+        identity: 'Frosted-glass cards on a vivid mesh / candy gradient — the marquee look',
+        defaultSkin: 'prism', tags: ['dark', 'creative'],
         structure: {
+            // glass + grain are constant; the candy (light) vs mesh (dark) bg is
+            // the per-skin variant — Prism = light, Noir/Aurora/Nebula = dark.
             font: 'geometric', radius: 'round', cardShadow: 'strong', sectionDefault: 'plain',
-            glass: true, dark: true, texture: 'grain', bgEffect: 'mesh'
+            glass: true, texture: 'grain'
         }
     },
     luxe: {
         id: 'luxe', label: 'Luxe',
-        identity: 'Serif display, sharp, gradient',
-        defaultSkin: 'emerald',
+        identity: 'Premium serif, gold accent, deep gradient surfaces',
+        defaultSkin: 'emerald', tags: ['creative', 'editorial'],
         structure: {
             font: 'luxe', radius: 'sharp', cardShadow: 'none', sectionDefault: 'plain',
             inputStyle: 'underline', panelDecor: 'frame'
@@ -194,7 +198,7 @@ export const THEMES = {
     editorial: {
         id: 'editorial', label: 'Editorial',
         identity: 'Warm paper, serif, refined, left labels',
-        defaultSkin: 'paper',
+        defaultSkin: 'paper', tags: ['light', 'editorial'],
         structure: {
             font: 'editorial', radius: 'sharp', cardShadow: 'medium', sectionDefault: 'plain',
             labelPosition: 'left', inputStyle: 'underline', texture: 'grain'
@@ -203,7 +207,7 @@ export const THEMES = {
     blueprint: {
         id: 'blueprint', label: 'Blueprint',
         identity: 'Technical — mono-caps labels, grid texture, boxed',
-        defaultSkin: 'blueprint',
+        defaultSkin: 'blueprint', tags: ['light', 'minimalist'],
         structure: {
             font: 'technical', radius: 'sharp', cardShadow: 'none', sectionDefault: 'boxed',
             texture: 'grid', labelStyle: 'mono-caps'
@@ -212,12 +216,53 @@ export const THEMES = {
     kiosk: {
         id: 'kiosk', label: 'Kiosk',
         identity: 'Oversized touch controls, bold',
-        defaultSkin: 'daylight',
+        defaultSkin: 'daylight', tags: ['light', 'creative'],
         structure: {
             font: 'geometric', radius: 'pill', cardShadow: 'strong', sectionDefault: 'plain',
             controlScale: 1.5
         }
-    }
+    },
+
+    /* ======================================================================
+     * 30 imported PRESET themes (from theme-comparison.html). These are FLAT
+     * presets — one baked look each, one skin each — so the same Theme→Skin
+     * model carries them: structure holds the shared keys (font/radius/shadow/
+     * glass via the enum-OR-raw token fns), the single skin holds the explicit
+     * colors. Fonts are flattened to the SF default per owner (v1). Background
+     * IMAGES are deferred: pageBg/headerBg fall back to palette gradients/solids
+     * for now; the asset manifest in docs/redesign/THEME_SYSTEM_PLAN.md lists the
+     * source images to bundle as a Static Resource and the keys to re-point.
+     * ==================================================================== */
+    nordic: { id: 'nordic', label: 'Nordic Minimalist', identity: 'Scandinavian clean — high-contrast muted cool grays.', defaultSkin: 'light', tags: ['light', 'minimalist'], structure: { font: 'salesforce', radius: '8px', cardShadow: '0 4px 14px rgba(0,0,0,0.05)', sectionDefault: 'card', logoType: 'triangle', headerArrangement: 'stacked', headerHighlight: 'Closes Friday!' } },
+    neoBrutalism: { id: 'neoBrutalism', label: 'Neo-Brutalism', identity: 'Bold Gumroad/Figma — thick black borders, flat primaries.', defaultSkin: 'default', tags: ['light', 'creative'], structure: { font: 'salesforce', radius: '0px', cardShadow: '4px 4px 0px #000000', sectionDefault: 'card', logoType: 'shield', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    dracula: { id: 'dracula', label: 'Dracula Dark', identity: 'Programmer dark mode — deep purples, neon accents.', defaultSkin: 'default', tags: ['dark', 'creative'], structure: { font: 'salesforce', radius: '8px', cardShadow: '0 8px 30px rgba(0,0,0,0.4)', sectionDefault: 'card', logoType: 'aperture', headerArrangement: 'inline', headerHighlight: 'SPECIAL EVENT' } },
+    terracotta: { id: 'terracotta', label: 'Warm Terracotta', identity: 'Cozy boutique — soft ivory + organic clay orange.', defaultSkin: 'default', tags: ['light', 'editorial'], structure: { font: 'salesforce', radius: '4px', cardShadow: '0 6px 20px rgba(194,65,12,0.05)', sectionDefault: 'card', logoType: 'coffee', headerArrangement: 'textOnly', headerHighlight: '' } },
+    forest: { id: 'forest', label: 'Forest Moss', identity: 'Nature — deep forest green on sand/sage.', defaultSkin: 'default', tags: ['light', 'minimalist'], structure: { font: 'salesforce', radius: '12px', cardShadow: '0 4px 12px rgba(20,83,45,0.04)', sectionDefault: 'card', logoType: 'leaf', headerArrangement: 'stacked', headerHighlight: 'DRAFT COPY' } },
+    slate: { id: 'slate', label: 'Steel Slate', identity: 'Corporate SaaS — slate greys, steel accents.', defaultSkin: 'default', tags: ['light', 'minimalist'], structure: { font: 'salesforce', radius: '6px', cardShadow: '0 4px 16px rgba(15,23,42,0.04)', sectionDefault: 'card', logoType: 'globe', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    tokyo: { id: 'tokyo', label: 'Tokyo Midnight', identity: 'Neon cyberpunk — ice text, cosmic void.', defaultSkin: 'default', tags: ['dark', 'creative'], structure: { font: 'salesforce', radius: '2px', cardShadow: '0 12px 40px rgba(0,0,0,0.6)', sectionDefault: 'card', logoType: 'shield', headerArrangement: 'inline', headerHighlight: '2026 EDITION' } },
+    sandstone: { id: 'sandstone', label: 'Sandstone & Copper', identity: 'Warm desert minimalism — copper on sand.', defaultSkin: 'default', tags: ['light', 'editorial'], structure: { font: 'salesforce', radius: '14px', cardShadow: '0 4px 20px rgba(124,45,18,0.04)', sectionDefault: 'card', logoType: 'coffee', headerArrangement: 'textOnly', headerHighlight: '' } },
+    terminal: { id: 'terminal', label: 'Retro Terminal', identity: '1980s green phosphor terminal — flat, glowing.', defaultSkin: 'default', tags: ['dark', 'minimalist'], structure: { font: 'salesforce', radius: '0px', cardShadow: 'none', sectionDefault: 'card', logoType: 'shield', headerArrangement: 'stacked', headerHighlight: 'REQUIRED SIGN-IN' } },
+    lavender: { id: 'lavender', label: 'Lavender Mist', identity: 'Soft violet — creative / soft healthcare.', defaultSkin: 'default', tags: ['light', 'creative'], structure: { font: 'salesforce', radius: '16px', cardShadow: '0 8px 24px rgba(126,34,206,0.05)', sectionDefault: 'card', logoType: 'cross', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    mintStepper: { id: 'mintStepper', label: 'Neo-Mint', identity: 'Mint accents on dark charcoal — modern wizard.', defaultSkin: 'default', tags: ['dark', 'stepped', 'minimalist'], structure: { font: 'salesforce', radius: '6px', cardShadow: '0 8px 24px rgba(0,0,0,0.25)', sectionDefault: 'card', logoType: 'shield', headerArrangement: 'inline', headerHighlight: 'Closes Friday!' } },
+    retroStepper: { id: 'retroStepper', label: 'Amber Terminal', identity: 'Monospaced amber glow on black panels.', defaultSkin: 'default', tags: ['dark', 'stepped', 'creative'], structure: { font: 'salesforce', radius: '0px', cardShadow: 'none', sectionDefault: 'card', logoType: 'shield', headerArrangement: 'textOnly', headerHighlight: '' } },
+    snowStepper: { id: 'snowStepper', label: 'Nordic Snow', identity: 'Glacial white with ice-blue accents.', defaultSkin: 'default', tags: ['light', 'stepped', 'minimalist'], structure: { font: 'salesforce', radius: '16px', cardShadow: '0 4px 20px rgba(59,130,246,0.03)', sectionDefault: 'card', logoType: 'triangle', headerArrangement: 'stacked', headerHighlight: 'SPECIAL EVENT' } },
+    marbleSplit: { id: 'marbleSplit', label: 'Marble Split', identity: 'White marble brand rail + golden accents.', defaultSkin: 'default', tags: ['light', 'split', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '4px', cardShadow: '0 8px 30px rgba(0,0,0,0.06)', sectionDefault: 'card', logoType: 'award', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    cyberSplit: { id: 'cyberSplit', label: 'Cyber Midnight Split', identity: 'Pitch-black layouts + glowing network rail.', defaultSkin: 'default', tags: ['dark', 'split', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '2px', cardShadow: '0 12px 40px rgba(0,0,0,0.4)', sectionDefault: 'card', logoType: 'shield', headerArrangement: 'inline', headerHighlight: 'DRAFT COPY' } },
+    claySplit: { id: 'claySplit', label: 'Terracotta Split', identity: 'Desert-sunset rail + linen cards, rust highlights.', defaultSkin: 'default', tags: ['light', 'split', 'editorial', 'bgimage'], structure: { font: 'salesforce', radius: '8px', cardShadow: '0 6px 16px rgba(0,0,0,0.04)', sectionDefault: 'card', logoType: 'coffee', headerArrangement: 'textOnly', headerHighlight: '' } },
+    botanicalSplit: { id: 'botanicalSplit', label: 'Botanical Split', identity: 'Mist-forest rail + white cards, forest-green controls.', defaultSkin: 'default', tags: ['light', 'split', 'minimalist', 'bgimage'], structure: { font: 'salesforce', radius: '12px', cardShadow: '0 8px 24px rgba(0,0,0,0.05)', sectionDefault: 'card', logoType: 'leaf', headerArrangement: 'stacked', headerHighlight: '2026 EDITION' } },
+    execNav: { id: 'execNav', label: 'Steel Side-Nav', identity: 'Steel slate + professional nav, sharp corporate.', defaultSkin: 'default', tags: ['light', 'minimalist'], structure: { font: 'salesforce', radius: '6px', cardShadow: '0 4px 12px rgba(15,23,42,0.05)', sectionDefault: 'card', logoType: 'globe', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    startupNav: { id: 'startupNav', label: 'Tech Startup Nav', identity: 'Charcoal nav + white cards, indigo details.', defaultSkin: 'default', tags: ['light', 'minimalist'], structure: { font: 'salesforce', radius: '12px', cardShadow: '0 8px 24px rgba(0,0,0,0.06)', sectionDefault: 'card', logoType: 'globe', headerArrangement: 'inline', headerHighlight: 'REQUIRED SIGN-IN' } },
+    auraSplit: { id: 'auraSplit', label: 'Bioluminescent Split', identity: 'Frosted panel beside neon teal/purple gradient rail.', defaultSkin: 'default', tags: ['dark', 'split', 'creative'], structure: { font: 'salesforce', radius: '16px', cardShadow: '0 12px 40px rgba(0,0,0,0.4)', sectionDefault: 'card', glass: true, logoType: 'aperture', headerArrangement: 'textOnly', headerHighlight: '' } },
+    sunsetDunes: { id: 'sunsetDunes', label: 'Sunset Dunes', identity: 'Warm cinematic gradient + frosted panels.', defaultSkin: 'default', tags: ['light', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '16px', cardShadow: '0 8px 32px rgba(0,0,0,0.15)', sectionDefault: 'card', glass: true, logoType: 'aperture', headerArrangement: 'stacked', headerHighlight: 'Closes Friday!' } },
+    forestMist: { id: 'forestMist', label: 'Forest Mist', identity: 'Misty pines + frosted panels, deep green.', defaultSkin: 'default', tags: ['light', 'editorial', 'bgimage'], structure: { font: 'salesforce', radius: '12px', cardShadow: '0 8px 24px rgba(0,0,0,0.1)', sectionDefault: 'card', glass: true, logoType: 'leaf', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    marbleLuxury: { id: 'marbleLuxury', label: 'Marble Luxury', identity: 'White marble + solid panels, wood-textured header.', defaultSkin: 'default', tags: ['light', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '4px', cardShadow: '0 10px 30px rgba(0,0,0,0.08)', sectionDefault: 'card', logoType: 'award', headerArrangement: 'inline', headerHighlight: 'SPECIAL EVENT' } },
+    carbonMatrix: { id: 'carbonMatrix', label: 'Carbon Matrix', identity: 'Dark matrix mesh + obsidian glass, phosphor green.', defaultSkin: 'default', tags: ['dark', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '4px', cardShadow: '0 12px 40px rgba(0,0,0,0.5)', sectionDefault: 'card', glass: true, logoType: 'shield', headerArrangement: 'textOnly', headerHighlight: '' } },
+    oceanBreeze: { id: 'oceanBreeze', label: 'Ocean Breeze', identity: 'Turquoise ocean + seafoam frosted glass.', defaultSkin: 'default', tags: ['light', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '20px', cardShadow: '0 12px 36px rgba(0,0,0,0.12)', sectionDefault: 'card', glass: true, logoType: 'aperture', headerArrangement: 'stacked', headerHighlight: 'DRAFT COPY' } },
+    cosmicVortex: { id: 'cosmicVortex', label: 'Cosmic Vortex', identity: 'Purple nebula + frosted amethyst panels.', defaultSkin: 'default', tags: ['dark', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '16px', cardShadow: '0 12px 40px rgba(0,0,0,0.5)', sectionDefault: 'card', glass: true, logoType: 'aperture', headerArrangement: 'logoBeside', headerHighlight: '' } },
+    desertOasis: { id: 'desertOasis', label: 'Desert Oasis', identity: 'Orange dunes + warm linen glass, clay-rust.', defaultSkin: 'default', tags: ['light', 'editorial', 'bgimage'], structure: { font: 'salesforce', radius: '12px', cardShadow: '0 8px 24px rgba(124,45,18,0.08)', sectionDefault: 'card', glass: true, logoType: 'coffee', headerArrangement: 'inline', headerHighlight: '2026 EDITION' } },
+    vintagePaper: { id: 'vintagePaper', label: 'Vintage Paper', identity: 'Aged paper + monospaced typewriter feel.', defaultSkin: 'default', tags: ['light', 'minimalist', 'bgimage'], structure: { font: 'salesforce', radius: '0px', cardShadow: '2px 2px 10px rgba(0,0,0,0.1)', sectionDefault: 'card', logoType: 'coffee', headerArrangement: 'textOnly', headerHighlight: '' } },
+    auroraBorealis: { id: 'auroraBorealis', label: 'Northern Lights', identity: 'Green/blue aurora + dark pine panels, neon teal.', defaultSkin: 'default', tags: ['dark', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '10px', cardShadow: '0 12px 40px rgba(0,0,0,0.6)', sectionDefault: 'card', glass: true, logoType: 'shield', headerArrangement: 'stacked', headerHighlight: 'REQUIRED SIGN-IN' } },
+    silkLuxury: { id: 'silkLuxury', label: 'Silk Luxury', identity: 'Soft pink silk + frosted premium panels.', defaultSkin: 'default', tags: ['light', 'creative', 'bgimage'], structure: { font: 'salesforce', radius: '16px', cardShadow: '0 8px 30px rgba(219,39,119,0.06)', sectionDefault: 'card', glass: true, logoType: 'aperture', headerArrangement: 'logoBeside', headerHighlight: '' } }
 };
 
 // SKINS[themeId][skinId] = the mood/surface/color variant (layered on the
@@ -228,14 +273,18 @@ export const SKINS = {
         dark: { label: 'Dark', accent: '#1b96ff', surface: '#16213a', pageBg: '#0b0e1a', dark: true }
     },
     cloud: {
-        light: { label: 'Light', accent: '#0176d3', surface: '#ffffff', pageBg: '#f4f6f9' },
-        dark: { label: 'Dark', accent: '#5aa9ff', surface: '#1e2230', pageBg: '#11131c', dark: true },
-        soft: { label: 'Soft', accent: '#4f46e5', surface: '#ffffff', pageBg: '#eef0f6' }
+        // Indigo, NOT SLDS blue — the deliberate break from Lightning.
+        light: { label: 'Light', accent: '#6366f1', surface: '#ffffff', pageBg: '#eef1f8' },
+        dark: { label: 'Dark', accent: '#818cf8', surface: '#1e2030', pageBg: '#12131f', dark: true },
+        mist: { label: 'Mist', accent: '#6366f1', surface: '#ffffff', pageBg: 'linear-gradient(180deg, #eef1f8 0%, #e4ebfb 100%)' }
     },
-    midnight: {
-        noir: { label: 'Noir', accent: '#16e0c4', surface: 'rgba(255,255,255,0.08)', pageBg: '#08060f', meshHues: ['#7a5cff', '#ff2e93', '#16e0c4', '#ffb13d'] },
-        aurora: { label: 'Aurora', accent: '#5ad1ff', surface: 'rgba(255,255,255,0.08)', pageBg: '#04121a', meshHues: ['#16d2c4', '#5ad1ff', '#3a7bff', '#9b6bff'] },
-        nebula: { label: 'Nebula', accent: '#ff7ad9', surface: 'rgba(255,255,255,0.08)', pageBg: '#100617', meshHues: ['#ff2e93', '#9b6bff', '#5a5cff', '#ffb13d'] }
+    immersive: {
+        // Prism = the light candy-glass (ex-legacy "immersive"); Noir/Aurora/
+        // Nebula = the dark mesh family (ex-"Midnight"). One glass theme.
+        prism: { label: 'Prism', accent: '#7c5cff', surface: 'rgba(255,255,255,0.62)', pageBg: 'linear-gradient(135deg, #ff8fb1 0%, #7a5cff 52%, #16d2c4 100%)' },
+        noir: { label: 'Noir', accent: '#16e0c4', surface: 'rgba(255,255,255,0.08)', pageBg: '#08060f', dark: true, bgEffect: 'mesh', meshHues: ['#7a5cff', '#ff2e93', '#16e0c4', '#ffb13d'] },
+        aurora: { label: 'Aurora', accent: '#5ad1ff', surface: 'rgba(255,255,255,0.08)', pageBg: '#04121a', dark: true, bgEffect: 'mesh', meshHues: ['#16d2c4', '#5ad1ff', '#3a7bff', '#9b6bff'] },
+        nebula: { label: 'Nebula', accent: '#ff7ad9', surface: 'rgba(255,255,255,0.08)', pageBg: '#100617', dark: true, bgEffect: 'mesh', meshHues: ['#ff2e93', '#9b6bff', '#5a5cff', '#ffb13d'] }
     },
     luxe: {
         emerald: { label: 'Emerald', accent: '#c9a24b', surface: '#ffffff', pageBg: 'linear-gradient(160deg, #059669 0%, #064e3b 100%)' },
@@ -243,7 +292,10 @@ export const SKINS = {
         champagne: { label: 'Champagne', accent: '#b08d57', surface: '#ffffff', pageBg: 'linear-gradient(160deg, #f7efe2 0%, #efe2cf 100%)' }
     },
     editorial: {
-        paper: { label: 'Paper', accent: '#1f2937', surface: '#fffdf8', pageBg: '#e9e7e1' },
+        // Warm editorial — terracotta accent on warm cream (the "Camber & Co."
+        // conversational look: serif heads, underline inputs, dark ink body
+        // text, rust eyebrow/button). Ink = the dark magazine variant.
+        paper: { label: 'Paper', accent: '#c0492f', surface: '#fffdf8', pageBg: '#faf7f2' },
         ink: { label: 'Ink', accent: '#e8c07d', surface: '#1a1814', pageBg: '#0e0d0b', dark: true }
     },
     blueprint: {
@@ -253,13 +305,71 @@ export const SKINS = {
     kiosk: {
         daylight: { label: 'Daylight', accent: '#d4380d', surface: '#ffffff', pageBg: '#f5f6f8' },
         spotlight: { label: 'Spotlight', accent: '#ff5a1f', surface: '#15171c', pageBg: '#0a0b0e', dark: true }
-    }
+    },
+
+    /* ---- 30 imported preset skins (one look each; explicit colors per the
+     * Phase-0 override layer). bgimage themes use a palette gradient/solid for
+     * pageBg/headerBg until the Static Resource is wired (see plan manifest). ---- */
+    nordic: {
+        light: { label: 'Light', accent: '#1e3a8a', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f3f4f6', text: '#1f2937', textMuted: '#6b7280', borderColor: '#d1d5db', borderLight: '#e5e7eb', cardBorder: '1px solid #d1d5db' },
+        dark: { label: 'Dark', accent: '#38bdf8', accentText: '#0f172a', surface: '#1e293b', pageBg: '#0f172a', text: '#f8fafc', textMuted: '#94a3b8', borderColor: '#334155', borderLight: '#1e293b', cardBorder: '1px solid #334155', cardShadow: '0 4px 14px rgba(0,0,0,0.4)', dark: true }
+    },
+    neoBrutalism: { default: { label: 'Default', accent: '#d946ef', accentText: '#ffffff', surface: '#ffffff', pageBg: '#fef08a', text: '#000000', textMuted: '#4b5563', borderColor: '#000000', borderLight: '#000000', cardBorder: '2px solid #000000' } },
+    dracula: { default: { label: 'Default', accent: '#ff79c6', accentText: '#1e1f29', surface: '#282a36', pageBg: '#1e1f29', text: '#f8f8f2', textMuted: '#6272a4', borderColor: '#44475a', borderLight: '#383a59', cardBorder: '1px solid #44475a', dark: true } },
+    terracotta: { default: { label: 'Default', accent: '#c2410c', accentText: '#ffffff', surface: '#ffffff', pageBg: '#faf7f2', text: '#27272a', textMuted: '#71717a', borderColor: '#d4d4d8', borderLight: '#e4e4e7', cardBorder: '1px solid #e4e4e7' } },
+    forest: { default: { label: 'Default', accent: '#14532d', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f4f7f5', text: '#1e293b', textMuted: '#64748b', borderColor: '#cbd5e1', borderLight: '#e2e8f0', cardBorder: '1px solid #cbd5e1' } },
+    slate: { default: { label: 'Default', accent: '#0f172a', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f1f5f9', text: '#334155', textMuted: '#64748b', borderColor: '#cbd5e1', borderLight: '#e2e8f0', cardBorder: '1px solid #cbd5e1' } },
+    tokyo: { default: { label: 'Default', accent: '#06b6d4', accentText: '#0c0f1d', surface: '#161b33', pageBg: '#0c0f1d', text: '#e2e8f0', textMuted: '#64748b', borderColor: '#1e293b', borderLight: '#161b33', cardBorder: '1px solid #1e293b', dark: true } },
+    sandstone: { default: { label: 'Default', accent: '#7c2d12', accentText: '#ffffff', surface: '#fffdfa', pageBg: '#f5e0d3', text: '#3c1508', textMuted: '#8c6250', borderColor: '#e7d5c7', borderLight: '#f2e8e1', cardBorder: '1px solid #e7d5c7' } },
+    terminal: { default: { label: 'Default', accent: '#22c55e', accentText: '#000000', surface: '#000000', pageBg: '#000000', text: '#22c55e', textMuted: '#15803d', borderColor: '#22c55e', borderLight: '#166534', cardBorder: '1px solid #22c55e', dark: true } },
+    lavender: { default: { label: 'Default', accent: '#7e22ce', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f3e8ff', text: '#3b0764', textMuted: '#7b3a9c', borderColor: '#e9d5ff', borderLight: '#f3e8ff', cardBorder: '1px solid #e9d5ff' } },
+    mintStepper: { default: { label: 'Default', accent: '#10b981', accentText: '#111827', surface: '#1f2937', pageBg: '#111827', text: '#f9fafc', textMuted: '#9ca3af', borderColor: '#374151', borderLight: '#4b5563', cardBorder: '1px solid #374151', dark: true } },
+    retroStepper: { default: { label: 'Default', accent: '#f97316', accentText: '#0c0703', surface: '#1a0e05', pageBg: '#0c0703', text: '#fb923c', textMuted: '#c2410c', borderColor: '#ea580c', borderLight: '#9a3412', cardBorder: '1px solid #ea580c', dark: true } },
+    snowStepper: { default: { label: 'Default', accent: '#3b82f6', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f0f4f8', text: '#1e293b', textMuted: '#64748b', borderColor: '#cbd5e1', borderLight: '#e2e8f0', cardBorder: '1px solid #e2e8f0' } },
+    marbleSplit: { default: { label: 'Default', accent: '#d97706', accentText: '#ffffff', surface: '#ffffff', pageBg: '#fafaf9', headerBg: "url('/resource/formThemeAssets/marble.jpg') center/cover no-repeat", headerText: '#1c1917', headerTextMuted: '#78716c', text: '#1c1917', textMuted: '#78716c', borderColor: '#e7e5e4', borderLight: '#f5f5f4', cardBorder: '1px solid #e7e5e4' } },
+    cyberSplit: { default: { label: 'Default', accent: '#ec4899', accentText: '#ffffff', surface: '#18181b', pageBg: '#09090b', headerBg: "url('/resource/formThemeAssets/tech.jpg') center/cover no-repeat", headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.7)', text: '#fafafa', textMuted: '#a1a1aa', borderColor: '#27272a', borderLight: '#18181b', cardBorder: '1px solid #27272a', dark: true } },
+    claySplit: { default: { label: 'Default', accent: '#c2410c', accentText: '#ffffff', surface: '#ffffff', pageBg: '#fdfbf7', headerBg: "url('/resource/formThemeAssets/desert.jpg') center/cover no-repeat", headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.85)', text: '#292524', textMuted: '#78716c', borderColor: '#e7d5c7', borderLight: '#f5efe6', cardBorder: '1px solid #e7d5c7' } },
+    botanicalSplit: { default: { label: 'Default', accent: '#15803d', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f4f7f5', headerBg: "url('/resource/formThemeAssets/forest.jpg') center/cover no-repeat", headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.85)', text: '#1e293b', textMuted: '#64748b', borderColor: '#e2e8f0', borderLight: '#f1f5f9', cardBorder: '1px solid #e2e8f0' } },
+    execNav: { default: { label: 'Default', accent: '#1e40af', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f1f5f9', text: '#0f172a', textMuted: '#475569', borderColor: '#cbd5e1', borderLight: '#e2e8f0', cardBorder: '1px solid #cbd5e1' } },
+    startupNav: { default: { label: 'Default', accent: '#4f46e5', accentText: '#ffffff', surface: '#ffffff', pageBg: '#f8fafc', text: '#0f172a', textMuted: '#64748b', borderColor: '#e2e8f0', borderLight: '#f1f5f9', cardBorder: '1px solid #e2e8f0' } },
+    auraSplit: { default: { label: 'Default', accent: '#2dd4bf', accentText: '#090d16', surface: 'rgba(255,255,255,0.08)', pageBg: '#090d16', headerBg: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.8)', text: '#f8fafc', textMuted: '#a1a1aa', borderColor: 'rgba(255,255,255,0.15)', borderLight: 'rgba(255,255,255,0.1)', cardBorder: '1px solid rgba(255,255,255,0.15)', dark: true } },
+    sunsetDunes: { default: { label: 'Default', accent: '#f97316', accentText: '#ffffff', surface: 'rgba(255,255,255,0.78)', pageBg: "url('/resource/formThemeAssets/sunset.jpg') center/cover no-repeat", headerBg: 'linear-gradient(135deg, #f97316 0%, #facc15 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.8)', text: '#27272a', textMuted: '#52525b', borderColor: 'rgba(255,255,255,0.3)', borderLight: 'rgba(255,255,255,0.2)', cardBorder: '1px solid rgba(255,255,255,0.25)' } },
+    forestMist: { default: { label: 'Default', accent: '#15803d', accentText: '#ffffff', surface: 'rgba(255,255,255,0.85)', pageBg: "url('/resource/formThemeAssets/forest.jpg') center/cover no-repeat", headerBg: 'linear-gradient(to right, #052e16 0%, #15803d 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.8)', text: '#1e293b', textMuted: '#475569', borderColor: 'rgba(255,255,255,0.3)', borderLight: 'rgba(255,255,255,0.2)', cardBorder: '1px solid rgba(255,255,255,0.20)' } },
+    marbleLuxury: { default: { label: 'Default', accent: '#18181b', accentText: '#ffffff', surface: '#ffffff', pageBg: "url('/resource/formThemeAssets/marble.jpg') center/cover no-repeat", headerBg: "url('/resource/formThemeAssets/wood.jpg') center/cover no-repeat", headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.9)', text: '#18181b', textMuted: '#71717a', borderColor: '#e4e4e7', borderLight: '#f4f4f5', cardBorder: '1px solid #e4e4e7' } },
+    carbonMatrix: { default: { label: 'Default', accent: '#22c55e', accentText: '#0f172a', surface: 'rgba(15,23,42,0.88)', pageBg: "url('/resource/formThemeAssets/tech.jpg') center/cover no-repeat", headerBg: 'linear-gradient(to right, #090d16 0%, #0f172a 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.7)', text: '#f8fafc', textMuted: '#94a3b8', borderColor: 'rgba(255,255,255,0.15)', borderLight: 'rgba(255,255,255,0.1)', cardBorder: '1px solid rgba(255,255,255,0.12)', dark: true } },
+    oceanBreeze: { default: { label: 'Default', accent: '#06b6d4', accentText: '#ffffff', surface: 'rgba(255,255,255,0.72)', pageBg: "url('/resource/formThemeAssets/ocean.jpg') center/cover no-repeat", headerBg: 'linear-gradient(135deg, #0891b2 0%, #0d9488 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.8)', text: '#0e7490', textMuted: '#4b5563', borderColor: 'rgba(255,255,255,0.35)', borderLight: 'rgba(255,255,255,0.25)', cardBorder: '1px solid rgba(255,255,255,0.3)' } },
+    cosmicVortex: { default: { label: 'Default', accent: '#a855f7', accentText: '#ffffff', surface: 'rgba(15,10,30,0.8)', pageBg: "url('/resource/formThemeAssets/nebula.jpg') center/cover no-repeat", headerBg: 'linear-gradient(135deg, #7c3aed 0%, #c084fc 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.7)', text: '#f3e8ff', textMuted: '#c084fc', borderColor: 'rgba(255,255,255,0.15)', borderLight: 'rgba(255,255,255,0.1)', cardBorder: '1px solid rgba(255,255,255,0.12)', dark: true } },
+    desertOasis: { default: { label: 'Default', accent: '#ea580c', accentText: '#ffffff', surface: 'rgba(253,251,247,0.85)', pageBg: "url('/resource/formThemeAssets/desert.jpg') center/cover no-repeat", headerBg: 'linear-gradient(to right, #ea580c 0%, #c2410c 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.8)', text: '#3f2b18', textMuted: '#7c5f43', borderColor: 'rgba(255,255,255,0.25)', borderLight: 'rgba(255,255,255,0.15)', cardBorder: '1px solid rgba(255,255,255,0.2)' } },
+    vintagePaper: { default: { label: 'Default', accent: '#4b5563', accentText: '#ffffff', surface: 'rgba(255,253,247,0.95)', pageBg: "url('/resource/formThemeAssets/paper.jpg') center/cover no-repeat", headerBg: 'transparent', headerText: '#1c1917', headerTextMuted: '#78716c', text: '#1c1917', textMuted: '#44403c', borderColor: '#78716c', borderLight: '#d6d3d1', cardBorder: '1px solid #78716c' } },
+    auroraBorealis: { default: { label: 'Default', accent: '#2dd4bf', accentText: '#041d1a', surface: 'rgba(15,23,25,0.85)', pageBg: "url('/resource/formThemeAssets/aurora.jpg') center/cover no-repeat", headerBg: 'linear-gradient(to right, #041b18 0%, #155e54 100%)', headerText: '#ffffff', headerTextMuted: 'rgba(255,255,255,0.8)', text: '#ccfbf1', textMuted: '#14b8a6', borderColor: 'rgba(255,255,255,0.15)', borderLight: 'rgba(255,255,255,0.1)', cardBorder: '1px solid rgba(255,255,255,0.1)', dark: true } },
+    silkLuxury: { default: { label: 'Default', accent: '#db2777', accentText: '#ffffff', surface: 'rgba(255,255,255,0.85)', pageBg: "url('/resource/formThemeAssets/silk.jpg') center/cover no-repeat", headerBg: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%)', headerText: '#4c0519', headerTextMuted: '#9d174d', text: '#4c0519', textMuted: '#be185d', borderColor: 'rgba(255,255,255,0.4)', borderLight: 'rgba(255,255,255,0.25)', cardBorder: '1px solid rgba(255,255,255,0.3)' } }
 };
 
 // Dropdown helpers for the creation flow / editor (§3.1 Theme & Skin selects).
 export const THEME_OPTIONS = Object.keys(THEMES).map((id) => ({
     label: THEMES[id].label, value: id
 }));
+
+// Rich catalog for the visual theme PICKER (creation gallery): id + label +
+// tags (for filter pills) + the default skin to preview each card with.
+export const THEME_CATALOG = Object.keys(THEMES).map((id) => ({
+    id,
+    label: THEMES[id].label,
+    description: THEMES[id].identity || '',
+    tags: THEMES[id].tags || [],
+    defaultSkin: THEMES[id].defaultSkin
+}));
+
+// Filter pills for the picker, in display order (value matches a `tags` entry).
+export const THEME_FILTERS = [
+    { value: 'minimalist', label: 'Minimalist' },
+    { value: 'creative', label: 'Creative' },
+    { value: 'editorial', label: 'Editorial' },
+    { value: 'stepped', label: 'Stepped' },
+    { value: 'split', label: 'Split' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'bgimage', label: 'Image' }
+];
 
 export function skinsForTheme(themeId) {
     const skins = SKINS[themeId] || {};
@@ -521,8 +631,20 @@ const SHADOW_MAP = {
     strong: '0 24px 60px -20px rgba(0, 0, 0, 0.55)'
 };
 
+// Both radiusToken and shadowToken accept an ENUM key (the structural themes)
+// OR a raw CSS value (the imported flat presets + the custom editor). One key
+// per property, dual-mode — no parallel "raw" keys to keep in sync.
 export function radiusToken(name) {
-    return RADIUS_MAP[name] || RADIUS_MAP.rounded;
+    if (RADIUS_MAP[name]) return RADIUS_MAP[name];
+    // Pass through a raw CSS length (e.g. '8px', '0', '1rem').
+    if (typeof name === 'string' && /^-?[\d.]/.test(name.trim())) return name.trim();
+    return RADIUS_MAP.rounded;
+}
+
+export function shadowToken(name) {
+    if (name && SHADOW_MAP[name]) return SHADOW_MAP[name]; // enum: none/soft/medium/strong
+    if (typeof name === 'string' && name.trim()) return name.trim(); // raw box-shadow
+    return SHADOW_MAP.soft;
 }
 
 export const RADIUS_OPTIONS = [
@@ -660,6 +782,37 @@ function themeSpecV2Parts(theme, density, accent) {
     }
     parts.push(`--c-input-font: var(${theme.inputDisplayFont ? '--c-font-display' : '--c-font-body'})`);
 
+    // SLDS styling hooks — map the themed --c-input-* values onto the NATIVE
+    // lightning-input-field / combobox / textarea. Custom properties inherit across
+    // the SLDS shadow boundary, so the LIVE fields pick up the theme's background,
+    // border, radius and focus accent instead of rendering as default SLDS (which
+    // was the preview-looks-themed / real-form-bare drift).
+    parts.push(
+        '--slds-c-input-color-background: var(--c-input-bg, var(--c-card-bg, #ffffff))',
+        '--slds-c-input-color-border: var(--c-border, #d8dde6)',
+        '--slds-c-input-radius-border: var(--c-input-radius, var(--c-radius, 8px))',
+        '--slds-c-input-text-color: var(--c-text, #16325c)',
+        '--slds-c-input-color-border-focus: var(--c-accent, #0176d3)',
+        // Native field HEIGHT follows the density-driven control height (40px
+        // comfortable / 32px compact) so inputs read as tight as the mockup when
+        // Compact is chosen, without an a11y-unfriendly hardcoded shrink.
+        // (SLDS-version dependent; harmless no-op where the hook is unsupported.)
+        '--slds-c-input-sizing-height: var(--c-control-h, 40px)',
+        '--slds-c-input-spacing-height: var(--c-control-h, 40px)',
+        '--slds-c-combobox-sizing-height: var(--c-control-h, 40px)',
+        // Native field LABEL color — defaults to a fixed SLDS gray, so on dark
+        // themes labels went near-invisible. Point it at the theme's label token
+        // (which flips light-on-dark / dark-on-light per skin).
+        '--slds-s-label-color: var(--c-label, var(--c-text, #16325c))',
+        '--slds-c-input-label-color: var(--c-label, var(--c-text, #16325c))',
+        '--slds-c-combobox-color-background: var(--c-input-bg, var(--c-card-bg, #ffffff))',
+        '--slds-c-combobox-color-border: var(--c-border, #d8dde6)',
+        '--slds-c-combobox-radius-border: var(--c-input-radius, var(--c-radius, 8px))',
+        '--slds-c-textarea-color-background: var(--c-input-bg, var(--c-card-bg, #ffffff))',
+        '--slds-c-textarea-color-border: var(--c-border, #d8dde6)',
+        '--slds-c-textarea-radius-border: var(--c-input-radius, var(--c-radius, 8px))'
+    );
+
     // 3.2 labels — labelFace slot (NOT `label`, which is the pairing's display
     // name; T19 must use `labelFace` for the mono micro-label face).
     const pairing = FONT_PAIRINGS[theme.font] || {};
@@ -732,6 +885,10 @@ export function themeVars(a, b, c, d) {
         // v2 path: (themeId, skinId, opts, density)
         return buildTokenString(resolveTheme(a, b, c), d);
     }
+    if (a && typeof a === 'object' && typeof a.theme === 'string') {
+        // v2 object path: themeVars(selectionOrResolvedObject, density)
+        return buildTokenString(resolveTheme(a.theme, a.skin, a), b);
+    }
     // legacy path: (skinObject, density)
     return buildTokenString(a, b);
 }
@@ -748,7 +905,11 @@ function buildTokenString(t, density) {
     const radius = radiusToken(theme.radius);
     const container = theme.container || 'boxed';
     const flat = theme.glass || container === 'flat' || container === 'fullbleed';
-    const cardShadow = SHADOW_MAP[theme.cardShadow] || (flat ? 'none' : SHADOW_MAP.soft);
+    const cardShadow = theme.cardShadow != null
+        ? shadowToken(theme.cardShadow) // enum OR raw box-shadow
+        : flat
+        ? 'none'
+        : SHADOW_MAP.soft;
     const cardBorder = theme.glass
         ? '1px solid rgba(255,255,255,0.18)'
         : flat
@@ -786,15 +947,6 @@ function buildTokenString(t, density) {
 
     parts.push(...themeSpecV2Parts(theme, density, accent));
 
-    // Optional explicit border color (e.g. the Salesforce skin's SLDS #dddbda).
-    // Drives the card border + divider tokens so the chrome matches exactly.
-    if (theme.borderColor && !theme.dark) {
-        parts.push(
-            `--c-border-light: ${theme.borderColor}`,
-            `--c-border: ${theme.borderColor}`
-        );
-    }
-
     // Dark skins (e.g. Immersive glass) flip the chrome text tokens so our
     // titles/labels/help text stay readable over the dark card.
     if (theme.dark) {
@@ -815,6 +967,33 @@ function buildTokenString(t, density) {
     if (Array.isArray(theme._roleTokens)) {
         parts.push(...theme._roleTokens);
     }
+
+    // Explicit chrome overrides — the lowest, last-wins layer. These pin an
+    // EXACT value over what the engine derives (palette ramp, dark defaults,
+    // readableOn() guesses) because CSS takes the last declaration. The single
+    // home for explicit color/chrome inputs: the flat preset themes set them all;
+    // the structural themes set few or none and keep the derived values.
+    // (surface→--c-card-bg, pageBg, headerBg, radius, cardShadow are already
+    // enum-or-raw at their natural position above.)
+    const OVERRIDES = [
+        ['text', '--c-text'],
+        ['accentText', '--c-on-accent'], // button-label color (beats onAccent())
+        ['borderColor', '--c-border'], // divider/input color
+        ['cardBorder', '--c-card-border'], // full border string, e.g. '2px solid #000'
+        ['headerText', '--c-header-text'],
+        ['headerTextMuted', '--c-header-text-weak']
+    ];
+    OVERRIDES.forEach(([key, token]) => {
+        if (theme[key]) parts.push(`${token}: ${theme[key]}`);
+    });
+    // borderLight defaults to borderColor (matches the old SLDS-border behavior).
+    if (theme.borderLight || theme.borderColor) {
+        parts.push(`--c-border-light: ${theme.borderLight || theme.borderColor}`);
+    }
+    if (theme.textMuted) {
+        parts.push(`--c-text-weak: ${theme.textMuted}`, `--c-text-meta: ${theme.textMuted}`);
+    }
+
     return parts.join('; ');
 }
 

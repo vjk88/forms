@@ -3,7 +3,7 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
-                <componentName>c:formPlayer</componentName>
+                <componentName>c:zLayoutHarness</componentName>
                 <identifier>formPlayer1</identifier>
             </componentInstance>
         </itemInstances>

@@ -1,0 +1,156 @@
+:host { display: block; height: 100%; }
+
+/* The stage = the page background; everything sits inside it. */
+.lt-stage {
+    height: 100%;
+    width: 100%;
+    min-height: 84px;
+    border-radius: 6px;
+    padding: 9px;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- Card (the form body) ---- */
+.lt-card {
+    width: 100%;
+    height: 100%;
+    padding: 7px 8px;
+    box-sizing: border-box;
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.lt-card.flush { box-shadow: none; border-radius: 0 5px 5px 0; }
+.lt-card.center { width: 78%; justify-content: center; }
+.lt-card.pad0 { padding: 0; }
+.lt-card.pad-sm { padding: 6px; gap: 4px; }
+
+/* glass theme (Immersive) — frosted translucent card */
+.is-glass .lt-card {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+/* ---- Primitives ---- */
+.lt-strip { height: 12px; border-radius: 3px; margin-bottom: 2px; }
+.lt-line { height: 5px; border-radius: 3px; background: #dfe3e8; }
+.lt-line.s { width: 60%; }
+.lt-line.lg { height: 8px; width: 85%; }
+.lt-btn { height: 9px; width: 38%; border-radius: 3px; margin-top: auto; }
+
+/* dark / glass themes: lines go light so they read on a dark surface */
+.is-dark .lt-line,
+.is-glass .lt-line { background: rgba(255, 255, 255, 0.45); }
+
+/* ---- Bento (2×2) ---- */
+.lt-bento {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 4px;
+}
+.lt-cell {
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: flex-end;
+    padding: 5px;
+}
+.lt-chip { width: 40%; height: 6px; border-radius: 2px; }
+
+/* ---- Split / Side Nav two-pane ---- */
+.lt-split { display: flex; width: 100%; height: 100%; }
+.lt-panel {
+    width: 42%;
+    border-radius: 5px 0 0 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 7px;
+}
+.lt-panel-line { height: 5px; width: 70%; border-radius: 3px; background: rgba(255, 255, 255, 0.7); }
+.lt-panel-line.s { width: 45%; background: rgba(255, 255, 255, 0.5); }
+.lt-rail {
+    width: 26%;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px 0 0 6px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 5px 0 0 5px;
+}
+.is-dark .lt-rail { background: rgba(255, 255, 255, 0.08); }
+.lt-dot { width: 9px; height: 9px; border-radius: 50%; background: #cfd3da; flex: none; }
+.is-dark .lt-dot { background: rgba(255, 255, 255, 0.3); }
+.lt-dot.on { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08); }
+
+/* ---- Stepper (wizard) ---- */
+.lt-wizard {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.lt-stepper-top {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 8px;
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.is-dark .lt-stepper-top { background: rgba(255, 255, 255, 0.06); border-bottom-color: rgba(255, 255, 255, 0.1); }
+.lt-bar { flex: 1; height: 2px; border-radius: 2px; background: #cfd3da; }
+.is-dark .lt-bar { background: rgba(255, 255, 255, 0.2); }
+.lt-wizard-body { flex: 1; padding: 7px 8px; display: flex; flex-direction: column; gap: 5px; }
+
+/* ---- One-at-a-time progress ---- */
+.lt-progress { height: 3px; border-radius: 2px; background: rgba(0, 0, 0, 0.1); overflow: hidden; margin-bottom: 3px; }
+.is-dark .lt-progress { background: rgba(255, 255, 255, 0.15); }
+.lt-progress-fill { display: block; height: 100%; width: 45%; border-radius: 2px; }
+
+/* ---- Tabbed ---- */
+.lt-tabs {
+    display: flex;
+    gap: 5px;
+    padding: 6px 8px 0;
+}
+.lt-tab { width: 22%; height: 6px; border-radius: 3px 3px 0 0; background: #d7dbe1; }
+.is-dark .lt-tab { background: rgba(255, 255, 255, 0.2); }
+.lt-tab-body { padding: 6px 8px 8px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+
+/* ---- Accordion ---- */
+.lt-acc-row {
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.is-dark .lt-acc-row { background: rgba(255, 255, 255, 0.06); }
+.lt-acc-row.open { background: rgba(0, 0, 0, 0.05); }
+.is-dark .lt-acc-row.open { background: rgba(255, 255, 255, 0.1); }
+.lt-acc-head { height: 6px; width: 50%; border-radius: 2px; background: #c7ccd3; }
+.is-dark .lt-acc-head { background: rgba(255, 255, 255, 0.4); }
+
+@media (prefers-reduced-transparency: reduce) {
+    .is-glass .lt-card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

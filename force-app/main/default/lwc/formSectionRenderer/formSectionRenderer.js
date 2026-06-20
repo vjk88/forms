@@ -1,4 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getPicklistOptions from '@salesforce/apex/FormViewerController.getPicklistOptions';
 
 /**
@@ -27,15 +28,15 @@ import getPicklistOptions from '@salesforce/apex/FormViewerController.getPicklis
  *   'sectionvalidity' {sectionKey, valid}
  */
 
-const FULL_WIDTH_TYPES = [
-  'Rich_Text',
-  'Static_Text',
-  'Divider',
-  'Image',
-  'Callout',
-  'Spacer',
-  'Consent'
-];
+// Only these ignore the section grid and always span every column. Content that
+// can sensibly sit in a column (Image/Callout/Display-Text/Consent/File-Upload)
+// sizes by colSpan like a field — so it behaves the same inside a section. (In a
+// content BLOCK the section is 1 column, so those render full-width there anyway.)
+const FULL_WIDTH_TYPES = ['Hero', 'Divider', 'Spacer'];
+
+// Content blocks that are always plain — their frame is meaningless (a rule, a
+// self-styled callout, a gap). Mirrors formStudio's PLAIN_ONLY_BLOCK_TYPES.
+const PLAIN_ONLY_BLOCK_TYPES = ['Divider', 'Callout', 'Spacer'];
 
 const CALLOUT_ICONS = {
   success: 'utility:success',
@@ -64,6 +65,7 @@ export default class FormSectionRenderer extends LightningElement {
 
   @track _values = {};
   @track _fieldErrors = {};
+  @track _files = {}; // elementId -> [{ fileName, base64, contentType }] (create-mode uploads)
   _section;
   _picklistMap = {};
   _userEdited = new Set();
@@ -102,11 +104,35 @@ export default class FormSectionRenderer extends LightningElement {
       title,
       style: s.style || 'card',
       icon: s.icon,
-      showHeader: s.showHeader !== false && !!title,
+      description: s.description || '',
+      collapsible: !!s.collapsible,
+      collapsedByDefault: !!s.collapsedByDefault,
+      // A header still shows for a collapsible section even without a title (so
+      // there's something to click); otherwise it needs a title.
+      showHeader: s.showHeader !== false && (!!title || !!s.collapsible),
       gridColumns: s.gridColumns || 1,
       elements: s.elements || [],
       repeaters: s.relatedSections || s.repeaters || []
     };
+  }
+
+  // Collapse state — defaults to collapsedByDefault, then user toggles override it.
+  @track _collapsedOverride = null;
+  get isCollapsed() {
+    if (!this.sec.collapsible) return false;
+    return this._collapsedOverride != null ? this._collapsedOverride : this.sec.collapsedByDefault;
+  }
+  get collapseChevron() {
+    return this.isCollapsed ? 'utility:chevronright' : 'utility:chevrondown';
+  }
+  get headerClass() {
+    return this.sec.collapsible ? 'sec-header sec-header_toggle' : 'sec-header';
+  }
+  get bodyClass() {
+    return this.isCollapsed ? 'sec-content is-collapsed' : 'sec-content';
+  }
+  toggleCollapse() {
+    if (this.sec.collapsible) this._collapsedOverride = !this.isCollapsed;
   }
 
   connectedCallback() {
@@ -125,8 +151,25 @@ export default class FormSectionRenderer extends LightningElement {
     return !!this._section && this._section.visible === false;
   }
 
+  // Section framing: a regular field-section is a PLAIN container (no border) — the
+  // style picker moved to standalone content blocks. Only a content block (one
+  // content element on its own) carries a configurable style (card/plain/boxed).
+  get secStyleClass() {
+    const s = this._section || {};
+    // Divider/Callout/Spacer content blocks are always plain — their frame is
+    // meaningless (a rule, a self-styled callout, a gap).
+    if (s.contentBlock) {
+      const first = (s.elements || [])[0];
+      if (first && PLAIN_ONLY_BLOCK_TYPES.includes(first.type)) return 'sec-style-plain';
+    }
+    // Field-sections AND content blocks honor their RESOLVED style. The engine
+    // derives it from the global "Section look" (skin.sectionDefault) with a
+    // per-section override as the escape hatch; defaults to plain when unset.
+    return `sec-style-${s.style || 'plain'}`;
+  }
+
   get hostClass() {
-    return `sec sec-style-${this.sec.style} den-${this.density || 'cozy'}${
+    return `sec ${this.secStyleClass} den-${this.density || 'cozy'}${
       this.isSectionHidden ? ' is-hidden' : ''
     }`;
   }
@@ -194,12 +237,35 @@ export default class FormSectionRenderer extends LightningElement {
       isCallout: type === 'Callout',
       calloutClass: `el-callout callout-${el.calloutVariant || 'info'}`,
       calloutIcon: CALLOUT_ICONS[el.calloutVariant] || CALLOUT_ICONS.info,
+      // Hero (HEADER_HERO_DND_SPEC): inline image + headline + subtext +
+      // optional CTA (action 'link' → anchor, 'start' → jump-to-form button).
+      isHero: type === 'Hero',
+      heroHasImage: !!el.imageUrl,
+      heroImageUrl: el.imageUrl,
+      heroImageAlt: el.imageAlt || el.headline || 'Hero image',
+      heroHeadline: el.headline,
+      heroSubtext: el.subtext,
+      heroHasCta: !!(el.cta && el.cta.label),
+      heroCtaLabel: el.cta && el.cta.label,
+      heroCtaIsLink: !!(el.cta && el.cta.action === 'link'),
+      heroCtaHref: (el.cta && el.cta.href) || '#',
       isSpacer: type === 'Spacer',
       spacerClass: `el-spacer spacer-${el.spacerSize || 'medium'}`,
+      // Empty space — a blank grid cell (NOT full width) that occupies one or
+      // more columns to push other fields around the grid.
+      isEmptySpace: type === 'Empty_Space',
       isConsent: type === 'Consent',
       consentContent: el.content || 'I agree to the terms and conditions.',
       consentRequired: el.consentRequired !== false && !isHidden,
       isFileUpload: type === 'File_Upload',
+      fileMultiple: el.allowMultiple !== false,
+      fileAccept: el.accept || '',
+      fileElId: el.key || el.id || el.label,
+      fileNames: (this._files[el.key || el.id || el.label] || []).map((f, i) => ({
+        key: `f-${i}`,
+        idx: i,
+        name: f.fileName
+      })),
       readOnly: uiBehavior === 'Read_Only',
       effectiveRequired: uiBehavior === 'Required' && !isHidden
     };
@@ -223,17 +289,17 @@ export default class FormSectionRenderer extends LightningElement {
       out.hasError = !!out.errorMessage;
     }
 
+    // Per-element width: a field (or Empty space) spans `colSpan` of the section's
+    // columns (1 = one cell, cols = full width). Content blocks (image/callout/…)
+    // stay full-width. Stacks to one column on a narrow box (the @container rule in
+    // layoutSectionHost.css). SLDS fractions (1-of-2 … 3-of-4) all exist for cols ≤ 4.
     let sizeClass = 'slds-size_1-of-1';
-    if (!isFullWidth) {
-      if (cols === 2) {
-        sizeClass = 'slds-size_1-of-1 slds-medium-size_1-of-2';
-      } else if (cols === 3) {
-        sizeClass =
-          'slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3';
-      } else if (cols === 4) {
-        sizeClass =
-          'slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-4';
-      }
+    if (!isFullWidth && cols > 1) {
+      const span = Math.min(Math.max(parseInt(el.colSpan, 10) || 1, 1), cols);
+      sizeClass =
+        span >= cols
+          ? 'slds-size_1-of-1'
+          : `slds-size_1-of-1 slds-medium-size_${span}-of-${cols}`;
     }
     out.gridItemClass = `slds-col ${sizeClass} el${isHidden ? ' is-hidden' : ''}`;
     return out;
@@ -383,6 +449,23 @@ export default class FormSectionRenderer extends LightningElement {
     this.emitValue();
   }
 
+  // Hero CTA with action 'start' = jump to the form. Scroll the first field
+  // here into view if present; otherwise bubble so c/formViewer can advance
+  // (the hero often sits in its own section with no fields of its own).
+  handleHeroStart() {
+    const field = this.template.querySelector(
+      'lightning-input-field:not(.carrier), lightning-input, lightning-combobox'
+    );
+    if (field && typeof field.scrollIntoView === 'function') {
+      field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof field.focus === 'function') field.focus();
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent('herostart', { bubbles: true, composed: true })
+    );
+  }
+
   emitValue() {
     this.dispatchEvent(
       new CustomEvent('sectionvalue', {
@@ -428,6 +511,58 @@ export default class FormSectionRenderer extends LightningElement {
     return values;
   }
 
+  // --- File upload (create mode: capture to base64, attach on submit) ---
+  // ~4.3 MB ceiling per file, matching FormSubmitController's server cap.
+  handleFilePick(event) {
+    const elId = event.target.dataset.elId;
+    const list = Array.from((event.target.files) || []);
+    if (!elId || !list.length) return;
+    Promise.all(list.map((file) => this.readFile(file))).then((read) => {
+        const valid = read.filter((f) => f && f.base64);
+        if (!valid.length) return;
+        const existing = this._files[elId] || [];
+        this._files = { ...this._files, [elId]: [...existing, ...valid] };
+    });
+  }
+  readFile(file) {
+    return new Promise((resolve) => {
+        if (file.size > 4500000) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'File too large',
+                    message: `"${file.name}" exceeds the 4 MB limit and was skipped.`,
+                    variant: 'error'
+                })
+            );
+            resolve(null);
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () =>
+            resolve({ fileName: file.name, contentType: file.type, base64: reader.result });
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+    });
+  }
+  handleFileRemove(event) {
+    const elId = event.currentTarget.dataset.elId;
+    const idx = parseInt(event.currentTarget.dataset.idx, 10);
+    const arr = (this._files[elId] || []).filter((_, i) => i !== idx);
+    this._files = { ...this._files, [elId]: arr };
+  }
+
+  /** Respondent uploads across this section → [{fileName, base64, contentType}]. */
+  @api
+  collectFiles() {
+    const out = [];
+    Object.keys(this._files).forEach((elId) => {
+        (this._files[elId] || []).forEach((f) => {
+            if (f && f.base64) out.push({ fileName: f.fileName, base64: f.base64, contentType: f.contentType });
+        });
+    });
+    return out;
+  }
+
   /** Related-list rows, one block per repeater, tagged for error routing. */
   @api
   collectRepeaterBlocks() {
@@ -467,6 +602,9 @@ export default class FormSectionRenderer extends LightningElement {
     this.template.querySelectorAll('c-form-repeater').forEach((rep) => {
       if (rep.reportValidity && !rep.reportValidity()) valid = false;
     });
+    // SF-standard: a collapsed section auto-expands when it has an error, so the
+    // respondent can see and fix the offending field.
+    if (!valid && this.isCollapsed) this._collapsedOverride = false;
     this.emitValidity(valid);
     return valid;
   }

@@ -1,0 +1,173 @@
+:host {
+    display: block;
+    /* width:100% is REQUIRED before container-type: as a flex item (in the
+       shell's flex-column pane) container-type:inline-size would otherwise
+       collapse the host to 0px. See reference-container-type-flex-collapse. */
+    width: 100%;
+    container-type: inline-size;
+}
+
+.form-nav {
+    margin-bottom: var(--c-space-4, 16px);
+}
+
+/* ── Progress bar ── */
+.fn-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-2, 8px);
+}
+.fn-text {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-text-weak, #646b78);
+    font-family: var(--c-font-body, inherit);
+}
+.fn-track {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--c-border-light, color-mix(in srgb, var(--c-text, #101319) 10%, transparent));
+    overflow: hidden;
+}
+.fn-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--c-accent, #0176d3);
+    transition: width var(--c-dur-2, 300ms) var(--c-ease, ease);
+}
+
+/* ── Horizontal stepper ── */
+.fn-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-space-2, 8px);
+}
+.fn-step {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-2, 8px);
+    padding: var(--c-space-2, 8px) var(--c-space-3, 12px);
+    background: transparent;
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    color: var(--c-text-weak, #646b78);
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--c-dur-1, 150ms);
+}
+.fn-step:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--c-text, #101319) 5%, transparent);
+}
+.fn-step:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+.fn-step.is-active {
+    color: var(--c-text, #101319);
+    background: color-mix(in srgb, var(--c-text, #101319) 7%, transparent);
+}
+.fn-step.is-error {
+    color: var(--c-error, #ea001e);
+}
+.fn-step:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
+}
+.fn-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border: 2px solid currentColor;
+    background: transparent;
+    transition: background var(--c-dur-1, 150ms), border-color var(--c-dur-1, 150ms);
+}
+.is-active .fn-num {
+    background: var(--c-accent, #0176d3);
+    border-color: var(--c-accent, #0176d3);
+    color: var(--c-on-accent, #fff);
+}
+.is-done .fn-num {
+    background: color-mix(in srgb, var(--c-accent, #0176d3) 20%, transparent);
+    border-color: color-mix(in srgb, var(--c-accent, #0176d3) 50%, transparent);
+}
+.fn-label {
+    font-size: 0.875rem;
+    line-height: 1.3;
+}
+.fn-check {
+    color: var(--c-accent, #0176d3);
+    font-size: 0.8rem;
+}
+
+/* ── Step dots ── */
+.fn-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2, 6px);
+}
+.fn-dots .fn-step,
+.fn-dots button {
+    padding: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    line-height: 0;
+}
+.fn-dots button:disabled {
+    cursor: default;
+}
+.fn-dot {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-border, color-mix(in srgb, var(--c-text, #101319) 22%, transparent));
+    transition: background var(--c-dur-1, 150ms);
+}
+.fn-dots .is-done .fn-dot {
+    background: color-mix(in srgb, var(--c-accent, #0176d3) 55%, transparent);
+}
+.fn-dots .is-active .fn-dot {
+    background: var(--c-accent, #0176d3);
+}
+.fn-dots button:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring, 0 0 0 3px rgba(1, 118, 211, 0.25));
+}
+
+/* ── Fractional (text only) ── */
+.fn-fraction {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-2, 8px);
+}
+.fn-frac-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--c-text-weak, #646b78);
+    font-variant-numeric: tabular-nums;
+}
+.fn-frac-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-text-weak, #646b78);
+}
+
+/* Narrow container: drop step labels, keep the numbered circles as a compact row. */
+@container (max-width: 480px) {
+    .fn-steps .fn-label {
+        display: none;
+    }
+}

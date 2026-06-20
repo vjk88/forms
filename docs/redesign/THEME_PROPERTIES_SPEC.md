@@ -188,6 +188,27 @@ weight independently. Roles:
 | Input style | outline/underline/filled | theme | `inputStyle` → `--c-input-*` |
 | Texture | none/grain/grid | theme | `texture` → `--c-texture` |
 
+### 3.6 Field & control states (added 2026-06-15, from the Zoho theming audit)
+
+Granular field-state colors users expect (Zoho exposes these under its Fields tab).
+All are new `--c-*` tokens written by `themeVars()`; all default to a theme value
+so nothing changes without opt-in.
+
+| Property | Controls | UI | Default | → token |
+|---|---|---|---|---|
+| **Focus** | ring + border on the active/focused input | color picker | accent | `focusColor` → `--c-field-focus` |
+| **Mandatory asterisk** | the `*` on required fields | color picker | error red | `requiredColor` → `--c-required` |
+| **Error** | validation error text + input border | color picker | error | `errorColor` → `--c-error`, `--c-error-border` |
+| **Picker surface** | dropdown / date-picker panel bg | color picker | content | `pickerBg` → `--c-picker-bg` |
+
+**Special-field types are NOT a separate styling surface.** Rating / slider /
+choice / grid render through the same control tokens and **derive their color from
+`--c-accent`** (star fill, slider track/thumb, checked state) + the input tokens.
+**Build rule:** every special-field widget MUST consume the theme tokens (accent +
+input) and never hardcode color — so it's themed automatically. No per-type color
+knobs in v1 (cleaner than Zoho's per-widget pickers; revisit only if a user needs a
+rating in a color *other* than the accent).
+
 ---
 
 ## 4. Header panel (your new requirements, in detail)
@@ -325,6 +346,9 @@ device). One shell, one config value, three displays, graceful on any width.
 | Submit placement | flow / sticky-bottom | per layout | `actions.submitPlacement` |
 | Submit alignment | left/center/right/full | right | `actions.submitAlign` |
 | Submit color | accent / custom | accent | `actions.submitColor` → `--c-submit-bg` |
+| **Button shape** | rectangle / rounded / pill | per theme radius | `actions.buttonShape` → `--c-button-radius` |
+| **Button border** | color / none | none | `actions.buttonBorder` → `--c-button-border` |
+| **Button width** | standard / fit-to-container | standard | `actions.buttonWidth` → `--c-button-w` |
 | Back / Cancel labels | text | — | `actions.backLabel`, `.cancelLabel` |
 
 ---
@@ -406,6 +430,18 @@ device). One shell, one config value, three displays, graceful on any width.
    — but **NOT** the form’s `suggestedObject` and **NOT** the actual sections /
    inputs (the data structure). So a custom template is a reusable **look** applied
    onto any form’s own content. ⚠️ This changes today’s behavior — see §11.
+6. **Design = its own focused surface** (validated vs Zoho Forms, 2026-06-15).
+   Theme customization has enough surface (General / Header / Fields / Container /
+   Banner / Buttons / Progress categories) to be a dedicated **Design mode** — an
+   icon-dock of categories **+ the shared live preview** (formViewer) — NOT a panel
+   crammed beside field-insertion. Reinforces #1 (separate panels) and the designer
+   architecture: **Build mode** (blueprint + insert) and **Design mode** (theme
+   customize) are two focused modes sharing ONE live preview. See
+   docs/redesign/designer-ux-blueprint-mockup.html.
+7. **Container width stays PRESETS** (narrow / medium / wide / full) — owner, NOT
+   raw px. Simpler and responsive-safe.
+8. **Special-field styling derives from tokens** — no separate per-type styling tab
+   (see §3.6 build rule).
 
 ---
 

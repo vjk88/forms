@@ -28,20 +28,30 @@ export default class ShellStack extends LightningElement {
 
     get showHeader() {
         const h = this.shell.header;
-        return (
-            h !== 'none' &&
-            !!(this.model && (this.model.header.title || this.model.header.description))
-        );
+        const hd = (this.model && this.model.header) || {};
+        // The highlight badge now lives inside the header lockup, so it must also
+        // keep the header rendered even when there's no title/description/logo.
+        return h !== 'none' && !!(hd.title || hd.description || hd.logo || hd.highlight);
+    }
+    get highlightVariant() {
+        return this.shell.header === 'hero' ? 'banner' : '';
+    }
+    get headerArrangement() {
+        return (this.model && this.model.header && this.model.header.arrangement) || 'stacked';
+    }
+    get showLogo() {
+        const h = (this.model && this.model.header) || {};
+        return this.headerArrangement !== 'textOnly' && !!h.logo;
     }
     get headClass() {
-        return `head head-${this.shell.header || 'standard'}`;
+        return `head head-${this.shell.header || 'standard'} arrange-${this.headerArrangement}`;
     }
 
     get wrapperClass() {
         return `wrap chrome-${this.shell.chrome || 'card'}`;
     }
     get surfaceClass() {
-        return `surface maxw-${this.shell.maxWidth || 'medium'}`;
+        return `surface maxw-${this.shell.maxWidth || 'narrow'}`;
     }
     get isPaper() {
         return this.shell.chrome === 'paper';

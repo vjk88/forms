@@ -1,0 +1,871 @@
+<template>
+    <div class={appClass}>
+        <!-- Backdrop to close dropdown menus -->
+        <template lwc:if={anyMenuOpen}>
+            <div class="dd-backdrop" onclick={closeMenus}></div>
+        </template>
+
+        <!-- Top App Bar -->
+        <div class="topbar">
+            <div class="brand">
+                <span class="dot"></span>
+                <span>FormBuilder Pro</span>
+            </div>
+            
+            <div class="ftype">
+                <button class={formsSegClass} data-tab="forms" onclick={handlePrimaryTabChange}>
+                    <lightning-icon icon-name="utility:form" size="xx-small" class="seg-ico" variant="inverse"></lightning-icon>
+                    Forms
+                </button>
+                <button class={surveysSegClass} data-tab="surveys" onclick={handlePrimaryTabChange}>
+                    <lightning-icon icon-name="utility:rating" size="xx-small" class="seg-ico" variant="inverse"></lightning-icon>
+                    Surveys
+                </button>
+            </div>
+
+            <!-- Form Selector Dropdown -->
+            <div class="dropdown-container">
+                <button class="ddl" onclick={toggleFormMenu}>
+                    <span>{formTitleLabel}</span>
+                    <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="slds-m-left_xx-small" variant="inverse"></lightning-icon>
+                </button>
+                <template lwc:if={showFormMenu}>
+                    <div class="dd-menu" role="menu">
+                        <button type="button" class="dd-item dd-new" role="menuitem" onclick={handleOpenGallery}>
+                            ＋ {newItemLabel}
+                        </button>
+                        <template for:each={formOptions} for:item="opt">
+                            <button key={opt.value} type="button" class="dd-item" role="menuitem" data-id={opt.value} onclick={handlePickForm}>
+                                {opt.label}
+                            </button>
+                        </template>
+                        <template lwc:if={hasNoForms}>
+                            <div class="dd-empty">No {primaryTab} yet</div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Version Selector Dropdown -->
+            <template lwc:if={hasFormSelected}>
+                <div class="dropdown-container">
+                    <button class={versionPillClass} onclick={toggleVersionMenu}>
+                        <span>{versionPillLabel}</span>
+                        <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="slds-m-left_xx-small" variant="inverse"></lightning-icon>
+                    </button>
+                    <template lwc:if={showVersionMenu}>
+                        <div class="dd-menu dd-menu_sm" role="menu">
+                            <template for:each={versionOptions} for:item="v">
+                                <button key={v.value} type="button" class="dd-item" role="menuitem" data-id={v.value} onclick={handlePickVersion}>
+                                    {v.label}
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <span class="spacer"></span>
+            
+            <button class="tbtn ghost" title="Undo (Ctrl+Z)" onclick={handleUndo} disabled={undoDisabled}>
+                <lightning-icon icon-name="utility:undo" size="x-small" variant="inverse"></lightning-icon>
+            </button>
+            <button class="tbtn ghost" title="Redo (Ctrl+Shift+Z)" onclick={handleRedo} disabled={redoDisabled}>
+                <lightning-icon icon-name="utility:redo" size="x-small" variant="inverse"></lightning-icon>
+            </button>
+            <span class="autosave">
+                <lightning-icon icon-name={saveStateIcon} size="xx-small" class="slds-m-right_xx-small" variant="inverse"></lightning-icon>
+                {saveStateLabel}
+            </span>
+            <button lwc:if={isDraft} class="tbtn ghost" onclick={handleDiscardDraft} disabled={_saving} title="Discard this draft">Discard</button>
+            <button class="tbtn" onclick={handleSave} disabled={saveDisabled}>Save</button>
+            <button class="tbtn primary" onclick={handlePublish} disabled={publishDisabled}>Publish</button>
+        </div>
+
+        <!-- Stage body — empty state when there are no forms/surveys yet -->
+        <template lwc:if={hasNoForms}>
+            <div class="empty-stage">
+                <div class="empty-card">
+                    <lightning-icon icon-name="utility:add" size="large" class="empty-ico" variant="inverse"></lightning-icon>
+                    <h2>{emptyTitle}</h2>
+                    <p>{emptyDesc}</p>
+                    <button class="tbtn primary empty-cta" onclick={handleOpenGallery}>＋ {newItemLabel}</button>
+                </div>
+            </div>
+        </template>
+        <template lwc:else>
+        <div class="body">
+            <!-- LEFT WORKSPACE COLUMN -->
+            <div class="leftcol">
+                <div class="modebar">
+                    <div class="modeseg">
+                        <button class={buildToggleClass} onclick={handleBuild}>Build</button>
+                        <button class={designToggleClass} onclick={handleDesign}>Design</button>
+                    </div>
+                </div>
+                <div class="leftregion">
+                    <!-- LEFT ICON DOCK -->
+                    <nav class="rail" aria-label="Designer">
+                        <div class="rg rg-build">
+                            <template lwc:if={isBuild}>
+                                <template for:each={railBuild} for:item="item">
+                                    <button key={item.id} class={item.cls} data-id={item.id} onclick={handleRail}>
+                                        <lightning-icon icon-name={item.icon} size="small" variant="inverse"></lightning-icon>
+                                        <small>{item.label}</small>
+                                    </button>
+                                </template>
+                            </template>
+                        </div>
+                        <div class="rg rg-design">
+                            <template lwc:if={isDesign}>
+                                <template for:each={railDesign} for:item="item">
+                                    <button key={item.id} class={item.cls} data-id={item.id} onclick={handleRail}>
+                                        <lightning-icon icon-name={item.icon} size="small" variant="inverse"></lightning-icon>
+                                        <small>{item.label}</small>
+                                    </button>
+                                </template>
+                            </template>
+                        </div>
+                    </nav>
+
+                    <!-- LEFT PANEL -->
+                    <aside class="panel">
+                        <div class="ph">
+                            <div>
+                                <h2>{headerTitle}</h2>
+                                <div class="sub">{headerSub}</div>
+                            </div>
+                        </div>
+                        <div class="pbody">
+                            <!-- PROPERTY INSPECTOR (selection takes over the panel) -->
+                            <template lwc:if={inspectorOpen}>
+                                <div class="insp">
+                                    <template lwc:if={isSelSection}>
+                                        <label class="fld">
+                                            <span class="fld-l">Title</span>
+                                            <input class="inp" type="text" value={selTitle} onchange={handleTitleInput} />
+                                        </label>
+                                        <template lwc:if={isSelRelated}>
+                                            <div class="fld">
+                                                <span class="fld-l">Child records</span>
+                                                <span class="ro">{selRelChildObject}</span>
+                                            </div>
+                                            <label class="fld">
+                                                <span class="fld-l">Display style</span>
+                                                <select class="inp" onchange={handleRelStyleChange}>
+                                                    <template for:each={relStyleOptions} for:item="o">
+                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                    </template>
+                                                </select>
+                                            </label>
+                                            <label class="fld">
+                                                <span class="fld-l">Add-button label</span>
+                                                <input class="inp" type="text" value={selRelAddLabel} placeholder="Add" onchange={handleRelAddLabel} />
+                                            </label>
+                                            <label class="fld">
+                                                <span class="fld-l">Min rows</span>
+                                                <input class="inp" type="number" min="0" value={selRelMinRows} onchange={handleRelMinRows} />
+                                            </label>
+                                            <label class="fld">
+                                                <span class="fld-l">Max rows (0 = unlimited)</span>
+                                                <input class="inp" type="number" min="0" value={selRelMaxRows} onchange={handleRelMaxRows} />
+                                            </label>
+                                            <div class="fld">
+                                                <span class="fld-l">Fields shown per record</span>
+                                                <template lwc:if={hasRelatedFields}>
+                                                    <div class="rel-fldlist">
+                                                        <template for:each={relatedFieldRows} for:item="rf">
+                                                            <button key={rf.key} class={rf.itemClass} data-api={rf.api} onclick={handleAddRelatedField}>
+                                                                <lightning-icon icon-name={rf.icon} size="xx-small" class="gi" variant="inverse"></lightning-icon>
+                                                                <span class="nm">{rf.label}</span>
+                                                                <span class="pal-added" lwc:if={rf.isUsed}>added</span>
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template lwc:else>
+                                                    <div class="vis-empty">Loading {selRelChildObject} fields…</div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template lwc:else>
+                                            <div class="fld">
+                                                <span class="fld-l">Columns</span>
+                                                <div class="seg-row">
+                                                    <button class={col1Class} data-cols="1" onclick={handleColsClick}>1</button>
+                                                    <button class={col2Class} data-cols="2" onclick={handleColsClick}>2</button>
+                                                    <button class={col3Class} data-cols="3" onclick={handleColsClick}>3</button>
+                                                    <button class={col4Class} data-cols="4" onclick={handleColsClick}>4</button>
+                                                </div>
+                                            </div>
+                                            <div class="fld">
+                                                <span class="fld-l">Header</span>
+                                                <button class={showHeaderBtnClass} onclick={handleShowHeaderToggle}>{showHeaderBtnLabel}</button>
+                                            </div>
+                                            <template lwc:if={selShowHeader}>
+                                                <div class="fld">
+                                                    <span class="fld-l">Header icon</span>
+                                                    <div class="ic-picker">
+                                                        <div class="ic-search">
+                                                            <input class="inp" type="text" placeholder="Search icons…" value={iconSearch} oninput={handleIconSearch} />
+                                                            <template lwc:if={hasSelIcon}>
+                                                                <button class="ic-clear" onclick={handleClearIcon} title="Clear icon">Clear</button>
+                                                            </template>
+                                                        </div>
+                                                        <div class="ic-grid">
+                                                            <template for:each={iconChoices} for:item="ic">
+                                                                <button key={ic.key} class={ic.btnClass} data-icon={ic.name} onclick={handleSelectIcon} title={ic.name}>
+                                                                    <lightning-icon icon-name={ic.name} size="x-small" variant="inverse"></lightning-icon>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <label class="fld">
+                                                <span class="fld-l">Description</span>
+                                                <textarea class="inp" rows="2" onchange={handleDescriptionInput}>{selDescription}</textarea>
+                                            </label>
+                                            <div class="fld">
+                                                <span class="fld-l">Collapsible</span>
+                                                <button class={collapsibleBtnClass} onclick={handleCollapsibleToggle}>{collapsibleBtnLabel}</button>
+                                            </div>
+                                            <template lwc:if={selCollapsible}>
+                                                <div class="fld">
+                                                    <span class="fld-l">Default state</span>
+                                                    <button class={collapsedDefaultBtnClass} onclick={handleCollapsedDefaultToggle}>{collapsedDefaultBtnLabel}</button>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </template>
+
+                                    <template lwc:if={isSelField}>
+                                        <label class="fld">
+                                            <span class="fld-l">Label</span>
+                                            <input class="inp" type="text" value={selLabel} onchange={handleLabelInput} />
+                                        </label>
+                                        <template lwc:if={hasFieldApi}>
+                                            <div class="fld">
+                                                <span class="fld-l">Field</span>
+                                                <span class="ro">{elFieldApi}</span>
+                                            </div>
+                                        </template>
+                                        <label class="fld">
+                                            <span class="fld-l">Behavior</span>
+                                            <select class="inp" onchange={handleBehaviorChange}>
+                                                <template for:each={behaviorOptions} for:item="o">
+                                                    <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                </template>
+                                            </select>
+                                        </label>
+                                        <template lwc:if={hasRenderAsChoices}>
+                                            <label class="fld">
+                                                <span class="fld-l">Display as</span>
+                                                <select class="inp" onchange={handleRenderAsChange}>
+                                                    <template for:each={renderAsOptions} for:item="o">
+                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                    </template>
+                                                </select>
+                                            </label>
+                                        </template>
+                                        <template lwc:if={showCustomValues}>
+                                            <div class="fld">
+                                                <span class="fld-l">Options</span>
+                                                <template for:each={customOptions} for:item="o">
+                                                    <div key={o.key} class="opt-row">
+                                                        <input class="inp" type="text" placeholder="Label" value={o.label} data-index={o.index} data-field="label" onchange={handleOptionChange} />
+                                                        <input class="inp" type="text" placeholder="Value" value={o.value} data-index={o.index} data-field="value" onchange={handleOptionChange} />
+                                                        <button class="opt-del" data-index={o.index} onclick={handleRemoveOption} title="Remove">
+                                                            <lightning-icon icon-name="utility:close" size="xx-small" variant="inverse"></lightning-icon>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                                <button class="opt-add" onclick={handleAddOption}>＋ Add option</button>
+                                            </div>
+                                        </template>
+                                        <template lwc:if={isSliderRender}>
+                                            <div class="fld">
+                                                <span class="fld-l">Slider range</span>
+                                                <div class="num-row">
+                                                    <input class="inp" type="number" value={elSliderMin} onchange={handleSliderMin} title="Min" />
+                                                    <input class="inp" type="number" value={elSliderMax} onchange={handleSliderMax} title="Max" />
+                                                    <input class="inp" type="number" value={elSliderStep} onchange={handleSliderStep} title="Step" />
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <label class="fld">
+                                            <span class="fld-l">Help text</span>
+                                            <input class="inp" type="text" value={elHelpText} onchange={handleHelpTextInput} />
+                                        </label>
+                                        <label class="fld">
+                                            <span class="fld-l">Placeholder</span>
+                                            <input class="inp" type="text" value={elPlaceholder} onchange={handlePlaceholderInput} />
+                                        </label>
+                                        <label class="fld">
+                                            <span class="fld-l">URL prefill parameter</span>
+                                            <input class="inp" type="text" value={elUrlPrefill} placeholder="e.g. acct" onchange={handleUrlPrefillInput} />
+                                        </label>
+                                    </template>
+
+                                    <template lwc:if={isSelHero}>
+                                        <div class="fld">
+                                            <span class="fld-l">Media image</span>
+                                            <template lwc:if={selHasImage}>
+                                                <div class="media-thumb">
+                                                    <img src={selImageUrl} alt={selImageAlt} />
+                                                </div>
+                                            </template>
+                                            <div class="media-actions">
+                                                <label class="upload-btn">
+                                                    <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onchange={handleMediaUpload} disabled={_uploading} />
+                                                    {uploadBtnLabel}
+                                                </label>
+                                                <template lwc:if={selHasImage}>
+                                                    <button class="media-remove" onclick={handleMediaRemove}>Remove</button>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <template lwc:if={selHasImage}>
+                                            <label class="fld">
+                                                <span class="fld-l">Image alt text</span>
+                                                <input class="inp" type="text" value={selImageAlt} onchange={handleImageAltInput} />
+                                            </label>
+                                        </template>
+                                        <label class="fld">
+                                            <span class="fld-l">Headline</span>
+                                            <input class="inp" type="text" value={selHeadline} onchange={handleHeadlineInput} />
+                                        </label>
+                                        <label class="fld">
+                                            <span class="fld-l">Subtext</span>
+                                            <textarea class="inp" rows="2" onchange={handleSubtextInput}>{selSubtext}</textarea>
+                                        </label>
+                                        <label class="fld">
+                                            <span class="fld-l">Button label</span>
+                                            <input class="inp" type="text" value={selCtaLabel} onchange={handleCtaLabelInput} />
+                                        </label>
+                                        <label class="fld">
+                                            <span class="fld-l">Button action</span>
+                                            <select class="inp" onchange={handleCtaActionChange}>
+                                                <option value="start" selected={ctaIsStart}>Jump to form</option>
+                                                <option value="link" selected={selCtaIsLink}>External link</option>
+                                            </select>
+                                        </label>
+                                        <template lwc:if={selCtaIsLink}>
+                                            <label class="fld">
+                                                <span class="fld-l">Link URL</span>
+                                                <input class="inp" type="text" value={selCtaHref} onchange={handleCtaHrefInput} />
+                                            </label>
+                                        </template>
+                                    </template>
+
+                                    <template lwc:if={isSelContent}>
+                                        <!-- Empty space — grid cell filler (width = shared control below) -->
+                                        <template lwc:if={isSelEmptySpace}>
+                                            <template lwc:if={showEmptySpaceNote}>
+                                                <div class="fld note">Empty space fills a grid cell — give its section more than one column to size it.</div>
+                                            </template>
+                                        </template>
+
+                                        <template lwc:else>
+                                        <label class="fld">
+                                            <span class="fld-l">Label</span>
+                                            <input class="inp" type="text" value={selLabel} onchange={handleLabelInput} />
+                                        </label>
+
+                                        <!-- Display text — rich text editor (it renders as rich text) -->
+                                        <template lwc:if={isSelDisplayText}>
+                                            <div class="fld">
+                                                <span class="fld-l">Text</span>
+                                                <lightning-input-rich-text label="Display text" value={selContent} onchange={handleContentInput}></lightning-input-rich-text>
+                                            </div>
+                                        </template>
+
+                                        <!-- Image -->
+                                        <template lwc:if={isSelImage}>
+                                            <div class="fld">
+                                                <span class="fld-l">Image</span>
+                                                <template lwc:if={selHasImage}>
+                                                    <div class="media-thumb">
+                                                        <img src={selImageUrl} alt={selImageAlt} />
+                                                    </div>
+                                                </template>
+                                                <div class="media-actions">
+                                                    <label class="upload-btn">
+                                                        <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onchange={handleMediaUpload} disabled={_uploading} />
+                                                        {uploadBtnLabel}
+                                                    </label>
+                                                    <template lwc:if={selHasImage}>
+                                                        <button class="media-remove" onclick={handleMediaRemove}>Remove</button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <label class="fld">
+                                                <span class="fld-l">Alt text</span>
+                                                <input class="inp" type="text" value={selImageAlt} onchange={handleImageAltInput} />
+                                            </label>
+                                            <label class="fld">
+                                                <span class="fld-l">Size</span>
+                                                <select class="inp" onchange={handleImageSizeChange}>
+                                                    <template for:each={imageSizeOptions} for:item="o">
+                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                    </template>
+                                                </select>
+                                            </label>
+                                        </template>
+
+                                        <!-- Callout -->
+                                        <template lwc:if={isSelCallout}>
+                                            <label class="fld">
+                                                <span class="fld-l">Tone</span>
+                                                <select class="inp" onchange={handleCalloutVariantChange}>
+                                                    <template for:each={calloutVariantOptions} for:item="o">
+                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                    </template>
+                                                </select>
+                                            </label>
+                                            <div class="fld">
+                                                <span class="fld-l">Message</span>
+                                                <lightning-input-rich-text label="Callout message" value={selContent} onchange={handleContentInput}></lightning-input-rich-text>
+                                            </div>
+                                        </template>
+
+                                        <!-- Spacer -->
+                                        <template lwc:if={isSelSpacer}>
+                                            <label class="fld">
+                                                <span class="fld-l">Size</span>
+                                                <select class="inp" onchange={handleSpacerSizeChange}>
+                                                    <template for:each={spacerSizeOptions} for:item="o">
+                                                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                    </template>
+                                                </select>
+                                            </label>
+                                        </template>
+
+                                        <!-- Consent -->
+                                        <template lwc:if={isSelConsent}>
+                                            <div class="fld">
+                                                <span class="fld-l">Consent text</span>
+                                                <lightning-input-rich-text label="Consent text" value={selContent} onchange={handleContentInput}></lightning-input-rich-text>
+                                            </div>
+                                            <div class="fld">
+                                                <span class="fld-l">Acceptance</span>
+                                                <button class={consentReqBtnClass} onclick={handleConsentToggle}>{consentReqBtnLabel}</button>
+                                            </div>
+                                        </template>
+
+                                        <!-- Divider (no settings — styling comes from the theme) -->
+                                        <template lwc:if={isSelDivider}>
+                                            <div class="fld note">A divider has no settings — its look comes from the form theme.</div>
+                                        </template>
+
+                                        <!-- File upload -->
+                                        <template lwc:if={isSelFileUpload}>
+                                            <div class="fld note">Respondents can attach files once the record is created. The label above is what they’ll see.</div>
+                                        </template>
+                                        </template>
+                                    </template>
+
+                                    <!-- Width (field / sizable content / empty space, in a multi-column section) -->
+                                    <template lwc:if={showWidth}>
+                                        <label class="fld">
+                                            <span class="fld-l">Width</span>
+                                            <select class="inp" onchange={handleFieldWidthChange}>
+                                                <template for:each={widthOptions} for:item="o">
+                                                    <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                </template>
+                                            </select>
+                                        </label>
+                                    </template>
+
+                                    <!-- Standalone content block (outside a section) → framing style -->
+                                    <template lwc:if={isSelStandaloneBlock}>
+                                        <label class="fld">
+                                            <span class="fld-l">Block style</span>
+                                            <select class="inp" onchange={handleBlockStyleChange}>
+                                                <template for:each={blockStyleOptions} for:item="o">
+                                                    <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                                                </template>
+                                            </select>
+                                        </label>
+                                    </template>
+
+                                    <template lwc:if={showVisibility}>
+                                        <div class="fld vis-block">
+                                            <span class="fld-l">Visibility</span>
+                                            <template lwc:if={hasVisibility}>
+                                                <div class="vis-summary">
+                                                    <div class="vis-logic">{visibilitySummary.logicText}</div>
+                                                    <template for:each={visibilitySummary.items} for:item="r">
+                                                        <div key={r.key} class="vis-rule">{r.text}</div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template lwc:else>
+                                                <div class="vis-empty">Always shown</div>
+                                            </template>
+                                            <button class="vis-btn" onclick={handleEditVisibility}>
+                                                <lightning-icon icon-name="utility:filterList" size="xx-small" class="slds-m-right_xx-small" variant="inverse"></lightning-icon>
+                                                {visBtnLabel}
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <button class="insp-del" onclick={handleDeleteNode}>
+                                        <lightning-icon icon-name="utility:delete" size="xx-small" class="slds-m-right_xx-small" variant="inverse"></lightning-icon>
+                                        Delete
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- FIELDS (click to add to the form) -->
+                            <template lwc:elseif={isFields}>
+                                <div class="search">
+                                    <lightning-icon icon-name="utility:search" size="x-small" class="gi" variant="inverse"></lightning-icon>
+                                    <input placeholder="Search fields…" type="text" oninput={handleSearch} />
+                                </div>
+                                <template for:each={fieldRows} for:item="f">
+                                    <button key={f.key} class={f.itemClass} data-api={f.api} onclick={handleAddField}
+                                            draggable={f.draggable} ondragstart={handlePaletteFieldDragStart} ondragend={handleDragEndClear}>
+                                        <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" class="gi grip" variant="inverse"></lightning-icon>
+                                        <lightning-icon icon-name={f.icon} size="x-small" class="gi" variant="inverse"></lightning-icon>
+                                        <span class="nm">{f.label}</span>
+                                        <span class="pal-added" lwc:if={f.isUsed}>added</span>
+                                        <span class="pal-req" lwc:if={f.required}>• required</span>
+                                    </button>
+                                </template>
+                                <template lwc:if={hasNoFields}>
+                                    <div class="placeholder-panel">
+                                        <p>No fields to show</p>
+                                        <p class="sub">Pick a form with a primary object</p>
+                                    </div>
+                                </template>
+                            </template>
+
+                            <!-- INSERT (click to add an element) -->
+                            <template lwc:elseif={isInsert}>
+                                <template for:each={insertGroups} for:item="g">
+                                    <div key={g.key} class="ins-group">
+                                        <div class="glabel">{g.label}</div>
+                                        <template for:each={g.items} for:item="it">
+                                            <button key={it.value} class="item ins" data-type={it.value} onclick={handleInsertElement}
+                                                    draggable="true" ondragstart={handlePaletteElDragStart} ondragend={handleDragEndClear}>
+                                                <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" class="gi grip" variant="inverse"></lightning-icon>
+                                                <lightning-icon icon-name={it.icon} size="x-small" class="gi" variant="inverse"></lightning-icon>
+                                                <span class="nm">{it.label}</span>
+                                                <lightning-icon icon-name="utility:add" size="xx-small" class="addico" variant="inverse"></lightning-icon>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </template>
+
+                            <!-- BUILD · AUTOFILL (form-level prefill rules) -->
+                            <template lwc:elseif={isAutofill}>
+                                <div class="af-list">
+                                    <p class="af-intro">Copy field values from a source record into this form — when a lookup is filled in, or from a record Id in the URL.</p>
+                                    <template lwc:if={hasAutofillObject}>
+                                        <template lwc:if={hasAutofillRules}>
+                                            <template for:each={autofillSummaries} for:item="r">
+                                                <div key={r.key} class="af-card">
+                                                    <div class="af-card__main">
+                                                        <span class="af-card__src">{r.sourceText}</span>
+                                                        <span class="af-card__map">{r.mapText}</span>
+                                                    </div>
+                                                    <div class="af-card__act">
+                                                        <lightning-button-icon icon-name="utility:edit" variant="bare" size="small" alternative-text="Edit rule" data-index={r.index} onclick={handleEditAutofill}></lightning-button-icon>
+                                                        <lightning-button-icon icon-name="utility:delete" variant="bare" size="small" alternative-text="Delete rule" data-index={r.index} onclick={handleDeleteAutofill}></lightning-button-icon>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </template>
+                                        <template lwc:else>
+                                            <p class="af-empty">No autofill rules yet.</p>
+                                        </template>
+                                        <button class="af-add" onclick={handleNewAutofill}>+ New rule</button>
+                                    </template>
+                                    <template lwc:else>
+                                        <p class="af-empty">This form has no primary object, so there's nothing to autofill into.</p>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- DESIGN · 4-pillar settings panel (c/designPanel) -->
+                            <template lwc:elseif={isDesign}>
+                                <c-design-panel active-tab={panel} design={designState}
+                                    uploading={_uploading}
+                                    onchange={handleDesignChange}></c-design-panel>
+                            </template>
+
+                            <!-- fallback -->
+                            <template lwc:else>
+                                <div class="placeholder-panel">
+                                    <p>{panelTitle}</p>
+                                    <p class="sub">{panelSub}</p>
+                                </div>
+                            </template>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- CENTER BLUEPRINT OR REOPEN STRIP -->
+            <template lwc:if={editorHidden}>
+                <!-- reopen strip -->
+                <div class="reopen">
+                    <button onclick={handleToggleEditor}>▸ Show editor</button>
+                </div>
+            </template>
+            <template lwc:else>
+                <!-- BLUEPRINT (center) -->
+                <section class="blueprint">
+                    <div class="bph">
+                        <span class="lab">Blueprint</span>
+                        <div class="right">
+                            <button class="bpbtn" onclick={handleToggleEditor}>
+                                <lightning-icon icon-name="utility:chevronleft" size="x-small" class="slds-m-right_xx-small" variant="inverse"></lightning-icon>
+                                {hideEditorLabel}
+                            </button>
+                        </div>
+                    </div>
+                    <!-- PAGE TAB STRIP (stepped layouts only) -->
+                    <template lwc:if={showPageStrip}>
+                        <div class="bp-pages" ondragover={allowDrop} ondrop={handlePageStripDrop}>
+                            <template for:each={pageTabs} for:item="pg">
+                                <div key={pg.key} class={pg.cls} data-key={pg.key}
+                                     draggable="true"
+                                     ondragstart={handlePageDragStart}
+                                     ondragend={handleDragEndClear}
+                                     ondragover={allowDrop}
+                                     ondrop={handlePageTabDrop}
+                                     ondragenter={handleDragEnter}
+                                     ondragleave={handleDragLeave}
+                                     onclick={handleSelectPage}
+                                     ondblclick={handleStartRename}>
+                                    <template lwc:if={pg.isRenaming}>
+                                        <input class="bp-page-rename" type="text" value={pg.label}
+                                               onchange={handleRenameInput}
+                                               onblur={handleRenameCommit}
+                                               onkeydown={handleRenameKey} />
+                                    </template>
+                                    <template lwc:else>
+                                        <span class="bp-page-name">{pg.label}</span>
+                                        <button class="bp-page-del" data-key={pg.key} onclick={handleDeletePage} title="Delete page">×</button>
+                                    </template>
+                                </div>
+                            </template>
+                            <button class="bp-page-add" onclick={handleAddPage} title="Add page">＋ Page</button>
+                        </div>
+                    </template>
+
+                    <div class="bpscroll">
+                        <div class="bpsheet" ondrop={handleSheetDrop}>
+                            <template for:each={blueprintSections} for:item="sec">
+                                <div key={sec.key} class="bp-row">
+                                  <div class={sec.gapCls} data-before={sec.key}
+                                       ondragover={handleGapDragOver} ondrop={handleGapDrop}
+                                       ondragleave={handleGapLeave}></div>
+                                  <div class={sec.selCls}
+                                     data-key={sec.key}
+                                     ondragover={handleSecDragOver}
+                                     ondrop={handleSectionDrop}
+                                     ondragenter={handleDragEnter}
+                                     ondragleave={handleDragLeave}>
+                                    <template lwc:if={sec.isContentBlock}>
+                                        <div class="bp-block-head" data-key={sec.key} data-sel={sec.elKey} onclick={handleSelectBlock}
+                                             draggable="true" ondragstart={handleSectionDragStart} ondragend={handleDragEndClear}>
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" class="bp-grip" variant="inverse"></lightning-icon>
+                                            <span class="bp-block-tag">{sec.blockLabel}</span>
+                                            <button class="bp-sec-del" data-key={sec.key} onclick={handleDeleteSec} title="Delete">
+                                                <lightning-icon icon-name="utility:close" size="xx-small" variant="inverse"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template lwc:else>
+                                        <div class="bp-sec-header" data-key={sec.key} onclick={handleSelect}
+                                             draggable="true" ondragstart={handleSectionDragStart} ondragend={handleDragEndClear}>
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" class="bp-grip" variant="inverse"></lightning-icon>
+                                            <span class="bptag">{sec.title}</span>
+                                            <span class="bp-ctx" lwc:if={sec.ctxLabel}>{sec.ctxLabel}</span>
+                                            <button class="bp-sec-del" data-key={sec.key} onclick={handleDeleteSec} title="Delete section">
+                                                <lightning-icon icon-name="utility:close" size="xx-small" variant="inverse"></lightning-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <div class="bp-sec-desc" lwc:if={sec.desc}>{sec.desc}</div>
+                                    <div class={sec.gridCls}>
+                                        <template for:each={sec.elements} for:item="el">
+                                            <div key={el.key} class={el.selCls} style={el.gridStyle}
+                                                 data-key={el.key} data-section-key={el.sectionKey}
+                                                 draggable={el.drag}
+                                                 ondragstart={handleElementDragStart}
+                                                 ondragend={handleDragEndClear}
+                                                 ondragover={handleElDragOver}
+                                                 ondrop={handleElementDrop}
+                                                 onclick={handleSelect}>
+                                                <button class="bp-el-del" data-key={el.key} onclick={handleDeleteEl} title="Delete" lwc:if={el.delEl}>
+                                                    <lightning-icon icon-name="utility:close" size="xx-small" variant="inverse"></lightning-icon>
+                                                </button>
+                                                <template lwc:if={el.isHero}>
+                                                    <div class="bphero">
+                                                        <div class="m">image</div>
+                                                        <div class="h"></div>
+                                                        <div class="s"></div>
+                                                        <div class="b"></div>
+                                                    </div>
+                                                </template>
+                                                <template lwc:if={el.isField}>
+                                                    <span class="k">
+                                                        {el.label}
+                                                        <span class="req" lwc:if={el.required}> *</span>
+                                                    </span>
+                                                    <div class="v"></div>
+                                                </template>
+                                                <template lwc:if={el.isContent}>
+                                                    <span class="k bp-ctype">{el.typeLabel}</span>
+                                                    <div class="v"></div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template lwc:if={sec.showEmptyDrop}>
+                                            <div class="bp-drop-empty">Drop fields here</div>
+                                        </template>
+                                    </div>
+                                  </div>
+                                </div>
+                            </template>
+                            <div class={endGapCls} data-before=""
+                                 ondragover={handleGapDragOver} ondrop={handleGapDrop}
+                                 ondragleave={handleGapLeave}></div>
+                            <button class="bpadd" onclick={handleAddSection}>＋ Add section</button>
+                        </div>
+                    </div>
+                </section>
+            </template>
+
+            <!-- PREVIEW (right) -->
+            <section class="preview">
+                <div class="pvh">
+                    <span class="t">Live preview</span>
+                    <div class="right">
+                        <div class="devseg">
+                            <button class={desktopBtnClass} onclick={handleDesktop}>
+                                <lightning-icon icon-name="utility:desktop" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                                Desktop
+                            </button>
+                            <button class={mobileBtnClass} onclick={handleMobile}>
+                                <lightning-icon icon-name="utility:phone" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                                Mobile
+                            </button>
+                        </div>
+                        <button class="dev-btn pv-refresh" onclick={handleRefreshPreview} title="Restart preview">
+                            <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+                        </button>
+                        <button class="bpbtn collapse-btn" onclick={handleToggleEditor}>
+                            {hideEditorLabel}
+                        </button>
+                    </div>
+                </div>
+                <div class="pvscroll">
+                    <!-- WYSIWYG: the actual respondent runtime, fed the live model
+                         in-memory (no Apex, no DML). What you see IS the form. -->
+                    <template lwc:if={showLivePreview}>
+                        <div class={previewStageClass}>
+                            <template lwc:if={_previewMounted}>
+                                <c-form-viewer
+                                    preview-definition={previewDefinition}
+                                    preview-width={previewWidth}
+                                    mode="preview">
+                                </c-form-viewer>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <div class="pv-empty">
+                            <lightning-icon icon-name="utility:preview" size="small" alternative-text="" class="pv-empty-ico"></lightning-icon>
+                            <p>{previewEmptyText}</p>
+                        </div>
+                    </template>
+                </div>
+            </section>
+        </div>
+        </template>
+
+        <!-- Creation gallery (New form / New survey) — full-screen overlay -->
+        <template lwc:if={showGallery}>
+            <div class="gallery-overlay">
+                <c-form-creation-gallery
+                    mode={galleryMode}
+                    onformcreated={handleFormCreated}
+                    onclose={handleGalleryClose}>
+                </c-form-creation-gallery>
+            </div>
+        </template>
+
+        <!-- Visibility rules modal (c/visibilityEditor — the non-z editor) -->
+        <template lwc:if={showVisModal}>
+            <section class="vis-modal" role="dialog" aria-modal="true">
+                <div class="vis-mbackdrop" onclick={handleVisCancel}></div>
+                <div class="vis-mcard">
+                    <c-visibility-editor
+                        context-label={visContextLabel}
+                        fields={visFields}
+                        object-label={visObjectLabel}
+                        rules-json={selVisibilityJson}
+                        onsave={handleVisSave}
+                        oncancel={handleVisCancel}>
+                    </c-visibility-editor>
+                </div>
+            </section>
+        </template>
+
+        <!-- Autofill single-rule editor modal (c/formAutofill) -->
+        <template lwc:if={showAutofillModal}>
+            <section class="vis-modal" role="dialog" aria-modal="true">
+                <div class="vis-mbackdrop" onclick={handleAutofillModalCancel}></div>
+                <div class="vis-mcard">
+                    <c-form-autofill
+                        object-api-name={autofillObject}
+                        target-fields={objectFields}
+                        rule={editingAutofillRule}
+                        onsave={handleAutofillSave}
+                        oncancel={handleAutofillModalCancel}>
+                    </c-form-autofill>
+                </div>
+            </section>
+        </template>
+
+        <!-- Related List: child-relationship picker -->
+        <template lwc:if={showRelPicker}>
+            <section class="vis-modal" role="dialog" aria-modal="true">
+                <div class="vis-mbackdrop" onclick={handleRelPickerCancel}></div>
+                <div class="vis-mcard rel-pick">
+                    <div class="rel-pick-head">
+                        <h2>Add a related list</h2>
+                        <p>Pick a child relationship of this object. Its records repeat in the form.</p>
+                    </div>
+                    <template lwc:if={hasRelOptions}>
+                        <div class="rel-pick-list">
+                            <template for:each={relPickerOptions} for:item="r">
+                                <button key={r.key} class="rel-pick-item" data-rel={r.relationshipName}
+                                        data-child={r.childObject} data-label={r.childObjectLabel} data-linking={r.linkingField}
+                                        onclick={handlePickRelationship}>
+                                    <lightning-icon icon-name="utility:table" size="x-small" class="gi" variant="inverse"></lightning-icon>
+                                    <span class="rel-pick-main">
+                                        <span class="rel-pick-name">{r.childObjectLabel}</span>
+                                        <span class="rel-pick-sub">{r.sub}</span>
+                                    </span>
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <div class="vis-empty">No child relationships found for this object.</div>
+                    </template>
+                    <div class="rel-pick-foot">
+                        <button class="tbtn ghost" onclick={handleRelPickerCancel}>Cancel</button>
+                    </div>
+                </div>
+            </section>
+        </template>
+    </div>
+</template>
