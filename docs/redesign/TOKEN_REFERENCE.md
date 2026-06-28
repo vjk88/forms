@@ -19,6 +19,19 @@ dark/palette or via an override) · ⛔ out of scope (builder UI, not the form).
 
 Each fix is recorded here as it lands. ⚠️ = code-path fix, not yet render-tested.
 
+### 2026-06-28 (later 10) — Dead-token hygiene cut
+> Grep-verified zero-consumer tokens removed from the `formThemes.js` producer (1 cmp deployed, 0 err,
+> jest 45/45). Pure hygiene — no behavior change, every cut token had **no** consumer anywhere in `force-app`.
+- **Cut (5):** `--c-zone-pad` (zones use `--c-grid-gap`), `--c-summary-w` (unbuilt summary zone),
+  `--c-dur-3` (no consumer; `--c-dur-1`/`-2` kept — used by formNav + 5 shells), `--c-input-border-bottom`
+  (removed from all 3 input-style branches; underline solved via `--slds-c-input-shadow` since "later"),
+  `--c-title-fill` (titles styled by weight/size in shells).
+- **Explicitly KEPT (verified live):** `--c-stickybar-h` (wired in 3 shells), `--c-input-border`/`-bg`/`-radius`
+  (layoutSectionHost + SLDS hooks), `--c-rail-w` (sideNav/wizard), `--c-grid-gap` (layoutZones).
+- **Tests:** the two `--c-title-fill` assertions flipped to `toBeUndefined()` to lock in the cut.
+- **Still 🔴 (not cut — have a possible future home):** `--c-panel-decor-color` (accent band, deferred),
+  `--c-bg-scrim`, `--c-control-font`, `--c-input-font`, `--c-back-color`, `--c-section-header-bg`.
+
 ### 2026-06-27 (later 9) — Sticky-bar regression fixes (supersedes parts of "later 8")
 > User flagged 3 issues with the "later 8" change. All addressed (5 cmp, 0 err, jest 35/35, ⚠️ render-pending).
 - **Width bug (real, mine):** shellStack rendered the sticky `.savebar` as a **sibling of `<article>`**
@@ -39,6 +52,12 @@ Each fix is recorded here as it lands. ⚠️ = code-path fix, not yet render-te
   `submitrequest` CustomEvent; record-edit-forms live in formSectionRenderer (per-section, context-only);
   formViewer collects + submits via FormSubmitController. The change was CSS-positioning only — zero
   data/submit-path impact.
+- **🔴 KNOWN ISSUE (deferred — user will fix later):** with Sticky active, the pinned bar **floats over
+  the trailing fields** while scrolling (the bar covers only its own strip, so the last fields — e.g. a
+  date/time row — bleed out beneath it). Sticky is left **default `'auto'` but known-imperfect**; the
+  user opted to keep it as-is rather than revert to Inline. Proper fix needs a real browser render
+  (pin-only-on-overflow + full coverage of content behind the bar) — NOT yet done. Inline placement is
+  unaffected (correct).
 
 ### 2026-06-27 (later 8) — Sticky submit bar → Auto default (4 cmp, 0 err, ⚠️)
 > **Correction:** the sticky submit bar was NOT unbuilt — I wrongly said "no shell renders one" when
@@ -251,10 +270,11 @@ Control scale + Label position (user-verified).
 **Not exposed in the panel at all** (no control): fonts (`--c-font-body/-display` — picker
 deferred), `--c-back-color`, `--c-border` (only reachable indirectly, see above),
 `--c-header-text-weak`, `--c-surface-sunken/-alt`, the palette lane (`--c-secondary*/-tertiary*`), all
-motion (`--c-dur-*`, `--c-ease`), all structural (`--c-grid-gap`, `--c-zone-pad`, `--c-rail-w`,
-`--c-summary-w`, `--c-stickybar-h`, `--c-shell-*`), and every never-produced constant
-(`--c-error*`, `--c-danger`, `--c-callout-*`, `--c-input-height`, `--c-surface-2`, `--c-text-muted`,
-`--c-space-6/7/8`, `--c-radius-sm`).
+motion (`--c-dur-1/-2`, `--c-ease`), the surviving structural (`--c-grid-gap`, `--c-rail-w`,
+`--c-stickybar-h`, `--c-shell-*`), and every never-produced constant
+(`--c-space-6/7/8`, `--c-radius-sm`).
+*(Note: `--c-error*`/`--c-danger`/`--c-callout-*`/`--c-input-height`/`--c-surface-2`/`--c-text-muted`
+were in this list pre-Phase-1 — they are now **produced** at formThemes.js:1071-1082, see fix log.)*
 
 ---
 
@@ -306,15 +326,15 @@ producer line in `formThemes.js`.
 | ~~`--c-texture`~~ | paper/grid surface texture | Background texture | ✅ **CONSUMED 2026-06-27** — all 7 shells' page-bg `background-image` |
 | ~~`--c-mesh-1..4`~~ + `--c-mesh-bg` | mesh blob hues → ready-made radial-gradient bg | Mesh background | ✅ **CONSUMED 2026-06-27** — `--c-mesh-bg` layered in all 7 shells |
 | `--c-panel-decor-color` | top accent band tint | Top accent band | 🔴 **DEFERRED** — needs per-layout target (Split Hero has no cards) |
-| `--c-title-fill` | title color | (internal) | unused — cut |
+| ~~`--c-title-fill`~~ | title color | (internal) | ✅ **CUT 2026-06-28** — no consumer; titles styled by weight/size in shells |
 | `--c-bg-scrim` | legibility scrim on dark bg | (internal, dark only) | a shell bg overlay, or cut |
-| `--c-dur-3` | 600ms entrance duration | (internal motion) | unused — cut or use |
+| ~~`--c-dur-3`~~ | 600ms entrance duration | (internal motion) | ✅ **CUT 2026-06-28** — no consumer (`--c-dur-1`/`-2` kept, used widely) |
 | ~~`--c-stickybar-h`~~ | sticky bar height | (internal) | ✅ **WIRED 2026-06-27** — `min-height` on the auto sticky savebar/footer (Stack/Tabbed/Accordion) |
-| `--c-summary-w` | summary zone width | (internal) | unused — cut |
-| `--c-zone-pad` | zone inner padding | (internal) | zones uses `--c-grid-gap` instead — cut |
+| ~~`--c-summary-w`~~ | summary zone width | (internal) | ✅ **CUT 2026-06-28** — unbuilt summary zone, no consumer |
+| ~~`--c-zone-pad`~~ | zone inner padding | (internal) | ✅ **CUT 2026-06-28** — zones use `--c-grid-gap` instead |
 | `--c-control-font` | control font scale | Control scale (partial) | a `fields` rule, or cut |
 | `--c-input-font` | input font family | Input style (partial) | a `fields`/`lSH` rule, or cut |
-| `--c-input-border-bottom` | underline-input bottom border | Input style = Underline | ✅ **Underline solved differently 2026-06-27** — via `--slds-c-input-shadow` inset line, not this token. This token is now redundant (cut candidate). |
+| ~~`--c-input-border-bottom`~~ | underline-input bottom border | Input style = Underline | ✅ **CUT 2026-06-28** — underline solved via `--slds-c-input-shadow` inset line; this token was redundant in all 3 input-style branches |
 | ~~`--c-label-size`~~ | label font size | Label style (mono/muted) | ✅ **CONSUMED 2026-06-27** by `.el-flabel` |
 | ~~`--c-label-tracking`~~ | label letter-spacing | Label style | ✅ **CONSUMED 2026-06-27** by `.el-flabel` |
 | ~~`--c-label-col`~~ | ~~left-label column width~~ | Label position = Left | ✅ **CUT 2026-06-27** — Left now uses native `variant="label-inline"`, not a token |
@@ -389,15 +409,16 @@ live form component, so they're irrelevant to theming a form:
 
 ## What to actually do (smallest → biggest)
 
-1. **Aliases/produce in `formThemes.js`** (one line each, fixes the ⚪ mismatches): emit
-   `--c-text-muted`, `--c-input-height`, `--c-surface-2` as aliases; produce `--c-error` (+ alias
-   `--c-danger`); produce the four `--c-callout-*-bg`. → "Muted text", error color, density, alerts
-   start reaching fields.
-2. **Verify Input=Underline and Label=Left actually render** — `--c-input-border-bottom` and
-   `--c-label-col` have no consumer (🔴). Likely partial/broken; needs a render test, then add the
-   `var()` to `layoutSectionHost.css`/`formSectionRenderer.css`.
-3. **Decide the 🔴 effects** (texture/mesh/accent-band/title-fill/bg-scrim + dead structural) — wire
-   or cut. They're why parts of the panel do nothing.
+1. ~~Aliases/produce in `formThemes.js`~~ ✅ **DONE 2026-06-27 (Phase 1)** — `--c-text-muted`,
+   `--c-input-height`, `--c-surface-2`, `--c-danger` aliases + pinned `--c-error`/`--c-error-bg` + the
+   four `--c-callout-*-bg` all emitted at
+   [formThemes.js:1071-1082](../../force-app/main/default/lwc/formThemes/formThemes.js#L1071) and
+   grep-confirmed consumed. ⚠️ code-path wired, not render-verified.
+2. ~~Verify Input=Underline and Label=Left render~~ ✅ **DONE** — both work (Underline via
+   `--slds-c-input-shadow`, Left via native `variant="label-inline"`); the dead tokens
+   `--c-input-border-bottom` + `--c-label-col` were **cut**, not wired.
+3. **Decide the remaining 🔴 effects** (accent-band/bg-scrim + `--c-control-font`/`--c-input-font`) — wire
+   or cut. (texture/mesh = consumed; title-fill/dur-3/zone-pad/summary-w = cut 2026-06-28.)
 4. **Inert-per-layout (🟡)** — either add the `var()` to the 3 bespoke shells, or hide those controls
    on those layouts (see COVERAGE_MATRIX A5).
 

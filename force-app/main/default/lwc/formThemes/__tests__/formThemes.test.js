@@ -64,7 +64,7 @@ describe('c-form-themes themeVars v2', () => {
         expect(m['--c-input-font']).toBe('var(--c-font-body)');
         expect(m['--c-label-transform']).toBe('none');
         expect(m['--c-texture']).toBe('none');
-        expect(m['--c-title-fill']).toBe('var(--c-text, #16325c)');
+        expect(m['--c-title-fill']).toBeUndefined(); // cut: no consumer (titles styled by weight/size in shells)
         expect(m['--c-label-col']).toBeUndefined();
         expect(m['--c-mesh-1']).toBeUndefined();
         expect(m['--c-panel-decor-color']).toBeUndefined();
@@ -96,8 +96,8 @@ describe('c-form-themes themeVars v2', () => {
         expect(m['--c-texture']).toContain('data:image/svg+xml');
         expect(m['--c-mesh-1']).toBe('#111111');
         expect(m['--c-mesh-2']).toBe('#7a5cff'); // default fills the gap
-        // titleStyle:'gradient' is ignored — title fill stays solid (no gradient text).
-        expect(m['--c-title-fill']).toBe('var(--c-text, #16325c)');
+        // titleStyle:'gradient' is ignored — token cut, titles styled by weight/size in shells.
+        expect(m['--c-title-fill']).toBeUndefined();
         expect(m['--c-panel-decor-color']).toContain('color-mix');
     });
 

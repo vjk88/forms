@@ -102,10 +102,12 @@ but **doesn't reach the fields**. All in
 | (alerts/callouts) | — (nothing) | `--c-callout-{info,success,warning,error}-bg` (L194-206) | callouts are permanently the hardcoded pastels |
 | (sunken surface) | `--c-surface-sunken` (dark/palette only) | `--c-surface-2` (L261) | sunken field blocks stay `#f9fafb` |
 
-**Fix is one line each, high value:** either rename the consumers to the produced tokens, or have the
-engine emit aliases — `--c-text-muted: var(--c-text-weak)`, `--c-danger: var(--c-error)`,
-`--c-input-height: var(--c-control-h)`, `--c-surface-2: var(--c-surface-sunken)`. The callout colors
-need new producer entries if you want them themeable. *(Credit: surfaced by a cross-audit; verified
+> ✅ **RESOLVED 2026-06-27 (Phase 1) — the table above is the PRE-FIX snapshot.** The engine now
+> emits all of these: aliases `--c-text-muted: var(--c-text-weak)`, `--c-danger: var(--c-error)`,
+> `--c-input-height: var(--c-control-h)`, `--c-surface-2: var(--c-surface-sunken)`, plus pinned
+> `--c-error: #ba0517` / `--c-error-bg` and the four `--c-callout-*-bg`
+> ([formThemes.js:1071-1082](../../force-app/main/default/lwc/formThemes/formThemes.js#L1071)),
+> all grep-confirmed consumed. ⚠️ code-path wired, not render-verified. *(Credit: surfaced by a cross-audit; verified
 against source — no `:host` or producer bridges any of these names.)*
 
 ---
@@ -149,9 +151,9 @@ Produced and consumed, but not user-facing colour controls — transitions and l
 | Token | Consumed by | Drives |
 |---|---|---|
 | `--c-dur-1`, `--c-dur-2`, `--c-ease` | WZ, SH, SN, CV, AC + formNav, layoutZones | transitions / animations (ST, TB have little motion) |
-| `--c-grid-gap`, `--c-zone-pad` | layoutZones | zone / column gutters |
+| `--c-grid-gap` | layoutZones | zone / column gutters (note: `--c-zone-pad` was NOT consumed → cut 2026-06-28) |
 | `--c-rail-w` | WZ, SN | rail width (240px) |
-| `--c-control-font`, `--c-input-border-bottom`, `--c-input-font` | formSectionRenderer | control font size / input underline / input font |
+| `--c-input-font-size` | formSectionRenderer | input text size (Control scale). (`--c-control-font`/`--c-input-font`/`--c-input-border-bottom` are NOT consumed; border-bottom cut 2026-06-28) |
 
 > Engine also emits **aliases**: `--c-brand` / `--c-brand-dark` (= accent, used by formNav/engine),
 > `--c-back-color` (legacy-only consumer), `--c-header-style` / `--c-section-style` (read by JS/template
@@ -188,14 +190,16 @@ to **three visible controls that do nothing on any layout:**
 
 | Token | Design-mode control (all in "Card Borders & FX") | Status |
 |---|---|---|
-| `--c-texture` | **Background texture** | 🔴 dead |
-| `--c-mesh-1..4` | **Animated mesh background** | 🔴 dead |
-| `--c-panel-decor-color` | **Top accent band** | 🔴 dead |
-| `--c-title-fill` | (internal, no control) | 🔴 unused |
+| `--c-texture` | **Background texture** | ✅ CONSUMED 2026-06-27 (all 7 shells' page-bg) |
+| `--c-mesh-bg` (was `--c-mesh-1..4`) | **Mesh background** | ✅ CONSUMED 2026-06-27 (all 7 shells) |
+| `--c-panel-decor-color` | **Top accent band** | 🔴 DEFERRED — needs per-layout target |
+| `--c-title-fill` | (internal, no control) | ✅ CUT 2026-06-28 |
 | `--c-bg-scrim` | (internal; dark skins only) | 🔴 produced, no consumer |
-| `--c-dur-3` | (internal; 600ms entrance) | 🔴 produced, no consumer |
-| `--c-stickybar-h` | (internal; 64px) | 🔴 produced, no consumer |
-| `--c-summary-w` | (internal; 280px summary zone) | 🔴 produced, no consumer |
+| `--c-dur-3` | (internal; 600ms entrance) | ✅ CUT 2026-06-28 |
+| `--c-stickybar-h` | (internal; 64px) | ✅ WIRED 2026-06-27 (sticky footer min-height, 3 shells) |
+| `--c-summary-w` | (internal; 280px summary zone) | ✅ CUT 2026-06-28 |
+| `--c-zone-pad` | (internal; zone padding) | ✅ CUT 2026-06-28 (zones use `--c-grid-gap`) |
+| `--c-input-border-bottom` | Input style = Underline | ✅ CUT 2026-06-28 (underline via `--slds-c-input-shadow`) |
 
 ### Bucket D — CONSTANT: referenced but never produced (⚪)
 Shells reference these with a literal fallback; the engine never sets them, so they're effectively
@@ -207,13 +211,12 @@ fixed values, not themeable.
 | `--c-space-7` | formSectionRenderer (L223) | `3rem` |
 | `--c-space-8` | formViewer (L54) | `3rem` |
 | `--c-radius-sm` | CV, formSectionRenderer | `6px` |
-| `--c-input-height` | formSectionRenderer (L80) | `2.5rem` — **mismatch, see A2b** (engine sets `--c-control-h`) |
-| `--c-text-muted` | formSectionRenderer (L114, L122) | `#64748b` — **mismatch, see A2b** (engine sets `--c-text-weak`) |
-| `--c-danger` | formSectionRenderer (L284) | `#b91c1c` — **mismatch, see A2b** (engine sets `--c-error`) |
-| `--c-surface-2` | formSectionRenderer (L261) | `#f9fafb` — **mismatch, see A2b** (engine sets `--c-surface-sunken`) |
-| `--c-callout-info-bg` / `-success-bg` / `-warning-bg` / `-error-bg` | formSectionRenderer (L194-206) | hardcoded pastels — alert colors not themeable |
-| `--c-error` | formViewer, formSectionRenderer (L143), formNav, formRepeater, shellSideNav, shellWizard | **never produced** → inconsistent fallbacks across files (`#ba0517` / `#ea001e` / `#ba1a1a`) |
-| `--c-error-bg` | formViewer (L24) | never produced → fallback `#fef1f1` |
+
+> ✅ **RESOLVED 2026-06-27 (Phase 1) — no longer Bucket D.** `--c-input-height`, `--c-text-muted`,
+> `--c-danger`, `--c-surface-2`, `--c-error`, `--c-error-bg`, and the four `--c-callout-*-bg` were the
+> A2b name-mismatch / never-produced bugs; the engine now **produces all of them**
+> ([formThemes.js:1071-1082](../../force-app/main/default/lwc/formThemes/formThemes.js#L1071)), wired
+> end-to-end. ⚠️ code-path, not render-verified.
 | `--c-surface-alt` | formLayoutEngine (skeleton), layoutSectionHost (input-bg fallback), formRepeater | engine emits it **only in dark / palette** mode; light themes fall back to `#f3f3f3`/`#f7f9fb` |
 | `--c-shell-min-h`, `--c-shell-rail-h` | all rail/scroll shells | engine-set to `auto` in preview only ([formLayoutEngine L142](../../force-app/main/default/lwc/formLayoutEngine/formLayoutEngine.js), [formViewer L423](../../force-app/main/default/lwc/formViewer/formViewer.js)); else `100%`/`100vh`. Structural plumbing, not a design knob. |
 
@@ -315,15 +318,15 @@ appear on a layout that ignores its token):
 
 ## A7 · Summary of action items (feeds the IA + later build)
 
-1. **Fix the token-name mismatches** (A2b) — alias/rename `--c-text-muted`, `--c-input-height`,
-   `--c-surface-2` to the produced tokens; **start producing an error color** (`--c-error`, and alias
-   `--c-danger` to it — today neither is emitted, with inconsistent fallbacks); theme the callout
-   colors. One line each; makes "Muted text", field error color, and density actually reach the
-   fields. **Highest value, lowest effort.**
+1. ~~Fix the token-name mismatches (A2b)~~ ✅ **DONE 2026-06-27 (Phase 1)** — `--c-text-muted`,
+   `--c-input-height`, `--c-surface-2`, `--c-danger` aliased; `--c-error`/`--c-error-bg` pinned; four
+   `--c-callout-*-bg` produced ([formThemes.js:1071-1082](../../force-app/main/default/lwc/formThemes/formThemes.js#L1071)).
+   ⚠️ code-path wired, not render-verified. (Cosmetic follow-up: unify the red fallback literal — engine
+   `#ba0517` vs static `#ba1a1a`/`#ea001e` in some `:host` defaults.)
 2. **Hide inert controls per layout** (A5) — cheapest fix; removes most "it does nothing" confusion.
-3. **Decide texture / mesh / top-accent-band + the dead structural tokens** (Bucket C:
-   `--c-bg-scrim`, `--c-dur-3`, `--c-stickybar-h`, `--c-summary-w`) — wire them into the
-   shells/renderer, or cut them. Right now they are pure UI noise.
+3. ~~Decide texture / mesh / dead structural tokens~~ — mostly DONE: texture/mesh **consumed**,
+   `--c-stickybar-h` **wired**, and `--c-title-fill`/`--c-dur-3`/`--c-summary-w`/`--c-zone-pad`/
+   `--c-input-border-bottom` **cut 2026-06-28**. Remaining 🔴: top accent band (deferred), `--c-bg-scrim`.
 4. **Add background image + alpha** on page/card/header surfaces (A6).
 5. **Restructure the panel** so colors aren't scattered and the dead/inert controls aren't filed
    under "Typography" — see [DESIGN_MODE_IA.md](./DESIGN_MODE_IA.md).
