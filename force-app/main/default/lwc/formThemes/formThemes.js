@@ -763,13 +763,11 @@ function themeSpecV2Parts(theme, density, accent) {
         `--c-tap-min: 44px`,
         // 3.4 engine structural
         '--c-grid-gap: var(--c-space-4)',
-        '--c-zone-pad: var(--c-space-3)',
         '--c-rail-w: 240px',
-        '--c-summary-w: 280px',
         '--c-stickybar-h: 64px',
         // 3.5 motion & focus (constants — AI has no motion authority)
         '--c-ease: cubic-bezier(.2,.8,.2,1)',
-        '--c-dur-1: 150ms', '--c-dur-2: 250ms', '--c-dur-3: 600ms',
+        '--c-dur-1: 150ms', '--c-dur-2: 250ms',
         `--c-focus-ring: 0 0 0 3px color-mix(in srgb, ${accent} 25%, transparent)`,
         `--c-on-accent: ${onAccent(accent)}`
     ];
@@ -778,21 +776,18 @@ function themeSpecV2Parts(theme, density, accent) {
     if (inputStyle === 'underline') {
         parts.push(
             '--c-input-border: 0 solid transparent',
-            '--c-input-border-bottom: 1.5px solid var(--c-border, #d8dde6)',
             '--c-input-bg: transparent',
             '--c-input-radius: 0'
         );
     } else if (inputStyle === 'filled') {
         parts.push(
             '--c-input-border: 0 solid transparent',
-            '--c-input-border-bottom: 0 solid transparent',
             '--c-input-bg: var(--c-surface-sunken, #f3f3f6)',
             '--c-input-radius: var(--c-radius)'
         );
     } else {
         parts.push(
             '--c-input-border: 1.5px solid var(--c-border, #d8dde6)',
-            '--c-input-border-bottom: 1.5px solid var(--c-border, #d8dde6)',
             '--c-input-bg: var(--c-card-bg)',
             '--c-input-radius: var(--c-radius)'
         );
@@ -903,9 +898,6 @@ function themeSpecV2Parts(theme, density, accent) {
             parts.push(`--c-bg-scrim: linear-gradient(rgba(0,0,0,${scrim}), rgba(0,0,0,${scrim}))`);
         }
     }
-    // Title fill is always a solid color — gradient text (background-clip:text)
-    // is an absolute no. Emphasis comes from weight/size in the shells.
-    parts.push('--c-title-fill: var(--c-text, #16325c)');
     if (theme.panelDecor === 'frame') {
         parts.push(`--c-panel-decor-color: color-mix(in srgb, ${accent} 28%, transparent)`);
     }
