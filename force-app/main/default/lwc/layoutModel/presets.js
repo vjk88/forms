@@ -31,7 +31,7 @@ export const PRESETS = {
             maxWidth: 'medium',
             header: 'standard',
             progress: 'none',
-            submit: { placement: 'flow', alignment: 'right' }
+            submit: { placement: 'auto', alignment: 'right' }
         },
         responsive: { collapseBelow: '768px', collapseOrder: 'source' }
     },
@@ -47,7 +47,7 @@ export const PRESETS = {
             maxWidth: 'wide',
             header: 'standard',
             progress: 'none',
-            submit: { placement: 'flow', alignment: 'right' }
+            submit: { placement: 'auto', alignment: 'right' }
         },
         responsive: { collapseBelow: '1024px', collapseOrder: 'mainFirst' }
     },
@@ -140,7 +140,7 @@ export const PRESETS = {
             maxWidth: 'medium',
             header: 'standard',
             progress: 'fraction',
-            submit: { placement: 'flow', alignment: 'right' }
+            submit: { placement: 'auto', alignment: 'right' }
         },
         responsive: { collapseBelow: '768px', collapseOrder: 'source' }
     },
@@ -156,7 +156,7 @@ export const PRESETS = {
             maxWidth: 'medium',
             header: 'standard',
             progress: 'fraction',
-            submit: { placement: 'flow', alignment: 'right' }
+            submit: { placement: 'auto', alignment: 'right' }
         },
         responsive: { collapseBelow: '768px', collapseOrder: 'source' }
     }

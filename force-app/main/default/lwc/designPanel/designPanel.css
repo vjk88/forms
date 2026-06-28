@@ -290,6 +290,20 @@ textarea.inp {
     border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
+/* mesh color swatches (4 user-pickable hues) */
+.mesh-hues {
+    display: flex;
+    gap: 6px;
+}
+.mesh-hue {
+    flex: 1 1 0;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--dp-line);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
 /* image upload (logo / banner) */
 .dp-thumb {
     border: 1px solid var(--dp-line);

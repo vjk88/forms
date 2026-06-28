@@ -74,6 +74,29 @@
     box-shadow: none;
 }
 
+/* Control scale (Design panel) → text size inside native fields. font-size is an
+   inherited property, so setting it on the field hosts cascades into the SLDS
+   shadow internals wherever they don't hardcode their own size — the path that
+   survives when the --slds-c-input-font-size hook is unsupported on this org. */
+:host lightning-input-field,
+:host lightning-input,
+:host lightning-combobox,
+:host lightning-textarea {
+    font-size: var(--c-input-font-size, 0.9375rem);
+}
+
+/* Custom field label (Label style/position). We render our own label so the
+   --c-label-* tokens reach it — native field labels live in shadow DOM and
+   can't be styled. The native field is label-hidden (keeps its assistive-text
+   label); this one is aria-hidden, so screen readers hear it once. */
+.el-flabel {
+    font-family: var(--c-label-font, inherit);
+    font-size: var(--c-label-size, 0.8125rem);
+    letter-spacing: var(--c-label-tracking, normal);
+    text-transform: var(--c-label-transform, none);
+    color: var(--c-label, var(--c-text, #0b1320));
+}
+
 /* Empty space — occupies its grid cell(s) at roughly a field's height so it
    visibly holds the column open. Invisible (no border/bg) by design. */
 .el-emptyspace {

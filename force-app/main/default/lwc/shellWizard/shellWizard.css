@@ -2,7 +2,11 @@
    regions, so we adapt to OUR width, not the viewport. */
 :host {
     display: block;
-    background: var(--c-page-bg, #eceae4);
+    background-color: var(--c-page-bg, #eceae4);
+    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
+    background-size: auto, cover, cover, var(--c-bg-size, cover);
+    background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
+    background-position: center, center, center, center;
     container-type: inline-size;
     container-name: wizard;
 }

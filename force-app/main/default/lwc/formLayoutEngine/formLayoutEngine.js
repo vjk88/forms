@@ -195,6 +195,11 @@ export default class FormLayoutEngine extends LightningElement {
                 style: resolveSectionStyle(s.style, templateDefault),
                 elements: elsBySec.get(key) || [],
                 density,
+                // Label position (top|left) + style (default|mono-caps|muted-sm)
+                // ride the section VM like density. Position → native field
+                // variant; style → custom-label CSS in the renderer. Theme-sourced.
+                labelPosition: (this.skin && this.skin.labelPosition) || 'top',
+                labelStyle: (this.skin && this.skin.labelStyle) || 'default',
                 objectApiName: this.objectApiName,
                 recordTypeId: this.recordTypeId,
                 recordId: this.recordId,

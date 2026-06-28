@@ -177,6 +177,8 @@ export default class DesignPanel extends LightningElement {
     get cHeaderBg() { return this._hex(this._ct.headerBg) || this._hex(this.rt.headerBg) || '#1e3a8a'; }
     get logoUploadLabel() { return this._hdr.logo ? 'Replace logo' : 'Upload logo'; }
     get bannerUploadLabel() { return this._hdr.bgImage ? 'Replace banner' : 'Upload banner'; }
+    get pageBgImageUrl() { return (this._ct && this._ct.pageBgImage) || ''; }
+    get bgUploadLabel() { return this.pageBgImageUrl ? 'Replace image' : 'Upload image'; }
     get titleVal() { return this._hdr.title || ''; }
     get descVal() { return this._hdr.description || ''; }
     get highlightVal() { return this._hdr.highlight || ''; }
@@ -233,6 +235,33 @@ export default class DesignPanel extends LightningElement {
     }
     get meshOn() { return this._ct.bgEffect === 'mesh'; }
     get panelDecorOn() { return this._ct.panelDecor === 'frame'; }
+    // Texture intensity (Phase 3) — scales grain/grid alpha. Default 1×.
+    get textureActive() { return (this._ct.texture || this.rt.texture || 'none') !== 'none'; }
+    get textureIntensityVal() { return Number(this._ct.textureIntensity) || 1; }
+    get textureIntensityLabel() { return `${this.textureIntensityVal.toFixed(2)}×`; }
+    // Mesh colors (Phase 2) — 4 user-pickable hues; seed from override → theme → defaults.
+    get meshHues() {
+        const src = (this._ct.meshHues && this._ct.meshHues.length ? this._ct.meshHues : this.rt.meshHues) || [];
+        const defs = ['#ff8fb1', '#7a5cff', '#16d2c4', '#ffd166'];
+        return [0, 1, 2, 3].map((i) => ({ idx: i, value: this._hex(src[i]) || defs[i] }));
+    }
+    // Page bg image fit + legibility scrim (Phase 3).
+    get bgFitOpts() {
+        return this._sel([
+            { value: 'cover', label: 'Cover (fill, may crop)' },
+            { value: 'contain', label: 'Contain (fit, no crop)' },
+            { value: 'tile', label: 'Tile (repeat)' }
+        ], this._ct.bgImageFit || 'cover');
+    }
+    get bgScrimVal() { return Number(this._ct.bgScrim) || 0; }
+    get bgScrimLabel() { return `${Math.round(this.bgScrimVal * 100)}%`; }
+    // Background-surface opacity (page / content / header). 100% = opaque.
+    get pageBgAlphaVal() { return this._ct.pageBgAlpha != null ? Number(this._ct.pageBgAlpha) : 1; }
+    get surfaceAlphaVal() { return this._ct.surfaceAlpha != null ? Number(this._ct.surfaceAlpha) : 1; }
+    get headerBgAlphaVal() { return this._ct.headerBgAlpha != null ? Number(this._ct.headerBgAlpha) : 1; }
+    get pageBgAlphaLabel() { return `${Math.round(this.pageBgAlphaVal * 100)}%`; }
+    get surfaceAlphaLabel() { return `${Math.round(this.surfaceAlphaVal * 100)}%`; }
+    get headerBgAlphaLabel() { return `${Math.round(this.headerBgAlphaVal * 100)}%`; }
 
     // ---- Flow
     get cAccent() { return this._hex(this.design.accent) || this._hex(this.rt.accent) || '#6366f1'; }
@@ -260,9 +289,9 @@ export default class DesignPanel extends LightningElement {
     }
     get submitPlacementOpts() {
         return this._sel([
-            { value: 'flow', label: 'Inline with flow' }, { value: 'stickyBottom', label: 'Sticky bottom bar' },
-            { value: 'brandPanel', label: 'Inside brand rail' }
-        ], this._sh.submitPlacement || 'flow');
+            { value: 'flow', label: 'Inline (at end of form)' },
+            { value: 'auto', label: 'Sticky (auto-hides on short forms)' }
+        ], this._sh.submitPlacement || 'auto');
     }
     get afterSeg() {
         return this._seg([
@@ -293,6 +322,13 @@ export default class DesignPanel extends LightningElement {
         e.target.value = '';
     }
     onHeaderAssetRemove(e) { this._emit('headerAsset', e.currentTarget.dataset.kind, null); }
+    // Page background image — pass the File up; host owns the ContentVersion upload.
+    onBgFile(e) {
+        const file = e.target.files && e.target.files[0];
+        if (file) this._emit('bgAsset', 'pageBg', file);
+        e.target.value = '';
+    }
+    onBgRemove() { this._emit('bgAsset', 'pageBg', null); }
     onButtons(e) { this._emit('buttons', e.target.dataset.key, e.target.value); }
     onBtnAlign(e) { this._emit('buttons', 'alignment', e.currentTarget.dataset.value); }
     onAfter(e) { this._emit('after', e.target.dataset.key, e.target.value); }
@@ -310,6 +346,15 @@ export default class DesignPanel extends LightningElement {
     onGlass(e) { this._emit('theme', 'glass', e.target.checked); }
     onMesh(e) { this._emit('theme', 'bgEffect', e.target.checked ? 'mesh' : null); }
     onPanelDecor(e) { this._emit('theme', 'panelDecor', e.target.checked ? 'frame' : null); }
+    onTextureIntensity(e) { this._emit('theme', 'textureIntensity', Number(e.target.value)); }
+    onMeshHue(e) {
+        const idx = Number(e.target.dataset.idx);
+        const next = this.meshHues.map((h) => h.value);
+        next[idx] = e.target.value;
+        this._emit('theme', 'meshHues', next);
+    }
+    onBgScrim(e) { this._emit('theme', 'bgScrim', Number(e.target.value)); }
+    onAlpha(e) { this._emit('theme', e.target.dataset.key, Number(e.target.value)); }
     onBrandContent() {
         const vals = [...this.template.querySelectorAll('.brand-content-cb')]
             .filter((b) => b.checked).map((b) => b.dataset.key);

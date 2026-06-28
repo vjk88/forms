@@ -9,7 +9,11 @@
 }
 .chrome-fullbleed {
     min-height: var(--c-shell-min-h, 100%);
-    background: var(--c-page-bg, transparent);
+    background-color: var(--c-page-bg, transparent);
+    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
+    background-size: auto, cover, cover, var(--c-bg-size, cover);
+    background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
+    background-position: center, center, center, center;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -133,16 +137,16 @@
 .align-right { justify-content: flex-end; }
 .align-stretch .submit-btn { width: 100%; }
 
-/* ---- Submit (sticky savebar) ---- */
-.savebar {
+/* Sticky variant: a footer INSIDE the card, so it matches the content width.
+   position:sticky;bottom:0 self-releases on short forms (sits inline) and pins
+   on overflow. (.surface has no overflow:hidden, so sticky reaches the viewport.) */
+.submit-row.is-sticky {
     position: sticky;
     bottom: 0;
     z-index: 2;
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--c-space-3, 12px);
-    margin-top: var(--c-space-4, 16px);
-    padding: var(--c-space-3, 12px) var(--c-space-4, 16px);
+    align-items: center;
+    min-height: var(--c-stickybar-h, 64px);
+    padding-top: var(--c-space-3, 12px);
     background: var(--c-card-bg, #fff);
     border-top: 1px solid var(--c-border-light, #e6e8ec);
 }

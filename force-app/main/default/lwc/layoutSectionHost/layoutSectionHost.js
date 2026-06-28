@@ -27,6 +27,12 @@ export default class LayoutSectionHost extends LightningElement {
     get density() {
         return (this.section && this.section.density) || 'cozy';
     }
+    get labelPosition() {
+        return (this.section && this.section.labelPosition) || 'top';
+    }
+    get labelStyle() {
+        return (this.section && this.section.labelStyle) || 'default';
+    }
     get prefillValues() {
         return this.section && this.section.prefillValues;
     }

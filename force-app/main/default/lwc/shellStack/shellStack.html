@@ -24,16 +24,11 @@
                     ></c-layout-zones>
                 </section>
             </template>
-            <footer lwc:if={isFlowSubmit} class={submitClass}>
+            <footer class={submitClass}>
                 <button type="button" class="submit-btn" onclick={fireSubmit}>
                     {submitLabel}
                 </button>
             </footer>
         </article>
-        <div lwc:if={isStickySubmit} class="savebar" role="toolbar" aria-label="Save actions">
-            <button type="button" class="submit-btn" onclick={fireSubmit}>
-                {submitLabel}
-            </button>
-        </div>
     </div>
 </template>

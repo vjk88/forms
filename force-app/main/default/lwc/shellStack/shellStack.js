@@ -67,13 +67,15 @@ export default class ShellStack extends LightningElement {
         return this.shell.submit || { placement: 'flow', alignment: 'right' };
     }
     get isStickySubmit() {
-        return this.submitInfo.placement === 'stickyBottom';
-    }
-    get isFlowSubmit() {
-        return !this.isStickySubmit;
+        // 'auto' (and legacy 'stickyBottom') render the submit as a sticky footer
+        // INSIDE the card — position:sticky;bottom:0 self-releases on short forms
+        // (sits inline) and pins only when the form overflows. 'flow' = plain
+        // inline submit. Driven by the "Submit placement" control.
+        return ['auto', 'stickyBottom'].includes(this.submitInfo.placement);
     }
     get submitClass() {
-        return `submit-row align-${this.submitInfo.alignment || 'right'}`;
+        const a = this.submitInfo.alignment || 'right';
+        return `submit-row align-${a}${this.isStickySubmit ? ' is-sticky' : ''}`;
     }
 
     get submitLabel() {

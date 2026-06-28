@@ -681,15 +681,27 @@ const SPACE_SCALES = {
 };
 // Fixed app-shipped assets — AI/skins select by enum, never inject URLs
 // (DESIGN_TOKENS §4 guardrail).
-const GRAIN_SVG =
-    "url(\"data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
-const TEXTURES = {
-    none: 'none',
-    grain: GRAIN_SVG,
-    grid:
-        'repeating-linear-gradient(0deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 24px), ' +
-        'repeating-linear-gradient(90deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 24px)'
-};
+// Texture builders — alpha is intensity-driven (see buildTokenString). The old
+// grain was a fixed slope 0.05 = near-invisible; the intensity slider now scales it.
+const grainSvg = (a) =>
+    "url(\"data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='" +
+    a +
+    "'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+const gridCss = (a) =>
+    `repeating-linear-gradient(0deg, rgba(0,0,0,${a}) 0 1px, transparent 1px 24px), ` +
+    `repeating-linear-gradient(90deg, rgba(0,0,0,${a}) 0 1px, transparent 1px 24px)`;
+
+// Apply a background-surface opacity (0–1) to a PLAIN 6-digit hex → 8-digit
+// #RRGGBBAA. Gradients, rgba(), url() banners and 'transparent' pass through
+// untouched (can't safely alpha a gradient/image). alpha ≥ 1 / invalid → no-op.
+function withAlpha(color, alpha) {
+    const a = Number(alpha);
+    if (!Number.isFinite(a) || a < 0 || a >= 1) return color;
+    const m = /^#([0-9a-f]{6})$/i.exec((color || '').trim());
+    if (!m) return color;
+    const aa = Math.round(a * 255).toString(16).padStart(2, '0');
+    return `#${m[1]}${aa}`;
+}
 const MESH_DEFAULT = ['#ff8fb1', '#7a5cff', '#16d2c4', '#ffd166'];
 const INPUT_STYLES = ['outline', 'underline', 'filled'];
 const LABEL_STYLES = ['default', 'mono-caps', 'muted-sm'];
@@ -741,9 +753,14 @@ function themeSpecV2Parts(theme, density, accent) {
         // 3.1 density & scale
         `--c-space-1: ${sp[0]}`, `--c-space-2: ${sp[1]}`, `--c-space-3: ${sp[2]}`,
         `--c-space-4: ${sp[3]}`, `--c-space-5: ${sp[4]}`,
-        `--c-control-h: ${Math.round(baseH * scale)}px`,
-        `--c-control-font: ${scale}rem`,
-        `--c-tap-min: ${Math.round(44 * scale)}px`,
+        // Control scale (slider 1.0–1.5x) drives ONLY the field TEXT size — not
+        // buttons. --c-control-h (button/CTA height) stays density-fixed so the
+        // slider no longer resizes buttons; --c-field-h (native field height) grows
+        // with scale so larger text isn't cramped; --c-input-font-size is the text.
+        `--c-control-h: ${baseH}px`,
+        `--c-field-h: ${Math.round(baseH * scale)}px`,
+        `--c-input-font-size: ${(0.9375 * scale).toFixed(3)}rem`,
+        `--c-tap-min: 44px`,
         // 3.4 engine structural
         '--c-grid-gap: var(--c-space-4)',
         '--c-zone-pad: var(--c-space-3)',
@@ -797,9 +814,14 @@ function themeSpecV2Parts(theme, density, accent) {
         // comfortable / 32px compact) so inputs read as tight as the mockup when
         // Compact is chosen, without an a11y-unfriendly hardcoded shrink.
         // (SLDS-version dependent; harmless no-op where the hook is unsupported.)
-        '--slds-c-input-sizing-height: var(--c-control-h, 40px)',
-        '--slds-c-input-spacing-height: var(--c-control-h, 40px)',
-        '--slds-c-combobox-sizing-height: var(--c-control-h, 40px)',
+        '--slds-c-input-sizing-height: var(--c-field-h, 40px)',
+        '--slds-c-input-spacing-height: var(--c-field-h, 40px)',
+        '--slds-c-combobox-sizing-height: var(--c-field-h, 40px)',
+        // Native field TEXT SIZE — the actual job of the Control scale slider.
+        // font-size is INHERITED (unlike height), so even where this SLDS hook is a
+        // no-op on the org's version, the wrapper-cascade in formSectionRenderer.css
+        // can still take. Verified in-org before relying on it.
+        '--slds-c-input-font-size: var(--c-input-font-size, 0.9375rem)',
         // Native field LABEL color — defaults to a fixed SLDS gray, so on dark
         // themes labels went near-invisible. Point it at the theme's label token
         // (which flips light-on-dark / dark-on-light per skin).
@@ -812,6 +834,25 @@ function themeSpecV2Parts(theme, density, accent) {
         '--slds-c-textarea-color-border: var(--c-border, #d8dde6)',
         '--slds-c-textarea-radius-border: var(--c-input-radius, var(--c-radius, 8px))'
     );
+
+    // Input style = Underline — fake a bottom-only border on the NATIVE field.
+    // SLDS exposes no per-side border hook, so: drop the box border (it DOES
+    // honor --slds-c-input-color-border) and draw the line with the box-shadow
+    // hook. SPIKE: --slds-c-input-shadow may be a no-op on this org's SLDS
+    // version (the height hooks were). If it is, the field renders borderless and
+    // we'll know the only real fix is owning the input layer. Override AFTER the
+    // block above so last-declaration-wins on the duplicate border hook.
+    if (inputStyle === 'underline') {
+        const line = 'inset 0 -1.5px 0 0 var(--c-border, #d8dde6)';
+        parts.push(
+            '--slds-c-input-color-border: transparent',
+            '--slds-c-combobox-color-border: transparent',
+            '--slds-c-textarea-color-border: transparent',
+            `--slds-c-input-shadow: ${line}`,
+            `--slds-c-combobox-shadow: ${line}`,
+            `--slds-c-textarea-shadow: ${line}`
+        );
+    }
 
     // 3.2 labels — labelFace slot (NOT `label`, which is the pairing's display
     // name; T19 must use `labelFace` for the mono micro-label face).
@@ -838,12 +879,30 @@ function themeSpecV2Parts(theme, density, accent) {
             '--c-label-tracking: normal'
         );
     }
-    if (theme.labelPosition === 'left') {
-        parts.push('--c-label-col: 160px');
-    }
 
-    // 3.3 surfaces & effects
-    parts.push(`--c-texture: ${TEXTURES[theme.texture] || 'none'}`);
+    // 3.3 surfaces & effects — texture + intensity. Default intensity 1 → grain
+    // α0.12 / grid α0.07 (actually visible, unlike the old fixed 0.05). The
+    // "Texture intensity" slider scales 0.25×–2.5×.
+    const tiRaw = Number(theme.textureIntensity);
+    const tInt = Number.isFinite(tiRaw) ? Math.min(2.5, Math.max(0.25, tiRaw)) : 1;
+    let textureVal = 'none';
+    if (theme.texture === 'grain') textureVal = grainSvg((0.12 * tInt).toFixed(3));
+    else if (theme.texture === 'grid') textureVal = gridCss((0.07 * tInt).toFixed(3));
+    parts.push(`--c-texture: ${textureVal}`);
+    // Page background image (uploaded → ContentVersion URL) + fit + legibility
+    // scrim. Bottom-most bg layer in every shell; texture/mesh layer on top.
+    if (theme.pageBgImage) {
+        parts.push(`--c-page-bg-image: url('${theme.pageBgImage}')`);
+        const fit = theme.bgImageFit;
+        if (fit === 'contain') parts.push('--c-bg-size: contain', '--c-bg-repeat: no-repeat');
+        else if (fit === 'tile') parts.push('--c-bg-size: auto', '--c-bg-repeat: repeat');
+        else parts.push('--c-bg-size: cover', '--c-bg-repeat: no-repeat');
+        const scRaw = Number(theme.bgScrim);
+        const scrim = Number.isFinite(scRaw) ? Math.min(0.7, Math.max(0, scRaw)) : 0;
+        if (scrim > 0) {
+            parts.push(`--c-bg-scrim: linear-gradient(rgba(0,0,0,${scrim}), rgba(0,0,0,${scrim}))`);
+        }
+    }
     // Title fill is always a solid color — gradient text (background-clip:text)
     // is an absolute no. Emphasis comes from weight/size in the shells.
     parts.push('--c-title-fill: var(--c-text, #16325c)');
@@ -851,10 +910,23 @@ function themeSpecV2Parts(theme, density, accent) {
         parts.push(`--c-panel-decor-color: color-mix(in srgb, ${accent} 28%, transparent)`);
     }
     if (theme.bgEffect === 'mesh') {
-        const hues = Array.isArray(theme.meshHues) ? theme.meshHues : [];
+        const src = Array.isArray(theme.meshHues) ? theme.meshHues : [];
+        const m = [];
         for (let i = 0; i < 4; i++) {
-            parts.push(`--c-mesh-${i + 1}: ${hues[i] || MESH_DEFAULT[i]}`);
+            const c = src[i] || MESH_DEFAULT[i];
+            m.push(c);
+            parts.push(`--c-mesh-${i + 1}: ${c}`);
         }
+        // Ready-to-use page background-image: four soft radial blobs from the
+        // mesh hues, softened with color-mix so they read as ambient, not neon.
+        // STATIC (no animation — perf + taste). Shells layer it via --c-mesh-bg.
+        const blob = (col, pos) =>
+            `radial-gradient(45% 55% at ${pos}, color-mix(in srgb, ${col} 62%, transparent) 0%, transparent 60%)`;
+        parts.push(
+            '--c-mesh-bg: ' +
+            [blob(m[0], '18% 22%'), blob(m[1], '82% 18%'),
+                blob(m[2], '25% 82%'), blob(m[3], '80% 80%')].join(', ')
+        );
     }
     if (theme.glass) {
         parts.push('--c-glass-blur: 26px');
@@ -905,8 +977,13 @@ function buildTokenString(t, density) {
     const radius = radiusToken(theme.radius);
     const container = theme.container || 'boxed';
     const flat = theme.glass || container === 'flat' || container === 'fullbleed';
-    const cardShadow = theme.cardShadow != null
-        ? shadowToken(theme.cardShadow) // enum OR raw box-shadow
+    // The Design panel writes `shadow` (explicit per-form override); theme
+    // structures/skins set `cardShadow`. The override must WIN — and since EVERY
+    // theme structure defines cardShadow, checking cardShadow first would always
+    // ignore the user's choice. So: shadow-first, cardShadow as the fallback.
+    const shadowSpec = theme.shadow != null ? theme.shadow : theme.cardShadow;
+    const cardShadow = shadowSpec != null
+        ? shadowToken(shadowSpec) // enum OR raw box-shadow
         : flat
         ? 'none'
         : SHADOW_MAP.soft;
@@ -928,11 +1005,11 @@ function buildTokenString(t, density) {
         `--c-radius-card: ${radiusTokenCard(theme)}`,
         `--c-submit-bg: ${theme.submitColor || accent}`,
         `--c-back-color: ${theme.backColor || accent}`,
-        `--c-card-bg: ${theme.surfaceGradient || theme.surface || '#ffffff'}`,
+        `--c-card-bg: ${withAlpha(theme.surfaceGradient || theme.surface || '#ffffff', theme.surfaceAlpha)}`,
         `--c-card-border: ${cardBorder}`,
         `--c-card-shadow: ${cardShadow}`,
-        `--c-page-bg: ${theme.pageBg || 'transparent'}`,
-        `--c-header-bg: ${theme.headerBg || theme.pageBg || 'transparent'}`,
+        `--c-page-bg: ${withAlpha(theme.pageBg || 'transparent', theme.pageBgAlpha)}`,
+        `--c-header-bg: ${withAlpha(theme.headerBg || theme.pageBg || 'transparent', theme.headerBgAlpha)}`,
         `--c-header-text: ${readableOn(theme.headerBg || theme.pageBg)}`,
         `--c-header-text-weak: ${
             readableOn(theme.headerBg || theme.pageBg) === '#ffffff'
@@ -978,7 +1055,8 @@ function buildTokenString(t, density) {
     const OVERRIDES = [
         ['text', '--c-text'],
         ['accentText', '--c-on-accent'], // button-label color (beats onAccent())
-        ['borderColor', '--c-border'], // divider/input color
+        ['borderColor', '--c-border'], // divider/input color (preset skins)
+        ['border', '--c-border'], // "Border (strong)" Design-panel key → divider/input color
         ['cardBorder', '--c-card-border'], // full border string, e.g. '2px solid #000'
         ['headerText', '--c-header-text'],
         ['headerTextMuted', '--c-header-text-weak']
@@ -993,6 +1071,24 @@ function buildTokenString(t, density) {
     if (theme.textMuted) {
         parts.push(`--c-text-weak: ${theme.textMuted}`, `--c-text-meta: ${theme.textMuted}`);
     }
+
+    // Alias / formalize the names the field renderer (c/formSectionRenderer) and
+    // c/formViewer read but the engine historically never emitted. Without these,
+    // "Muted text" + density never reached the live fields, and error/alert colors
+    // were inconsistent literals across files. var() chains preserve light-theme
+    // fallbacks; --c-error is pinned once so all consumers agree.
+    parts.push(
+        '--c-text-muted: var(--c-text-weak, #64748b)', // muted text → field help text/icons
+        '--c-input-height: var(--c-control-h, 2.5rem)', // density → custom control wrapper
+        '--c-surface-2: var(--c-surface-sunken, #f9fafb)', // sunken field blocks
+        '--c-error: #ba0517', // single source of truth for error/validation red
+        '--c-danger: var(--c-error)', // alias the field renderer reads
+        '--c-error-bg: #fef1f1',
+        '--c-callout-info-bg: #eef4ff',
+        '--c-callout-success-bg: #ebf7ee',
+        '--c-callout-warning-bg: #fdf6e3',
+        '--c-callout-error-bg: #fdeded'
+    );
 
     return parts.join('; ');
 }

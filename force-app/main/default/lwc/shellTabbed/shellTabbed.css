@@ -5,7 +5,11 @@
 }
 .chrome-fullbleed {
     min-height: var(--c-shell-min-h, 100%);
-    background: var(--c-page-bg, transparent);
+    background-color: var(--c-page-bg, transparent);
+    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
+    background-size: auto, cover, cover, var(--c-bg-size, cover);
+    background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
+    background-position: center, center, center, center;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -19,7 +23,10 @@
     background: var(--c-card-bg, #fff);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    /* clip (not hidden): clips to the border-radius like hidden, but does NOT
+       create a scroll container — so the sticky submit footer can pin to the
+       viewport instead of being trapped inside this card. */
+    overflow: clip;
 }
 
 .chrome-card .card,
@@ -124,6 +131,7 @@
     position: sticky;
     bottom: 0;
     z-index: 2;
+    min-height: var(--c-stickybar-h, 64px);
 }
 .align-left    { justify-content: flex-start; }
 .align-center  { justify-content: center; }

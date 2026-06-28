@@ -32,13 +32,35 @@
 
                         <!-- Field (native render) -->
                         <template lwc:if={el.isFieldDefault}>
-                            <lightning-input-field
-                                field-name={el.fieldApiName}
-                                data-field={el.fieldApiName}
-                                required={el.effectiveRequired}
-                                disabled={el.readOnly}
-                                onchange={handleFieldChange}>
-                            </lightning-input-field>
+                            <template lwc:if={el.useCustomLabel}>
+                                <div class={el.fieldWrapClass}>
+                                    <label class={el.labelClass} aria-hidden="true">
+                                        <abbr class="slds-required" title="required" lwc:if={el.effectiveRequired}>*</abbr>
+                                        {el.label}
+                                    </label>
+                                    <lightning-helptext lwc:if={el.helpText} content={el.helpText}></lightning-helptext>
+                                    <div class="slds-form-element__control">
+                                        <lightning-input-field
+                                            field-name={el.fieldApiName}
+                                            data-field={el.fieldApiName}
+                                            required={el.effectiveRequired}
+                                            disabled={el.readOnly}
+                                            variant="label-hidden"
+                                            onchange={handleFieldChange}>
+                                        </lightning-input-field>
+                                    </div>
+                                </div>
+                            </template>
+                            <template lwc:else>
+                                <lightning-input-field
+                                    field-name={el.fieldApiName}
+                                    data-field={el.fieldApiName}
+                                    required={el.effectiveRequired}
+                                    disabled={el.readOnly}
+                                    variant={el.fieldVariant}
+                                    onchange={handleFieldChange}>
+                                </lightning-input-field>
+                            </template>
                         </template>
 
                         <!-- Field (Render As custom control). The hidden
@@ -64,6 +86,7 @@
                             <template lwc:elseif={el.isSlider}>
                                 <lightning-slider
                                     label={el.label}
+                                    field-level-help={el.helpText}
                                     min={el.sliderMin}
                                     max={el.sliderMax}
                                     step={el.sliderStep}
@@ -78,6 +101,7 @@
                                 <lightning-radio-group
                                     type="radio"
                                     label={el.label}
+                                    field-level-help={el.helpText}
                                     options={el.options}
                                     value={el.value}
                                     required={el.effectiveRequired}
@@ -107,6 +131,7 @@
                                     value={el.value}
                                     required={el.effectiveRequired}
                                     disabled={el.readOnly}
+                                    field-level-help={el.helpText}
                                     data-custom="true"
                                     data-field={el.fieldApiName}
                                     onchange={handleCustomChange}>

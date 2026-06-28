@@ -60,6 +60,10 @@ export default class FormSectionRenderer extends LightningElement {
   @api recordId;
   @api mode = 'live'; // live | preview
   @api density = 'cozy';
+  /** 'top' (label above field) | 'left' (label beside field, native inline). */
+  @api labelPosition = 'top';
+  /** 'default' | 'mono-caps' | 'muted-sm' — drives the custom-label CSS. */
+  @api labelStyle = 'default';
   /** Optional {fieldApi: value} — URL/record prefill from c/formViewer. */
   @api prefillValues;
 
@@ -218,6 +222,24 @@ export default class FormSectionRenderer extends LightningElement {
       helpText: el.helpText,
       isFieldDefault: type === 'Field' && !isCustomField,
       isCustomField,
+      // Native field label placement. 'left' → SLDS label-inline (the only
+      // reliable way to move a native field's label; CSS can't reach into the
+      // field's shadow DOM). Anything else uses the standard label-on-top.
+      fieldVariant: this.labelPosition === 'left' ? 'label-inline' : 'standard',
+      // Custom-label path: a label WE render (so --c-label-* tokens can style
+      // it — native field labels live in shadow DOM and can't be reached). Used
+      // when a label style is active or help text exists. The native field is
+      // label-hidden (keeps its assistive-text label, so no a11y loss) and our
+      // visual label is aria-hidden (no double announcement). Plain left/top with
+      // the default style stays on the native variant path (verified working).
+      useCustomLabel:
+        !!el.helpText || (this.labelStyle && this.labelStyle !== 'default'),
+      // SLDS horizontal modifier puts the custom label beside the control for
+      // 'left'; covers help+left and style+left together.
+      fieldWrapClass: this.labelPosition === 'left'
+        ? 'slds-form-element slds-form-element_horizontal'
+        : 'slds-form-element',
+      labelClass: 'slds-form-element__label el-flabel',
       isToggle: renderKind === 'toggle',
       isSlider: renderKind === 'slider',
       isRadio: renderKind === 'radio',

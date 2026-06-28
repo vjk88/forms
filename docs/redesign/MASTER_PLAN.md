@@ -166,6 +166,8 @@ affordances hidden when absent.
 Deliverables (all in docs/redesign/):
 - `LAYOUT_SPEC.md` — JSON Schema + semantics (the contract; everything depends on it)
 - `DESIGN_TOKENS.md` — token system v2 (extend `--c-*`; density, spacing scale, dark)
+- `COVERAGE_MATRIX.md` — audit: which `--c-*` tokens each shell honors; dead/inert controls (2026-06-26)
+- `DESIGN_MODE_IA.md` — proposed Design-mode settings restructure (7-tab outline; depends on COVERAGE_MATRIX)
 - Archetype boards — 1 page per archetype: grid, nav, mobile collapse, default skin
 - Wireframes: creation wizard, designer shell redesign, copilot panel, preview harness
 - UX review of flows (uiux-flow-reviewer pass on wireframes)

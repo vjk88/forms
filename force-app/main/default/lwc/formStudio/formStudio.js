@@ -1920,6 +1920,11 @@ export default class FormStudio extends LightningElement {
                 if (value) this._uploadHeaderAsset(value, key);
                 else this._removeHeaderAsset(key);
                 break;
+            case 'bgAsset':
+                // key = 'pageBg'; value = File (upload) or null (remove).
+                if (value) this._uploadBgAsset(value);
+                else this._removeBgAsset();
+                break;
             case 'buttons':
                 this._buttons = { ...this._buttons, [key]: value };
                 break;
@@ -2243,6 +2248,40 @@ export default class FormStudio extends LightningElement {
             this._customTheme = ct;
             if (v) deleteImage({ contentVersionId: v }).catch(() => {});
         }
+    }
+
+    // Page background image — same ContentVersion path as header assets, but
+    // stored on the custom theme so it rides skin.overrides → --c-page-bg-image.
+    _uploadBgAsset(file) {
+        const formId = this.currentForm && this.currentForm.Id;
+        const prev = this._customTheme && this._customTheme.pageBgImageVersionId;
+        this._uploading = true;
+        const reader = new FileReader();
+        reader.onload = () => {
+            uploadImage({ base64Data: reader.result, fileName: file.name, formId })
+                .then((res) => {
+                    this._customTheme = {
+                        ...this._customTheme,
+                        pageBgImage: res.url,
+                        pageBgImageVersionId: res.contentVersionId
+                    };
+                    if (prev) deleteImage({ contentVersionId: prev }).catch(() => {});
+                })
+                .catch((error) => {
+                    const msg = (error && error.body && error.body.message) || 'Image upload failed.';
+                    this._toast(msg, 'error');
+                })
+                .finally(() => { this._uploading = false; });
+        };
+        reader.readAsDataURL(file);
+    }
+    _removeBgAsset() {
+        const v = this._customTheme && this._customTheme.pageBgImageVersionId;
+        const ct = { ...this._customTheme };
+        delete ct.pageBgImage;
+        delete ct.pageBgImageVersionId;
+        this._customTheme = ct;
+        if (v) deleteImage({ contentVersionId: v }).catch(() => {});
     }
 
     // Patch a specific element by key — the async upload resolves after the user may

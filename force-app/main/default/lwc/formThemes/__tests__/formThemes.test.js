@@ -84,11 +84,15 @@ describe('c-form-themes themeVars v2', () => {
             )
         );
         expect(m['--c-space-4']).toBe('12px'); // compact scale
-        expect(m['--c-control-h']).toBe('48px'); // 32 × 1.5
-        expect(m['--c-tap-min']).toBe('66px');
+        // Control scale now drives field TEXT size, not button/control height.
+        expect(m['--c-control-h']).toBe('32px'); // compact baseH, density-fixed (no scale)
+        expect(m['--c-field-h']).toBe('48px'); // native field height = 32 × 1.5
+        expect(m['--c-input-font-size']).toBe('1.406rem'); // 0.9375 × 1.5
+        expect(m['--c-tap-min']).toBe('44px'); // constant, decoupled from scale
         expect(m['--c-input-bg']).toBe('var(--c-surface-sunken, #f3f3f6)');
         expect(m['--c-label-size']).toBe('0.75rem');
-        expect(m['--c-label-col']).toBe('160px');
+        // labelPosition='left' is now a native field variant, not a token.
+        expect(m['--c-label-col']).toBeUndefined();
         expect(m['--c-texture']).toContain('data:image/svg+xml');
         expect(m['--c-mesh-1']).toBe('#111111');
         expect(m['--c-mesh-2']).toBe('#7a5cff'); // default fills the gap
@@ -100,8 +104,10 @@ describe('c-form-themes themeVars v2', () => {
     it('clamps controlScale to 1–1.5 and ignores junk', () => {
         const big = tokenMap(themeVars({ controlScale: 9 }));
         const junk = tokenMap(themeVars({ controlScale: 'huge' }));
-        expect(big['--c-control-h']).toBe('60px'); // 40 × 1.5 cap
-        expect(junk['--c-control-h']).toBe('40px');
+        // Control scale now drives field height/text size (not button control-h).
+        expect(big['--c-field-h']).toBe('60px'); // 40 × 1.5 cap
+        expect(junk['--c-field-h']).toBe('40px'); // junk → default 1
+        expect(big['--c-control-h']).toBe('40px'); // density-fixed, unaffected by scale
     });
 });
 
@@ -180,7 +186,7 @@ describe('c-form-themes Theme → Skin → Accent model (v2)', () => {
         const tokens = tokenMap(themeVars(rawSel, 'comfortable'));
         expect(tokens['--c-accent']).toBe('#ff5a1f');
         expect(tokens['--c-label']).toBe('#d7d2ee'); // high-contrast dark theme label
-        expect(tokens['--c-control-h']).toBe('60px'); // kiosk controlScale 1.5 -> 40 * 1.5
+        expect(tokens['--c-field-h']).toBe('60px'); // kiosk controlScale 1.5 -> 40 * 1.5
     });
 
     it('dark skins flip the chrome text tokens', () => {

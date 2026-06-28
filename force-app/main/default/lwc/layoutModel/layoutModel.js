@@ -45,7 +45,7 @@ const ENUMS = {
     density: ['comfortable', 'compact'],
     panelSide: ['left', 'right', 'top'],
     panelContent: ['logo', 'title', 'description', 'progress', 'image', 'props', 'quote'],
-    submitPlacement: ['flow', 'stickyBottom', 'brandPanel'],
+    submitPlacement: ['flow', 'auto', 'stickyBottom', 'brandPanel'],
     submitAlignment: ['left', 'center', 'right', 'stretch'],
     collapseBelow: ['480px', '768px', '1024px'],
     collapseOrder: ['source', 'mainFirst']

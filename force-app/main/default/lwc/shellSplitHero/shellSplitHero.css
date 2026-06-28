@@ -3,6 +3,10 @@
 .layout {
     display: flex;
     min-height: var(--c-shell-min-h, 100%);
+    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
+    background-size: auto, cover, cover, var(--c-bg-size, cover);
+    background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
+    background-position: center, center, center, center;
 }
 
 /* ── Brand panel ── */

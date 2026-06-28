@@ -62,7 +62,7 @@ export default class ShellAccordion extends LightningElement {
         return this.shell.submit || { placement: 'flow', alignment: 'right' };
     }
     get isStickySubmit() {
-        return this.submitInfo.placement === 'stickyBottom';
+        return ['auto', 'stickyBottom'].includes(this.submitInfo.placement);
     }
     get footerClass() {
         const a = this.submitInfo.alignment || 'right';

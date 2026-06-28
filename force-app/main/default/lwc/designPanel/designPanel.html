@@ -139,9 +139,53 @@
                 <span class="color-l">Page background</span>
                 <span class="color-pick"><span class="hex">{cPageBg}</span><input type="color" value={cPageBg} data-key="pageBg" oninput={onTheme} /></span>
             </div>
+            <div class="ctl">
+                <span class="ctl-l">Page background opacity</span>
+                <div class="slider-row">
+                    <input type="range" min="0" max="1" step="0.05" value={pageBgAlphaVal} data-key="pageBgAlpha" class="rng" oninput={onAlpha} />
+                    <span class="rng-v">{pageBgAlphaLabel}</span>
+                </div>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Page background image</span>
+                <div lwc:if={pageBgImageUrl} class="dp-thumb dp-thumb-wide"><img src={pageBgImageUrl} alt="" /></div>
+                <div class="dp-upload-row">
+                    <label class="dp-upload-btn">
+                        <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-kind="pageBg" onchange={onBgFile} disabled={uploading} />
+                        <span>{bgUploadLabel}</span>
+                    </label>
+                    <button lwc:if={pageBgImageUrl} class="dp-remove" type="button" data-kind="pageBg" onclick={onBgRemove}>Remove</button>
+                </div>
+                <p class="dp-note">Covers the page behind the form. Texture/mesh layer on top.</p>
+            </div>
+            <template lwc:if={pageBgImageUrl}>
+                <div class="ctl">
+                    <span class="ctl-l">Image fit</span>
+                    <select class="inp" data-key="bgImageFit" onchange={onTheme}>
+                        <template for:each={bgFitOpts} for:item="o">
+                            <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                        </template>
+                    </select>
+                </div>
+                <div class="ctl">
+                    <span class="ctl-l">Image dim (legibility)</span>
+                    <div class="slider-row">
+                        <input type="range" min="0" max="0.7" step="0.1" value={bgScrimVal} class="rng" oninput={onBgScrim} />
+                        <span class="rng-v">{bgScrimLabel}</span>
+                    </div>
+                </div>
+            </template>
             <div class="color-row">
-                <span class="color-l">Card background</span>
+                <span class="color-l">Content background</span>
                 <span class="color-pick"><span class="hex">{cSurface}</span><input type="color" value={cSurface} data-key="surface" oninput={onTheme} /></span>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Content background opacity</span>
+                <div class="slider-row">
+                    <input type="range" min="0" max="1" step="0.05" value={surfaceAlphaVal} data-key="surfaceAlpha" class="rng" oninput={onAlpha} />
+                    <span class="rng-v">{surfaceAlphaLabel}</span>
+                </div>
+                <p class="dp-note">Lower it to let the page background/image show through the form.</p>
             </div>
         </template>
 
@@ -205,6 +249,13 @@
             <div class="color-row">
                 <span class="color-l">Header background color</span>
                 <span class="color-pick"><span class="hex">{cHeaderBg}</span><input type="color" value={cHeaderBg} data-key="headerBg" oninput={onTheme} /></span>
+            </div>
+            <div class="ctl">
+                <span class="ctl-l">Header background opacity</span>
+                <div class="slider-row">
+                    <input type="range" min="0" max="1" step="0.05" value={headerBgAlphaVal} data-key="headerBgAlpha" class="rng" oninput={onAlpha} />
+                    <span class="rng-v">{headerBgAlphaLabel}</span>
+                </div>
             </div>
 
             <div class="dp-divider">Introduction content</div>
@@ -332,9 +383,24 @@
                     </template>
                 </select>
             </div>
+            <div lwc:if={textureActive} class="ctl">
+                <span class="ctl-l">Texture intensity</span>
+                <div class="slider-row">
+                    <input type="range" min="0.25" max="2.5" step="0.25" value={textureIntensityVal} class="rng" oninput={onTextureIntensity} />
+                    <span class="rng-v">{textureIntensityLabel}</span>
+                </div>
+            </div>
             <div class="switch-row">
-                <div class="switch-l"><span class="switch-t">Animated mesh background</span><span class="switch-d">Flowing color hues</span></div>
+                <div class="switch-l"><span class="switch-t">Mesh background</span><span class="switch-d">Soft color blobs</span></div>
                 <label class="switch"><input type="checkbox" checked={meshOn} onchange={onMesh} /><span class="track"></span></label>
+            </div>
+            <div lwc:if={meshOn} class="ctl">
+                <span class="ctl-l">Mesh colors</span>
+                <div class="mesh-hues">
+                    <template for:each={meshHues} for:item="h">
+                        <input key={h.idx} type="color" value={h.value} data-idx={h.idx} oninput={onMeshHue} class="mesh-hue" />
+                    </template>
+                </div>
             </div>
             <div class="switch-row">
                 <div class="switch-l"><span class="switch-t">Top accent band</span><span class="switch-d">Branded frame strip</span></div>
