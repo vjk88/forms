@@ -16,13 +16,16 @@
     border-radius: var(--c-radius, 8px);
     padding: var(--c-section-padding, 1rem);
 }
+/* Surface model: mirror c/formSectionRenderer — a carded section fills like the
+   Content panel by default, an explicit --c-section-bg/-border wins, and it carries
+   the theme shadow via --c-section-shadow. */
 .sec-card {
-    background: var(--c-card-bg, #fff);
-    border: var(--c-card-border, 1px solid var(--c-border-light, #e6e8ec));
-    box-shadow: var(--c-card-shadow, none);
+    background: var(--c-section-bg, var(--c-content-bg, #fff));
+    border: var(--c-section-border, 1px solid var(--c-border-light, #e6e8ec));
+    box-shadow: var(--c-section-shadow, none);
 }
 .sec-boxed {
-    border: 2px solid var(--c-border, #d3d7de);
+    border: var(--c-section-border, 2px solid var(--c-border, #d3d7de));
 }
 .sec-subtle,
 .sec-plain {

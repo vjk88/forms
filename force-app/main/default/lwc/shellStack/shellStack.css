@@ -29,10 +29,10 @@
     display: flex;
     flex-direction: column;
     gap: var(--c-space-5, 24px);
-    background: var(--c-card-bg, #fff);
-    border: var(--c-card-border, 1px solid var(--c-border-light, #e6e8ec));
+    background: var(--c-content-bg, #fff);
+    border: var(--c-content-border, 1px solid var(--c-border-light, #e6e8ec));
     border-radius: var(--c-radius-card, 8px);
-    box-shadow: var(--c-card-shadow, none);
+    box-shadow: var(--c-content-shadow, none);
     /* Glass: blurs only when a theme sets --c-glass-blur (else blur(0) = none). */
     backdrop-filter: blur(var(--c-glass-blur, 0px));
     -webkit-backdrop-filter: blur(var(--c-glass-blur, 0px));
@@ -47,7 +47,7 @@
 /* paper: warm sheet with a top accent rule, no heavy border */
 .chrome-paper .surface {
     border: none;
-    box-shadow: var(--c-card-shadow, 0 4px 14px rgba(0, 0, 0, 0.1));
+    box-shadow: var(--c-content-shadow, 0 4px 14px rgba(0, 0, 0, 0.1));
 }
 .paper-rule {
     height: 3px;
@@ -147,7 +147,7 @@
     align-items: center;
     min-height: var(--c-stickybar-h, 64px);
     padding-top: var(--c-space-3, 12px);
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
     border-top: 1px solid var(--c-border-light, #e6e8ec);
 }
 

@@ -21,57 +21,55 @@
 
 /* Section chrome — token-driven so every theme/skin restyles it. The
    archetype shell owns page chrome; this owns only the section box. */
+/* Surface model (SURFACE_MODEL_SPEC.md): sections default transparent + borderless
+   (they sit INSIDE the Content panel). An explicit Section background/border color
+   (--c-section-bg / --c-section-border) always wins; the .sec-style-* presets below
+   are quick-starts that supply a fallback look via var(--c-section-bg, <default>).
+   The base is flat; the card preset opts into elevation via --c-section-shadow. */
 .sec {
-    background: var(--c-card-bg, #ffffff);
-    border: 1px solid var(--c-card-border, var(--c-border-light, #e5e7eb));
+    background: var(--c-section-bg, transparent);
+    border: var(--c-section-border, 0 solid transparent);
     border-radius: var(--c-radius-card, var(--c-radius, 12px));
-    box-shadow: var(--c-card-shadow, none);
+    box-shadow: none;
     padding: var(--c-section-padding, var(--c-space-5, 1.25rem));
 }
 
 .sec-style-flat {
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-    /* Borderless, but the "Section inner padding" control still drives the block
-       padding — only the inline padding is zeroed for the frameless look. */
+    /* Frameless. bg/border come from .sec base (transparent unless the user picks a
+       Section color); only the padding differs for the flush look. */
     padding-block: var(--c-section-padding, var(--c-space-2, 0.5rem));
     padding-inline: 0;
 }
 
 .sec-style-outline {
-    background: transparent;
-    box-shadow: none;
+    /* Outlined: transparent fill (base) + a visible border by default; explicit wins. */
+    border: var(--c-section-border, 1px solid var(--c-border-light, #e5e7eb));
 }
 
-/* Subtle — a soft filled panel, no border. */
+/* Subtle — a soft filled panel, no border. Explicit Section bg wins over sunken. */
 .sec-style-subtle {
-    background: var(--c-surface-sunken, #f6f7f9);
-    border: 0;
-    box-shadow: none;
+    background: var(--c-section-bg, var(--c-surface-sunken, #f6f7f9));
 }
 
 /* Plain — a container with no frame, so the form reads as headed groups of
    fields on the page. Inner-padding control drives the block padding; inline is
    zeroed so the fields sit flush with the page. */
 .sec-style-plain {
-    background: transparent;
-    border: 0;
-    box-shadow: none;
     padding-block: var(--c-section-padding, var(--c-space-3, 0.75rem));
     padding-inline: 0;
 }
 
-/* Card / Boxed — for standalone content blocks that opt into a frame. */
+/* Card / Boxed — opt-in framed blocks. Fill like the Content panel by default;
+   explicit Section bg/border win. Card carries the theme shadow
+   (--c-section-shadow); boxed stays flat. */
 .sec-style-card {
-    background: var(--c-card-bg, #ffffff);
-    border: 1px solid var(--c-card-border, var(--c-border-light, #e5e7eb));
-    box-shadow: var(--c-card-shadow, none);
+    background: var(--c-section-bg, var(--c-content-bg, #ffffff));
+    border: var(--c-section-border, 1px solid var(--c-border-light, #e5e7eb));
+    box-shadow: var(--c-section-shadow, none);
 }
 .sec-style-boxed {
-    background: var(--c-card-bg, #ffffff);
-    border: 2px solid var(--c-border, #cbd5e1);
-    box-shadow: none;
+    background: var(--c-section-bg, var(--c-content-bg, #ffffff));
+    border: var(--c-section-border, 2px solid var(--c-border, #cbd5e1));
 }
 
 /* Control scale (Design panel) → text size inside native fields. font-size is an

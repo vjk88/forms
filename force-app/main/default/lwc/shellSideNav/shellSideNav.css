@@ -31,9 +31,9 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
     border-right: 1px solid var(--c-border-light, #e6e8ec);
-    box-shadow: var(--c-card-shadow, none);
+    box-shadow: var(--c-content-shadow, none);
 }
 .rail-header {
     padding: var(--c-space-5, 24px) var(--c-space-4, 16px) var(--c-space-3, 12px);
@@ -129,7 +129,7 @@
     position: sticky;
     bottom: 0;
     z-index: 2;
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
     border-top: 1px solid var(--c-border-light, #e6e8ec);
     padding: var(--c-space-3, 12px) 0;
     margin-top: auto;
@@ -183,7 +183,7 @@
         flex-direction: column;
         gap: var(--c-space-1, 4px);
         padding: var(--c-space-2, 8px) var(--c-space-4, 16px) 0;
-        background: var(--c-card-bg, #fff);
+        background: var(--c-content-bg, #fff);
     }
 
     .rail {

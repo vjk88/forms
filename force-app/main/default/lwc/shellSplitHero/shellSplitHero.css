@@ -68,7 +68,7 @@
     flex: 1 1 0;
     min-width: 0;
     padding: var(--c-space-5, 24px);
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
     display: flex;
     flex-direction: column;
     gap: var(--c-space-5, 24px);
@@ -163,7 +163,7 @@
     position: sticky;
     bottom: 0;
     z-index: 2;
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
     border-top: 1px solid var(--c-border-light, #e6e8ec);
     padding: var(--c-space-3, 12px) 0;
     margin-top: auto;
