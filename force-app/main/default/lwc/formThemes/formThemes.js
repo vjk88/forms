@@ -1004,6 +1004,18 @@ function buildTokenString(t, density) {
         `--c-card-bg: ${withAlpha(theme.surfaceGradient || theme.surface || '#ffffff', theme.surfaceAlpha)}`,
         `--c-card-border: ${cardBorder}`,
         `--c-card-shadow: ${cardShadow}`,
+        // --- Surface model (see SURFACE_MODEL_SPEC.md) — split the overloaded
+        // --c-card-* into Content-panel + Section tokens. The --c-card-* lines above
+        // stay until consumers migrate (P2); --c-content-* mirror them so that switch
+        // is a visual no-op for the panel. Sections default transparent (they sit
+        // INSIDE the panel) + borderless — the one intended visual change, which
+        // lands when .sec migrates in P2. Shadow is content-only; radius is shared
+        // (--c-radius), so no --c-section-radius / --c-content-radius is emitted.
+        `--c-content-bg: ${withAlpha(theme.contentBg || theme.surfaceGradient || theme.surface || '#ffffff', theme.surfaceAlpha)}`,
+        `--c-content-border: ${cardBorder}`,
+        `--c-content-shadow: ${cardShadow}`,
+        `--c-section-bg: ${theme.sectionBg || 'transparent'}`,
+        `--c-section-border: ${theme.sectionBorder || '0 solid transparent'}`,
         `--c-page-bg: ${withAlpha(theme.pageBg || 'transparent', theme.pageBgAlpha)}`,
         `--c-header-bg: ${withAlpha(theme.headerBg || theme.pageBg || 'transparent', theme.headerBgAlpha)}`,
         `--c-header-text: ${readableOn(theme.headerBg || theme.pageBg)}`,
@@ -1054,6 +1066,7 @@ function buildTokenString(t, density) {
         ['borderColor', '--c-border'], // divider/input color (preset skins)
         ['border', '--c-border'], // "Border (strong)" Design-panel key → divider/input color
         ['cardBorder', '--c-card-border'], // full border string, e.g. '2px solid #000'
+        ['cardBorder', '--c-content-border'], // surface-model: same border override also feeds the Content panel
         ['headerText', '--c-header-text'],
         ['headerTextMuted', '--c-header-text-weak']
     ];

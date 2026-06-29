@@ -56,6 +56,26 @@ describe('c-form-themes themeVars v2', () => {
         });
     });
 
+    it('splits --c-card-* into Content + Section surface tokens (SURFACE_MODEL_SPEC P1)', () => {
+        const m = tokenMap(themeVars(LAYOUT_TEMPLATES.classic));
+        // Content panel mirrors the (still-emitted) card-* values exactly — so the
+        // P2 consumer switch is a visual no-op for the panel.
+        expect(m['--c-content-bg']).toBe(m['--c-card-bg']);
+        expect(m['--c-content-border']).toBe(m['--c-card-border']);
+        expect(m['--c-content-shadow']).toBe(m['--c-card-shadow']);
+        // Sections default transparent / borderless — they sit inside the panel.
+        expect(m['--c-section-bg']).toBe('transparent');
+        expect(m['--c-section-border']).toBe('0 solid transparent');
+        // Explicit section overrides are honored.
+        const o = tokenMap(themeVars({ ...LAYOUT_TEMPLATES.classic, sectionBg: '#eef', sectionBorder: '2px solid #abc' }));
+        expect(o['--c-section-bg']).toBe('#eef');
+        expect(o['--c-section-border']).toBe('2px solid #abc');
+        // An explicit border override feeds BOTH the card alias and the content panel.
+        const b = tokenMap(themeVars({ ...LAYOUT_TEMPLATES.classic, cardBorder: '3px dashed #123' }));
+        expect(b['--c-content-border']).toBe('3px dashed #123');
+        expect(b['--c-card-border']).toBe('3px dashed #123');
+    });
+
     it('emits v1-equivalent v2 defaults for a bare v1 skin', () => {
         const m = tokenMap(themeVars(LAYOUT_TEMPLATES.classic));
         expect(m['--c-space-4']).toBe('16px'); // matches old hardcoded fallbacks
