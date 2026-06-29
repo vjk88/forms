@@ -19,6 +19,19 @@ dark/palette or via an override) · ⛔ out of scope (builder UI, not the form).
 
 Each fix is recorded here as it lands. ⚠️ = code-path fix, not yet render-tested.
 
+### 2026-06-29 (later 11) — Dark-theme background bug + scrim/control-font doc fixes
+> Dark skins were silently dropping ALL page background layers. Code fix + doc reconciliation
+> (1 cmp deployed, jest 45/45). ⚠️ render-pending — verify on Immersive Dark with a texture on.
+- **BUG FIX (formThemes.js:927):** the dark branch emitted `--c-bg-scrim: rgba(0,0,0,0.18)` — a flat
+  color in a slot every shell consumes as a `background-image` layer. A bare `rgba()` is not a valid
+  `<image>` → invalid-at-computed-value-time → the whole multi-layer `background-image` collapsed to
+  `none`, so under **any dark skin** the texture / mesh / page-bg-image **all vanished**. Fixed to emit
+  `linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18))` (matching the image-scrim path at L898).
+- **Doc:** `--c-bg-scrim` was wrongly 🔴 dead (Dead table + "later 10" list) → it's produced (L898/L927)
+  + consumed by all 7 shells. Corrected to ✅ CONSUMED.
+- **Doc:** `--c-control-font` was wrongly 🔴 produced-but-dead → it's no longer produced (replaced by
+  `--c-input-font-size`, L762). Corrected to CUT/replaced.
+
 ### 2026-06-28 (later 10) — Dead-token hygiene cut
 > Grep-verified zero-consumer tokens removed from the `formThemes.js` producer (1 cmp deployed, 0 err,
 > jest 45/45). Pure hygiene — no behavior change, every cut token had **no** consumer anywhere in `force-app`.
@@ -30,7 +43,9 @@ Each fix is recorded here as it lands. ⚠️ = code-path fix, not yet render-te
   (layoutSectionHost + SLDS hooks), `--c-rail-w` (sideNav/wizard), `--c-grid-gap` (layoutZones).
 - **Tests:** the two `--c-title-fill` assertions flipped to `toBeUndefined()` to lock in the cut.
 - **Still 🔴 (not cut — have a possible future home):** `--c-panel-decor-color` (accent band, deferred),
-  `--c-bg-scrim`, `--c-control-font`, `--c-input-font`, `--c-back-color`, `--c-section-header-bg`.
+  `--c-input-font`, `--c-back-color`, `--c-section-header-bg`.
+  (Superseded since: `--c-bg-scrim` is now CONSUMED by all 7 shells; `--c-control-font` was replaced by
+  `--c-input-font-size` — see "later 11".)
 
 ### 2026-06-27 (later 9) — Sticky-bar regression fixes (supersedes parts of "later 8")
 > User flagged 3 issues with the "later 8" change. All addressed (5 cmp, 0 err, jest 35/35, ⚠️ render-pending).
@@ -327,12 +342,12 @@ producer line in `formThemes.js`.
 | ~~`--c-mesh-1..4`~~ + `--c-mesh-bg` | mesh blob hues → ready-made radial-gradient bg | Mesh background | ✅ **CONSUMED 2026-06-27** — `--c-mesh-bg` layered in all 7 shells |
 | `--c-panel-decor-color` | top accent band tint | Top accent band | 🔴 **DEFERRED** — needs per-layout target (Split Hero has no cards) |
 | ~~`--c-title-fill`~~ | title color | (internal) | ✅ **CUT 2026-06-28** — no consumer; titles styled by weight/size in shells |
-| `--c-bg-scrim` | legibility scrim on dark bg | (internal, dark only) | a shell bg overlay, or cut |
+| ~~`--c-bg-scrim`~~ | legibility scrim (dark skin + bg-image dim) | Image dim (scrim) + dark skin | ✅ **CONSUMED** — all 7 shells' page-bg `background-image`; produced L898 (image scrim) + L927 (dark). Dark branch **fixed 2026-06-29** to emit a gradient (was a flat `rgba()` → invalidated the whole bg-image). |
 | ~~`--c-dur-3`~~ | 600ms entrance duration | (internal motion) | ✅ **CUT 2026-06-28** — no consumer (`--c-dur-1`/`-2` kept, used widely) |
 | ~~`--c-stickybar-h`~~ | sticky bar height | (internal) | ✅ **WIRED 2026-06-27** — `min-height` on the auto sticky savebar/footer (Stack/Tabbed/Accordion) |
 | ~~`--c-summary-w`~~ | summary zone width | (internal) | ✅ **CUT 2026-06-28** — unbuilt summary zone, no consumer |
 | ~~`--c-zone-pad`~~ | zone inner padding | (internal) | ✅ **CUT 2026-06-28** — zones use `--c-grid-gap` instead |
-| `--c-control-font` | control font scale | Control scale (partial) | a `fields` rule, or cut |
+| ~~`--c-control-font`~~ | control font scale | Control scale (partial) | ✅ **CUT/replaced** — no longer produced; superseded by `--c-input-font-size` (L762, consumed by formSectionRenderer) |
 | `--c-input-font` | input font family | Input style (partial) | a `fields`/`lSH` rule, or cut |
 | ~~`--c-input-border-bottom`~~ | underline-input bottom border | Input style = Underline | ✅ **CUT 2026-06-28** — underline solved via `--slds-c-input-shadow` inset line; this token was redundant in all 3 input-style branches |
 | ~~`--c-label-size`~~ | label font size | Label style (mono/muted) | ✅ **CONSUMED 2026-06-27** by `.el-flabel` |
