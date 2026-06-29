@@ -924,7 +924,11 @@ function themeSpecV2Parts(theme, density, accent) {
         parts.push('--c-glass-blur: 26px');
     }
     if (theme.dark) {
-        parts.push('--c-bg-scrim: rgba(0,0,0,0.18)');
+        // Must be an <image> (gradient), NOT a flat color — shells consume this
+        // as a layer in a multi-image `background-image`. A bare rgba() is
+        // invalid-at-computed-value-time and collapses the WHOLE background-image
+        // to none (killing texture/mesh/page-bg-image under any dark skin).
+        parts.push('--c-bg-scrim: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18))');
     }
     return parts;
 }
