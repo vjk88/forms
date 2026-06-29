@@ -63,9 +63,13 @@ describe('c-form-themes themeVars v2', () => {
         expect(m['--c-content-bg']).toBe(m['--c-card-bg']);
         expect(m['--c-content-border']).toBe(m['--c-card-border']);
         expect(m['--c-content-shadow']).toBe(m['--c-card-shadow']);
-        // Sections default transparent / borderless — they sit inside the panel.
-        expect(m['--c-section-bg']).toBe('transparent');
-        expect(m['--c-section-border']).toBe('0 solid transparent');
+        // Carded sections keep the theme shadow via their own --c-section-shadow.
+        expect(m['--c-section-shadow']).toBe(m['--c-card-shadow']);
+        // Sections emit NO bg/border token unless explicitly set — so the renderer's
+        // .sec falls to transparent/borderless and the presets supply quick-start
+        // fallbacks via var(--c-section-bg, …). Explicit color then always wins.
+        expect(m['--c-section-bg']).toBeUndefined();
+        expect(m['--c-section-border']).toBeUndefined();
         // Explicit section overrides are honored.
         const o = tokenMap(themeVars({ ...LAYOUT_TEMPLATES.classic, sectionBg: '#eef', sectionBorder: '2px solid #abc' }));
         expect(o['--c-section-bg']).toBe('#eef');

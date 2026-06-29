@@ -20,7 +20,7 @@
 .card {
     margin: 0 auto;
     width: 100%;
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
     display: flex;
     flex-direction: column;
     /* clip (not hidden): clips to the border-radius like hidden, but does NOT
@@ -33,19 +33,19 @@
 .chrome-paper .card {
     margin: var(--c-space-5, 24px) auto;
     border-radius: var(--c-radius-card, 8px);
-    box-shadow: var(--c-card-shadow, none);
+    box-shadow: var(--c-content-shadow, none);
     position: relative;
 }
 
 .chrome-card .card {
-    border: var(--c-card-border, 1px solid var(--c-border-light, #e6e8ec));
+    border: var(--c-content-border, 1px solid var(--c-border-light, #e6e8ec));
     backdrop-filter: blur(var(--c-glass-blur, 0px));
     -webkit-backdrop-filter: blur(var(--c-glass-blur, 0px));
 }
 
 .chrome-paper .card {
     border: none;
-    box-shadow: var(--c-card-shadow, 0 4px 14px rgba(0, 0, 0, 0.1));
+    box-shadow: var(--c-content-shadow, 0 4px 14px rgba(0, 0, 0, 0.1));
 }
 
 .chrome-fullbleed .card {
@@ -125,7 +125,7 @@
     gap: var(--c-space-4, 16px);
     padding: var(--c-space-4, 16px) var(--c-space-5, 24px);
     border-top: 1px solid var(--c-border-light, #e6e8ec);
-    background: var(--c-card-bg, #fff);
+    background: var(--c-content-bg, #fff);
 }
 .footer-row.is-sticky {
     position: sticky;

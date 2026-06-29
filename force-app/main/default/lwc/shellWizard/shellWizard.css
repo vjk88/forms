@@ -149,7 +149,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: var(--c-card-bg, #f7f6f2);
+    background: var(--c-content-bg, #f7f6f2);
     width: 100%;
 }
 
@@ -157,19 +157,19 @@
 .chrome-paper .sheet {
     margin: var(--c-space-5, 24px) auto;
     border-radius: var(--c-radius-card, 8px);
-    box-shadow: var(--c-card-shadow, none);
+    box-shadow: var(--c-content-shadow, none);
     position: relative;
 }
 
 .chrome-card .sheet {
-    border: var(--c-card-border, 1px solid var(--c-border-light, #e6e8ec));
+    border: var(--c-content-border, 1px solid var(--c-border-light, #e6e8ec));
     backdrop-filter: blur(var(--c-glass-blur, 0px));
     -webkit-backdrop-filter: blur(var(--c-glass-blur, 0px));
 }
 
 .chrome-paper .sheet {
     border: none;
-    box-shadow: var(--c-card-shadow, 0 4px 14px rgba(0, 0, 0, 0.1));
+    box-shadow: var(--c-content-shadow, 0 4px 14px rgba(0, 0, 0, 0.1));
 }
 
 .chrome-fullbleed .sheet {
@@ -235,7 +235,7 @@
     gap: var(--c-space-3, 12px);
     padding: var(--c-space-2, 8px) var(--c-space-5, 24px);
     border-bottom: 1px solid var(--c-border-light, #e6e8ec);
-    background: var(--c-card-bg, #f7f6f2);
+    background: var(--c-content-bg, #f7f6f2);
 }
 .meta-step {
     font-size: 0.6875rem;
@@ -262,7 +262,7 @@
     gap: var(--c-space-3, 12px);
     padding: var(--c-space-4, 16px) var(--c-space-5, 24px);
     border-top: 1px solid var(--c-border-light, #e6e8ec);
-    background: var(--c-card-bg, #f7f6f2);
+    background: var(--c-content-bg, #f7f6f2);
 }
 .sheet-footer.is-sticky {
     position: sticky;

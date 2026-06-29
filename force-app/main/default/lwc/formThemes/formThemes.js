@@ -1004,18 +1004,18 @@ function buildTokenString(t, density) {
         `--c-card-bg: ${withAlpha(theme.surfaceGradient || theme.surface || '#ffffff', theme.surfaceAlpha)}`,
         `--c-card-border: ${cardBorder}`,
         `--c-card-shadow: ${cardShadow}`,
-        // --- Surface model (see SURFACE_MODEL_SPEC.md) — split the overloaded
-        // --c-card-* into Content-panel + Section tokens. The --c-card-* lines above
-        // stay until consumers migrate (P2); --c-content-* mirror them so that switch
-        // is a visual no-op for the panel. Sections default transparent (they sit
-        // INSIDE the panel) + borderless — the one intended visual change, which
-        // lands when .sec migrates in P2. Shadow is content-only; radius is shared
-        // (--c-radius), so no --c-section-radius / --c-content-radius is emitted.
+        // --- Surface model (see SURFACE_MODEL_SPEC.md) — Content panel tokens, split
+        // out of the overloaded --c-card-* (kept above as a back-compat alias). The
+        // --c-content-* mirror the card values exactly, so pointing the shells at them
+        // is a visual no-op. Radius stays shared (--c-radius / --c-radius-card).
+        // Content panel + carded sections both carry the theme shadow
+        // (--c-content-shadow / --c-section-shadow). Section bg/border are emitted
+        // separately + conditionally (just below the array) so the section-style
+        // presets can act as quick-starts.
         `--c-content-bg: ${withAlpha(theme.contentBg || theme.surfaceGradient || theme.surface || '#ffffff', theme.surfaceAlpha)}`,
         `--c-content-border: ${cardBorder}`,
         `--c-content-shadow: ${cardShadow}`,
-        `--c-section-bg: ${theme.sectionBg || 'transparent'}`,
-        `--c-section-border: ${theme.sectionBorder || '0 solid transparent'}`,
+        `--c-section-shadow: ${cardShadow}`,
         `--c-page-bg: ${withAlpha(theme.pageBg || 'transparent', theme.pageBgAlpha)}`,
         `--c-header-bg: ${withAlpha(theme.headerBg || theme.pageBg || 'transparent', theme.headerBgAlpha)}`,
         `--c-header-text: ${readableOn(theme.headerBg || theme.pageBg)}`,
@@ -1031,6 +1031,15 @@ function buildTokenString(t, density) {
     ];
 
     parts.push(...themeSpecV2Parts(theme, density, accent));
+
+    // Surface model: Section bg/border are emitted ONLY when explicitly set, so the
+    // section-style presets (quick-starts) can supply their own fallback via
+    // `var(--c-section-bg, <preset default>)` and an explicit user color always wins
+    // (fixes the old "a plain section silently ate your color" bug). When unset, the
+    // renderer's .sec defaults to transparent / borderless — sections sit inside the
+    // Content panel instead of being nested boxes.
+    if (theme.sectionBg) parts.push(`--c-section-bg: ${theme.sectionBg}`);
+    if (theme.sectionBorder) parts.push(`--c-section-border: ${theme.sectionBorder}`);
 
     // Dark skins (e.g. Immersive glass) flip the chrome text tokens so our
     // titles/labels/help text stay readable over the dark card.
