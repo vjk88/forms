@@ -128,6 +128,14 @@ Replaces the mislabeled single "Content/Card" group with two honest groups (slot
    all labels; add Section background/border pickers; auto-hide Content controls on One-at-a-Time.
 4. **P4 — Verify per layout.** Render-check all 7 shells (esp. the section-transparent default and
    One-at-a-Time). Update TOKEN_REFERENCE + COVERAGE_MATRIX.
+5. **P5 — Retire `chrome`.** The `chrome` enum (`card` / `paper` / `fullbleed`) predates the surface
+   model and now overlaps it: `card`/`paper` are just Content-panel border/shadow presets, and
+   `fullbleed` only ever meant "float the card on the page bg" — now the default. It also *conflated*
+   two unrelated things and caused a real bug (see below): the **page background was painted only on
+   `.chrome-fullbleed`**, so the layouts defaulting to `chrome:'card'` (Stacked, Bento, Tabbed,
+   Accordion) showed **no page background at all** (uploaded images invisible). Immediate fix (2026-07-01):
+   page bg moved to the always-present `.wrap` on those 3 shells so it shows regardless of chrome.
+   P5 = fold `card`/`paper` into Content-panel presets and remove the `chrome` control/enum entirely.
 
 ## 9. Open items / risks
 
