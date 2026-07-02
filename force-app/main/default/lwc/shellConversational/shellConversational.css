@@ -10,13 +10,32 @@
     display: flex;
     flex-direction: column;
     min-height: var(--c-shell-min-h, 100%);
+    /* Image-fit fix: the uploaded page image gets its OWN background here (a single
+       layer → --c-bg-size / --c-bg-repeat always align), while texture/mesh/scrim
+       move to ::before. Sharing one background-image stack broke image fit whenever
+       texture (grid = 2 layers) or mesh (= 4 layers) shifted the layer count and
+       knocked --c-bg-size onto the wrong slot. */
+    position: relative;
+    isolation: isolate; /* contain the ::before z-index:-1 */
     background-color: var(--c-page-bg, #faf7f2);
-    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
-    background-size: auto, cover, cover, var(--c-bg-size, cover);
-    background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
-    background-position: center, center, center, center;
+    background-image: var(--c-page-bg-image, none);
+    background-size: var(--c-bg-size, cover);
+    background-repeat: var(--c-bg-repeat, no-repeat);
+    background-position: center;
     padding: 0;
     outline: none; /* focus managed programmatically */
+}
+/* Texture + mesh + scrim ride a back layer — above the page image, below content. */
+.conv::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none);
+    background-size: auto;
+    background-repeat: repeat;
+    background-position: center;
 }
 
 /* ── Brand header ── */
