@@ -9,16 +9,32 @@
 }
 .chrome-fullbleed {
     min-height: var(--c-shell-min-h, 100%);
+    /* Image-fit fix: the page image gets its OWN background (single layer → fit &
+       repeat always align); texture/mesh/scrim move to ::before. See
+       shellConversational for the full rationale. */
+    position: relative;
+    isolation: isolate;
     background-color: var(--c-page-bg, transparent);
-    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
-    background-size: auto, cover, cover, var(--c-bg-size, cover);
-    background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
-    background-position: center, center, center, center;
+    background-image: var(--c-page-bg-image, none);
+    background-size: var(--c-bg-size, cover);
+    background-repeat: var(--c-bg-repeat, no-repeat);
+    background-position: center;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--c-space-5, 24px) var(--c-space-4, 16px);
     box-sizing: border-box;
+}
+.chrome-fullbleed::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none);
+    background-size: auto;
+    background-repeat: repeat;
+    background-position: center;
 }
 
 /* ---- Surface (the card) ---- */
