@@ -33,7 +33,7 @@ surfaced as `formViewer`'s **Spam Protection** attribute:
 - `formViewer`'s **Response Cap** and **Open/Close Window** also shrink the abuse surface — enforce
   both **server-side at submit**, not just in render (a closed form must reject a replayed POST).
 
-## Guest drafts — `draftManager` security (same elevated-context class as file upload)
+## Guest drafts — `draftManager` security **[v2 — feature deferred (DEFERRED.md #2); rules bind when it's built]**
 
 Save & Resume for guests means guest-created records holding PII, readable later by an
 unauthenticated visitor. Rules:

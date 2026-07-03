@@ -90,8 +90,8 @@ Submit / Next / Back buttons, alignment, and sticky behavior.
 | Next Button Label | text | Multi-page only |
 | Back Button Label | text | Multi-page only |
 | Show Progress | toggle | Pair the bar with a progress indicator |
-| Show Save Draft | toggle | "Save & Finish Later" — shown only when Save & Resume is enabled (`draftManager`, §4) |
-| Save Draft Label | text | |
+| Show Save Draft | toggle | "Save & Finish Later" — shown only when Save & Resume is enabled (`draftManager`, §4) — **v2, deferred with Save & Resume** |
+| Save Draft Label | text | v2 |
 
 > **One button implementation, everywhere.** Paginated nav primitives do NOT render their own
 > Next/Back/Submit buttons — they **host this `submitBar` in a slot** and forward its intents as the
@@ -342,8 +342,8 @@ Canvas-based signing field for agreements, sign-offs, applications.
 | Output Type | enum | Base64 PNG / ContentVersion relationship |
 | Required | toggle | |
 
-### `formMap` — location / map (review §2 gap)
-Show an address on a map or let the user pin coordinates.
+### `formMap` — location / map (review §2 gap) — **DEFERRED to v2** ([DEFERRED.md](./DEFERRED.md) #1)
+Show an address on a map or let the user pin coordinates. Spec kept; not built in v1.
 
 | Attribute | Type | Notes |
 |---|---|---|
@@ -396,8 +396,9 @@ Thank-you or redirect after submit.
 | Show Response Summary | toggle | Recap of submitted values |
 | Allow Another Response | toggle | "Submit another" |
 
-### `draftManager` — save & resume (review §2 gap)
+### `draftManager` — save & resume (review §2 gap) — **DEFERRED to v2** ([DEFERRED.md](./DEFERRED.md) #2)
 Lets respondents (especially guests on long multi-page forms) save progress and continue later.
+Spec + security rules kept; nothing built in v1 (no `Form_Draft__c`, no Save-Draft button).
 
 | Attribute | Type | Notes |
 |---|---|---|

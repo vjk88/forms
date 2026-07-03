@@ -64,8 +64,11 @@
 Sharing: org-wide **ReadWrite for internal** (themes are meant to be shared across builders).
 **Guests: zero access** — published forms carry resolved tokens in the snapshot, so the runtime
 never reads this object.
+**Deletion posture (v1):** `Is_Active__c` soft-delete is the sanctioned removal path; published
+forms are immune regardless (snapshot). Hard-delete blocking when a draft's
+`Design_Config_JSON__c` references the theme = v2 hardening ([DEFERRED.md](./DEFERRED.md) #3).
 
-### `Form_Draft__c` — save & resume (catalog §4 `draftManager`)
+### `Form_Draft__c` — save & resume — **DEFERRED to v2: do NOT create in v1** ([DEFERRED.md](./DEFERRED.md) #2)
 | Field | Type | Notes |
 |---|---|---|
 | `Form_Version__c` | Lookup | The published version being answered |
