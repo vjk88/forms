@@ -52,8 +52,11 @@ visibility · `colorControl` + `contrastBadge` + `imageUploader` · **resolve-at
 action compiles `Spec_JSON__c` with the `resolved` block).
 
 **Gate:** publish a themed form → open as guest → renders from `resolved.tokens` with
-**`themeCatalog` absent from the guest bundle** (network tab proof). Design-mode tweaks preview
-instantly (no wire calls in the loop). Engine snapshot tests cover the full catalog.
+**`themeCatalog` absent from the guest bundle** (network tab proof). The absence check covers ALL
+design-mode components too — `designPanel`, `themeEditor`, `colorControl`, `contrastBadge` never
+load outside the builder (review C; LWC only loads what the rendered template references, so this
+is a verification, not machinery). Design-mode tweaks preview instantly (no wire calls in the
+loop). Engine snapshot tests cover the full catalog.
 
 ## P3 · The builder
 

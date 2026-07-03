@@ -98,8 +98,9 @@ export const LAYOUTS = {
 
 ### 2.3 What layout code may NOT do
 
-- Define any color / shadow / font / spacing value — except **neutral fallbacks** in `var()`.
-- Fallbacks must be neutral grayscale (`#fff`, `#e6e8ec`, `transparent`) — never brand-flavored.
+- Define any color / shadow / font / spacing value. The only sanctioned exceptions: the **neutral
+  base block** at `pageFrame :host` (§3.1 rule 5) and `sectionRenderer`'s preset-default fallbacks.
+- Neutral means grayscale (`#f4f7f5`, `#e6e8ec`, `transparent`) — never brand-flavored.
   A form with zero theme applied renders plain but *correct*.
 - Read theme data, import the catalog, or branch on theme/skin names. If a layout needs to "know"
   something visual, that's a missing token — extend the contract (§6), don't peek.
@@ -115,7 +116,13 @@ export const LAYOUTS = {
 3. **Append-only.** New tokens may be added; existing tokens are never renamed or removed (alias +
    deprecate if truly needed). Consumers must be able to trust the vocabulary.
 4. **Naming:** `--c-<surface>-<property>` for surfaces, `--c-<role>` for roles.
-5. **Fallback discipline:** every consumption site is `var(--c-x, <neutral>)`.
+5. **Fallback discipline — centralized (review round 2):** neutral base values are declared ONCE at
+   `pageFrame`'s `:host` (plain declarations — `--c-page-bg: #f4f7f5;`); the engine's inline style on
+   the same element overrides them. Children consume **bare `var(--c-x)`** — no per-file fallbacks to
+   drift apart. **Carve-out:** preset-dependent tokens (`--c-section-*`) keep consumer-side fallbacks,
+   because *unset = the section preset decides* — centralizing them would break that contract.
+   (Do NOT use the reviewer's `--c-x: var(--c-x, …)` pattern — a self-referential custom property is
+   invalid CSS and silently kills the token.)
 
 ### 3.2 Contract v1 (~36 semantic tokens)
 
@@ -237,17 +244,38 @@ theme default  →  form-level override  →  per-component explicit value
 
 Blank = inherit up. Explicit wins. No other precedence logic anywhere.
 
+### 4.4 Dark mode posture — DECISION CLOSED 2026-07-03 (review round 2)
+
+- **A published form renders AS DESIGNED — always.** No auto-inversion from the visitor's OS
+  (`prefers-color-scheme`), no end-user toggle. Forms are art-directed; the theme surface is brand.
+  (Typeform/Jotform behave the same way.)
+- **Dark is a theme decision, not a runtime mode.** Dark *themes* exist in the catalog like any
+  other; a theme MAY ship a *designed* dark variant that the **designer** picks. Never an
+  auto-generated inversion — the old dark-scrim bug is the provenance for why.
+- **v1 builds NOTHING for visitor-adaptive dark mode.** If it's ever wanted: a per-form opt-in,
+  offered only when the theme has a designed dark variant, implemented by **appending
+  `resolved.darkTokens`** at publish. The spec's ignore-unknown-keys rule makes that additive — no
+  `specVersion` bump, no guest engine, no breakage. The door is open by construction; we walk
+  through it only on demand.
+- Reviewer's alternative ("snapshot properties + ship a lightweight engine to guests") **REJECTED**:
+  it reintroduces resolution logic into the guest bundle (what resolve-at-publish exists to prevent)
+  and breaks `engineVersion` pinning — an engine update would silently re-style published forms.
+
 ## 5 · Token engine (L5) — the single producer
 
 ```js
 // themeEngine (logic module) — pure function, no DOM, no wire
-resolveTokens(themeProps, formOverrides, { mode /* light|dark */ })
+resolveTokens(themeProps, formOverrides)
   → { '--c-accent': '#0d9488', '--c-radius': '10px', … }
+// No "mode" param — dark is a theme/variant choice resolved into themeProps
+// upstream (§4.4), never a runtime input.
 ```
 
 - **Applied at ONE point:** the `pageFrame` root, as a style attribute. No other component ever
   writes a `--c-*` value.
-- **Neutral fallback set lives once** at `pageFrame`'s `:host` — the "no theme" render.
+- **Neutral base values live once** at `pageFrame`'s `:host` as plain declarations — the "no theme"
+  render. The engine's inline style on the same element wins over them; children consume bare
+  `var(--c-x)` (§3.1 rule 5, incl. the section-preset carve-out).
 - **Exhaustively jest-tested:** every theme property × expected token output, cascade order, sparse
   overrides, dark mode. The old build had zero engine tests and infinite regressions; this module is
   where correctness is cheapest to buy.

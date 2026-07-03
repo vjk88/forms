@@ -202,13 +202,16 @@ placeholder ("unsupported element"), never crashes the form — same ignore-unkn
 ## 5 · The `resolved` block (resolve-at-publish)
 
 Written by the **publish action only** (ARCH §4.2): it runs `themeEngine.resolveTokens(theme,
-overrides, ctx)` server-of-record at publish time and embeds the full token map.
+overrides)` at publish time and embeds the full token map.
 
 - Guest/live runtime applies `resolved.tokens` directly — **never loads `themeCatalog`, never runs
   the engine**. Recipes stay off the public site; guest bundle stays small.
 - `engineVersion` recorded so a future engine change can't silently re-style old published forms.
 - Builder preview ignores `resolved` and runs the engine live (that's the point of client-side
   resolution — instant Design-mode feedback).
+- **Dark mode: none in v1** — published forms render as designed (ARCH §4.4). If visitor-adaptive
+  dark ever ships, it arrives as an appended `resolved.darkTokens` map — additive, no `specVersion`
+  bump, still no guest engine.
 
 ## 6 · ID rules (load-bearing — drafts, answers, rules all key on these)
 
