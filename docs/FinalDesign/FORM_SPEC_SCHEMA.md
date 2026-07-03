@@ -153,7 +153,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "collapsible": false,
       "defaultCollapsed": false,
       "visibility": null,
-      "repeat": null,                // or { "min":1, "max":5, "style":"stacked", "addLabel":"Add", "removeLabel":"Remove", "entryLabel":"Contact {index}" }
+      "repeat": null,                // §4.1 — or { "childObject":"Contact", "relationshipField":"AccountId", "min":1, "max":5, "style":"stacked", "addLabel":"Add", "removeLabel":"Remove", "entryLabel":"Contact {index}" }
 
       "elements": [
         {
@@ -198,6 +198,25 @@ Version records are never edited in place. "Fix the live form" = edit records �
 
 Content types (`hero`…`spacer`) have `binding: null` always. Unknown `type` at runtime renders a
 placeholder ("unsupported element"), never crashes the form — same ignore-unknown discipline as §2.
+
+### 4.1 Repeatable sections (repeaters)
+
+Repeat lives at **section level only** (owner decision) — a repeating group IS a section; a
+"chromeless" repeater is a repeatable section with `Plain` style (the builder's palette sells it as
+a first-class **Repeating Group** item, catalog §5).
+
+- **Defined once, instantiated at runtime.** The spec carries the section + its elements ONE time;
+  entries are runtime instances and never appear as extra spec nodes.
+- **Header info** (title / description) = the section's own fields. **Presentation** (style,
+  add/remove labels, entry label) = the `repeat` block. **Binding** = `repeat.childObject` +
+  `repeat.relationshipField` — compiled from the section record's `Parent_SObject_API__c` /
+  `Relationship_Name__c` (DATA_MODEL_DELTA §1: those fields already exist).
+- **Elements inside bind to the CHILD object's fields** (`binding.object` = the child) — they're
+  ordinary elements otherwise.
+- **Rules scope per entry:** visibility/validation referencing elements inside a repeatable section
+  evaluate against the *same entry's* values — entry 2's "show if X = Yes" reads entry 2's X.
+- **No nesting, ever (v1 law):** a repeater cannot contain a repeater — grandchild records are
+  deferred multi-object territory.
 
 ## 5 · The `resolved` block (resolve-at-publish)
 
@@ -261,6 +280,12 @@ evaluates both — one evaluator, build + runtime (catalog §5 note).
 {
   "formVersionId": "a0Y…",           // the published snapshot responded to
   "answers": { "el_m4t8s6vb": "jo@x.com", "el_q2…": ["A","C"] },   // keyed by element id
+  "repeats": {                       // repeatable sections (§4.1) — array of entry maps per section id
+    "sec_p8d2w7rt": [
+      { "el_ph1": "555-0100", "el_ty1": "Mobile" },
+      { "el_ph1": "555-0199", "el_ty1": "Work" }
+    ]
+  },
   "files": [ { "elementId": "el_f…", "name": "…", "base64": "…" } ],
   "meta": { "startedAt": "…", "submittedAt": "…", "language": "en_US" }
 }
@@ -268,9 +293,13 @@ evaluates both — one evaluator, build + runtime (catalog §5 note).
 
 - **Forms:** server maps `answers` → record fields via the snapshot's bindings (server-side mapping —
   the client never names Salesforce fields; RUNTIME_NOTES elevated-context rules apply).
+- **Forms + `repeats`:** each entry inserts ONE child record (`repeat.relationshipField` = the new
+  parent's Id) **inside the same submit savepoint** — parent + all entries are atomic (the old
+  build's `FormSubmitController` already proved this path).
 - **Surveys:** each answer becomes an answer-store row: `elementId` + **label snapshot** (question
   text at submit time) + value. The label snapshot keeps analytics honest after questions are
-  reworded.
+  reworded. Repeated answers additionally carry `Entry_Index__c` — without it, two entries'
+  answers to the same question are indistinguishable.
 
 **Draft payload** = the same shape + `resumeToken`, minus `files` (files upload on final submit
 only). Resuming = fetch draft by token (RUNTIME_NOTES guardrails) → hydrate `answers` by element id.
