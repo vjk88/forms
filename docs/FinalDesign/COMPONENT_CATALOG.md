@@ -1,6 +1,7 @@
 # Component Catalog — every LWC, its job, and its configurable attributes
 
-> **Status: spec / design reference.** The full component inventory for the rebuilt app, each with a
+> **Status: spec / design reference. This `.md` is the single source of truth** — any `.csv` export is
+> secondary and may drift; edit here. The full component inventory for the rebuilt app, each with a
 > plain-English description and **all** configurable attributes in **business language** (no `--c-*`
 > token names — those are the internal wiring; this is what a user/admin actually sets). Attributes
 > are *what the component can be configured with*, not its raw technical `@api` surface.
@@ -384,13 +385,18 @@ Drag/drop pages, sections, elements; the live blueprint with the form preview.
 | Drag Rules | data | What can drop where (gatekeeper) |
 
 ### `historyManager` — undo / redo (review §2 gap)
-Builder-shell service managing the undo/redo stack for all form edits.
+Builder-shell service managing the undo/redo stack for **structural** form edits.
 
 | Attribute | Type | Notes |
 |---|---|---|
+| Tracked Scope | enum | **Build-mode structural edits only** (add/move/delete pages · sections · elements) |
 | Stack Limit | number | Max steps retained |
 | Undo / Redo | events | Wired to toolbar + keyboard shortcuts |
-| Coalescing | toggle | Merge rapid edits (e.g. typing) into one step |
+| Coalescing | toggle | Collapse a continuous input (drag / typing) to ONE step on release |
+
+> **Design-mode changes are NOT on this stack** (review C). Live theme tweaks (color sliders, etc.)
+> apply as instant CSS preview and revert via the form-level **Save / Discard** — not per-tweak undo.
+> Keeps the stack clean without making "undo my color change" feel broken.
 
 ### `fieldPalette` — the element palette
 Draggable element/field types.
@@ -582,5 +588,9 @@ translate from — so they need real i18n. Design:
 
 ### Counts (post-review)
 **~46 UI components + ~7 logic modules** — the review added: `formSignature` / `formMap` / `formVideo`,
-`historyManager`, `draftManager`, `expressionEngine`, `translationService`. Nav primitives could still
-merge into one `formNav` with a `mode` attribute (drops ~5).
+`historyManager`, `draftManager`, `expressionEngine`, `translationService`.
+
+> **Nav primitives stay SEPARATE — do NOT merge into one `formNav`** (review A). Merging would bundle
+> all nav logic (stepper / accordion / conversational) into a component every form downloads, defeating
+> the lazy-load win. Kept separate + `lwc:is` dynamic-imported, a guest opening a simple scroll form
+> pulls only `navScroll` — critical for guest-site LCP. (Reverses the earlier "could merge" note.)
