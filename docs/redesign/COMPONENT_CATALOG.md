@@ -110,7 +110,7 @@ Section header (icon/title/description), the field grid, style treatment, collap
 | Collapsible | toggle | |
 | Default Collapsed | toggle | When collapsible |
 | Visibility Rule | rule | Show/hide this section conditionally |
-| Repeatable | toggle | Turns the section into a `formRepeater` |
+| Repeatable | toggle | When on, the section composes `c-form-repeater` (§3) to wrap its field grid — one shared repeat engine, not a second implementation (review Rec 3) |
 
 ### `elementRenderer` — one element (field / content block)
 Renders a single element with label, help, and input. Type-driven.
@@ -118,16 +118,13 @@ Renders a single element with label, help, and input. Type-driven.
 | Attribute | Type | Notes |
 |---|---|---|
 | Element Type | enum | Field / Hero / Image / Rich Text / Divider / Spacer |
-| Field Binding | binding | Object.Field this maps to |
+| Field Binding | binding | Object.Field this maps to (**Forms**). **Surveys are unbound** — the answer stores to the answer-store, no binding |
 | Field Label | text | |
 | Label Position | enum | Top / Left / Hidden |
 | Label Style | enum | Default / Uppercase / Muted |
 | Help Text | text | Tooltip/hint |
 | Placeholder | text | |
 | Required | toggle | |
-| Required Asterisk Color | color | Field-state color |
-| Focus Color | color | Field-state color |
-| Error Color | color | Field-state color |
 | Default Value | text/binding | Static or from source record |
 | Input Style | enum | Outline / Filled / Underline |
 | Field Text Size | number | Control scale |
@@ -137,9 +134,23 @@ Renders a single element with label, help, and input. Type-driven.
 | Validation Rules | list(rule) | Required / Pattern / Range / Custom + message |
 | Visibility Rule | rule | Conditional show/hide |
 
+> **Field-state colors are theme-level, not per-field** (review Rec 1). Focus / error / required-asterisk
+> colors live in the **theme** (`themeEditor`, §6), emitted as tokens and consumed by `elementRenderer`'s
+> CSS — NOT stored on every field record (that's metadata bloat + "update 40 fields to change one
+> color"). Per-field override is intentionally deferred (rare need).
+
 ---
 
 ## §2 · Navigation primitives (lazy-loaded — one per form)
+
+> **Shared contract — every primitive implements it (review Rec 2).** This is what lets
+> `formLayoutEngine` lazy-swap any primitive. The primitive is **dumb**: it never owns validation or
+> submission logic — it renders navigation state and *dispatches intent*; the engine owns the truth.
+> - **Inputs:** `pages` (page-config array) · `currentPageIndex` · `pageValidity` (per-page valid
+>   flags, so it can render gating) · `progress` style.
+> - **Events:** `pagechange` (user clicked a tab / step / panel) · `next` · `back` · `submit`.
+>
+> The per-primitive attributes below are its *presentation* options, layered on that contract.
 
 ### `navScroll` — continuous flow
 All pages/sections in one scroll; no pagination.
@@ -241,8 +252,8 @@ Files persisted on submit (internal + guest).
 | Allow Multiple | toggle | |
 | Link to Record | toggle | Relate uploaded files to the saved record |
 
-### `formRepeater` — repeatable entries
-Add multiple entries of a section.
+### `formRepeater` — repeatable entries (the reusable repeat container)
+The single home for repeat logic: adds multiple entries of a section's field grid. `sectionRenderer` **composes** this when its **Repeatable** toggle is on (review Rec 3) — not a separate feature, one shared engine.
 
 | Attribute | Type | Notes |
 |---|---|---|
@@ -277,6 +288,39 @@ Draggable hero (image + heading + subtext + CTA).
 | Height | enum | Compact / Standard / Tall |
 | Overlay Dim | number | Scrim over the image |
 
+### `formSignature` — signature pad (review §2 gap)
+Canvas-based signing field for agreements, sign-offs, applications.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| Pen Color | color | |
+| Line Thickness | number | |
+| Placeholder Text | text | "Sign here" |
+| Output Type | enum | Base64 PNG / ContentVersion relationship |
+| Required | toggle | |
+
+### `formMap` — location / map (review §2 gap)
+Show an address on a map or let the user pin coordinates.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| Map Provider | enum | Salesforce Maps / Google / Leaflet |
+| Address Binding | binding | Address field to plot |
+| Default Zoom | number | |
+| Pin Coordinate | data | Captured lat/long |
+| Allow Pin Drop | toggle | Let respondents set the point |
+
+### `formVideo` — embedded video (review §2 gap)
+Instructional / marketing video block inside a section.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| Video Source | enum | YouTube / Vimeo / Salesforce CMS |
+| Video URL / Id | text | |
+| Autoplay | toggle | |
+| Loop | toggle | |
+| Muted | toggle | |
+
 ---
 
 ## §4 · Runtime
@@ -304,6 +348,17 @@ Thank-you or redirect after submit.
 | Show Response Summary | toggle | Recap of submitted values |
 | Allow Another Response | toggle | "Submit another" |
 
+### `draftManager` — save & resume (review §2 gap)
+Lets respondents (especially guests on long multi-page forms) save progress and continue later.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| Enable Save & Resume | toggle | |
+| Draft Storage | enum | Draft record (custom object) / Browser local storage |
+| Resume Key | data | Unique token per in-progress response |
+| Resume Delivery | enum | Emailed link / Copyable link |
+| Draft Expiry | number | Days a draft is retained |
+
 ---
 
 ## §5 · Builder shell + Build mode
@@ -327,6 +382,15 @@ Drag/drop pages, sections, elements; the live blueprint with the form preview.
 | Selected Node | data | Page/section/element in focus |
 | Show Guides | toggle | Grid/alignment guides |
 | Drag Rules | data | What can drop where (gatekeeper) |
+
+### `historyManager` — undo / redo (review §2 gap)
+Builder-shell service managing the undo/redo stack for all form edits.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| Stack Limit | number | Max steps retained |
+| Undo / Redo | events | Wired to toolbar + keyboard shortcuts |
+| Coalescing | toggle | Merge rapid edits (e.g. typing) into one step |
 
 ### `fieldPalette` — the element palette
 Draggable element/field types.
@@ -380,6 +444,10 @@ Declarative multi-rule editor (Lightning record-page pattern).
 | Condition | rule | When it applies |
 | Error Message | text | |
 
+> Both `visibilityRules` and `validationEditor` evaluate through a shared **`expressionEngine`** logic
+> module (review §2 gap) — parses/runs declarative conditions (e.g. `Age >= 18`, `Email == ConfirmEmail`)
+> **client-side, no Apex.** One evaluator, reused at build (validate the rule) and runtime (apply it).
+
 ---
 
 ## §6 · Design mode
@@ -420,6 +488,7 @@ Edits theme **properties** (which resolve to tokens) and saves a named custom th
 | Main Text Color | color | |
 | Muted Text Color | color | |
 | Surface Colors | color | Page / Panel / Section |
+| Field-State Colors | color | Focus / Error / Required-asterisk / Field border — **global here** (review Rec 1), not per-field |
 | Font Pairing | enum | Editorial / Geometric / Enterprise / Technical / … |
 | Corner Rounding | enum | Sharp → Pill |
 | Border Style | enum | None / Hairline / Bold |
@@ -493,5 +562,25 @@ The starting point for a new form (pre-bound themed templates).
   Design/Build editors (§5–§6) are UIs over them. This is what keeps styling out of the shells.
 - **Everything themeable is a theme property** that resolves to a token — the `themeEditor` writing a
   property and the engine emitting the `--c-*` are the same pipeline (see the layout×theme contract).
-- **Counts:** ~40 UI components + ~5 logic modules. Nav primitives could merge into one `formNav`
-  with a `mode` attribute (drops ~5); element widgets could split by type (adds a few).
+- **Navigation primitives share one interface** (§2 intro) so the engine can lazy-swap them.
+- **Field-state colors are theme-level, not per-field** (review Rec 1) — they live in `themeEditor`.
+
+### Localization (review Rec 4 — driven by Surveys)
+Forms are object-bound, so **bound field labels auto-translate** via the platform (per user/guest
+language) — nothing to build there. But **Surveys are unbound** ([[project-form-vs-survey-model]]) and
+all their copy is *authored* (questions, options, help, static content) with no field metadata to
+translate from — so they need real i18n. Design:
+- A **`translationService`** logic module + a **Translation Map** on the form spec.
+- Every authored label / placeholder / help / option / error carries a **translation key**; the map
+  holds per-language values; the engine resolves keys against the current user/guest `language` param
+  at render time.
+- Lives at the runtime layer (`formLayoutEngine` config). **Deferred to a later phase** — not core P1.
+
+### Logic modules (non-UI, ~7)
+`layoutModel` · `themeEngine` (token producer) · `presets` · `navState` · `expressionEngine`
+(visibility/validation) · `translationService` (survey/authored i18n) · `serialize/spec` utils.
+
+### Counts (post-review)
+**~46 UI components + ~7 logic modules** — the review added: `formSignature` / `formMap` / `formVideo`,
+`historyManager`, `draftManager`, `expressionEngine`, `translationService`. Nav primitives could still
+merge into one `formNav` with a `mode` attribute (drops ~5).
