@@ -7,8 +7,8 @@
 >
 > **How to read the layers:** the **render** components (§1–§3) OWN the attributes; the **Design/Build**
 > editors (§6–§7) are just UIs that EDIT those same attributes. To stay DRY, each attribute is listed
-> once on the component that owns it. Companion: [SURFACE_MODEL_SPEC.md](./SURFACE_MODEL_SPEC.md) ·
-> [DESIGN_MODE_IA.md](./DESIGN_MODE_IA.md). Authored 2026-07-03.
+> once on the component that owns it. Companion: [SURFACE_MODEL_SPEC.md](../redesign/SURFACE_MODEL_SPEC.md) ·
+> [DESIGN_MODE_IA.md](../redesign/DESIGN_MODE_IA.md). Authored 2026-07-03.
 
 **Type legend:** `text` · `number` · `toggle` (on/off) · `enum` (fixed choices) · `color` · `image`
 · `list` · `rule` (declarative condition) · `binding` (object/field reference).
