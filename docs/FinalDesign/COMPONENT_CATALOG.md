@@ -10,6 +10,12 @@
 > editors (§6–§7) are just UIs that EDIT those same attributes. To stay DRY, each attribute is listed
 > once on the component that owns it. Companion: [SURFACE_MODEL_SPEC.md](../redesign/SURFACE_MODEL_SPEC.md) ·
 > [DESIGN_MODE_IA.md](../redesign/DESIGN_MODE_IA.md). Authored 2026-07-03.
+>
+> **Value precedence — ONE cascade, stated once:** `theme default → form-level theme override →
+> per-component explicit value`. Where an attribute appears at more than one level (Corner Rounding,
+> surface colors, Density), it is the **same property at different cascade levels — not duplicate
+> ownership**. Explicit always wins; blank means "inherit up". This rule is what keeps the old
+> `--c-card-*` double-ownership disease from coming back.
 
 **Type legend:** `text` · `number` · `toggle` (on/off) · `enum` (fixed choices) · `color` · `image`
 · `list` · `rule` (declarative condition) · `binding` (object/field reference).
@@ -24,6 +30,7 @@ Picks the layout, lazy-loads the frame + the one nav primitive it needs, and fee
 | Attribute | Type | Notes |
 |---|---|---|
 | Form Definition | data | The authored spec (pages → sections → elements) |
+| Form Type | enum | **Form** (object-bound → saves a record) / **Survey** (unbound → answer-store). Drives binding, submit path, and i18n needs |
 | Selected Layout | enum | Which archetype (Stacked, Wizard, Tabbed, …) → chooses the nav primitive |
 | Selected Theme | enum | Built-in or custom theme name |
 | Theme Overrides | data | The form's per-form custom values (deltas) |
@@ -66,7 +73,7 @@ Logo, title, description, highlight banner, and arrangement at the top of the fo
 | Built-in Emblem | enum | Decorative logo shape when no image (shield, leaf, aperture, …) |
 | Form Title | text | |
 | Description / Subtitle | text | |
-| Highlight Message | text | Announcement badge/banner (e.g. "Closes Friday!") |
+| Highlight | — | Composes `formHighlight` (§3), which owns the message / variant / icon — not re-owned here |
 | Header Background Color | color | Header surface fill |
 | Header Banner Image | image | Hero background image |
 | Header Background Opacity | number | |
@@ -83,6 +90,15 @@ Submit / Next / Back buttons, alignment, and sticky behavior.
 | Next Button Label | text | Multi-page only |
 | Back Button Label | text | Multi-page only |
 | Show Progress | toggle | Pair the bar with a progress indicator |
+| Show Save Draft | toggle | "Save & Finish Later" — shown only when Save & Resume is enabled (`draftManager`, §4) |
+| Save Draft Label | text | |
+
+> **One button implementation, everywhere.** Paginated nav primitives do NOT render their own
+> Next/Back/Submit buttons — they **host this `submitBar` in a slot** and forward its intents as the
+> §2 contract events (`next` / `back` / `submit`). One place owns button markup, labels, and alignment;
+> primitives own only nav chrome (steps, tabs, panels). Sole exception: `navOneAtATime`'s **Advance
+> Trigger** is the primitive's own control — in conversational mode the advance action *is* the
+> navigation.
 
 ### `layoutZones` — section arrangement within a page
 Arranges a page's sections into columns / grid.
@@ -118,7 +134,7 @@ Renders a single element with label, help, and input. Type-driven.
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Element Type | enum | Field / Hero / Image / Rich Text / Divider / Spacer |
+| Element Type | enum | Field / Hero / Image / Rich Text / Divider / Spacer **+ the §3 widget types** (Lookup, File Upload, Repeater, Signature, Map, Video) |
 | Field Binding | binding | Object.Field this maps to (**Forms**). **Surveys are unbound** — the answer stores to the answer-store, no binding |
 | Field Label | text | |
 | Label Position | enum | Top / Left / Hidden |
@@ -139,6 +155,11 @@ Renders a single element with label, help, and input. Type-driven.
 > colors live in the **theme** (`themeEditor`, §6), emitted as tokens and consumed by `elementRenderer`'s
 > CSS — NOT stored on every field record (that's metadata bloat + "update 40 fields to change one
 > color"). Per-field override is intentionally deferred (rare need).
+>
+> **Widget registry — how §3 plugs in.** `elementRenderer` resolves Element Type → widget component
+> through a single **type→component registry** (lazy `lwc:is`, same pattern as the nav primitives).
+> §3 defines the widget types; `fieldPalette` (§5) offers exactly what the registry declares. Adding
+> an element type = registering a widget — never editing the renderer's internals.
 
 ---
 
@@ -150,6 +171,13 @@ Renders a single element with label, help, and input. Type-driven.
 > - **Inputs:** `pages` (page-config array) · `currentPageIndex` · `pageValidity` (per-page valid
 >   flags, so it can render gating) · `progress` style.
 > - **Events:** `pagechange` (user clicked a tab / step / panel) · `next` · `back` · `submit`.
+> - **Buttons come from `submitBar`, not the primitive:** primitives host the shared `submitBar` (§1)
+>   in a slot and forward its intents as `next` / `back` / `submit` — no primitive renders its own
+>   button markup (see the submitBar note; `navOneAtATime`'s Advance Trigger is the one exception).
+> - **Accessibility is part of the contract:** each primitive owns its keyboard + ARIA semantics —
+>   `navTabs` = tablist/tab/tabpanel · `navStepper`/`navRail` = nav list with `aria-current="step"` ·
+>   `navAccordion` = trigger buttons with `aria-expanded` · `navOneAtATime` = focus moves to the new
+>   screen on advance. A primitive isn't done until its keyboard path works.
 >
 > The per-primitive attributes below are its *presentation* options, layered on that contract.
 
@@ -251,6 +279,7 @@ Files persisted on submit (internal + guest).
 | Max File Size | number | |
 | Max Number of Files | number | |
 | Allow Multiple | toggle | |
+| Required | toggle | |
 | Link to Record | toggle | Relate uploaded files to the saved record |
 
 ### `formRepeater` — repeatable entries (the reusable repeat container)
@@ -305,7 +334,7 @@ Show an address on a map or let the user pin coordinates.
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Map Provider | enum | Salesforce Maps / Google / Leaflet |
+| Map Provider | enum | Native `lightning-map` (**default** — no key, no CSP setup) / Google / Leaflet. External providers need CSP Trusted Sites ([RUNTIME_NOTES](./RUNTIME_NOTES.md)); "Salesforce Maps" the SKU is paid — never required |
 | Address Binding | binding | Address field to plot |
 | Default Zoom | number | |
 | Pin Coordinate | data | Captured lat/long |
@@ -316,7 +345,7 @@ Instructional / marketing video block inside a section.
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Video Source | enum | YouTube / Vimeo / Salesforce CMS |
+| Video Source | enum | YouTube / Vimeo / Salesforce CMS — external providers need CSP Trusted Sites on Experience Cloud ([RUNTIME_NOTES](./RUNTIME_NOTES.md)) |
 | Video URL / Id | text | |
 | Autoplay | toggle | |
 | Loop | toggle | |
@@ -336,7 +365,12 @@ Loads the spec, manages field state, prefill/autofill, and submission. Internal 
 | Autofill Rules | list(rule) | Form-level prefill from a source record |
 | Audience | enum | Internal / Guest |
 | Read-only | toggle | Preview without submit |
-| Submit Target | binding | Object the record saves to |
+| Submit Target | binding | Object the record saves to (**Forms**; Surveys submit to the answer-store — split path per Form Type) |
+| Availability | enum | Active / Closed — a closed form renders the Closed Message, never the fields |
+| Closed Message | text | Shown when closed, outside the window, or over the response cap |
+| Open/Close Window | data | Optional scheduled open + close date-times |
+| Response Cap | number | Optional max responses; auto-closes when reached |
+| Spam Protection | enum | None / Honeypot (**default for guest**) / CAPTCHA — guardrails in [RUNTIME_NOTES](./RUNTIME_NOTES.md) |
 
 ### `formCompletion` — post-submit screen
 Thank-you or redirect after submit.
@@ -356,9 +390,14 @@ Lets respondents (especially guests on long multi-page forms) save progress and 
 |---|---|---|
 | Enable Save & Resume | toggle | |
 | Draft Storage | enum | Draft record (custom object) / Browser local storage |
-| Resume Key | data | Unique token per in-progress response |
+| Resume Key | data | Unique token per in-progress response — **cryptographically unguessable**, never a record Id |
 | Resume Delivery | enum | Emailed link / Copyable link |
-| Draft Expiry | number | Days a draft is retained |
+| Draft Expiry | number | Days a draft is retained (expiry purge is mandatory — drafts hold PII) |
+
+> **UI homes:** the save action renders as `submitBar`'s **Save & Finish Later** button (§1); the
+> resume link re-opens `formViewer` with the resume key — no separate resume screen. **Guest drafts
+> are elevated-context** (same class as guest file upload, review B): token-gated read of ONLY the
+> matching draft, no draft querying. Guardrails in [RUNTIME_NOTES](./RUNTIME_NOTES.md).
 
 ---
 
@@ -502,6 +541,12 @@ Edits theme **properties** (which resolve to tokens) and saves a named custom th
 | Effects | multi | Shadow / Glass / Texture / Mesh |
 | Save Mode | enum | Save / Save As New |
 
+> **Storage split:** built-in themes ship as **hidden data in managed code** (hiding depth —
+> managed-code-only vs server-side token resolution — is an open tech-spec decision). **Custom themes
+> are user-created → stored as records** (they can't hide, and they must be saveable / shareable /
+> listable in `themeGallery`). The editor writes the SAME theme-property shape either way — storage
+> differs, the pipeline doesn't.
+
 ### `colorControl` — color input + contrast badge
 Reusable color picker with live WCAG feedback.
 
@@ -558,14 +603,20 @@ The starting point for a new form (pre-bound themed templates).
 | Attribute | Type | Notes |
 |---|---|---|
 | Form Name | text | |
+| Form Type | enum | **Form** (object-bound) / **Survey** (unbound answer-store) — the first fork in creation |
 | Start From | enum | Template / Blank |
-| Target Object | binding | |
+| Target Object | binding | Forms only — Surveys skip binding |
 
 ---
 
 ## Notes for the tech spec
 - **Attribute ownership is single-source:** render components (§1–§3) own the attributes; the
   Design/Build editors (§5–§6) are UIs over them. This is what keeps styling out of the shells.
+- **One cascade** (header note): theme default → form-level override → per-component explicit. The
+  tech spec formalizes which properties exist at which levels.
+- **One button implementation:** primitives slot `submitBar`; they never own button markup (§1/§2).
+- **Widget registry:** element types resolve type→component via one registry (§1 note); §3 = the
+  registered widgets.
 - **Everything themeable is a theme property** that resolves to a token — the `themeEditor` writing a
   property and the engine emitting the `--c-*` are the same pipeline (see the layout×theme contract).
 - **Navigation primitives share one interface** (§2 intro) so the engine can lazy-swap them.
@@ -587,8 +638,9 @@ translate from — so they need real i18n. Design:
 (visibility/validation) · `translationService` (survey/authored i18n) · `serialize/spec` utils.
 
 ### Counts (post-review)
-**~46 UI components + ~7 logic modules** — the review added: `formSignature` / `formMap` / `formVideo`,
-`historyManager`, `draftManager`, `expressionEngine`, `translationService`.
+**44 UI components + ~7 logic modules** (exact table count as of this revision) — the review added:
+`formSignature` / `formMap` / `formVideo`, `historyManager`, `draftManager`, `expressionEngine`,
+`translationService`.
 
 > **Nav primitives stay SEPARATE — do NOT merge into one `formNav`** (review A). Merging would bundle
 > all nav logic (stepper / accordion / conversational) into a component every form downloads, defeating
