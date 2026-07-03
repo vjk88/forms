@@ -2,14 +2,19 @@
 
 .wrap {
     display: block;
-}
-.chrome-fullbleed {
+    /* Page background lives on the ALWAYS-present wrapper — NOT on a chrome variant —
+       so it shows for card / paper / fullbleed alike. (Bug fix: card & paper chrome
+       painted no page background, so uploaded page images never showed on Stacked/
+       Bento/Tabbed/Accordion. See SURFACE_MODEL_SPEC "retire chrome".) */
     min-height: var(--c-shell-min-h, 100%);
     background-color: var(--c-page-bg, transparent);
     background-image: var(--c-texture, none), var(--c-mesh-bg, none), var(--c-bg-scrim, none), var(--c-page-bg-image, none);
     background-size: auto, cover, cover, var(--c-bg-size, cover);
     background-repeat: repeat, no-repeat, no-repeat, var(--c-bg-repeat, no-repeat);
     background-position: center, center, center, center;
+}
+.chrome-fullbleed {
+    /* Page bg now lives on .wrap; fullbleed only adds the edge-to-edge centered layout. */
     display: flex;
     align-items: center;
     justify-content: center;
