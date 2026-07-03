@@ -128,6 +128,7 @@ Section header (icon/title/description), the field grid, style treatment, collap
 | Default Collapsed | toggle | When collapsible |
 | Visibility Rule | rule | Show/hide this section conditionally |
 | Repeatable | toggle | When on, the section composes `c-form-repeater` (§3) to wrap its field grid — one shared repeat engine, not a second implementation (review Rec 3) |
+| Repeat Binding | binding | Child Object + Relationship — each entry saves ONE related record on submit; elements inside bind to the child object's fields |
 
 ### `elementRenderer` — one element (field / content block)
 Renders a single element with label, help, and input. Type-driven.
@@ -298,6 +299,14 @@ The single home for repeat logic: adds multiple entries of a section's field gri
 | Remove Button Label | text | |
 | Entry Label Template | text | e.g. "Contact {index}" |
 
+> **Repeat lives at SECTION level only (owner decision).** No page-level repeater species, no
+> element-level nesting, and **never a repeater inside a repeater** (grandchild records = deferred
+> multi-object territory). A "repeater outside sections" is a *visual* ask, not a structural one:
+> a repeatable section with `Plain` style renders as a bare repeating group — the palette sells
+> exactly that as its **Repeating Group** item (`fieldPalette`, §5). The `repeats` payload keys by
+> container id, so an element-level repeater could compose this same engine later without
+> reshaping anything.
+
 ### `formHighlight` — announcement banner
 Highlight message shown in the header.
 
@@ -449,6 +458,10 @@ Draggable element/field types.
 | Categories | enum | Fields / Layout / Content / Advanced |
 | Available Types | list | Filtered by bound object |
 | Search | text | |
+
+> Includes a first-class **"Repeating Group"** item: dropping it creates a repeatable, chromeless
+> (`Plain`-style) section pre-wired to prompt for Child Object + Relationship (§1 sectionRenderer /
+> §3 formRepeater). Users think "repeating group"; the tree keeps ONE container species.
 
 ### `propertyPanel` — the element editor
 Edits the selected element's attributes (see `elementRenderer` §1 — it edits all of those). Contextual to selection.

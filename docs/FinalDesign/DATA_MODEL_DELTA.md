@@ -10,7 +10,7 @@
 | Object | Role |
 |---|---|
 | `Form__c` | Form root (see field delta §2) |
-| `Form_Page__c` / `Form_Section__c` / `Form_Element__c` | The structure tree the builder edits |
+| `Form_Page__c` / `Form_Section__c` / `Form_Element__c` | The structure tree the builder edits. **`Form_Section__c` already carries the repeater fields** — `Is_Repeatable__c`, `Min/Max_Repetitions__c`, `Parent_SObject_API__c`, `Relationship_Name__c` — load-bearing for spec §4.1, kept ✓. A repeater's elements are ordinary `Form_Element__c` rows bound to the CHILD object's fields |
 | `Form_Version__c` | Published snapshot home (see field delta §2) |
 | `Form_Response__c` | Response header — record links (Contact/Case/Lead/…), session, status ✓ already built |
 | `Form_Response_Answer__c` | Answer store — **`Element_Key__c` already matches the spec's element-id keying** ✓; typed value columns ✓ |
@@ -39,10 +39,16 @@
 | Deprecate `Global_Styles_JSON__c` / `Layout_Config__c` / `Layout_Mode__c` | Superseded by `Design_Config_JSON__c` |
 | **Retire `Submission_Storage__c`** | The storage axis was removed from the model ([[project-form-vs-survey-model]]) — `Form_Type__c` (kept ✓) is the only axis |
 
-### `Form_Response_Answer__c` — one addition
+### `Form_Section__c` — one addition
+| Change | Why |
+|---|---|
+| **Add `Config_JSON__c`** (LongTextArea) | Section presentation without dedicated fields: style preset + explicit surface values (spec §4 `surface`) and repeat presentation (style / add-remove labels / entry label template). The repeat *binding* stays in the existing dedicated fields above |
+
+### `Form_Response_Answer__c` — two additions
 | Change | Why |
 |---|---|
 | **Add `Label_Snapshot__c`** (Text 255) | Question text at submit time (spec §8) — analytics stay honest after questions are reworded |
+| **Add `Entry_Index__c`** (Number) | Which repeat entry a survey answer belongs to (spec §4.1/§8) — without it, two entries' answers to the same question are indistinguishable. Null for non-repeated answers |
 
 ## 3 · Added (the two genuinely new objects)
 
