@@ -172,8 +172,12 @@ Renders a single element with label, help, and input. Type-driven.
 >   flags, so it can render gating) · `progress` style.
 > - **Events:** `pagechange` (user clicked a tab / step / panel) · `next` · `back` · `submit`.
 > - **Buttons come from `submitBar`, not the primitive:** primitives host the shared `submitBar` (§1)
->   in a slot and forward its intents as `next` / `back` / `submit` — no primitive renders its own
->   button markup (see the submitBar note; `navOneAtATime`'s Advance Trigger is the one exception).
+>   in a slot — no primitive renders its own button markup (see the submitBar note; `navOneAtATime`'s
+>   Advance Trigger is the one exception). **Event path (schema review C):** because `submitBar` is
+>   slotted from the ENGINE's template, it stays in the engine's tree — its `next`/`back`/`submit`
+>   events never cross the primitive's shadow boundary, so "forwarding" is automatic. Plain
+>   non-composed `CustomEvent`s, handlers on the tag; **no `bubbles: true, composed: true`** (leaky
+>   LWC anti-pattern) and no forwarding plumbing in primitives.
 > - **Accessibility is part of the contract:** each primitive owns its keyboard + ARIA semantics —
 >   `navTabs` = tablist/tab/tabpanel · `navStepper`/`navRail` = nav list with `aria-current="step"` ·
 >   `navAccordion` = trigger buttons with `aria-expanded` · `navOneAtATime` = focus moves to the new
