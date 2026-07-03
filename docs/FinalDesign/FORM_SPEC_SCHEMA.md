@@ -61,7 +61,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "source": "urlParams",         // "urlParams" | "sourceRecord" | "none"
       "autofillRules": []            // form-level prefill rules (catalog §4 formViewer)
     },
-    "draft": {
+    "draft": {                       // v2 — Save & Resume DEFERRED (DEFERRED.md #2); always enabled:false in v1
       "enabled": false,
       "storage": "record",           // "record" | "local"
       "expiryDays": 30,
@@ -191,7 +191,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
 | `lookup` | `formLookup` §3 | displayFields, filters, dependentOn, allowCreate, recentlyViewed |
 | `file` | `fileUpload` §3 | allowedTypes, maxSize, maxFiles, multiple, linkToRecord |
 | `signature` | `formSignature` §3 | penColor, thickness, outputType |
-| `map` | `formMap` §3 | provider, addressBinding, zoom, allowPinDrop |
+| `map` | `formMap` §3 — **v2, deferred** (key reserved) | provider, addressBinding, zoom, allowPinDrop |
 | `video` | `formVideo` §3 | source, urlOrId, autoplay, loop, muted |
 | `hero` | `heroElement` §3 | image, heading, subtext, cta, height, overlayDim |
 | `image` / `richText` / `divider` / `spacer` | content blocks | src / html / — / height |

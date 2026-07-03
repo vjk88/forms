@@ -73,23 +73,24 @@ structural edits. Preview === published render (one-parser rule holds).
 
 **Build (registry rows, one PR each):** `formLookup` (per CUSTOM_LOOKUP_SPEC phases) · `fileUpload`
 (base64-on-submit path re-proven) · `formRepeater` (+ sectionRenderer Repeatable composition) ·
-`formSignature` (reuses the file path) · `formMap` (native `lightning-map` first) · `formVideo`
-(iframe embeds) · `heroElement`.
+`formSignature` (reuses the file path) · `formVideo` (iframe embeds) · `heroElement`.
+*`formMap` DEFERRED to v2 — [DEFERRED.md](./DEFERRED.md) #1 (registry key reserved).*
 
 **Gate:** each widget submits end-to-end internally; unknown-type placeholder verified (forward
-compat). Map/video degrade gracefully without CSP setup.
+compat). Video degrades gracefully without CSP setup.
 
 ## P5 · Guest runtime & hardening
 
-**Build:** guest `without sharing` controller set (spec fetch, submit, file insert, draft-by-token)
+**Build:** guest `without sharing` controller set (spec fetch, submit, file insert)
 with RUNTIME_NOTES guardrails · spam protection (honeypot default, rate limit, availability
-enforced server-side at submit) · `Form_Draft__c` + `draftManager` + Save-&-Finish-Later ·
-`formCompletion` · prefill/autofill (guest-safe allow-list) · survey answer-store writes with
-`Label_Snapshot__c` · draft expiry purge job.
+enforced server-side at submit) · `formCompletion` · prefill/autofill (guest-safe allow-list,
+signed prefill token) · survey answer-store writes with `Label_Snapshot__c` + `Entry_Index__c`.
+*Save & Resume (`Form_Draft__c`, `draftManager`, purge job) DEFERRED to v2 —
+[DEFERRED.md](./DEFERRED.md) #2.*
 
-**Gate:** full guest E2E on an Experience site: open → save draft → resume by token → upload file →
-submit → answers + files land correctly. Replayed POST against a closed form rejected. Apex tests
-green incl. guest-context tests. **This phase is the security review point.**
+**Gate:** full guest E2E on an Experience site: open → upload file → submit → answers + files land
+correctly. Replayed POST against a closed form rejected. Apex tests green incl. guest-context
+tests. **This phase is the security review point.**
 
 ## P6 · Creation & templates
 
