@@ -1,0 +1,280 @@
+# Form Spec Schema — the JSON everything consumes
+
+> **Status: approved design for the rebuild.** The single serialized shape parsed by the builder
+> preview, the published runtime, and the draft/answer pipeline. Companions:
+> [ARCHITECTURE_LAYOUTS_THEMES.md](./ARCHITECTURE_LAYOUTS_THEMES.md) (layers, token contract) ·
+> [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md) (who owns each attribute) ·
+> [RUNTIME_NOTES.md](./RUNTIME_NOTES.md). Authored 2026-07-03.
+
+## 0 · The two rules that prevent drift
+
+1. **One serializer, one parser.** The builder's live preview and the published guest runtime parse
+   the SAME spec shape through the SAME code path. The old build's "gallery looks finished, live
+   form looks half-baked" disease was exactly this rule not existing.
+2. **Compile on publish.** The builder edits the L1 data-model records; **Publish compiles records →
+   one immutable spec JSON** (this schema) stored on a version record. The runtime fetches ONE blob —
+   no N-query guest loads, no live drift when builder data changes, and the resolve-at-publish token
+   snapshot (§5) rides in the same artifact. Draft preview assembles the same shape in memory via the
+   same serializer.
+
+## 1 · Lifecycles
+
+| Artifact | Contains | Mutability |
+|---|---|---|
+| **Draft spec** (in-memory, builder) | Everything below EXCEPT `resolved` | Rebuilt on every edit |
+| **Published snapshot** (version record) | Everything below INCLUDING `resolved` | **Immutable** — re-publish creates a new version |
+
+Version records are never edited in place. "Fix the live form" = edit records → publish again.
+
+## 2 · Versioning & forward compatibility
+
+- `specVersion` (integer) at the root. Bumped ONLY for breaking shape changes.
+- **Parsers ignore unknown keys** — additive evolution needs no version bump.
+- The runtime carries a tiny **upgrade chain** (`v1→v2→…`) applied at load; published snapshots are
+  never migrated in storage.
+- Same append-only spirit as the token contract: never rename or repurpose an existing key.
+
+## 3 · Top-level shape (annotated)
+
+```jsonc
+{
+  "specVersion": 1,
+
+  "form": {
+    "id": "a0X…",                    // form record Id
+    "name": "Contact Us",
+    "type": "form",                  // "form" (object-bound) | "survey" (answer-store)
+    "targetObject": "Case",          // forms only; null for surveys
+    "saveMode": "create"             // "create" | "update"
+  },
+
+  "settings": {
+    "availability": {
+      "status": "active",            // "active" | "closed"
+      "opensAt": null,               // ISO datetime or null
+      "closesAt": null,
+      "responseCap": null,           // integer or null
+      "closedMessage": "This form is no longer accepting responses."
+    },
+    "spamProtection": "honeypot",    // "none" | "honeypot" | "captcha"
+    "prefill": {
+      "source": "urlParams",         // "urlParams" | "sourceRecord" | "none"
+      "autofillRules": []            // form-level prefill rules (catalog §4 formViewer)
+    },
+    "draft": {
+      "enabled": false,
+      "storage": "record",           // "record" | "local"
+      "expiryDays": 30,
+      "delivery": "link"             // "email" | "link"
+    },
+    "completion": {
+      "outcome": "message",          // "message" | "redirect"
+      "thankYou": "<p>Thanks!</p>",  // rich text
+      "redirectUrl": null,
+      "showSummary": false,
+      "allowAnother": false
+    }
+  },
+
+  "layout": {
+    "type": "stepper",               // layoutRegistry key (ARCH §2.2) — scroll|stepper|tabs|accordion|rail|splitHero|oneAtATime
+    "options": {                     // THIS primitive's presentation options (catalog §2) — shape varies by type
+      "placement": "top", "mode": "numbered", "navigation": "gated", "showStepCount": true
+    },
+    "zonesDefault": {                // layoutZones defaults; pages may override
+      "arrangement": "single",       // "single" | "twoCol" | "grid" | "bento"
+      "gap": "md",
+      "breakpoint": 768,
+      "collapseOrder": "source"
+    },
+    "maxWidth": "medium",            // narrow|medium|wide|full
+    "density": "comfortable"         // comfortable|compact — engine resolves into space/control tokens
+  },
+
+  "theme": {
+    "source": "builtin",             // "builtin" | "custom"
+    "name": "editorialIvory",        // builtin catalog key OR custom-theme record Id
+    "overrides": {                   // SPARSE theme-property deltas (ARCH §4.3) — same shape as a theme
+      "palette": { "accent": "#0d9488" },
+      "radius": "round"
+    }
+  },
+
+  "resolved": {                      // PUBLISHED SNAPSHOT ONLY — never present in drafts
+    "tokens": { "--c-accent": "#0d9488", "--c-radius": "14px" /* … full contract */ },
+    "engineVersion": 1,              // themeEngine version that produced it
+    "resolvedAt": "2026-07-03T10:00:00Z"
+  },
+
+  "header": {
+    "style": "hero",                 // standard|hero|minimal|none
+    "arrangement": "stacked",        // stacked|logoBeside|textOnly|inline|centered
+    "title": "Contact Us",
+    "description": "We reply within a day.",
+    "logo": { "url": "…", "versionId": "068…" },
+    "emblem": "shield",              // built-in emblem key when no logo
+    "banner": { "url": "…", "versionId": "068…", "opacity": 100 },
+    "highlight": { "text": "Closes Friday!", "variant": "badge", "icon": null, "dismissible": false }
+  },
+
+  "submit": {
+    "label": "Submit",
+    "alignment": "right",            // left|center|right|stretch
+    "placement": "sticky",           // inline|sticky
+    "nextLabel": "Next", "backLabel": "Back",
+    "showProgress": true,
+    "saveDraft": { "show": false, "label": "Save & finish later" }
+  },
+
+  "pages": [ /* §4 */ ]
+}
+```
+
+## 4 · Pages → sections → elements
+
+```jsonc
+{
+  "id": "pg_k3f9x2mq",               // stable id (§6)
+  "name": "Your details",
+  "visibility": null,                // rule object (§7) or null = always
+  "zones": { "arrangement": "twoCol" },  // sparse override of layout.zonesDefault
+
+  "sections": [
+    {
+      "id": "sec_p8d2w7rt",
+      "title": "Contact",
+      "description": null,
+      "icon": null,
+      "style": "card",               // preset: plain|card|boxed|outline|subtle|flat
+      "surface": {                   // explicit values — WIN over the preset (the cascade, ARCH §4.3)
+        "bg": null, "border": null, "shadow": null, "padding": "md"
+      },
+      "columns": 2,                  // 1|2|3
+      "collapsible": false,
+      "defaultCollapsed": false,
+      "visibility": null,
+      "repeat": null,                // or { "min":1, "max":5, "style":"stacked", "addLabel":"Add", "removeLabel":"Remove", "entryLabel":"Contact {index}" }
+
+      "elements": [
+        {
+          "id": "el_m4t8s6vb",
+          "type": "field",           // WIDGET-REGISTRY KEY (catalog §1 note) — see table below
+          "binding": { "object": "Case", "field": "SuppliedEmail" },  // null for surveys + content types
+          "label": "Email",
+          "labelPosition": "top",    // top|left|hidden
+          "labelStyle": "default",   // default|uppercase|muted
+          "help": null,
+          "placeholder": "you@example.com",
+          "required": true,
+          "readOnly": false,
+          "disabled": false,
+          "defaultValue": null,      // static value or { "fromSource": "Contact.Email" }
+          "width": 1,                // columns to span within the section grid
+          "inputStyle": null,        // null = theme default; outline|filled|underline
+          "validation": [            // §7 validation entries
+            { "type": "pattern", "pattern": "^\\S+@\\S+$", "message": "Enter a valid email" }
+          ],
+          "visibility": null,
+          "config": {}               // TYPE-SPECIFIC bag — see below
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Element `type` = widget-registry key** (exact string). v1 registry:
+
+| `type` | Widget (catalog) | `config` carries |
+|---|---|---|
+| `field` | native input via `elementRenderer` | picklist options (surveys), scale/format hints |
+| `lookup` | `formLookup` §3 | displayFields, filters, dependentOn, allowCreate, recentlyViewed |
+| `file` | `fileUpload` §3 | allowedTypes, maxSize, maxFiles, multiple, linkToRecord |
+| `signature` | `formSignature` §3 | penColor, thickness, outputType |
+| `map` | `formMap` §3 | provider, addressBinding, zoom, allowPinDrop |
+| `video` | `formVideo` §3 | source, urlOrId, autoplay, loop, muted |
+| `hero` | `heroElement` §3 | image, heading, subtext, cta, height, overlayDim |
+| `image` / `richText` / `divider` / `spacer` | content blocks | src / html / — / height |
+
+Content types (`hero`…`spacer`) have `binding: null` always. Unknown `type` at runtime renders a
+placeholder ("unsupported element"), never crashes the form — same ignore-unknown discipline as §2.
+
+## 5 · The `resolved` block (resolve-at-publish)
+
+Written by the **publish action only** (ARCH §4.2): it runs `themeEngine.resolveTokens(theme,
+overrides, ctx)` server-of-record at publish time and embeds the full token map.
+
+- Guest/live runtime applies `resolved.tokens` directly — **never loads `themeCatalog`, never runs
+  the engine**. Recipes stay off the public site; guest bundle stays small.
+- `engineVersion` recorded so a future engine change can't silently re-style old published forms.
+- Builder preview ignores `resolved` and runs the engine live (that's the point of client-side
+  resolution — instant Design-mode feedback).
+
+## 6 · ID rules (load-bearing — drafts, answers, rules all key on these)
+
+- Prefixed, crypto-random, client-generated at creation: `pg_` / `sec_` / `el_` + 8+ random chars.
+- **NEVER regenerated** — not on rename, move, copy-paste of the form (a *duplicated* form gets fresh
+  ids; a *moved* element keeps its id).
+- Everything references ids, never labels or positions: visibility rules (§7), draft payloads (§8),
+  survey answers (§8), future translation keys.
+- Renaming a question therefore never orphans its answers, rules, or drafts.
+
+## 7 · Rule format (visibility + validation)
+
+**Visibility** — declarative, Lightning-record-page pattern (owner decision: never raw expressions
+in the spec). Evaluated by `expressionEngine` client-side:
+
+```jsonc
+{
+  "action": "show",                 // "show" | "hide"
+  "logic": "all",                   // "all" (AND) | "any" (OR) | "custom"
+  "customLogic": null,              // "1 AND (2 OR 3)" — rule indexes, only when logic="custom"
+  "rules": [
+    { "source": "el_m4t8s6vb", "operator": "equals", "value": "Yes" }
+  ]
+}
+```
+
+- `source` is an **element id** (works identically for bound forms and unbound surveys).
+- Operators v1: `equals` · `notEquals` · `contains` · `greaterThan` · `lessThan` · `isBlank` ·
+  `isNotBlank`. Append-only enum.
+
+**Validation** — array on the element; each entry:
+
+```jsonc
+{ "type": "range", "min": 18, "max": 120, "message": "Must be 18–120", "when": null }
+```
+
+`type`: `required` | `pattern` | `range` | `custom` (declarative comparison against another
+element, e.g. Email == ConfirmEmail via `{ "compareTo": "el_x", "operator": "equals" }`).
+`when` = optional visibility-style rule gating when the validation applies. Same `expressionEngine`
+evaluates both — one evaluator, build + runtime (catalog §5 note).
+
+## 8 · Answer & draft payloads (what leaves the form)
+
+**Submission payload** (client → submit Apex):
+
+```jsonc
+{
+  "formVersionId": "a0Y…",           // the published snapshot responded to
+  "answers": { "el_m4t8s6vb": "jo@x.com", "el_q2…": ["A","C"] },   // keyed by element id
+  "files": [ { "elementId": "el_f…", "name": "…", "base64": "…" } ],
+  "meta": { "startedAt": "…", "submittedAt": "…", "language": "en_US" }
+}
+```
+
+- **Forms:** server maps `answers` → record fields via the snapshot's bindings (server-side mapping —
+  the client never names Salesforce fields; RUNTIME_NOTES elevated-context rules apply).
+- **Surveys:** each answer becomes an answer-store row: `elementId` + **label snapshot** (question
+  text at submit time) + value. The label snapshot keeps analytics honest after questions are
+  reworded.
+
+**Draft payload** = the same shape + `resumeToken`, minus `files` (files upload on final submit
+only). Resuming = fetch draft by token (RUNTIME_NOTES guardrails) → hydrate `answers` by element id.
+
+## 9 · What this feeds
+
+- **DATA_MODEL_DELTA.md** — the published-version record (spec blob + status), custom-theme record,
+  draft record (token + payload + expiry), survey answer-store rows.
+- **BUILD_PHASES.md** — P0 walking skeleton parses exactly this schema with one page / one section /
+  `field` elements only; every later phase adds blocks without reshaping them.
