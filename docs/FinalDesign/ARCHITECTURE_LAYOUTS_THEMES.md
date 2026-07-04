@@ -124,7 +124,7 @@ export const LAYOUTS = {
    (Do NOT use the reviewer's `--c-x: var(--c-x, …)` pattern — a self-referential custom property is
    invalid CSS and silently kills the token.)
 
-### 3.2 Contract v1 (~36 semantic tokens)
+### 3.2 Contract v1 (40 semantic tokens — the engine's jest suite enforces this list exactly)
 
 Deliberately smaller than the old sprawl ([TOKEN_REFERENCE.md](../redesign/TOKEN_REFERENCE.md)
 documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign/SURFACE_MODEL_SPEC.md):
@@ -134,9 +134,9 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 |---|---|
 | `--c-page-bg` | Backdrop fill |
 | `--c-page-bg-image` | User's uploaded backdrop (one `url()`) |
-| `--c-page-bg-size` / `--c-page-bg-position` | Fit + placement for that image only |
+| `--c-page-bg-size` / `--c-page-bg-position` / `--c-page-bg-repeat` | Fit + placement + tiling for that image only |
 | `--c-page-scrim` | Legibility dim over the image — always a single gradient |
-| `--c-fx-texture` / `--c-fx-mesh` | Decorative layers — `.fx` element ONLY, never `.page` |
+| `--c-fx-texture` / `--c-fx-mesh-1..3` | Decorative layers — `.fx` element ONLY, never `.page`. Each token = ONE layer (rule 2); a mesh occupies up to three FIXED slots, so layers can never shift |
 
 **Content panel** (consumed by `pageFrame .panel`)
 | Token | Styles |
@@ -205,6 +205,7 @@ desynchronize.
   density: 'comfortable',
   effects: { shadow: 'soft', glass: false, texture: null, mesh: null },
   fieldStates: { focus, error, required },    // review Rec 1 — global, never per-field
+  pageImage: { url, fit, position, scrim },   // page backdrop image — usually set per-form via overrides (Design tab), rarely by the theme itself
 }
 ```
 

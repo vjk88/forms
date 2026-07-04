@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Layout registry (rebuild): the one place nav-primitive layouts are declared; lazy lwc:is loaders + metadata. Adding a layout = one primitive + one row.</description>
+</LightningComponentBundle>

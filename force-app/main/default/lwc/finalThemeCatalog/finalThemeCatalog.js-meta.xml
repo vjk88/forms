@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>L4 built-in theme catalog (rebuild): theme-property data only, hidden in managed code. Builder-only import — guest runtime uses the published resolved-token snapshot.</description>
+</LightningComponentBundle>
