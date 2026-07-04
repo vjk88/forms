@@ -20,6 +20,10 @@
 **Type legend:** `text` · `number` · `toggle` (on/off) · `enum` (fixed choices) · `color` · `image`
 · `list` · `rule` (declarative condition) · `binding` (object/field reference).
 
+**Naming:** this catalog uses *logical* names (`pageFrame`, `navScroll`). Implementation names carry
+the **`final` prefix** (`finalPageFrame` → `<c-final-page-frame>`, Apex `FinalXxx`) — owner decision,
+BUILD_PHASES rule 6. Data model keeps natural names.
+
 ---
 
 ## §1 · Rendering core (shared by builder preview + live runtime)
