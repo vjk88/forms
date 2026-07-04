@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>L5 token engine (rebuild): pure function resolving theme properties + form overrides into the --c-* token contract. The ONLY producer of --c-* values.</description>
+</LightningComponentBundle>
