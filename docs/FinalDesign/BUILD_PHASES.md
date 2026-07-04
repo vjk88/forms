@@ -52,12 +52,14 @@ nav-contract a11y (keyboard path per primitive).
 **Work mode (owner 2026-07-04): shared chrome first (`submitBar`, `formHeader`, `layoutZones`),
 then ONE layout per PR** — each configured end-to-end and render-verified against the checklist
 below before its PR merges. Layouts are built fresh from the ARCH/catalog contracts, never ported
-from the legacy shells — the legacy formDesigner/formPlayer layout bugs ARE the anti-checklist.
+from the legacy shells — **`formStudio`'s shell layouts are the bug source** (button placements,
+repeated headers/process indicators, Submit on every page, height traps) and their bugs ARE the
+anti-checklist; **`formDesigner` is the stable-behavior reference** (owner correction 2026-07-04).
 
 **Per-layout chrome checklist (every primitive passes ALL of these):**
 1. **Buttons** — one `submitBar`, correct placement per layout; **Submit appears ONLY on the final
-   page, Next/Back elsewhere** (legacy bug: sideNav showed "Submit" on every page); One-at-a-Time
-   contexts default the advance label to **Continue** (catalog §2).
+   page, Next/Back elsewhere** (formStudio bug: its sideNav shell showed "Submit" on every page);
+   One-at-a-Time contexts default the advance label to **Continue** (catalog §2).
 2. **Header** — exactly ONE header instance per form; never re-rendered per page/step/tab (legacy
    bug: repeated headers); title + subtitle placement verified in the layout's arrangement.
 3. **Progress** — exactly ONE indicator, owned by the primitive; never doubled with the header's
