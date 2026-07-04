@@ -249,6 +249,14 @@ Immersive brand panel on one side, form on the other.
 | Sticky Brand Panel | toggle | |
 | Progress Style | enum | Default / Horizontal / None |
 | Navigation | enum | Free / Gated (per preset) |
+| Pane Flow | enum | Pages / One at a Time (owner request 2026-07-04) — how the FORM pane advances |
+
+> **Pane Flow = One at a Time** runs the form pane on the **same step-flow engine as
+> `navOneAtATime`** — one shared logic module extracted in P1, never a second implementation
+> (same rule as `formRepeater`/`sectionRenderer`). In that mode the Advance Trigger exception
+> applies inside the pane, Progress Style renders in the brand panel, and Navigation gating
+> applies per screen. This is a presentation option on the primitive, NOT a new registry row —
+> the layout is still `splitHero`.
 
 ### `navOneAtATime` — one screen at a time (conversational)
 One section (or element) per screen, advance-driven.
@@ -258,6 +266,16 @@ One section (or element) per screen, advance-driven.
 | Advance Trigger | enum | Button / Enter key |
 | Show Progress Bar | toggle | |
 | Back Link Style | enum | Text link / Arrow |
+
+> **Pattern provenance & IP posture (owner question 2026-07-04):** one-question-at-a-time is an
+> industry-generic interaction pattern (Typeform popularized it; Jotform "Cards", Tally, Youform,
+> Fillout, SurveyMonkey one-question mode all ship it). We implement it from scratch — our own
+> code, DOM, motion, microcopy, and theme-system visuals; no third-party code, assets, or service
+> is used, so no ToS/agreement applies. Guardrails that keep it that way: product naming stays
+> generic ("One at a Time" / "Conversational" — never a vendor's name in UI, docs, or listings),
+> no pixel-cloning of any vendor's screens or signature microcopy, and our motion/visual design
+> comes from our own tokens. Interaction paradigms aren't copyrightable; these guardrails cover
+> the trademark/trade-dress residue.
 
 ---
 
