@@ -1,0 +1,100 @@
+:host {
+    display: block;
+
+    /*
+     * Neutral base — the "no theme" render (ARCH §3.1 rule 5).
+     * Declared ONCE, here only. The engine's inline tokens on this same host win.
+     * Children everywhere consume bare var(--c-x) — no per-file fallbacks.
+     * Neutral means grayscale — never brand-flavored (§2.3).
+     */
+    --c-page-bg: #f4f7f5;
+    --c-page-bg-image: none;
+    --c-page-bg-size: cover;
+    --c-page-bg-position: center;
+    --c-page-bg-repeat: no-repeat;
+    --c-page-scrim: none;
+    --c-fx-mesh-1: none;
+    --c-fx-mesh-2: none;
+    --c-fx-mesh-3: none;
+    --c-fx-texture: none;
+    --c-content-bg: #ffffff;
+    --c-content-border: 1px solid #e6e8ec;
+    --c-content-shadow: none;
+    --c-glass-blur: 0px;
+    --c-section-pad: 20px;
+    --c-field-bg: #ffffff;
+    --c-field-border: 1px solid #c9ced6;
+    --c-field-focus: #4b5563;
+    --c-field-error: #8a1f11;
+    --c-field-required: #8a1f11;
+    --c-control-h: 44px;
+    --c-text: #1f2937;
+    --c-text-weak: #6b7280;
+    --c-accent: #4b5563;
+    --c-on-accent: #ffffff;
+    --c-focus-ring: 0 0 0 3px rgba(75, 85, 99, 0.28);
+    --c-header-bg: transparent;
+    --c-header-text: #1f2937;
+    --c-header-text-weak: #6b7280;
+    --c-submit-bg: #374151;
+    --c-submit-text: #ffffff;
+    --c-radius: 10px;
+    --c-space-1: 4px;
+    --c-space-2: 8px;
+    --c-space-3: 12px;
+    --c-space-4: 16px;
+    --c-space-5: 24px;
+    --c-space-6: 32px;
+    --c-font-body: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+        sans-serif;
+    --c-font-display: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+        sans-serif;
+}
+
+/*
+ * §2.1 rule 1: page background paints HERE — an always-present element,
+ * never a variant class. (The old chrome bug is dead by construction.)
+ *
+ * Fixed 2-layer stack, forever: slot 1 = scrim, slot 2 = the user's image.
+ * The fit/placement tokens address slot 2 by POSITION, so no feature can
+ * ever shift which layer they land on. (The old image-fit bug, same fate.)
+ */
+.page {
+    position: relative;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: var(--c-space-6) var(--c-space-4);
+    color: var(--c-text);
+    font-family: var(--c-font-body);
+    background-color: var(--c-page-bg);
+    background-image: var(--c-page-scrim), var(--c-page-bg-image);
+    background-size: auto, var(--c-page-bg-size);
+    background-position: center, var(--c-page-bg-position);
+    background-repeat: no-repeat, var(--c-page-bg-repeat);
+}
+
+/*
+ * §2.1 rule 2: mesh + texture live ONLY on this dedicated element — the user's
+ * image never shares a background stack with effects. Four fixed slots:
+ * mesh 1-3, then texture. Unused slots resolve to `none` and stay put.
+ */
+.fx {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: var(--c-fx-mesh-1), var(--c-fx-mesh-2),
+        var(--c-fx-mesh-3), var(--c-fx-texture);
+}
+
+/* Content surface. Sits after .fx in paint order — no z-index games. */
+.panel {
+    position: relative;
+    margin: 0 auto;
+    padding: var(--c-space-6);
+    background: var(--c-content-bg);
+    border: var(--c-content-border);
+    border-radius: var(--c-radius);
+    box-shadow: var(--c-content-shadow);
+    -webkit-backdrop-filter: blur(var(--c-glass-blur));
+    backdrop-filter: blur(var(--c-glass-blur));
+}

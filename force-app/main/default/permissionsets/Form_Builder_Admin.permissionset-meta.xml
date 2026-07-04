@@ -507,6 +507,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
+        <field>Form_Version__c.Spec_JSON__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Version__c.Engine_Version__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
         <field>Form_Version__c.Published_By__c</field>
     </fieldPermissions>
     <fieldPermissions>
@@ -529,6 +539,10 @@
         <readable>true</readable>
         <field>Spec_History__c.Spec_JSON__c</field>
     </fieldPermissions>
+    <classAccesses>
+        <apexClass>FinalSpecController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <classAccesses>
         <apexClass>FormAssetController</apexClass>
         <enabled>true</enabled>
@@ -561,4 +575,8 @@
         <apexClass>FormVersionTriggerHandler</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <tabSettings>
+        <tab>Final_P0_Test</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
 </PermissionSet>
