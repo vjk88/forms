@@ -46,7 +46,9 @@ ONE built-in theme.
 
 **Build:** `navStepper` · `navTabs` · `navAccordion` · `navRail` · `navSplitHero` (+ Pane Flow via
 the shared step-flow engine) · `navOneAtATime` · `submitBar` slotting (one button implementation,
-forwarded intents) · `layoutZones` · `formHeader` (+ `formHighlight`, `brandEmblem` reuse) ·
+forwarded intents) · `layoutZones` · `formHeader` (+ `formHighlight`; branding = logo image, else
+Brand Name typeset as a wordmark in `--c-font-display` — built-in emblems retired, legacy
+`brandEmblem` is NOT reused) ·
 nav-contract a11y (keyboard path per primitive).
 
 **Work mode (owner 2026-07-04): shared chrome first (`submitBar`, `formHeader`, `layoutZones`),
