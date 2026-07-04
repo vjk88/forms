@@ -11,12 +11,20 @@
    untouched). Nothing legacy is modified or deleted until P7 cutover.
 2. **The gate:** a phase is DONE when it's **deployed to the org and render-verified in a browser**
    — jest-green alone is not done ([[feedback-deploy-and-verify]]). Background/stacking/z-index CSS
-   additionally requires render-verification *before merge*, not after.
+   additionally requires render-verification _before merge_, not after.
 3. Per-change git flow: branch off main → PR → merge (existing doctrine).
 4. `themeEngine` and `expressionEngine` grow their jest suites in the same PR as every behavior
    change — these two modules are where correctness is cheapest.
 5. Apex ships with tests + the Salesforce skill posture (`USER_MODE`, CRUD/FLS, guest guards) in the
    same phase, never "hardening later" — except where a phase is explicitly internal-only below.
+6. **Naming & isolation (owner decision 2026-07-04): every NEW code artifact is prefixed `final`.**
+   LWCs = `final` + the catalog's logical name (`pageFrame` → `finalPageFrame` →
+   `<c-final-page-frame>`); logic modules `finalThemeEngine`; Apex classes `FinalSpecController`.
+   **Exception: data model** — objects/fields keep their natural names per DATA_MODEL_DELTA.
+   Zero collision with legacy during the parallel build, and the prefix makes P7's
+   search-and-destroy deletion trivial (everything non-`final` in the legacy set dies). Never
+   contaminate legacy folders or write overrides inside legacy code. The prefix is **permanent** —
+   renaming shipped components post-cutover is churn for zero function; accepted.
 
 ---
 
@@ -28,6 +36,7 @@ only**) · minimal `formViewer` that parses a hand-authored `Spec_JSON__c` (one 
 ONE built-in theme.
 
 **Gate — the old bugs are the acceptance tests:**
+
 - Page background color + uploaded image + mesh + texture enabled **together**, image Fit switched
   Cover→Contain→Tile — image fit must not move. (The slot-shift bug, dead by construction.)
 - Theme applied/removed → neutral-fallback render is plain but correct.
@@ -74,10 +83,10 @@ structural edits. Preview === published render (one-parser rule holds).
 **Build (registry rows, one PR each):** `formLookup` (per CUSTOM_LOOKUP_SPEC phases) · `fileUpload`
 (base64-on-submit path re-proven) · `formRepeater` (+ sectionRenderer Repeatable composition) ·
 `formSignature` (reuses the file path) · `formVideo` (iframe embeds) · `heroElement`.
-*`formMap` DEFERRED to v2 — [DEFERRED.md](./DEFERRED.md) #1 (registry key reserved).*
+_`formMap` DEFERRED to v2 — [DEFERRED.md](./DEFERRED.md) #1 (registry key reserved)._
 
 **Gate:** each widget submits end-to-end internally; unknown-type placeholder verified (forward
-compat). Video degrades gracefully without CSP setup.
+compat). Video degrades gracefully without CSP setup. _Note: File upload and signature widgets are validated in internal user contexts only during P4; guest-upload capabilities are deferred to P5 when guest-safe server-side handlers are built._
 
 ## P5 · Guest runtime & hardening
 
@@ -85,8 +94,8 @@ compat). Video degrades gracefully without CSP setup.
 with RUNTIME_NOTES guardrails · spam protection (honeypot default, rate limit, availability
 enforced server-side at submit) · `formCompletion` · prefill/autofill (guest-safe allow-list,
 signed prefill token) · survey answer-store writes with `Label_Snapshot__c` + `Entry_Index__c`.
-*Save & Resume (`Form_Draft__c`, `draftManager`, purge job) DEFERRED to v2 —
-[DEFERRED.md](./DEFERRED.md) #2.*
+_Save & Resume (`Form_Draft__c`, `draftManager`, purge job) DEFERRED to v2 —
+[DEFERRED.md](./DEFERRED.md) #2._
 
 **Gate:** full guest E2E on an Experience site: open → upload file → submit → answers + files land
 correctly. Replayed POST against a closed form rejected. Apex tests green incl. guest-context
