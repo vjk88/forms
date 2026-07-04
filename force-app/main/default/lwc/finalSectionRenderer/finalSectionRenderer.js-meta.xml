@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Renders one spec section (rebuild): header, style presets with sanctioned fallbacks, field grid. Explicit surface values win over presets per the cascade.</description>
+</LightningComponentBundle>

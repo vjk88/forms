@@ -1,0 +1,18 @@
+<template>
+    <div class="flow">
+        <template for:each={pageList} for:item="page">
+            <section class="page-block" key={page.key}>
+                <template lwc:if={showPageDividers}>
+                    <h2 class="divider">{page.name}</h2>
+                </template>
+                <template for:each={page.sections} for:item="section">
+                    <c-final-section-renderer
+                        key={section.id}
+                        section={section}
+                    ></c-final-section-renderer>
+                </template>
+            </section>
+        </template>
+        <slot name="actions"></slot>
+    </div>
+</template>

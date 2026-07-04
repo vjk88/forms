@@ -1,0 +1,95 @@
+/*
+ * Preset fallbacks are the sanctioned exception (ARCH §2.3): for --c-section-*
+ * tokens, unset means "the preset decides" — so each preset carries its own
+ * neutral fallback values. Everything else consumes bare var(--c-x).
+ */
+
+.section {
+    border-radius: var(--c-radius);
+}
+
+.style-plain {
+    background: var(--c-section-bg, transparent);
+    border: var(--c-section-border, none);
+    box-shadow: var(--c-section-shadow, none);
+    padding: var(--c-section-pad);
+}
+
+.style-card {
+    background: var(--c-section-bg, #ffffff);
+    border: var(--c-section-border, 1px solid #e6e8ec);
+    box-shadow: var(--c-section-shadow, 0 1px 2px rgba(15, 23, 42, 0.05));
+    padding: var(--c-section-pad);
+}
+
+.style-boxed {
+    background: var(--c-section-bg, #f3f4f6);
+    border: var(--c-section-border, none);
+    box-shadow: var(--c-section-shadow, none);
+    padding: var(--c-section-pad);
+}
+
+.style-outline {
+    background: var(--c-section-bg, transparent);
+    border: var(--c-section-border, 1px solid #d1d5db);
+    box-shadow: var(--c-section-shadow, none);
+    padding: var(--c-section-pad);
+}
+
+.style-subtle {
+    background: var(--c-section-bg, #f9fafb);
+    border: var(--c-section-border, none);
+    box-shadow: var(--c-section-shadow, none);
+    padding: var(--c-section-pad);
+}
+
+.style-flat {
+    background: var(--c-section-bg, transparent);
+    border: var(--c-section-border, none);
+    box-shadow: var(--c-section-shadow, none);
+    padding: var(--c-section-pad) 0;
+    border-radius: 0;
+}
+
+.sec-head {
+    margin-bottom: var(--c-space-4);
+}
+
+.sec-title {
+    margin: 0;
+    font-family: var(--c-font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.sec-desc {
+    margin: var(--c-space-1) 0 0;
+    font-size: 0.875rem;
+    color: var(--c-text-weak);
+}
+
+.grid {
+    display: grid;
+    gap: var(--c-space-4);
+}
+
+.cols-1 {
+    grid-template-columns: 1fr;
+}
+
+.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Static collapse for P0 — container-query zones arrive with layoutZones (P1). */
+@media (max-width: 640px) {
+    .cols-2,
+    .cols-3 {
+        grid-template-columns: 1fr;
+    }
+}

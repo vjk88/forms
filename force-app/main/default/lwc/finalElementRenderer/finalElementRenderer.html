@@ -1,0 +1,36 @@
+<template>
+    <template lwc:if={isTextarea}>
+        <lightning-textarea
+            label={el.label}
+            placeholder={el.placeholder}
+            required={el.required}
+            disabled={el.disabled}
+            read-only={el.readOnly}
+            field-level-help={el.help}
+            variant={labelVariant}
+            onchange={handleChange}
+        ></lightning-textarea>
+    </template>
+    <template lwc:elseif={isInput}>
+        <lightning-input
+            type={inputType}
+            label={el.label}
+            placeholder={el.placeholder}
+            required={el.required}
+            disabled={el.disabled}
+            read-only={el.readOnly}
+            field-level-help={el.help}
+            variant={labelVariant}
+            onchange={handleChange}
+        ></lightning-input>
+    </template>
+    <template lwc:else>
+        <div class="unsupported">
+            <lightning-icon
+                icon-name="utility:puzzle"
+                size="x-small"
+            ></lightning-icon>
+            <span>This element type isn&#8217;t supported yet.</span>
+        </div>
+    </template>
+</template>

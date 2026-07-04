@@ -1,0 +1,22 @@
+<template>
+    <div class={sectionClass} style={surfaceStyle}>
+        <template lwc:if={hasHeader}>
+            <header class="sec-head">
+                <template lwc:if={sec.title}>
+                    <h3 class="sec-title">{sec.title}</h3>
+                </template>
+                <template lwc:if={sec.description}>
+                    <p class="sec-desc">{sec.description}</p>
+                </template>
+            </header>
+        </template>
+        <div class={gridClass}>
+            <template for:each={elements} for:item="el">
+                <c-final-element-renderer
+                    key={el.id}
+                    element={el}
+                ></c-final-element-renderer>
+            </template>
+        </div>
+    </div>
+</template>

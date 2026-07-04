@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Engine_Version__c</fullName>
+    <description>finalThemeEngine version that produced resolved.tokens inside Spec_JSON__c. Pins published styling so a future engine change can never silently re-style old published forms (ARCHITECTURE §4.2/§5).</description>
+    <externalId>false</externalId>
+    <label>Engine Version</label>
+    <precision>3</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

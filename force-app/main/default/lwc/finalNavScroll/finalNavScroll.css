@@ -1,0 +1,20 @@
+.flow {
+    display: grid;
+    gap: var(--c-space-5);
+}
+
+.page-block {
+    display: grid;
+    gap: var(--c-space-4);
+}
+
+.divider {
+    margin: var(--c-space-4) 0 0;
+    font-family: var(--c-font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text-weak);
+    border-bottom: 1px solid;
+    border-image: linear-gradient(to right, currentColor, transparent) 1;
+    padding-bottom: var(--c-space-2);
+}

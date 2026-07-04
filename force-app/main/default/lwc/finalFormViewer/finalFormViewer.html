@@ -1,0 +1,38 @@
+<template>
+    <template lwc:if={error}>
+        <div class="viewer-error" role="alert">{error}</div>
+    </template>
+    <template lwc:elseif={model}>
+        <c-final-page-frame tokens={tokens} max-width={model.maxWidth}>
+            <template lwc:if={model.header}>
+                <header slot="header" class="hdr">
+                    <h1 class="hdr-title">{model.header.title}</h1>
+                    <template lwc:if={model.header.description}>
+                        <p class="hdr-desc">{model.header.description}</p>
+                    </template>
+                </header>
+            </template>
+            <div slot="body">
+                <template lwc:if={navCtor}>
+                    <lwc:component
+                        lwc:is={navCtor}
+                        pages={model.pages}
+                    ></lwc:component>
+                </template>
+            </div>
+            <div slot="actions" class="actions">
+                <button class="submit" type="button">
+                    {model.submitLabel}
+                </button>
+            </div>
+        </c-final-page-frame>
+    </template>
+    <template lwc:else>
+        <div class="viewer-loading">
+            <lightning-spinner
+                alternative-text="Loading form"
+                size="medium"
+            ></lightning-spinner>
+        </div>
+    </template>
+</template>
