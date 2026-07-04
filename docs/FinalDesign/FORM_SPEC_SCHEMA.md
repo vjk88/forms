@@ -112,7 +112,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
     "title": "Contact Us",
     "description": "We reply within a day.",
     "logo": { "url": "…", "versionId": "068…" },
-    "emblem": "shield",              // built-in emblem key when no logo
+    "brandName": "Acme Outdoors",    // no logo → typeset wordmark in --c-font-display; logo wins when both set
     "banner": { "url": "…", "versionId": "068…", "opacity": 100 },
     "highlight": { "text": "Closes Friday!", "variant": "badge", "icon": null, "dismissible": false }
   },

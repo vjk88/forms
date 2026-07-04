@@ -67,14 +67,14 @@ Owns everything identical across layouts: the page backdrop, the form panel surf
 | Vertical Alignment | enum | Top / Center (how the panel sits on the page) |
 
 ### `formHeader` — the header lockup
-Logo, title, description, highlight banner, and arrangement at the top of the form.
+Logo (or brand-name wordmark), title, description, highlight banner, and arrangement at the top of the form.
 
 | Attribute | Type | Notes |
 |---|---|---|
 | Header Style | enum | Standard / Hero (banner) / Minimal / None |
 | Header Arrangement | enum | Stacked / Logo Beside / Text Only / Inline / Centered |
-| Logo Image | image | Uploaded or URL |
-| Built-in Emblem | enum | Decorative logo shape when no image (shield, leaf, aperture, …) |
+| Logo Image | image | Uploaded or URL — wins over Brand Name when both are set |
+| Brand Name | text | No logo → rendered as a typeset text wordmark in the theme's display typography (`--c-font-display`). Built-in emblem icons RETIRED (owner 2026-07-04) |
 | Form Title | text | |
 | Description / Subtitle | text | |
 | Highlight | — | Composes `formHighlight` (§3), which owns the message / variant / icon — not re-owned here |
