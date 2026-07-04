@@ -263,7 +263,8 @@ One section (or element) per screen, advance-driven.
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Advance Trigger | enum | Button / Enter key |
+| Advance Trigger | enum | Button only / Button + Keyboard advance |
+| Advance Button Label | text | Default **"Continue"** (owner 2026-07-04) — deliberately not a vendor-signature "OK"/"Next" |
 | Show Progress Bar | toggle | |
 | Back Link Style | enum | Text link / Arrow |
 
@@ -276,6 +277,15 @@ One section (or element) per screen, advance-driven.
 > no pixel-cloning of any vendor's screens or signature microcopy, and our motion/visual design
 > comes from our own tokens. Interaction paradigms aren't copyrightable; these guardrails cover
 > the trademark/trade-dress residue.
+>
+> **Signature-distance rules (owner 2026-07-04 — bind at P1 build):**
+> - The feature is called **Keyboard advance** everywhere (settings, docs, code) — never
+>   "Press Enter". Its on-screen affordance is plain muted helper text under the Continue button
+>   in our own words (e.g. "or press Return"), **never a styled key-chip** ("press Enter ↵" is
+>   Typeform's signature microcopy treatment).
+> - Advance button label defaults to **Continue**.
+> - Screen transition is our own motion (defined at P1 from our tokens — a short fade/rise, not
+>   a full-viewport vertical card carousel).
 
 ---
 

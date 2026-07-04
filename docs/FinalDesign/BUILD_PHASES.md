@@ -44,13 +44,35 @@ ONE built-in theme.
 
 ## P1 · All seven layouts
 
-**Build:** `navStepper` · `navTabs` · `navAccordion` · `navRail` · `navSplitHero` · `navOneAtATime`
-· `submitBar` slotting (one button implementation, forwarded intents) · `layoutZones` · `formHeader`
-(+ `formHighlight`, `brandEmblem` reuse) · nav-contract a11y (keyboard path per primitive).
+**Build:** `navStepper` · `navTabs` · `navAccordion` · `navRail` · `navSplitHero` (+ Pane Flow via
+the shared step-flow engine) · `navOneAtATime` · `submitBar` slotting (one button implementation,
+forwarded intents) · `layoutZones` · `formHeader` (+ `formHighlight`, `brandEmblem` reuse) ·
+nav-contract a11y (keyboard path per primitive).
+
+**Work mode (owner 2026-07-04): shared chrome first (`submitBar`, `formHeader`, `layoutZones`),
+then ONE layout per PR** — each configured end-to-end and render-verified against the checklist
+below before its PR merges. Layouts are built fresh from the ARCH/catalog contracts, never ported
+from the legacy shells — the legacy formDesigner/formPlayer layout bugs ARE the anti-checklist.
+
+**Per-layout chrome checklist (every primitive passes ALL of these):**
+1. **Buttons** — one `submitBar`, correct placement per layout; **Submit appears ONLY on the final
+   page, Next/Back elsewhere** (legacy bug: sideNav showed "Submit" on every page); One-at-a-Time
+   contexts default the advance label to **Continue** (catalog §2).
+2. **Header** — exactly ONE header instance per form; never re-rendered per page/step/tab (legacy
+   bug: repeated headers); title + subtitle placement verified in the layout's arrangement.
+3. **Progress** — exactly ONE indicator, owned by the primitive; never doubled with the header's
+   (legacy bug: repeated process indicators).
+4. **Images** — header banner image AND page background image + effects render per the `pageFrame`
+   contract in every layout; no layout may hide, crop-shift, or duplicate them.
+5. **Height** — content-driven height; no fixed-height inner scroll traps (legacy "height issues");
+   the page owns scrolling, not nested panels.
+6. **Errors** — inline at the field + summary near the action, per the legacy `formDesigner`
+   pattern (the one legacy behavior explicitly kept as the reference — owner 2026-07-04).
 
 **Gate:** the same themed form switched across ALL 7 layouts — page background, panel surface, and
-header survive every switch (the chrome bug's regression test). Lazy-load verified: scroll form
-downloads only `navScroll` (network tab). Keyboard walk on stepper + tabs + accordion.
+header survive every switch (the chrome bug's regression test), and every layout has passed the
+checklist above. Lazy-load verified: scroll form downloads only `navScroll` (network tab). Keyboard
+walk on stepper + tabs + accordion.
 
 ## P2 · Full theme system
 
