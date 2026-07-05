@@ -1,0 +1,156 @@
+<template>
+    <div class="cg">
+        <div class="cg-head">
+            <h2 class="cg-title">Create a form</h2>
+            <div class="cg-steps" aria-hidden="true">
+                <span class={step1cls}>1 · Layout</span>
+                <span class="cg-sep">›</span>
+                <span class={step2cls}>2 · Theme</span>
+                <span class="cg-sep">›</span>
+                <span class={step3cls}>3 · Details</span>
+            </div>
+            <button
+                class="cg-close"
+                type="button"
+                title="Close"
+                onclick={handleClose}
+            >
+                ✕
+            </button>
+        </div>
+
+        <!-- STEP 1 — layout -->
+        <template lwc:if={isLayoutStep}>
+            <div class="cg-body">
+                <p class="cg-lead">Choose a layout to start.</p>
+                <div class="cg-grid">
+                    <template for:each={layoutCards} for:item="l">
+                        <c-final-layout-card
+                            key={l.key}
+                            layout={l.layout}
+                            selected={l.selected}
+                            onselect={handleLayoutSelect}
+                        ></c-final-layout-card>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- STEP 2 — theme -->
+        <template lwc:elseif={isThemeStep}>
+            <div class="cg-body">
+                <button class="cg-back" type="button" onclick={handleBackToLayout}>
+                    ← Layout
+                </button>
+                <c-final-theme-gallery
+                    layout={chosenLayout}
+                    selected-theme-key={chosenThemeKey}
+                    onthemeselect={handleThemeSelect}
+                ></c-final-theme-gallery>
+            </div>
+        </template>
+
+        <!-- STEP 3 — details -->
+        <template lwc:elseif={isDetailsStep}>
+            <div class="cg-body">
+                <button class="cg-back" type="button" onclick={handleBackToTheme}>
+                    ← Theme
+                </button>
+                <div class="cg-detail-grid">
+                    <div class="cg-preview">
+                        <c-final-theme-card
+                            theme-key={chosenThemeKey}
+                            label="Preview"
+                            description=""
+                            layout={chosenLayout}
+                        ></c-final-theme-card>
+                    </div>
+                    <div class="cg-form">
+                        <label class="cg-flabel" for="cg-name">Form name</label>
+                        <input
+                            id="cg-name"
+                            class="cg-input"
+                            type="text"
+                            value={formName}
+                            oninput={handleName}
+                            placeholder="e.g. Contact Intake"
+                        />
+
+                        <label class="cg-flabel" for="cg-obj">Object</label>
+                        <div class="obj-picker">
+                            <input
+                                id="cg-obj"
+                                class="cg-input"
+                                type="text"
+                                autocomplete="off"
+                                value={objectSearch}
+                                oninput={handleObjectSearch}
+                                onfocus={handleObjectFocus}
+                                onblur={handleObjectBlur}
+                                placeholder="Search objects…"
+                            />
+                            <template lwc:if={objectOpen}>
+                                <div class="obj-list">
+                                    <template
+                                        for:each={objectOptions}
+                                        for:item="o"
+                                    >
+                                        <div
+                                            key={o.value}
+                                            class={o.cls}
+                                            data-value={o.value}
+                                            data-label={o.label}
+                                            onmousedown={handleObjectPick}
+                                        >
+                                            <span class="obj-label">{o.label}</span>
+                                            <span class="obj-api">{o.value}</span>
+                                        </div>
+                                    </template>
+                                    <template lwc:if={hasObjectResults}></template>
+                                    <template lwc:else>
+                                        <div class="obj-empty">No matches</div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <template lwc:if={errorMessage}>
+                            <p class="cg-error">{errorMessage}</p>
+                        </template>
+
+                        <button
+                            class="cg-create"
+                            type="button"
+                            onclick={handleCreate}
+                            disabled={createDisabled}
+                        >
+                            <template lwc:if={isCreating}>Creating…</template>
+                            <template lwc:else>Create form</template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- DONE -->
+        <template lwc:elseif={isDone}>
+            <div class="cg-body cg-done">
+                <div class="cg-done-mark">✓</div>
+                <h3 class="cg-done-title">Form created</h3>
+                <p class="cg-done-sub">Your form is ready in the builder.</p>
+                <div class="cg-done-actions">
+                    <button
+                        class="cg-secondary"
+                        type="button"
+                        onclick={handleStartOver}
+                    >
+                        Create another
+                    </button>
+                    <button class="cg-create" type="button" onclick={handleClose}>
+                        Done
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>
