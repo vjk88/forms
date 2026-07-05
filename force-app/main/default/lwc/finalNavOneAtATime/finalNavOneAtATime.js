@@ -12,22 +12,38 @@ import {
 /**
  * finalNavOneAtATime — conversational nav primitive (catalog §2).
  *
- * One SECTION per screen on the shared finalStepFlow engine. The Advance
- * Trigger is THIS primitive's own control (the sanctioned submitBar
- * exception) — but the final screen renders the actions slot instead, so
- * Submit still comes from the one shared bar.
+ * One SECTION per screen on the shared finalStepFlow engine. Being `ownsAdvance`,
+ * this primitive owns its WHOLE action row (Back + Continue), and — the bounded
+ * extension of that exception — the terminal Submit too: on the last screen the
+ * primary button dispatches a `submit` intent to the viewer instead of advancing.
+ * That keeps Back + primary in ONE row that never jumps between screens
+ * (LAYOUT_REFINEMENTS_SPEC §3); the shared submitBar serves the other layouts.
  *
- * Signature distance (owner): advance label defaults to "Continue"; the
- * keyboard feature is "Keyboard advance" with plain muted helper text
- * ("or press Return" / "or press Ctrl+Enter"), never a key-chip; touch
- * devices hide the helper entirely; choice inputs never auto-advance.
- * Focus moves to the new screen on advance (a11y contract).
+ * Immersive `bleed` (default ON, registry): page chrome (a full-width progress
+ * hairline + counter) over a floating, centred question card. `bleed=false`
+ * restores the carded render inside the pageFrame panel.
+ *
+ * Signature distance (owner): advance label defaults to "Continue"; keyboard
+ * advance uses plain muted helper text ("or press Return"), never a key-chip.
  */
+
+const ARRANGE_CLASS = {
+    'together-left': 'arr-start',
+    'together-right': 'arr-end',
+    split: 'arr-split'
+};
+
 export default class FinalNavOneAtATime extends LightningElement {
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { advanceTrigger, advanceLabel, showProgressBar, backLinkStyle } */
+    /** Spec layout.options: { advanceTrigger, advanceLabel, showProgressBar } */
     @api options;
+    /** Immersive full-bleed (viewer: layout.bleed && fullBleed !== false). */
+    @api bleed = false;
+    /** Resolved action-row arrangement (viewer: submit ?? layout default). */
+    @api arrangement = 'together-left';
+    /** Terminal Submit label (viewer: submit.label). */
+    @api submitLabel = 'Submit';
 
     @track screenIndex = 0;
     @track multilineFocus = false;
@@ -47,10 +63,6 @@ export default class FinalNavOneAtATime extends LightningElement {
 
     get opts() {
         return this.options || {};
-    }
-
-    get screens() {
-        return this._screens;
     }
 
     get currentScreenList() {
@@ -76,16 +88,37 @@ export default class FinalNavOneAtATime extends LightningElement {
         return this.screenIndex > 0;
     }
 
-    get backIsArrow() {
-        return this.opts.backLinkStyle === 'arrow';
-    }
-
     get advanceLabel() {
         return this.opts.advanceLabel || 'Continue';
     }
 
+    /** Continue while stepping; the Submit label on the final screen. */
+    get primaryLabel() {
+        return this.onLastScreen ? this.submitLabel || 'Submit' : this.advanceLabel;
+    }
+
+    get layoutClass() {
+        return this.bleed ? 'oaat mode-bleed' : 'oaat';
+    }
+
+    get bodyClass() {
+        return this.bleed ? 'oaat-body question-card' : 'oaat-body';
+    }
+
+    get actionRowClass() {
+        return `action-row ${ARRANGE_CLASS[this.arrangement] || ARRANGE_CLASS['together-left']}`;
+    }
+
     get showProgress() {
         return this.opts.showProgressBar !== false;
+    }
+
+    get showTopChrome() {
+        return this.bleed && this.showProgress;
+    }
+
+    get showInlineProgress() {
+        return !this.bleed && this.showProgress;
     }
 
     get progressFillStyle() {
@@ -94,6 +127,10 @@ export default class FinalNavOneAtATime extends LightningElement {
 
     get progressText() {
         return `${this.screenIndex + 1} of ${this._screens.length}`;
+    }
+
+    get counterText() {
+        return `${this.screenIndex + 1} / ${this._screens.length}`;
     }
 
     get keyboardAdvanceOn() {
@@ -106,6 +143,10 @@ export default class FinalNavOneAtATime extends LightningElement {
             return null;
         }
         return this.multilineFocus ? 'or press Ctrl+Enter' : 'or press Return';
+    }
+
+    get showHelperRow() {
+        return Boolean(this.keyboardHelperText) && !this.onLastScreen;
     }
 
     handleKeydown(event) {
@@ -124,8 +165,12 @@ export default class FinalNavOneAtATime extends LightningElement {
         this.multilineFocus = isMultilineTarget(origin);
     }
 
-    handleAdvance() {
-        this._go(this.screenIndex + 1);
+    handlePrimary() {
+        if (this.onLastScreen) {
+            this.dispatchEvent(new CustomEvent('submit'));
+        } else {
+            this._go(this.screenIndex + 1);
+        }
     }
 
     handleBack() {

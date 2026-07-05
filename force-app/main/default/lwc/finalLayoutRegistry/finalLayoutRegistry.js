@@ -15,19 +15,25 @@ export const LAYOUTS = {
         // paginates = presents pages as discrete steps. Any layout can host a
         // multi-page spec — scroll flattens pages with dividers (ARCH §2.2).
         paginates: false,
-        gating: false
+        gating: false,
+        // Default action-row arrangement (LAYOUT_REFINEMENTS_SPEC §3): submit
+        // only → sit it in the conventional primary corner (right).
+        buttonArrangement: 'together-right'
     },
     stepper: {
         label: 'Wizard steps',
         load: () => import('c/finalNavStepper'),
         paginates: true,
-        gating: true
+        gating: true,
+        // Wizard convention: Back one end, Next the other.
+        buttonArrangement: 'split'
     },
     tabs: {
         label: 'Tabbed pages',
         load: () => import('c/finalNavTabs'),
         paginates: true,
-        gating: false
+        gating: false,
+        buttonArrangement: 'split'
     },
     accordion: {
         label: 'Accordion panels',
@@ -35,13 +41,15 @@ export const LAYOUTS = {
         // Panels expand in place — all pages stay visible territory, so the
         // submitBar renders once below (like scroll), never per panel.
         paginates: false,
-        gating: false
+        gating: false,
+        buttonArrangement: 'together-right'
     },
     rail: {
         label: 'Side rail',
         load: () => import('c/finalNavRail'),
         paginates: true,
-        gating: false
+        gating: false,
+        buttonArrangement: 'split'
     },
     oneAtATime: {
         label: 'One at a time',
@@ -50,7 +58,13 @@ export const LAYOUTS = {
         gating: true,
         // The primitive's Advance Trigger IS the navigation (catalog §2's one
         // exception): the engine renders no Next/Back, only Submit at the end.
-        ownsAdvance: true
+        ownsAdvance: true,
+        // Grouped bottom-left (owner 2026-07-05): least mouse travel, the
+        // conversational feel — Continue and Submit share one spot, no jump.
+        buttonArrangement: 'together-left',
+        // Full-bleed is the conversational look (2nd bleed consumer after
+        // splitHero, default ON): page chrome + a floating question card.
+        bleed: true
     },
     splitHero: {
         label: 'Split hero',
@@ -62,7 +76,8 @@ export const LAYOUTS = {
         ownsHeader: true,
         // May run full-bleed (Immersive toggle, default ON): pageFrame drops
         // the panel surface and the primitive owns the canvas edge-to-edge.
-        bleed: true
+        bleed: true,
+        buttonArrangement: 'split'
     }
 };
 

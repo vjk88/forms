@@ -126,6 +126,13 @@ export default class FinalFormViewer extends LightningElement {
                 zones: { ...zonesDefault, ...(page.zones || {}) }
             })),
             submit: spec.submit || {},
+            // Action-row arrangement (LAYOUT_REFINEMENTS §3): form override wins,
+            // else the layout's registry default, else split. Honored by the
+            // shared submitBar AND oneAtATime's own action row.
+            buttonArrangement:
+                (spec.submit && spec.submit.buttonArrangement) ||
+                layout.buttonArrangement ||
+                'split',
             layoutOptions: options,
             paginates: Boolean(layout.paginates),
             ownsAdvance,
