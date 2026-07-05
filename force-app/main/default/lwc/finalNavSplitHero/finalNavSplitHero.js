@@ -103,11 +103,19 @@ export default class FinalNavSplitHero extends LightningElement {
 
     /** Veil over image: first background layer (topmost) is the composed rgba. */
     get paneStyle() {
+        const hasBg = this.opts.paneBg !== undefined && this.opts.paneBg !== null;
+        const img = this.opts.paneImage && this.opts.paneImage.url;
+        // No explicit pane config → the THEME dresses the pane: its header
+        // surface + header text (so split themes paint their brand panel, and
+        // light-header themes get readable text). Config-driven panes keep the
+        // composed veil + hero-white text below, unchanged.
+        if (!hasBg && !img) {
+            return 'background: var(--c-header-bg); color: var(--c-header-text);';
+        }
         const veil = hexToRgba(
             this.opts.paneBg || '#111827',
             this.opts.paneBgOpacity === undefined ? 100 : this.opts.paneBgOpacity
         );
-        const img = this.opts.paneImage && this.opts.paneImage.url;
         if (!img) {
             return `background: ${veil}`;
         }
