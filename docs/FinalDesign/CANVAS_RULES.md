@@ -70,8 +70,17 @@ may live in the gaps between sections.
 - Elements inside the repeater bind to the CHILD object; the linking field is config, never an
   authored element.
 
-## 7 · What the rebuild does NOT port
+## 7 · What carries forward as CODE vs as rules
 
-The legacy shells' chrome bugs (BUILD_PHASES P1 anti-checklist) and formStudio's
-serializer/inspector implementation. Only the RULES above + the DnD event model
-([[reference-formstudio-dnd]]) carry forward.
+**The DnD machinery is a SANCTIONED CODE PORT (owner 2026-07-05):** `formStudio`'s drag-and-drop
+implementation — the capture-phase gatekeeper owning `preventDefault`, `_sectionAcceptsDrag` /
+`_dragAllowedAt` validity, `_sectionAt` ancestor walk, imperative `_setHighlight`/`_clearHighlight`
+(no re-render mid-drag), auto-scroll, and the drag-kind state model — is lifted **as code** into
+`finalBuilderCanvas` at P3, adapted only for names (`final*`), the spec data shape (`pg_/sec_/el_`
+ids instead of the parts model), and lint. "We spent a lot of time and made it work really well" —
+reimplementing it would re-earn its bugs. This is the ONE deliberate exception to the
+never-port-legacy rule (BUILD_PHASES standing rule 1), which still holds for shells, serializer,
+and inspector code.
+
+**Everything else carries forward as rules only** (§1–§6 above): the legacy shells' chrome is the
+P1 anti-checklist, and formStudio's serializer/inspector implementations stay behind.

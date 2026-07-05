@@ -96,10 +96,12 @@ loop). Engine snapshot tests cover the full catalog.
 
 ## P3 · The builder
 
-**Build:** `formStudio` (Build|Design modes) · `builderCanvas` (DnD per [[reference-formstudio-dnd]]
-model: capture-phase gatekeeper, imperative highlights, native no-drop) · `fieldPalette` (registry-
-driven) · `propertyPanel` · `pageManager` · `bindingPicker` · `visibilityRules` + `validationEditor`
-over a jest-covered `expressionEngine` · `historyManager` (in-memory, Build-mode only, coalescing).
+**Build:** `formStudio` (Build|Design modes) · `builderCanvas` (**DnD = sanctioned CODE PORT of
+legacy formStudio's machinery** — owner 2026-07-05, the one exception to rule 1; rules + port scope
+in [CANVAS_RULES.md](./CANVAS_RULES.md) §7 and [[reference-formstudio-dnd]]) · `fieldPalette`
+(registry-driven) · `propertyPanel` · `pageManager` · `bindingPicker` · `visibilityRules` +
+`validationEditor` over a jest-covered `expressionEngine` · `historyManager` (in-memory, Build-mode
+only, coalescing).
 
 **Gate:** author a real form in the org from blank — pages, sections, bound fields, a visibility
 rule, a validation rule — publish it, submit it internally, see the record. Undo/redo across 20
