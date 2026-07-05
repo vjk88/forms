@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Nav primitive (rebuild): wizard steps — top or left-rail step control (numbered/dots/progress bar), gated or free navigation, container-query narrow collapse to numbered chips. Lazy-loaded via finalLayoutRegistry.</description>
+</LightningComponentBundle>

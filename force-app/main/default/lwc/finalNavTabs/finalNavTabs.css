@@ -1,0 +1,148 @@
+/* Size container for the narrow behavior (fade-edge scroll; tabs NEVER wrap).
+   Queried classes live on descendants — a container query can't style its own
+   container. width:100% guards the container-type flex/grid collapse. */
+.tabs {
+    container-type: inline-size;
+    container-name: tabs;
+    width: 100%;
+    font-family: var(--c-font-body);
+}
+
+.tab-strip {
+    margin-bottom: var(--c-space-5);
+}
+
+.tab-list {
+    display: flex;
+    align-items: stretch;
+    gap: var(--c-space-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.tab-list::-webkit-scrollbar {
+    display: none;
+}
+
+.align-center {
+    justify-content: center;
+}
+
+.align-full .tab {
+    flex: 1;
+    justify-content: center;
+}
+
+.tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--c-space-2);
+    padding: var(--c-space-2) var(--c-space-3);
+    border: none;
+    background: none;
+    color: var(--c-text-weak);
+    font-family: var(--c-font-body);
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.tab:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+    border-radius: var(--c-radius);
+}
+
+.tab.active {
+    color: var(--c-text);
+    font-weight: 600;
+}
+
+/* — Underline — */
+.style-underline {
+    border-bottom: 1px solid var(--c-field-border);
+}
+
+.style-underline .tab {
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.style-underline .tab.active {
+    border-bottom-color: var(--c-accent);
+}
+
+/* — Pills — */
+.style-pills .tab {
+    border-radius: 999px;
+}
+
+.style-pills .tab.active {
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+}
+
+/* — Enclosed — */
+.style-enclosed {
+    gap: 0;
+    border-bottom: 1px solid var(--c-field-border);
+}
+
+.style-enclosed .tab {
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: var(--c-radius) var(--c-radius) 0 0;
+    margin-bottom: -1px;
+}
+
+.style-enclosed .tab.active {
+    border-color: var(--c-field-border);
+    background: var(--c-content-bg);
+}
+
+.tab-icon {
+    --sds-c-icon-color-foreground-default: currentColor;
+}
+
+/* — Tab switch transition (keyed remount) — */
+.page-panel {
+    animation: final-tab-in 0.2s ease-out;
+}
+
+@keyframes final-tab-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* — Narrow: fade edges signal the horizontal scroll (never wrap) — */
+@container tabs (max-width: 540px) {
+    .tab-strip {
+        mask-image: linear-gradient(
+            to right,
+            transparent,
+            #000 var(--c-space-5),
+            #000 calc(100% - var(--c-space-5)),
+            transparent
+        );
+    }
+
+    .align-center {
+        justify-content: flex-start;
+    }
+
+    .align-full .tab {
+        flex: 0 0 auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-panel {
+        animation: none;
+    }
+}

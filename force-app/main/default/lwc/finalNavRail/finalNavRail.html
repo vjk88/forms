@@ -1,0 +1,63 @@
+<template>
+    <div class="railnav">
+        <div class={layoutClass}>
+            <button
+                class="drawer-toggle"
+                type="button"
+                aria-expanded={drawerExpanded}
+                onclick={handleDrawerToggle}
+            >
+                <lightning-icon
+                    icon-name="utility:rows"
+                    size="xx-small"
+                    aria-hidden="true"
+                ></lightning-icon>
+                {drawerToggleLabel}
+            </button>
+            <nav class={railClass} aria-label="Form pages">
+                <template lwc:if={showPageList}>
+                    <ul class="rail-list">
+                        <template for:each={pageList} for:item="page">
+                            <li key={page.key}>
+                                <button
+                                    class={page.cls}
+                                    type="button"
+                                    data-index={page.index}
+                                    aria-current={page.ariaCurrent}
+                                    onclick={handlePageClick}
+                                >
+                                    <span class="rail-num" aria-hidden="true"
+                                        >{page.number}</span
+                                    >
+                                    <span class="rail-label">{page.label}</span>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+                <template lwc:if={showProgress}>
+                    <div class="rail-progress">
+                        <div class="progress-track" aria-hidden="true">
+                            <div
+                                class="progress-fill"
+                                style={progressFillStyle}
+                            ></div>
+                        </div>
+                        <p class="progress-text">{progressText}</p>
+                    </div>
+                </template>
+            </nav>
+            <div class="content">
+                <template for:each={currentPageList} for:item="page">
+                    <div class="page-panel" key={page.key}>
+                        <c-final-layout-zones
+                            sections={page.sections}
+                            zones={page.zones}
+                        ></c-final-layout-zones>
+                    </div>
+                </template>
+                <slot name="actions"></slot>
+            </div>
+        </div>
+    </div>
+</template>

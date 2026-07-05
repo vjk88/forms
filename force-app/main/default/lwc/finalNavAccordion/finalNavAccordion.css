@@ -1,0 +1,62 @@
+.accordion {
+    width: 100%;
+    font-family: var(--c-font-body);
+}
+
+.panel {
+    border-bottom: 1px solid var(--c-field-border);
+}
+
+.panel:first-child {
+    border-top: 1px solid var(--c-field-border);
+}
+
+.head {
+    margin: 0;
+}
+
+.trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-3);
+    width: 100%;
+    padding: var(--c-space-4) var(--c-space-2);
+    border: none;
+    background: none;
+    color: var(--c-text);
+    font-family: var(--c-font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.icon-trailing {
+    flex-direction: row-reverse;
+    justify-content: space-between;
+}
+
+.trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+    border-radius: var(--c-radius);
+}
+
+.chevron {
+    --sds-c-icon-color-foreground-default: var(--c-text-weak);
+    transition: transform 0.15s ease;
+}
+
+.chevron.open {
+    transform: rotate(90deg);
+}
+
+.body {
+    padding: var(--c-space-2) var(--c-space-2) var(--c-space-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chevron {
+        transition: none;
+    }
+}

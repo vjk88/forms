@@ -1,0 +1,42 @@
+<template>
+    <div class="accordion">
+        <template for:each={panelList} for:item="panel">
+            <section class="panel" key={panel.key}>
+                <h3 class="head">
+                    <button
+                        class={panel.triggerCls}
+                        type="button"
+                        id={panel.triggerId}
+                        data-key={panel.key}
+                        data-index={panel.index}
+                        aria-expanded={panel.expanded}
+                        aria-controls={panel.panelId}
+                        onclick={handleToggle}
+                    >
+                        <lightning-icon
+                            class={panel.chevronCls}
+                            icon-name="utility:chevronright"
+                            size="xx-small"
+                            aria-hidden="true"
+                        ></lightning-icon>
+                        <span class="trigger-label">{panel.name}</span>
+                    </button>
+                </h3>
+                <template lwc:if={panel.isOpen}>
+                    <div
+                        class="body"
+                        id={panel.panelId}
+                        role="region"
+                        aria-labelledby={panel.triggerId}
+                    >
+                        <c-final-layout-zones
+                            sections={panel.sections}
+                            zones={panel.zones}
+                        ></c-final-layout-zones>
+                    </div>
+                </template>
+            </section>
+        </template>
+        <slot name="actions"></slot>
+    </div>
+</template>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Nav primitive (rebuild): expandable accordion panels — single or multiple open, leading/trailing chevron, aria-expanded triggers. Lazy-loaded via finalLayoutRegistry.</description>
+</LightningComponentBundle>

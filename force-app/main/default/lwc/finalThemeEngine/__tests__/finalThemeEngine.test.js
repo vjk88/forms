@@ -401,6 +401,31 @@ describe('c-final-layout-registry', () => {
         expect(typeof LAYOUTS.scroll.load).toBe('function');
     });
 
+    it('stepper row carries the §2.2 metadata', () => {
+        expect(LAYOUTS.stepper.paginates).toBe(true);
+        expect(LAYOUTS.stepper.gating).toBe(true);
+        expect(typeof LAYOUTS.stepper.load).toBe('function');
+    });
+
+    it('tabs / accordion / rail rows carry the §2.2 metadata', () => {
+        expect(LAYOUTS.tabs.paginates).toBe(true);
+        expect(LAYOUTS.tabs.gating).toBe(false);
+        expect(LAYOUTS.accordion.paginates).toBe(false); // panels, not steps
+        expect(LAYOUTS.rail.paginates).toBe(true);
+        for (const key of ['tabs', 'accordion', 'rail']) {
+            expect(typeof LAYOUTS[key].load).toBe('function');
+        }
+    });
+
+    it('oneAtATime + splitHero rows carry their §2 exceptions', () => {
+        expect(LAYOUTS.oneAtATime.ownsAdvance).toBe(true); // Advance Trigger exception
+        expect(LAYOUTS.splitHero.ownsHeader).toBe(true); // pane replaces formHeader
+        expect(LAYOUTS.oneAtATime.paginates).toBe(true);
+        expect(LAYOUTS.splitHero.paginates).toBe(true);
+        expect(typeof LAYOUTS.oneAtATime.load).toBe('function');
+        expect(typeof LAYOUTS.splitHero.load).toBe('function');
+    });
+
     it('unknown layout type falls back to scroll', () => {
         expect(getLayout('hologram')).toBe(LAYOUTS.scroll);
         expect(getLayout(undefined)).toBe(LAYOUTS.scroll);

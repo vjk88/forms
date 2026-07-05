@@ -1,0 +1,241 @@
+/* Size container; queried classes live on .layout (a container query can't
+   style its own container). width:100% guards container-type collapse. */
+.railnav {
+    container-type: inline-size;
+    container-name: railnav;
+    width: 100%;
+    font-family: var(--c-font-body);
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    column-gap: var(--c-space-5);
+    align-items: start;
+}
+
+.rail-narrow {
+    grid-template-columns: 140px minmax(0, 1fr);
+}
+
+.rail-wide {
+    grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.side-right {
+    grid-template-columns: minmax(0, 1fr) 200px;
+}
+
+.side-right.rail-narrow {
+    grid-template-columns: minmax(0, 1fr) 140px;
+}
+
+.side-right.rail-wide {
+    grid-template-columns: minmax(0, 1fr) 260px;
+}
+
+.side-right .rail {
+    order: 2;
+}
+
+.sticky-rail .rail {
+    position: sticky;
+    top: var(--c-space-4);
+}
+
+/* Drawer toggle exists for the narrow drawer mode only — hidden wide. */
+.drawer-toggle {
+    display: none;
+    align-items: center;
+    gap: var(--c-space-2);
+    padding: var(--c-space-2) var(--c-space-3);
+    margin-bottom: var(--c-space-3);
+    border: 1px solid var(--c-field-border);
+    border-radius: var(--c-radius);
+    background: var(--c-content-bg);
+    color: var(--c-text);
+    font-family: var(--c-font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.drawer-toggle:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+
+.rail-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rail-link {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-2);
+    width: 100%;
+    padding: var(--c-space-2) var(--c-space-3);
+    border: none;
+    border-radius: var(--c-radius);
+    background: none;
+    color: var(--c-text-weak);
+    font-family: var(--c-font-body);
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.rail-link:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+
+.rail-link.active {
+    background: var(--c-section-bg);
+    color: var(--c-text);
+    font-weight: 600;
+}
+
+.rail-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border: 1px solid var(--c-field-border);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.rail-link.active .rail-num {
+    border-color: var(--c-accent);
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+}
+
+.rail-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rail-progress {
+    margin-top: var(--c-space-4);
+}
+
+.progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--c-field-border);
+    overflow: hidden;
+}
+
+.progress-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--c-accent);
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+}
+
+.progress-text {
+    margin: var(--c-space-2) 0 0;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
+.page-panel {
+    animation: final-rail-in 0.2s ease-out;
+}
+
+@keyframes final-rail-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* — Narrow behaviors (container-driven enum) — */
+@container railnav (max-width: 540px) {
+    .layout {
+        display: block;
+    }
+
+    /* topBar: the rail becomes a horizontal chip row */
+    .narrow-topbar .rail {
+        margin-bottom: var(--c-space-5);
+    }
+
+    .narrow-topbar .rail-list {
+        flex-direction: row;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .narrow-topbar .rail-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .narrow-topbar .rail-link {
+        width: auto;
+        flex: 0 0 auto;
+    }
+
+    .narrow-topbar .rail-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .narrow-topbar .rail-progress {
+        display: none;
+    }
+
+    /* drawer: rail hides behind the Pages toggle */
+    .narrow-drawer .drawer-toggle {
+        display: inline-flex;
+    }
+
+    .narrow-drawer .rail {
+        display: none;
+    }
+
+    .narrow-drawer .rail.drawer-open {
+        display: block;
+        margin-bottom: var(--c-space-5);
+        padding: var(--c-space-3);
+        border: 1px solid var(--c-field-border);
+        border-radius: var(--c-radius);
+        background: var(--c-content-bg);
+    }
+
+    .sticky-rail .rail {
+        position: static;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-panel {
+        animation: none;
+    }
+
+    .progress-fill {
+        transition: none;
+    }
+}

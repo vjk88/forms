@@ -1,0 +1,130 @@
+.oaat {
+    width: 100%;
+    font-family: var(--c-font-body);
+}
+
+.progress {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-3);
+    margin-bottom: var(--c-space-5);
+}
+
+.progress-track {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--c-field-border);
+    overflow: hidden;
+}
+
+.progress-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--c-accent);
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+}
+
+.progress-text {
+    margin: 0;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+/* Our own motion: a short fade/rise — deliberately NOT a full-viewport
+   vertical card carousel (signature-distance rule, catalog §2). */
+.screen-panel {
+    outline: none;
+    animation: final-oaat-in 0.25s ease-out;
+}
+
+@keyframes final-oaat-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--c-space-4);
+    margin-top: var(--c-space-5);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--c-space-1);
+    padding: var(--c-space-1) 0;
+    border: none;
+    background: none;
+    color: var(--c-text-weak);
+    font-family: var(--c-font-body);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.back-link:hover {
+    color: var(--c-text);
+}
+
+.back-link:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+    border-radius: var(--c-radius);
+}
+
+.back-link lightning-icon {
+    --sds-c-icon-color-foreground-default: currentColor;
+}
+
+.advance {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-3);
+    margin-left: auto;
+}
+
+.advance-btn {
+    height: var(--c-control-h);
+    padding: 0 var(--c-space-5);
+    border: none;
+    border-radius: var(--c-radius);
+    background: var(--c-submit-bg);
+    color: var(--c-submit-text);
+    font-family: var(--c-font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.advance-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+
+/* Plain muted helper text — never a styled key-chip (signature distance). */
+.key-helper {
+    margin: 0;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .screen-panel {
+        animation: none;
+    }
+
+    .progress-fill {
+        transition: none;
+    }
+}

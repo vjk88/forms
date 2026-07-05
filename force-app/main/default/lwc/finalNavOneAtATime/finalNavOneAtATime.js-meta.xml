@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Nav primitive (rebuild): one section per screen on the shared finalStepFlow engine — own Continue advance (the sanctioned exception), Keyboard advance with input-type semantics, back link, progress bar. Lazy-loaded via finalLayoutRegistry.</description>
+</LightningComponentBundle>

@@ -13,8 +13,8 @@ export default class FinalNavScroll extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Presentation option: page labels become dividers when > 1 page. */
-    @api showDividers = false;
+    /** Spec layout.options — scroll reads only showDividers. */
+    @api options;
 
     get pageList() {
         return (this.pages || []).map((page, index) => ({
@@ -25,6 +25,7 @@ export default class FinalNavScroll extends LightningElement {
     }
 
     get showPageDividers() {
-        return this.showDividers && (this.pages || []).length > 1;
+        const show = Boolean(this.options && this.options.showDividers);
+        return show && (this.pages || []).length > 1;
     }
 }
