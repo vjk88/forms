@@ -1,0 +1,86 @@
+:host {
+    display: block;
+    font-family:
+        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2937;
+}
+
+.gal {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.25rem;
+}
+
+.gal-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eceef2;
+}
+
+.gal-filters,
+.gal-layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.gal-llabel {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.pill,
+.lchip {
+    border: 1px solid #e2e5ea;
+    background: #f7f8fa;
+    color: #4b5563;
+    border-radius: 9999px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.pill:hover,
+.lchip:hover {
+    border-color: #c7c9ff;
+}
+
+.pill.is-on {
+    background: #eef0ff;
+    border-color: #6366f1;
+    color: #4338ca;
+}
+
+.lchip {
+    border-radius: 7px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+}
+
+.lchip.is-on {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #ffffff;
+}
+
+.gal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}

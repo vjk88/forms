@@ -1,0 +1,232 @@
+/* --- Admin chrome (the card frame) — the app's own design, NOT themed. --- */
+.tc {
+    cursor: pointer;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tc:hover {
+    transform: translateY(-2px);
+    border-color: #c7c9ff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.tc:focus-visible {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.tc.is-on {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px #6366f1;
+}
+
+/* --- Themed preview stage (everything below rides --c-* tokens) --- */
+.tc-stage {
+    background-color: var(--c-page-bg, #f3f4f6);
+    background-image: var(--c-page-bg-image, none);
+    background-size: var(--c-page-bg-size, cover);
+    background-position: var(--c-page-bg-position, center);
+    padding: 18px;
+    min-height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--c-font-body, sans-serif);
+}
+
+.tc-card {
+    width: 100%;
+    max-width: 260px;
+    background: var(--c-content-bg, #ffffff);
+    border: var(--c-content-border, 1px solid #e5e7eb);
+    border-radius: var(--c-radius, 8px);
+    box-shadow: var(--c-content-shadow, none);
+    overflow: hidden;
+    -webkit-backdrop-filter: blur(var(--c-glass-blur, 0px));
+    backdrop-filter: blur(var(--c-glass-blur, 0px));
+}
+
+.tc-head {
+    padding: 12px 12px 0;
+}
+
+.tc-banner {
+    padding: 12px;
+    background: var(--c-header-bg);
+    background-size: cover;
+    background-position: center;
+}
+
+.tc-banner .tc-h {
+    color: var(--c-header-text, #ffffff);
+}
+.tc-banner .tc-p {
+    color: var(--c-header-text-weak, rgba(255, 255, 255, 0.85));
+}
+
+.tc-h {
+    margin: 0;
+    font-family: var(--c-font-display, inherit);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--c-text, #1f2937);
+}
+
+.tc-p {
+    margin: 3px 0 0;
+    font-size: 0.62rem;
+    line-height: 1.35;
+    color: var(--c-text-weak, #6b7280);
+}
+
+.tc-body {
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tc-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tc-flabel {
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--c-text, #1f2937);
+}
+
+.tc-input {
+    height: 16px;
+    border-radius: calc(var(--c-radius, 8px) * 0.6);
+    background: var(--c-field-bg, #ffffff);
+    border: var(--c-field-border, 1px solid #d1d5db);
+}
+
+.tc-btn {
+    margin-top: 2px;
+    height: 22px;
+    border: none;
+    border-radius: var(--c-radius, 8px);
+    background: var(--c-submit-bg, var(--c-accent, #6366f1));
+    color: var(--c-submit-text, #ffffff);
+    font-family: var(--c-font-body, inherit);
+    font-size: 0.62rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Stepped */
+.tc-stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--c-field-border, #e5e7eb);
+}
+
+.tc-step {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.tc-step-off {
+    opacity: 0.5;
+}
+
+.tc-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.55rem;
+    font-weight: 700;
+    background: var(--c-accent, #6366f1);
+    color: var(--c-on-accent, #ffffff);
+}
+.tc-step-off .tc-dot {
+    background: var(--c-text-weak, #9ca3af);
+}
+
+.tc-slabel {
+    font-size: 0.58rem;
+    color: var(--c-text, #1f2937);
+}
+
+.tc-stepline {
+    flex: 1;
+    height: 2px;
+    background: var(--c-field-border, #e5e7eb);
+}
+
+/* Split */
+.tc-split {
+    display: grid;
+    grid-template-columns: 42% 58%;
+}
+
+.tc-rail {
+    background: var(--c-header-bg, var(--c-accent, #6366f1));
+    background-size: cover;
+    background-position: center;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+}
+.tc-rail .tc-h {
+    color: var(--c-header-text, #ffffff);
+}
+.tc-rail .tc-p {
+    color: var(--c-header-text-weak, rgba(255, 255, 255, 0.85));
+}
+
+/* --- Admin chrome meta --- */
+.tc-meta {
+    padding: 10px 12px 12px;
+}
+
+.tc-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.tc-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1f2937;
+}
+
+.tc-check {
+    --slds-c-icon-color-foreground-default: #6366f1;
+}
+
+.tc-desc {
+    margin: 2px 0 8px;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: #6b7280;
+}
+
+.tc-swatches {
+    display: flex;
+    gap: 4px;
+}
+
+.tc-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}

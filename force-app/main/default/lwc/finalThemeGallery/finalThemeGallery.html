@@ -1,0 +1,48 @@
+<template>
+    <div class="gal">
+        <div class="gal-controls">
+            <div class="gal-filters" role="group" aria-label="Filter themes">
+                <template for:each={filterPills} for:item="p">
+                    <button
+                        key={p.value}
+                        class={p.cls}
+                        data-value={p.value}
+                        onclick={handleFilter}
+                        type="button"
+                    >
+                        {p.label}
+                    </button>
+                </template>
+            </div>
+
+            <div class="gal-layout" role="group" aria-label="Preview layout">
+                <span class="gal-llabel">Preview in</span>
+                <template for:each={layoutChips} for:item="l">
+                    <button
+                        key={l.value}
+                        class={l.cls}
+                        data-value={l.value}
+                        onclick={handleLayout}
+                        type="button"
+                    >
+                        {l.label}
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <div class="gal-grid">
+            <template for:each={cards} for:item="c">
+                <c-final-theme-card
+                    key={c.key}
+                    theme-key={c.key}
+                    label={c.label}
+                    description={c.description}
+                    layout={previewLayout}
+                    selected={c.selected}
+                    onselect={handleSelect}
+                ></c-final-theme-card>
+            </template>
+        </div>
+    </div>
+</template>

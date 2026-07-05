@@ -1,0 +1,132 @@
+<template>
+    <div
+        class={rootClass}
+        role="button"
+        tabindex="0"
+        aria-pressed={pressed}
+        aria-label={label}
+        onclick={handleClick}
+        onkeydown={handleKey}
+    >
+        <!-- Themed preview — the token string sets every --c-* the mock reads. -->
+        <div class="tc-preview" style={tokenStyle}>
+            <div class="tc-stage">
+                <!-- SPLIT (splitHero) -->
+                <template lwc:if={isSplit}>
+                    <div class="tc-card tc-split">
+                        <div class="tc-rail">
+                            <div class="tc-rail-brand">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </div>
+                        <div class="tc-fields">
+                            <div class="tc-body">
+                                <div class="tc-field">
+                                    <span class="tc-flabel">Full name</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                                <div class="tc-field">
+                                    <span class="tc-flabel">Email</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                                <button class="tc-btn" type="button" tabindex="-1">
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- STEPPED (stepper) -->
+                <template lwc:elseif={isStepped}>
+                    <div class="tc-card">
+                        <div class="tc-stepper">
+                            <div class="tc-step tc-step-on">
+                                <span class="tc-dot">1</span>
+                                <span class="tc-slabel">Profile</span>
+                            </div>
+                            <div class="tc-stepline"></div>
+                            <div class="tc-step tc-step-off">
+                                <span class="tc-dot">2</span>
+                                <span class="tc-slabel">Review</span>
+                            </div>
+                        </div>
+                        <div class="tc-head">
+                            <h4 class="tc-h">{brand.title}</h4>
+                            <p class="tc-p">{brand.subtitle}</p>
+                        </div>
+                        <div class="tc-body">
+                            <div class="tc-field">
+                                <span class="tc-flabel">Full name</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <div class="tc-field">
+                                <span class="tc-flabel">Email</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- CLASSIC (scroll / tabs / accordion / rail / oneAtATime) -->
+                <template lwc:else>
+                    <div class="tc-card">
+                        <template lwc:if={hasBanner}>
+                            <div class="tc-banner">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <div class="tc-head">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
+                        <div class="tc-body">
+                            <div class="tc-field">
+                                <span class="tc-flabel">Full name</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <div class="tc-field">
+                                <span class="tc-flabel">Email</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">
+                                Submit
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Admin chrome (NOT themed) -->
+        <div class="tc-meta">
+            <div class="tc-meta-top">
+                <span class="tc-name">{label}</span>
+                <lightning-icon
+                    lwc:if={selected}
+                    icon-name="utility:check"
+                    size="xx-small"
+                    class="tc-check"
+                ></lightning-icon>
+            </div>
+            <p class="tc-desc">{description}</p>
+            <div class="tc-swatches" aria-hidden="true">
+                <template for:each={swatches} for:item="sw">
+                    <span
+                        key={sw.key}
+                        class="tc-swatch"
+                        style={sw.style}
+                        title={sw.name}
+                    ></span>
+                </template>
+            </div>
+        </div>
+    </div>
+</template>
