@@ -1,0 +1,117 @@
+.bar {
+    margin-top: var(--c-space-5);
+    font-family: var(--c-font-body);
+}
+
+.sticky {
+    position: sticky;
+    bottom: 0;
+    padding: var(--c-space-3) 0;
+    background: var(--c-content-bg);
+}
+
+.buttons {
+    display: flex;
+    gap: var(--c-space-3);
+}
+
+.align-left .buttons {
+    justify-content: flex-start;
+}
+
+.align-center .buttons {
+    justify-content: center;
+}
+
+.align-right .buttons {
+    justify-content: flex-end;
+}
+
+.align-stretch .buttons {
+    flex-direction: column;
+}
+
+.align-stretch .btn {
+    width: 100%;
+}
+
+/* Empty until the engine sets blockedMessage — zero height, no layout shift. */
+.blocked {
+    margin: 0;
+    min-height: 0;
+    color: var(--c-field-error);
+    font-size: 0.875rem;
+    text-align: right;
+}
+
+.blocked:not(:empty) {
+    margin-bottom: var(--c-space-2);
+}
+
+.align-left .blocked {
+    text-align: left;
+}
+
+.align-center .blocked,
+.align-stretch .blocked {
+    text-align: center;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2);
+    height: var(--c-control-h);
+    padding: 0 var(--c-space-5);
+    border-radius: var(--c-radius);
+    font-family: var(--c-font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn:disabled {
+    cursor: default;
+    opacity: 0.65;
+}
+
+.primary {
+    border: none;
+    background: var(--c-submit-bg);
+    color: var(--c-submit-text);
+}
+
+.secondary {
+    border: 1px solid var(--c-field-border);
+    background: none;
+    color: var(--c-text);
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: final-submit-spin 0.7s linear infinite;
+}
+
+@keyframes final-submit-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation: none;
+        border-top-color: currentColor;
+        opacity: 0.5;
+    }
+}

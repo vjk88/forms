@@ -1,0 +1,84 @@
+/* Container-type on a flex/grid item collapses to 0 width without an explicit
+   width — width:100% is load-bearing (the old build's "responsiveness broken"
+   root cause). */
+.zones {
+    container-type: inline-size;
+    container-name: zones;
+    width: 100%;
+}
+
+.zone-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.gap-sm {
+    gap: var(--c-space-3);
+}
+
+.gap-md {
+    gap: var(--c-space-4);
+}
+
+.gap-lg {
+    gap: var(--c-space-5);
+}
+
+.arr-twocol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.arr-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Bento mosaic: alternating wide/narrow pairs on a 6-track grid. */
+.arr-bento {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.arr-bento .zone:nth-child(4n + 1) {
+    grid-column: span 4;
+}
+
+.arr-bento .zone:nth-child(4n + 2) {
+    grid-column: span 2;
+}
+
+.arr-bento .zone:nth-child(4n + 3) {
+    grid-column: span 2;
+}
+
+.arr-bento .zone:nth-child(4n) {
+    grid-column: span 4;
+}
+
+/* Collapse-to-one-column breakpoints — CONTAINER width constants (the enum's
+   engine-side values), never viewport, never wire-crossing px (review #12).
+   early = gives up columns first while narrowing; late = holds them longest. */
+@container zones (max-width: 680px) {
+    .collapse-early {
+        grid-template-columns: 1fr;
+    }
+    .collapse-early .zone {
+        grid-column: auto;
+    }
+}
+
+@container zones (max-width: 540px) {
+    .collapse-standard {
+        grid-template-columns: 1fr;
+    }
+    .collapse-standard .zone {
+        grid-column: auto;
+    }
+}
+
+@container zones (max-width: 400px) {
+    .collapse-late {
+        grid-template-columns: 1fr;
+    }
+    .collapse-late .zone {
+        grid-column: auto;
+    }
+}

@@ -6,6 +6,8 @@ import { LightningElement, api } from 'lwc';
  * Dumb by contract: accepts the shared inputs, renders all pages in one scroll,
  * owns zero validation/submission logic. Scroll has no pagination chrome, so
  * `currentPageIndex` / `pageValidity` are accepted (contract) but unused here.
+ * Section arrangement is finalLayoutZones' job — pages arrive with their zones
+ * config already merged (layout.zonesDefault + page override) by the viewer.
  */
 export default class FinalNavScroll extends LightningElement {
     @api pages = [];
