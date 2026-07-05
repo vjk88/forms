@@ -380,16 +380,36 @@ describe('c-final-theme-catalog', () => {
         expect(getBuiltinTheme('nope')).toBeNull();
     });
 
-    it('listing exposes key/name/tags only — never recipes', () => {
+    it('listing exposes key/name/tags/layout only — never recipes', () => {
         const list = listBuiltinThemes();
-        expect(list).toEqual([
-            {
-                key: 'editorialIvory',
-                name: 'Editorial Ivory',
-                tags: ['light', 'editorial']
-            }
-        ]);
-        expect(list[0].palette).toBeUndefined();
+        expect(list.length).toBe(31);
+        const ivory = list.find((t) => t.key === 'editorialIvory');
+        expect(ivory).toEqual({
+            key: 'editorialIvory',
+            name: 'Editorial Ivory',
+            tags: ['light', 'editorial'],
+            layout: 'classic'
+        });
+        // recipes never leak; every row carries a valid layout affinity
+        const valid = new Set(['classic', 'stepped', 'split']);
+        expect(list.every((t) => t.palette === undefined)).toBe(true);
+        expect(list.every((t) => valid.has(t.layout))).toBe(true);
+    });
+
+    it('roster maps raw colours + quantized scales through the engine', () => {
+        const brutal = resolveTokens(getBuiltinTheme('neoBrutalism'));
+        expect(brutal['--c-radius']).toBe('0px'); // sharp
+        expect(brutal['--c-content-shadow']).toBe('5px 5px 0 rgba(0, 0, 0, 0.9)'); // brutal
+        expect(brutal['--c-content-border']).toBe('2px solid #000000'); // bold + raw colour
+        expect(brutal['--c-accent']).toBe('#d946ef');
+
+        const ocean = resolveTokens(getBuiltinTheme('oceanBreeze'));
+        expect(ocean['--c-radius']).toBe('20px'); // xl (new scale step)
+        expect(ocean['--c-page-bg-image']).toBe(
+            'url("/resource/formThemeAssets/ocean.jpg")'
+        );
+        expect(ocean['--c-glass-blur']).toBe('14px'); // glass on
+        expect(ocean['--c-content-bg']).toBe('rgba(255, 255, 255, 0.72)');
     });
 });
 

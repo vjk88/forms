@@ -2,6 +2,11 @@
  * Preset fallbacks are the sanctioned exception (ARCH §2.3): for --c-section-*
  * tokens, unset means "the preset decides" — so each preset carries its own
  * neutral fallback values. Everything else consumes bare var(--c-x).
+ *
+ * Fallbacks are derived from --c-text (the theme's ink) via color-mix so a
+ * "card" is a subtle tint of whatever surface it sits on — it self-adapts to
+ * light AND dark themes (fixes the white-card-on-dark bug). A theme/form that
+ * sets --c-section-* explicitly still wins.
  */
 
 .section {
@@ -16,14 +21,23 @@
 }
 
 .style-card {
-    background: var(--c-section-bg, #ffffff);
-    border: var(--c-section-border, 1px solid #e6e8ec);
+    background: var(
+        --c-section-bg,
+        color-mix(in srgb, var(--c-text) 4%, transparent)
+    );
+    border: var(
+        --c-section-border,
+        1px solid color-mix(in srgb, var(--c-text) 12%, transparent)
+    );
     box-shadow: var(--c-section-shadow, 0 1px 2px rgba(15, 23, 42, 0.05));
     padding: var(--c-section-pad);
 }
 
 .style-boxed {
-    background: var(--c-section-bg, #f3f4f6);
+    background: var(
+        --c-section-bg,
+        color-mix(in srgb, var(--c-text) 7%, transparent)
+    );
     border: var(--c-section-border, none);
     box-shadow: var(--c-section-shadow, none);
     padding: var(--c-section-pad);
@@ -31,13 +45,19 @@
 
 .style-outline {
     background: var(--c-section-bg, transparent);
-    border: var(--c-section-border, 1px solid #d1d5db);
+    border: var(
+        --c-section-border,
+        1px solid color-mix(in srgb, var(--c-text) 18%, transparent)
+    );
     box-shadow: var(--c-section-shadow, none);
     padding: var(--c-section-pad);
 }
 
 .style-subtle {
-    background: var(--c-section-bg, #f9fafb);
+    background: var(
+        --c-section-bg,
+        color-mix(in srgb, var(--c-text) 3%, transparent)
+    );
     border: var(--c-section-border, none);
     box-shadow: var(--c-section-shadow, none);
     padding: var(--c-section-pad);

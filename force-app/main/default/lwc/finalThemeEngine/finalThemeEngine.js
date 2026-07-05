@@ -22,10 +22,17 @@ export const ENGINE_VERSION = 1;
 // Internal scales (§3.3 — primitives stay inside the engine, never on the wire)
 // ---------------------------------------------------------------------------
 
+// Curated radius scale (§3.3 — internal, not on the wire). Themes select a key;
+// the roster's raw px values quantize onto the nearest step. editorialIvory's
+// `soft` (8px) is unchanged, so its snapshot stays put.
 const RADIUS = {
     sharp: '0px',
+    xs: '4px',
     soft: '8px',
+    md: '12px',
     round: '14px',
+    lg: '16px',
+    xl: '20px',
     pill: '24px'
 };
 
@@ -57,10 +64,15 @@ const FONT_STACKS = {
     }
 };
 
+// Curated shadow scale (§3.3). `soft`/`floating` unchanged (editorialIvory uses
+// `soft`); `medium` fills the gap, `brutal` is the flat offset the Neo-Brutalism
+// family needs (a hard drop, no blur).
 const SHADOWS = {
     none: 'none',
     soft: '0 8px 24px rgba(15, 23, 42, 0.08)',
-    floating: '0 18px 48px rgba(15, 23, 42, 0.16)'
+    medium: '0 10px 30px rgba(15, 23, 42, 0.12)',
+    floating: '0 18px 48px rgba(15, 23, 42, 0.16)',
+    brutal: '5px 5px 0 rgba(0, 0, 0, 0.9)'
 };
 
 const BORDER_WIDTHS = {
