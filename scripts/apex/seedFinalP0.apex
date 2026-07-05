@@ -65,9 +65,10 @@ for (Map<String, Object> v : variants) {
             'id' => form.Id, 'name' => FORM_NAME, 'type' => 'form',
             'targetObject' => 'Contact', 'saveMode' => 'create'
         },
+        // no layout.density — density is a THEME property (schema §3 / UIUX review #22)
         'layout' => new Map<String, Object>{
             'type' => 'scroll', 'options' => new Map<String, Object>(),
-            'maxWidth' => 'medium', 'density' => 'comfortable'
+            'maxWidth' => 'medium'
         },
         'header' => new Map<String, Object>{
             'style' => 'standard',

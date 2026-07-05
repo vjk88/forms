@@ -395,7 +395,8 @@ describe('c-final-theme-catalog', () => {
 
 describe('c-final-layout-registry', () => {
     it('scroll row carries the §2.2 metadata', () => {
-        expect(LAYOUTS.scroll.multiPage).toBe(false);
+        expect(LAYOUTS.scroll.paginates).toBe(false);
+        expect(LAYOUTS.scroll.multiPage).toBeUndefined(); // renamed — UIUX review #8
         expect(LAYOUTS.scroll.gating).toBe(false);
         expect(typeof LAYOUTS.scroll.load).toBe('function');
     });
