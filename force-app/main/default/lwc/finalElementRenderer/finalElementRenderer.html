@@ -1,28 +1,47 @@
 <template>
-    <template lwc:if={isTextarea}>
-        <lightning-textarea
-            label={el.label}
-            placeholder={el.placeholder}
-            required={el.required}
-            disabled={el.disabled}
-            read-only={el.readOnly}
-            field-level-help={el.help}
-            variant={labelVariant}
-            onchange={handleChange}
-        ></lightning-textarea>
-    </template>
-    <template lwc:elseif={isInput}>
-        <lightning-input
-            type={inputType}
-            label={el.label}
-            placeholder={el.placeholder}
-            required={el.required}
-            disabled={el.disabled}
-            read-only={el.readOnly}
-            field-level-help={el.help}
-            variant={labelVariant}
-            onchange={handleChange}
-        ></lightning-input>
+    <template lwc:if={isField}>
+        <div class="field">
+            <!-- Custom themeable label (native field is label-hidden). -->
+            <template lwc:if={showCustomLabel}>
+                <label class="field-label" aria-hidden="true">
+                    <template lwc:if={el.required}>
+                        <abbr class="field-req" title="required">*</abbr>
+                    </template>
+                    {el.label}
+                    <template lwc:if={el.help}>
+                        <lightning-helptext
+                            content={el.help}
+                        ></lightning-helptext>
+                    </template>
+                </label>
+            </template>
+
+            <template lwc:if={isTextarea}>
+                <lightning-textarea
+                    label={el.label}
+                    placeholder={el.placeholder}
+                    required={el.required}
+                    disabled={el.disabled}
+                    read-only={el.readOnly}
+                    field-level-help={nativeHelp}
+                    variant="label-hidden"
+                    onchange={handleChange}
+                ></lightning-textarea>
+            </template>
+            <template lwc:else>
+                <lightning-input
+                    type={inputType}
+                    label={el.label}
+                    placeholder={el.placeholder}
+                    required={el.required}
+                    disabled={el.disabled}
+                    read-only={el.readOnly}
+                    field-level-help={nativeHelp}
+                    variant="label-hidden"
+                    onchange={handleChange}
+                ></lightning-input>
+            </template>
+        </div>
     </template>
     <template lwc:else>
         <div class="unsupported">

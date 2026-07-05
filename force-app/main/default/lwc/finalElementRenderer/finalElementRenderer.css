@@ -4,6 +4,46 @@
     --slds-c-input-radius-border: var(--c-radius);
     --slds-c-input-sizing-height: var(--c-control-h);
     --slds-c-textarea-radius-border: var(--c-radius);
+
+    /* Theme the input surface so a dark theme doesn't get white boxes:
+       --c-field-bg lifts to a translucent input on dark themes (engine), and
+       text/placeholder/border ride the theme's ink. */
+    --slds-c-input-color-background: var(--c-field-bg);
+    --slds-c-input-text-color: var(--c-text);
+    --slds-c-input-color-border: var(--c-text-weak);
+    --slds-c-input-placeholder-color: var(--c-text-weak);
+
+    --slds-c-textarea-color-background: var(--c-field-bg);
+    --slds-c-textarea-text-color: var(--c-text);
+    --slds-c-textarea-color-border: var(--c-text-weak);
+    --slds-c-textarea-placeholder-color: var(--c-text-weak);
+}
+
+.field {
+    display: block;
+}
+
+/* Our own label — reaches the theme ink (the native shadow-DOM label can't). */
+.field-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--c-space-1);
+    margin-bottom: var(--c-space-1);
+    font-family: var(--c-font-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--c-text);
+}
+
+.field-req {
+    color: var(--c-field-required, var(--c-field-error, #ba0517));
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.field-label lightning-helptext {
+    --slds-c-icon-color-foreground-default: var(--c-text-weak);
 }
 
 .unsupported {

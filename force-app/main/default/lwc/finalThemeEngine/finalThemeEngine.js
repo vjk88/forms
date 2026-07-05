@@ -190,6 +190,15 @@ function onColor(hex) {
     return yiq >= 150 ? '#111827' : '#ffffff';
 }
 
+/** Is this a light color? (Non-hex → treated as light — the neutral default.) */
+function isLight(hex) {
+    const c = hexToRgb(hex);
+    if (!c) {
+        return true;
+    }
+    return (c.r * 299 + c.g * 587 + c.b * 114) / 1000 >= 150;
+}
+
 // ---------------------------------------------------------------------------
 // Property merge — theme default → form-level override (§4.3; one cascade, here only)
 // ---------------------------------------------------------------------------
@@ -278,8 +287,11 @@ export function resolveTokens(themeProps, formOverrides) {
         // Section (pad only — bg/border/shadow stay unset so the preset decides)
         '--c-section-pad': density.sectionPad,
 
-        // Field
-        '--c-field-bg': pal.fieldBg || '#ffffff',
+        // Field — the input surface adapts to theme darkness: a dark theme
+        // (light text) gets a lifted translucent input instead of a jarring
+        // white box; light themes stay white. (Overridable via palette.fieldBg.)
+        '--c-field-bg':
+            pal.fieldBg || (isLight(pal.text) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff'),
         '--c-field-border': `1px solid ${pal.fieldBorderColor || mix(pal.text, pal.contentBg, 0.3)}`,
         '--c-field-focus': focus,
         '--c-field-error': fs.error,

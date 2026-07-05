@@ -45,14 +45,23 @@ export default class FinalElementRenderer extends LightningElement {
         return INPUT_TYPES[this.cfg.inputType] || 'text';
     }
 
-    get labelVariant() {
-        if (this.el.labelPosition === 'hidden') {
-            return 'label-hidden';
-        }
-        if (this.el.labelPosition === 'left') {
-            return 'label-inline';
-        }
-        return 'standard';
+    /**
+     * We render our OWN label (themeable) and keep the native field
+     * `label-hidden` — a shadow-DOM native label can't take --c-* colours, so
+     * on dark themes it renders faint. (Technique from formStudio's
+     * formSectionRenderer; the native keeps its assistive-text label for SR.)
+     */
+    get showCustomLabel() {
+        return (
+            this.isField &&
+            this.el.labelPosition !== 'hidden' &&
+            Boolean(this.el.label)
+        );
+    }
+
+    /** Help rides with the custom label when we render one; else on the field. */
+    get nativeHelp() {
+        return this.showCustomLabel ? undefined : this.el.help;
     }
 
     handleChange(event) {
