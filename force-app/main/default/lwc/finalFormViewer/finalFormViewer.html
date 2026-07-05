@@ -15,15 +15,26 @@
                     <lwc:component
                         lwc:is={navCtor}
                         pages={model.pages}
-                    ></lwc:component>
+                        current-page-index={pageIndex}
+                        page-validity={pageValidity}
+                        options={model.layoutOptions}
+                        onpagechange={handlePageChange}
+                    >
+                        <!-- Slotted from the engine's template: button intents
+                             never cross the primitive's shadow boundary. -->
+                        <c-final-submit-bar
+                            slot="actions"
+                            config={model.submit}
+                            show-back={showBack}
+                            show-next={showNext}
+                            show-submit={showSubmit}
+                            onback={handleBack}
+                            onnext={handleNext}
+                            onsubmit={handleSubmit}
+                        ></c-final-submit-bar>
+                    </lwc:component>
                 </template>
             </div>
-            <c-final-submit-bar
-                slot="actions"
-                config={model.submit}
-                show-submit={model.showSubmit}
-                onsubmit={handleSubmit}
-            ></c-final-submit-bar>
         </c-final-page-frame>
     </template>
     <template lwc:else>

@@ -1,0 +1,52 @@
+<template>
+    <div class="oaat" onkeydown={handleKeydown} onfocusin={handleFocusIn}>
+        <template lwc:if={showProgress}>
+            <div class="progress">
+                <div class="progress-track" aria-hidden="true">
+                    <div class="progress-fill" style={progressFillStyle}></div>
+                </div>
+                <p class="progress-text">{progressText}</p>
+            </div>
+        </template>
+        <template for:each={currentScreenList} for:item="screen">
+            <div class="screen-panel" key={screen.key} tabindex="-1">
+                <c-final-layout-zones
+                    sections={currentSections}
+                    zones={currentZones}
+                ></c-final-layout-zones>
+            </div>
+        </template>
+        <div class="controls">
+            <template lwc:if={showBackLink}>
+                <button class="back-link" type="button" onclick={handleBack}>
+                    <template lwc:if={backIsArrow}>
+                        <lightning-icon
+                            icon-name="utility:chevronup"
+                            size="xx-small"
+                            aria-hidden="true"
+                        ></lightning-icon>
+                    </template>
+                    Back
+                </button>
+            </template>
+            <template lwc:if={onLastScreen}></template>
+            <template lwc:else>
+                <div class="advance">
+                    <button
+                        class="advance-btn"
+                        type="button"
+                        onclick={handleAdvance}
+                    >
+                        {advanceLabel}
+                    </button>
+                    <template lwc:if={keyboardHelperText}>
+                        <p class="key-helper">{keyboardHelperText}</p>
+                    </template>
+                </div>
+            </template>
+        </div>
+        <template lwc:if={onLastScreen}>
+            <slot name="actions"></slot>
+        </template>
+    </div>
+</template>

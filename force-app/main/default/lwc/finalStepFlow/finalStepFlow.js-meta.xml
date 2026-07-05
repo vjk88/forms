@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Logic module (rebuild): the ONE shared one-at-a-time step-flow engine — screen flattening, advance rules incl. keyboard-advance semantics. Used by finalNavOneAtATime and finalNavSplitHero's Pane Flow.</description>
+</LightningComponentBundle>

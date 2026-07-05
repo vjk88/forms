@@ -1,0 +1,277 @@
+/* Size container; queried classes live on .layout (a container query can't
+   style its own container). width:100% guards container-type collapse. */
+.split {
+    container-type: inline-size;
+    container-name: split;
+    width: 100%;
+    font-family: var(--c-font-body);
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--c-space-5);
+    align-items: stretch;
+}
+
+.ratio-third {
+    grid-template-columns: 1fr 2fr;
+}
+
+.side-right {
+    grid-template-columns: 1fr 1fr;
+}
+
+.side-right.ratio-third {
+    grid-template-columns: 2fr 1fr;
+}
+
+.side-right .pane {
+    order: 2;
+}
+
+.sticky-pane .pane {
+    position: sticky;
+    top: var(--c-space-4);
+    align-self: start;
+}
+
+/* — The brand pane: the product's hero. Config paints it (image + composed
+     veil via paneStyle); type sits on it in hero white. — */
+.pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 480px;
+    padding: var(--c-space-6, 48px) var(--c-space-5);
+    border-radius: var(--c-radius);
+    color: #fff;
+    overflow: hidden;
+}
+
+.brand {
+    margin-bottom: var(--c-space-4);
+}
+
+.brand-logo {
+    max-height: 44px;
+    max-width: 200px;
+    object-fit: contain;
+}
+
+.brand-wordmark {
+    font-family: var(--c-font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.zone {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-3);
+}
+
+.zone-center {
+    flex: 1;
+    justify-content: center;
+}
+
+.zone-bottom {
+    justify-content: flex-end;
+}
+
+.pane-title {
+    font-family: var(--c-font-display);
+    font-size: clamp(1.6rem, 4cqw, 2.4rem);
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.pane-subtitle {
+    font-size: 1rem;
+    line-height: 1.5;
+    opacity: 0.85;
+}
+
+.pane-progress {
+    margin-top: var(--c-space-4);
+}
+
+.dots {
+    display: flex;
+    gap: var(--c-space-2);
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.dot.done,
+.dot.active {
+    background: #fff;
+}
+
+.dot.active {
+    outline: 2px solid rgba(255, 255, 255, 0.4);
+    outline-offset: 2px;
+}
+
+.progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+}
+
+.progress-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: #fff;
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+}
+
+.progress-text {
+    margin: var(--c-space-2) 0 0;
+    font-size: 0.8125rem;
+    opacity: 0.8;
+}
+
+/* — Form pane — */
+.form {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.page-panel,
+.screen-panel {
+    outline: none;
+    animation: final-split-in 0.25s ease-out;
+}
+
+@keyframes final-split-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--c-space-4);
+    margin-top: var(--c-space-5);
+}
+
+.back-link {
+    padding: var(--c-space-1) 0;
+    border: none;
+    background: none;
+    color: var(--c-text-weak);
+    font-family: var(--c-font-body);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.back-link:hover {
+    color: var(--c-text);
+}
+
+.back-link:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+    border-radius: var(--c-radius);
+}
+
+.advance {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-3);
+    margin-left: auto;
+}
+
+.advance-btn {
+    height: var(--c-control-h);
+    padding: 0 var(--c-space-5);
+    border: none;
+    border-radius: var(--c-radius);
+    background: var(--c-submit-bg);
+    color: var(--c-submit-text);
+    font-family: var(--c-font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.advance-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+
+.key-helper {
+    margin: 0;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
+/* — Narrow: the pane becomes a compact top brand strip; form full-width;
+     sticky off (contract narrow behavior). — */
+@container split (max-width: 540px) {
+    .layout {
+        display: block;
+    }
+
+    .pane {
+        min-height: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--c-space-4);
+        padding: var(--c-space-4);
+        margin-bottom: var(--c-space-5);
+        position: static;
+    }
+
+    .brand {
+        margin-bottom: 0;
+    }
+
+    .zone {
+        flex: none;
+    }
+
+    .zone-center,
+    .zone-bottom,
+    .pane-progress {
+        display: none;
+    }
+
+    .pane-title {
+        font-size: 1.15rem;
+    }
+
+    .pane-subtitle {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-panel,
+    .screen-panel {
+        animation: none;
+    }
+
+    .progress-fill {
+        transition: none;
+    }
+}

@@ -1,0 +1,54 @@
+<template>
+    <div class="stepper">
+        <div class={layoutClass}>
+            <nav class={stepsClass} aria-label="Form steps">
+                <template lwc:if={isProgressBar}>
+                    <div
+                        class="progress-track"
+                        role="progressbar"
+                        aria-valuenow={progressPercent}
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                    >
+                        <div class="progress-fill" style={progressFillStyle}></div>
+                    </div>
+                </template>
+                <template lwc:else>
+                    <ol class="step-list">
+                        <template for:each={stepList} for:item="step">
+                            <li class="step-item" key={step.key}>
+                                <button
+                                    class={step.cls}
+                                    type="button"
+                                    data-index={step.index}
+                                    disabled={step.disabled}
+                                    aria-current={step.ariaCurrent}
+                                    onclick={handleStepClick}
+                                >
+                                    <span class="step-marker" aria-hidden="true"
+                                        >{step.number}</span
+                                    >
+                                    <span class="step-label">{step.label}</span>
+                                </button>
+                            </li>
+                        </template>
+                    </ol>
+                </template>
+                <template lwc:if={stepCountText}>
+                    <p class="step-count">{stepCountText}</p>
+                </template>
+            </nav>
+            <div class="content">
+                <template for:each={currentPageList} for:item="page">
+                    <div class="page-panel" key={page.key}>
+                        <c-final-layout-zones
+                            sections={page.sections}
+                            zones={page.zones}
+                        ></c-final-layout-zones>
+                    </div>
+                </template>
+                <slot name="actions"></slot>
+            </div>
+        </div>
+    </div>
+</template>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Nav primitive (rebuild): tabbed pages — underline/pills/enclosed styles, free navigation, roving-tabindex tablist, narrow fade-edge scroll (tabs never wrap). Lazy-loaded via finalLayoutRegistry.</description>
+</LightningComponentBundle>

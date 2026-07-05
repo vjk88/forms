@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Nav primitive (rebuild): persistent side rail — page list and/or progress, left/right side, three widths, sticky option, narrow collapse to top chip bar or drawer. Lazy-loaded via finalLayoutRegistry.</description>
+</LightningComponentBundle>

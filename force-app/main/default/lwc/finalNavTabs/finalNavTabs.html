@@ -1,0 +1,45 @@
+<template>
+    <div class="tabs">
+        <div class="tab-strip">
+            <div
+                class={listClass}
+                role="tablist"
+                aria-label="Form pages"
+                onkeydown={handleKeydown}
+            >
+                <template for:each={tabList} for:item="tab">
+                    <button
+                        class={tab.cls}
+                        type="button"
+                        role="tab"
+                        key={tab.key}
+                        data-index={tab.index}
+                        aria-selected={tab.selected}
+                        tabindex={tab.tabindex}
+                        onclick={handleTabClick}
+                    >
+                        <template lwc:if={tab.iconName}>
+                            <lightning-icon
+                                class="tab-icon"
+                                icon-name={tab.iconName}
+                                size="xx-small"
+                            ></lightning-icon>
+                        </template>
+                        {tab.label}
+                    </button>
+                </template>
+            </div>
+        </div>
+        <div class="content" role="tabpanel">
+            <template for:each={currentPageList} for:item="page">
+                <div class="page-panel" key={page.key}>
+                    <c-final-layout-zones
+                        sections={page.sections}
+                        zones={page.zones}
+                    ></c-final-layout-zones>
+                </div>
+            </template>
+            <slot name="actions"></slot>
+        </div>
+    </div>
+</template>

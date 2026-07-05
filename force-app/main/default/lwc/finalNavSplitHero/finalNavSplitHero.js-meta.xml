@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Nav primitive (rebuild): split hero — the brand pane IS the hero (image + veil, rich-text blocks, Top/Center/Bottom placement, replaces formHeader); Pane Flow = Pages or One at a Time via shared finalStepFlow.</description>
+</LightningComponentBundle>

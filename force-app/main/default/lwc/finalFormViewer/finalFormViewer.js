@@ -23,6 +23,10 @@ export default class FinalFormViewer extends LightningElement {
     navCtor;
     error;
 
+    /** Step-flow state (paginated layouts). The viewer is the engine for now. */
+    pageIndex = 0;
+    _maxVisited = 0;
+
     _urlFormId;
     _urlVersionId;
     _loadedKey;
@@ -89,6 +93,8 @@ export default class FinalFormViewer extends LightningElement {
         const layout = getLayout(spec.layout ? spec.layout.type : undefined);
         const module = await layout.load();
         this.navCtor = module.default;
+        this.pageIndex = 0;
+        this._maxVisited = 0;
 
         const header = spec.header || {};
         const hasLockup = Boolean(
@@ -100,9 +106,19 @@ export default class FinalFormViewer extends LightningElement {
         );
         const zonesDefault =
             (spec.layout && spec.layout.zonesDefault) || {};
+        const options = (spec.layout && spec.layout.options) || {};
+        // splitHero's brand pane replaces formHeader (registry: ownsHeader);
+        // its Pane Flow = One at a Time also owns the advance, like oneAtATime.
+        const ownsAdvance = Boolean(
+            layout.ownsAdvance ||
+                (layout.ownsHeader && options.paneFlow === 'oneAtATime')
+        );
         this.model = {
             maxWidth: (spec.layout && spec.layout.maxWidth) || 'medium',
-            header: header.style !== 'none' && hasLockup ? header : null,
+            header:
+                !layout.ownsHeader && header.style !== 'none' && hasLockup
+                    ? header
+                    : null,
             // Each page ships with its zones config pre-merged (sparse page
             // override on top of layout.zonesDefault — schema §4).
             pages: (spec.pages || []).map((page) => ({
@@ -110,11 +126,80 @@ export default class FinalFormViewer extends LightningElement {
                 zones: { ...zonesDefault, ...(page.zones || {}) }
             })),
             submit: spec.submit || {},
-            // Scroll is unpaginated: Submit always shows. Paginated primitives
-            // will drive these per-step when they land (P1 layout PRs).
-            showSubmit: true
+            layoutOptions: options,
+            paginates: Boolean(layout.paginates),
+            ownsAdvance
         };
         this.error = undefined;
+    }
+
+    get lastPageIndex() {
+        return this.model ? this.model.pages.length - 1 : 0;
+    }
+
+    /**
+     * Per-page validity — the engine's truth the primitives render gating from.
+     * No validation engine yet (P1): a page counts valid once visited, so gated
+     * steppers gate on "how far you've been", never further.
+     */
+    get pageValidity() {
+        if (!this.model) {
+            return [];
+        }
+        return this.model.pages.map((_page, i) => i <= this._maxVisited);
+    }
+
+    get showBack() {
+        return (
+            this.model &&
+            this.model.paginates &&
+            !this.model.ownsAdvance &&
+            this.pageIndex > 0
+        );
+    }
+
+    get showNext() {
+        return (
+            this.model &&
+            this.model.paginates &&
+            !this.model.ownsAdvance &&
+            this.pageIndex < this.lastPageIndex
+        );
+    }
+
+    /** Submit ONLY on the final page (BUILD_PHASES checklist #1). */
+    get showSubmit() {
+        return (
+            this.model &&
+            (!this.model.paginates || this.pageIndex === this.lastPageIndex)
+        );
+    }
+
+    handlePageChange(event) {
+        const index = event.detail ? event.detail.index : undefined;
+        if (
+            typeof index === 'number' &&
+            index >= 0 &&
+            index <= this.lastPageIndex
+        ) {
+            this.pageIndex = index;
+            this._maxVisited = Math.max(this._maxVisited, index);
+        }
+    }
+
+    handleNext() {
+        // Page validation runs here once the validation engine lands (P1 later
+        // slices only need the flow; blocked-state UX is already in submitBar).
+        if (this.pageIndex < this.lastPageIndex) {
+            this.pageIndex += 1;
+            this._maxVisited = Math.max(this._maxVisited, this.pageIndex);
+        }
+    }
+
+    handleBack() {
+        if (this.pageIndex > 0) {
+            this.pageIndex -= 1;
+        }
     }
 
     handleSubmit() {
