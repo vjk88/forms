@@ -1,0 +1,80 @@
+<template>
+    <div
+        class={rootClass}
+        role="button"
+        tabindex="0"
+        aria-pressed={pressed}
+        aria-label={meta.label}
+        onclick={handleClick}
+        onkeydown={handleKey}
+    >
+        <div class="lc-diagram">
+            <template lwc:if={isScroll}>
+                <div class="d-bar"></div>
+                <div class="d-bar"></div>
+                <div class="d-bar"></div>
+            </template>
+            <template lwc:elseif={isStepper}>
+                <div class="d-steps">
+                    <span class="d-dot on"></span>
+                    <span class="d-line"></span>
+                    <span class="d-dot"></span>
+                    <span class="d-line"></span>
+                    <span class="d-dot"></span>
+                </div>
+                <div class="d-bar"></div>
+                <div class="d-bar"></div>
+            </template>
+            <template lwc:elseif={isTabs}>
+                <div class="d-tabs">
+                    <span class="d-tab on"></span>
+                    <span class="d-tab"></span>
+                    <span class="d-tab"></span>
+                </div>
+                <div class="d-bar"></div>
+                <div class="d-bar"></div>
+            </template>
+            <template lwc:elseif={isAccordion}>
+                <div class="d-acc on"></div>
+                <div class="d-acc"></div>
+                <div class="d-acc"></div>
+            </template>
+            <template lwc:elseif={isRail}>
+                <div class="d-rail-wrap">
+                    <div class="d-rail"></div>
+                    <div class="d-rail-body">
+                        <div class="d-bar"></div>
+                        <div class="d-bar"></div>
+                    </div>
+                </div>
+            </template>
+            <template lwc:elseif={isOneAtATime}>
+                <div class="d-single">
+                    <div class="d-bar wide"></div>
+                </div>
+            </template>
+            <template lwc:elseif={isSplit}>
+                <div class="d-split">
+                    <div class="d-pane"></div>
+                    <div class="d-split-body">
+                        <div class="d-bar"></div>
+                        <div class="d-bar"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div class="lc-meta">
+            <div class="lc-top">
+                <span class="lc-name">{meta.label}</span>
+                <lightning-icon
+                    lwc:if={selected}
+                    icon-name="utility:check"
+                    size="xx-small"
+                    class="lc-check"
+                ></lightning-icon>
+            </div>
+            <p class="lc-hint">{meta.hint}</p>
+        </div>
+    </div>
+</template>

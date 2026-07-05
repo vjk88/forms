@@ -1,0 +1,248 @@
+:host {
+    display: block;
+    font-family:
+        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2937;
+}
+
+.cg {
+    display: flex;
+    flex-direction: column;
+    min-height: 60vh;
+}
+
+/* --- header + step indicator --- */
+.cg-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eceef2;
+}
+.cg-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+}
+.cg-steps {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    font-size: 0.8rem;
+}
+.cg-step {
+    color: #9ca3af;
+    font-weight: 500;
+}
+.cg-step.on {
+    color: #4338ca;
+    font-weight: 700;
+}
+.cg-step.done {
+    color: #10b981;
+}
+.cg-sep {
+    color: #d1d5db;
+}
+.cg-close {
+    border: none;
+    background: none;
+    font-size: 1rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+.cg-close:hover {
+    background: #f3f4f6;
+}
+
+.cg-body {
+    padding: 1.25rem;
+}
+.cg-lead {
+    margin: 0 0 1rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+.cg-back {
+    border: none;
+    background: none;
+    color: #4b5563;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.25rem 0;
+    margin-bottom: 0.75rem;
+}
+.cg-back:hover {
+    color: #1f2937;
+    text-decoration: underline;
+}
+
+/* --- layout grid --- */
+.cg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+/* --- details --- */
+.cg-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 360px) 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+.cg-preview {
+    position: sticky;
+    top: 1rem;
+}
+.cg-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-width: 460px;
+}
+.cg-flabel {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.75rem;
+}
+.cg-input {
+    height: 38px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0 0.75rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: #1f2937;
+    outline: none;
+}
+.cg-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* --- searchable object picker --- */
+.obj-picker {
+    position: relative;
+}
+.obj-list {
+    position: absolute;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    max-height: 280px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #e2e5ea;
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    padding: 0.25rem;
+}
+.obj-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 7px;
+    cursor: pointer;
+}
+.obj-item:hover,
+.obj-item.is-on {
+    background: #eef0ff;
+}
+.obj-label {
+    font-size: 0.88rem;
+    color: #1f2937;
+}
+.obj-api {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+}
+.obj-empty {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.cg-error {
+    color: #b42318;
+    font-size: 0.82rem;
+    margin: 0.5rem 0 0;
+}
+
+.cg-create {
+    margin-top: 1.25rem;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: #6366f1;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+.cg-create:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.cg-secondary {
+    height: 40px;
+    padding: 0 1.1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* --- done --- */
+.cg-done {
+    text-align: center;
+    padding: 3rem 1.25rem;
+}
+.cg-done-mark {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #10b981;
+    display: grid;
+    place-items: center;
+    font-size: 1.6rem;
+}
+.cg-done-title {
+    margin: 0;
+    font-size: 1.2rem;
+}
+.cg-done-sub {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+.cg-done-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 720px) {
+    .cg-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    .cg-preview {
+        position: static;
+    }
+}
