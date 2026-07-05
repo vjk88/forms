@@ -45,7 +45,11 @@ Version records are never edited in place. "Fix the live form" = edit records �
     "name": "Contact Us",
     "type": "form",                  // "form" (object-bound) | "survey" (answer-store)
     "targetObject": "Case",          // forms only; null for surveys
-    "saveMode": "create"             // "create" | "update"
+    "saveMode": "create",            // "create" | "update"
+    "updateTarget": null             // ONLY when saveMode="update": { "source": "sourceRecord"|"urlParam", "param": "recordId" }
+                                     // v1 posture: update mode is INTERNAL-audience only — guest+update is
+                                     // deferred until RUNTIME_NOTES specs a token-gated pattern (never a raw
+                                     // record Id in a URL). (UIUX review #26)
   },
 
   "settings": {
@@ -84,16 +88,23 @@ Version records are never edited in place. "Fix the live form" = edit records �
     "zonesDefault": {                // layoutZones defaults; pages may override
       "arrangement": "single",       // "single" | "twoCol" | "grid" | "bento"
       "gap": "md",
-      "breakpoint": 768,
+      "collapse": "standard",        // "early" | "standard" | "late" — CONTAINER-width constants in the
+                                     // engine; raw px never crosses the wire (UIUX review #12)
       "collapseOrder": "source"
     },
-    "maxWidth": "medium",            // narrow|medium|wide|full
-    "density": "comfortable"         // comfortable|compact — engine resolves into space/control tokens
+    "maxWidth": "medium"             // narrow|medium|wide|full — structural, so it lives here.
+                                     // NO "density" key (UIUX review #22): density is a THEME property
+                                     // (ARCH §4.1); form-level density = theme.overrides.density — the one
+                                     // cascade, never a second plumbing path. Rule of thumb: in the ARCH
+                                     // §4.1 theme shape → override via theme.overrides; not in it → layout.
   },
 
   "theme": {
     "source": "builtin",             // "builtin" | "custom"
-    "name": "editorialIvory",        // builtin catalog key OR custom-theme record Id
+    "name": "editorialIvory",        // builtin catalog key OR custom-theme record Id (two value domains —
+                                     // "source" disambiguates). If a custom theme record is deleted
+                                     // post-publish: guests are safe via `resolved`; the BUILDER falls back
+                                     // to the base theme + a warning (UIUX review nit)
     "overrides": {                   // SPARSE theme-property deltas (ARCH §4.3) — same shape as a theme
       "palette": { "accent": "#0d9488" },
       "radius": "round"
@@ -107,13 +118,19 @@ Version records are never edited in place. "Fix the live form" = edit records �
   },
 
   "header": {
-    "style": "hero",                 // standard|hero|minimal|none
+    "style": "standard",             // standard|minimal|none — "hero" RETIRED (owner 2026-07-05):
+                                     // hero features live EXCLUSIVELY in splitHero's brand pane
+                                     // (its config rides layout.options; catalog §2)
     "arrangement": "stacked",        // stacked|logoBeside|textOnly|inline|centered
     "title": "Contact Us",
     "description": "We reply within a day.",
     "logo": { "url": "…", "versionId": "068…" },
     "brandName": "Acme Outdoors",    // no logo → typeset wordmark in --c-font-display; logo wins when both set
-    "banner": { "url": "…", "versionId": "068…", "opacity": 100 },
+    "bgImage": { "url": "…", "versionId": "068…" },
+                                     // painted at the BOTTOM of the header surface (was "banner"). The color
+                                     // veil above it is --c-header-bg — theme cascade (palette.headerBg +
+                                     // headerBgOpacity composed to rgba by the engine), NOT keys here.
+                                     // Kills the two-owners-for-one-opacity bug (UIUX review #28).
     "highlight": { "text": "Closes Friday!", "variant": "badge", "icon": null, "dismissible": false }
   },
 
@@ -122,7 +139,8 @@ Version records are never edited in place. "Fix the live form" = edit records �
     "alignment": "right",            // left|center|right|stretch
     "placement": "sticky",           // inline|sticky
     "nextLabel": "Next", "backLabel": "Back",
-    "showProgress": true,
+                                     // NO "showProgress" key (UIUX review #5): progress is nav chrome and
+                                     // the chosen primitive owns it — one indicator, never doubled.
     "saveDraft": { "show": false, "label": "Save & finish later" }
   },
 
@@ -154,6 +172,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "defaultCollapsed": false,
       "visibility": null,
       "repeat": null,                // §4.1 — or { "childObject":"Contact", "relationshipField":"AccountId", "min":1, "max":5, "style":"stacked", "addLabel":"Add", "removeLabel":"Remove", "entryLabel":"Contact {index}" }
+                                     // repeat.style: "stacked" | "table" | "tileModal" (mirrors catalog §3)
 
       "elements": [
         {
@@ -165,17 +184,26 @@ Version records are never edited in place. "Fix the live form" = edit records �
           "labelStyle": "default",   // default|uppercase|muted
           "help": null,
           "placeholder": "you@example.com",
-          "required": true,
-          "readOnly": false,
-          "disabled": false,
-          "defaultValue": null,      // static value or { "fromSource": "Contact.Email" }
+          "required": true,          // AUTHORING SUGAR ONLY (UIUX review #24): the serializer compiles it
+                                     // into a validation entry at save/publish; the runtime evaluates
+                                     // validation entries ONLY — one evaluator, one truth
+          "readOnly": false,         // no "disabled" key (UIUX review #16) — read-only covers the real cases
+          "defaultValue": null,      // static value or { "fromSource": "Contact.Email" } — element-level
+                                     // defaultValue WINS over form-level settings.prefill (UIUX review nit)
           "width": 1,                // columns to span within the section grid
           "inputStyle": null,        // null = theme default; outline|filled|underline
           "validation": [            // §7 validation entries
             { "type": "pattern", "pattern": "^\\S+@\\S+$", "message": "Enter a valid email" }
           ],
           "visibility": null,
-          "config": {}               // TYPE-SPECIFIC bag — see below
+          "config": {},              // TYPE-SPECIFIC bag — see below
+          "render": null             // COMPILED AT PUBLISH (UIUX review #21): display metadata from field
+                                     // describe — { "inputType", "options": [], "maxLength", "scale",
+                                     // "precision", "currencyCode", … }. Surveys: written directly by the
+                                     // builder (the schema hook for the question-type inventory). Snapshot
+                                     // honesty like the label/token snapshots — re-publish refreshes
+                                     // describe drift (picklist changes etc.). Display-only; server still
+                                     // enforces CRUD/FLS at submit.
         }
       ]
     }
@@ -193,10 +221,10 @@ Version records are never edited in place. "Fix the live form" = edit records �
 | `signature` | `formSignature` §3 | penColor, thickness, outputType |
 | `map` | `formMap` §3 — **v2, deferred** (key reserved) | provider, addressBinding, zoom, allowPinDrop |
 | `video` | `formVideo` §3 | source, urlOrId, autoplay, loop, muted |
-| `hero` | `heroElement` §3 | image, heading, subtext, cta, height, overlayDim |
+| `hero` | — **RETIRED** (owner 2026-07-05; hero = splitHero's brand pane, catalog §2) | key reserved — ignore-unknown makes a future body-hero additive |
 | `image` / `richText` / `divider` / `spacer` | content blocks | src / html / — / height |
 
-Content types (`hero`…`spacer`) have `binding: null` always. Unknown `type` at runtime renders a
+Content types (`image`…`spacer`) have `binding: null` always. Unknown `type` at runtime renders a
 placeholder ("unsupported element"), never crashes the form — same ignore-unknown discipline as §2.
 
 ### 4.1 Repeatable sections (repeaters)
@@ -217,6 +245,10 @@ a first-class **Repeating Group** item, catalog §5).
   evaluate against the *same entry's* values — entry 2's "show if X = Yes" reads entry 2's X.
 - **No nesting, ever (v1 law):** a repeater cannot contain a repeater — grandchild records are
   deferred multi-object territory.
+- **No file elements inside repeatable sections (v1 law — UIUX review #23):** the builder blocks
+  the drop. A flat `files` array keyed by `elementId` can't attach entry 1's file vs entry 2's to
+  the right child record — and ~4.3 MB base64 × N entries is a heap bomb. The files entry shape
+  reserves `entryIndex` (ignore-unknown = additive) for when this is genuinely wanted.
 
 ## 5 · The `resolved` block (resolve-at-publish)
 
@@ -235,8 +267,9 @@ overrides)` at publish time and embeds the full token map.
 ## 6 · ID rules (load-bearing — drafts, answers, rules all key on these)
 
 - Prefixed, crypto-random, client-generated at creation: `pg_` / `sec_` / `el_` + 8+ random chars.
-- **NEVER regenerated** — not on rename, move, copy-paste of the form (a *duplicated* form gets fresh
-  ids; a *moved* element keeps its id).
+- **Ids survive rename and move within a form. ANY duplication — element, section, page, or whole
+  form — mints fresh ids for every copy** (answers/rules/drafts belong to the original). Two
+  sentences, zero ambiguity (UIUX review #25).
 - Everything references ids, never labels or positions: visibility rules (§7), draft payloads (§8),
   survey answers (§8), future translation keys.
 - Renaming a question therefore never orphans its answers, rules, or drafts.
@@ -260,6 +293,13 @@ in the spec). Evaluated by `expressionEngine` client-side:
 - `source` is an **element id** (works identically for bound forms and unbound surveys).
 - Operators v1: `equals` · `notEquals` · `contains` · `greaterThan` · `lessThan` · `isBlank` ·
   `isNotBlank`. Append-only enum.
+- **Typing/coercion (define in `expressionEngine`'s spec before it builds — UIUX review nit):**
+  `greaterThan`/`lessThan` compare numerically when both sides parse as numbers, as dates when the
+  source element is a date type; otherwise the rule is a build-time spec error — never silent
+  string comparison.
+- **Repeater scoping (UIUX review #27):** elements inside a repeatable section are NOT valid
+  `source`s outside that section — build-time spec error, never a runtime guess (which entry would
+  it read?). Inside the section, rules read the same entry (§4.1).
 
 **Validation** — array on the element; each entry:
 
@@ -286,13 +326,23 @@ evaluates both — one evaluator, build + runtime (catalog §5 note).
       { "el_ph1": "555-0199", "el_ty1": "Work" }
     ]
   },
-  "files": [ { "elementId": "el_f…", "name": "…", "base64": "…" } ],
+  "files": [ { "elementId": "el_f…", "name": "…", "base64": "…" } ],   // shape reserves "entryIndex" (§4.1 — unused in v1: file elements can't sit in repeatable sections)
   "meta": { "startedAt": "…", "submittedAt": "…", "language": "en_US" }
 }
 ```
 
 - **Forms:** server maps `answers` → record fields via the snapshot's bindings (server-side mapping —
   the client never names Salesforce fields; RUNTIME_NOTES elevated-context rules apply).
+
+> **The served spec is a RUNTIME PROJECTION (UIUX review #21 — finishes the compile-on-publish
+> thought).** Publish stores TWO artifacts on the version record: the **full spec** (with
+> `binding` — server-side truth for answer mapping) and a **projection** with `binding` STRIPPED
+> from every element and `render` compiled in (like `resolved.tokens`: stored at publish, not
+> projected per serve — deterministic and cacheable). The runtime — guest AND internal viewer AND
+> builder preview — parses ONLY the projection shape, keeping the one-parser rule honest: answers
+> key by element id, so no client ever needs a field name, and §8's "client never names Salesforce
+> fields" promise stops contradicting §4. Preview builds the same projection in memory via the same
+> serializer (builder has describe access live).
 - **Forms + `repeats`:** each entry inserts ONE child record (`repeat.relationshipField` = the new
   parent's Id) **inside the same submit savepoint** — parent + all entries are atomic (the old
   build's `FormSubmitController` already proved this path).
@@ -303,6 +353,10 @@ evaluates both — one evaluator, build + runtime (catalog §5 note).
 
 **Draft payload** = the same shape + `resumeToken`, minus `files` (files upload on final submit
 only). Resuming = fetch draft by token (RUNTIME_NOTES guardrails) → hydrate `answers` by element id.
+
+**Asset URLs (UIUX review nit):** published snapshots embed image URLs (`logo.url`, header
+`bgImage`, page image). Publish must snapshot **stable public URLs** (the config-image-storage
+hardening list) — otherwise re-publish becomes the fix for every rotated file link.
 
 ## 9 · What this feeds
 

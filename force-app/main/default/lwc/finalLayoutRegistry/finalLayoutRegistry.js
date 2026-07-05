@@ -12,7 +12,9 @@ export const LAYOUTS = {
     scroll: {
         label: 'Continuous scroll',
         load: () => import('c/finalNavScroll'),
-        multiPage: false,
+        // paginates = presents pages as discrete steps. Any layout can host a
+        // multi-page spec — scroll flattens pages with dividers (ARCH §2.2).
+        paginates: false,
         gating: false
     }
 };

@@ -47,6 +47,44 @@ unauthenticated visitor. Rules:
 - **Emailed resume links:** send only to an address collected _inside this draft's form data_, and
   rate-limit sends — otherwise the org becomes an open email relay.
 
+## Guest spec delivery & overflow — `Form_Version__c.Spec_JSON__c` (delta review B)
+
+Since Guest users do not have access to standard file sharing or search in Experience Cloud, they cannot query `ContentVersion` records directly. This creates a roadblock when form configurations overflow the 131k character limit and store their specs as attachments.
+
+- Guest spec retrieval runs strictly through the guest Apex controller (`without sharing`).
+- **Overflow Interception:** If `Form_Version__c.Spec_JSON__c` contains `{"overflow": true}`, the Apex controller must query the related `ContentVersion`'s `VersionData` blob in system context and return the full parsed spec JSON string to the client.
+- **What the endpoint serves = the runtime PROJECTION, never the full spec** (schema §8 / UIUX
+  review #21): element `binding`s stripped, `render` display metadata compiled in at publish. The
+  full spec (with bindings) stays server-side on the version record for answer mapping. This
+  applies to the overflow path too — the overflow ContentVersion stores both artifacts or the
+  controller extracts the projection; the client never receives field names.
+
+## Validation timing — engine-owned UX rules (UIUX review #3)
+
+The presentation contract lives in catalog §2; the engine-side rules bind here:
+
+- **"Reward early, punish late":** a field first validates on **blur after being touched**; once it
+  has erred, it re-validates on **every input** until valid. Never validate while typing a fresh
+  field.
+- Next/Submit with invalid fields: block, validate the full current page, set `pageValidity`, focus
+  + scroll the first invalid field (respect reduced motion). No toasts, ever.
+- **Submit dispatch sets the Submitting state** (buttons disabled, spinner) and clears on
+  resolve/reject — the double-submit guard is structural, not a debounce.
+
+## Submit payload caps (UIUX review #23)
+
+The ~4.3 MB base64 file cap is per-file; the **submit payload as a whole needs a server-side size
+check** too. v1 keeps the multiplier structurally impossible: file elements can't sit inside
+repeatable sections (schema §4.1 law), so max payload ≈ answers + repeats + (file count × cap).
+
+## Update mode — `saveMode: "update"` (UIUX review #26)
+
+- v1: **internal audience only.** The update target resolves per `form.updateTarget` (schema §3) —
+  source record or URL param — under the user's own CRUD/FLS/sharing (`WITH USER_MODE`).
+- **Guest + update is out of v1 entirely.** If it ever ships it uses a signed/opaque token in the
+  same class as draft resume keys and prefill tokens — a guessable record Id in a guest URL would
+  be write access to arbitrary records.
+
 ## Guest prefill — `prefill.source: "sourceRecord"` (schema review B)
 
 Guests cannot use LDS / UI-API (`getRecord`) on Experience sites, so record-based prefill needs the

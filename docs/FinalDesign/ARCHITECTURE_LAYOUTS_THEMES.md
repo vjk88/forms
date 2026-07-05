@@ -79,16 +79,19 @@ Seven separate LWCs (catalog §2 contract), lazy-loaded via `lwc:is`. The engine
 ```js
 // layoutRegistry (logic module)
 export const LAYOUTS = {
-  scroll:        { load: () => import('c/navScroll'),        multiPage: false, gating: false },
-  stepper:       { load: () => import('c/navStepper'),       multiPage: true,  gating: true  },
-  tabs:          { load: () => import('c/navTabs'),          multiPage: true,  gating: false },
-  accordion:     { load: () => import('c/navAccordion'),     multiPage: true,  gating: false },
-  rail:          { load: () => import('c/navRail'),          multiPage: true,  gating: false },
-  splitHero:     { load: () => import('c/navSplitHero'),     multiPage: true,  gating: true  },
-  oneAtATime:    { load: () => import('c/navOneAtATime'),    multiPage: true,  gating: true  },
+  scroll:        { load: () => import('c/navScroll'),        paginates: false, gating: false },
+  stepper:       { load: () => import('c/navStepper'),       paginates: true,  gating: true  },
+  tabs:          { load: () => import('c/navTabs'),          paginates: true,  gating: false },
+  accordion:     { load: () => import('c/navAccordion'),     paginates: true,  gating: false },
+  rail:          { load: () => import('c/navRail'),          paginates: true,  gating: false },
+  splitHero:     { load: () => import('c/navSplitHero'),     paginates: true,  gating: true  },
+  oneAtATime:    { load: () => import('c/navOneAtATime'),    paginates: true,  gating: true  },
 };
 ```
 
+- **`paginates`** = whether the primitive presents pages as **discrete steps**. Any primitive can
+  host a multi-page spec — scroll flattens pages with dividers. (Renamed from `multiPage`, whose
+  obvious misreading would wrongly block multi-page forms from choosing scroll — UIUX review #8.)
 - **Adding a layout = one new primitive + one registry row.** Nothing else changes.
 - `designPanel`'s Layout tab and its conditional-visibility rules read the registry metadata —
   editors never hardcode layout lists.
@@ -312,6 +315,13 @@ resolveTokens(themeProps, formOverrides)
    merge.** No exceptions; jest-green is not rendered-correct.
 7. The engine is pure and exhaustively unit-tested — visual bugs get caught as string diffs, not
    screenshots.
+8. **All motion honors `prefers-reduced-motion`** — transitions become instant or plain crossfade,
+   decorative animation (mesh/blob drift) stops, scroll-to-error jumps. This is accessibility, not
+   art direction: the ONE sanctioned exception to "renders as designed" (UIUX review #14).
+9. **Translucency has one owner per surface (owner 2026-07-05 + UIUX review #11):** pickers emit
+   opaque colors; each background surface pairs with its own Opacity property; the ENGINE composes
+   color + opacity into the existing token's rgba — token count unchanged, no alpha pickers,
+   glass = blur only.
 
 ## 8 · What this unblocks
 

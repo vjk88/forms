@@ -45,7 +45,8 @@ ONE built-in theme.
 ## P1 · All seven layouts
 
 **Build:** `navStepper` · `navTabs` · `navAccordion` · `navRail` · `navSplitHero` (+ Pane Flow via
-the shared step-flow engine) · `navOneAtATime` · `submitBar` slotting (one button implementation,
+the shared step-flow engine; its brand pane IS the product's hero — rich title/subtitle/highlight
+with per-block Top/Center/Bottom placement, owner 2026-07-05) · `navOneAtATime` · `submitBar` slotting (one button implementation,
 forwarded intents) · `layoutZones` · `formHeader` (+ `formHighlight`; branding = logo image, else
 Brand Name typeset as a wordmark in `--c-font-display` — built-in emblems retired, legacy
 `brandEmblem` is NOT reused) ·
@@ -108,7 +109,8 @@ structural edits. Preview === published render (one-parser rule holds).
 
 **Build (registry rows, one PR each):** `formLookup` (per CUSTOM_LOOKUP_SPEC phases) · `fileUpload`
 (base64-on-submit path re-proven) · `formRepeater` (+ sectionRenderer Repeatable composition) ·
-`formSignature` (reuses the file path) · `formVideo` (iframe embeds) · `heroElement`.
+`formSignature` (reuses the file path) · `formVideo` (iframe embeds).
+_`heroElement` RETIRED (owner 2026-07-05) — hero = splitHero's brand pane, built in P1._
 _`formMap` DEFERRED to v2 — [DEFERRED.md](./DEFERRED.md) #1 (registry key reserved)._
 
 **Gate:** each widget submits end-to-end internally; unknown-type placeholder verified (forward

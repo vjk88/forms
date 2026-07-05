@@ -18,6 +18,8 @@
 | 9 | **`Spec_JSON__c` 131k overflow** | ContentVersion overflow storage for giant specs | DATA_MODEL_DELTA §2 | Build when a real form hits the cap — don't preclude, don't pre-build |
 | 10 | **CAPTCHA integration** | Third org-configured spam tier | RUNTIME_NOTES spam | Honeypot + server rate-limit ship in v1; CAPTCHA when abuse demands |
 | 11 | **Survey analytics (phases 2–3) + sentiment** | Aggregation dashboards, Agentforce sentiment | Form-vs-Survey model notes | After the runtime proves itself |
+| 12 | **`designPanel` control search** | Settings-search control finder (VS Code pattern) | Catalog §6 designPanel note (UIUX review #9) | Disclosure posture (≤6 primary + Advanced) + one-home-per-control mostly dissolve the findability problem; search is the durable fix if it persists |
+| 13 | **Body `heroElement`** | Generic draggable hero content block in the form body | Catalog §3 (RETIRED stub) — element-type key `hero` reserved | **Owner call 2026-07-05: hero is splitHero's brand pane, exclusively.** Revisit only if a real body-hero need appears; ignore-unknown keeps it additive |
 
 **Rules of the ledger:** an item leaves this list only by (a) being scheduled into a named phase of
 a version plan, or (b) being explicitly killed. Adding an item here requires pointing to where its

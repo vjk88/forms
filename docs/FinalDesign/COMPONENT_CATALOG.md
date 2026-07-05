@@ -17,8 +17,19 @@
 > ownership**. Explicit always wins; blank means "inherit up". This rule is what keeps the old
 > `--c-card-*` double-ownership disease from coming back.
 
-**Type legend:** `text` · `number` · `toggle` (on/off) · `enum` (fixed choices) · `color` · `image`
-· `list` · `rule` (declarative condition) · `binding` (object/field reference).
+**Type legend:** `text` · `richtext` (sanitized rich text) · `number` · `toggle` (on/off) · `enum`
+(fixed choices) · `color` · `image` · `list` · `rule` (declarative condition) · `binding`
+(object/field reference) · `data` (engine/runtime-supplied, not user-set) · `events` (dispatched
+intents) · `multi` (multi-select enum) · `color+enum` (composite: color plus style choices).
+
+**Scope:** results & analytics UI is **out of catalog v1 scope** — tracked in the Form-vs-Survey
+analytics phases ([[project-form-vs-survey-model]]). (UIUX review #17)
+
+**Translucency rule (owner 2026-07-05 + UIUX review #11):** color pickers always emit **opaque**
+colors; every *background* color (page image veil, header, form panel, section) pairs with its own
+**Opacity** slider, and the **engine composes color + opacity into the token's rgba**. Opacity
+always means "the color veil over whatever sits beneath it." Glassmorphism is blur only — it never
+writes opacity.
 
 **Naming:** this catalog uses *logical* names (`pageFrame`, `navScroll`). Implementation names carry
 the **`final` prefix** (`finalPageFrame` → `<c-final-page-frame>`, Apex `FinalXxx`) — owner decision,
@@ -47,8 +58,7 @@ Owns everything identical across layouts: the page backdrop, the form panel surf
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Page Background Color | color | The backdrop behind the whole form |
-| Page Background Opacity | number | 0–100% |
+| Page Background Color | color | The backdrop behind the whole form — bottom-most layer, so no opacity of its own (UIUX review #11) |
 | Page Background Image | image | Uploaded backdrop photo |
 | Page Image Fit | enum | Cover / Contain / Tile |
 | Page Image Dim | number | Darkening scrim over the image for legibility (0–70%) |
@@ -56,12 +66,12 @@ Owns everything identical across layouts: the page backdrop, the form panel surf
 | Texture Intensity | number | 0.25×–2.5× |
 | Background Effect | enum | None / Soft Color Blobs |
 | Blob Colors | list(color) | Up to 4, when effect is on |
-| Glassmorphism | toggle | Frosted-glass blur on the form panel |
+| Glassmorphism | toggle | Frosted-glass **blur only** (`--c-glass-blur`) — never writes opacity; helper text: "Lower Form Panel Opacity to see the effect" (UIUX review #11) |
 | Form Panel Background | color | The form's own surface fill (was "card") |
 | Form Panel Opacity | number | Lower it to let the backdrop show through |
 | Form Panel Border | color+enum | Color · width · style (solid/dashed/none) |
 | Form Panel Shadow | enum | None / Soft / Strong |
-| Corner Rounding | enum/number | Shared roundness (panel + sections + fields) |
+| Corner Rounding | enum | Shared roundness (panel + sections + fields) — same Sharp→Pill scale as `themeEditor`; enum only, raw px never crosses the wire (UIUX review #12) |
 | Max Content Width | enum | Narrow / Medium / Wide / Full |
 | Content Padding | enum | Inherits density scale |
 | Vertical Alignment | enum | Top / Center (how the panel sits on the page) |
@@ -71,17 +81,25 @@ Logo (or brand-name wordmark), title, description, highlight banner, and arrange
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Header Style | enum | Standard / Hero (banner) / Minimal / None |
+| Header Style | enum | Standard / Minimal / None — "Hero (banner)" style RETIRED (owner 2026-07-05); background image is available on every style instead |
 | Header Arrangement | enum | Stacked / Logo Beside / Text Only / Inline / Centered |
 | Logo Image | image | Uploaded or URL — wins over Brand Name when both are set |
 | Brand Name | text | No logo → rendered as a typeset text wordmark in the theme's display typography (`--c-font-display`). Built-in emblem icons RETIRED (owner 2026-07-04) |
 | Form Title | text | |
 | Description / Subtitle | text | |
 | Highlight | — | Composes `formHighlight` (§3), which owns the message / variant / icon — not re-owned here |
-| Header Background Color | color | Header surface fill |
-| Header Banner Image | image | Hero background image |
-| Header Background Opacity | number | |
+| Header Background Image | image | Painted at the bottom of the header surface (was "Banner") |
+| Header Background Color | color | The veil layered **over** the background image (or the page) |
+| Header Background Opacity | number | Opacity of that color veil (0–100) — the engine composes color + opacity into `--c-header-bg` as rgba; this doubles as the image-legibility control (resolves UIUX review #28) |
 | Header Text Color | color | |
+
+> **Owner header model (2026-07-05, resolves UIUX review #20):** the header everywhere is the
+> lockup + the background trio above — nothing more. **Hero features are EXCLUSIVE to
+> `navSplitHero`'s brand pane (§2)**; there is no generic draggable hero element and no second
+> "big image at top" implementation to drift from this one.
+> [HEADER_HERO_DND_SPEC](../redesign/HEADER_HERO_DND_SPEC.md) is **superseded** by this note.
+> The header zone renders ONCE per form, on every page/step (never re-rendered per page —
+> BUILD_PHASES checklist item 2).
 
 ### `submitBar` — the actions row
 Submit / Next / Back buttons, alignment, and sticky behavior.
@@ -93,7 +111,8 @@ Submit / Next / Back buttons, alignment, and sticky behavior.
 | Submit Placement | enum | Inline / Sticky Footer (pins on long forms) |
 | Next Button Label | text | Multi-page only |
 | Back Button Label | text | Multi-page only |
-| Show Progress | toggle | Pair the bar with a progress indicator |
+| Submitting | data | Engine-set on submit dispatch, cleared on resolve/reject: all buttons disabled + spinner on the primary — double-submit structurally impossible (UIUX review #3) |
+| Blocked Message | data | While Next/Submit is blocked by invalid fields: compact `aria-live="polite"` text — "Fix {n} field(s) to continue"; clears when the page validates (UIUX review #3) |
 | Show Save Draft | toggle | "Save & Finish Later" — shown only when Save & Resume is enabled (`draftManager`, §4) — **v2, deferred with Save & Resume** |
 | Save Draft Label | text | v2 |
 
@@ -111,7 +130,7 @@ Arranges a page's sections into columns / grid.
 |---|---|---|
 | Zone Arrangement | enum | Single Column / Two Column / Grid / Bento (mosaic) |
 | Column Gap | enum | From spacing scale |
-| Responsive Breakpoint | number | Width at which columns collapse to one |
+| Collapse | enum | Early / Standard / Late — the width at which columns collapse to one; container-width constants in the engine, **container query, never viewport** (UIUX review #12; raw px never crosses the wire) |
 | Collapse Order | enum | Source order / Priority |
 
 ### `sectionRenderer` — one section + its fields
@@ -124,6 +143,7 @@ Section header (icon/title/description), the field grid, style treatment, collap
 | Section Icon | enum | Optional leading icon |
 | Section Style | enum | Plain / Card / Boxed / Outline / Subtle / Flat (quick-start presets) |
 | Section Background | color | Explicit fill — **wins over the preset** |
+| Section Background Opacity | number | Opacity of that fill over the form panel (composed to rgba — header translucency rule) |
 | Section Border | color+enum | Color · width · style |
 | Section Corner Rounding | number | (shared roundness by default) |
 | Section Inner Padding | enum | None / Small / Medium / Large |
@@ -139,7 +159,7 @@ Renders a single element with label, help, and input. Type-driven.
 
 | Attribute | Type | Notes |
 |---|---|---|
-| Element Type | enum | Field / Hero / Image / Rich Text / Divider / Spacer **+ the §3 widget types** (Lookup, File Upload, Repeater, Signature, Map, Video) |
+| Element Type | enum | Field / Image / Rich Text / Divider / Spacer **+ the §3 widget types** (Lookup, File Upload, Repeater, Signature, Map, Video). **Repeater stays in this enum by owner ruling (2026-07-05):** it drags from the palette like any element but **lands as a repeatable section** — the drop opens the child-relationship picker ("Work Orders · via AccountId") and mints the section with its dedicated inspector; `formStudio`'s Related List flow is the reference UX. (Hero removed — splitHero-exclusive, see `formHeader` note) |
 | Field Binding | binding | Object.Field this maps to (**Forms**). **Surveys are unbound** — the answer stores to the answer-store, no binding |
 | Field Label | text | |
 | Label Position | enum | Top / Left / Hidden |
@@ -149,10 +169,8 @@ Renders a single element with label, help, and input. Type-driven.
 | Required | toggle | |
 | Default Value | text/binding | Static or from source record |
 | Input Style | enum | Outline / Filled / Underline |
-| Field Text Size | number | Control scale |
 | Field Width | enum | Columns to span |
-| Read-only | toggle | |
-| Disabled | toggle | |
+| Read-only | toggle | Visible, not editable; the value still binds and submits. (**Disabled** dropped — admins confuse the two and its submit semantics are muddy; **Field Text Size** dropped — the theme owns the type scale, per-field sizes are how forms become ransom notes. UIUX review #16/#7) |
 | Validation Rules | list(rule) | Required / Pattern / Range / Custom + message |
 | Visibility Rule | rule | Conditional show/hide |
 
@@ -187,8 +205,28 @@ Renders a single element with label, help, and input. Type-driven.
 >   `navTabs` = tablist/tab/tabpanel · `navStepper`/`navRail` = nav list with `aria-current="step"` ·
 >   `navAccordion` = trigger buttons with `aria-expanded` · `navOneAtATime` = focus moves to the new
 >   screen on advance. A primitive isn't done until its keyboard path works.
+> - **Reduced motion is part of the contract (UIUX review #14):** ALL motion — screen transitions,
+>   mesh/blob drift, scroll-to-error — honors `prefers-reduced-motion` (instant or plain crossfade;
+>   decorative animation stops; scrolling jumps). The sanctioned exception to "renders as designed."
+> - **Narrow-container behavior is part of the contract (UIUX review #4):** each primitive declares
+>   its narrow render (see its **Narrow behavior** row) and isn't done until it works — driven by
+>   **container queries on the pageFrame panel** (never viewport), one shared threshold constant in
+>   the engine.
+> - **`pageValidity` semantics (UIUX review #3):** it is the result of the **last validation run**,
+>   computed by the engine — primitives render gating from it, never compute it.
 >
 > The per-primitive attributes below are its *presentation* options, layered on that contract.
+>
+> **Validation presentation — engine-owned, NOT configurable (UIUX review #3):**
+> - Timing ("reward early, punish late"): a field first validates on blur after being touched; once
+>   it has erred, it re-validates on every input until valid. Never while typing a fresh field.
+> - Errors render **inline under the field** via `elementRenderer` (`--c-field-error`), message from
+>   the rule. **No toast is ever a validation surface.**
+> - Next/Submit with invalid fields: block, validate the full current page, mark all invalid fields,
+>   move focus to the first invalid field and scroll it into view (respecting reduced motion).
+>   `submitBar` shows the blocked message near the action (its Blocked Message row, §1) — inline at
+>   field + summary near the action is the kept legacy `formDesigner` pattern.
+> - `navOneAtATime`: error inline under the single input; advance denied; focus stays put; no shake.
 
 ### `navScroll` — continuous flow
 All pages/sections in one scroll; no pagination.
@@ -197,6 +235,7 @@ All pages/sections in one scroll; no pagination.
 |---|---|---|
 | Show Page Dividers | toggle | Page labels become dividers when > 1 page |
 | Section Spacing | enum | Gap between sections |
+| Narrow behavior | — | No structural change (declared per contract, UIUX review #4) |
 
 ### `navStepper` — wizard steps
 One page per step with a progress control; forward can be gated.
@@ -207,7 +246,8 @@ One page per step with a progress control; forward can be gated.
 | Stepper Mode | enum | Numbered / Dots / Progress Bar |
 | Navigation | enum | Free / Gated (must complete to advance) |
 | Show Step Count | toggle | "Step 2 of 5" |
-| Rail Width | number | When placed on the left |
+| Rail Width | enum | Narrow / Standard / Wide — when placed on the left (UIUX review #12) |
+| Narrow behavior | — | Left Rail collapses to a compact top bar of numbered chips (UIUX review #4) |
 
 ### `navTabs` — tabbed pages
 One page per tab; free navigation.
@@ -217,6 +257,7 @@ One page per tab; free navigation.
 | Tab Alignment | enum | Left / Center / Full-width |
 | Tab Style | enum | Underline / Pills / Enclosed |
 | Show Tab Icons | toggle | |
+| Narrow behavior | — | Horizontal scroll with fade edges — tabs never wrap (UIUX review #4) |
 
 ### `navAccordion` — expandable panels
 Pages/sections as accordion panels.
@@ -226,6 +267,7 @@ Pages/sections as accordion panels.
 | Allow Multiple Open | toggle | |
 | First Panel Open | toggle | Default-expand the first |
 | Icon Position | enum | Leading / Trailing chevron |
+| Narrow behavior | — | No structural change (declared per contract, UIUX review #4) |
 
 ### `navRail` — persistent side nav
 A list of pages/sections beside the content pane.
@@ -233,10 +275,10 @@ A list of pages/sections beside the content pane.
 | Attribute | Type | Notes |
 |---|---|---|
 | Rail Side | enum | Left / Right |
-| Rail Width | number | |
+| Rail Width | enum | Narrow / Standard / Wide (UIUX review #12) |
 | Rail Content | enum | Page List / Progress / Both |
 | Sticky Rail | toggle | |
-| Mobile Behavior | enum | Collapse to Top Bar / Drawer |
+| Narrow behavior | enum | Collapse to Top Bar / Drawer (was "Mobile Behavior" — container-driven, UIUX review #4) |
 
 ### `navSplitHero` — brand panel + form
 Immersive brand panel on one side, form on the other.
@@ -245,11 +287,25 @@ Immersive brand panel on one side, form on the other.
 |---|---|---|
 | Brand Panel Side | enum | Left / Right |
 | Brand Panel Width | enum | Ratio (⅓ / ½) |
-| Brand Panel Content | enum | Logo / Image / Text / Progress |
 | Sticky Brand Panel | toggle | |
-| Progress Style | enum | Default / Horizontal / None |
+| Pane Background Image | image | The hero visual filling the brand pane |
+| Pane Background Color | color | Veil over the pane image — with Opacity per the translucency rule |
+| Pane Background Opacity | number | |
+| Pane Logo / Brand | — | Logo image, else Brand Name wordmark (same rule as `formHeader`) |
+| Pane Title | richtext | Rich-text editable, not plain text (owner 2026-07-05) |
+| Pane Subtitle | richtext | Rich-text editable |
+| Pane Highlight | — | Composes `formHighlight` (§3) |
+| Block Placement | enum | **Per block** (title / subtitle / highlight): Top / Center / Bottom vertical alignment inside the pane (owner 2026-07-05) |
+| Progress Style | enum | Default / Horizontal / None — renders in the brand pane |
 | Navigation | enum | Free / Gated (per preset) |
 | Pane Flow | enum | Pages / One at a Time (owner request 2026-07-04) — how the FORM pane advances |
+| Narrow behavior | — | Brand pane becomes a compact top brand strip; form full-width; sticky off (UIUX review #4) |
+
+> **The brand pane IS the product's hero (owner 2026-07-05).** Hero features — full-pane imagery,
+> richly placed title/subtitle/highlight — live HERE exclusively. When this layout is chosen, "the
+> entire half of the form is the header": the pane replaces `formHeader` (no second header renders).
+> There is no generic draggable hero element (§3 `heroElement` retired) and
+> [HEADER_HERO_DND_SPEC](../redesign/HEADER_HERO_DND_SPEC.md) is superseded.
 
 > **Pane Flow = One at a Time** runs the form pane on the **same step-flow engine as
 > `navOneAtATime`** — one shared logic module extracted in P1, never a second implementation
@@ -267,6 +323,14 @@ One section (or element) per screen, advance-driven.
 | Advance Button Label | text | Default **"Continue"** (owner 2026-07-04) — deliberately not a vendor-signature "OK"/"Next" |
 | Show Progress Bar | toggle | |
 | Back Link Style | enum | Text link / Arrow |
+| Narrow behavior | — | No structural change (declared per contract, UIUX review #4) |
+
+> **Keyboard advance vs input types (UIUX review #13, binds at P1):** single-line inputs — Enter
+> advances when Keyboard advance is on. Textarea / rich text — Enter is a newline; **Ctrl/Cmd+Enter
+> advances**, and the muted helper text swaps accordingly ("or press Ctrl+Enter") — still plain
+> text, never a key-chip. On **touch devices** the helper text hides entirely (no modifier keys
+> exist) and advance is button-only. Choice inputs: selecting **never auto-advances** — advance
+> stays explicit (a11y + signature distance).
 
 > **Pattern provenance & IP posture (owner question 2026-07-04):** one-question-at-a-time is an
 > industry-generic interaction pattern (Typeform popularized it; Jotform "Cards", Tally, Youform,
@@ -349,19 +413,11 @@ Highlight message shown in the header.
 | Icon | enum | Optional |
 | Dismissible | toggle | |
 
-### `heroElement` — hero content block
-Draggable hero (image + heading + subtext + CTA).
-
-| Attribute | Type | Notes |
-|---|---|---|
-| Hero Image | image | |
-| Heading | text | |
-| Subtext | text | |
-| CTA Label | text | |
-| CTA Action | enum | Scroll to form / URL / None |
-| Alignment | enum | Left / Center |
-| Height | enum | Compact / Standard / Tall |
-| Overlay Dim | number | Scrim over the image |
+### `heroElement` — **RETIRED** (owner 2026-07-05)
+The generic draggable hero content block is cut: **hero features are exclusive to `navSplitHero`'s
+brand pane (§2)** — one hero implementation, zero drift (resolves UIUX review #20). No registry
+row, no palette item. The `hero` element-type key stays reserved (ignore-unknown-keys makes a
+future body-hero purely additive if ever wanted).
 
 ### `formSignature` — signature pad (review §2 gap)
 Canvas-based signing field for agreements, sign-offs, applications.
@@ -475,13 +531,23 @@ Builder-shell service managing the undo/redo stack for **structural** form edits
 | Attribute | Type | Notes |
 |---|---|---|
 | Tracked Scope | enum | **Build-mode structural edits only** (add/move/delete pages · sections · elements) |
-| Stack Limit | number | Max steps retained |
-| Undo / Redo | events | Wired to toolbar + keyboard shortcuts |
+| Undo / Redo | events | Wired to toolbar + keyboard shortcuts. (Stack limit = internal engine constant, not admin surface — UIUX review #12) |
 | Coalescing | toggle | Collapse a continuous input (drag / typing) to ONE step on release |
 
 > **Design-mode changes are NOT on this stack** (review C). Live theme tweaks (color sliders, etc.)
 > apply as instant CSS preview and revert via the form-level **Save / Discard** — not per-tweak undo.
-> Keeps the stack clean without making "undo my color change" feel broken.
+> Keeps the stack clean without making "undo my color change" feel broken. The decision is
+> defensible because the **override lifecycle** (below, UIUX review #2) gives every design control
+> its own escape hatch.
+>
+> **Override lifecycle — shared contract for `designPanel` + `propertyPanel` (UIUX review #2):**
+> - Every design control shows its cascade state: inherited (plain) vs **overridden** (marked —
+>   exact treatment at P1). The control never lies about where its value comes from.
+> - Every overridden control gets a **Reset to theme** affordance that re-blanks it (inherit).
+> - `designPanel`'s header shows a persistent chip: "**{n} customizations** · Reset all" (confirm).
+> - Theme switch with overrides present prompts ONCE: **Keep my {n} customizations** (default,
+>   count named so the user knows what to hunt if the new theme looks off) / **Use theme as-is**
+>   (clears them). No prompt at zero overrides.
 
 ### `fieldPalette` — the element palette
 Draggable element/field types.
@@ -492,9 +558,10 @@ Draggable element/field types.
 | Available Types | list | Filtered by bound object |
 | Search | text | |
 
-> Includes a first-class **"Repeating Group"** item: dropping it creates a repeatable, chromeless
-> (`Plain`-style) section pre-wired to prompt for Child Object + Relationship (§1 sectionRenderer /
-> §3 formRepeater). Users think "repeating group"; the tree keeps ONE container species.
+> Includes a first-class **"Repeater"** item (a.k.a. Repeating Group): dropping it opens the
+> child-relationship picker and creates a repeatable, chromeless (`Plain`-style) section (§1
+> sectionRenderer / §3 formRepeater) — `formStudio`'s Related List flow is the reference UX (owner
+> 2026-07-05). Users think "repeater"; the tree keeps ONE container species.
 
 ### `propertyPanel` — the element editor
 Edits the selected element's attributes (see `elementRenderer` §1 — it edits all of those). Contextual to selection.
@@ -532,10 +599,14 @@ Declarative multi-rule editor (Lightning record-page pattern).
 | Combine Logic | enum | All (AND) / Any (OR) / Custom |
 | Action | enum | Show / Hide |
 
+> **Repeater scoping law (UIUX review #27):** elements inside a repeatable section are NOT valid
+> rule sources outside that section — the source picker simply doesn't offer them, and
+> `expressionEngine` treats such a reference as a **build-time spec error**, never a runtime guess.
+
 ### `validationEditor` — validation rules
 | Attribute | Type | Notes |
 |---|---|---|
-| Rule Type | enum | Required / Pattern / Range / Custom |
+| Rule Type | enum | Required / Pattern / Range / Custom — **Required is authored via the element's toggle**; the serializer compiles it into a validation entry, and the runtime evaluates validation entries ONLY (one evaluator, one truth — UIUX review #24) |
 | Condition | rule | When it applies |
 | Error Message | text | |
 
@@ -554,6 +625,13 @@ Organized tabs that write theme overrides. It **edits** the `pageFrame` / `formH
 |---|---|---|
 | Active Tab | enum | Theme / Palette / Backgrounds / Layout / Fields / Header / Actions |
 | Layout-conditional visibility | data | Hides controls that don't apply to the current layout |
+| Customizations chip | data | "{n} customizations · Reset all" (override lifecycle, §5 `historyManager` note) |
+
+> **Disclosure posture (UIUX review #9):** each tab shows a small set of primary controls
+> (target ≤ 6); everything else sits behind a per-tab **Advanced** expander. **One home per
+> control** — tabs are *surfaces*, not property types; no control appears twice.
+> [DESIGN_MODE_IA](../redesign/DESIGN_MODE_IA.md) owns the per-control primary/advanced mapping and
+> any tab renames. A control-finder **Search** is DEFERRED to v2 ([DEFERRED.md](./DEFERRED.md)).
 
 ### `themeGallery` — theme picker
 Browse and pick a theme (built-in + custom) from a visual gallery.
@@ -579,6 +657,7 @@ Edits theme **properties** (which resolve to tokens) and saves a named custom th
 |---|---|---|
 | Theme Name | text | |
 | Start From | enum | Base theme to fork |
+| Affected Forms | data | Count of forms using this theme — renders a persistent scope banner: "Editing theme '{name}' — used by {n} forms" (UIUX review #10) |
 | Accent / Brand Color | color | + live contrast badge |
 | Main Text Color | color | |
 | Muted Text Color | color | |
@@ -596,6 +675,11 @@ Edits theme **properties** (which resolve to tokens) and saves a named custom th
 > are user-created → stored as records** (they can't hide, and they must be saveable / shareable /
 > listable in `themeGallery`). The editor writes the SAME theme-property shape either way — storage
 > differs, the pipeline doesn't.
+>
+> **Blast-radius rules (UIUX review #10):** `themeEditor` opens ONLY via an explicit "Edit theme…"
+> action — never inline from `designPanel` controls (styles vs direct formatting must FEEL
+> different). Saving a theme used by more than one form confirms with the count; **Save As New**
+> stays the frictionless path.
 
 ### `colorControl` — color input + contrast badge
 Reusable color picker with live WCAG feedback.
@@ -603,8 +687,7 @@ Reusable color picker with live WCAG feedback.
 | Attribute | Type | Notes |
 |---|---|---|
 | Label | text | |
-| Color Value | color | |
-| Allow Alpha | toggle | Transparency (backgrounds only) |
+| Color Value | color | Always **opaque** — no alpha in the picker; translucency is each background surface's dedicated Opacity slider, composed to rgba by the engine (translucency rule / UIUX review #11) |
 | Contrast Reference | color | What it's checked against |
 | Contrast Result | data | AA / AAA pass-fail badge |
 
@@ -640,6 +723,7 @@ The starting point for a new form (pre-bound themed templates).
 | Category | enum | By object / use case |
 | Selected Template | data | |
 | Search | text | |
+| Blank tile | — | **"Start blank" is a tile in this gallery, first position** — the gallery is the ONLY fork (UIUX review #18) |
 
 ### `templateCard` — a template tile
 | Attribute | Type | Notes |
@@ -654,7 +738,7 @@ The starting point for a new form (pre-bound themed templates).
 |---|---|---|
 | Form Name | text | |
 | Form Type | enum | **Form** (object-bound) / **Survey** (unbound answer-store) — the first fork in creation |
-| Start From | enum | Template / Blank |
+| Chosen Template | data | Summary chip of the gallery pick (change = back to gallery). **"Start From" enum removed** — the gallery owns that fork, Blank included (UIUX review #18) |
 | Target Object | binding | Forms only — Surveys skip binding |
 
 ---
@@ -672,11 +756,12 @@ The starting point for a new form (pre-bound themed templates).
 - **Navigation primitives share one interface** (§2 intro) so the engine can lazy-swap them.
 - **Field-state colors are theme-level, not per-field** (review Rec 1) — they live in `themeEditor`.
 
-### Localization (review Rec 4 — driven by Surveys)
+### Localization (review Rec 4 — driven by Surveys; scope honesty per UIUX review #15)
 Forms are object-bound, so **bound field labels auto-translate** via the platform (per user/guest
-language) — nothing to build there. But **Surveys are unbound** ([[project-form-vs-survey-model]]) and
-all their copy is *authored* (questions, options, help, static content) with no field metadata to
-translate from — so they need real i18n. Design:
+language) — that part comes free. But authored copy exists on **both form types** — section titles,
+help text, placeholders, button labels, validation messages, thank-you copy on Forms too; on
+Surveys, *everything* is authored (questions, options, help, static content). The Translation Map
+covers authored copy for **both**; only bound labels are free. Design:
 - A **`translationService`** logic module + a **Translation Map** on the form spec.
 - Every authored label / placeholder / help / option / error carries a **translation key**; the map
   holds per-language values; the engine resolves keys against the current user/guest `language` param
