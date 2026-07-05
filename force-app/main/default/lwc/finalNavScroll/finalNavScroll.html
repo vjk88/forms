@@ -5,12 +5,10 @@
                 <template lwc:if={showPageDividers}>
                     <h2 class="divider">{page.name}</h2>
                 </template>
-                <template for:each={page.sections} for:item="section">
-                    <c-final-section-renderer
-                        key={section.id}
-                        section={section}
-                    ></c-final-section-renderer>
-                </template>
+                <c-final-layout-zones
+                    sections={page.sections}
+                    zones={page.zones}
+                ></c-final-layout-zones>
             </section>
         </template>
         <slot name="actions"></slot>

@@ -1,0 +1,88 @@
+/* The header surface: --c-header-bg is the veil — over the page when there is no
+   bgImage, over the image (via surfaceStyle's gradient layer) when there is one. */
+.hdr {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--c-space-3);
+    padding: var(--c-space-5);
+    border-radius: var(--c-radius);
+    margin-bottom: var(--c-space-5);
+    background: var(--c-header-bg);
+    font-family: var(--c-font-body);
+}
+
+.style-minimal {
+    background: none;
+    padding: 0 0 var(--c-space-4);
+    border-radius: 0;
+}
+
+.brand-logo {
+    max-height: 48px;
+    max-width: 220px;
+    object-fit: contain;
+}
+
+.brand-wordmark {
+    font-family: var(--c-font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--c-header-text);
+}
+
+.hdr-title {
+    margin: 0;
+    font-family: var(--c-font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--c-header-text);
+}
+
+.style-minimal .hdr-title {
+    font-size: 1.3rem;
+}
+
+.hdr-desc {
+    margin: var(--c-space-2) 0 0;
+    font-size: 0.9375rem;
+    color: var(--c-header-text-weak);
+}
+
+/* — Arrangements — */
+
+/* logoBeside: branding left, text right */
+.arr-logo-beside {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: var(--c-space-4);
+}
+
+.arr-logo-beside .hdr-highlight {
+    grid-column: 1 / -1;
+}
+
+/* inline: branding and title share one line */
+.arr-inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--c-space-4);
+}
+
+.arr-inline .brand-logo {
+    max-height: 32px;
+}
+
+.arr-inline .hdr-title {
+    font-size: 1.3rem;
+}
+
+/* centered: everything centered */
+.arr-centered {
+    align-items: center;
+    text-align: center;
+}

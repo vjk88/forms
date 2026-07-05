@@ -1,0 +1,62 @@
+.hl {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--c-space-2);
+    font-family: var(--c-font-body);
+}
+
+/* Badge — compact accent pill */
+.hl-badge {
+    padding: var(--c-space-1) var(--c-space-3);
+    border-radius: 999px;
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+/* Banner — full-width accent strip */
+.hl-banner {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--c-space-2) var(--c-space-4);
+    border-radius: var(--c-radius);
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Inline — quiet text row on the host surface */
+.hl-inline {
+    color: var(--c-header-text-weak, var(--c-text-weak));
+    font-size: 0.875rem;
+}
+
+.hl-badge .hl-icon,
+.hl-banner .hl-icon {
+    --sds-c-icon-color-foreground-default: var(--c-on-accent);
+}
+
+.hl-dismiss {
+    margin-left: var(--c-space-1);
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.hl-dismiss:hover {
+    opacity: 1;
+}
+
+.hl-dismiss:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+    border-radius: 2px;
+}

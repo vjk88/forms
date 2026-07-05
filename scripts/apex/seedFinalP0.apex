@@ -49,14 +49,24 @@ for (Map<String, Object> v : variants) {
             'help' => 'We reply within a day.',
             'config' => new Map<String, Object>{ 'inputType' => 'email' }
         },
+        // forward-compat check: unknown type must render the placeholder, never crash
+        new Map<String, Object>{ 'id' => 'el_p0mystery1', 'type' => 'hologram', 'config' => new Map<String, Object>() }
+    };
+
+    // Second section: proves layoutZones' twoCol arrangement + container collapse.
+    List<Object> extraElements = new List<Object>{
+        new Map<String, Object>{
+            'id' => 'el_p0phone01', 'type' => 'field',
+            'binding' => new Map<String, Object>{ 'object' => 'Contact', 'field' => 'Phone' },
+            'label' => 'Phone',
+            'config' => new Map<String, Object>{ 'inputType' => 'tel' }
+        },
         new Map<String, Object>{
             'id' => 'el_p0notes01', 'type' => 'field',
             'binding' => new Map<String, Object>{ 'object' => 'Contact', 'field' => 'Description' },
             'label' => 'Anything else?',
             'config' => new Map<String, Object>{ 'inputType' => 'textarea' }
-        },
-        // forward-compat check: unknown type must render the placeholder, never crash
-        new Map<String, Object>{ 'id' => 'el_p0mystery1', 'type' => 'hologram', 'config' => new Map<String, Object>() }
+        }
     };
 
     Map<String, Object> spec = new Map<String, Object>{
@@ -68,14 +78,26 @@ for (Map<String, Object> v : variants) {
         // no layout.density — density is a THEME property (schema §3 / UIUX review #22)
         'layout' => new Map<String, Object>{
             'type' => 'scroll', 'options' => new Map<String, Object>(),
-            'maxWidth' => 'medium'
+            'maxWidth' => 'medium',
+            'zonesDefault' => new Map<String, Object>{
+                'arrangement' => 'twoCol', 'gap' => 'md',
+                'collapse' => 'standard', 'collapseOrder' => 'source'
+            }
         },
         'header' => new Map<String, Object>{
             'style' => 'standard',
+            'arrangement' => 'stacked',
+            'brandName' => 'Acme Outdoors',   // no logo → typeset wordmark (chrome PR)
             'title' => 'P0 Walking Skeleton — ' + (String) v.get('label'),
-            'description' => 'Old-bug reel: page color + image + mesh + texture together.'
+            'description' => 'Old-bug reel: page color + image + mesh + texture together.',
+            'highlight' => new Map<String, Object>{
+                'text' => 'Closes Friday!', 'variant' => 'badge',
+                'icon' => null, 'dismissible' => false
+            }
         },
-        'submit' => new Map<String, Object>{ 'label' => 'Submit', 'alignment' => 'right' },
+        'submit' => new Map<String, Object>{
+            'label' => 'Submit', 'alignment' => 'right', 'placement' => 'inline'
+        },
         'pages' => new List<Object>{
             new Map<String, Object>{
                 'id' => 'pg_p0demo001', 'name' => 'Details',
@@ -83,9 +105,15 @@ for (Map<String, Object> v : variants) {
                     new Map<String, Object>{
                         'id' => 'sec_p0demo01',
                         'title' => 'Contact details',
-                        'description' => 'One page, one section, field elements only.',
+                        'description' => 'One page, two sections in twoCol zones.',
                         'style' => 'card', 'columns' => 2,
                         'elements' => elements
+                    },
+                    new Map<String, Object>{
+                        'id' => 'sec_p0demo02',
+                        'title' => 'Your message',
+                        'style' => 'card', 'columns' => 1,
+                        'elements' => extraElements
                     }
                 }
             }

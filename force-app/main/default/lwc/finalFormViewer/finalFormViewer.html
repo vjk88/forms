@@ -5,12 +5,10 @@
     <template lwc:elseif={model}>
         <c-final-page-frame tokens={tokens} max-width={model.maxWidth}>
             <template lwc:if={model.header}>
-                <header slot="header" class="hdr">
-                    <h1 class="hdr-title">{model.header.title}</h1>
-                    <template lwc:if={model.header.description}>
-                        <p class="hdr-desc">{model.header.description}</p>
-                    </template>
-                </header>
+                <c-final-form-header
+                    slot="header"
+                    header={model.header}
+                ></c-final-form-header>
             </template>
             <div slot="body">
                 <template lwc:if={navCtor}>
@@ -20,11 +18,12 @@
                     ></lwc:component>
                 </template>
             </div>
-            <div slot="actions" class="actions">
-                <button class="submit" type="button">
-                    {model.submitLabel}
-                </button>
-            </div>
+            <c-final-submit-bar
+                slot="actions"
+                config={model.submit}
+                show-submit={model.showSubmit}
+                onsubmit={handleSubmit}
+            ></c-final-submit-bar>
         </c-final-page-frame>
     </template>
     <template lwc:else>

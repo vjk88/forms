@@ -91,15 +91,34 @@ export default class FinalFormViewer extends LightningElement {
         this.navCtor = module.default;
 
         const header = spec.header || {};
+        const hasLockup = Boolean(
+            header.title ||
+                header.description ||
+                header.brandName ||
+                (header.logo && header.logo.url) ||
+                (header.highlight && header.highlight.text)
+        );
+        const zonesDefault =
+            (spec.layout && spec.layout.zonesDefault) || {};
         this.model = {
             maxWidth: (spec.layout && spec.layout.maxWidth) || 'medium',
-            header:
-                header.style !== 'none' && (header.title || header.description)
-                    ? header
-                    : null,
-            pages: spec.pages || [],
-            submitLabel: (spec.submit && spec.submit.label) || 'Submit'
+            header: header.style !== 'none' && hasLockup ? header : null,
+            // Each page ships with its zones config pre-merged (sparse page
+            // override on top of layout.zonesDefault — schema §4).
+            pages: (spec.pages || []).map((page) => ({
+                ...page,
+                zones: { ...zonesDefault, ...(page.zones || {}) }
+            })),
+            submit: spec.submit || {},
+            // Scroll is unpaginated: Submit always shows. Paginated primitives
+            // will drive these per-step when they land (P1 layout PRs).
+            showSubmit: true
         };
         this.error = undefined;
+    }
+
+    handleSubmit() {
+        // Submission engine lands in a later slice (BUILD_PHASES — P3 gate is
+        // the first end-to-end submit). The bar's intent is contract-complete.
     }
 }

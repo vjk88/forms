@@ -1,0 +1,43 @@
+<template>
+    <div class={rootClass}>
+        <!-- Persistent aria-live row: present even when empty so screen readers
+             announce the blocked message the moment the engine sets it. -->
+        <p class="blocked" aria-live="polite">{blockedMessage}</p>
+        <div class="buttons">
+            <template lwc:if={showBack}>
+                <button
+                    class="btn secondary"
+                    type="button"
+                    disabled={submitting}
+                    onclick={handleBack}
+                >
+                    {backLabel}
+                </button>
+            </template>
+            <template lwc:if={showNext}>
+                <button
+                    class="btn primary"
+                    type="button"
+                    disabled={submitting}
+                    onclick={handleNext}
+                >
+                    {nextLabel}
+                </button>
+            </template>
+            <template lwc:if={showSubmit}>
+                <button
+                    class={primaryClass}
+                    type="button"
+                    disabled={submitting}
+                    onclick={handleSubmit}
+                >
+                    <template lwc:if={submitting}>
+                        <span class="spinner" aria-hidden="true"></span>
+                        Submitting…
+                    </template>
+                    <template lwc:else>{submitLabel}</template>
+                </button>
+            </template>
+        </div>
+    </div>
+</template>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Shared chrome (rebuild): the ONE Next/Back/Submit button implementation — alignment, sticky placement, engine-set Submitting + Blocked Message states. Nav primitives host it in a slot and forward its intents.</description>
+</LightningComponentBundle>

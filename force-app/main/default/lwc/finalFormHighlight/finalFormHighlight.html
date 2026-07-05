@@ -1,0 +1,25 @@
+<template>
+    <template lwc:if={show}>
+        <div class={rootClass}>
+            <template lwc:if={iconName}>
+                <lightning-icon
+                    class="hl-icon"
+                    icon-name={iconName}
+                    size="xx-small"
+                ></lightning-icon>
+            </template>
+            <span class="hl-text">{highlight.text}</span>
+            <template lwc:if={dismissible}>
+                <button
+                    class="hl-dismiss"
+                    type="button"
+                    title="Dismiss"
+                    aria-label="Dismiss announcement"
+                    onclick={handleDismiss}
+                >
+                    &times;
+                </button>
+            </template>
+        </div>
+    </template>
+</template>
