@@ -420,6 +420,7 @@ describe('c-final-layout-registry', () => {
     it('oneAtATime + splitHero rows carry their §2 exceptions', () => {
         expect(LAYOUTS.oneAtATime.ownsAdvance).toBe(true); // Advance Trigger exception
         expect(LAYOUTS.splitHero.ownsHeader).toBe(true); // pane replaces formHeader
+        expect(LAYOUTS.splitHero.bleed).toBe(true); // Immersive toggle capable
         expect(LAYOUTS.oneAtATime.paginates).toBe(true);
         expect(LAYOUTS.splitHero.paginates).toBe(true);
         expect(typeof LAYOUTS.oneAtATime.load).toBe('function');

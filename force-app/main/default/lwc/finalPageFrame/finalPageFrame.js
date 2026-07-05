@@ -22,6 +22,13 @@ const MAX_WIDTHS = {
 
 export default class FinalPageFrame extends LightningElement {
     @api maxWidth = 'medium';
+    /**
+     * Full-bleed mode (splitHero's Immersive toggle): the panel drops its
+     * surface, padding, and max-width so the primitive owns the canvas
+     * edge-to-edge. The .page backdrop stack and .fx layer stay untouched —
+     * bleed changes the FRAME, never the background contract.
+     */
+    @api bleed = false;
 
     _tokens = {};
     _appliedKeys = [];
@@ -43,8 +50,18 @@ export default class FinalPageFrame extends LightningElement {
         this._applyTokens();
     }
 
+    get pageClass() {
+        return this.bleed ? 'page page--bleed' : 'page';
+    }
+
+    get panelClass() {
+        return this.bleed ? 'panel panel--bleed' : 'panel';
+    }
+
     get panelStyle() {
-        return `max-width: ${MAX_WIDTHS[this.maxWidth] || MAX_WIDTHS.medium}`;
+        return this.bleed
+            ? ''
+            : `max-width: ${MAX_WIDTHS[this.maxWidth] || MAX_WIDTHS.medium}`;
     }
 
     _applyTokens() {
