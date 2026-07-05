@@ -3,6 +3,7 @@
     font-family: var(--c-font-body);
 }
 
+/* ---------- non-bleed inline progress (carded render, in the panel) ---------- */
 .progress {
     display: flex;
     align-items: center;
@@ -34,8 +35,52 @@
     white-space: nowrap;
 }
 
-/* Our own motion: a short fade/rise — deliberately NOT a full-viewport
-   vertical card carousel (signature-distance rule, catalog §2). */
+/* ---------- BLEED: page chrome + floating question card ---------- */
+.mode-bleed {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 64vh;
+    gap: var(--c-space-5);
+}
+
+.top-chrome {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-4);
+}
+
+.progress-hairline {
+    flex: 1;
+    height: 2px;
+    background: var(--c-field-border);
+    overflow: hidden;
+}
+
+.counter {
+    margin: 0;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The floating card owns the content surface (pageFrame dropped the panel in
+   bleed). Centred in the remaining space via margin:auto. */
+.question-card {
+    align-self: center;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    padding: var(--c-space-6);
+    background: var(--c-content-bg);
+    border: var(--c-content-border);
+    border-radius: var(--c-radius);
+    box-shadow: var(--c-content-shadow);
+    -webkit-backdrop-filter: blur(var(--c-glass-blur));
+    backdrop-filter: blur(var(--c-glass-blur));
+}
+
+/* ---------- screen motion: our own short fade/rise (signature distance) ---------- */
 .screen-panel {
     outline: none;
     animation: final-oaat-in 0.25s ease-out;
@@ -52,19 +97,31 @@
     }
 }
 
-.controls {
+/* ---------- one action row, arrangement-placed (LAYOUT_REFINEMENTS §3) ---------- */
+.action-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--c-space-4);
     margin-top: var(--c-space-5);
+}
+
+.action-row.arr-start {
+    justify-content: flex-start;
+}
+
+.action-row.arr-end {
+    justify-content: flex-end;
+}
+
+.action-row.arr-split {
+    justify-content: space-between;
 }
 
 .back-link {
     display: inline-flex;
     align-items: center;
     gap: var(--c-space-1);
-    padding: var(--c-space-1) 0;
+    padding: var(--c-space-1) var(--c-space-2);
     border: none;
     background: none;
     color: var(--c-text-weak);
@@ -75,6 +132,8 @@
 
 .back-link:hover {
     color: var(--c-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .back-link:focus-visible {
@@ -87,14 +146,7 @@
     --sds-c-icon-color-foreground-default: currentColor;
 }
 
-.advance {
-    display: flex;
-    align-items: center;
-    gap: var(--c-space-3);
-    margin-left: auto;
-}
-
-.advance-btn {
+.primary-btn {
     height: var(--c-control-h);
     padding: 0 var(--c-space-5);
     border: none;
@@ -107,14 +159,14 @@
     cursor: pointer;
 }
 
-.advance-btn:focus-visible {
+.primary-btn:focus-visible {
     outline: none;
     box-shadow: var(--c-focus-ring);
 }
 
 /* Plain muted helper text — never a styled key-chip (signature distance). */
 .key-helper {
-    margin: 0;
+    margin: var(--c-space-2) 0 0;
     color: var(--c-text-weak);
     font-size: 0.8125rem;
 }

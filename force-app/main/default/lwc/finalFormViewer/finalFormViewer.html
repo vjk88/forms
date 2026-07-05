@@ -23,7 +23,11 @@
             page-validity={pageValidity}
             options={model.layoutOptions}
             lockup={model.paneLockup}
+            arrangement={model.buttonArrangement}
+            bleed={model.bleed}
+            submit-label={model.submit.label}
             onpagechange={handlePageChange}
+            onsubmit={handleSubmit}
           >
             <!-- Slotted from the engine's template: button intents
                              never cross the primitive's shadow boundary. -->
@@ -33,6 +37,7 @@
               show-back={showBack}
               show-next={showNext}
               show-submit={showSubmit}
+              arrangement={model.buttonArrangement}
               onback={handleBack}
               onnext={handleNext}
               onsubmit={handleSubmit}

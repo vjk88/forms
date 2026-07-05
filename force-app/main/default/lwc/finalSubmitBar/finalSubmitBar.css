@@ -12,27 +12,22 @@
 
 .buttons {
     display: flex;
-    gap: var(--c-space-3);
+    align-items: center;
+    gap: var(--c-space-4);
 }
 
-.align-left .buttons {
+/* Arrangement (LAYOUT_REFINEMENTS §3): together-left | together-right | split.
+   With one button (submit-only), start/split sit it left, end sits it right. */
+.arr-start .buttons {
     justify-content: flex-start;
 }
 
-.align-center .buttons {
-    justify-content: center;
-}
-
-.align-right .buttons {
+.arr-end .buttons {
     justify-content: flex-end;
 }
 
-.align-stretch .buttons {
-    flex-direction: column;
-}
-
-.align-stretch .btn {
-    width: 100%;
+.arr-split .buttons {
+    justify-content: space-between;
 }
 
 /* Empty until the engine sets blockedMessage — zero height, no layout shift. */
@@ -41,20 +36,14 @@
     min-height: 0;
     color: var(--c-field-error);
     font-size: 0.875rem;
-    text-align: right;
 }
 
 .blocked:not(:empty) {
     margin-bottom: var(--c-space-2);
 }
 
-.align-left .blocked {
-    text-align: left;
-}
-
-.align-center .blocked,
-.align-stretch .blocked {
-    text-align: center;
+.arr-end .blocked {
+    text-align: right;
 }
 
 .btn {
@@ -82,15 +71,45 @@
     color: var(--c-submit-text);
 }
 
-.secondary {
-    border: 1px solid var(--c-field-border);
-    background: none;
-    color: var(--c-text);
-}
-
 .btn:focus-visible {
     outline: none;
     box-shadow: var(--c-focus-ring);
+}
+
+/* Back = quiet text link (LAYOUT_REFINEMENTS §3): secondary to the filled
+   primary, and identical wherever Back appears (kills the link-vs-button jump). */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--c-space-1);
+    padding: var(--c-space-1) var(--c-space-2);
+    border: none;
+    background: none;
+    color: var(--c-text-weak);
+    font-family: var(--c-font-body);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.back-link:hover {
+    color: var(--c-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.back-link:disabled {
+    cursor: default;
+    opacity: 0.65;
+}
+
+.back-link:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+    border-radius: var(--c-radius);
+}
+
+.back-link lightning-icon {
+    --sds-c-icon-color-foreground-default: currentColor;
 }
 
 .spinner {

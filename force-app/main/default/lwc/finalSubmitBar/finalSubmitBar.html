@@ -6,11 +6,16 @@
         <div class="buttons">
             <template lwc:if={showBack}>
                 <button
-                    class="btn secondary"
+                    class="back-link"
                     type="button"
                     disabled={submitting}
                     onclick={handleBack}
                 >
+                    <lightning-icon
+                        icon-name="utility:chevronleft"
+                        size="xx-small"
+                        aria-hidden="true"
+                    ></lightning-icon>
                     {backLabel}
                 </button>
             </template>

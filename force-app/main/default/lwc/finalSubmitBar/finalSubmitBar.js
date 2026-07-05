@@ -1,27 +1,28 @@
 import { LightningElement, api } from 'lwc';
 
 /**
- * finalSubmitBar — THE one button implementation (catalog §1).
+ * finalSubmitBar — THE one button implementation (catalog §1) for the paginated
+ * layouts that host it (scroll/stepper/tabs/rail/splitHero). oneAtATime owns its
+ * own action row (ownsAdvance) and does NOT host this bar.
  *
- * Paginated nav primitives never render their own Next/Back/Submit — they host
- * this bar in a slot and receive its intents as the §2 contract events
- * (`back` / `next` / `submit`, dispatched here, composed=false bubbles=false —
- * the host listens directly on the element).
+ * `submitting` and `blockedMessage` are DATA, engine-set (UIUX review #3):
+ * submitting disables everything + spins the primary; blockedMessage renders in a
+ * persistent aria-live="polite" row.
  *
- * `submitting` and `blockedMessage` are DATA, engine-set (catalog: UIUX review #3):
- * submitting disables everything + spins the primary (double-submit structurally
- * impossible); blockedMessage renders in a persistent aria-live="polite" row.
+ * Button arrangement (LAYOUT_REFINEMENTS_SPEC §3): Back + the primary sit in ONE
+ * row; `arrangement` places the pair — together-left / together-right / split.
+ * Back is a quiet text link so it always reads as secondary to the filled primary
+ * and stays identical wherever it appears.
  */
 
-const ALIGN_CLASS = {
-    left: 'align-left',
-    center: 'align-center',
-    right: 'align-right',
-    stretch: 'align-stretch'
+const ARRANGE_CLASS = {
+    'together-left': 'arr-start',
+    'together-right': 'arr-end',
+    split: 'arr-split'
 };
 
 export default class FinalSubmitBar extends LightningElement {
-    /** Spec `submit` block: { label, alignment, placement, nextLabel, backLabel } */
+    /** Spec `submit` block: { label, placement, nextLabel, backLabel } */
     @api config;
     /** Which buttons this nav context shows. Scroll = submit only (the default). */
     @api showBack = false;
@@ -31,15 +32,17 @@ export default class FinalSubmitBar extends LightningElement {
     @api submitting = false;
     /** Engine-set while Next/Submit is blocked by invalid fields; '' when clear. */
     @api blockedMessage = '';
+    /** Resolved by the viewer: submit.buttonArrangement ?? layout default. */
+    @api arrangement = 'split';
 
     get cfg() {
         return this.config || {};
     }
 
     get rootClass() {
-        const align = ALIGN_CLASS[this.cfg.alignment] || ALIGN_CLASS.right;
+        const arr = ARRANGE_CLASS[this.arrangement] || ARRANGE_CLASS.split;
         const sticky = this.cfg.placement === 'sticky' ? ' sticky' : '';
-        return `bar ${align}${sticky}`;
+        return `bar ${arr}${sticky}`;
     }
 
     get submitLabel() {
@@ -47,8 +50,6 @@ export default class FinalSubmitBar extends LightningElement {
     }
 
     get nextLabel() {
-        // One-at-a-Time contexts default the advance label to "Continue" via
-        // their own config; the bar's fallback stays "Next" (catalog §2).
         return this.cfg.nextLabel || 'Next';
     }
 

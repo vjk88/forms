@@ -1,52 +1,72 @@
 <template>
-    <div class="oaat" onkeydown={handleKeydown} onfocusin={handleFocusIn}>
-        <template lwc:if={showProgress}>
-            <div class="progress">
-                <div class="progress-track" aria-hidden="true">
+    <div
+        class={layoutClass}
+        onkeydown={handleKeydown}
+        onfocusin={handleFocusIn}
+    >
+        <!-- BLEED: page chrome — full-width progress hairline + step counter. -->
+        <template lwc:if={showTopChrome}>
+            <div class="top-chrome">
+                <div class="progress-hairline" aria-hidden="true">
                     <div class="progress-fill" style={progressFillStyle}></div>
                 </div>
-                <p class="progress-text">{progressText}</p>
+                <p class="counter">{counterText}</p>
             </div>
         </template>
-        <template for:each={currentScreenList} for:item="screen">
-            <div class="screen-panel" key={screen.key} tabindex="-1">
-                <c-final-layout-zones
-                    sections={currentSections}
-                    zones={currentZones}
-                ></c-final-layout-zones>
-            </div>
-        </template>
-        <div class="controls">
-            <template lwc:if={showBackLink}>
-                <button class="back-link" type="button" onclick={handleBack}>
-                    <template lwc:if={backIsArrow}>
+
+        <!-- The question surface: a floating card in bleed, plain otherwise. -->
+        <div class={bodyClass}>
+            <template lwc:if={showInlineProgress}>
+                <div class="progress">
+                    <div class="progress-track" aria-hidden="true">
+                        <div
+                            class="progress-fill"
+                            style={progressFillStyle}
+                        ></div>
+                    </div>
+                    <p class="progress-text">{progressText}</p>
+                </div>
+            </template>
+
+            <template for:each={currentScreenList} for:item="screen">
+                <div class="screen-panel" key={screen.key} tabindex="-1">
+                    <c-final-layout-zones
+                        sections={currentSections}
+                        zones={currentZones}
+                    ></c-final-layout-zones>
+                </div>
+            </template>
+
+            <!-- One action row for every screen: Back + primary, placed by
+                 arrangement. The primary is Continue while stepping, Submit on
+                 the last screen — same spot, same style, no jump. -->
+            <div class={actionRowClass}>
+                <template lwc:if={showBackLink}>
+                    <button
+                        class="back-link"
+                        type="button"
+                        onclick={handleBack}
+                    >
                         <lightning-icon
-                            icon-name="utility:chevronup"
+                            icon-name="utility:chevronleft"
                             size="xx-small"
                             aria-hidden="true"
                         ></lightning-icon>
-                    </template>
-                    Back
-                </button>
-            </template>
-            <template lwc:if={onLastScreen}></template>
-            <template lwc:else>
-                <div class="advance">
-                    <button
-                        class="advance-btn"
-                        type="button"
-                        onclick={handleAdvance}
-                    >
-                        {advanceLabel}
+                        Back
                     </button>
-                    <template lwc:if={keyboardHelperText}>
-                        <p class="key-helper">{keyboardHelperText}</p>
-                    </template>
-                </div>
+                </template>
+                <button
+                    class="primary-btn"
+                    type="button"
+                    onclick={handlePrimary}
+                >
+                    {primaryLabel}
+                </button>
+            </div>
+
+            <template lwc:if={showHelperRow}>
+                <p class="key-helper">{keyboardHelperText}</p>
             </template>
         </div>
-        <template lwc:if={onLastScreen}>
-            <slot name="actions"></slot>
-        </template>
     </div>
 </template>

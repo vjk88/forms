@@ -421,10 +421,21 @@ describe('c-final-layout-registry', () => {
         expect(LAYOUTS.oneAtATime.ownsAdvance).toBe(true); // Advance Trigger exception
         expect(LAYOUTS.splitHero.ownsHeader).toBe(true); // pane replaces formHeader
         expect(LAYOUTS.splitHero.bleed).toBe(true); // Immersive toggle capable
+        expect(LAYOUTS.oneAtATime.bleed).toBe(true); // 2nd bleed consumer (conversational)
         expect(LAYOUTS.oneAtATime.paginates).toBe(true);
         expect(LAYOUTS.splitHero.paginates).toBe(true);
         expect(typeof LAYOUTS.oneAtATime.load).toBe('function');
         expect(typeof LAYOUTS.splitHero.load).toBe('function');
+    });
+
+    it('every row declares a default button arrangement (LAYOUT_REFINEMENTS §3)', () => {
+        const valid = new Set(['together-left', 'together-right', 'split']);
+        for (const key of Object.keys(LAYOUTS)) {
+            expect(valid.has(LAYOUTS[key].buttonArrangement)).toBe(true);
+        }
+        // Owner picks: conversational groups left, wizard splits.
+        expect(LAYOUTS.oneAtATime.buttonArrangement).toBe('together-left');
+        expect(LAYOUTS.stepper.buttonArrangement).toBe('split');
     });
 
     it('unknown layout type falls back to scroll', () => {
