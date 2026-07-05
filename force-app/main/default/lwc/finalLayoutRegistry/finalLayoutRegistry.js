@@ -59,7 +59,10 @@ export const LAYOUTS = {
         gating: true,
         // The brand pane replaces formHeader (owner 2026-07-05) — the engine
         // must not render a second header.
-        ownsHeader: true
+        ownsHeader: true,
+        // May run full-bleed (Immersive toggle, default ON): pageFrame drops
+        // the panel surface and the primitive owns the canvas edge-to-edge.
+        bleed: true
     }
 };
 

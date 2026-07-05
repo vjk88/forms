@@ -1,7 +1,7 @@
 <template>
-    <div class="page">
+    <div class={pageClass}>
         <div class="fx" aria-hidden="true"></div>
-        <div class="panel" style={panelStyle}>
+        <div class={panelClass} style={panelStyle}>
             <slot name="header"></slot>
             <slot name="nav"></slot>
             <slot name="body"></slot>

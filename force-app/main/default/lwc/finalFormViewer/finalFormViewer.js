@@ -128,7 +128,17 @@ export default class FinalFormViewer extends LightningElement {
             submit: spec.submit || {},
             layoutOptions: options,
             paginates: Boolean(layout.paginates),
-            ownsAdvance
+            ownsAdvance,
+            // Immersive full-bleed: only bleed-capable layouts (splitHero),
+            // ON by default, reverted with options.fullBleed === false — the
+            // toggle restores the carded-pane render exactly.
+            bleed: Boolean(layout.bleed) && options.fullBleed !== false,
+            // The pane owns branding; the form side still gets the minimal
+            // title lockup (rendered by the primitive, bleed mode only).
+            paneLockup:
+                layout.ownsHeader && (header.title || header.description)
+                    ? { title: header.title, description: header.description }
+                    : null
         };
         this.error = undefined;
     }

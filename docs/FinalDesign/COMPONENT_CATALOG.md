@@ -287,6 +287,7 @@ Immersive brand panel on one side, form on the other.
 |---|---|---|
 | Brand Panel Side | enum | Left / Right |
 | Brand Panel Width | enum | Ratio (⅓ / ½) |
+| Immersive (Full Bleed) | toggle | Default ON (owner 2026-07-05): pane + form own the canvas edge-to-edge — `pageFrame` drops the panel surface, the form floats as a content card (`--c-content-*` tokens) with the minimal title lockup inside. OFF restores the carded-pane-inside-panel render exactly (spec key `fullBleed`) |
 | Sticky Brand Panel | toggle | |
 | Pane Background Image | image | The hero visual filling the brand pane |
 | Pane Background Color | color | Veil over the pane image — with Opacity per the translucency rule |

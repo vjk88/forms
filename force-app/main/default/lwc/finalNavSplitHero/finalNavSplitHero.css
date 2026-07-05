@@ -225,6 +225,55 @@
     font-size: 0.8125rem;
 }
 
+/* — Immersive full-bleed (default): pane and form own the whole canvas —
+     halves touch, pane loses its card radius, the form floats as a content
+     card on the page backdrop. fullBleed:false skips ALL of this. — */
+.mode-bleed {
+    gap: 0;
+    min-height: 100vh;
+}
+
+.mode-bleed .pane {
+    border-radius: 0;
+    padding: var(--c-space-6);
+}
+
+.mode-bleed .form {
+    padding: var(--c-space-6) var(--c-space-5);
+}
+
+.mode-bleed .form-card {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--c-space-6);
+    background: var(--c-content-bg);
+    border: var(--c-content-border);
+    border-radius: var(--c-radius);
+    box-shadow: var(--c-content-shadow);
+    -webkit-backdrop-filter: blur(var(--c-glass-blur));
+    backdrop-filter: blur(var(--c-glass-blur));
+}
+
+.lockup {
+    margin-bottom: var(--c-space-5);
+}
+
+.lockup-title {
+    margin: 0;
+    font-family: var(--c-font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--c-text);
+}
+
+.lockup-desc {
+    margin: var(--c-space-2) 0 0;
+    font-size: 0.9375rem;
+    color: var(--c-text-weak);
+}
+
 /* — Narrow: the pane becomes a compact top brand strip; form full-width;
      sticky off (contract narrow behavior). — */
 @container split (max-width: 540px) {
@@ -240,6 +289,19 @@
         padding: var(--c-space-4);
         margin-bottom: var(--c-space-5);
         position: static;
+    }
+
+    .mode-bleed {
+        min-height: 0;
+    }
+
+    .mode-bleed .pane {
+        margin-bottom: 0;
+        padding: var(--c-space-4);
+    }
+
+    .mode-bleed .form {
+        padding: var(--c-space-5) var(--c-space-4);
     }
 
     .brand {

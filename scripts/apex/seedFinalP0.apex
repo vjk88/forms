@@ -173,7 +173,8 @@ List<Map<String, Object>> p1Variants = new List<Map<String, Object>>{
         } },
     new Map<String, Object>{ 'num' => 13, 'label' => 'Split Hero OneAtATime', 'type' => 'splitHero',
         'options' => new Map<String, Object>{
-            'side' => 'left', 'ratio' => 'third', 'sticky' => false, 'paneFlow' => 'oneAtATime',
+            // fullBleed:false = the Immersive toggle reverted — carded pane inside the panel
+            'side' => 'left', 'ratio' => 'third', 'sticky' => false, 'paneFlow' => 'oneAtATime', 'fullBleed' => false,
             'paneImage' => new Map<String, Object>{ 'url' => IMG_URL },
             'paneBg' => '#1f2937', 'paneBgOpacity' => 70,
             'paneBrandName' => 'Acme Outdoors',

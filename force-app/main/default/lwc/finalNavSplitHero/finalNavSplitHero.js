@@ -43,6 +43,8 @@ export default class FinalNavSplitHero extends LightningElement {
      * paneHighlight, blockPlacement, progressStyle, navigation, paneFlow.
      */
     @api options;
+    /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
+    @api lockup;
 
     @track screenIndex = 0;
     @track multilineFocus = false;
@@ -70,11 +72,33 @@ export default class FinalNavSplitHero extends LightningElement {
 
     // ---- shell ----
 
+    /**
+     * Immersive full-bleed (default ON): pane and form own the whole canvas;
+     * the form renders as a floating content card. `fullBleed: false` restores
+     * the carded-pane-inside-panel render exactly.
+     */
+    get bleedOn() {
+        return this.opts.fullBleed !== false;
+    }
+
     get layoutClass() {
         const side = this.opts.side === 'right' ? 'side-right' : 'side-left';
         const ratio = this.opts.ratio === 'third' ? 'ratio-third' : 'ratio-half';
         const sticky = this.opts.sticky ? ' sticky-pane' : '';
-        return `layout ${side} ${ratio}${sticky}`;
+        const bleed = this.bleedOn ? ' mode-bleed' : '';
+        return `layout ${side} ${ratio}${sticky}${bleed}`;
+    }
+
+    get formCardClass() {
+        return this.bleedOn ? 'form-card' : 'form-plain';
+    }
+
+    get showLockup() {
+        return Boolean(
+            this.bleedOn &&
+                this.lockup &&
+                (this.lockup.title || this.lockup.description)
+        );
     }
 
     /** Veil over image: first background layer (topmost) is the composed rgba. */
