@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Design mode (rebuild): reusable image upload — ContentVersion storage via FinalAssetController (public iff guest adapter), replace-cleans-up, url+versionId only (never base64). Builder-only; never ships to the guest bundle.</description>
+</LightningComponentBundle>
