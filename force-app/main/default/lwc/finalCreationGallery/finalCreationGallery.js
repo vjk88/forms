@@ -1,28 +1,40 @@
 import { LightningElement, track, wire } from 'lwc';
 import getUpdatableObjects from '@salesforce/apex/FinalFormCreateController.getUpdatableObjects';
 import createForm from '@salesforce/apex/FinalFormCreateController.createForm';
+import { buildSampleSpec } from 'c/finalSampleSpec';
 
 /**
  * finalCreationGallery — the guided creation flow (owner: always layout → theme
- * → details, no "start from scratch"). Step 1 picks a layout; step 2 is the
- * finalThemeGallery, previewing every theme IN that layout; step 3 names the
- * form + picks an object (searchable, all updatable) and creates it via
- * FinalFormCreateController. Emits `formcreated` { formId, versionId } + `close`.
+ * → details, no "start from scratch"). Step 1 picks a layout (8 cards — the 7
+ * registry layouts + splitHero's Conversational pane-flow variant); step 2 is
+ * the finalThemeGallery, previewing every theme IN that layout; step 3 names
+ * the form + picks an object beside a LIVE sample preview (finalFormViewer on
+ * an inline c/finalSampleSpec — real engine, canned 3-page form, the typed
+ * name becomes the preview title). Emits `formcreated` { formId, versionId }
+ * + `close`.
  */
 
-const LAYOUTS = [
-    'scroll',
-    'stepper',
-    'tabs',
-    'accordion',
-    'rail',
-    'oneAtATime',
-    'splitHero'
+// Step-1 roster. Each card's mockup is tinted by a DISTINCT flattering builtin
+// theme (the old gallery's trick — never eight clones of one palette). The
+// splitHero Conversational card is the same primitive with
+// layout.options.paneFlow = 'oneAtATime' (catalog §2) — NOT a new layout.
+const LAYOUT_CARDS = [
+    { layout: 'scroll', themeKey: 'terracotta' },
+    { layout: 'stepper', themeKey: 'mintStepper' },
+    { layout: 'tabs', themeKey: 'nordic' },
+    { layout: 'accordion', themeKey: 'sandstone' },
+    { layout: 'rail', themeKey: 'execNav' },
+    { layout: 'oneAtATime', themeKey: 'lavender' },
+    { layout: 'splitHero', themeKey: 'marbleSplit' },
+    { layout: 'splitHero', paneFlow: 'oneAtATime', themeKey: 'auraSplit' }
 ];
+
+const DEVICE_WIDTHS = { desktop: '100%', tablet: '760px', mobile: '400px' };
 
 export default class FinalCreationGallery extends LightningElement {
     @track step = 'layout'; // layout | theme | details | done
     @track chosenLayout = '';
+    @track chosenPaneFlow = '';
     @track chosenThemeKey = '';
     @track formName = '';
     @track chosenObject = '';
@@ -31,8 +43,11 @@ export default class FinalCreationGallery extends LightningElement {
     @track isCreating = false;
     @track errorMessage = '';
     @track createdInfo = null;
+    @track previewDevice = 'desktop';
 
     _objects = [];
+    _specCache = null;
+    _specCacheKey = '';
 
     @wire(getUpdatableObjects)
     wiredObjects({ data }) {
@@ -73,11 +88,48 @@ export default class FinalCreationGallery extends LightningElement {
     }
 
     get layoutCards() {
-        return LAYOUTS.map((l) => ({
-            key: l,
-            layout: l,
-            selected: l === this.chosenLayout
+        return LAYOUT_CARDS.map((c) => ({
+            key: c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout,
+            layout: c.layout,
+            paneFlow: c.paneFlow || '',
+            themeKey: c.themeKey,
+            selected:
+                c.layout === this.chosenLayout &&
+                (c.paneFlow || '') === this.chosenPaneFlow
         }));
+    }
+
+    // ---- live preview (step 3) ----
+    /**
+     * The inline spec the preview viewer renders. Memoized on its real inputs
+     * so unrelated re-renders (object search keystrokes) don't re-apply it.
+     */
+    get previewSpec() {
+        const name = this.formName.trim();
+        const key = `${this.chosenLayout}|${this.chosenPaneFlow}|${this.chosenThemeKey}|${name}`;
+        if (key !== this._specCacheKey) {
+            this._specCacheKey = key;
+            this._specCache = buildSampleSpec({
+                layout: this.chosenLayout,
+                paneFlow: this.chosenPaneFlow || undefined,
+                themeKey: this.chosenThemeKey,
+                title: name || undefined
+            });
+        }
+        return this._specCache;
+    }
+    get deviceOptions() {
+        return ['desktop', 'tablet', 'mobile'].map((d) => ({
+            value: d,
+            label: d.charAt(0).toUpperCase() + d.slice(1),
+            cls: this.previewDevice === d ? 'dev-btn is-on' : 'dev-btn'
+        }));
+    }
+    get previewFrameStyle() {
+        return `max-width:${DEVICE_WIDTHS[this.previewDevice] || '100%'};`;
+    }
+    handleDevice(e) {
+        this.previewDevice = e.currentTarget.dataset.value;
     }
 
     // ---- object picker (searchable, all updatable) ----
@@ -107,6 +159,7 @@ export default class FinalCreationGallery extends LightningElement {
     // ---- navigation ----
     handleLayoutSelect(e) {
         this.chosenLayout = e.detail.layout;
+        this.chosenPaneFlow = e.detail.paneFlow || '';
         this.step = 'theme';
     }
     handleThemeSelect(e) {
@@ -157,7 +210,8 @@ export default class FinalCreationGallery extends LightningElement {
             formName: this.formName.trim(),
             objectApiName: this.chosenObject,
             layoutType: this.chosenLayout,
-            themeName: this.chosenThemeKey
+            themeName: this.chosenThemeKey,
+            paneFlow: this.chosenPaneFlow || null
         })
             .then((res) => {
                 this.isCreating = false;
@@ -186,11 +240,13 @@ export default class FinalCreationGallery extends LightningElement {
     handleStartOver() {
         this.step = 'layout';
         this.chosenLayout = '';
+        this.chosenPaneFlow = '';
         this.chosenThemeKey = '';
         this.formName = '';
         this.chosenObject = '';
         this.objectSearch = '';
         this.createdInfo = null;
         this.errorMessage = '';
+        this.previewDevice = 'desktop';
     }
 }

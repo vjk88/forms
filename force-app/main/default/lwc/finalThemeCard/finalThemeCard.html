@@ -38,6 +38,32 @@
                     </div>
                 </template>
 
+                <!-- SPLIT · CONVERSATIONAL (splitHero, paneFlow=oneAtATime) -->
+                <template lwc:elseif={isSplitOne}>
+                    <div class="tc-card tc-split">
+                        <div class="tc-rail">
+                            <div class="tc-rail-brand">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </div>
+                        <div class="tc-fields">
+                            <div class="tc-body tc-body-center">
+                                <div class="tc-progress">
+                                    <span class="tc-progress-fill"></span>
+                                </div>
+                                <div class="tc-field">
+                                    <span class="tc-flabel">Full name</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                                <button class="tc-btn" type="button" tabindex="-1">
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- STEPPED (stepper) -->
                 <template lwc:elseif={isStepped}>
                     <div class="tc-card">
@@ -72,7 +98,101 @@
                     </div>
                 </template>
 
-                <!-- CLASSIC (scroll / tabs / accordion / rail / oneAtATime) -->
+                <!-- TABS -->
+                <template lwc:elseif={isTabs}>
+                    <div class="tc-card">
+                        <div class="tc-tabs">
+                            <span class="tc-tab on">Profile</span>
+                            <span class="tc-tab">Details</span>
+                            <span class="tc-tab">Review</span>
+                        </div>
+                        <div class="tc-head">
+                            <h4 class="tc-h">{brand.title}</h4>
+                            <p class="tc-p">{brand.subtitle}</p>
+                        </div>
+                        <div class="tc-body">
+                            <div class="tc-field">
+                                <span class="tc-flabel">Full name</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ACCORDION -->
+                <template lwc:elseif={isAccordion}>
+                    <div class="tc-card">
+                        <div class="tc-head">
+                            <h4 class="tc-h">{brand.title}</h4>
+                            <p class="tc-p">{brand.subtitle}</p>
+                        </div>
+                        <div class="tc-body">
+                            <div class="tc-acc open">
+                                <span class="tc-acc-title">Contact</span>
+                                <div class="tc-field">
+                                    <span class="tc-flabel">Full name</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                            </div>
+                            <div class="tc-acc">
+                                <span class="tc-acc-title">Address</span>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">
+                                Submit
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- RAIL -->
+                <template lwc:elseif={isRail}>
+                    <div class="tc-card tc-railed">
+                        <div class="tc-sidenav">
+                            <span class="tc-nav-item on"></span>
+                            <span class="tc-nav-item"></span>
+                            <span class="tc-nav-item"></span>
+                        </div>
+                        <div class="tc-fields">
+                            <div class="tc-head">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                            <div class="tc-body">
+                                <div class="tc-field">
+                                    <span class="tc-flabel">Email</span>
+                                    <div class="tc-input"></div>
+                                </div>
+                                <button class="tc-btn" type="button" tabindex="-1">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- SINGLE (oneAtATime — full-bleed floating question) -->
+                <template lwc:elseif={isSingle}>
+                    <div class="tc-card tc-floating">
+                        <div class="tc-body tc-body-center">
+                            <div class="tc-progress">
+                                <span class="tc-progress-fill"></span>
+                            </div>
+                            <h4 class="tc-h">{brand.title}</h4>
+                            <div class="tc-field">
+                                <span class="tc-flabel">Full name</span>
+                                <div class="tc-input"></div>
+                            </div>
+                            <button class="tc-btn" type="button" tabindex="-1">
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- CLASSIC (scroll) -->
                 <template lwc:else>
                     <div class="tc-card">
                         <template lwc:if={hasBanner}>

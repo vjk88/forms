@@ -28,6 +28,8 @@
                         <c-final-layout-card
                             key={l.key}
                             layout={l.layout}
+                            pane-flow={l.paneFlow}
+                            theme-key={l.themeKey}
                             selected={l.selected}
                             onselect={handleLayoutSelect}
                         ></c-final-layout-card>
@@ -44,6 +46,7 @@
                 </button>
                 <c-final-theme-gallery
                     layout={chosenLayout}
+                    pane-flow={chosenPaneFlow}
                     selected-theme-key={chosenThemeKey}
                     onthemeselect={handleThemeSelect}
                 ></c-final-theme-gallery>
@@ -57,14 +60,6 @@
                     ← Theme
                 </button>
                 <div class="cg-detail-grid">
-                    <div class="cg-preview">
-                        <c-final-theme-card
-                            theme-key={chosenThemeKey}
-                            label="Preview"
-                            description=""
-                            layout={chosenLayout}
-                        ></c-final-theme-card>
-                    </div>
                     <div class="cg-form">
                         <label class="cg-flabel" for="cg-name">Form name</label>
                         <input
@@ -127,6 +122,34 @@
                             <template lwc:if={isCreating}>Creating…</template>
                             <template lwc:else>Create form</template>
                         </button>
+                    </div>
+
+                    <!-- Live sample preview: the real engine on an inline
+                         sample spec — chosen layout + theme, typed name. -->
+                    <div class="cg-preview">
+                        <div class="cg-preview-bar">
+                            <span class="cg-preview-label">Live preview</span>
+                            <div class="dev-toggle" role="group" aria-label="Preview width">
+                                <template for:each={deviceOptions} for:item="d">
+                                    <button
+                                        key={d.value}
+                                        class={d.cls}
+                                        type="button"
+                                        data-value={d.value}
+                                        onclick={handleDevice}
+                                    >
+                                        {d.label}
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="cg-stage">
+                            <div class="cg-frame" style={previewFrameStyle}>
+                                <c-final-form-viewer
+                                    spec={previewSpec}
+                                ></c-final-form-viewer>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

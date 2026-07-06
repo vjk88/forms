@@ -8,60 +8,123 @@
         onclick={handleClick}
         onkeydown={handleKey}
     >
-        <div class="lc-diagram">
-            <template lwc:if={isScroll}>
-                <div class="d-bar"></div>
-                <div class="d-bar"></div>
-                <div class="d-bar"></div>
-            </template>
-            <template lwc:elseif={isStepper}>
-                <div class="d-steps">
-                    <span class="d-dot on"></span>
-                    <span class="d-line"></span>
-                    <span class="d-dot"></span>
-                    <span class="d-line"></span>
-                    <span class="d-dot"></span>
-                </div>
-                <div class="d-bar"></div>
-                <div class="d-bar"></div>
-            </template>
-            <template lwc:elseif={isTabs}>
-                <div class="d-tabs">
-                    <span class="d-tab on"></span>
-                    <span class="d-tab"></span>
-                    <span class="d-tab"></span>
-                </div>
-                <div class="d-bar"></div>
-                <div class="d-bar"></div>
-            </template>
-            <template lwc:elseif={isAccordion}>
-                <div class="d-acc on"></div>
-                <div class="d-acc"></div>
-                <div class="d-acc"></div>
-            </template>
-            <template lwc:elseif={isRail}>
-                <div class="d-rail-wrap">
-                    <div class="d-rail"></div>
-                    <div class="d-rail-body">
-                        <div class="d-bar"></div>
-                        <div class="d-bar"></div>
+        <!-- Theme-tinted structural mockup (layoutThumb treatment, --c-* driven) -->
+        <div class="lc-diagram" style={tokenStyle}>
+            <div class="lt-stage">
+                <!-- Scroll: header strip + field lines + button -->
+                <template lwc:if={isScroll}>
+                    <div class="lt-card">
+                        <div class="lt-strip"></div>
+                        <div class="lt-line"></div>
+                        <div class="lt-line s"></div>
+                        <div class="lt-line"></div>
+                        <div class="lt-btn"></div>
                     </div>
-                </div>
-            </template>
-            <template lwc:elseif={isOneAtATime}>
-                <div class="d-single">
-                    <div class="d-bar wide"></div>
-                </div>
-            </template>
-            <template lwc:elseif={isSplit}>
-                <div class="d-split">
-                    <div class="d-pane"></div>
-                    <div class="d-split-body">
-                        <div class="d-bar"></div>
-                        <div class="d-bar"></div>
+                </template>
+
+                <!-- Stepper: step rail across the top, then body -->
+                <template lwc:elseif={isStepper}>
+                    <div class="lt-card pad0">
+                        <div class="lt-stepper-top">
+                            <span class="lt-dot on"></span>
+                            <span class="lt-bar"></span>
+                            <span class="lt-dot"></span>
+                            <span class="lt-bar"></span>
+                            <span class="lt-dot"></span>
+                        </div>
+                        <div class="lt-body">
+                            <div class="lt-line"></div>
+                            <div class="lt-line s"></div>
+                            <div class="lt-btn"></div>
+                        </div>
                     </div>
-                </div>
-            </template>
+                </template>
+
+                <!-- Tabs: tab strip on top of the card -->
+                <template lwc:elseif={isTabs}>
+                    <div class="lt-card pad0">
+                        <div class="lt-tabs">
+                            <span class="lt-tab on"></span>
+                            <span class="lt-tab"></span>
+                            <span class="lt-tab"></span>
+                        </div>
+                        <div class="lt-body">
+                            <div class="lt-line"></div>
+                            <div class="lt-line s"></div>
+                            <div class="lt-btn"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Accordion: first row expanded, two collapsed -->
+                <template lwc:elseif={isAccordion}>
+                    <div class="lt-card pad-sm">
+                        <div class="lt-acc-row open">
+                            <span class="lt-acc-head on"></span>
+                            <div class="lt-line"></div>
+                            <div class="lt-line s"></div>
+                        </div>
+                        <div class="lt-acc-row"><span class="lt-acc-head"></span></div>
+                        <div class="lt-acc-row"><span class="lt-acc-head"></span></div>
+                    </div>
+                </template>
+
+                <!-- Rail: vertical nav rail beside the form -->
+                <template lwc:elseif={isRail}>
+                    <div class="lt-split">
+                        <div class="lt-rail">
+                            <span class="lt-dot on"></span>
+                            <span class="lt-dot"></span>
+                            <span class="lt-dot"></span>
+                        </div>
+                        <div class="lt-card flush">
+                            <div class="lt-line"></div>
+                            <div class="lt-line s"></div>
+                            <div class="lt-btn"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- One at a time: page bg + progress + one floating question -->
+                <template lwc:elseif={isOneAtATime}>
+                    <div class="lt-card center">
+                        <div class="lt-progress"><span class="lt-progress-fill"></span></div>
+                        <div class="lt-line lg"></div>
+                        <div class="lt-line s"></div>
+                        <div class="lt-btn"></div>
+                    </div>
+                </template>
+
+                <!-- Split hero: brand panel beside the form -->
+                <template lwc:elseif={isSplit}>
+                    <div class="lt-split">
+                        <div class="lt-panel">
+                            <span class="lt-panel-line"></span>
+                            <span class="lt-panel-line s"></span>
+                        </div>
+                        <div class="lt-card flush">
+                            <div class="lt-line"></div>
+                            <div class="lt-line s"></div>
+                            <div class="lt-btn"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Split hero · Conversational: brand panel + one question -->
+                <template lwc:elseif={isSplitOne}>
+                    <div class="lt-split">
+                        <div class="lt-panel">
+                            <span class="lt-panel-line"></span>
+                            <span class="lt-panel-line s"></span>
+                        </div>
+                        <div class="lt-card flush center-v">
+                            <div class="lt-progress"><span class="lt-progress-fill"></span></div>
+                            <div class="lt-line lg"></div>
+                            <div class="lt-btn"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
 
         <div class="lc-meta">

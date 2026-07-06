@@ -18,6 +18,24 @@ export default class FinalFormViewer extends LightningElement {
     @api formId;
     @api versionId;
 
+    /**
+     * Inline spec (pre-save preview — creation flow step 3, builder preview
+     * later). When set, it wins over formId/versionId and no Apex load runs.
+     * Re-setting it re-applies; navigation position survives when the layout
+     * and page count are unchanged (so live-typing the title doesn't yank the
+     * preview back to page 1).
+     */
+    @api
+    get spec() {
+        return this._inlineSpec;
+    }
+    set spec(value) {
+        this._inlineSpec = value;
+        if (value) {
+            this._apply(value, { preserveNav: true });
+        }
+    }
+
     model;
     tokens = {};
     navCtor;
@@ -27,6 +45,7 @@ export default class FinalFormViewer extends LightningElement {
     pageIndex = 0;
     _maxVisited = 0;
 
+    _inlineSpec;
     _urlFormId;
     _urlVersionId;
     _loadedKey;
@@ -52,6 +71,9 @@ export default class FinalFormViewer extends LightningElement {
     }
 
     async _load() {
+        if (this._inlineSpec) {
+            return;
+        }
         const formId = this.effectiveFormId;
         const versionId = this.effectiveVersionId;
         if (!formId && !versionId) {
@@ -76,7 +98,7 @@ export default class FinalFormViewer extends LightningElement {
         }
     }
 
-    async _apply(spec) {
+    async _apply(spec, { preserveNav } = {}) {
         if (!spec || spec.specVersion !== 1) {
             this.error = 'This form uses an unsupported specification version.';
             this.model = null;
@@ -91,10 +113,24 @@ export default class FinalFormViewer extends LightningElement {
             resolveTokens(theme, spec.theme ? spec.theme.overrides : null);
 
         const layout = getLayout(spec.layout ? spec.layout.type : undefined);
+        const seq = (this._applySeq = (this._applySeq || 0) + 1);
         const module = await layout.load();
+        if (seq !== this._applySeq) {
+            return; // a newer spec landed while the primitive loaded
+        }
         this.navCtor = module.default;
-        this.pageIndex = 0;
-        this._maxVisited = 0;
+        // Same layout + page count (a live-preview retint/retitle) keeps the
+        // visitor's place; anything structural restarts at page 1.
+        const keepNav =
+            preserveNav &&
+            this.model &&
+            this.model.pages.length === (spec.pages || []).length &&
+            this._appliedLayoutType === (spec.layout && spec.layout.type);
+        if (!keepNav) {
+            this.pageIndex = 0;
+            this._maxVisited = 0;
+        }
+        this._appliedLayoutType = spec.layout ? spec.layout.type : undefined;
 
         const header = spec.header || {};
         const hasLockup = Boolean(

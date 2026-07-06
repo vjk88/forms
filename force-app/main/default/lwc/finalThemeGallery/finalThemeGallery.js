@@ -24,6 +24,8 @@ const FILTERS = [
     { value: 'split', label: 'Split' }
 ];
 
+// "Preview in" chips — the 8 step-1 choices (7 layouts + splitHero's
+// Conversational pane-flow variant, keyed `layout:paneFlow`).
 const LAYOUTS = [
     { value: 'scroll', label: 'Scroll' },
     { value: 'stepper', label: 'Stepper' },
@@ -31,7 +33,8 @@ const LAYOUTS = [
     { value: 'accordion', label: 'Accordion' },
     { value: 'rail', label: 'Rail' },
     { value: 'oneAtATime', label: 'One at a time' },
-    { value: 'splitHero', label: 'Split hero' }
+    { value: 'splitHero', label: 'Split hero' },
+    { value: 'splitHero:oneAtATime', label: 'Split · One at a time' }
 ];
 
 function cap(s) {
@@ -41,13 +44,27 @@ function cap(s) {
 export default class FinalThemeGallery extends LightningElement {
     /** Layout picked in step 1 — the default preview shape. */
     @api layout = 'scroll';
+    /** splitHero pane flow picked in step 1 ('oneAtATime' → conversational). */
+    @api paneFlow = '';
     @api selectedThemeKey = '';
 
     @track _filter = '';
-    @track _previewLayout = '';
+    @track _previewKey = '';
+    /** Local pick (an @api prop must not be reassigned); wins over the prop. */
+    @track _pickedThemeKey = '';
 
+    get previewKey() {
+        if (this._previewKey) {
+            return this._previewKey;
+        }
+        const base = this.layout || 'scroll';
+        return this.paneFlow ? `${base}:${this.paneFlow}` : base;
+    }
     get previewLayout() {
-        return this._previewLayout || this.layout || 'scroll';
+        return this.previewKey.split(':')[0];
+    }
+    get previewPaneFlow() {
+        return this.previewKey.split(':')[1] || '';
     }
 
     get filterPills() {
@@ -60,12 +77,12 @@ export default class FinalThemeGallery extends LightningElement {
     get layoutChips() {
         return LAYOUTS.map((l) => ({
             ...l,
-            cls: this.previewLayout === l.value ? 'lchip is-on' : 'lchip'
+            cls: this.previewKey === l.value ? 'lchip is-on' : 'lchip'
         }));
     }
 
     get cards() {
-        const sel = this.selectedThemeKey;
+        const sel = this._pickedThemeKey || this.selectedThemeKey;
         return listBuiltinThemes()
             .filter((t) => !this._filter || (t.tags || []).includes(this._filter))
             .map((t) => ({
@@ -81,11 +98,11 @@ export default class FinalThemeGallery extends LightningElement {
     }
 
     handleLayout(e) {
-        this._previewLayout = e.currentTarget.dataset.value;
+        this._previewKey = e.currentTarget.dataset.value;
     }
 
     handleSelect(e) {
-        this.selectedThemeKey = e.detail.themeKey;
+        this._pickedThemeKey = e.detail.themeKey;
         this.dispatchEvent(
             new CustomEvent('themeselect', {
                 detail: { themeKey: e.detail.themeKey }
