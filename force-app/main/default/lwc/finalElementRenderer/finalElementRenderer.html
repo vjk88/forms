@@ -1,19 +1,30 @@
 <template>
     <template lwc:if={isField}>
-        <div class="field">
-            <!-- Custom themeable label (native field is label-hidden). -->
+        <div class={fieldClass}>
+            <!--
+                Custom themeable label (native field is label-hidden and keeps
+                its own assistive label — SR announces the field exactly once).
+                Only the label TEXT is aria-hidden; helptext is a perceivable
+                sibling so its button never sits inside a hidden region.
+            -->
             <template lwc:if={showCustomLabel}>
-                <label class="field-label" aria-hidden="true">
-                    <template lwc:if={el.required}>
-                        <abbr class="field-req" title="required">*</abbr>
-                    </template>
-                    {el.label}
+                <div class="field-label-row">
+                    <label
+                        class={labelClass}
+                        aria-hidden="true"
+                        onclick={handleLabelClick}
+                    >
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
                     <template lwc:if={el.help}>
                         <lightning-helptext
                             content={el.help}
                         ></lightning-helptext>
                     </template>
-                </label>
+                </div>
             </template>
 
             <template lwc:if={isTextarea}>
