@@ -20,6 +20,7 @@
 | 11 | **Survey analytics (phases 2–3) + sentiment** | Aggregation dashboards, Agentforce sentiment | Form-vs-Survey model notes | After the runtime proves itself |
 | 12 | **`designPanel` control search** | Settings-search control finder (VS Code pattern) | Catalog §6 designPanel note (UIUX review #9) | Disclosure posture (≤6 primary + Advanced) + one-home-per-control mostly dissolve the findability problem; search is the durable fix if it persists |
 | 13 | **Body `heroElement`** | Generic draggable hero content block in the form body | Catalog §3 (RETIRED stub) — element-type key `hero` reserved | **Owner call 2026-07-05: hero is splitHero's brand pane, exclusively.** Revisit only if a real body-hero need appears; ignore-unknown keeps it additive |
+| 14 | **Hosting adapters — one form, many surfaces** | Form declares where it may render (record page edit/create, Flow screen, guest page, external iFrame, embedded LWC); every adapter validates server-side. Type-derived constraints (Survey NEVER a Record Page) | [HOSTING_ADAPTERS_SPEC.md](./HOSTING_ADAPTERS_SPEC.md) | **Owner call 2026-07-05: core reuse goal, build later.** `Allowed_Adapters__c` KEPT (unread by final* until then). Revisit after P5 — guest runtime is adapter #2 and shapes the contract |
 
 **Rules of the ledger:** an item leaves this list only by (a) being scheduled into a named phase of
 a version plan, or (b) being explicitly killed. Adding an item here requires pointing to where its
