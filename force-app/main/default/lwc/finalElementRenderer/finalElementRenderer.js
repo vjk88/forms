@@ -59,15 +59,61 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
-    /** Help rides with the custom label when we render one; else on the field. */
+    /** Help rides the visible helptext next to our label; else on the field. */
     get nativeHelp() {
         return this.showCustomLabel ? undefined : this.el.help;
     }
 
+    /** `left` lays the field out as a row: label column + control (spec §4). */
+    get fieldClass() {
+        let cls = 'field';
+        if (this.el.labelPosition === 'left') {
+            cls += ' label-left';
+        }
+        if (this.isTextarea) {
+            cls += ' field-textarea';
+        }
+        return cls;
+    }
+
+    /** labelStyle: default | uppercase | muted (catalog §1). */
+    get labelClass() {
+        const style = this.el.labelStyle;
+        if (style === 'uppercase' || style === 'muted') {
+            return `field-label label-${style}`;
+        }
+        return 'field-label';
+    }
+
+    /**
+     * The custom label can't reach the native input across shadow roots with
+     * `for` — forward the click instead (checkboxes toggle, everything else
+     * just focuses).
+     */
+    handleLabelClick() {
+        const target = this.template.querySelector(
+            'lightning-input, lightning-textarea'
+        );
+        if (!target) {
+            return;
+        }
+        target.focus();
+        if (this.inputType === 'checkbox' && !this.isTextarea) {
+            target.checked = !target.checked;
+            this.dispatchValue(target.checked);
+        }
+    }
+
     handleChange(event) {
+        // A checkbox's state lives in `checked`; `value` is a constant string.
+        const t = event.target;
+        this.dispatchValue(t.type === 'checkbox' ? t.checked : t.value);
+    }
+
+    dispatchValue(value) {
         this.dispatchEvent(
             new CustomEvent('valuechange', {
-                detail: { elementId: this.el.id, value: event.target.value }
+                detail: { elementId: this.el.id, value }
             })
         );
     }

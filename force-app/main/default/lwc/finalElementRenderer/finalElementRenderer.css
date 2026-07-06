@@ -23,12 +23,19 @@
     display: block;
 }
 
+/* Label text + (perceivable) helptext, side by side. */
+.field-label-row {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-1);
+    margin-bottom: var(--c-space-1);
+}
+
 /* Our own label — reaches the theme ink (the native shadow-DOM label can't). */
 .field-label {
     display: inline-flex;
     align-items: center;
     gap: var(--c-space-1);
-    margin-bottom: var(--c-space-1);
     font-family: var(--c-font-body);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -37,13 +44,53 @@
 }
 
 .field-req {
-    color: var(--c-field-required, var(--c-field-error, #ba0517));
+    color: var(--c-field-required);
     text-decoration: none;
     font-weight: 700;
 }
 
-.field-label lightning-helptext {
+.field-label-row lightning-helptext {
     --slds-c-icon-color-foreground-default: var(--c-text-weak);
+}
+
+/* labelStyle (catalog §1): default | uppercase | muted */
+.label-uppercase {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.6875rem;
+}
+
+.label-muted {
+    color: var(--c-text-weak);
+    font-weight: 500;
+}
+
+/* labelPosition: left — label column beside the control (spec §4). */
+.label-left {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-4);
+}
+
+.label-left .field-label-row {
+    flex: 0 0 calc(var(--c-space-6) * 5);
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.label-left lightning-input,
+.label-left lightning-textarea {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Multi-line control: pin the label to the top of the row. */
+.label-left.field-textarea {
+    align-items: flex-start;
+}
+
+.label-left.field-textarea .field-label-row {
+    padding-top: var(--c-space-2);
 }
 
 .unsupported {
