@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>App Home — the form library (proposal)</title>
+<style>
+    :root {
+        --ink: #181818;
+        --ink-2: #5c5c5c;
+        --line: #e5e5e5;
+        --line-2: #d8d8d8;
+        --chrome: #f3f3f3;
+        --brand: #0d9488;
+        --brand-ink: #0b6e65;
+        --pass-bg: #e8f6ef;
+        --pass-ink: #1b6e46;
+        --warn-bg: #fef3e8;
+        --warn-ink: #8a5300;
+        --radius: 10px;
+        font-size: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font: 13.5px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        background: var(--chrome);
+        min-height: 100vh;
+    }
+    button { font: inherit; cursor: pointer; }
+
+    /* ---- simulated LEX chrome (demo of the real-estate tax the library accepts) ---- */
+    .lexsim { display: none; }
+    body.lex .lexsim { display: block; }
+    .lex-global {
+        height: 46px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 16px;
+        color: #7a7a7a;
+    }
+    .lex-global .waffle { width: 22px; height: 22px; display: grid; grid-template-columns: repeat(3, 5px); gap: 2px; }
+    .lex-global .waffle i { width: 5px; height: 5px; background: #b8bcc4; border-radius: 1px; }
+    .lex-global .gsearch { flex: 1; max-width: 560px; margin: 0 auto; border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 14px; font-size: 12.5px; color: #9aa0aa; background: #f7f8fa; text-align: center; }
+    .lex-global .gi { width: 20px; height: 20px; border-radius: 50%; background: #e6e8ec; }
+    .lex-nav {
+        height: 42px;
+        background: #fff;
+        border-bottom: 2px solid #0176d3;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0 12px;
+        font-size: 12.5px;
+        color: #444;
+    }
+    .lex-nav .appname { font-weight: 700; padding: 0 12px 0 4px; }
+    .lex-nav span { padding: 11px 12px; }
+    .lex-nav span.cur { color: #0176d3; font-weight: 700; box-shadow: inset 0 -3px 0 #0176d3; }
+    .lex-note { background: #fef3e8; color: #8a5300; font-size: 11.5px; padding: 5px 16px; }
+
+    .hostdemo {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 20;
+        border: 1px solid var(--line-2);
+        background: #fff;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: var(--ink-2);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+    }
+
+    .topbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 20px;
+        height: 52px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+    body.lex .topbar { position: static; }
+    .brand { font-weight: 800; letter-spacing: 0.01em; }
+    .seg { display: flex; border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; }
+    .seg button { border: 0; background: none; padding: 5px 16px; color: var(--ink-2); font-weight: 600; }
+    .seg button.on { background: var(--ink); color: #fff; }
+    .apptabs { display: flex; gap: 2px; margin-left: 18px; }
+    .apptabs button {
+        border: 0;
+        background: none;
+        padding: 16px 13px 13px;
+        font-weight: 600;
+        color: var(--ink-2);
+        box-shadow: inset 0 -3px 0 transparent;
+    }
+    .apptabs button.on { color: var(--brand-ink); box-shadow: inset 0 -3px 0 var(--brand); }
+    .apptabs button:hover:not(.on) { color: var(--ink); }
+    body.lex .apptabs { display: none; } /* in LEX, the app nav carries these tabs */
+
+    .search {
+        margin-left: auto;
+        width: 280px;
+        border: 1px solid var(--line-2);
+        border-radius: 8px;
+        padding: 7px 12px;
+        font: inherit;
+        background: #fff;
+    }
+    .newbtn { border: 0; background: var(--brand); color: #fff; font-weight: 700; padding: 8px 16px; border-radius: 8px; margin-left: auto; }
+    .tabpanel[hidden] { display: none; }
+    .viewall { border: 0; background: none; color: var(--brand-ink); font-weight: 700; padding: 0; font-size: 13px; }
+    .sechead { display: flex; align-items: baseline; gap: 10px; margin: 22px 0 12px; }
+    .sechead h2 { margin: 0; font-size: 15px; font-weight: 800; }
+    .sechead .viewall { margin-left: auto; }
+    .stub { background: #fff; border: 1px dashed var(--line-2); border-radius: var(--radius); padding: 26px; color: var(--ink-2); max-width: 640px; }
+    .stub h2 { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
+    .stub ul { margin: 8px 0 0 18px; padding: 0; }
+    .stub li { margin: 4px 0; }
+
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 26px 20px 60px; }
+
+    .pagehead { margin-bottom: 18px; }
+    .pagehead h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+    .pagehead p { margin: 3px 0 0; color: var(--ink-2); font-size: 13px; }
+
+    /* ---- pulse: stat tiles (label · value · delta · trend) ---- */
+    .pulse { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .tile { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 12px; }
+    .tile .tlabel { font-size: 12px; color: var(--ink-2); }
+    .tile .tvalue { font-size: 26px; font-weight: 600; margin: 2px 0 0; }
+    .tile .tdelta { font-size: 12px; font-weight: 600; margin-top: 2px; }
+    .tile .tdelta.up { color: var(--pass-ink); }
+    .tile .tdelta.down { color: #a3251d; }
+    .tile .tdelta.flat { color: var(--ink-2); font-weight: 400; }
+    .tile svg { display: block; margin-top: 8px; }
+
+    /* ---- work row: continue editing + needs attention ---- */
+    .workrow { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; margin-bottom: 22px; }
+    @media (max-width: 900px) { .workrow { grid-template-columns: 1fr; } }
+    .panelcard { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+    .panelcard h2 { margin: 0 0 10px; font-size: 13px; font-weight: 700; }
+    .continue .formname { font-size: 15.5px; font-weight: 700; margin: 0 0 2px; }
+    .continue .sub { color: var(--ink-2); font-size: 12.5px; margin: 0 0 12px; }
+    .continue .go { border: 0; background: var(--brand); color: #fff; font-weight: 700; padding: 8px 16px; border-radius: 8px; }
+
+    .att { list-style: none; margin: 0; padding: 0; }
+    .att li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .att li:first-child { border-top: 0; }
+    .att .ic { flex: none; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font-size: 13px; }
+    .att .ic.serious { background: var(--fail-bg, #fdeeee); color: #a3251d; }
+    .att .ic.warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .att .txt { flex: 1; min-width: 0; font-size: 12.5px; }
+    .att .txt b { display: block; font-size: 13px; }
+    .att .txt span { color: var(--ink-2); }
+    .att .act { border: 1px solid var(--line-2); background: #fff; border-radius: 7px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+    .att .act:hover { color: var(--brand-ink); border-color: var(--brand-ink); }
+
+    .cardspark { vertical-align: middle; margin-left: 8px; }
+
+    .filters { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .fchip { border: 1px solid var(--line-2); background: #fff; border-radius: 999px; padding: 4px 13px; color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+    .fchip.on { background: var(--brand-ink); border-color: var(--brand-ink); color: #fff; }
+    .count { margin-left: 6px; color: var(--ink-2); font-size: 12px; white-space: nowrap; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+    .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+    }
+    .card:hover { border-color: var(--line-2); box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07); }
+
+    /* mini render: the form's OWN layout + theme, mocked from its tokens */
+    .mini { height: 120px; padding: 12px 14px; display: flex; gap: 8px; }
+    .mini .pane { flex: 0 0 34%; border-radius: 6px; display: flex; flex-direction: column; justify-content: flex-end; padding: 7px; gap: 3px; }
+    .mini .pane .dotrow { display: flex; gap: 3px; }
+    .mini .pane .d { width: 5px; height: 5px; border-radius: 50%; opacity: 0.5; background: currentColor; }
+    .mini .pane .d.on { opacity: 1; }
+    .mini .sheet { flex: 1; border-radius: 6px; padding: 9px 10px; display: flex; flex-direction: column; gap: 5px; }
+    .mini .bar { height: 7px; border-radius: 4px; width: 55%; }
+    .mini .bar.thin { height: 5px; width: 78%; opacity: 0.55; }
+    .mini .inprow { display: flex; gap: 5px; margin-top: auto; }
+    .mini .inp { flex: 1; height: 12px; border-radius: 3px; border: 1px solid; opacity: 0.8; }
+    .mini .btn { align-self: flex-end; width: 42px; height: 12px; border-radius: 3px; margin-top: 5px; }
+    .mini .steps { display: flex; gap: 4px; margin-bottom: 2px; }
+    .mini .step { width: 9px; height: 9px; border-radius: 50%; }
+    .mini .step.off { opacity: 0.35; }
+
+    .card .body { padding: 12px 14px 6px; }
+    .titlerow { display: flex; align-items: center; gap: 8px; }
+    .titlerow h3 { margin: 0; font-size: 15.5px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status { font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; border-radius: 5px; padding: 2px 8px; }
+    .status.pub { background: var(--pass-bg); color: var(--pass-ink); }
+    .status.draft { background: #eef0f3; color: #4a5261; }
+    .status.arch { background: #f4f4f4; color: #8a8a8a; }
+    .meta { display: flex; gap: 6px; align-items: center; color: var(--ink-2); font-size: 12px; margin-top: 5px; }
+    .meta .obj { border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 7px; font-size: 11px; font-weight: 600; }
+    .stats { color: var(--ink-2); font-size: 12px; padding: 4px 14px 0; }
+    .stats b { color: var(--ink); }
+
+    .actions { display: flex; gap: 4px; padding: 8px 10px 10px; opacity: 0; transition: opacity 0.12s ease-out; }
+    .card:hover .actions, .card:focus-within .actions { opacity: 1; }
+    .actions button { border: 1px solid var(--line-2); background: #fff; border-radius: 7px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+    .actions button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .actions .spacer { flex: 1; }
+
+    /* teaching empty state (first-run and no-results share the shape) */
+    .empty { display: none; text-align: center; padding: 70px 0 30px; }
+    .empty.on { display: block; }
+    .empty h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; }
+    .empty p { margin: 0 0 18px; color: var(--ink-2); }
+    .steps3 { display: inline-flex; flex-direction: column; gap: 8px; text-align: left; margin-bottom: 20px; }
+    .steps3 div { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 9px 14px; }
+    .steps3 .n { width: 20px; height: 20px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+    .empty .newbtn { padding: 10px 22px; }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="lexsim" aria-hidden="true">
+    <div class="lex-global">
+        <span class="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="gsearch">Search…</span>
+        <span class="gi"></span><span class="gi"></span><span class="gi"></span>
+    </div>
+    <div class="lex-nav">
+        <span class="appname">FormStudio</span>
+        <span class="cur">Home</span><span>Forms</span><span>Responses</span><span>Analytics</span><span>Templates</span><span>Settings</span>
+    </div>
+    <div class="lex-note">Simulated Lightning chrome. Inside LEX, the app's own tab strip disappears — Home / Forms / Responses / Analytics / Templates / Settings become the LEX app's nav items (one flexipage each). The STUDIO still never pays this tax: Edit opens full-screen, like App Builder.</div>
+</div>
+
+<div class="topbar">
+    <span class="brand">FormStudio</span>
+    <nav class="apptabs" aria-label="App navigation">
+        <button type="button" class="on" data-apptab="home">Home</button>
+        <button type="button" data-apptab="forms">Forms</button>
+        <button type="button" data-apptab="responses">Responses</button>
+        <button type="button" data-apptab="analytics">Analytics</button>
+        <button type="button" data-apptab="templates">Templates</button>
+        <button type="button" data-apptab="settings">Settings</button>
+    </nav>
+    <button class="newbtn" type="button" title="Opens the creation gallery (finalCreationGallery — already built)">+ New form</button>
+</div>
+
+<div class="wrap">
+
+    <!-- ============ TAB: HOME — start work or flag work, nothing else ============ -->
+    <section class="tabpanel" data-tabpanel="home">
+    <div class="pagehead">
+        <h1>Good morning, Vijay</h1>
+        <p>Here's how your forms are doing.</p>
+    </div>
+
+    <div class="pulse">
+        <div class="tile">
+            <div class="tlabel">Responses, last 7 days</div>
+            <div class="tvalue">204</div>
+            <div class="tdelta up">+18% vs prior 7 days</div>
+            <svg width="150" height="26" id="pulseSpark" role="img" aria-label="Responses trend, 12 days"></svg>
+        </div>
+        <div class="tile">
+            <div class="tlabel">Average completion</div>
+            <div class="tvalue">71%</div>
+            <div class="tdelta down">−3 pts vs prior 7 days</div>
+        </div>
+        <div class="tile">
+            <div class="tlabel">Published forms</div>
+            <div class="tvalue">3</div>
+            <div class="tdelta flat">across 3 objects</div>
+        </div>
+        <div class="tile">
+            <div class="tlabel">Drafts in progress</div>
+            <div class="tvalue">2</div>
+            <div class="tdelta flat">1 idle 12 days</div>
+        </div>
+    </div>
+
+    <div class="workrow">
+        <div class="panelcard continue">
+            <h2>Continue where you left off</h2>
+            <p class="formname">Support Case Wizard</p>
+            <p class="sub">Draft · edited just now · you were in Build, Page 1</p>
+            <button class="go" type="button" onclick="location.href='design_panel_ia_modes.html'">Resume in studio</button>
+        </div>
+        <div class="panelcard">
+            <h2>Needs attention</h2>
+            <ul class="att">
+                <li>
+                    <span class="ic serious" aria-hidden="true">✕</span>
+                    <span class="txt"><b>Partner Intake — broken binding</b>
+                        <span>Account.Segment__c was deleted from the object. 2 elements can't save.</span></span>
+                    <button class="act" type="button">Fix bindings</button>
+                </li>
+                <li>
+                    <span class="ic warn" aria-hidden="true">▲</span>
+                    <span class="txt"><b>Customer Feedback — completion falling</b>
+                        <span>64% this week (−9 pts). Most exits on page 2.</span></span>
+                    <button class="act" type="button">View drop-off</button>
+                </li>
+                <li>
+                    <span class="ic warn" aria-hidden="true">⏸</span>
+                    <span class="txt"><b>Event Registration — idle draft</b>
+                        <span>No edits in 12 days and never published.</span></span>
+                    <button class="act" type="button">Resume</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="sechead">
+        <h2>Recently edited</h2>
+        <button class="viewall" type="button" data-goto="forms">View all forms →</button>
+    </div>
+    <div class="grid" id="recentGrid"></div>
+    </section>
+
+    <!-- ============ TAB: FORMS — the library; search lives WITH the grid ============ -->
+    <section class="tabpanel" data-tabpanel="forms" hidden>
+    <div class="pagehead">
+        <h1>Forms</h1>
+        <p>Everything you've built. Search, filter, open.</p>
+    </div>
+
+    <div class="filters" id="statusChips">
+        <button class="fchip on" type="button" data-status="all">All</button>
+        <button class="fchip" type="button" data-status="Published">Published</button>
+        <button class="fchip" type="button" data-status="Draft">Drafts</button>
+        <button class="fchip" type="button" data-status="Archived">Archived</button>
+        <div class="seg" id="typeSeg">
+            <button type="button" class="on" data-type="all">All types</button>
+            <button type="button" data-type="Form">Forms</button>
+            <button type="button" data-type="Survey">Surveys</button>
+        </div>
+        <input class="search" id="q" type="search" placeholder="Search forms… (“zzz” = empty state)" />
+        <span class="count" id="countLbl"></span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <button class="hostdemo" id="hostDemo" type="button">Show Lightning chrome (demo)</button>
+
+    <div class="empty" id="empty">
+        <h2 id="emptyTitle">Create your first form</h2>
+        <p id="emptyDesc">Pick a layout, pick a theme, bind an object — live in minutes.</p>
+        <div class="steps3">
+            <div><span class="n">1</span> Choose a layout &amp; theme from the gallery</div>
+            <div><span class="n">2</span> Drag your object's fields onto the blueprint</div>
+            <div><span class="n">3</span> Publish — share the link or drop it on a page</div>
+        </div>
+        <br />
+        <button class="newbtn" type="button">+ New form</button>
+    </div>
+    </section>
+
+    <!-- ============ STUB TABS — declared jobs, built later ============ -->
+    <section class="tabpanel" data-tabpanel="responses" hidden>
+        <div class="pagehead"><h1>Responses</h1><p>Every submission, across all forms.</p></div>
+        <div class="stub">
+            <h2>What lives here</h2>
+            <ul>
+                <li>Cross-form response explorer: filter by form, date, outcome; open the created record</li>
+                <li>Survey answers with label snapshots (answer store)</li>
+                <li>Export selected responses</li>
+            </ul>
+        </div>
+    </section>
+    <section class="tabpanel" data-tabpanel="analytics" hidden>
+        <div class="pagehead"><h1>Analytics</h1><p>Funnels and trends (survey analytics phases 1–3).</p></div>
+        <div class="stub">
+            <h2>What lives here</h2>
+            <ul>
+                <li>Per-form funnel: views → starts → completions, drop-off by page</li>
+                <li>Response trends; completion-rate leaderboard</li>
+                <li>Survey answer distributions, per question</li>
+            </ul>
+        </div>
+    </section>
+    <section class="tabpanel" data-tabpanel="templates" hidden>
+        <div class="pagehead"><h1>Templates</h1><p>Curated, themed starting points (the P6 gallery).</p></div>
+        <div class="stub">
+            <h2>What lives here</h2>
+            <ul>
+                <li>The creation gallery as a browsable library: layout × theme × object presets</li>
+                <li>Org templates: save any form as a starting point for your team</li>
+            </ul>
+        </div>
+    </section>
+    <section class="tabpanel" data-tabpanel="settings" hidden>
+        <div class="pagehead"><h1>Settings</h1><p>App-level defaults — never per-form config.</p></div>
+        <div class="stub">
+            <h2>What lives here</h2>
+            <ul>
+                <li>Brand kit defaults: org logo, default theme for new forms</li>
+                <li>Spam protection defaults (honeypot, rate limits) — enforced server-side</li>
+                <li>Hosting surfaces / adapters (record page, Flow, guest, embed) — future</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<script>
+/* Each card renders the form's OWN layout + theme from its resolved tokens —
+   the same trick as finalThemeCard, so the library IS a visual index. */
+const FORMS = [
+    { name: 'Customer Feedback', obj: 'Contact', type: 'Form', status: 'Published', layout: 'split',
+      t: { accent: '#bd93f9', page: '#191a21', sheet: '#282a36', ink: '#f8f8f2', pane: '#1e1f29', paneInk: '#f8f8f2' },
+      stat: '128 responses · last 7 days', edited: 'Edited 2d ago' },
+    { name: 'Event Registration', obj: 'Lead', type: 'Form', status: 'Draft', layout: 'classic',
+      t: { accent: '#0f766e', page: '#f6f4ee', sheet: '#fffdf7', ink: '#232019', pane: '#efece3', paneInk: '#232019' },
+      stat: 'Not published yet', edited: 'Edited 5h ago' },
+    { name: 'CSAT Pulse', obj: 'Answer store', type: 'Survey', status: 'Published', layout: 'stepped',
+      t: { accent: '#0d9488', page: '#f4f7f5', sheet: '#ffffff', ink: '#1f2937', pane: '#134e4a', paneInk: '#ffffff' },
+      stat: '64 responses · 71% completion', edited: 'Edited 6d ago' },
+    { name: 'Partner Intake', obj: 'Account', type: 'Form', status: 'Published', layout: 'classic',
+      t: { accent: '#b45309', page: '#fffbeb', sheet: '#ffffff', ink: '#292524', pane: '#fde68a', paneInk: '#292524' },
+      stat: '12 responses · last 7 days', edited: 'Edited 12d ago' },
+    { name: 'Support Case Wizard', obj: 'Case', type: 'Form', status: 'Draft', layout: 'stepped',
+      t: { accent: '#4f46e5', page: '#eef2ff', sheet: '#ffffff', ink: '#1e1b4b', pane: '#e0e7ff', paneInk: '#1e1b4b' },
+      stat: 'Not published yet', edited: 'Edited just now' },
+    { name: 'Churn Survey (old)', obj: 'Answer store', type: 'Survey', status: 'Archived', layout: 'classic',
+      t: { accent: '#6b7280', page: '#f4f4f5', sheet: '#ffffff', ink: '#3f3f46', pane: '#e4e4e7', paneInk: '#3f3f46' },
+      stat: '212 responses · closed', edited: 'Archived 3mo ago' }
+];
+
+const SPARKS = {
+    'Customer Feedback': [14, 18, 15, 22, 19, 25, 15],
+    'CSAT Pulse': [6, 9, 11, 8, 12, 10, 8],
+    'Partner Intake': [4, 2, 3, 1, 1, 2, 0]
+};
+
+let typeF = 'all', statusF = 'all', q = '';
+const $ = (id) => document.getElementById(id);
+
+/* 2px round-join line; history in de-emphasis gray, current period in accent;
+   >=8px end-dot with a 2px surface ring (dataviz mark spec) */
+function spark(points, w, h, pad = 5) {
+    const min = Math.min(...points), max = Math.max(...points);
+    const X = (i) => pad + (i * (w - 2 * pad)) / (points.length - 1);
+    const Y = (v) => max === min ? h / 2 : pad + (1 - (v - min) / (max - min)) * (h - 2 * pad);
+    const pts = points.map((v, i) => `${X(i)},${Y(v).toFixed(1)}`);
+    const histor = pts.slice(0, -1).join(' ');
+    const last = pts.slice(-2).join(' ');
+    const [ex, ey] = pts[pts.length - 1].split(',');
+    return `
+        <polyline points="${histor}" fill="none" stroke="#b8bcc4" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline points="${last}" fill="none" stroke="#0d9488" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${ex}" cy="${ey}" r="4" fill="#0d9488" stroke="#ffffff" stroke-width="2"/>`;
+}
+
+function mini(f) {
+    const t = f.t;
+    const inp = `<div class="inprow"><span class="inp" style="border-color:${t.ink}"></span><span class="inp" style="border-color:${t.ink}"></span></div>`;
+    const bars = `<span class="bar" style="background:${t.ink}"></span><span class="bar thin" style="background:${t.ink}"></span>`;
+    const btn = `<span class="btn" style="background:${t.accent}"></span>`;
+    if (f.layout === 'split') {
+        return `<div class="mini" style="background:${t.page}">
+            <div class="pane" style="background:${t.pane};color:${t.paneInk}"><div class="dotrow"><span class="d on"></span><span class="d"></span><span class="d"></span></div></div>
+            <div class="sheet" style="background:${t.sheet}">${bars}${inp}${btn}</div></div>`;
+    }
+    if (f.layout === 'stepped') {
+        return `<div class="mini" style="background:${t.page}">
+            <div class="sheet" style="background:${t.sheet}">
+            <div class="steps"><span class="step" style="background:${t.accent}"></span><span class="step off" style="background:${t.ink}"></span><span class="step off" style="background:${t.ink}"></span></div>
+            ${bars}${inp}${btn}</div></div>`;
+    }
+    return `<div class="mini" style="background:${t.page}"><div class="sheet" style="background:${t.sheet}">${bars}${inp}${btn}</div></div>`;
+}
+
+function statusChip(s) {
+    const cls = s === 'Published' ? 'pub' : s === 'Draft' ? 'draft' : 'arch';
+    return `<span class="status ${cls}">${s.toUpperCase()}</span>`;
+}
+
+function cardHtml(f) {
+    return `
+        <article class="card" tabindex="0">
+            ${mini(f)}
+            <div class="body">
+                <div class="titlerow"><h3>${f.name}</h3>${statusChip(f.status)}</div>
+                <div class="meta"><span class="obj">${f.obj}</span><span>${f.type}</span><span>·</span><span>${f.edited}</span></div>
+            </div>
+            <div class="stats"><b>${f.stat.split(' · ')[0]}</b>${f.stat.includes('·') ? ' · ' + f.stat.split(' · ')[1] : ''}${
+                SPARKS[f.name] && f.status === 'Published'
+                    ? `<svg class="cardspark" width="64" height="18" role="img" aria-label="7-day response trend">${spark(SPARKS[f.name], 64, 18, 4)}</svg>`
+                    : ''
+            }</div>
+            <div class="actions">
+                <button type="button" class="primary" onclick="location.href='design_panel_ia_modes.html'" title="Opens the full-screen studio (no LEX chrome)">Edit</button>
+                <button type="button">Preview</button>
+                ${f.status === 'Published' ? '<button type="button" title="Copy the public link">Copy link</button>' : ''}
+                <span class="spacer"></span>
+                <button type="button" title="Duplicate · Archive · Delete">⋯</button>
+            </div>
+        </article>`;
+}
+
+function render() {
+    const list = FORMS.filter((f) =>
+        (typeF === 'all' || f.type === typeF) &&
+        (statusF === 'all' || f.status === statusF) &&
+        (!q || f.name.toLowerCase().includes(q))
+    );
+    const grid = $('grid');
+    grid.innerHTML = list.map(cardHtml).join('');
+
+    const empty = $('empty');
+    const none = list.length === 0;
+    empty.classList.toggle('on', none);
+    grid.style.display = none ? 'none' : '';
+    if (none) {
+        const firstRun = FORMS.length === 0;
+        $('emptyTitle').textContent = firstRun ? 'Create your first form' : 'Nothing matches';
+        $('emptyDesc').textContent = firstRun
+            ? 'Pick a layout, pick a theme, bind an object — live in minutes.'
+            : 'No forms match your filters. Clear them, or start something new.';
+    }
+    $('countLbl').textContent = `${list.length} of ${FORMS.length}`;
+}
+
+document.querySelectorAll('#typeSeg button').forEach((b) =>
+    b.addEventListener('click', () => {
+        document.querySelectorAll('#typeSeg button').forEach((x) => x.classList.remove('on'));
+        b.classList.add('on');
+        typeF = b.dataset.type;
+        render();
+    }));
+document.querySelectorAll('#statusChips .fchip').forEach((b) =>
+    b.addEventListener('click', () => {
+        document.querySelectorAll('#statusChips .fchip').forEach((x) => x.classList.remove('on'));
+        b.classList.add('on');
+        statusF = b.dataset.status;
+        render();
+    }));
+$('q').addEventListener('input', () => { q = $('q').value.trim().toLowerCase(); render(); });
+
+render();
+
+/* home: the three most recently edited, newest first */
+$('recentGrid').innerHTML = [FORMS[4], FORMS[1], FORMS[0]].map(cardHtml).join('');
+
+/* app tabs: one job each */
+const showTab = (key) => {
+    document.querySelectorAll('.apptabs button').forEach((b) => b.classList.toggle('on', b.dataset.apptab === key));
+    document.querySelectorAll('.tabpanel').forEach((p) => (p.hidden = p.dataset.tabpanel !== key));
+};
+document.querySelectorAll('.apptabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.apptab)));
+document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.goto)));
+
+$('pulseSpark').innerHTML = spark([12, 16, 14, 19, 17, 23, 21, 26, 24, 31, 28, 34], 150, 26);
+
+document.getElementById('hostDemo').addEventListener('click', () => {
+    document.body.classList.toggle('lex');
+    document.getElementById('hostDemo').textContent =
+        document.body.classList.contains('lex') ? 'Hide Lightning chrome (demo)' : 'Show Lightning chrome (demo)';
+});
+</script>
+</body>
+</html>
