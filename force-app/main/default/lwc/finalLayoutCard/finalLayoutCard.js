@@ -1,9 +1,19 @@
 import { LightningElement, api } from 'lwc';
+import { getBuiltinTheme } from 'c/finalThemeCatalog';
+import { resolveTokens, tokensToStyle } from 'c/finalThemeEngine';
 
 /**
  * finalLayoutCard — one layout choice in the creation flow's step 1.
- * A small neutral structural diagram (NOT themed — theme comes next step) + a
- * label/hint. Emits `select` { layout } on click/keyboard.
+ *
+ * The preview is a layoutThumb-style structural mini-mockup (ported from the
+ * old build's c/layoutThumb — the picker treatment FormStudio's gallery uses),
+ * tinted by a representative builtin theme's `--c-*` tokens so the grid reads
+ * as a varied gallery, not eight gray-bar clones (owner 2026-07-05). The REAL
+ * theme choice is still step 2 — the tint here is just presentation.
+ *
+ * `paneFlow="oneAtATime"` renders splitHero's conversational variant card —
+ * a presentation option on the same primitive (catalog §2), NOT a new layout.
+ * Emits `select` { layout, paneFlow } on click/keyboard.
  */
 
 const META = {
@@ -15,12 +25,26 @@ const META = {
     oneAtATime: { label: 'One at a time', hint: 'One question per screen.' },
     splitHero: { label: 'Split hero', hint: 'Brand panel beside the form.' }
 };
+const SPLIT_ONE_META = {
+    label: 'Split hero · Conversational',
+    hint: 'Brand panel, one question at a time.'
+};
 
 export default class FinalLayoutCard extends LightningElement {
     @api layout;
+    /** 'oneAtATime' → the splitHero conversational variant card. */
+    @api paneFlow;
+    /** Representative builtin theme tinting THIS card's mockup. */
+    @api themeKey;
     @api selected = false;
 
+    get isSplitOne() {
+        return this.layout === 'splitHero' && this.paneFlow === 'oneAtATime';
+    }
     get meta() {
+        if (this.isSplitOne) {
+            return SPLIT_ONE_META;
+        }
         return META[this.layout] || { label: this.layout, hint: '' };
     }
     get rootClass() {
@@ -28,6 +52,15 @@ export default class FinalLayoutCard extends LightningElement {
     }
     get pressed() {
         return this.selected ? 'true' : 'false';
+    }
+
+    /** The mockup rides the representative theme's full token contract. */
+    get tokenStyle() {
+        try {
+            return tokensToStyle(resolveTokens(getBuiltinTheme(this.themeKey)));
+        } catch {
+            return '';
+        }
     }
 
     get isScroll() {
@@ -49,12 +82,14 @@ export default class FinalLayoutCard extends LightningElement {
         return this.layout === 'oneAtATime';
     }
     get isSplit() {
-        return this.layout === 'splitHero';
+        return this.layout === 'splitHero' && !this.isSplitOne;
     }
 
     _emit() {
         this.dispatchEvent(
-            new CustomEvent('select', { detail: { layout: this.layout } })
+            new CustomEvent('select', {
+                detail: { layout: this.layout, paneFlow: this.paneFlow }
+            })
         );
     }
     handleClick() {

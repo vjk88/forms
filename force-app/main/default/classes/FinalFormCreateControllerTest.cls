@@ -33,7 +33,8 @@ private class FinalFormCreateControllerTest {
             'Contact Intake',
             'Contact',
             'stepper',
-            'nordic'
+            'nordic',
+            null
         );
         Test.stopTest();
 
@@ -82,6 +83,56 @@ private class FinalFormCreateControllerTest {
     }
 
     @isTest
+    static void createForm_splitHeroPaneFlow_landsInLayoutOptions() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createForm(
+            'VIP Sign-in',
+            'Contact',
+            'splitHero',
+            'auraSplit',
+            'oneAtATime'
+        );
+        Test.stopTest();
+
+        Form_Version__c v = [
+            SELECT Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Id = :(Id) res.get('versionId')
+        ];
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            v.Spec_JSON__c
+        );
+        Map<String, Object> layout = (Map<String, Object>) spec.get('layout');
+        System.assertEquals('splitHero', layout.get('type'));
+        Map<String, Object> options = (Map<String, Object>) layout.get('options');
+        System.assertEquals(
+            'oneAtATime',
+            options.get('paneFlow'),
+            'Conversational card must ride layout.options.paneFlow'
+        );
+    }
+
+    @isTest
+    static void createForm_rejectsPaneFlowOffSplitHero() {
+        Boolean threw = false;
+        try {
+            FinalFormCreateController.createForm(
+                'X',
+                'Contact',
+                'stepper',
+                'nordic',
+                'oneAtATime'
+            );
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(
+            threw,
+            'paneFlow on a non-splitHero layout must be rejected'
+        );
+    }
+
+    @isTest
     static void createForm_rejectsBlankName() {
         assertBadInput('', 'Contact');
     }
@@ -101,7 +152,13 @@ private class FinalFormCreateControllerTest {
     private static void assertBadInput(String name, String obj) {
         Boolean threw = false;
         try {
-            FinalFormCreateController.createForm(name, obj, 'scroll', 'nordic');
+            FinalFormCreateController.createForm(
+                name,
+                obj,
+                'scroll',
+                'nordic',
+                null
+            );
         } catch (AuraHandledException e) {
             threw = true;
         }

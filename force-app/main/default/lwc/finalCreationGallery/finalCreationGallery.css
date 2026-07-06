@@ -87,22 +87,74 @@
     gap: 1rem;
 }
 
-/* --- details --- */
+/* --- details: form column left, live preview owns the rest --- */
 .cg-detail-grid {
     display: grid;
-    grid-template-columns: minmax(0, 360px) 1fr;
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
     gap: 1.5rem;
     align-items: start;
-}
-.cg-preview {
-    position: sticky;
-    top: 1rem;
 }
 .cg-form {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
-    max-width: 460px;
+}
+
+/* --- live preview pane --- */
+.cg-preview {
+    position: sticky;
+    top: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f6f7fa;
+}
+.cg-preview-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    background: #ffffff;
+    border-bottom: 1px solid #eceef2;
+}
+.cg-preview-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #374151;
+}
+.dev-toggle {
+    display: flex;
+    gap: 2px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    padding: 2px;
+}
+.dev-btn {
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #6b7280;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.dev-btn.is-on {
+    background: #ffffff;
+    color: #1f2937;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+.cg-stage {
+    min-height: 480px;
+    max-height: 68vh;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+}
+.cg-frame {
+    width: 100%;
 }
 .cg-flabel {
     font-size: 0.78rem;
@@ -238,11 +290,14 @@
     margin-top: 1.5rem;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
     .cg-detail-grid {
         grid-template-columns: 1fr;
     }
     .cg-preview {
         position: static;
+    }
+    .cg-stage {
+        min-height: 360px;
     }
 }

@@ -169,6 +169,87 @@
     background: var(--c-field-border, #e5e7eb);
 }
 
+/* Tabs */
+.tc-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 12px 0;
+    border-bottom: 1px solid var(--c-field-border, #e5e7eb);
+}
+.tc-tab {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--c-text-weak, #6b7280);
+    padding: 3px 8px 5px;
+    border-bottom: 2px solid transparent;
+}
+.tc-tab.on {
+    color: var(--c-accent, #6366f1);
+    border-bottom-color: var(--c-accent, #6366f1);
+}
+
+/* Accordion */
+.tc-acc {
+    border: 1px solid var(--c-field-border, #e5e7eb);
+    border-radius: calc(var(--c-radius, 8px) * 0.6);
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.tc-acc-title {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: var(--c-text, #1f2937);
+}
+.tc-acc:not(.open) .tc-acc-title {
+    color: var(--c-text-weak, #6b7280);
+}
+
+/* Rail (side navigation) */
+.tc-railed {
+    display: grid;
+    grid-template-columns: 26% 74%;
+}
+.tc-sidenav {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 12px 8px;
+    border-right: 1px solid var(--c-field-border, #e5e7eb);
+}
+.tc-nav-item {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--c-field-border, #d1d5db);
+}
+.tc-nav-item.on {
+    background: var(--c-accent, #6366f1);
+}
+
+/* Single (oneAtATime) — floating question card on the page bg */
+.tc-floating {
+    max-width: 210px;
+}
+.tc-body-center {
+    justify-content: center;
+}
+
+/* Progress (single + splitOne) */
+.tc-progress {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--c-field-border, #e5e7eb);
+    overflow: hidden;
+}
+.tc-progress-fill {
+    display: block;
+    height: 100%;
+    width: 45%;
+    border-radius: 2px;
+    background: var(--c-accent, #6366f1);
+}
+
 /* Split */
 .tc-split {
     display: grid;

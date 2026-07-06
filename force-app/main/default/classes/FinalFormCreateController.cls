@@ -49,6 +49,9 @@ public with sharing class FinalFormCreateController {
      * @param objectApiName  chosen primary object (must be updatable)
      * @param layoutType   registry layout key (scroll|stepper|tabs|…)
      * @param themeName    built-in theme catalog key
+     * @param paneFlow   splitHero pane flow — 'oneAtATime' for the
+     *                   Conversational gallery card (layout.options.paneFlow,
+     *                   catalog §2); null/blank otherwise
      * @return { formId, versionId }
      */
     @AuraEnabled
@@ -56,7 +59,8 @@ public with sharing class FinalFormCreateController {
         String formName,
         String objectApiName,
         String layoutType,
-        String themeName
+        String themeName,
+        String paneFlow
     ) {
         if (String.isBlank(formName)) {
             throw new AuraHandledException('A form name is required.');
@@ -77,6 +81,15 @@ public with sharing class FinalFormCreateController {
         }
         String resolvedObject = objDesc.getName();
         String layout = String.isBlank(layoutType) ? 'scroll' : layoutType;
+        // Pane Flow is a splitHero-only presentation option; anything else is
+        // a client bug — reject rather than persist a nonsense spec.
+        String resolvedPaneFlow = null;
+        if (String.isNotBlank(paneFlow)) {
+            if (layout != 'splitHero' || paneFlow != 'oneAtATime') {
+                throw new AuraHandledException('Invalid pane flow option.');
+            }
+            resolvedPaneFlow = paneFlow;
+        }
 
         Savepoint sp = Database.setSavepoint();
         try {
@@ -91,7 +104,8 @@ public with sharing class FinalFormCreateController {
                 resolvedObject,
                 objDesc,
                 layout,
-                themeName
+                themeName,
+                resolvedPaneFlow
             );
 
             Form_Version__c version = new Form_Version__c();
@@ -125,8 +139,13 @@ public with sharing class FinalFormCreateController {
         String objectApi,
         Schema.DescribeSObjectResult objDesc,
         String layout,
-        String themeName
+        String themeName,
+        String paneFlow
     ) {
+        Map<String, Object> layoutOptions = new Map<String, Object>();
+        if (String.isNotBlank(paneFlow)) {
+            layoutOptions.put('paneFlow', paneFlow);
+        }
         Map<String, Object> spec = new Map<String, Object>{
             'specVersion' => 1,
             'form' => new Map<String, Object>{
@@ -138,7 +157,7 @@ public with sharing class FinalFormCreateController {
             },
             'layout' => new Map<String, Object>{
                 'type' => layout,
-                'options' => new Map<String, Object>(),
+                'options' => layoutOptions,
                 'maxWidth' => 'medium',
                 'zonesDefault' => new Map<String, Object>{
                     'arrangement' => 'single',

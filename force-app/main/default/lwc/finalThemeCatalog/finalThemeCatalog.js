@@ -459,3 +459,50 @@ export function listBuiltinThemes() {
         layout: t.layout || 'classic'
     }));
 }
+
+// Sample brand copy per theme — the personality lines every preview surface
+// (theme cards, the creation flow's live sample form) shares. Matches the
+// theme-comparison.html identities; unknown keys get the generic lockup.
+const BRAND_COPY = {
+    editorialIvory: { title: 'The Gazette', subtitle: 'Subscribe to our weekly print edition.' },
+    nordic: { title: 'Pre-Flight Manifest', subtitle: 'Verify passenger and crew credentials.' },
+    neoBrutalism: { title: 'Creator Application', subtitle: 'Apply for the early access program.' },
+    dracula: { title: 'Central Core Uplink', subtitle: 'Authorize security token to sync.' },
+    terracotta: { title: 'Workshop Registry', subtitle: 'Join our pottery classes in Austin.' },
+    forest: { title: 'Ranger Application', subtitle: 'Register for conservation patrols.' },
+    slate: { title: 'Customs Declaration', subtitle: 'Declare global freight manifests.' },
+    tokyo: { title: 'Node Connection', subtitle: 'Enter credentials for terminal 4-G.' },
+    sandstone: { title: 'Guest Concierge', subtitle: 'Submit preferences for your stay.' },
+    terminal: { title: 'SYSOP Authentication', subtitle: 'INPUT SECURE TOKENS FOR ACCESS.' },
+    lavender: { title: 'Patient Admittance', subtitle: 'Provide medical information.' },
+    execNav: { title: 'Corporate Onboarding', subtitle: 'Complete compliance checklists.' },
+    startupNav: { title: 'API Key Generation', subtitle: 'Generate production credentials.' },
+    mintStepper: { title: 'Developer Setup', subtitle: 'Initialize environment parameters.' },
+    retroStepper: { title: 'Bootloader Wizard', subtitle: 'Mounting virtual system image.' },
+    snowStepper: { title: 'Flight Check-in', subtitle: 'Confirm seat assignments.' },
+    marbleSplit: { title: 'VIP Lounge Sign-in', subtitle: 'Enter the luxury rewards portal.' },
+    cyberSplit: { title: 'Infiltration Gate', subtitle: 'Establishing remote SSH session.' },
+    claySplit: { title: 'Artisan Membership', subtitle: 'Receive special discounts and invites.' },
+    botanicalSplit: { title: 'Forest Preservation', subtitle: 'Join our carbon offsets program.' },
+    auraSplit: { title: 'Artist Portfolio', subtitle: 'Upload your creative submissions.' },
+    sunsetDunes: { title: 'Desert Expedition', subtitle: 'Book a luxury guided safari.' },
+    forestMist: { title: 'Retreat Enrollment', subtitle: 'Escape to our off-grid cabins.' },
+    marbleLuxury: { title: 'Exhibition RSVP', subtitle: 'Reserve private viewing passes.' },
+    carbonMatrix: { title: 'Threat Assessment', subtitle: 'File an infrastructure hazard report.' },
+    oceanBreeze: { title: 'Dive Charter Signup', subtitle: 'Confirm rental and experience level.' },
+    cosmicVortex: { title: 'Telescope Booking', subtitle: 'Reserve time on deep-space optics.' },
+    desertOasis: { title: 'Booking Request', subtitle: 'Check availability for canvas tents.' },
+    vintagePaper: { title: 'Literary Submission', subtitle: 'Send poems or short stories.' },
+    auroraBorealis: { title: 'Expedition Registry', subtitle: 'Register scientific equipment.' },
+    silkLuxury: { title: 'Atelier Booking', subtitle: 'Schedule a custom fitting.' }
+};
+
+/** Brand personality lockup for a theme key — always returns { title, subtitle }. */
+export function getBrandCopy(key) {
+    return (
+        BRAND_COPY[key] || {
+            title: 'Registration',
+            subtitle: 'Tell us a little about yourself.'
+        }
+    );
+}
