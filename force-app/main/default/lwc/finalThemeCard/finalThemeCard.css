@@ -109,7 +109,7 @@
     height: 16px;
     border-radius: calc(var(--c-radius, 8px) * 0.6);
     background: var(--c-field-bg, #ffffff);
-    border: var(--c-field-border, 1px solid #d1d5db);
+    border: 1px solid var(--c-field-border, #d1d5db);
 }
 
 .tc-btn {

@@ -145,7 +145,7 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 | Token | Styles |
 |---|---|
 | `--c-content-bg` | Panel fill (supports alpha) |
-| `--c-content-border` | Full border shorthand |
+| `--c-content-border` | Full border shorthand (width varies by theme) — consumers MUST use it as the ENTIRE value of a `border*` property, never as a color |
 | `--c-content-shadow` | Panel shadow |
 | `--c-glass-blur` | Frosted-glass blur radius |
 
@@ -158,7 +158,7 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 **Field** (consumed by `elementRenderer` + widgets)
 | Token | Styles |
 |---|---|
-| `--c-field-bg` / `--c-field-border` | Input surface |
+| `--c-field-bg` / `--c-field-border` | Input surface fill + border COLOR. `--c-field-border` is a color (width is always consumer-owned: `1px solid var(--c-field-border)`); nav chrome may also use it for hairlines/dividers/tracks |
 | `--c-field-focus` / `--c-field-error` / `--c-field-required` | Field-state colors (theme-level — review Rec 1) |
 | `--c-control-h` | Input height (density-driven) |
 

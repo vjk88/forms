@@ -335,7 +335,64 @@ describe('c-final-theme-engine', () => {
         });
     });
 
+    describe('field surface & border (review F1/F4)', () => {
+        it('--c-field-border is a COLOR — never a border shorthand (F1)', () => {
+            // The type is the contract: a shorthand here silently kills every
+            // nav hairline/divider/track consuming it as a color.
+            for (const { key } of listBuiltinThemes()) {
+                const v = resolveTokens(getBuiltinTheme(key))['--c-field-border'];
+                expect(v).toMatch(/^(#[0-9a-fA-F]{3,8}|rgba?\()/);
+                expect(v).not.toMatch(/solid|dashed|px /);
+            }
+        });
+
+        it('palette.fieldBorderColor knob is live', () => {
+            const t = resolveTokens({ palette: { fieldBorderColor: '#123456' } });
+            expect(t['--c-field-border']).toBe('#123456');
+        });
+
+        it('terminal (colored text on black) still gets a dark-surface input (F4)', () => {
+            const t = resolveTokens(getBuiltinTheme('terminal'));
+            expect(t['--c-field-bg']).not.toBe('#ffffff');
+            expect(t['--c-field-bg']).toContain('rgba');
+        });
+
+        it('dark-surface probe keys off contentBg, not text brightness', () => {
+            // dark panel + light text → lifted input
+            const dark = resolveTokens({
+                palette: { contentBg: '#0b0f14', text: '#f8fafc' }
+            });
+            expect(dark['--c-field-bg']).toContain('rgba');
+            // light panel + dark text → plain white input
+            const light = resolveTokens({
+                palette: { contentBg: '#ffffff', text: '#1f2937' }
+            });
+            expect(light['--c-field-bg']).toBe('#ffffff');
+            // glass (unparseable) surface falls back to the text-ink probe
+            const glass = resolveTokens({
+                palette: { contentBg: 'rgba(255, 255, 255, 0.7)', text: '#f8fafc' }
+            });
+            expect(glass['--c-field-bg']).toContain('rgba');
+        });
+
+        it('glass surfaces degrade border tints to rgba — never full-strength text (F17)', () => {
+            // contentBg is rgba → mix() can't blend → translucent tint of text
+            const ocean = resolveTokens(getBuiltinTheme('oceanBreeze'));
+            expect(ocean['--c-field-border']).toMatch(/^rgba\(/);
+            const glass = resolveTokens({
+                palette: { contentBg: 'rgba(255, 255, 255, 0.7)', text: '#0f172a' }
+            });
+            expect(glass['--c-field-border']).toMatch(/^rgba\(15, 23, 42, 0.3\)$/);
+        });
+    });
+
     describe('robustness & determinism', () => {
+        it('explicit null palette values are dropped, not emitted as invalid CSS (F17)', () => {
+            const t = resolveTokens(theme(), { palette: { headerBg: null } });
+            expect(t['--c-header-bg']).toBeUndefined();
+            expect(t['--c-text']).toBeDefined(); // the rest of the map survives
+        });
+
         it('same inputs → deep-equal output', () => {
             const a = resolveTokens(theme(), { radius: 'round' });
             const b = resolveTokens(theme(), { radius: 'round' });
