@@ -9,8 +9,19 @@
  * sets --c-section-* explicitly still wins.
  */
 
+/*
+ * The section watches ITS OWN width — container, never viewport (UIUX #12):
+ * inside a half-width pane (splitHero) the field grid collapses even on a
+ * wide viewport. Queried classes live on .grid, a descendant (a container
+ * query can never style its own container); width + box-sizing guard the
+ * container-type width collapse.
+ */
 .section {
     border-radius: var(--c-radius);
+    container-type: inline-size;
+    container-name: section;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .style-plain {
@@ -106,8 +117,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-/* Static collapse for P0 — container-query zones arrive with layoutZones (P1). */
-@media (max-width: 640px) {
+@container section (max-width: 640px) {
     .cols-2,
     .cols-3 {
         grid-template-columns: 1fr;
