@@ -11,9 +11,11 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
+            <!-- RETIRED (DATA_MODEL_DELTA): the storage axis left the model —
+                 default removed so inserts stop auto-stamping it. -->
             <value>
                 <fullName>Primary_Object</fullName>
-                <default>true</default>
+                <default>false</default>
                 <label>Primary Object</label>
             </value>
             <value>

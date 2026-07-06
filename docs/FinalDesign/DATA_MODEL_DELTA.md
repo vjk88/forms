@@ -39,6 +39,13 @@
 | Deprecate `Global_Styles_JSON__c` / `Layout_Config__c` / `Layout_Mode__c` | Superseded by `Design_Config_JSON__c` |
 | **Retire `Submission_Storage__c`** | The storage axis was removed from the model ([[project-form-vs-survey-model]]) — `Form_Type__c` (kept ✓) is the only axis |
 
+> **Picklist-default gotcha (found 2026-07-05):** "stop writing" isn't enough — `Layout_Mode__c`
+> (both objects) and `Submission_Storage__c` had `<default>true</default>` picklist values, so
+> *Salesforce itself* stamped stale old-world values onto every final-created record (a splitHero
+> form displayed "Single Page"). Defaults removed; `FinalFormCreateControllerTest` now asserts the
+> deprecated fields stay null on created records. `Allowed_Adapters__c` also carries a default and
+> has NO verdict in this delta — owner to rule on it at legacy cutover.
+
 ### `Form_Section__c` — one addition
 | Change | Why |
 |---|---|
