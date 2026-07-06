@@ -83,8 +83,9 @@ walk on stepper + tabs + accordion.
 
 **Build:** `themeCatalog` (all built-ins, managed-hidden) · theme property completeness (fonts,
 field states, effects) · `themeGallery` + `themeCard` · `Theme_Definition__c` + `themeEditor`
-(custom themes, Save/Save-As) · `designPanel` (7-tab IA) with registry-driven conditional
-visibility · `colorControl` + `contrastBadge` + `imageUploader` · **resolve-at-publish** (publish
+(custom themes, Save/Save-As) · `designPanel` (Simple/Advanced lens + 9-area Advanced rail per
+[FORM_STUDIO_IA.md](./FORM_STUDIO_IA.md) §5 — supersedes the earlier 7-tab IA) with registry-driven
+conditional visibility · `colorControl` + `contrastBadge` + `imageUploader` · **resolve-at-publish** (publish
 action compiles `Spec_JSON__c` with the `resolved` block).
 
 **Gate:** publish a themed form → open as guest → renders from `resolved.tokens` with
@@ -96,7 +97,9 @@ loop). Engine snapshot tests cover the full catalog.
 
 ## P3 · The builder
 
-**Build:** `formStudio` (Build|Design modes) · `builderCanvas` (**DnD = sanctioned CODE PORT of
+**Build:** `formStudio` (Build|Design modes, top bar, and the `c__formId`/`?formId=` URL contract
+per [FORM_STUDIO_IA.md](./FORM_STUDIO_IA.md) §2–4; the app's Home/Forms tabs land here too as the
+builder's entry point, stubs for the rest per §1) · `builderCanvas` (**DnD = sanctioned CODE PORT of
 legacy formStudio's machinery** — owner 2026-07-05, the one exception to rule 1; rules + port scope
 in [CANVAS_RULES.md](./CANVAS_RULES.md) §7 and [[reference-formstudio-dnd]]) · `fieldPalette`
 (registry-driven) · `propertyPanel` · `pageManager` · `bindingPicker` · `visibilityRules` +
