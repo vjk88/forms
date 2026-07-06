@@ -1,0 +1,68 @@
+import { createElement } from 'lwc';
+import FinalNavSplitHero from 'c/finalNavSplitHero';
+
+const PAGES = () => [
+    {
+        id: 'p1',
+        sections: [
+            { id: 's1', elements: [] },
+            { id: 's2', elements: [] }
+        ]
+    },
+    { id: 'p2', sections: [{ id: 's3', elements: [] }] }
+];
+
+async function mount(options = {}, pages = PAGES()) {
+    const cmp = createElement('c-final-nav-split-hero', {
+        is: FinalNavSplitHero
+    });
+    cmp.options = options;
+    cmp.pages = pages;
+    document.body.appendChild(cmp);
+    await Promise.resolve();
+    return cmp;
+}
+
+describe('c-final-nav-split-hero', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('re-assigning pages preserves the screen position (review F10)', async () => {
+        const cmp = await mount({ paneFlow: 'oneAtATime' });
+        const text = () =>
+            cmp.shadowRoot.querySelector('.progress-text').textContent;
+        expect(text()).toBe('Step 1 of 3');
+        cmp.shadowRoot.querySelector('.advance-btn').click();
+        await Promise.resolve();
+        expect(text()).toBe('Step 2 of 3');
+
+        cmp.pages = PAGES();
+        await Promise.resolve();
+        expect(text()).toBe('Step 2 of 3');
+    });
+
+    it('theme-dressed pane (no config) consumes header tokens', async () => {
+        const cmp = await mount({});
+        const pane = cmp.shadowRoot.querySelector('.pane');
+        expect(pane.getAttribute('style')).toContain('var(--c-header-bg)');
+        expect(pane.getAttribute('style')).toContain('var(--c-header-text)');
+    });
+
+    it('3-digit hex veils keep their opacity (review F17)', async () => {
+        const cmp = await mount({ paneBg: '#fff', paneBgOpacity: 40 });
+        const pane = cmp.shadowRoot.querySelector('.pane');
+        expect(pane.getAttribute('style')).toContain(
+            'rgba(255, 255, 255, 0.4)'
+        );
+    });
+
+    it('progress dots carry no hard-coded color classes (review F5 rides currentColor)', async () => {
+        const cmp = await mount({});
+        const dots = cmp.shadowRoot.querySelectorAll('.dot');
+        expect(dots.length).toBe(2); // Pages flow: one per page
+        expect(dots[0].className).toBe('dot active');
+    });
+});

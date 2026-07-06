@@ -62,6 +62,7 @@
 .page {
     position: relative;
     min-height: 100vh;
+    min-height: 100dvh;
     box-sizing: border-box;
     padding: var(--c-space-6) var(--c-space-4);
     color: var(--c-text);
@@ -97,6 +98,12 @@
     box-shadow: var(--c-content-shadow);
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));
+}
+
+/* In LEX the platform chrome owns the viewport — a 100vh minimum guarantees
+   a permanent page scroll on app pages. Content drives height instead. */
+.page--embedded {
+    min-height: 0;
 }
 
 /*

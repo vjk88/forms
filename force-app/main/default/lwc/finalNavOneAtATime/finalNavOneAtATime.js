@@ -58,7 +58,9 @@ export default class FinalNavOneAtATime extends LightningElement {
     set pages(value) {
         this._pages = value || [];
         this._screens = buildScreens(this._pages);
-        this.screenIndex = 0;
+        // Re-passing pages (P3 visibility rules will) must not teleport the
+        // user back to screen one — keep the position, clamped to the new list.
+        this.screenIndex = clampIndex(this.screenIndex, this._screens);
     }
 
     get opts() {
