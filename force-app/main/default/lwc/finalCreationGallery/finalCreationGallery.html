@@ -1,118 +1,270 @@
 <template>
-    <div class="cg">
-        <div class="cg-head">
-            <h2 class="cg-title">Create a form</h2>
-            <div class="cg-steps" aria-hidden="true">
-                <span class={step1cls}>1 · Layout</span>
-                <span class="cg-sep">›</span>
-                <span class={step2cls}>2 · Theme</span>
-                <span class="cg-sep">›</span>
-                <span class={step3cls}>3 · Details</span>
-            </div>
-            <button
-                class="cg-close"
-                type="button"
-                title="Close"
-                onclick={handleClose}
-            >
-                ✕
-            </button>
-        </div>
-
-        <!-- STEP 1 — layout -->
+    <div class="gallery-root">
+        <!-- ============================ GALLERY (Screen 1) ============================ -->
         <template lwc:if={isLayoutStep}>
-            <div class="cg-body">
-                <p class="cg-lead">Choose a layout to start.</p>
-                <div class="cg-grid">
-                    <template for:each={layoutCards} for:item="l">
-                        <c-final-layout-card
-                            key={l.key}
-                            layout={l.layout}
-                            pane-flow={l.paneFlow}
-                            theme-key={l.themeKey}
-                            selected={l.selected}
-                            onselect={handleLayoutSelect}
-                        ></c-final-layout-card>
-                    </template>
+            <header class="g-head">
+                <div>
+                    <h1 class="g-title">Create a form</h1>
+                    <p class="g-sub">
+                        Start from a ready-made template, or pick a layout and
+                        make it your own.
+                    </p>
                 </div>
-            </div>
-        </template>
-
-        <!-- STEP 2 — theme -->
-        <template lwc:elseif={isThemeStep}>
-            <div class="cg-body">
-                <button class="cg-back" type="button" onclick={handleBackToLayout}>
-                    ← Layout
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
                 </button>
-                <c-final-theme-gallery
-                    layout={chosenLayout}
-                    pane-flow={chosenPaneFlow}
-                    selected-theme-key={chosenThemeKey}
-                    onthemeselect={handleThemeSelect}
-                ></c-final-theme-gallery>
-            </div>
-        </template>
+            </header>
 
-        <!-- STEP 3 — details -->
-        <template lwc:elseif={isDetailsStep}>
-            <div class="cg-body">
-                <button class="cg-back" type="button" onclick={handleBackToTheme}>
-                    ← Theme
+            <!-- Entry mode toggle -->
+            <div class="entry-bar" role="tablist" aria-label="How to start">
+                <button
+                    class={templateTabClass}
+                    type="button"
+                    role="tab"
+                    aria-selected={templateSelected}
+                    onclick={handleEntryTemplate}
+                >
+                    <lightning-icon
+                        icon-name="utility:apps"
+                        size="x-small"
+                    ></lightning-icon>
+                    <span>Start from a template</span>
                 </button>
-                <div class="cg-detail-grid">
-                    <div class="cg-form">
-                        <label class="cg-flabel" for="cg-name">Form name</label>
-                        <input
-                            id="cg-name"
-                            class="cg-input"
-                            type="text"
-                            value={formName}
-                            oninput={handleName}
-                            placeholder="e.g. Contact Intake"
-                        />
+                <button
+                    class={scratchTabClass}
+                    type="button"
+                    role="tab"
+                    aria-selected={scratchSelected}
+                    onclick={handleEntryScratch}
+                >
+                    <lightning-icon
+                        icon-name="utility:layout"
+                        size="x-small"
+                    ></lightning-icon>
+                    <span>Start from scratch</span>
+                </button>
+            </div>
 
-                        <label class="cg-flabel" for="cg-obj">Object</label>
-                        <div class="obj-picker">
-                            <input
-                                id="cg-obj"
-                                class="cg-input"
-                                type="text"
-                                autocomplete="off"
-                                value={objectSearch}
-                                oninput={handleObjectSearch}
-                                onfocus={handleObjectFocus}
-                                onblur={handleObjectBlur}
-                                placeholder="Search objects…"
-                            />
-                            <template lwc:if={objectOpen}>
-                                <div class="obj-list">
-                                    <template
-                                        for:each={objectOptions}
-                                        for:item="o"
-                                    >
-                                        <div
-                                            key={o.value}
-                                            class={o.cls}
-                                            data-value={o.value}
-                                            data-label={o.label}
-                                            onmousedown={handleObjectPick}
-                                        >
-                                            <span class="obj-label">{o.label}</span>
-                                            <span class="obj-api">{o.value}</span>
-                                        </div>
-                                    </template>
-                                    <template lwc:if={hasObjectResults}></template>
-                                    <template lwc:else>
-                                        <div class="obj-empty">No matches</div>
-                                    </template>
-                                </div>
+            <!-- Mode A: templates (placeholder for now) -->
+            <div lwc:if={isTemplateMode} class="tpl-empty">
+                <lightning-icon
+                    icon-name="utility:apps"
+                    size="medium"
+                    class="tpl-empty-icon"
+                ></lightning-icon>
+                <h2 class="tpl-empty-title">Templates are coming soon</h2>
+                <p class="tpl-empty-sub">
+                    Start from scratch while the template gallery is built.
+                </p>
+            </div>
+
+            <!-- Mode B: layouts, grouped -->
+            <div lwc:else class="scratch">
+                <template for:each={layoutGroups} for:item="grp">
+                    <section key={grp.id} class="lg-group">
+                        <div class="lg-head">
+                            <h2 class="lg-title">{grp.title}</h2>
+                            <span class="lg-hint">{grp.hint}</span>
+                        </div>
+                        <div class="card-grid">
+                            <template for:each={grp.cards} for:item="l">
+                                <c-final-layout-card
+                                    key={l.key}
+                                    layout={l.layout}
+                                    pane-flow={l.paneFlow}
+                                    theme-key={l.themeKey}
+                                    label={l.name}
+                                    description={l.description}
+                                    selected={l.selected}
+                                    onselect={handleLayoutSelect}
+                                ></c-final-layout-card>
                             </template>
                         </div>
+                    </section>
+                </template>
+            </div>
+        </template>
 
-                        <template lwc:if={errorMessage}>
-                            <p class="cg-error">{errorMessage}</p>
+        <!-- ======================= THEME STEP ======================= -->
+        <template lwc:elseif={isThemeStep}>
+            <header class="d-head">
+                <button
+                    class="d-back"
+                    type="button"
+                    onclick={handleBackToLayout}
+                >
+                    <lightning-icon
+                        icon-name="utility:back"
+                        size="x-small"
+                        alternative-text="Back"
+                    ></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
+                </button>
+            </header>
+
+            <div class="thm-head">
+                <h1 class="thm-title">Pick a theme</h1>
+                <p class="thm-sub">Each preview uses your chosen layout.</p>
+            </div>
+
+            <c-final-theme-gallery
+                layout={chosenLayout}
+                pane-flow={chosenPaneFlow}
+                selected-theme-key={chosenThemeKey}
+                onthemeselect={handleThemeSelect}
+            ></c-final-theme-gallery>
+        </template>
+
+        <!-- ============================ DETAIL (final page) ============================= -->
+        <template lwc:elseif={isDetailsStep}>
+            <header class="d-head">
+                <button
+                    class="d-back"
+                    type="button"
+                    onclick={handleBackToTheme}
+                >
+                    <lightning-icon
+                        icon-name="utility:back"
+                        size="x-small"
+                        alternative-text="Back"
+                    ></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
+                </button>
+            </header>
+
+            <div class="d-body">
+                <!-- Left: configure -->
+                <div class="d-config">
+                    <label class="d-field-label" for="cg-name">Form name</label>
+                    <input
+                        id="cg-name"
+                        class="d-input"
+                        type="text"
+                        value={formName}
+                        oninput={handleName}
+                        placeholder="Name your form…"
+                    />
+
+                    <label class="d-field-label" for="cg-obj"
+                        >Primary object</label
+                    >
+                    <div class="obj-picker">
+                        <input
+                            id="cg-obj"
+                            class="d-input"
+                            type="text"
+                            autocomplete="off"
+                            value={objectSearch}
+                            oninput={handleObjectSearch}
+                            onfocus={handleObjectFocus}
+                            onblur={handleObjectBlur}
+                            placeholder="Choose an object…"
+                        />
+                        <template lwc:if={objectOpen}>
+                            <div class="obj-list">
+                                <template
+                                    for:each={objectOptions}
+                                    for:item="o"
+                                >
+                                    <div
+                                        key={o.value}
+                                        class={o.cls}
+                                        data-value={o.value}
+                                        data-label={o.label}
+                                        onmousedown={handleObjectPick}
+                                    >
+                                        <span class="obj-label">{o.label}</span>
+                                        <span class="obj-api">{o.value}</span>
+                                    </div>
+                                </template>
+                                <template lwc:if={hasObjectResults}></template>
+                                <template lwc:else>
+                                    <div class="obj-empty">No matches</div>
+                                </template>
+                            </div>
                         </template>
+                    </div>
 
+                    <div class="d-section-label">Appearance</div>
+
+                    <label class="d-field-label" for="cg-layout">Layout</label>
+                    <select
+                        id="cg-layout"
+                        class="d-input d-select"
+                        onchange={handleLayoutDropdown}
+                    >
+                        <template for:each={layoutOptions} for:item="o">
+                            <option
+                                key={o.value}
+                                value={o.value}
+                                selected={o.selected}
+                            >
+                                {o.label}
+                            </option>
+                        </template>
+                    </select>
+
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Theme</span>
+                        <button
+                            class="d-theme-chip"
+                            type="button"
+                            onclick={handleChangeTheme}
+                        >
+                            <span class="d-theme-name">{chosenThemeLabel}</span>
+                            <span class="d-theme-change">
+                                <lightning-icon
+                                    icon-name="utility:image"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
+
+                    <div lwc:if={errorMessage} class="d-error" role="alert">
+                        <lightning-icon
+                            icon-name="utility:error"
+                            variant="error"
+                            size="x-small"
+                        ></lightning-icon>
+                        <span>{errorMessage}</span>
+                    </div>
+
+                    <div class="d-actions">
                         <button
                             class="cg-create"
                             type="button"
@@ -123,45 +275,55 @@
                             <template lwc:else>Create form</template>
                         </button>
                     </div>
+                </div>
 
-                    <!-- Live sample preview: the real engine on an inline
-                         sample spec — chosen layout + theme, typed name. -->
-                    <div class="cg-preview">
-                        <div class="cg-preview-bar">
-                            <span class="cg-preview-label">Live preview</span>
-                            <div class="dev-toggle" role="group" aria-label="Preview width">
-                                <template for:each={deviceOptions} for:item="d">
-                                    <button
-                                        key={d.value}
-                                        class={d.cls}
-                                        type="button"
-                                        data-value={d.value}
-                                        onclick={handleDevice}
-                                    >
-                                        {d.label}
-                                    </button>
-                                </template>
-                            </div>
+                <!-- Right: live preview -->
+                <div class="d-preview">
+                    <div class="d-preview-bar">
+                        <span class="d-preview-label">Live preview</span>
+                        <div class="dev-toggle" role="group" aria-label="Preview width">
+                            <template for:each={deviceOptions} for:item="d">
+                                <button
+                                    key={d.value}
+                                    class={d.cls}
+                                    type="button"
+                                    data-value={d.value}
+                                    title={d.title}
+                                    onclick={handleDevice}
+                                >
+                                    <lightning-icon
+                                        icon-name={d.icon}
+                                        size="x-small"
+                                        alternative-text={d.title}
+                                    ></lightning-icon>
+                                </button>
+                            </template>
                         </div>
-                        <div class="cg-stage">
-                            <div class="cg-frame" style={previewFrameStyle}>
-                                <c-final-form-viewer
-                                    spec={previewSpec}
-                                ></c-final-form-viewer>
-                            </div>
+                    </div>
+                    <div class="d-stage" aria-hidden="true">
+                        <div class={previewFrameClass} style={previewFrameStyle}>
+                            <c-final-form-viewer
+                                spec={previewSpec}
+                            ></c-final-form-viewer>
                         </div>
                     </div>
                 </div>
             </div>
         </template>
 
-        <!-- DONE -->
+        <!-- ============================== DONE ============================= -->
         <template lwc:elseif={isDone}>
-            <div class="cg-body cg-done">
-                <div class="cg-done-mark">✓</div>
-                <h3 class="cg-done-title">Form created</h3>
-                <p class="cg-done-sub">Your form is ready in the builder.</p>
-                <div class="cg-done-actions">
+            <div class="done">
+                <lightning-icon
+                    icon-name="utility:success"
+                    variant="success"
+                    size="large"
+                ></lightning-icon>
+                <h2 class="done-title">Your form is ready</h2>
+                <p class="done-sub">
+                    It opens in the builder so you can make it yours.
+                </p>
+                <div class="done-actions">
                     <button
                         class="cg-secondary"
                         type="button"
@@ -169,7 +331,11 @@
                     >
                         Create another
                     </button>
-                    <button class="cg-create" type="button" onclick={handleClose}>
+                    <button
+                        class="cg-create"
+                        type="button"
+                        onclick={handleClose}
+                    >
                         Done
                     </button>
                 </div>

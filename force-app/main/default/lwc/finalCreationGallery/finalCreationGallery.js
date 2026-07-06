@@ -2,37 +2,79 @@ import { LightningElement, track, wire } from 'lwc';
 import getUpdatableObjects from '@salesforce/apex/FinalFormCreateController.getUpdatableObjects';
 import createForm from '@salesforce/apex/FinalFormCreateController.createForm';
 import { buildSampleSpec } from 'c/finalSampleSpec';
+import { listBuiltinThemes } from 'c/finalThemeCatalog';
 
 /**
- * finalCreationGallery — the guided creation flow (owner: always layout → theme
- * → details, no "start from scratch"). Step 1 picks a layout (8 cards — the 7
- * registry layouts + splitHero's Conversational pane-flow variant); step 2 is
- * the finalThemeGallery, previewing every theme IN that layout; step 3 names
- * the form + picks an object beside a LIVE sample preview (finalFormViewer on
- * an inline c/finalSampleSpec — real engine, canned 3-page form, the typed
- * name becomes the preview title). Emits `formcreated` { formId, versionId }
- * + `close`.
+ * finalCreationGallery — the guided creation flow, replicating the OLD
+ * formCreationGallery's UI exactly (owner 2026-07-05) with the REBUILD's
+ * layout + theme rosters:
+ *
+ * Screen 1 = entry toggle ("Start from a template" placeholder | "Start from
+ * scratch" default) over the GROUPED layout gallery (Continuous flow /
+ * Paginated·Nav-driven / Tabbed & Accordion — old-style short card names).
+ * Then theme step (finalThemeGallery) → detail screen: config card left
+ * (Form name / Primary object / APPEARANCE / Layout dropdown / Theme chip +
+ * Change) beside the LIVE PREVIEW card (finalFormViewer on an inline
+ * c/finalSampleSpec, icon device toggle at real device widths).
+ * Emits `formcreated` { formId, versionId } + `close`.
  */
 
-// Step-1 roster. Each card's mockup is tinted by a DISTINCT flattering builtin
-// theme (the old gallery's trick — never eight clones of one palette). The
-// splitHero Conversational card is the same primitive with
-// layout.options.paneFlow = 'oneAtATime' (catalog §2) — NOT a new layout.
-const LAYOUT_CARDS = [
-    { layout: 'scroll', themeKey: 'terracotta' },
-    { layout: 'stepper', themeKey: 'mintStepper' },
-    { layout: 'tabs', themeKey: 'nordic' },
-    { layout: 'accordion', themeKey: 'sandstone' },
-    { layout: 'rail', themeKey: 'execNav' },
-    { layout: 'oneAtATime', themeKey: 'lavender' },
-    { layout: 'splitHero', themeKey: 'marbleSplit' },
-    { layout: 'splitHero', paneFlow: 'oneAtATime', themeKey: 'auraSplit' }
+// The 8 step-1 choices in the old gallery's 3 groups. Old-style short names
+// (owner picked); each card's mockup tinted by a DISTINCT builtin theme.
+// The Conversational card = splitHero + layout.options.paneFlow (catalog §2).
+const LAYOUT_GROUPS = [
+    {
+        id: 'continuous',
+        title: 'Continuous flow',
+        hint: 'One page, scrolls top to bottom',
+        cards: [{ layout: 'scroll', themeKey: 'terracotta', name: 'Scroll' }]
+    },
+    {
+        id: 'paginated',
+        title: 'Paginated / Nav-driven',
+        hint: 'Steps, side panels, one question at a time',
+        cards: [
+            { layout: 'stepper', themeKey: 'mintStepper', name: 'Stepper' },
+            { layout: 'splitHero', themeKey: 'marbleSplit', name: 'Split Hero' },
+            {
+                layout: 'splitHero',
+                paneFlow: 'oneAtATime',
+                themeKey: 'auraSplit',
+                name: 'Split Hero · Conversational',
+                description:
+                    'Start from the Split Hero layout, one question at a time.'
+            },
+            { layout: 'rail', themeKey: 'execNav', name: 'Side Nav' },
+            { layout: 'oneAtATime', themeKey: 'lavender', name: 'One at a Time' }
+        ]
+    },
+    {
+        id: 'tabbedAcc',
+        title: 'Tabbed & Accordion',
+        hint: 'Content grouped into panels',
+        cards: [
+            { layout: 'tabs', themeKey: 'nordic', name: 'Tabbed' },
+            { layout: 'accordion', themeKey: 'sandstone', name: 'Accordion' }
+        ]
+    }
 ];
 
-const DEVICE_WIDTHS = { desktop: '100%', tablet: '760px', mobile: '400px' };
+// Real device widths (old gallery: the frame renders at device width and the
+// form reflows via its own container queries — no scale transform).
+const DEVICE_WIDTHS = { desktop: 1024, tablet: 768, mobile: 390 };
+const DEVICES = [
+    { value: 'desktop', icon: 'utility:desktop', title: 'Desktop' },
+    { value: 'tablet', icon: 'utility:tablet_portrait', title: 'Tablet' },
+    { value: 'mobile', icon: 'utility:phone_portrait', title: 'Mobile' }
+];
+
+function cardKey(c) {
+    return c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout;
+}
 
 export default class FinalCreationGallery extends LightningElement {
     @track step = 'layout'; // layout | theme | details | done
+    @track entryMode = 'scratch'; // template (placeholder) | scratch
     @track chosenLayout = '';
     @track chosenPaneFlow = '';
     @track chosenThemeKey = '';
@@ -56,7 +98,7 @@ export default class FinalCreationGallery extends LightningElement {
         }
     }
 
-    // ---- step flags / indicator ----
+    // ---- step flags ----
     get isLayoutStep() {
         return this.step === 'layout';
     }
@@ -69,37 +111,87 @@ export default class FinalCreationGallery extends LightningElement {
     get isDone() {
         return this.step === 'done';
     }
-    get step1cls() {
-        return this.isLayoutStep
-            ? 'cg-step on'
-            : this.chosenLayout
-            ? 'cg-step done'
-            : 'cg-step';
+
+    // ---- entry toggle (template = placeholder for now) ----
+    get isTemplateMode() {
+        return this.entryMode === 'template';
     }
-    get step2cls() {
-        return this.isThemeStep
-            ? 'cg-step on'
-            : this.chosenThemeKey
-            ? 'cg-step done'
-            : 'cg-step';
+    get templateTabClass() {
+        return this.isTemplateMode ? 'entry-tab is-active' : 'entry-tab';
     }
-    get step3cls() {
-        return this.isDetailsStep ? 'cg-step on' : 'cg-step';
+    get scratchTabClass() {
+        return this.isTemplateMode ? 'entry-tab' : 'entry-tab is-active';
+    }
+    get templateSelected() {
+        return this.isTemplateMode ? 'true' : 'false';
+    }
+    get scratchSelected() {
+        return this.isTemplateMode ? 'false' : 'true';
+    }
+    handleEntryTemplate() {
+        this.entryMode = 'template';
+    }
+    handleEntryScratch() {
+        this.entryMode = 'scratch';
     }
 
-    get layoutCards() {
-        return LAYOUT_CARDS.map((c) => ({
-            key: c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout,
-            layout: c.layout,
-            paneFlow: c.paneFlow || '',
-            themeKey: c.themeKey,
-            selected:
-                c.layout === this.chosenLayout &&
-                (c.paneFlow || '') === this.chosenPaneFlow
+    // ---- grouped layout gallery ----
+    get layoutGroups() {
+        return LAYOUT_GROUPS.map((g) => ({
+            id: g.id,
+            title: g.title,
+            hint: g.hint,
+            cards: g.cards.map((c) => ({
+                key: cardKey(c),
+                layout: c.layout,
+                paneFlow: c.paneFlow || '',
+                themeKey: c.themeKey,
+                name: `${c.name} layout`,
+                description:
+                    c.description ||
+                    `Start from the ${c.name} layout with an empty form.`,
+                selected:
+                    c.layout === this.chosenLayout &&
+                    (c.paneFlow || '') === this.chosenPaneFlow
+            }))
         }));
     }
 
-    // ---- live preview (step 3) ----
+    // ---- detail: layout dropdown ("Name · Group", old pattern) ----
+    get layoutOptions() {
+        const current = this.chosenPaneFlow
+            ? `${this.chosenLayout}:${this.chosenPaneFlow}`
+            : this.chosenLayout;
+        const out = [];
+        LAYOUT_GROUPS.forEach((g) => {
+            g.cards.forEach((c) => {
+                const key = cardKey(c);
+                out.push({
+                    value: key,
+                    label: c.name.includes('·')
+                        ? c.name
+                        : `${c.name} · ${g.title}`,
+                    selected: key === current
+                });
+            });
+        });
+        return out;
+    }
+    handleLayoutDropdown(e) {
+        const [layout, paneFlow] = e.target.value.split(':');
+        this.chosenLayout = layout;
+        this.chosenPaneFlow = paneFlow || '';
+    }
+
+    get chosenThemeLabel() {
+        const t = listBuiltinThemes().find((x) => x.key === this.chosenThemeKey);
+        return t ? t.name : 'Pick a theme';
+    }
+    handleChangeTheme() {
+        this.step = 'theme';
+    }
+
+    // ---- live preview ----
     /**
      * The inline spec the preview viewer renders. Memoized on its real inputs
      * so unrelated re-renders (object search keystrokes) don't re-apply it.
@@ -119,14 +211,18 @@ export default class FinalCreationGallery extends LightningElement {
         return this._specCache;
     }
     get deviceOptions() {
-        return ['desktop', 'tablet', 'mobile'].map((d) => ({
-            value: d,
-            label: d.charAt(0).toUpperCase() + d.slice(1),
-            cls: this.previewDevice === d ? 'dev-btn is-on' : 'dev-btn'
+        return DEVICES.map((d) => ({
+            ...d,
+            cls: this.previewDevice === d.value ? 'dev-btn is-on' : 'dev-btn'
         }));
     }
+    get previewFrameClass() {
+        return this.previewDevice === 'desktop'
+            ? 'pv-frame'
+            : `pv-frame pv-frame_${this.previewDevice}`;
+    }
     get previewFrameStyle() {
-        return `max-width:${DEVICE_WIDTHS[this.previewDevice] || '100%'};`;
+        return `width:${DEVICE_WIDTHS[this.previewDevice] || 1024}px;`;
     }
     handleDevice(e) {
         this.previewDevice = e.currentTarget.dataset.value;
@@ -239,6 +335,7 @@ export default class FinalCreationGallery extends LightningElement {
     }
     handleStartOver() {
         this.step = 'layout';
+        this.entryMode = 'scratch';
         this.chosenLayout = '';
         this.chosenPaneFlow = '';
         this.chosenThemeKey = '';

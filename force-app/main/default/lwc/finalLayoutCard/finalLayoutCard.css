@@ -37,7 +37,7 @@
 }
 
 .lt-stage {
-    height: 128px;
+    height: 150px;
     width: 100%;
     padding: 12px;
     box-sizing: border-box;
@@ -256,14 +256,18 @@
 }
 .lc-top {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
+}
+.lc-icon {
+    --slds-c-icon-color-foreground-default: #18181b;
+    flex: none;
 }
 .lc-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #1f2937;
+    font-weight: 650;
+    font-size: 0.98rem;
+    color: #18181b;
+    flex: 1;
 }
 .lc-check {
     --slds-c-icon-color-foreground-default: #6366f1;
