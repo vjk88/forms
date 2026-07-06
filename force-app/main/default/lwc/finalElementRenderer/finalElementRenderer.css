@@ -10,12 +10,12 @@
        text/placeholder/border ride the theme's ink. */
     --slds-c-input-color-background: var(--c-field-bg);
     --slds-c-input-text-color: var(--c-text);
-    --slds-c-input-color-border: var(--c-text-weak);
+    --slds-c-input-color-border: var(--c-field-border);
     --slds-c-input-placeholder-color: var(--c-text-weak);
 
     --slds-c-textarea-color-background: var(--c-field-bg);
     --slds-c-textarea-text-color: var(--c-text);
-    --slds-c-textarea-color-border: var(--c-text-weak);
+    --slds-c-textarea-color-border: var(--c-field-border);
     --slds-c-textarea-placeholder-color: var(--c-text-weak);
 }
 

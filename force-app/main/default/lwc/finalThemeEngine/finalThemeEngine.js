@@ -162,7 +162,11 @@ function rgba(hex, alpha) {
     return c ? `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})` : hex;
 }
 
-/** Blend `weight` of hexA into hexB (0..1). Non-hex inputs fall back gracefully. */
+/**
+ * Blend `weight` of hexA into hexB (0..1). Non-hex inputs fall back gracefully:
+ * an unparseable base surface (rgba/gradient glass themes) degrades to a
+ * translucent tint of hexA — never full-strength hexA (loud borders).
+ */
 function mix(hexA, hexB, weight) {
     const a = hexToRgb(hexA);
     const b = hexToRgb(hexB);
@@ -170,7 +174,7 @@ function mix(hexA, hexB, weight) {
         return hexB;
     }
     if (!b) {
-        return hexA;
+        return rgba(hexA, Math.min(Math.max(weight, 0), 1));
     }
     const w = Math.min(Math.max(weight, 0), 1);
     const ch = (x, y) =>
@@ -197,6 +201,19 @@ function isLight(hex) {
         return true;
     }
     return (c.r * 299 + c.g * 587 + c.b * 114) / 1000 >= 150;
+}
+
+/**
+ * Do fields sit on a dark surface? Judge by contentBg when it parses as hex —
+ * that IS the panel inputs sit on, and colored-text themes (terminal's green)
+ * fool a text-based probe. Glass/gradient surfaces fall back to the text ink.
+ */
+function isDarkSurface(pal) {
+    const c = hexToRgb(pal.contentBg);
+    if (c) {
+        return (c.r * 299 + c.g * 587 + c.b * 114) / 1000 < 150;
+    }
+    return isLight(pal.text);
 }
 
 // ---------------------------------------------------------------------------
@@ -259,7 +276,7 @@ export function resolveTokens(themeProps, formOverrides) {
     const scrimRaw = Number(img.scrim);
     const scrim = scrimRaw > 0 ? Math.min(scrimRaw, 100) / 100 : 0;
 
-    return {
+    const tokens = {
         // Page (finalPageFrame .page — fixed 2-layer stack: scrim, then the user's image)
         '--c-page-bg': pal.pageBg,
         '--c-page-bg-image': img.url ? `url("${img.url}")` : 'none',
@@ -287,12 +304,14 @@ export function resolveTokens(themeProps, formOverrides) {
         // Section (pad only — bg/border/shadow stay unset so the preset decides)
         '--c-section-pad': density.sectionPad,
 
-        // Field — the input surface adapts to theme darkness: a dark theme
-        // (light text) gets a lifted translucent input instead of a jarring
-        // white box; light themes stay white. (Overridable via palette.fieldBg.)
+        // Field — the input surface adapts to theme darkness: a dark surface
+        // gets a lifted translucent input instead of a jarring white box;
+        // light surfaces stay white. (Overridable via palette.fieldBg.)
         '--c-field-bg':
-            pal.fieldBg || (isLight(pal.text) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff'),
-        '--c-field-border': `1px solid ${pal.fieldBorderColor || mix(pal.text, pal.contentBg, 0.3)}`,
+            pal.fieldBg || (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff'),
+        // A COLOR, not a border shorthand — consumers write their own
+        // `1px solid var(--c-field-border)` / `background:` / SLDS hooks.
+        '--c-field-border': pal.fieldBorderColor || mix(pal.text, pal.contentBg, 0.3),
         '--c-field-focus': focus,
         '--c-field-error': fs.error,
         '--c-field-required': fs.required,
@@ -325,6 +344,15 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-font-body': fonts.body,
         '--c-font-display': fonts.display
     };
+
+    // Guard: an explicit `null`/empty palette value must never emit invalid
+    // CSS (`--c-page-bg: null`). Dropping the token lets pageFrame's neutral win.
+    for (const key of Object.keys(tokens)) {
+        if (tokens[key] === null || tokens[key] === undefined || tokens[key] === '') {
+            delete tokens[key];
+        }
+    }
+    return tokens;
 }
 
 /** Token map → inline-style string for the ONE application point (finalPageFrame root). */

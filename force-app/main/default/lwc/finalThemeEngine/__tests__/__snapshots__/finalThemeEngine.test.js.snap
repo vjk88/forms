@@ -8,7 +8,7 @@ exports[`c-final-theme-engine robustness & determinism full-theme snapshot — a
   "--c-content-shadow": "0 8px 24px rgba(15, 23, 42, 0.08)",
   "--c-control-h": "44px",
   "--c-field-bg": "#ffffff",
-  "--c-field-border": "1px solid #bdbbb5",
+  "--c-field-border": "#bdbbb5",
   "--c-field-error": "#b42318",
   "--c-field-focus": "#0f766e",
   "--c-field-required": "#b42318",

@@ -23,7 +23,7 @@
     --c-glass-blur: 0px;
     --c-section-pad: 20px;
     --c-field-bg: #ffffff;
-    --c-field-border: 1px solid #c9ced6;
+    --c-field-border: #c9ced6; /* a COLOR — consumers own width/style */
     --c-field-focus: #4b5563;
     --c-field-error: #8a1f11;
     --c-field-required: #8a1f11;
