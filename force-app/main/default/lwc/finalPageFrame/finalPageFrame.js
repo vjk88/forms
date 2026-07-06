@@ -20,6 +20,12 @@ const MAX_WIDTHS = {
     full: 'none'
 };
 
+// Inside Lightning Experience the platform chrome owns the viewport — a 100vh
+// minimum guarantees a permanent page scroll there (P1 checklist #5).
+const EMBEDDED_IN_LEX =
+    typeof window !== 'undefined' &&
+    /^\/lightning\//.test(window.location.pathname);
+
 export default class FinalPageFrame extends LightningElement {
     @api maxWidth = 'medium';
     /**
@@ -51,7 +57,8 @@ export default class FinalPageFrame extends LightningElement {
     }
 
     get pageClass() {
-        return this.bleed ? 'page page--bleed' : 'page';
+        const embedded = EMBEDDED_IN_LEX ? ' page--embedded' : '';
+        return (this.bleed ? 'page page--bleed' : 'page') + embedded;
     }
 
     get panelClass() {

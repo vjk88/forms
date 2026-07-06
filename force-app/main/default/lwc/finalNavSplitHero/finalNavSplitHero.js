@@ -24,12 +24,25 @@ import {
 
 const ZONES = ['top', 'center', 'bottom'];
 
+// Inside Lightning Experience the platform chrome owns the viewport — a 100vh
+// minimum guarantees a permanent page scroll there (P1 checklist #5).
+const EMBEDDED_IN_LEX =
+    typeof window !== 'undefined' &&
+    /^\/lightning\//.test(window.location.pathname);
+
 function hexToRgba(hex, opacityPct) {
-    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
     if (!m) {
         return hex || 'transparent';
     }
-    const n = parseInt(m[1], 16);
+    const full =
+        m[1].length === 3
+            ? m[1]
+                  .split('')
+                  .map((c) => c + c)
+                  .join('')
+            : m[1];
+    const n = parseInt(full, 16);
     const alpha = Math.max(0, Math.min(100, Number(opacityPct))) / 100;
     return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
@@ -59,7 +72,9 @@ export default class FinalNavSplitHero extends LightningElement {
     set pages(value) {
         this._pages = value || [];
         this._screens = buildScreens(this._pages);
-        this.screenIndex = 0;
+        // Re-passing pages (P3 visibility rules will) must not teleport the
+        // user back to screen one — keep the position, clamped to the new list.
+        this.screenIndex = clampIndex(this.screenIndex, this._screens);
     }
 
     get opts() {
@@ -86,7 +101,8 @@ export default class FinalNavSplitHero extends LightningElement {
         const ratio = this.opts.ratio === 'third' ? 'ratio-third' : 'ratio-half';
         const sticky = this.opts.sticky ? ' sticky-pane' : '';
         const bleed = this.bleedOn ? ' mode-bleed' : '';
-        return `layout ${side} ${ratio}${sticky}${bleed}`;
+        const lex = EMBEDDED_IN_LEX ? ' in-lex' : '';
+        return `layout ${side} ${ratio}${sticky}${bleed}${lex}`;
     }
 
     get formCardClass() {
