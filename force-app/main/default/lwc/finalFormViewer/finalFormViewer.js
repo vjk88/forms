@@ -142,13 +142,44 @@ export default class FinalFormViewer extends LightningElement {
         );
         const zonesDefault =
             (spec.layout && spec.layout.zonesDefault) || {};
-        const options = (spec.layout && spec.layout.options) || {};
+        let options = (spec.layout && spec.layout.options) || {};
         // splitHero's brand pane replaces formHeader (registry: ownsHeader);
         // its Pane Flow = One at a Time also owns the advance, like oneAtATime.
         const ownsAdvance = Boolean(
             layout.ownsAdvance ||
                 (layout.ownsHeader && options.paneFlow === 'oneAtATime')
         );
+
+        // ownsHeader layouts: the pane IS the header (catalog §2). A spec with
+        // no explicit pane config — every form the creation flow makes — must
+        // render its header lockup IN the pane, never on the form side (owner
+        // 2026-07-06: "header on the right" bug). Explicit pane config wins
+        // untouched, and only then does the form side keep the minimal lockup.
+        let paneLockup = null;
+        if (layout.ownsHeader && header.style !== 'none') {
+            const paneConfigured = Boolean(
+                options.paneTitle ||
+                    options.paneSubtitle ||
+                    options.paneBrandName ||
+                    (options.paneLogo && options.paneLogo.url) ||
+                    (options.paneHighlight && options.paneHighlight.text)
+            );
+            if (!paneConfigured && hasLockup) {
+                options = {
+                    ...options,
+                    paneTitle: header.title,
+                    paneSubtitle: header.description,
+                    paneBrandName: header.brandName,
+                    paneLogo: header.logo,
+                    paneHighlight: header.highlight
+                };
+            } else if (paneConfigured && (header.title || header.description)) {
+                paneLockup = {
+                    title: header.title,
+                    description: header.description
+                };
+            }
+        }
         this.model = {
             maxWidth: (spec.layout && spec.layout.maxWidth) || 'medium',
             header:
@@ -176,12 +207,9 @@ export default class FinalFormViewer extends LightningElement {
             // ON by default, reverted with options.fullBleed === false — the
             // toggle restores the carded-pane render exactly.
             bleed: Boolean(layout.bleed) && options.fullBleed !== false,
-            // The pane owns branding; the form side still gets the minimal
-            // title lockup (rendered by the primitive, bleed mode only).
-            paneLockup:
-                layout.ownsHeader && (header.title || header.description)
-                    ? { title: header.title, description: header.description }
-                    : null
+            // Only set when the spec configures the pane EXPLICITLY (above) —
+            // then the form side keeps a minimal title lockup for context.
+            paneLockup
         };
         this.error = undefined;
     }
