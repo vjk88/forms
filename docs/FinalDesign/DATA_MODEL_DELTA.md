@@ -43,8 +43,13 @@
 > (both objects) and `Submission_Storage__c` had `<default>true</default>` picklist values, so
 > *Salesforce itself* stamped stale old-world values onto every final-created record (a splitHero
 > form displayed "Single Page"). Defaults removed; `FinalFormCreateControllerTest` now asserts the
-> deprecated fields stay null on created records. `Allowed_Adapters__c` also carries a default and
-> has NO verdict in this delta — owner to rule on it at legacy cutover.
+> deprecated fields stay null on created records.
+>
+> **`Allowed_Adapters__c` verdict (owner 2026-07-05): KEEP.** It is the hosting-surface matrix —
+> which surfaces a form may render on (record page, Flow screen, guest, iFrame, embedded), with
+> type-derived constraints (Survey ≠ Record Page). Unread by final* until the adapter layer builds;
+> value set + defaults get reshaped then. Spec: [HOSTING_ADAPTERS_SPEC.md](./HOSTING_ADAPTERS_SPEC.md),
+> parked as [DEFERRED.md](./DEFERRED.md) #14.
 
 ### `Form_Section__c` — one addition
 | Change | Why |
