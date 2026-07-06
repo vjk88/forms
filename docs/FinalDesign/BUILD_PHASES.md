@@ -103,6 +103,10 @@ in [CANVAS_RULES.md](./CANVAS_RULES.md) §7 and [[reference-formstudio-dnd]]) ·
 `validationEditor` over a jest-covered `expressionEngine` · `historyManager` (in-memory, Build-mode
 only, coalescing).
 
+_expressionEngine checklist (review F8): wire gating + advance-denial into the `finalStepFlow`
+consumers — splitHero/oneAtATime `_go` and the viewer's `pageValidity` are accepted-but-unread
+placeholders until this lands; the catalog's `Navigation: Free / Gated` row is fiction until wired._
+
 **Gate:** author a real form in the org from blank — pages, sections, bound fields, a visibility
 rule, a validation rule — publish it, submit it internally, see the record. Undo/redo across 20
 structural edits. Preview === published render (one-parser rule holds).
@@ -126,6 +130,11 @@ enforced server-side at submit) · `formCompletion` · prefill/autofill (guest-s
 signed prefill token) · survey answer-store writes with `Label_Snapshot__c` + `Entry_Index__c`.
 _Save & Resume (`Form_Draft__c`, `draftManager`, purge job) DEFERRED to v2 —
 [DEFERRED.md](./DEFERRED.md) #2._
+
+_Asset-URL checkpoint (review F13): built-in theme images snapshot `/resource/formThemeAssets/…`
+paths into published `resolved.tokens`; Experience Cloud serves static resources under a site base
+path → guest-side broken images. Decide here: rewrite at publish per-audience, or serve theme
+assets from a guest-safe CDN/CMS channel._
 
 **Gate:** full guest E2E on an Experience site: open → upload file → submit → answers + files land
 correctly. Replayed POST against a closed form rejected. Apex tests green incl. guest-context
