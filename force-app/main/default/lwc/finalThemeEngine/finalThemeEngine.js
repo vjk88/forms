@@ -216,6 +216,36 @@ function isDarkSurface(pal) {
     return isLight(pal.text);
 }
 
+/** WCAG relative luminance of a hex color; null when unparseable. */
+function relLuminance(hex) {
+    const c = hexToRgb(hex);
+    if (!c) {
+        return null;
+    }
+    const lin = (v) => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+}
+
+/**
+ * WCAG 2.x contrast ratio between two hex colors (1..21), or null when either
+ * side is unparseable. Exported as the ONE contrast computation — every badge
+ * (Simple lens, Advanced lens, themeEditor) renders this number, never its own.
+ * Threshold semantics live with the consumer (4.5 normal / 3 large text).
+ */
+export function contrastRatio(hexA, hexB) {
+    const la = relLuminance(hexA);
+    const lb = relLuminance(hexB);
+    if (la === null || lb === null) {
+        return null;
+    }
+    const hi = Math.max(la, lb);
+    const lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+}
+
 // ---------------------------------------------------------------------------
 // Property merge — theme default → form-level override (§4.3; one cascade, here only)
 // ---------------------------------------------------------------------------

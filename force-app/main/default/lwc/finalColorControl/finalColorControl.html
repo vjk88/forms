@@ -1,0 +1,26 @@
+<template>
+    <div class="row">
+        <template lwc:if={edited}>
+            <span class="dot" title="Customized"></span>
+        </template>
+        <label class="label" for="picker">{label}</label>
+        <span class="hex">{value}</span>
+        <input
+            id="picker"
+            class="picker"
+            type="color"
+            value={value}
+            disabled={disabled}
+            aria-label={pickerAria}
+            oninput={handleInput}
+        />
+    </div>
+    <template lwc:if={showBadge}>
+        <div class="badge-row">
+            <span class={badgeClass} role="status">{badgeLabel}</span>
+            <template lwc:if={badgeHint}>
+                <span class="hint">{badgeHint}</span>
+            </template>
+        </div>
+    </template>
+</template>

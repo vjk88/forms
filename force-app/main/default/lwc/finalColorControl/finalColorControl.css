@@ -1,0 +1,82 @@
+/* Builder chrome — neutral, self-contained; NOT the form's --c-* tokens. */
+:host {
+    display: block;
+    font-size: 13px;
+    color: #181818;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #0b6e65;
+    flex: none;
+}
+
+.label {
+    flex: 1;
+    min-width: 0;
+}
+
+.hex {
+    font-family: Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 11.5px;
+    color: #5c5c5c;
+}
+
+.picker {
+    width: 30px;
+    height: 24px;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    padding: 1px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.picker:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.badge-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding-bottom: 6px;
+}
+
+.badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    border-radius: 5px;
+    padding: 2px 7px;
+    white-space: nowrap;
+}
+
+.badge.pass {
+    background: #e8f6ef;
+    color: #1b6e46;
+}
+
+.badge.large {
+    background: #fef3e8;
+    color: #8a5300;
+}
+
+.badge.fail {
+    background: #fdeeee;
+    color: #a3251d;
+}
+
+.hint {
+    font-size: 11px;
+    color: #5c5c5c;
+}
