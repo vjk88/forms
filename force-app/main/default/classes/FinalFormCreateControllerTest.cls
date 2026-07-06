@@ -44,19 +44,45 @@ private class FinalFormCreateControllerTest {
         System.assertNotEquals(null, versionId, 'versionId returned');
 
         Form__c form = [
-            SELECT Name, Primary_Context_Object__c
+            SELECT
+                Name,
+                Primary_Context_Object__c,
+                Layout_Mode__c,
+                Submission_Storage__c
             FROM Form__c
             WHERE Id = :formId
         ];
         System.assertEquals('Contact Intake', form.Name);
         System.assertEquals('Contact', form.Primary_Context_Object__c);
+        // DATA_MODEL_DELTA tripwire: deprecated/retired fields stay UNWRITTEN.
+        // Layout truth is Spec_JSON layout.type — a picklist default must not
+        // resurrect the old build's fields on new-world records.
+        System.assertEquals(
+            null,
+            form.Layout_Mode__c,
+            'Deprecated Layout_Mode__c must not be stamped on final-created forms'
+        );
+        System.assertEquals(
+            null,
+            form.Submission_Storage__c,
+            'Retired Submission_Storage__c must not be stamped on final-created forms'
+        );
 
         Form_Version__c v = [
-            SELECT Spec_JSON__c, Engine_Version__c, Version_Number__c
+            SELECT
+                Spec_JSON__c,
+                Engine_Version__c,
+                Version_Number__c,
+                Layout_Mode__c
             FROM Form_Version__c
             WHERE Id = :versionId
         ];
         System.assertEquals(1, v.Engine_Version__c);
+        System.assertEquals(
+            null,
+            v.Layout_Mode__c,
+            'Deprecated Layout_Mode__c must not be stamped on final-created versions'
+        );
         System.assert(
             String.isNotBlank(v.Spec_JSON__c),
             'Spec_JSON should be populated'

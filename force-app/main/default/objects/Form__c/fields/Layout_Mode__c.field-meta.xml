@@ -11,9 +11,12 @@
         <restricted>true</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
+            <!-- DEPRECATED (DATA_MODEL_DELTA): final* never writes this; the
+                 default was removed so inserts stop auto-stamping stale data.
+                 Layout truth = Spec_JSON layout.type. -->
             <value>
                 <fullName>Single_Page</fullName>
-                <default>true</default>
+                <default>false</default>
                 <label>Single Page</label>
             </value>
             <value>
