@@ -36,16 +36,22 @@ export default class FinalLayoutCard extends LightningElement {
     @api paneFlow;
     /** Representative builtin theme tinting THIS card's mockup. */
     @api themeKey;
+    /** Display copy overrides — the gallery's grouped roster owns the words. */
+    @api label;
+    @api description;
     @api selected = false;
 
     get isSplitOne() {
         return this.layout === 'splitHero' && this.paneFlow === 'oneAtATime';
     }
     get meta() {
-        if (this.isSplitOne) {
-            return SPLIT_ONE_META;
-        }
-        return META[this.layout] || { label: this.layout, hint: '' };
+        const fallback = this.isSplitOne
+            ? SPLIT_ONE_META
+            : META[this.layout] || { label: this.layout, hint: '' };
+        return {
+            label: this.label || fallback.label,
+            hint: this.description || fallback.hint
+        };
     }
     get rootClass() {
         return this.selected ? 'lc is-on' : 'lc';
