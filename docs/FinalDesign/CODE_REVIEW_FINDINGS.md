@@ -18,23 +18,23 @@ The findings below are consumption slips at the edges — not another rotten cor
 
 | # | Severity | Status | Component(s) | One-liner |
 |---|---|---|---|---|
-| F1 | HIGH | **OPEN** | 5 nav primitives + engine contract | `--c-field-border` is a shorthand consumed as a color → invisible chrome |
-| F2 | HIGH | **OPEN** | finalElementRenderer | Help text unreachable for SR/keyboard users (aria-hidden-focus regression, PR #37) |
-| F3 | MED | **OPEN** | finalElementRenderer | `labelPosition: 'left'` silently renders as top-stacked (regression, PR #37) |
-| F4 | MED | **OPEN** | finalThemeEngine + finalThemeCatalog | Retro Terminal theme misses the dark-field heuristic → white inputs on black |
-| F5 | MED | **OPEN** | finalNavSplitHero | Progress dots/track hard-coded white → invisible on light theme-dressed panes |
-| F6 | MED | **OPEN** | finalSectionRenderer | Column collapse is a viewport media query, not a container query (UIUX #12) |
-| F7 | MED | **OPEN** | finalElementRenderer | Checkbox `valuechange` emits `event.target.value` instead of `.checked` |
-| F8 | LOW | OPEN (P3) | finalNavSplitHero + viewer | `pageValidity` / `options.navigation` (Free/Gated) accepted but never used — documented placeholder |
-| F9 | LOW | **OPEN** | several | Per-file `var()` fallbacks violating §3.1 rule 5 (drift-bait) |
-| F10 | LOW | OPEN | finalNavSplitHero (+ navOneAtATime) | `pages` setter resets `screenIndex` to 0 on every assignment |
-| F11 | LOW | OPEN | finalNavSplitHero | `.mode-bleed { min-height: 100vh }` overshoots inside LEX chrome |
-| F12 | LOW | OPEN | finalThemeCatalog | `headerBg` holds multi-part background shorthands — works, but document the constraint |
-| F13 | LOW | OPEN (P5) | finalThemeCatalog | `/resource/formThemeAssets/…` URLs snapshot into published specs → Experience-site 404 risk |
-| F14 | LOW | OPEN | docs | ARCH §2.2 sketch says accordion `paginates: true`; registry ships `false` (code is right) |
-| F15 | LOW | OPEN | finalElementRenderer | `labelStyle` (Uppercase/Muted) unimplemented — trivial now that we own the label markup |
+| F1 | HIGH | **FIXED (PR #43)** | 5 nav primitives + engine contract | `--c-field-border` is a shorthand consumed as a color → invisible chrome |
+| F2 | HIGH | **FIXED (PR #44)** | finalElementRenderer | Help text unreachable for SR/keyboard users (aria-hidden-focus regression, PR #37) |
+| F3 | MED | **FIXED (PR #44)** | finalElementRenderer | `labelPosition: 'left'` silently renders as top-stacked (regression, PR #37) |
+| F4 | MED | **FIXED (PR #43)** | finalThemeEngine + finalThemeCatalog | Retro Terminal theme misses the dark-field heuristic → white inputs on black |
+| F5 | MED | **FIXED (PR #45)** | finalNavSplitHero | Progress dots/track hard-coded white → invisible on light theme-dressed panes |
+| F6 | MED | **FIXED (PR #46)** | finalSectionRenderer | Column collapse is a viewport media query, not a container query (UIUX #12) |
+| F7 | MED | **FIXED (PR #44)** | finalElementRenderer | Checkbox `valuechange` emits `event.target.value` instead of `.checked` |
+| F8 | LOW | OPEN (P3, checklisted) | finalNavSplitHero + viewer | `pageValidity` / Free-Gated unread — now on the P3 expressionEngine checklist in BUILD_PHASES |
+| F9 | LOW | **FIXED (PR #44, #45)** | several | Per-file `var()` fallbacks violating §3.1 rule 5 (drift-bait) |
+| F10 | LOW | **FIXED (PR #45)** | finalNavSplitHero (+ navOneAtATime) | `pages` setter resets `screenIndex` to 0 on every assignment |
+| F11 | LOW | **FIXED (PR #45)** | finalNavSplitHero **+ finalPageFrame** | `min-height: 100vh` overshoots inside LEX chrome (pageFrame `.page` had it too) |
+| F12 | LOW | **FIXED (docs, 2026-07-05)** | finalThemeCatalog | `headerBg` shorthand constraint documented in ARCH §3.2 header row |
+| F13 | LOW | OPEN (P5, checklisted) | finalThemeCatalog | `/resource/…` publish-snapshot 404 risk — decision point added to the P5 checklist in BUILD_PHASES |
+| F14 | LOW | **FIXED (docs, 2026-07-05)** | docs | ARCH §2.2 sketch says accordion `paginates: true`; registry ships `false` (code is right) |
+| F15 | LOW | **FIXED (PR #44)** | finalElementRenderer | `labelStyle` (Uppercase/Muted) unimplemented — trivial now that we own the label markup |
 | F16 | INFO | phase-gated | finalSectionRenderer | Section Icon / Collapsible / Default Collapsed not rendered yet (P3 authoring scope) |
-| F17 | INFO | n/a | finalThemeEngine | Minor robustness nits (null palette values, `mix()` rgba degradation, 3-digit hex veil) |
+| F17 | INFO | **FIXED (PR #43, #45 + docs)** | finalThemeEngine (+ splitHero) | Robustness nits (null palette values, `mix()` rgba degradation, 3-digit hex veil, 40-vs-43 heading) |
 | ✅ | — | **FIXED (PR #37)** | engine + elementRenderer | Dark themes got white input boxes + faint SLDS-grey labels |
 
 ---
@@ -229,6 +229,21 @@ render — cheap to add whenever.
 | Finding | Fix | Verified |
 |---|---|---|
 | Dark themes rendered hardcoded-white input boxes; native SLDS labels stayed faint grey on dark themes | PR #37 (2b05a8c): engine lifts `--c-field-bg` to `rgba(255,255,255,0.06)` when theme text is light; SLDS hooks carry ink/placeholder; custom themeable label with native `label-hidden` | jest 45/45, snapshot intact, render-verified dracula + sunsetDunes |
+
+## ✅ Fix pass 2026-07-05 (PRs #43–#46 + this docs commit)
+
+Every render fix below was deployed and **render-verified in the org via Playwright computed
+styles**, not just jest-green. `--c-field-border` became a **COLOR token** (owner decision —
+against this review's own keep-the-shorthand recommendation: 15 of 17 usages already consumed it
+as a color, no theme varies field-border width, and the SLDS input hook needs a color anyway).
+
+| PR | Findings | Notes |
+|---|---|---|
+| **#43** | F1, F4, F17 | Engine emits field-border as color; SLDS input border wired to it (`palette.fieldBorderColor` live again); new **token-type tripwire** jest scans all final* CSS both directions; dark-field probe keys off `contentBg`; null palette values dropped; `mix()` degrades to rgba tint on glass. Extra F1 victim found: `finalThemeCard` (2 usages the review missed). Verified: terminal inputs `rgba(255,255,255,0.06)` + derived border; ivory stepper marker 1px hairline restored. |
+| **#44** | F2, F3, F7, F15, F9 | Helptext = perceivable sibling of the aria-hidden label; left-label flex row (spacing-scale column, textarea top-aligned); checkbox emits `.checked` + label click-through toggles across shadow roots; labelStyle class map; `.field-req` bare token. New 15-test suite. Verified live incl. a label-click checkbox toggle. |
+| **#45** | F5, F10, F11, F9, F17 | Progress dots/track/fill ride `currentColor` via `color-mix`; `pages` setter preserves clamped `screenIndex` in BOTH step primitives; LEX height content-driven (path-detected `.in-lex`/`.page--embedded`) — **pageFrame `.page` had the same 100vh bug, fixed too**; 48px padding fallback removed; `hexToRgba` parses 3-digit hex. New jest suites for both primitives. Verified: ivory splitHero dots = pane ink `rgb(35,32,25)`. |
+| **#46** | F6 | Section grid is an inline-size container (width + box-sizing guard); collapse watches the SECTION's width. Verified at one 1440px viewport: 414px section → 1 col, 694px section → 2 cols. |
+| docs | F12, F14, F8→P3, F13→P5, F17-cosmetic | ARCH §3.2: header-bg shorthand constraint + field-border color type + 40-emitted/3-reserved heading; §2.2 accordion sketch `paginates: false`; BUILD_PHASES P3 gating checklist note + P5 asset-URL checkpoint. |
 
 ## What was checked and passed (don't re-litigate)
 

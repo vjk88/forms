@@ -82,7 +82,7 @@ export const LAYOUTS = {
   scroll:        { load: () => import('c/navScroll'),        paginates: false, gating: false },
   stepper:       { load: () => import('c/navStepper'),       paginates: true,  gating: true  },
   tabs:          { load: () => import('c/navTabs'),          paginates: true,  gating: false },
-  accordion:     { load: () => import('c/navAccordion'),     paginates: true,  gating: false },
+  accordion:     { load: () => import('c/navAccordion'),     paginates: false, gating: false }, // panels expand in place; submitBar renders once
   rail:          { load: () => import('c/navRail'),          paginates: true,  gating: false },
   splitHero:     { load: () => import('c/navSplitHero'),     paginates: true,  gating: true  },
   oneAtATime:    { load: () => import('c/navOneAtATime'),    paginates: true,  gating: true  },
@@ -127,7 +127,7 @@ export const LAYOUTS = {
    (Do NOT use the reviewer's `--c-x: var(--c-x, …)` pattern — a self-referential custom property is
    invalid CSS and silently kills the token.)
 
-### 3.2 Contract v1 (40 semantic tokens — the engine's jest suite enforces this list exactly)
+### 3.2 Contract v1 (40 emitted tokens — the engine's jest suite enforces the list exactly; the 3 `--c-section-*` surface tokens below are RESERVED consumer-side, never emitted)
 
 Deliberately smaller than the old sprawl ([TOKEN_REFERENCE.md](../redesign/TOKEN_REFERENCE.md)
 documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign/SURFACE_MODEL_SPEC.md):
@@ -172,7 +172,7 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 **Header** (consumed by `formHeader`)
 | Token | Styles |
 |---|---|
-| `--c-header-bg` / `--c-header-text` / `--c-header-text-weak` | Header surface + text |
+| `--c-header-bg` / `--c-header-text` / `--c-header-text-weak` | Header surface + text. `--c-header-bg` may carry a full multi-part background shorthand (split/gradient/image themes) — consumers MUST use `background:`, never `background-color:` |
 
 **Actions** (consumed by `submitBar`)
 | Token | Styles |
