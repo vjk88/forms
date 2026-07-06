@@ -3,8 +3,8 @@
 > **Status:** owner review 2026-07-05 (this session), decisions LOCKED. The *structural* parts
 > are buildable now, theme-independent. The *skin* (fonts, colours, field styling) rides on the
 > theme layer (P2), which is **TABLED** by owner. Companion source-of-truth:
-> [ARCHITECTURE_LAYOUTS_THEMES.md](../FinalDesign/ARCHITECTURE_LAYOUTS_THEMES.md),
-> [COMPONENT_CATALOG.md](../FinalDesign/COMPONENT_CATALOG.md).
+> [ARCHITECTURE_LAYOUTS_THEMES.md](./ARCHITECTURE_LAYOUTS_THEMES.md),
+> [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md).
 
 Owner walked two target mockups (screenshots, not saved to disk):
 `design-explorations/final-layouts/oneAtATime.html` + `.../stepper.html` were referenced but the
