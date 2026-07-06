@@ -1,0 +1,48 @@
+<template>
+    <div class="row">
+        <template lwc:if={edited}>
+            <span class="dot" title="Customized"></span>
+        </template>
+        <span class="label">{label}</span>
+        <template lwc:if={busy}>
+            <lightning-spinner
+                class="spin"
+                size="small"
+                alternative-text="Uploading"
+            ></lightning-spinner>
+        </template>
+        <template lwc:if={showRemove}>
+            <button
+                class="linkbtn"
+                type="button"
+                disabled={inputDisabled}
+                onclick={handleRemove}
+            >
+                Remove
+            </button>
+        </template>
+        <button
+            class="btn"
+            type="button"
+            disabled={inputDisabled}
+            onclick={handlePick}
+        >
+            {buttonLabel}
+        </button>
+        <input
+            class="file-input"
+            type="file"
+            accept={accept}
+            onchange={handleFile}
+            hidden
+        />
+    </div>
+    <template lwc:if={showThumb}>
+        <div class="thumbwrap">
+            <img class="thumb" src={url} alt="Uploaded image preview" />
+        </div>
+    </template>
+    <template lwc:if={error}>
+        <p class="error" role="alert">{error}</p>
+    </template>
+</template>
