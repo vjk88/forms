@@ -20,8 +20,12 @@ const MAX_WIDTHS = {
     full: 'none'
 };
 
-// Inside Lightning Experience the platform chrome owns the viewport — a 100vh
-// minimum guarantees a permanent page scroll there (P1 checklist #5).
+// Inside Lightning Experience the platform chrome owns the viewport. A raw
+// 100vh minimum guarantees a permanent double scroll there (P1 checklist #5),
+// but content-driven height strands the backdrop mid-screen (owner QA
+// 2026-07-07). Ruling: FILL THE REMAINING VIEWPORT — measure the frame's top
+// offset once rendered and set min-height = viewport − offset. Content may
+// still grow past it; the page owns any scrolling.
 const EMBEDDED_IN_LEX =
     typeof window !== 'undefined' &&
     /^\/lightning\//.test(window.location.pathname);
@@ -54,6 +58,21 @@ export default class FinalPageFrame extends LightningElement {
     connectedCallback() {
         this._connected = true;
         this._applyTokens();
+    }
+
+    renderedCallback() {
+        if (!EMBEDDED_IN_LEX || this._embedMeasured) {
+            return;
+        }
+        const page = this.template.querySelector('.page');
+        if (!page) {
+            return;
+        }
+        const top = Math.max(0, Math.round(page.getBoundingClientRect().top));
+        // Custom property read by .page--embedded; measured once per mount —
+        // LEX chrome height is stable, and re-measuring on scroll would jitter.
+        this.template.host.style.setProperty('--frame-offset', `${top}px`);
+        this._embedMeasured = true;
     }
 
     get pageClass() {

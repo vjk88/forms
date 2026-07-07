@@ -100,10 +100,15 @@
     backdrop-filter: blur(var(--c-glass-blur));
 }
 
-/* In LEX the platform chrome owns the viewport — a 100vh minimum guarantees
-   a permanent page scroll on app pages. Content drives height instead. */
+/* In LEX the platform chrome owns the viewport — a raw 100vh minimum would
+   guarantee a permanent double scroll, but content-driven height strands the
+   backdrop mid-screen. Fill the REMAINING viewport instead: the JS measures
+   the frame's top offset once (--frame-offset) so the backdrop always reaches
+   the bottom of the screen (owner ruling 2026-07-07). Fallback before the
+   measurement lands resolves to 0 — content-driven, never a scroll trap. */
 .page--embedded {
-    min-height: 0;
+    min-height: calc(100vh - var(--frame-offset, 100vh));
+    min-height: calc(100dvh - var(--frame-offset, 100dvh));
 }
 
 /*
