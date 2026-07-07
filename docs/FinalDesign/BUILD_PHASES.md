@@ -95,6 +95,15 @@ load outside the builder (review C; LWC only loads what the rendered template re
 is a verification, not machinery). Design-mode tweaks preview instantly (no wire calls in the
 loop). Engine snapshot tests cover the full catalog.
 
+_Gate status (2026-07-06): resolve-at-publish BUILT + proven internally — the tamper test
+(published spec with NO overrides renders the snapshot's accent `#b34700`, where the live engine
+would give the theme's `#0f766e`) proves `resolved.tokens` is the render source, and a jest spy
+proves the resolved path never imports the catalog (the viewer's catalog import is dynamic,
+draft-path only; `FinalSpecController.publishSpec` refuses unresolved specs server-side). The
+network-tab half is UNMEASURABLE inside LEX — the app registry preloads all c- modules, so
+dynamic imports never hit the network in either direction. Re-run the network proof on the
+Experience site in P5, where modules are served individually and "open as guest" first exists._
+
 ## P3 · The builder
 
 **Build:** `formStudio` (Build|Design modes, top bar, and the `c__formId`/`?formId=` URL contract

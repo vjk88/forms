@@ -2,7 +2,6 @@ import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import { resolveTokens } from 'c/finalThemeEngine';
-import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
 
@@ -105,10 +104,23 @@ export default class FinalFormViewer extends LightningElement {
             this.model = null;
             return;
         }
-        const theme =
-            spec.theme && spec.theme.source === 'builtin'
-                ? getBuiltinTheme(spec.theme.name)
-                : null;
+        const seq = (this._applySeq = (this._applySeq || 0) + 1);
+        // The P2 gate, by construction: a PUBLISHED spec carries resolved
+        // tokens and must never fetch the theme catalog (managed recipes stay
+        // out of the delivered bundle). Only the draft/preview path — no
+        // `resolved` block — lazy-loads the catalog to run the engine live.
+        let theme = null;
+        if (
+            !(spec.resolved && spec.resolved.tokens) &&
+            spec.theme &&
+            spec.theme.source === 'builtin'
+        ) {
+            const catalog = await import('c/finalThemeCatalog');
+            if (seq !== this._applySeq) {
+                return; // a newer spec landed while the catalog loaded
+            }
+            theme = catalog.getBuiltinTheme(spec.theme.name);
+        }
         this.tokens =
             (spec.resolved && spec.resolved.tokens) ||
             resolveTokens(theme, spec.theme ? spec.theme.overrides : null);
@@ -127,7 +139,6 @@ export default class FinalFormViewer extends LightningElement {
         }
 
         const layout = getLayout(spec.layout ? spec.layout.type : undefined);
-        const seq = (this._applySeq = (this._applySeq || 0) + 1);
         const module = await layout.load();
         if (seq !== this._applySeq) {
             return; // a newer spec landed while the primitive loaded
