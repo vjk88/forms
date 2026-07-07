@@ -8,6 +8,21 @@ jest.mock(
     () => ({ default: jest.fn(() => Promise.resolve([])) }),
     { virtual: true }
 );
+jest.mock(
+    '@salesforce/apex/FinalThemeController.listCustomThemes',
+    () => ({ default: jest.fn(() => Promise.resolve([])) }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalThemeController.getCustomTheme',
+    () => ({
+        default: jest.fn(() =>
+            Promise.resolve('{"palette":{"accent":"#7c2d9c"}}')
+        )
+    }),
+    { virtual: true }
+);
+import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -285,6 +300,43 @@ describe('c-final-design-panel', () => {
         theme = lastSpec(handler).theme;
         expect(theme.overrides.customFont).toBeUndefined();
         expect(theme.overrides.typography).toBe('editorial');
+    });
+
+    it('custom themes list in the picker; picking one switches source + fetches props', async () => {
+        listCustomThemes.mockResolvedValueOnce([
+            { id: 'a0AXX0000001', name: 'Brand Purple', baseTheme: 'nordic' }
+        ]);
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await flush();
+        const select = el.shadowRoot.querySelector('.entry-select');
+        expect(
+            [...select.querySelectorAll('option')].map((o) => o.value)
+        ).toContain('custom:a0AXX0000001');
+        select.value = 'custom:a0AXX0000001';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        const theme = lastSpec(handler).theme;
+        expect(theme.source).toBe('custom');
+        expect(theme.name).toBe('a0AXX0000001');
+        // once the record props land, effective values read from them
+        await flush();
+        const accent = el.shadowRoot.querySelector(
+            'c-final-color-control[data-key="accent"]'
+        );
+        expect(accent.value).toBe('#7c2d9c');
+    });
+
+    it('Edit… dispatches the explicit themeedit action (blast-radius rule)', async () => {
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('themeedit', handler);
+        el.shadowRoot.querySelector('.entry .linkbtn').click();
+        expect(handler.mock.calls[0][0].detail).toEqual({
+            themeId: null,
+            startFrom: 'nordic'
+        });
     });
 
     it('plain content controls (title) write spec paths, never overrides', async () => {

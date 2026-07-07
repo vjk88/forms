@@ -44,4 +44,15 @@ describe('resolveSpecForPublish', () => {
         expect(() => resolveSpecForPublish({ specVersion: 2 })).toThrow();
         expect(() => resolveSpecForPublish(null)).toThrow();
     });
+
+    it('custom theme: resolves from the provided record props, refuses without them', () => {
+        const spec = draft({ source: 'custom', name: 'a0AXX0000001' });
+        const out = resolveSpecForPublish(spec, {
+            palette: { accent: '#7c2d9c' }
+        });
+        expect(out.resolved.tokens['--c-accent']).toBe('#7c2d9c');
+        expect(() => resolveSpecForPublish(spec)).toThrow(
+            /custom theme properties required/
+        );
+    });
 });

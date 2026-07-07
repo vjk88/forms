@@ -1,6 +1,8 @@
 import { LightningElement, api, track } from 'lwc';
 import LightningConfirm from 'lightning/confirm';
 import listFonts from '@salesforce/apex/FinalFontController.listFonts';
+import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
+import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
@@ -34,6 +36,9 @@ export default class FinalDesignPanel extends LightningElement {
     @track activeAreaKey = 'theme';
     @track pendingThemeKey = null;
     @track _fonts = [];
+    @track _customThemes = [];
+    @track _customProps = null;
+    _customPropsId = null;
     _spec = {};
 
     connectedCallback() {
@@ -45,6 +50,38 @@ export default class FinalDesignPanel extends LightningElement {
             .catch(() => {
                 this._fonts = [];
             });
+        this.refreshThemes();
+    }
+
+    /** Re-list custom themes (host calls this after the editor saves). */
+    @api
+    refreshThemes() {
+        return listCustomThemes()
+            .then((themes) => {
+                this._customThemes = themes || [];
+            })
+            .catch(() => {
+                this._customThemes = [];
+            });
+    }
+
+    _loadCustomProps(themeId) {
+        if (this._customPropsId === themeId && this._customProps) {
+            return;
+        }
+        this._customPropsId = themeId;
+        this._customProps = null;
+        getCustomTheme({ themeId })
+            .then((json) => {
+                if (this._customPropsId === themeId) {
+                    this._customProps = JSON.parse(json);
+                }
+            })
+            .catch(() => {
+                if (this._customPropsId === themeId) {
+                    this._customProps = {};
+                }
+            });
     }
 
     @api
@@ -53,6 +90,13 @@ export default class FinalDesignPanel extends LightningElement {
     }
     set spec(value) {
         this._spec = value ? JSON.parse(JSON.stringify(value)) : {};
+        if (
+            this._spec.theme &&
+            this._spec.theme.source === 'custom' &&
+            this._spec.theme.name
+        ) {
+            this._loadCustomProps(this._spec.theme.name);
+        }
     }
 
     // ----------------------------------------------------------------- state
@@ -61,7 +105,14 @@ export default class FinalDesignPanel extends LightningElement {
         return (this._spec.theme && this._spec.theme.name) || '';
     }
 
+    get themeSource() {
+        return (this._spec.theme && this._spec.theme.source) || 'builtin';
+    }
+
     get themeProps() {
+        if (this.themeSource === 'custom') {
+            return this._customProps; // null while loading — VMs degrade to fallbacks
+        }
         return getBuiltinTheme(this.themeKey);
     }
 
@@ -283,11 +334,22 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     get themeOptions() {
-        return listBuiltinThemes().map((t) => ({
-            value: t.key,
-            label: t.name,
-            selected: t.key === this.themeKey
-        }));
+        const current =
+            this.themeSource === 'custom'
+                ? `custom:${this.themeKey}`
+                : this.themeKey;
+        return [
+            ...listBuiltinThemes().map((t) => ({
+                value: t.key,
+                label: t.name,
+                selected: t.key === current
+            })),
+            ...this._customThemes.map((t) => ({
+                value: `custom:${t.id}`,
+                label: `${t.name} · custom`,
+                selected: `custom:${t.id}` === current
+            }))
+        ];
     }
 
     get overrideCount() {
@@ -321,10 +383,32 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     get pendingThemeName() {
-        const t = this.pendingThemeKey
-            ? listBuiltinThemes().find((x) => x.key === this.pendingThemeKey)
-            : null;
+        if (!this.pendingThemeKey) {
+            return '';
+        }
+        if (this.pendingThemeKey.startsWith('custom:')) {
+            const id = this.pendingThemeKey.slice(7);
+            const t = this._customThemes.find((x) => x.id === id);
+            return t ? t.name : 'custom theme';
+        }
+        const t = listBuiltinThemes().find(
+            (x) => x.key === this.pendingThemeKey
+        );
         return t ? t.name : '';
+    }
+
+    /** Blast-radius rule: the editor opens ONLY via this explicit action. */
+    handleEditTheme() {
+        this.dispatchEvent(
+            new CustomEvent('themeedit', {
+                detail: {
+                    themeId:
+                        this.themeSource === 'custom' ? this.themeKey : null,
+                    startFrom:
+                        this.themeSource === 'builtin' ? this.themeKey : null
+                }
+            })
+        );
     }
 
     // ---------------------------------------------------------------- events
@@ -523,8 +607,15 @@ export default class FinalDesignPanel extends LightningElement {
         if (!this._spec.theme) {
             this._spec.theme = { source: 'builtin', overrides: {} };
         }
-        this._spec.theme.source = 'builtin';
-        this._spec.theme.name = key;
+        if (key.startsWith('custom:')) {
+            const id = key.slice(7);
+            this._spec.theme.source = 'custom';
+            this._spec.theme.name = id;
+            this._loadCustomProps(id);
+        } else {
+            this._spec.theme.source = 'builtin';
+            this._spec.theme.name = key;
+        }
         if (clearOverrides) {
             this._spec.theme.overrides = {};
         }

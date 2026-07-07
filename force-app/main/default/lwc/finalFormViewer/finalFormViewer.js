@@ -1,6 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
@@ -110,16 +111,28 @@ export default class FinalFormViewer extends LightningElement {
         // out of the delivered bundle). Only the draft/preview path — no
         // `resolved` block — lazy-loads the catalog to run the engine live.
         let theme = null;
-        if (
-            !(spec.resolved && spec.resolved.tokens) &&
-            spec.theme &&
-            spec.theme.source === 'builtin'
-        ) {
-            const catalog = await import('c/finalThemeCatalog');
-            if (seq !== this._applySeq) {
-                return; // a newer spec landed while the catalog loaded
+        if (!(spec.resolved && spec.resolved.tokens) && spec.theme) {
+            if (spec.theme.source === 'builtin') {
+                const catalog = await import('c/finalThemeCatalog');
+                if (seq !== this._applySeq) {
+                    return; // a newer spec landed while the catalog loaded
+                }
+                theme = catalog.getBuiltinTheme(spec.theme.name);
+            } else if (spec.theme.source === 'custom' && spec.theme.name) {
+                // draft-path only; a deleted record degrades to overrides +
+                // engine defaults (guests stay safe via `resolved` — schema §3)
+                try {
+                    const json = await getCustomTheme({
+                        themeId: spec.theme.name
+                    });
+                    theme = JSON.parse(json);
+                } catch (e) {
+                    theme = null;
+                }
+                if (seq !== this._applySeq) {
+                    return;
+                }
             }
-            theme = catalog.getBuiltinTheme(spec.theme.name);
         }
         this.tokens =
             (spec.resolved && spec.resolved.tokens) ||
