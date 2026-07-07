@@ -178,6 +178,18 @@ const AREAS = [
                         ]
                     },
                     {
+                        key: 'meshIntensity',
+                        label: 'Mesh intensity',
+                        type: 'select',
+                        themePath: 'effects.meshIntensity',
+                        needsEffect: 'mesh',
+                        options: [
+                            { value: 'subtle', label: 'Subtle' },
+                            { value: 'medium', label: 'Medium' },
+                            { value: 'strong', label: 'Strong' }
+                        ]
+                    },
+                    {
                         key: 'texture',
                         label: 'Texture',
                         type: 'select',
@@ -187,6 +199,18 @@ const AREAS = [
                             { value: '', label: 'None' },
                             { value: 'dots', label: 'Dots' },
                             { value: 'grid', label: 'Grid' }
+                        ]
+                    },
+                    {
+                        key: 'textureIntensity',
+                        label: 'Texture intensity',
+                        type: 'select',
+                        themePath: 'effects.textureIntensity',
+                        needsEffect: 'texture',
+                        options: [
+                            { value: 'subtle', label: 'Subtle' },
+                            { value: 'medium', label: 'Medium' },
+                            { value: 'strong', label: 'Strong' }
                         ]
                     },
                     {

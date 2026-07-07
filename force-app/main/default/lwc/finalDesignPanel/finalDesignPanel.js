@@ -198,6 +198,12 @@ export default class FinalDesignPanel extends LightningElement {
             if (c.needsImage && !this._hasPageImage()) {
                 continue;
             }
+            if (c.needsEffect) {
+                const def = this._controlDef(c.needsEffect);
+                if (!def || !this._effective(def.control)) {
+                    continue;
+                }
+            }
             const value = this._effective(c);
             const vm = {
                 key: c.key,

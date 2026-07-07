@@ -114,10 +114,38 @@ const MESHES = {
 
 // A texture is ONE self-tiling layer (intrinsic-size SVG data URI — tiles naturally,
 // needs no background-size, so it can never collide with the image's fit tokens).
-const TEXTURES = {
-    dots: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='2' cy='2' r='1.1' fill='%23111827' fill-opacity='0.05'/%3E%3C/svg%3E")`,
-    grid: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M28 0H0v28' fill='none' stroke='%23111827' stroke-opacity='0.05'/%3E%3C/svg%3E")`
+// Intensity parametrizes the ink opacity (owner QA 2026-07-07: the fixed 0.05
+// was invisible on most backgrounds; FormStudio had Texture Intensity).
+const EFFECT_INTENSITY = {
+    subtle: { texture: 0.05, meshBoost: 1 },
+    medium: { texture: 0.12, meshBoost: 2 },
+    strong: { texture: 0.22, meshBoost: 3.2 }
 };
+
+function textureLayer(kind, intensity) {
+    const o = (EFFECT_INTENSITY[intensity] || EFFECT_INTENSITY.subtle).texture;
+    if (kind === 'dots') {
+        return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='2' cy='2' r='1.1' fill='%23111827' fill-opacity='${o}'/%3E%3C/svg%3E")`;
+    }
+    if (kind === 'grid') {
+        return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M28 0H0v28' fill='none' stroke='%23111827' stroke-opacity='${o}'/%3E%3C/svg%3E")`;
+    }
+    return null;
+}
+
+/** Scale every rgba alpha in a mesh gradient by the intensity boost (cap 0.6). */
+function boostMesh(layer, intensity) {
+    const boost = (EFFECT_INTENSITY[intensity] || EFFECT_INTENSITY.subtle)
+        .meshBoost;
+    if (boost === 1) {
+        return layer;
+    }
+    return layer.replace(
+        /rgba\((\d+), ?(\d+), ?(\d+), ?([0-9.]+)\)/g,
+        (m, r, g, b, a) =>
+            `rgba(${r}, ${g}, ${b}, ${Math.min(Number(a) * boost, 0.6).toFixed(3)})`
+    );
+}
 
 // The engine's own defaults for gaps a (sparse) theme leaves open. These are NOT the
 // no-theme neutrals — those live at finalPageFrame :host (§3.1 rule 5).
@@ -139,7 +167,14 @@ const DEFAULT_PROPS = {
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
-    effects: { shadow: 'soft', glass: false, texture: null, mesh: null },
+    effects: {
+        shadow: 'soft',
+        glass: false,
+        texture: null,
+        mesh: null,
+        textureIntensity: 'subtle',
+        meshIntensity: 'subtle'
+    },
     fieldStates: { error: '#b42318', required: '#b42318' },
     pageImage: { url: null, fit: 'cover', position: 'center', scrim: 0 }
 };
@@ -335,10 +370,10 @@ export function resolveTokens(themeProps, formOverrides) {
             : 'none',
 
         // Effects (finalPageFrame .fx ONLY — fixed slots, one layer per token)
-        '--c-fx-mesh-1': mesh[0] || 'none',
-        '--c-fx-mesh-2': mesh[1] || 'none',
-        '--c-fx-mesh-3': mesh[2] || 'none',
-        '--c-fx-texture': TEXTURES[fx.texture] || 'none',
+        '--c-fx-mesh-1': mesh[0] ? boostMesh(mesh[0], fx.meshIntensity) : 'none',
+        '--c-fx-mesh-2': mesh[1] ? boostMesh(mesh[1], fx.meshIntensity) : 'none',
+        '--c-fx-mesh-3': mesh[2] ? boostMesh(mesh[2], fx.meshIntensity) : 'none',
+        '--c-fx-texture': textureLayer(fx.texture, fx.textureIntensity) || 'none',
 
         // Content panel
         '--c-content-bg': pal.contentBg,
