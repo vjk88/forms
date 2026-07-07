@@ -343,6 +343,13 @@ const AREAS = [
                         type: 'text',
                         path: 'header.description',
                         simple: true
+                    },
+                    {
+                        key: 'highlight',
+                        label: 'Highlight message',
+                        type: 'text',
+                        path: 'header.highlight.text',
+                        placeholder: 'Optional announcement line'
                     }
                 ]
             },
@@ -355,6 +362,23 @@ const AREAS = [
                         label: 'Fill',
                         type: 'color',
                         themePath: 'palette.headerBg'
+                    },
+                    {
+                        key: 'bannerImage',
+                        label: 'Banner image',
+                        type: 'image',
+                        path: 'header.bgImage.url',
+                        versionPath: 'header.bgImage.versionId'
+                    },
+                    {
+                        key: 'bannerOpacity',
+                        label: 'Image opacity',
+                        type: 'range',
+                        path: 'header.bgImage.opacity',
+                        needsValueOf: 'bannerImage',
+                        min: 0,
+                        max: 100,
+                        fallback: 100
                     },
                     {
                         key: 'headerText',

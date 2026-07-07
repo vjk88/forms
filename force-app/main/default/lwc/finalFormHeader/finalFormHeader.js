@@ -49,9 +49,12 @@ export default class FinalFormHeader extends LightningElement {
     }
 
     /**
-     * Minimal style drops the surface (no fill, no image); standard paints the
-     * veil over the image: first background layer (topmost) is a flat gradient
-     * of --c-header-bg, the image sits beneath it.
+     * Surface composition (owner ruling 2026-07-07): the FILL paints UNDER the
+     * banner image (background-color, always the bottom layer) and the image
+     * carries its own opacity — emulated by a fill-tinted color-mix veil OVER
+     * the image, so fading the image blends it into the fill. The old render
+     * painted an opaque --c-header-bg veil on top, wiping the image out.
+     * Minimal drops the surface entirely (no fill, no image).
      */
     get surfaceStyle() {
         const img = this.hdr.bgImage && this.hdr.bgImage.url;
@@ -59,14 +62,22 @@ export default class FinalFormHeader extends LightningElement {
             return '';
         }
         const url = String(img).replace(/"/g, '%22');
+        const raw = Number(this.hdr.bgImage.opacity);
+        const opacity = Number.isFinite(raw)
+            ? Math.min(Math.max(raw, 0), 100)
+            : 100;
+        const veil = `color-mix(in srgb, var(--c-header-bg) ${100 - opacity}%, transparent)`;
         return (
-            'background-image: linear-gradient(var(--c-header-bg), var(--c-header-bg)),' +
-            ` url("${url}"); background-size: cover; background-position: center;`
+            `background-image: linear-gradient(${veil}, ${veil}), url("${url}");` +
+            ' background-size: auto, cover;' +
+            ' background-position: center, center;'
         );
     }
 
     get showBranding() {
-        return this.arrangement !== 'textOnly';
+        // minimal = the compact lockup (legacy formDesigner port): title +
+        // description + highlight only — no brand row, no surface.
+        return this.arrangement !== 'textOnly' && this.hdr.style !== 'minimal';
     }
 
     get logoUrl() {
