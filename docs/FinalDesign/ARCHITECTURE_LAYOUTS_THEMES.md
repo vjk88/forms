@@ -127,7 +127,7 @@ export const LAYOUTS = {
    (Do NOT use the reviewer's `--c-x: var(--c-x, …)` pattern — a self-referential custom property is
    invalid CSS and silently kills the token.)
 
-### 3.2 Contract v1 (40 emitted tokens — the engine's jest suite enforces the list exactly; the 3 `--c-section-*` surface tokens below are RESERVED consumer-side, never emitted)
+### 3.2 Contract v1 (56-token vocabulary — the engine's jest suite enforces the list exactly; the 3 `--c-section-*` surface tokens below are RESERVED consumer-side, never emitted. Contract event 2026-07-07 appended the `--c-input-*` shell set and `--c-label-*` defaults for fieldStyle/labelPosition/labelStyle; `--c-input-radius` and `--c-label-font` are emitted only when a non-default style needs them — their CSS fallbacks carry the default look)
 
 Deliberately smaller than the old sprawl ([TOKEN_REFERENCE.md](../redesign/TOKEN_REFERENCE.md)
 documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign/SURFACE_MODEL_SPEC.md):

@@ -458,6 +458,17 @@ const AREAS = [
                 label: 'Inputs',
                 controls: [
                     {
+                        key: 'inputStyle',
+                        label: 'Input style',
+                        type: 'select',
+                        themePath: 'fieldStyle',
+                        options: [
+                            { value: 'outline', label: 'Standard outline' },
+                            { value: 'underline', label: 'Boutique underline' },
+                            { value: 'filled', label: 'Flat filled' }
+                        ]
+                    },
+                    {
                         key: 'fieldBorderColor',
                         label: 'Input border',
                         type: 'color',
@@ -483,6 +494,33 @@ const AREAS = [
                         type: 'color',
                         themePath: 'fieldStates.required',
                         fallback: '#b42318'
+                    }
+                ]
+            },
+            {
+                key: 'labels',
+                label: 'Labels',
+                controls: [
+                    {
+                        key: 'labelPosition',
+                        label: 'Label position',
+                        type: 'select',
+                        themePath: 'labelPosition',
+                        options: [
+                            { value: 'top', label: 'Top' },
+                            { value: 'left', label: 'Left' }
+                        ]
+                    },
+                    {
+                        key: 'labelStyle',
+                        label: 'Label style',
+                        type: 'select',
+                        themePath: 'labelStyle',
+                        options: [
+                            { value: 'default', label: 'Default' },
+                            { value: 'monoCaps', label: 'Uppercase mono' },
+                            { value: 'mutedSm', label: 'Muted small' }
+                        ]
                     }
                 ]
             }
