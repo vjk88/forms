@@ -190,15 +190,31 @@ const DEFAULT_PROPS = {
 // palette.pageBgGradient / contentBgGradient / headerBgGradient. It paints as
 // a background-image layer ABOVE the surface's solid color (which stays the
 // fallback + the ink-derivation base for borders/contrast).
-function gradientLayer(g) {
+function gradientLayer(g, fillOpacity) {
     if (!g || !g.start || !g.end) {
         return 'none';
     }
+    const start = withFillOpacity(g.start, fillOpacity);
+    const end = withFillOpacity(g.end, fillOpacity);
     if (g.type === 'radial') {
-        return `radial-gradient(circle at 50% 0%, ${g.start}, ${g.end})`;
+        return `radial-gradient(circle at 50% 0%, ${start}, ${end})`;
     }
     const angle = Number.isFinite(Number(g.angle)) ? Number(g.angle) : 135;
-    return `linear-gradient(${angle}deg, ${g.start}, ${g.end})`;
+    return `linear-gradient(${angle}deg, ${start}, ${end})`;
+}
+
+// Fill opacity (owner QA 2026-07-08): each surface FILL can go translucent so
+// the layers behind show through (card/header over the page backdrop). Wraps
+// at token emission only — ink derivation (borders, onColor, the page veil)
+// keeps reading the raw fill. color-mix because theme fills aren't always hex
+// (rgba and color-mix strings exist in the catalog); at 100/unset the color
+// passes through untouched so existing themes emit byte-identical tokens.
+function withFillOpacity(color, pct) {
+    const n = Number(pct);
+    if (!color || !Number.isFinite(n) || n >= 100) {
+        return color;
+    }
+    return `color-mix(in srgb, ${color} ${Math.max(n, 0)}%, transparent)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -474,7 +490,7 @@ export function resolveTokens(themeProps, formOverrides) {
     const tokens = {
         // Page (finalPageFrame .page — fixed 4-layer stack, top to bottom:
         // scrim, image-opacity veil, the user's image, gradient)
-        '--c-page-bg': pal.pageBg,
+        '--c-page-bg': withFillOpacity(pal.pageBg, pal.pageBgOpacity),
         '--c-page-bg-image': img.url ? `url("${img.url}")` : 'none',
         '--c-page-bg-size': fit.size,
         '--c-page-bg-position': img.position || 'center',
@@ -485,7 +501,10 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-page-veil': veilColor
             ? `linear-gradient(${veilColor}, ${veilColor})`
             : 'none',
-        '--c-page-bg-gradient': gradientLayer(pal.pageBgGradient),
+        '--c-page-bg-gradient': gradientLayer(
+            pal.pageBgGradient,
+            pal.pageBgOpacity
+        ),
 
         // Effects (finalPageFrame .fx ONLY — fixed slots, one layer per token)
         '--c-fx-mesh-1': mesh[0] ? boostMesh(mesh[0], fx.meshIntensity) : 'none',
@@ -494,8 +513,11 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-fx-texture': textureLayer(fx.texture, fx.textureIntensity) || 'none',
 
         // Content panel
-        '--c-content-bg': pal.contentBg,
-        '--c-content-bg-gradient': gradientLayer(pal.contentBgGradient),
+        '--c-content-bg': withFillOpacity(pal.contentBg, pal.contentBgOpacity),
+        '--c-content-bg-gradient': gradientLayer(
+            pal.contentBgGradient,
+            pal.contentBgOpacity
+        ),
         '--c-content-border': BORDER_WIDTHS[p.border]
             ? `${BORDER_WIDTHS[p.border]} solid ${pal.borderColor || mix(pal.text, pal.contentBg, 0.16)}`
             : 'none',
@@ -548,8 +570,11 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-focus-ring': `0 0 0 3px ${rgba(focus, 0.32)}`,
 
         // Header
-        '--c-header-bg': pal.headerBg,
-        '--c-header-bg-gradient': gradientLayer(pal.headerBgGradient),
+        '--c-header-bg': withFillOpacity(pal.headerBg, pal.headerBgOpacity),
+        '--c-header-bg-gradient': gradientLayer(
+            pal.headerBgGradient,
+            pal.headerBgOpacity
+        ),
         '--c-header-text': pal.headerText || pal.text,
         '--c-header-text-weak': pal.headerTextWeak || pal.textWeak,
 

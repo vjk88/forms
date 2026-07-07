@@ -133,6 +133,15 @@ const AREAS = [
                         gradientPath: 'palette.pageBgGradient'
                     },
                     {
+                        key: 'pageBgOpacity',
+                        label: 'Fill opacity',
+                        type: 'range',
+                        themePath: 'palette.pageBgOpacity',
+                        min: 0,
+                        max: 100,
+                        fallback: 100
+                    },
+                    {
                         key: 'pageImage',
                         label: 'Image',
                         type: 'image',
@@ -376,6 +385,15 @@ const AREAS = [
                         gradientPath: 'palette.headerBgGradient'
                     },
                     {
+                        key: 'headerBgOpacity',
+                        label: 'Fill opacity',
+                        type: 'range',
+                        themePath: 'palette.headerBgOpacity',
+                        min: 0,
+                        max: 100,
+                        fallback: 100
+                    },
+                    {
                         key: 'bannerImage',
                         label: 'Banner image',
                         type: 'image',
@@ -427,6 +445,15 @@ const AREAS = [
                         type: 'gradientSurface',
                         themePath: 'palette.contentBg',
                         gradientPath: 'palette.contentBgGradient'
+                    },
+                    {
+                        key: 'contentBgOpacity',
+                        label: 'Fill opacity',
+                        type: 'range',
+                        themePath: 'palette.contentBgOpacity',
+                        min: 0,
+                        max: 100,
+                        fallback: 100
                     },
                     {
                         key: 'shadow',
