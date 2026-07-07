@@ -575,8 +575,16 @@
         <apexClass>FormVersionTriggerHandler</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>FinalAssetController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <tabSettings>
         <tab>Final_P0_Test</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Final_Design_Test</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>
