@@ -15,6 +15,12 @@ const CONTRACT_V1 = [
     '--c-page-bg-position',
     '--c-page-bg-repeat',
     '--c-page-scrim',
+    // backdrop composition (contract event 2026-07-07 — owner QA: gradients +
+    // image opacity; page stack = scrim / veil / image / gradient)
+    '--c-page-veil',
+    '--c-page-bg-gradient',
+    '--c-content-bg-gradient',
+    '--c-header-bg-gradient',
     '--c-fx-mesh-1',
     '--c-fx-mesh-2',
     '--c-fx-mesh-3',

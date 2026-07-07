@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Design mode (rebuild): Solid|Gradient surface input — presets, linear/radial, angle, start/end (FormBuilder pattern). Emits change {solid, gradient|null}. Builder-only.</description>
+</LightningComponentBundle>

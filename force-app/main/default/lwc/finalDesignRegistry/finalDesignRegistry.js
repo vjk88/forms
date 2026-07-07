@@ -128,8 +128,9 @@ const AREAS = [
                     {
                         key: 'pageBg',
                         label: 'Fill',
-                        type: 'color',
-                        themePath: 'palette.pageBg'
+                        type: 'gradientSurface',
+                        themePath: 'palette.pageBg',
+                        gradientPath: 'palette.pageBgGradient'
                     },
                     {
                         key: 'pageImage',
@@ -158,6 +159,16 @@ const AREAS = [
                         needsImage: true,
                         min: 0,
                         max: 80
+                    },
+                    {
+                        key: 'pageImageOpacity',
+                        label: 'Image opacity',
+                        type: 'range',
+                        themePath: 'pageImage.opacity',
+                        needsImage: true,
+                        min: 0,
+                        max: 100,
+                        fallback: 100
                     }
                 ]
             },
@@ -360,8 +371,9 @@ const AREAS = [
                     {
                         key: 'headerBg',
                         label: 'Fill',
-                        type: 'color',
-                        themePath: 'palette.headerBg'
+                        type: 'gradientSurface',
+                        themePath: 'palette.headerBg',
+                        gradientPath: 'palette.headerBgGradient'
                     },
                     {
                         key: 'bannerImage',
@@ -404,8 +416,9 @@ const AREAS = [
                     {
                         key: 'contentBg',
                         label: 'Fill',
-                        type: 'color',
-                        themePath: 'palette.contentBg'
+                        type: 'gradientSurface',
+                        themePath: 'palette.contentBg',
+                        gradientPath: 'palette.contentBgGradient'
                     },
                     {
                         key: 'shadow',

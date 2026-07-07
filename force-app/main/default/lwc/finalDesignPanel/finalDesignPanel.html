@@ -276,6 +276,16 @@
                                                 onchange={handleColor}
                                             ></c-final-color-control>
                                         </template>
+                                        <template lwc:elseif={c.isGradientSurface}>
+                                            <c-final-gradient-control
+                                                data-key={c.key}
+                                                label={c.label}
+                                                solid={c.value}
+                                                gradient={c.gradient}
+                                                edited={c.edited}
+                                                onchange={handleGradientSurface}
+                                            ></c-final-gradient-control>
+                                        </template>
                                         <template lwc:elseif={c.isImage}>
                                             <c-final-image-uploader
                                                 data-key={c.key}

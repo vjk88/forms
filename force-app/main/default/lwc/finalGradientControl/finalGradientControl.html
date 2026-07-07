@@ -1,0 +1,89 @@
+<template>
+    <div class="row">
+        <template lwc:if={edited}>
+            <span class="dot" title="Customized"></span>
+        </template>
+        <span class="label">{label}</span>
+        <div class="seg" role="tablist" aria-label="Fill mode">
+            <button
+                class={solidSegClass}
+                type="button"
+                disabled={disabled}
+                onclick={handleSolidMode}
+            >
+                Solid
+            </button>
+            <button
+                class={gradientSegClass}
+                type="button"
+                disabled={disabled}
+                onclick={handleGradientMode}
+            >
+                Gradient
+            </button>
+        </div>
+    </div>
+
+    <template lwc:if={isGradient}>
+        <div class="gbody">
+            <div class="presets">
+                <template for:each={presets} for:item="p">
+                    <button
+                        key={p.key}
+                        class="preset"
+                        type="button"
+                        style={p.style}
+                        data-start={p.start}
+                        data-end={p.end}
+                        title="Preset"
+                        onclick={handlePreset}
+                    ></button>
+                </template>
+            </div>
+            <div class="grow">
+                <label>Type</label>
+                <select onchange={handleType}>
+                    <template for:each={typeOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+            </div>
+            <template lwc:if={isLinear}>
+                <div class="grow">
+                    <label>Angle</label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={angle}
+                        oninput={handleAngle}
+                    />
+                    <span class="deg">{angle}°</span>
+                </div>
+            </template>
+            <div class="grow">
+                <label>Start</label>
+                <input type="color" value={start} oninput={handleStart} />
+                <label class="end-label">End</label>
+                <input type="color" value={end} oninput={handleEnd} />
+            </div>
+        </div>
+    </template>
+    <template lwc:else>
+        <div class="grow solid-row">
+            <span class="hex">{solid}</span>
+            <input
+                type="color"
+                value={solid}
+                disabled={disabled}
+                oninput={handleSolidColor}
+            />
+        </div>
+    </template>
+</template>

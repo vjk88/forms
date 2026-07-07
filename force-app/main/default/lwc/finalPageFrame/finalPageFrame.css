@@ -68,10 +68,14 @@
     color: var(--c-text);
     font-family: var(--c-font-body);
     background-color: var(--c-page-bg);
-    background-image: var(--c-page-scrim), var(--c-page-bg-image);
-    background-size: auto, var(--c-page-bg-size);
-    background-position: center, var(--c-page-bg-position);
-    background-repeat: no-repeat, var(--c-page-bg-repeat);
+    /* Fixed 4-slot stack, top to bottom: scrim, image-opacity veil, the
+       user's image, gradient. The fit/placement tokens address slot 3 by
+       POSITION — no feature can ever shift which layer they land on. */
+    background-image: var(--c-page-scrim), var(--c-page-veil, none),
+        var(--c-page-bg-image), var(--c-page-bg-gradient, none);
+    background-size: auto, auto, var(--c-page-bg-size), auto;
+    background-position: center, center, var(--c-page-bg-position), center;
+    background-repeat: no-repeat, no-repeat, var(--c-page-bg-repeat), no-repeat;
 }
 
 /*
@@ -92,7 +96,8 @@
     position: relative;
     margin: 0 auto;
     padding: var(--c-space-6);
-    background: var(--c-content-bg);
+    background-color: var(--c-content-bg);
+    background-image: var(--c-content-bg-gradient, none);
     border: var(--c-content-border);
     border-radius: var(--c-radius);
     box-shadow: var(--c-content-shadow);
