@@ -61,6 +61,14 @@ const FONT_STACKS = {
     mono: {
         body: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
         display: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace"
+    },
+    geometric: {
+        body: "'Avenir Next', 'Century Gothic', Futura, 'Trebuchet MS', sans-serif",
+        display: "'Avenir Next', 'Century Gothic', Futura, 'Trebuchet MS', sans-serif"
+    },
+    humanist: {
+        body: "Seravek, 'Gill Sans', 'Segoe UI', Verdana, sans-serif",
+        display: "Seravek, 'Gill Sans', 'Segoe UI', Verdana, sans-serif"
     }
 };
 
@@ -123,6 +131,11 @@ const DEFAULT_PROPS = {
         headerBg: 'transparent'
     },
     typography: 'system',
+    // Custom brand font (CUSTOM_FONTS.md): { key, family, fallback, resource,
+    // regularPath, boldPath }. The engine only TYPESETS it (family + fallback
+    // into the font tokens); registering the @font-face is finalFontLoader's
+    // job at the render site. Wins over `typography` when set.
+    customFont: null,
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
@@ -298,7 +311,11 @@ export function resolveTokens(themeProps, formOverrides) {
     const img = p.pageImage;
 
     const density = DENSITY[p.density] || DENSITY.comfortable;
-    const fonts = FONT_STACKS[p.typography] || FONT_STACKS.system;
+    let fonts = FONT_STACKS[p.typography] || FONT_STACKS.system;
+    if (p.customFont && p.customFont.family) {
+        const stack = `'${p.customFont.family}', ${p.customFont.fallback || 'sans-serif'}`;
+        fonts = { body: stack, display: stack };
+    }
     const fit = PAGE_FIT[img.fit] || PAGE_FIT.cover;
     const mesh = MESHES[fx.mesh] || [];
     const focus = fs.focus || pal.accent;

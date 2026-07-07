@@ -98,13 +98,18 @@ const AREAS = [
                         label: 'Font pairing',
                         type: 'select',
                         themePath: 'typography',
+                        // panel appends Form_Font__mdt entries as custom:<key>
+                        // options and routes them to overrides.customFont
+                        dynamicOptions: 'fonts',
                         options: [
                             { value: 'system', label: 'System' },
                             {
                                 value: 'editorial',
                                 label: 'Editorial (serif display)'
                             },
-                            { value: 'mono', label: 'Mono' }
+                            { value: 'mono', label: 'Mono' },
+                            { value: 'geometric', label: 'Geometric' },
+                            { value: 'humanist', label: 'Humanist' }
                         ]
                     }
                 ]

@@ -4,6 +4,7 @@ import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
+import { ensureFont } from 'c/finalFontLoader';
 
 /**
  * finalFormViewer — P0 minimal viewer: fetches one published Spec_JSON__c blob,
@@ -111,6 +112,19 @@ export default class FinalFormViewer extends LightningElement {
         this.tokens =
             (spec.resolved && spec.resolved.tokens) ||
             resolveTokens(theme, spec.theme ? spec.theme.overrides : null);
+
+        // Custom brand font: tokens only TYPESET the family — the @font-face
+        // must be registered globally (CUSTOM_FONTS.md). Idempotent; also runs
+        // for published specs since resolved tokens still name the family.
+        const customFont =
+            (spec.theme &&
+                spec.theme.overrides &&
+                spec.theme.overrides.customFont) ||
+            (theme && theme.customFont) ||
+            null;
+        if (customFont) {
+            ensureFont(customFont);
+        }
 
         const layout = getLayout(spec.layout ? spec.layout.type : undefined);
         const seq = (this._applySeq = (this._applySeq || 0) + 1);

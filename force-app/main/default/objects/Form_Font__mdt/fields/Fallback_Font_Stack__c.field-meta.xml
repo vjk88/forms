@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fallback_Font_Stack__c</fullName>
+    <label>Fallback Font Stack</label>
+    <type>Text</type>
+    <length>255</length>
+    <required>false</required>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <description>CSS fallback stack used while loading / on failure (e.g. sans-serif).</description>
+</CustomField>

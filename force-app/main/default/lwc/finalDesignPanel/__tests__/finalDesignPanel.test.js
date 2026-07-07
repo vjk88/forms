@@ -1,6 +1,13 @@
 import { createElement } from 'lwc';
 import FinalDesignPanel from 'c/finalDesignPanel';
 import { buildSampleSpec } from 'c/finalSampleSpec';
+import listFonts from '@salesforce/apex/FinalFontController.listFonts';
+
+jest.mock(
+    '@salesforce/apex/FinalFontController.listFonts',
+    () => ({ default: jest.fn(() => Promise.resolve([])) }),
+    { virtual: true }
+);
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -240,6 +247,44 @@ describe('c-final-design-panel', () => {
         el.shadowRoot.querySelector('.chip[data-look="dense"]').click();
         await flush();
         expect(lastSpec(handler).theme.overrides.density).toBe('compact');
+    });
+
+    it('custom font pick writes overrides.customFont; built-in pick clears it', async () => {
+        listFonts.mockResolvedValueOnce([
+            {
+                key: 'Sample_Brand',
+                family: 'Sample Brand',
+                fallback: 'cursive',
+                resource: 'sample_brand_font',
+                regularPath: null,
+                boldPath: null
+            }
+        ]);
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await flush();
+        await goAdvanced(el);
+        await openArea(el, 'type');
+        const select = el.shadowRoot.querySelector(
+            'select[data-key="typography"]'
+        );
+        expect(
+            [...select.querySelectorAll('option')].map((o) => o.value)
+        ).toContain('custom:Sample_Brand');
+        select.value = 'custom:Sample_Brand';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        let theme = lastSpec(handler).theme;
+        expect(theme.overrides.customFont.family).toBe('Sample Brand');
+        expect(theme.overrides.customFont.resource).toBe('sample_brand_font');
+
+        select.value = 'editorial';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        theme = lastSpec(handler).theme;
+        expect(theme.overrides.customFont).toBeUndefined();
+        expect(theme.overrides.typography).toBe('editorial');
     });
 
     it('plain content controls (title) write spec paths, never overrides', async () => {

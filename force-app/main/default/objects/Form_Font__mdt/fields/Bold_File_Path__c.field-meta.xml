@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Bold_File_Path__c</fullName>
+    <label>Bold File Path</label>
+    <type>Text</type>
+    <length>255</length>
+    <required>false</required>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <description>Relative path to the bold weight inside a ZIP resource (optional).</description>
+</CustomField>

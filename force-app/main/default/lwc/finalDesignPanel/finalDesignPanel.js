@@ -1,5 +1,6 @@
 import { LightningElement, api, track } from 'lwc';
 import LightningConfirm from 'lightning/confirm';
+import listFonts from '@salesforce/apex/FinalFontController.listFonts';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
@@ -32,7 +33,19 @@ export default class FinalDesignPanel extends LightningElement {
     @track advanced = false;
     @track activeAreaKey = 'theme';
     @track pendingThemeKey = null;
+    @track _fonts = [];
     _spec = {};
+
+    connectedCallback() {
+        // imperative (cacheable) — custom Form_Font__mdt entries for the picker
+        listFonts()
+            .then((fonts) => {
+                this._fonts = fonts || [];
+            })
+            .catch(() => {
+                this._fonts = [];
+            });
+    }
 
     @api
     get spec() {
@@ -159,9 +172,26 @@ export default class FinalDesignPanel extends LightningElement {
                     : undefined;
                 vm.subject = c.subject;
             } else if (c.type === 'select') {
-                const current =
+                let current =
                     value === null || value === undefined ? '' : String(value);
-                vm.options = c.options.map((o) => ({
+                let options = c.options;
+                if (c.dynamicOptions === 'fonts') {
+                    options = [
+                        ...options,
+                        ...this._fonts.map((f) => ({
+                            value: `custom:${f.key}`,
+                            label: `${f.family} · custom`
+                        }))
+                    ];
+                    const cf = getAt(this.overrides, 'customFont');
+                    if (cf && cf.key) {
+                        current = `custom:${cf.key}`;
+                    }
+                    vm.edited =
+                        vm.edited ||
+                        getAt(this.overrides, 'customFont') !== undefined;
+                }
+                vm.options = options.map((o) => ({
                     ...o,
                     selected: o.value === current
                 }));
@@ -353,6 +383,31 @@ export default class FinalDesignPanel extends LightningElement {
         const key = event.target.dataset.key;
         const def = this._controlDef(key);
         let v = event.target.value;
+        // custom font route: the picker value custom:<key> becomes a
+        // customFont override object; picking a built-in pairing clears it
+        if (def && def.control.dynamicOptions === 'fonts') {
+            const overrides = this._ensureOverrides();
+            if (v.startsWith('custom:')) {
+                const font = this._fonts.find(
+                    (f) => `custom:${f.key}` === v
+                );
+                if (font) {
+                    setAt(overrides, 'customFont', {
+                        key: font.key,
+                        family: font.family,
+                        fallback: font.fallback,
+                        resource: font.resource,
+                        regularPath: font.regularPath,
+                        boldPath: font.boldPath
+                    });
+                    deleteAt(overrides, 'typography');
+                    this._spec = { ...this._spec };
+                    this._emit();
+                }
+                return;
+            }
+            deleteAt(overrides, 'customFont');
+        }
         if (def && def.control.emptyAsNull && v === '') {
             v = null;
         }
@@ -492,6 +547,9 @@ export default class FinalDesignPanel extends LightningElement {
                 deleteAt(overrides, entry.control.themePath);
                 if (entry.control.versionPath) {
                     deleteAt(overrides, entry.control.versionPath);
+                }
+                if (entry.control.dynamicOptions === 'fonts') {
+                    deleteAt(overrides, 'customFont');
                 }
             }
         }
