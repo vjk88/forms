@@ -1,0 +1,367 @@
+<template>
+    <div class="panel-root">
+        <template lwc:if={advanced}>
+            <nav class="rail" aria-label="Design areas">
+                <template for:each={rail} for:item="a">
+                    <button
+                        key={a.key}
+                        class={a.cls}
+                        type="button"
+                        data-area={a.key}
+                        onclick={handleRail}
+                    >
+                        <lightning-icon
+                            icon-name={a.icon}
+                            size="x-small"
+                        ></lightning-icon>
+                        <span>{a.label}</span>
+                    </button>
+                </template>
+            </nav>
+        </template>
+
+        <div class="settings">
+            <div class="head">
+                <div class="lens" role="tablist" aria-label="Panel mode">
+                    <button
+                        class={simpleLensClass}
+                        type="button"
+                        onclick={handleLensSimple}
+                    >
+                        Simple
+                    </button>
+                    <button
+                        class={advancedLensClass}
+                        type="button"
+                        onclick={handleLensAdvanced}
+                    >
+                        Advanced
+                    </button>
+                </div>
+                <p class="lens-desc">{lensDesc}</p>
+                <template lwc:if={hasOverrides}>
+                    <div class="ovchip">
+                        <span>{overrideCount} customization(s)</span>
+                        <button
+                            class="linkbtn"
+                            type="button"
+                            onclick={handleResetAll}
+                        >
+                            Reset all
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <div class="scroll">
+                <div class="entry">
+                    <span class="entry-k">THEME</span>
+                    <select
+                        class="entry-select"
+                        aria-label="Theme"
+                        onchange={handleThemePick}
+                    >
+                        <template for:each={themeOptions} for:item="o">
+                            <option
+                                key={o.value}
+                                value={o.value}
+                                selected={o.selected}
+                            >
+                                {o.label}
+                            </option>
+                        </template>
+                    </select>
+                </div>
+
+                <template lwc:if={pendingThemeKey}>
+                    <div class="confirm" role="alert">
+                        Switching to <b>{pendingThemeName}</b> — you have
+                        <b>{overrideCount}</b> customization(s).
+                        <div class="confirm-acts">
+                            <button
+                                class="confirm-go"
+                                type="button"
+                                onclick={handleConfirmKeep}
+                            >
+                                Keep my customizations
+                            </button>
+                            <button
+                                class="confirm-alt"
+                                type="button"
+                                onclick={handleConfirmClear}
+                            >
+                                Use theme as-is
+                            </button>
+                            <button
+                                class="confirm-alt"
+                                type="button"
+                                onclick={handleConfirmCancel}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ============ SIMPLE ============ -->
+                <template lwc:if={advanced}></template>
+                <template lwc:else>
+                    <template lwc:if={showAdvChip}>
+                        <div class="advchip" role="status">
+                            <span>
+                                <b>{advChipCount}</b> advanced customization(s)
+                                active on this form.
+                            </span>
+                            <button
+                                class="linkbtn"
+                                type="button"
+                                onclick={handleLensAdvanced}
+                            >
+                                View
+                            </button>
+                        </div>
+                    </template>
+
+                    <div class="s-section">LOOK</div>
+                    <div class="s-card chips">
+                        <button
+                            class="chip"
+                            type="button"
+                            data-look="rounder"
+                            onclick={handleLook}
+                        >
+                            Rounder
+                        </button>
+                        <button
+                            class="chip"
+                            type="button"
+                            data-look="sharper"
+                            onclick={handleLook}
+                        >
+                            Sharper
+                        </button>
+                        <button
+                            class="chip"
+                            type="button"
+                            data-look="airy"
+                            onclick={handleLook}
+                        >
+                            Airy
+                        </button>
+                        <button
+                            class="chip"
+                            type="button"
+                            data-look="dense"
+                            onclick={handleLook}
+                        >
+                            Dense
+                        </button>
+                    </div>
+
+                    <div class="s-section">BRAND</div>
+                    <div class="s-card">
+                        <template lwc:if={simpleVM.accent}>
+                            <c-final-color-control
+                                data-key="accent"
+                                label="Brand color"
+                                value={simpleVM.accent.value}
+                                contrast-with={simpleVM.accent.contrastWith}
+                                subject={simpleVM.accent.subject}
+                                edited={simpleVM.accent.edited}
+                                onchange={handleColor}
+                            ></c-final-color-control>
+                        </template>
+                        <template lwc:if={simpleVM.logo}>
+                            <c-final-image-uploader
+                                data-key="logo"
+                                label="Logo"
+                                url={simpleVM.logo.value}
+                                content-version-id={simpleVM.logo.versionId}
+                                form-id={formId}
+                                onchange={handleImage}
+                            ></c-final-image-uploader>
+                        </template>
+                    </div>
+
+                    <div class="s-section">WORDS</div>
+                    <div class="s-card">
+                        <div class="row">
+                            <label for="s-title">Title</label>
+                            <input
+                                id="s-title"
+                                type="text"
+                                data-key="title"
+                                value={simpleVM.title.value}
+                                onchange={handleText}
+                            />
+                        </div>
+                        <div class="row">
+                            <label for="s-desc">Subtitle</label>
+                            <input
+                                id="s-desc"
+                                type="text"
+                                data-key="description"
+                                value={simpleVM.description.value}
+                                onchange={handleText}
+                            />
+                        </div>
+                    </div>
+
+                    <div class="s-section">FINISH</div>
+                    <div class="s-card">
+                        <div class="row">
+                            <label for="s-submit">Submit label</label>
+                            <input
+                                id="s-submit"
+                                type="text"
+                                data-key="submitLabel"
+                                value={simpleVM.submitLabel.value}
+                                onchange={handleText}
+                            />
+                        </div>
+                    </div>
+
+                    <p class="lens-note">
+                        Need image backgrounds, fonts, field styling? They live
+                        in <b>Advanced</b>. Switching modes never changes your
+                        settings.
+                    </p>
+                </template>
+
+                <!-- ============ ADVANCED ============ -->
+                <template lwc:if={advanced}>
+                    <template lwc:if={areaVM.narration}>
+                        <div class="narrate">{areaVM.narration}</div>
+                    </template>
+                    <template for:each={areaVM.groups} for:item="g">
+                        <section class="group" key={g.key}>
+                            <header class="group-head">
+                                <template lwc:if={g.edited}>
+                                    <span class="dot" title="Customized"></span>
+                                </template>
+                                <h2>{g.label}</h2>
+                                <template lwc:if={g.note}>
+                                    <span class="group-note">{g.note}</span>
+                                </template>
+                                <template lwc:if={g.edited}>
+                                    <button
+                                        class="linkbtn resetchip"
+                                        type="button"
+                                        data-group={g.key}
+                                        onclick={handleGroupReset}
+                                    >
+                                        Reset to theme
+                                    </button>
+                                </template>
+                            </header>
+                            <div class="group-body">
+                                <template for:each={g.controls} for:item="c">
+                                    <div key={c.key}>
+                                        <template lwc:if={c.isColor}>
+                                            <c-final-color-control
+                                                data-key={c.key}
+                                                label={c.label}
+                                                value={c.value}
+                                                contrast-with={c.contrastWith}
+                                                subject={c.subject}
+                                                edited={c.edited}
+                                                onchange={handleColor}
+                                            ></c-final-color-control>
+                                        </template>
+                                        <template lwc:elseif={c.isImage}>
+                                            <c-final-image-uploader
+                                                data-key={c.key}
+                                                label={c.label}
+                                                url={c.value}
+                                                content-version-id={c.versionId}
+                                                form-id={formId}
+                                                edited={c.edited}
+                                                onchange={handleImage}
+                                            ></c-final-image-uploader>
+                                        </template>
+                                        <template lwc:elseif={c.isSelect}>
+                                            <div class="row">
+                                                <template lwc:if={c.edited}>
+                                                    <span
+                                                        class="dot"
+                                                        title="Customized"
+                                                    ></span>
+                                                </template>
+                                                <label>{c.label}</label>
+                                                <select
+                                                    data-key={c.key}
+                                                    onchange={handleSelect}
+                                                >
+                                                    <template
+                                                        for:each={c.options}
+                                                        for:item="o"
+                                                    >
+                                                        <option
+                                                            key={o.value}
+                                                            value={o.value}
+                                                            selected={o.selected}
+                                                        >
+                                                            {o.label}
+                                                        </option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+                                        <template lwc:elseif={c.isToggle}>
+                                            <div class="row">
+                                                <template lwc:if={c.edited}>
+                                                    <span
+                                                        class="dot"
+                                                        title="Customized"
+                                                    ></span>
+                                                </template>
+                                                <label>{c.label}</label>
+                                                <input
+                                                    type="checkbox"
+                                                    data-key={c.key}
+                                                    checked={c.checked}
+                                                    onchange={handleToggle}
+                                                />
+                                            </div>
+                                        </template>
+                                        <template lwc:elseif={c.isRange}>
+                                            <div class="row">
+                                                <template lwc:if={c.edited}>
+                                                    <span
+                                                        class="dot"
+                                                        title="Customized"
+                                                    ></span>
+                                                </template>
+                                                <label>{c.label}</label>
+                                                <input
+                                                    type="range"
+                                                    data-key={c.key}
+                                                    min={c.min}
+                                                    max={c.max}
+                                                    value={c.value}
+                                                    oninput={handleRange}
+                                                />
+                                            </div>
+                                        </template>
+                                        <template lwc:else>
+                                            <div class="row">
+                                                <label>{c.label}</label>
+                                                <input
+                                                    type="text"
+                                                    data-key={c.key}
+                                                    value={c.value}
+                                                    placeholder={c.placeholder}
+                                                    onchange={handleText}
+                                                />
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </section>
+                    </template>
+                </template>
+            </div>
+        </div>
+    </div>
+</template>

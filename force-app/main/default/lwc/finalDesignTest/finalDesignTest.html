@@ -1,0 +1,35 @@
+<template>
+    <div class="dt-studio">
+        <aside class="dt-left">
+            <c-final-design-panel
+                spec={spec}
+                onspecchange={handleSpecChange}
+            ></c-final-design-panel>
+        </aside>
+        <!-- NOTE: not "stage" — LEX's one.app ships a global .stage class that
+             leaks position:absolute into embedded content; dt- prefix avoids
+             every such collision. -->
+        <main class="dt-main">
+            <div class="dt-bar">
+                <span>Live preview (the published render, same parser)</span>
+                <label class="dt-pick">
+                    Layout
+                    <select onchange={handleLayout}>
+                        <template for:each={layoutOptions} for:item="o">
+                            <option
+                                key={o.value}
+                                value={o.value}
+                                selected={o.selected}
+                            >
+                                {o.label}
+                            </option>
+                        </template>
+                    </select>
+                </label>
+            </div>
+            <div class="dt-scroll">
+                <c-final-form-viewer spec={spec}></c-final-form-viewer>
+            </div>
+        </main>
+    </div>
+</template>
