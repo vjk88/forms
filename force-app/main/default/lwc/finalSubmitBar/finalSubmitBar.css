@@ -1,3 +1,10 @@
+/* Custom elements are inline by default — without this the bar shrink-wraps
+   in hosts that don't stretch their children (splitHero's form column). */
+:host {
+    display: block;
+    width: 100%;
+}
+
 .bar {
     margin-top: var(--c-space-5);
     font-family: var(--c-font-body);
@@ -28,6 +35,29 @@
 
 .arr-split .buttons {
     justify-content: space-between;
+}
+
+/* stretch (owner QA 2026-07-07): every button shares the row equally; the
+   quiet Back link becomes a boxed secondary so it holds its half. */
+.arr-stretch .buttons > * {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.arr-stretch .back-link {
+    justify-content: center;
+    height: var(--c-control-h);
+    border: 1px solid var(--c-field-border);
+    border-radius: var(--c-radius);
+    background: var(--c-field-bg);
+    color: var(--c-text);
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.arr-stretch .back-link:hover {
+    text-decoration: none;
+    border-color: var(--c-text-weak);
 }
 
 /* Empty until the engine sets blockedMessage — zero height, no layout shift. */

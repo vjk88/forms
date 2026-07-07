@@ -571,7 +571,8 @@ const AREAS = [
                                 value: 'together-right',
                                 label: 'Together · right'
                             },
-                            { value: 'split', label: 'Split' }
+                            { value: 'split', label: 'Split' },
+                            { value: 'stretch', label: 'Stretch' }
                         ]
                     },
                     {
