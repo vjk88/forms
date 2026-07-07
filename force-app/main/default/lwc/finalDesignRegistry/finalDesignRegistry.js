@@ -194,7 +194,8 @@ const AREAS = [
                         options: [
                             { value: '', label: 'None' },
                             { value: 'aurora', label: 'Aurora' },
-                            { value: 'dusk', label: 'Dusk' }
+                            { value: 'dusk', label: 'Dusk' },
+                            { value: 'neon', label: 'Neon' }
                         ]
                     },
                     {
@@ -210,6 +211,13 @@ const AREAS = [
                         ]
                     },
                     {
+                        key: 'meshAnimate',
+                        label: 'Float animation',
+                        type: 'toggle',
+                        themePath: 'effects.meshAnimate',
+                        needsEffect: 'mesh'
+                    },
+                    {
                         key: 'texture',
                         label: 'Texture',
                         type: 'select',
@@ -218,7 +226,8 @@ const AREAS = [
                         options: [
                             { value: '', label: 'None' },
                             { value: 'dots', label: 'Dots' },
-                            { value: 'grid', label: 'Grid' }
+                            { value: 'grid', label: 'Grid' },
+                            { value: 'grain', label: 'Grain' }
                         ]
                     },
                     {
@@ -465,7 +474,8 @@ const AREAS = [
                             { value: 'soft', label: 'Soft' },
                             { value: 'medium', label: 'Medium' },
                             { value: 'floating', label: 'Floating' },
-                            { value: 'brutal', label: 'Hard offset' }
+                            { value: 'brutal', label: 'Hard offset' },
+                            { value: 'deep', label: 'Deep (dark pages)' }
                         ]
                     },
                     {
@@ -567,6 +577,7 @@ const AREAS = [
                         options: [
                             { value: 'default', label: 'Default' },
                             { value: 'monoCaps', label: 'Uppercase mono' },
+                            { value: 'caps', label: 'Uppercase small' },
                             { value: 'mutedSm', label: 'Muted small' }
                         ]
                     }

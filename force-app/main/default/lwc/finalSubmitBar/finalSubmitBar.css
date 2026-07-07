@@ -97,8 +97,26 @@
 
 .primary {
     border: none;
-    background: var(--c-submit-bg);
+    background-color: var(--c-submit-bg);
+    /* Gradient above the solid — same layering rule as the surface fills. */
+    background-image: var(--c-submit-bg-gradient, none);
     color: var(--c-submit-text);
+    box-shadow: var(--c-submit-glow, none);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .primary,
+    .primary:hover:not(:disabled) {
+        transition: none;
+        transform: none;
+    }
 }
 
 .btn:focus-visible {

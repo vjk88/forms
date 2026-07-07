@@ -16,6 +16,9 @@
     --c-fx-mesh-1: none;
     --c-fx-mesh-2: none;
     --c-fx-mesh-3: none;
+    --c-fx-mesh-4: none;
+    --c-mesh-anim: paused;
+    --c-mesh-blend: normal;
     --c-fx-texture: none;
     --c-content-bg: #ffffff;
     --c-content-border: 1px solid #e6e8ec;
@@ -61,6 +64,9 @@
  */
 .page {
     position: relative;
+    /* Mesh layers may blend (--c-mesh-blend: screen); isolate so they compose
+       against THIS page's backdrop only and never leak into host chrome. */
+    isolation: isolate;
     min-height: 100vh;
     min-height: 100dvh;
     box-sizing: border-box;
@@ -79,16 +85,65 @@
 }
 
 /*
- * §2.1 rule 2: mesh + texture live ONLY on this dedicated element — the user's
- * image never shares a background stack with effects. Four fixed slots:
- * mesh 1-3, then texture. Unused slots resolve to `none` and stay put.
+ * §2.1 rule 2: mesh + texture live ONLY on these dedicated elements — the
+ * user's image never shares a background stack with effects. Texture paints
+ * on .fx itself (under the mesh, as before); each mesh token owns ONE child
+ * element, which is what lets layers drift independently (--c-mesh-anim) and
+ * blend (--c-mesh-blend) without ever renegotiating slot positions.
  */
 .fx {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-image: var(--c-fx-mesh-1), var(--c-fx-mesh-2),
-        var(--c-fx-mesh-3), var(--c-fx-texture);
+    background-image: var(--c-fx-texture);
+}
+
+.fx-mesh {
+    position: absolute;
+    inset: 0;
+    mix-blend-mode: var(--c-mesh-blend);
+    animation: final-mesh-drift 18s ease-in-out infinite;
+    animation-play-state: var(--c-mesh-anim);
+}
+
+.fx-m1 {
+    background-image: var(--c-fx-mesh-1);
+    animation-delay: -2s;
+}
+
+.fx-m2 {
+    background-image: var(--c-fx-mesh-2);
+    animation-delay: -6s;
+}
+
+.fx-m3 {
+    background-image: var(--c-fx-mesh-3);
+    animation-delay: -10s;
+}
+
+.fx-m4 {
+    background-image: var(--c-fx-mesh-4);
+    animation-delay: -14s;
+}
+
+/* The blobs' soft falloff means edges never show — translate/scale freely. */
+@keyframes final-mesh-drift {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(5%, -4%) scale(1.12);
+    }
+    66% {
+        transform: translate(-4%, 5%) scale(0.94);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fx-mesh {
+        animation: none;
+    }
 }
 
 /* Content surface. Sits after .fx in paint order — no z-index games. */

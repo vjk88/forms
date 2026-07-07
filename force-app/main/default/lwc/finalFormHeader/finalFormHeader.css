@@ -33,13 +33,18 @@
     color: var(--c-header-text);
 }
 
+/* Gradient display ink is a token PAIR (engine emits both or neither):
+   fill goes transparent only when a gradient is behind the clipped text. */
 .hdr-title {
     margin: 0;
     font-family: var(--c-font-display);
     font-size: 1.6rem;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--c-header-text);
+    color: var(--c-header-title-fill, var(--c-header-text));
+    background-image: var(--c-header-title-gradient, none);
+    -webkit-background-clip: text;
+    background-clip: text;
 }
 
 .style-minimal .hdr-title {
