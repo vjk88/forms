@@ -24,6 +24,11 @@ const CONTRACT_V1 = [
     '--c-fx-mesh-1',
     '--c-fx-mesh-2',
     '--c-fx-mesh-3',
+    // immersive pass (contract event 2026-07-08 — Neon Nights: 4th mesh slot,
+    // drift play-state, blend mode; title-ink pair + submit gradient/glow below)
+    '--c-fx-mesh-4',
+    '--c-mesh-anim',
+    '--c-mesh-blend',
     '--c-fx-texture',
     '--c-content-bg',
     '--c-content-border',
@@ -62,8 +67,14 @@ const CONTRACT_V1 = [
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
+    // conditional PAIR (immersive pass): emitted together or not at all —
+    // background-clip:text needs a transparent fill only when a gradient exists
+    '--c-header-title-gradient',
+    '--c-header-title-fill',
     '--c-submit-bg',
     '--c-submit-text',
+    '--c-submit-bg-gradient',
+    '--c-submit-glow',
     '--c-radius',
     '--c-space-1',
     '--c-space-2',
@@ -93,9 +104,15 @@ describe('c-final-theme-engine', () => {
 
     describe('contract completeness (append-only tripwire)', () => {
         it('emits EXACTLY the contract v1 vocabulary for a full theme', () => {
-            // outline + default labels intentionally DON'T emit these two —
+            // outline + default labels intentionally DON'T emit the first two —
             // their CSS fallbacks (--c-radius / --c-font-body) carry the look.
-            const conditional = ['--c-input-radius', '--c-label-font'];
+            // The title pair only exists when palette.headerTitleGradient is set.
+            const conditional = [
+                '--c-input-radius',
+                '--c-label-font',
+                '--c-header-title-gradient',
+                '--c-header-title-fill'
+            ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()
@@ -440,7 +457,12 @@ describe('c-final-theme-engine', () => {
                 { ...theme(), futureThing: { x: 1 } },
                 { anotherFuture: true }
             );
-            const conditional = ['--c-input-radius', '--c-label-font'];
+            const conditional = [
+                '--c-input-radius',
+                '--c-label-font',
+                '--c-header-title-gradient',
+                '--c-header-title-fill'
+            ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()
             );
@@ -478,7 +500,7 @@ describe('c-final-theme-catalog', () => {
 
     it('listing exposes key/name/tags/layout only — never recipes', () => {
         const list = listBuiltinThemes();
-        expect(list.length).toBe(31);
+        expect(list.length).toBe(32); // 31 + neonNights (immersive pass)
         const ivory = list.find((t) => t.key === 'editorialIvory');
         expect(ivory).toEqual({
             key: 'editorialIvory',

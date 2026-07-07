@@ -127,7 +127,7 @@ export const LAYOUTS = {
    (Do NOT use the reviewer's `--c-x: var(--c-x, …)` pattern — a self-referential custom property is
    invalid CSS and silently kills the token.)
 
-### 3.2 Contract v1 (60-token vocabulary — the engine's jest suite enforces the list exactly; the 3 `--c-section-*` surface tokens below are RESERVED consumer-side, never emitted. Contract event 2026-07-07 appended the `--c-input-*` shell set and `--c-label-*` defaults for fieldStyle/labelPosition/labelStyle; `--c-input-radius` and `--c-label-font` are emitted only when a non-default style needs them — their CSS fallbacks carry the default look; backdrop-composition event same day appended `--c-page-veil` (image-opacity veil slot) and the three `--c-*-bg-gradient` layers — the page stack is now the fixed 4-slot scrim/veil/image/gradient)
+### 3.2 Contract v1 (67-token vocabulary — the engine's jest suite enforces the list exactly; the 3 `--c-section-*` surface tokens below are RESERVED consumer-side, never emitted. Contract event 2026-07-07 appended the `--c-input-*` shell set and `--c-label-*` defaults for fieldStyle/labelPosition/labelStyle; `--c-input-radius` and `--c-label-font` are emitted only when a non-default style needs them — their CSS fallbacks carry the default look; backdrop-composition event same day appended `--c-page-veil` (image-opacity veil slot) and the three `--c-*-bg-gradient` layers — the page stack is now the fixed 4-slot scrim/veil/image/gradient. Immersive event 2026-07-08 (Neon Nights) appended `--c-fx-mesh-4`, the mesh presentation pair `--c-mesh-anim`/`--c-mesh-blend`, the CTA pair `--c-submit-bg-gradient`/`--c-submit-glow`, and the CONDITIONAL title-ink pair `--c-header-title-gradient`/`--c-header-title-fill` — emitted together or not at all, since `background-clip:text` needs a transparent fill only when a gradient exists)
 
 Deliberately smaller than the old sprawl ([TOKEN_REFERENCE.md](../redesign/TOKEN_REFERENCE.md)
 documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign/SURFACE_MODEL_SPEC.md):
@@ -139,7 +139,8 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 | `--c-page-bg-image` | User's uploaded backdrop (one `url()`) |
 | `--c-page-bg-size` / `--c-page-bg-position` / `--c-page-bg-repeat` | Fit + placement + tiling for that image only |
 | `--c-page-scrim` | Legibility dim over the image — always a single gradient |
-| `--c-fx-texture` / `--c-fx-mesh-1..3` | Decorative layers — `.fx` element ONLY, never `.page`. Each token = ONE layer (rule 2); a mesh occupies up to three FIXED slots, so layers can never shift |
+| `--c-fx-texture` / `--c-fx-mesh-1..4` | Decorative layers — the `.fx` element tree ONLY, never `.page`. Each token = ONE layer (rule 2); texture paints on `.fx` itself, each mesh token owns one fixed CHILD element (`.fx-m1..4`), so layers can never shift and can drift/blend independently |
+| `--c-mesh-anim` / `--c-mesh-blend` | Mesh presentation: `running\|paused` drives the drift keyframes' play-state (reduced-motion forces off); `screen\|normal` is the blob blend (screen = luminous, dark pages only — `.page` is `isolation: isolate` so blends never leak into host chrome) |
 
 **Content panel** (consumed by `pageFrame .panel`)
 | Token | Styles |
@@ -173,11 +174,13 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 | Token | Styles |
 |---|---|
 | `--c-header-bg` / `--c-header-text` / `--c-header-text-weak` | Header surface + text. `--c-header-bg` may carry a full multi-part background shorthand (split/gradient/image themes) — consumers MUST use `background:`, never `background-color:` |
+| `--c-header-title-gradient` / `--c-header-title-fill` | CONDITIONAL pair (`palette.headerTitleGradient`): gradient display ink for the title via `background-clip:text` — fill goes `transparent` only when the gradient exists; absent = solid `--c-header-text` |
 
 **Actions** (consumed by `submitBar`)
 | Token | Styles |
 |---|---|
 | `--c-submit-bg` / `--c-submit-text` | Submit button |
+| `--c-submit-bg-gradient` / `--c-submit-glow` | CTA dressing (`palette.submitBgGradient` / `submitGlow`): gradient paints ABOVE the solid (same layering rule as surface fills); glow shadow derives from the gradient start, else the solid. Both default `none` |
 
 **Shape · space · type** (consumed everywhere)
 | Token | Styles |

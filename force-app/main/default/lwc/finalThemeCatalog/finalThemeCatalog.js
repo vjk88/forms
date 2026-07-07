@@ -442,6 +442,38 @@ const THEMES = {
         typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
         effects: { shadow: 'medium', glass: true, texture: null, mesh: null },
         pageImage: { url: '/resource/formThemeAssets/silk.jpg', fit: 'cover', position: 'center', scrim: 0 }
+    },
+
+    // Pixel port of design-explorations/04-glass-event-registration.html
+    // (owner 2026-07-08). Exercises the full immersive stack: 4-blob animated
+    // screen-blend mesh, grain, 26px glass, gradient title ink, gradient+glow
+    // CTA, caps labels, pill card over round inputs.
+    neonNights: {
+        name: 'Neon Nights',
+        tags: ['dark', 'creative'],
+        layout: 'classic',
+        palette: {
+            accent: '#ff2e93', onAccent: '#ffffff', pageBg: '#08060f',
+            contentBg: 'rgba(255, 255, 255, 0.08)',
+            text: '#f3f0ff', textWeak: '#b9b4d6',
+            headerBg: 'transparent', headerText: '#ffffff', headerTextWeak: '#b9b4d6',
+            headerTitleGradient: { angle: 100, stops: ['#ffffff', '#d9ccff 60%', '#16e0c4'] },
+            borderColor: 'rgba(255, 255, 255, 0.22)',
+            fieldBorderColor: 'rgba(255, 255, 255, 0.22)',
+            submitBg: '#16e0c4', submitText: '#0a0612',
+            submitBgGradient: { type: 'linear', angle: 100, start: '#16e0c4', end: '#7af6e0' },
+            submitGlow: true
+        },
+        typography: 'geometric',
+        fieldStyle: 'outline', fieldRadius: 'round', labelStyle: 'caps',
+        radius: 'pill', border: 'hairline', density: 'comfortable',
+        effects: {
+            shadow: 'deep', glass: 26,
+            texture: 'grain', textureIntensity: 'subtle',
+            mesh: 'neon', meshIntensity: 'subtle',
+            meshAnimate: true, meshBlend: 'screen'
+        },
+        fieldStates: { focus: '#ff2e93', error: '#ff5470', required: '#ff2e93' }
     }
 };
 
@@ -466,6 +498,7 @@ export function listBuiltinThemes() {
 // theme-comparison.html identities; unknown keys get the generic lockup.
 const BRAND_COPY = {
     editorialIvory: { title: 'The Gazette', subtitle: 'Subscribe to our weekly print edition.' },
+    neonNights: { title: 'Neon Nights 2026', subtitle: 'An after-hours showcase of light, sound & code.' },
     nordic: { title: 'Pre-Flight Manifest', subtitle: 'Verify passenger and crew credentials.' },
     neoBrutalism: { title: 'Creator Application', subtitle: 'Apply for the early access program.' },
     dracula: { title: 'Central Core Uplink', subtitle: 'Authorize security token to sync.' },

@@ -80,7 +80,9 @@ const SHADOWS = {
     soft: '0 8px 24px rgba(15, 23, 42, 0.08)',
     medium: '0 10px 30px rgba(15, 23, 42, 0.12)',
     floating: '0 18px 48px rgba(15, 23, 42, 0.16)',
-    brutal: '5px 5px 0 rgba(0, 0, 0, 0.9)'
+    brutal: '5px 5px 0 rgba(0, 0, 0, 0.9)',
+    // Immersive dark-scene lift (Neon Nights) — reads only against dark pages.
+    deep: '0 30px 80px -20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
 };
 
 const BORDER_WIDTHS = {
@@ -109,6 +111,15 @@ const MESHES = {
         'radial-gradient(65% 50% at 15% 12%, rgba(244, 114, 182, 0.16), transparent 70%)',
         'radial-gradient(60% 50% at 85% 90%, rgba(99, 102, 241, 0.18), transparent 70%)',
         'radial-gradient(50% 40% at 60% 0%, rgba(56, 189, 248, 0.12), transparent 72%)'
+    ],
+    // Neon Nights (design-explorations/04): four saturated blobs on a near-black
+    // page — the only preset that uses the fourth slot. Alphas are authored at
+    // full look strength; pair with meshBlend:'screen' for the glow.
+    neon: [
+        'radial-gradient(50% 50% at 6% 2%, rgba(122, 92, 255, 0.55), transparent 70%)',
+        'radial-gradient(45% 45% at 94% 10%, rgba(255, 46, 147, 0.5), transparent 70%)',
+        'radial-gradient(48% 48% at 30% 104%, rgba(22, 224, 196, 0.5), transparent 72%)',
+        'radial-gradient(34% 34% at 82% 96%, rgba(255, 177, 61, 0.45), transparent 70%)'
     ]
 };
 
@@ -129,6 +140,11 @@ function textureLayer(kind, intensity) {
     }
     if (kind === 'grid') {
         return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M28 0H0v28' fill='none' stroke='%23111827' stroke-opacity='${o}'/%3E%3C/svg%3E")`;
+    }
+    // Film grain: SVG turbulence noise — grayscale, so it reads on BOTH light
+    // and dark pages (dots/grid carry dark ink and vanish on dark themes).
+    if (kind === 'grain') {
+        return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='${o}'/%3E%3C/svg%3E")`;
     }
     return null;
 }
@@ -168,18 +184,23 @@ const DEFAULT_PROPS = {
     // and theme-level label defaults. Per-element label config still wins in
     // the renderer; these set the form-wide default.
     fieldStyle: 'outline', // outline | underline | filled
+    // Input-corner override (radius KEY): unset = inputs share --c-radius.
+    // Lets a theme pair a curvy card with tighter inputs (Neon Nights: pill/round).
+    fieldRadius: null,
     labelPosition: 'top', // top | left
-    labelStyle: 'default', // default | monoCaps | mutedSm
+    labelStyle: 'default', // default | monoCaps | mutedSm | caps
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
     effects: {
         shadow: 'soft',
-        glass: false,
+        glass: false, // false | true (14px) | number (custom blur px)
         texture: null,
         mesh: null,
         textureIntensity: 'subtle',
-        meshIntensity: 'subtle'
+        meshIntensity: 'subtle',
+        meshAnimate: false, // slow blob drift (pageFrame pauses on reduced motion)
+        meshBlend: 'normal' // 'screen' = luminous blobs (dark pages only — screen on white is invisible)
     },
     fieldStates: { error: '#b42318', required: '#b42318' },
     pageImage: { url: null, fit: 'cover', position: 'center', scrim: 0, opacity: 100 }
@@ -462,6 +483,16 @@ export function resolveTokens(themeProps, formOverrides) {
             tracking: 'normal',
             color: pal.textWeak,
             font: null
+        },
+        // Uppercase tracked SANS (Neon Nights) — monoCaps' shape without the
+        // mono font; muted so the inputs carry the contrast.
+        caps: {
+            size: '0.74rem',
+            weight: '600',
+            transform: 'uppercase',
+            tracking: '0.1em',
+            color: pal.textWeak,
+            font: null
         }
     };
     const labelLook = LABEL_LOOKS[p.labelStyle] || LABEL_LOOKS.default;
@@ -475,6 +506,20 @@ export function resolveTokens(themeProps, formOverrides) {
     const mesh = MESHES[fx.mesh] || [];
     const focus = fs.focus || pal.accent;
     const submitBg = pal.submitBg || pal.accent;
+
+    // Display-title gradient ink (Neon Nights): palette.headerTitleGradient =
+    // { angle, stops: ['#fff', '#d9ccff 60%', '#16e0c4'] } — stops are raw CSS
+    // color-stop strings so mid-stops with positions stay expressible. Emits a
+    // CONDITIONAL token pair: the gradient plus a transparent title fill (the
+    // background-clip:text trick needs both or neither — a transparent title
+    // with no gradient behind it is invisible text).
+    const tg = pal.headerTitleGradient;
+    const titleGradient =
+        tg && Array.isArray(tg.stops) && tg.stops.length >= 2
+            ? `linear-gradient(${
+                  Number.isFinite(Number(tg.angle)) ? Number(tg.angle) : 135
+              }deg, ${tg.stops.join(', ')})`
+            : null;
     const scrimRaw = Number(img.scrim);
     const scrim = scrimRaw > 0 ? Math.min(scrimRaw, 100) / 100 : 0;
     // Image opacity (owner QA 2026-07-07): emulated by a pageBg-tinted veil
@@ -510,6 +555,12 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-fx-mesh-1': mesh[0] ? boostMesh(mesh[0], fx.meshIntensity) : 'none',
         '--c-fx-mesh-2': mesh[1] ? boostMesh(mesh[1], fx.meshIntensity) : 'none',
         '--c-fx-mesh-3': mesh[2] ? boostMesh(mesh[2], fx.meshIntensity) : 'none',
+        '--c-fx-mesh-4': mesh[3] ? boostMesh(mesh[3], fx.meshIntensity) : 'none',
+        // Presentation of the mesh layers, not the layers themselves: drift
+        // animation is declared in pageFrame CSS and toggled via play-state;
+        // 'screen' blend makes blobs luminous (Neon Nights, dark pages).
+        '--c-mesh-anim': fx.meshAnimate ? 'running' : 'paused',
+        '--c-mesh-blend': fx.meshBlend === 'screen' ? 'screen' : 'normal',
         '--c-fx-texture': textureLayer(fx.texture, fx.textureIntensity) || 'none',
 
         // Content panel
@@ -522,7 +573,12 @@ export function resolveTokens(themeProps, formOverrides) {
             ? `${BORDER_WIDTHS[p.border]} solid ${pal.borderColor || mix(pal.text, pal.contentBg, 0.16)}`
             : 'none',
         '--c-content-shadow': SHADOWS[fx.shadow] || SHADOWS.none,
-        '--c-glass-blur': fx.glass ? '14px' : '0px',
+        '--c-glass-blur':
+            typeof fx.glass === 'number'
+                ? `${Math.max(fx.glass, 0)}px`
+                : fx.glass
+                  ? '14px'
+                  : '0px',
 
         // Section (pad only — bg/border/shadow stay unset so the preset decides)
         '--c-section-pad': density.sectionPad,
@@ -539,7 +595,9 @@ export function resolveTokens(themeProps, formOverrides) {
         // SLDS hooks read these with --c-field-* / --c-radius fallbacks.
         '--c-input-bg': shell.bg,
         '--c-input-border-color': shell.border,
-        '--c-input-radius': shell.radius,
+        // Shell first (underline pins 0), then the theme's fieldRadius KEY,
+        // else absent → the CSS fallback chain lands on --c-radius.
+        '--c-input-radius': shell.radius ?? RADIUS[p.fieldRadius],
         '--c-input-shadow': shell.shadow,
         '--c-input-shadow-focus': shell.shadowFocus,
 
@@ -577,10 +635,24 @@ export function resolveTokens(themeProps, formOverrides) {
         ),
         '--c-header-text': pal.headerText || pal.text,
         '--c-header-text-weak': pal.headerTextWeak || pal.textWeak,
+        // Conditional pair (null → dropped by the guard below, CSS falls back
+        // to --c-header-text): see titleGradient above.
+        '--c-header-title-gradient': titleGradient,
+        '--c-header-title-fill': titleGradient ? 'transparent' : null,
 
         // Actions
         '--c-submit-bg': submitBg,
         '--c-submit-text': pal.submitText || onColor(submitBg),
+        // Gradient paints ABOVE the solid (same layering rule as the surface
+        // fills); glow derives from the gradient's start (else the solid).
+        '--c-submit-bg-gradient': gradientLayer(pal.submitBgGradient),
+        '--c-submit-glow': pal.submitGlow
+            ? `0 16px 40px -12px ${rgba(
+                  (pal.submitBgGradient && pal.submitBgGradient.start) ||
+                      submitBg,
+                  0.6
+              )}`
+            : 'none',
 
         // Shape · space · type
         '--c-radius': RADIUS[p.radius] || RADIUS.soft,
