@@ -26,6 +26,24 @@ const CONTRACT_V1 = [
     '--c-section-pad',
     '--c-field-bg',
     '--c-field-border',
+    // input shell (fieldStyle — contract event 2026-07-07, owner QA)
+    '--c-input-bg',
+    '--c-input-border-color',
+    '--c-input-radius',
+    '--c-input-shadow',
+    '--c-input-shadow-focus',
+    // label defaults (labelPosition/labelStyle — same contract event)
+    '--c-label-flow',
+    '--c-label-basis',
+    '--c-label-mb',
+    '--c-label-gap',
+    '--c-label-align',
+    '--c-label-size',
+    '--c-label-weight',
+    '--c-label-transform',
+    '--c-label-tracking',
+    '--c-label-color',
+    '--c-label-font',
     '--c-field-focus',
     '--c-field-error',
     '--c-field-required',
@@ -69,8 +87,20 @@ describe('c-final-theme-engine', () => {
 
     describe('contract completeness (append-only tripwire)', () => {
         it('emits EXACTLY the contract v1 vocabulary for a full theme', () => {
+            // outline + default labels intentionally DON'T emit these two —
+            // their CSS fallbacks (--c-radius / --c-font-body) carry the look.
+            const conditional = ['--c-input-radius', '--c-label-font'];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
-            expect(keys).toEqual([...CONTRACT_V1].sort());
+            expect(keys).toEqual(
+                CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()
+            );
+            // …and the styles that need them DO emit them.
+            const styled = resolveTokens(theme(), {
+                fieldStyle: 'underline',
+                labelStyle: 'monoCaps'
+            });
+            expect(styled['--c-input-radius']).toBe('0px');
+            expect(styled['--c-label-font']).toContain('Consolas');
         });
 
         it('never emits section surface tokens — unset means the preset decides', () => {
@@ -404,7 +434,10 @@ describe('c-final-theme-engine', () => {
                 { ...theme(), futureThing: { x: 1 } },
                 { anotherFuture: true }
             );
-            expect(Object.keys(t).sort()).toEqual([...CONTRACT_V1].sort());
+            const conditional = ['--c-input-radius', '--c-label-font'];
+            expect(Object.keys(t).sort()).toEqual(
+                CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()
+            );
         });
 
         it('full-theme snapshot — any change here is a deliberate contract event', () => {

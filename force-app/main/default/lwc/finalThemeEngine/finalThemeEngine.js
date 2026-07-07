@@ -164,6 +164,12 @@ const DEFAULT_PROPS = {
     // into the font tokens); registering the @font-face is finalFontLoader's
     // job at the render site. Wins over `typography` when set.
     customFont: null,
+    // Field chrome (owner QA 2026-07-07, FormStudio port): input shell style
+    // and theme-level label defaults. Per-element label config still wins in
+    // the renderer; these set the form-wide default.
+    fieldStyle: 'outline', // outline | underline | filled
+    labelPosition: 'top', // top | left
+    labelStyle: 'default', // default | monoCaps | mutedSm
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
@@ -346,6 +352,88 @@ export function resolveTokens(themeProps, formOverrides) {
     const img = p.pageImage;
 
     const density = DENSITY[p.density] || DENSITY.comfortable;
+
+    // ---- field chrome: input shell + label defaults (owner QA 2026-07-07) ----
+    const fieldBorderColor =
+        pal.fieldBorderColor || mix(pal.text, pal.contentBg, 0.3);
+    const outlineBg =
+        pal.fieldBg || (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff');
+    const focusColor = fs.focus || pal.accent;
+    const INPUT_SHELLS = {
+        outline: {
+            bg: outlineBg,
+            border: fieldBorderColor,
+            radius: null, // falls through to --c-radius via the CSS fallback
+            shadow: 'none',
+            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`
+        },
+        // the "Boutique underline": no shell, just the baseline (legacy
+        // formThemes §3.2 — transparent border + inset box-shadow line)
+        underline: {
+            bg: 'transparent',
+            border: 'transparent',
+            radius: '0px',
+            shadow: `inset 0 -1.5px 0 0 ${fieldBorderColor}`,
+            shadowFocus: `inset 0 -2px 0 0 ${focusColor}`
+        },
+        // "Flat filled": sunken surface, no border
+        filled: {
+            bg: isDarkSurface(pal)
+                ? 'rgba(255, 255, 255, 0.08)'
+                : mix(pal.text, pal.contentBg, 0.06),
+            border: 'transparent',
+            radius: null,
+            shadow: 'none',
+            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`
+        }
+    };
+    const shell = INPUT_SHELLS[p.fieldStyle] || INPUT_SHELLS.outline;
+
+    const LABEL_FLOWS = {
+        top: {
+            flow: 'column',
+            basis: 'none',
+            mb: density.space[0],
+            gap: '0px',
+            align: 'stretch'
+        },
+        left: {
+            flow: 'row',
+            basis: '0 0 10rem',
+            mb: '0px',
+            gap: density.space[2],
+            align: 'center'
+        }
+    };
+    const labelFlow = LABEL_FLOWS[p.labelPosition] || LABEL_FLOWS.top;
+    const LABEL_LOOKS = {
+        default: {
+            size: '0.8125rem',
+            weight: '600',
+            transform: 'none',
+            tracking: 'normal',
+            color: pal.text,
+            font: null
+        },
+        monoCaps: {
+            size: '0.6875rem',
+            weight: '700',
+            transform: 'uppercase',
+            tracking: '0.06em',
+            color: pal.text,
+            font: FONT_STACKS.mono.body
+        },
+        mutedSm: {
+            size: '0.75rem',
+            weight: '500',
+            transform: 'none',
+            tracking: 'normal',
+            color: pal.textWeak,
+            font: null
+        }
+    };
+    const labelLook = LABEL_LOOKS[p.labelStyle] || LABEL_LOOKS.default;
+
     let fonts = FONT_STACKS[p.typography] || FONT_STACKS.system;
     if (p.customFont && p.customFont.family) {
         const stack = `'${p.customFont.family}', ${p.customFont.fallback || 'sans-serif'}`;
@@ -389,11 +477,33 @@ export function resolveTokens(themeProps, formOverrides) {
         // Field — the input surface adapts to theme darkness: a dark surface
         // gets a lifted translucent input instead of a jarring white box;
         // light surfaces stay white. (Overridable via palette.fieldBg.)
-        '--c-field-bg':
-            pal.fieldBg || (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff'),
+        '--c-field-bg': outlineBg,
         // A COLOR, not a border shorthand — consumers write their own
         // `1px solid var(--c-field-border)` / `background:` / SLDS hooks.
-        '--c-field-border': pal.fieldBorderColor || mix(pal.text, pal.contentBg, 0.3),
+        '--c-field-border': fieldBorderColor,
+
+        // Input shell (fieldStyle: outline | underline | filled). The renderer's
+        // SLDS hooks read these with --c-field-* / --c-radius fallbacks.
+        '--c-input-bg': shell.bg,
+        '--c-input-border-color': shell.border,
+        '--c-input-radius': shell.radius,
+        '--c-input-shadow': shell.shadow,
+        '--c-input-shadow-focus': shell.shadowFocus,
+
+        // Label defaults (labelPosition + labelStyle) — flow drives the .field
+        // flex axis; look drives the label typography. Per-element classes win.
+        '--c-label-flow': labelFlow.flow,
+        '--c-label-basis': labelFlow.basis,
+        '--c-label-mb': labelFlow.mb,
+        '--c-label-gap': labelFlow.gap,
+        '--c-label-align': labelFlow.align,
+        '--c-label-size': labelLook.size,
+        '--c-label-weight': labelLook.weight,
+        '--c-label-transform': labelLook.transform,
+        '--c-label-tracking': labelLook.tracking,
+        '--c-label-color': labelLook.color,
+        '--c-label-font': labelLook.font,
+
         '--c-field-focus': focus,
         '--c-field-error': fs.error,
         '--c-field-required': fs.required,

@@ -1,26 +1,59 @@
 :host {
     display: block;
-    /* Map the field tokens onto the base component's styling hooks. */
-    --slds-c-input-radius-border: var(--c-radius);
+    /* Map the field tokens onto the base component's styling hooks. The
+       --c-input-* set carries the theme's INPUT SHELL (outline / Boutique
+       underline / Flat filled — owner QA 2026-07-07); fallbacks preserve the
+       original outline look for specs published before the shell existed. */
+    --slds-c-input-radius-border: var(--c-input-radius, var(--c-radius));
     --slds-c-input-sizing-height: var(--c-control-h);
-    --slds-c-textarea-radius-border: var(--c-radius);
+    --slds-c-textarea-radius-border: var(--c-input-radius, var(--c-radius));
 
-    /* Theme the input surface so a dark theme doesn't get white boxes:
-       --c-field-bg lifts to a translucent input on dark themes (engine), and
-       text/placeholder/border ride the theme's ink. */
-    --slds-c-input-color-background: var(--c-field-bg);
+    --slds-c-input-color-background: var(--c-input-bg, var(--c-field-bg));
     --slds-c-input-text-color: var(--c-text);
-    --slds-c-input-color-border: var(--c-field-border);
+    --slds-c-input-color-border: var(
+        --c-input-border-color,
+        var(--c-field-border)
+    );
     --slds-c-input-placeholder-color: var(--c-text-weak);
+    --slds-c-input-shadow: var(--c-input-shadow, none);
 
-    --slds-c-textarea-color-background: var(--c-field-bg);
+    --slds-c-textarea-color-background: var(--c-input-bg, var(--c-field-bg));
     --slds-c-textarea-text-color: var(--c-text);
-    --slds-c-textarea-color-border: var(--c-field-border);
+    --slds-c-textarea-color-border: var(
+        --c-input-border-color,
+        var(--c-field-border)
+    );
     --slds-c-textarea-placeholder-color: var(--c-text-weak);
+    --slds-c-textarea-shadow: var(--c-input-shadow, none);
+
+    /* Focus state — --c-field-focus / --c-focus-ring were emitted from P0 but
+       never consumed (owner QA: "focus color doesn't seem to be working"). */
+    --slds-c-input-color-border-focus: var(--c-field-focus);
+    --slds-c-input-shadow-focus: var(
+        --c-input-shadow-focus,
+        var(--c-focus-ring)
+    );
+    --slds-c-textarea-color-border-focus: var(--c-field-focus);
+    --slds-c-textarea-shadow-focus: var(
+        --c-input-shadow-focus,
+        var(--c-focus-ring)
+    );
 }
 
+/* Theme-level label default: --c-label-flow (column = top, row = left) drives
+   the axis; per-element .label-left below still wins (later rule, same
+   specificity). */
 .field {
-    display: block;
+    display: flex;
+    flex-direction: var(--c-label-flow, column);
+    align-items: var(--c-label-align, stretch);
+    gap: var(--c-label-gap, 0);
+}
+
+.field > lightning-input,
+.field > lightning-textarea {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* Label text + (perceivable) helptext, side by side. */
@@ -28,7 +61,9 @@
     display: flex;
     align-items: center;
     gap: var(--c-space-1);
-    margin-bottom: var(--c-space-1);
+    flex: var(--c-label-basis, none);
+    min-width: 0;
+    margin-bottom: var(--c-label-mb, var(--c-space-1));
 }
 
 /* Our own label — reaches the theme ink (the native shadow-DOM label can't). */
@@ -36,11 +71,13 @@
     display: inline-flex;
     align-items: center;
     gap: var(--c-space-1);
-    font-family: var(--c-font-body);
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-family: var(--c-label-font, var(--c-font-body));
+    font-size: var(--c-label-size, 0.8125rem);
+    font-weight: var(--c-label-weight, 600);
+    text-transform: var(--c-label-transform, none);
+    letter-spacing: var(--c-label-tracking, normal);
     line-height: 1.3;
-    color: var(--c-text);
+    color: var(--c-label-color, var(--c-text));
 }
 
 .field-req {
