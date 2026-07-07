@@ -15,6 +15,7 @@
  * the `formThemeAssets` static resource (guest-safe). Split themes paint their brand pane
  * via `palette.headerBg` (finalNavSplitHero consumes --c-header-bg when unconfigured).
  */
+import { resolveTokens, ENGINE_VERSION } from 'c/finalThemeEngine';
 
 const THEMES = {
     editorialIvory: {
@@ -505,4 +506,28 @@ export function getBrandCopy(key) {
             subtitle: 'Tell us a little about yourself.'
         }
     );
+}
+
+/**
+ * Resolve-at-publish (ARCH §5, BUILD_PHASES P2): compile a draft spec into
+ * its publishable form by snapshotting the full token map into
+ * `spec.resolved`. The published render then reads tokens directly and NEVER
+ * imports this catalog — publishing is the only moment theme recipes and the
+ * spec meet. Pure function: returns a new spec, input untouched.
+ */
+export function resolveSpecForPublish(spec) {
+    if (!spec || spec.specVersion !== 1) {
+        throw new Error('resolveSpecForPublish: unsupported spec');
+    }
+    const out = JSON.parse(JSON.stringify(spec));
+    const theme =
+        out.theme && out.theme.source === 'builtin'
+            ? getBuiltinTheme(out.theme.name)
+            : null;
+    out.resolved = {
+        tokens: resolveTokens(theme, out.theme ? out.theme.overrides : null),
+        engineVersion: ENGINE_VERSION,
+        resolvedAt: new Date().toISOString()
+    };
+    return out;
 }

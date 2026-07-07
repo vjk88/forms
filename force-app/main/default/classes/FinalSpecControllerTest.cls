@@ -123,4 +123,76 @@ private class FinalSpecControllerTest {
             Assert.isNotNull(e.getMessage());
         }
     }
+
+    private static String resolvedSpec(String marker) {
+        return '{"specVersion":1,"marker":"' + marker + '",' +
+            '"resolved":{"tokens":{"--c-accent":"#123456"},"engineVersion":1,' +
+            '"resolvedAt":"2026-07-06T00:00:00Z"}}';
+    }
+
+    @IsTest
+    static void publishActivatesNewVersionAndDeactivatesPrior() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+
+        Test.startTest();
+        Id publishedId = FinalSpecController.publishSpec(
+            form.Id,
+            resolvedSpec('published')
+        );
+        Test.stopTest();
+
+        Form_Version__c published = [
+            SELECT Is_Active__c, Version_Number__c, Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Id = :publishedId
+        ];
+        Assert.isTrue(published.Is_Active__c, 'New version active');
+        Assert.areEqual(3, published.Version_Number__c.intValue(), 'max+1');
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM Form_Version__c
+                WHERE Form__c = :form.Id AND Is_Active__c = true
+            ],
+            'Exactly ONE active version after publish'
+        );
+        // and the runtime fetch serves the new spec
+        Assert.isTrue(
+            FinalSpecController.getSpec(form.Id, null)
+                .contains('"marker":"published"')
+        );
+    }
+
+    @IsTest
+    static void publishRefusesUnresolvedSpec() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+        try {
+            FinalSpecController.publishSpec(
+                form.Id,
+                '{"specVersion":1,"marker":"draft"}'
+            );
+            Assert.fail('Expected AuraHandledException');
+        } catch (AuraHandledException e) {
+            Assert.isNotNull(e.getMessage(), 'Unresolved spec rejected');
+        }
+    }
+
+    @IsTest
+    static void publishRefusesGarbage() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+        for (String bad : new List<String>{
+            null,
+            'not json',
+            '{"specVersion":2,"resolved":{"tokens":{"x":"y"}}}',
+            '{"specVersion":1,"resolved":{"tokens":{}}}'
+        }) {
+            try {
+                FinalSpecController.publishSpec(form.Id, bad);
+                Assert.fail('Expected exception for: ' + bad);
+            } catch (AuraHandledException e) {
+                Assert.isNotNull(e.getMessage());
+            }
+        }
+    }
 }
