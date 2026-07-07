@@ -101,10 +101,23 @@ export default class FinalColorControl extends LightningElement {
     }
 }
 
-/** #abc / #aabbcc (case-insensitive, # optional) → #aabbcc; else null. */
+/**
+ * #abc / #aabbcc (case-insensitive, # optional) → #aabbcc; else null.
+ * Also accepts rgb()/rgba() strings, dropping alpha — theme defaults like
+ * headerTextWeak/borderColor are often rgba, and the native picker + badge
+ * need an opaque hex starting point (not a stale black swatch).
+ */
 function normalizeHex(v) {
     if (typeof v !== 'string') {
         return null;
+    }
+    const rgb = v
+        .trim()
+        .match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*[,)]/i);
+    if (rgb) {
+        const to2 = (n) =>
+            Math.min(255, parseInt(n, 10)).toString(16).padStart(2, '0');
+        return `#${to2(rgb[1])}${to2(rgb[2])}${to2(rgb[3])}`;
     }
     const h = v.trim().replace(/^#/, '');
     const full =

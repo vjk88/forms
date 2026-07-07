@@ -31,6 +31,13 @@ describe('c-final-color-control', () => {
         expect(el.value).toBe('#aabbcc');
     });
 
+    it('flattens rgb()/rgba() theme defaults to opaque hex (alpha dropped)', () => {
+        const el = mount({ label: 'Subtitle', value: 'rgba(255, 255, 255, 0.7)' });
+        expect(el.value).toBe('#ffffff');
+        el.value = 'rgb(17, 34, 51)';
+        expect(el.value).toBe('#112233');
+    });
+
     it('emits change with the picked value', () => {
         const el = mount({ label: 'Accent', value: '#0d9488' });
         const handler = jest.fn();

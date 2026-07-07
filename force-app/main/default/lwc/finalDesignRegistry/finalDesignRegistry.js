@@ -399,6 +399,14 @@ const AREAS = [
                         themePath: 'palette.headerText',
                         contrastToken: '--c-header-bg',
                         subject: 'Header text'
+                    },
+                    {
+                        key: 'headerTextWeak',
+                        label: 'Subtitle color',
+                        type: 'color',
+                        themePath: 'palette.headerTextWeak',
+                        contrastToken: '--c-header-bg',
+                        subject: 'Subtitle'
                     }
                 ]
             }
