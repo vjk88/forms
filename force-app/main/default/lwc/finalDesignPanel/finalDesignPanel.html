@@ -71,6 +71,14 @@
                             </option>
                         </template>
                     </select>
+                    <button
+                        class="linkbtn"
+                        type="button"
+                        title="Create or edit a custom theme"
+                        onclick={handleEditTheme}
+                    >
+                        Edit…
+                    </button>
                 </div>
 
                 <template lwc:if={pendingThemeKey}>

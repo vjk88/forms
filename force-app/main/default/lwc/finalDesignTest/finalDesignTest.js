@@ -44,4 +44,34 @@ export default class FinalDesignTest extends LightningElement {
     handleSpecChange(event) {
         this.spec = event.detail.spec;
     }
+
+    // ----- custom-theme editor (opened only via the panel's explicit action) -----
+    @track editorOpen = false;
+    editorThemeId = null;
+    editorStartFrom = null;
+
+    handleThemeEdit(event) {
+        this.editorThemeId = event.detail.themeId;
+        this.editorStartFrom = event.detail.startFrom;
+        this.editorOpen = true;
+    }
+
+    handleEditorCancel() {
+        this.editorOpen = false;
+    }
+
+    async handleThemeSaved(event) {
+        this.editorOpen = false;
+        const next = JSON.parse(JSON.stringify(this.spec));
+        next.theme = {
+            source: 'custom',
+            name: event.detail.id,
+            overrides: {}
+        };
+        this.spec = next;
+        const panel = this.template.querySelector('c-final-design-panel');
+        if (panel) {
+            await panel.refreshThemes();
+        }
+    }
 }

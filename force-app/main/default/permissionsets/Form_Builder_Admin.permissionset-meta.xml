@@ -19,6 +19,15 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
+        <object>Theme_Definition__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
         <object>Form__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -539,6 +548,16 @@
         <readable>true</readable>
         <field>Spec_History__c.Spec_JSON__c</field>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Theme_Definition__c.Theme_JSON__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Theme_Definition__c.Base_Theme__c</field>
+    </fieldPermissions>
     <classAccesses>
         <apexClass>FinalSpecController</apexClass>
         <enabled>true</enabled>
@@ -577,6 +596,14 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FinalAssetController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>FinalFontController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>FinalThemeController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <tabSettings>

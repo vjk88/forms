@@ -1,0 +1,130 @@
+<template>
+    <div class="te-overlay" onclick={handleCancel}></div>
+    <div class="te-dialog" role="dialog" aria-label={title}>
+        <header class="te-head">
+            <h1>{title}</h1>
+            <button
+                class="te-x"
+                type="button"
+                title="Close"
+                onclick={handleCancel}
+            >
+                &times;
+            </button>
+        </header>
+
+        <template lwc:if={ready}>
+            <div class="te-scroll">
+                <div class="te-row">
+                    <label for="te-name">Theme name</label>
+                    <input
+                        id="te-name"
+                        type="text"
+                        value={name}
+                        placeholder="e.g. Brand Purple"
+                        oninput={handleName}
+                    />
+                </div>
+                <template lwc:if={isEdit}></template>
+                <template lwc:else>
+                    <div class="te-row">
+                        <label>Start from</label>
+                        <select onchange={handleStartFrom}>
+                            <template for:each={startOptions} for:item="o">
+                                <option
+                                    key={o.value}
+                                    value={o.value}
+                                    selected={o.selected}
+                                >
+                                    {o.label}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+                </template>
+
+                <h2 class="te-sect">Colors</h2>
+                <template for:each={colorRows} for:item="c">
+                    <c-final-color-control
+                        key={c.key}
+                        data-path={c.path}
+                        label={c.label}
+                        value={c.value}
+                        contrast-with={c.contrastWith}
+                        subject={c.subject}
+                        onchange={handleColor}
+                    ></c-final-color-control>
+                </template>
+
+                <h2 class="te-sect">Shape &amp; type</h2>
+                <template for:each={selectRows} for:item="s">
+                    <div class="te-row" key={s.key}>
+                        <label>{s.label}</label>
+                        <select data-key={s.key} onchange={handleSelect}>
+                            <template for:each={s.options} for:item="o">
+                                <option
+                                    key={o.value}
+                                    value={o.value}
+                                    selected={o.selected}
+                                >
+                                    {o.label}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+                </template>
+                <div class="te-row">
+                    <label>Glass blur</label>
+                    <input
+                        type="checkbox"
+                        checked={glassChecked}
+                        onchange={handleGlass}
+                    />
+                </div>
+
+                <template lwc:if={error}>
+                    <p class="te-error" role="alert">{error}</p>
+                </template>
+            </div>
+
+            <footer class="te-foot">
+                <button class="te-btn" type="button" onclick={handleCancel}>
+                    Cancel
+                </button>
+                <button
+                    class="te-btn"
+                    type="button"
+                    disabled={saveDisabled}
+                    onclick={handleSaveAsNew}
+                >
+                    Save as new
+                </button>
+                <template lwc:if={isEdit}>
+                    <button
+                        class="te-btn primary"
+                        type="button"
+                        disabled={saveDisabled}
+                        onclick={handleSave}
+                    >
+                        Save
+                    </button>
+                </template>
+                <template lwc:else>
+                    <button
+                        class="te-btn primary"
+                        type="button"
+                        disabled={saveDisabled}
+                        onclick={handleSaveAsNew}
+                    >
+                        Create theme
+                    </button>
+                </template>
+            </footer>
+        </template>
+        <template lwc:else>
+            <div class="te-scroll">
+                <p class="te-loading">Loading theme…</p>
+            </div>
+        </template>
+    </div>
+</template>

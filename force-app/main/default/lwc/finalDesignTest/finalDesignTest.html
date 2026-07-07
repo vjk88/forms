@@ -4,8 +4,17 @@
             <c-final-design-panel
                 spec={spec}
                 onspecchange={handleSpecChange}
+                onthemeedit={handleThemeEdit}
             ></c-final-design-panel>
         </aside>
+        <template lwc:if={editorOpen}>
+            <c-final-theme-editor
+                theme-id={editorThemeId}
+                start-from={editorStartFrom}
+                onsave={handleThemeSaved}
+                oncancel={handleEditorCancel}
+            ></c-final-theme-editor>
+        </template>
         <!-- NOTE: not "stage" — LEX's one.app ships a global .stage class that
              leaks position:absolute into embedded content; dt- prefix avoids
              every such collision. -->

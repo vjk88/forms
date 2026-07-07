@@ -515,15 +515,24 @@ export function getBrandCopy(key) {
  * imports this catalog — publishing is the only moment theme recipes and the
  * spec meet. Pure function: returns a new spec, input untouched.
  */
-export function resolveSpecForPublish(spec) {
+export function resolveSpecForPublish(spec, customThemeProps) {
     if (!spec || spec.specVersion !== 1) {
         throw new Error('resolveSpecForPublish: unsupported spec');
     }
     const out = JSON.parse(JSON.stringify(spec));
-    const theme =
-        out.theme && out.theme.source === 'builtin'
-            ? getBuiltinTheme(out.theme.name)
-            : null;
+    let theme = null;
+    if (out.theme && out.theme.source === 'builtin') {
+        theme = getBuiltinTheme(out.theme.name);
+    } else if (out.theme && out.theme.source === 'custom') {
+        // the caller fetches the Theme_Definition__c JSON first — publishing
+        // silently without the recipe would snapshot the wrong tokens
+        if (!customThemeProps) {
+            throw new Error(
+                'resolveSpecForPublish: custom theme properties required'
+            );
+        }
+        theme = customThemeProps;
+    }
     out.resolved = {
         tokens: resolveTokens(theme, out.theme ? out.theme.overrides : null),
         engineVersion: ENGINE_VERSION,

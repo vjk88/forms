@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Theme_JSON__c</fullName>
+    <label>Theme JSON</label>
+    <type>LongTextArea</type>
+    <length>131072</length>
+    <visibleLines>10</visibleLines>
+    <description>Theme-property object (ARCH §4.1 shape) — identical to a built-in recipe. Resolved to tokens by finalThemeEngine; never contains CSS.</description>
+</CustomField>
