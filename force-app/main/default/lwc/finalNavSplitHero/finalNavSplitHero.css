@@ -251,6 +251,22 @@
     padding: var(--c-space-6) var(--c-space-5);
 }
 
+/* The slotted submit bar shrink-wrapped (~414px) inside the wide form column,
+   so its arrangement moved buttons inside an invisible box — owner QA
+   2026-07-07 "Button Arrangement not working in splitHero". ::slotted doesn't
+   survive LWC style scoping; instead the bar's own :host is display:block and
+   the SLOT (ours to style) provides the box — full width, and in bleed mode
+   re-aligned to the floating card's rhythm. */
+slot[name='actions'] {
+    display: block;
+    width: 100%;
+}
+
+.mode-bleed slot[name='actions'] {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
 .mode-bleed .form-card {
     width: 100%;
     max-width: 480px;

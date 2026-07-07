@@ -18,7 +18,10 @@ import { LightningElement, api } from 'lwc';
 const ARRANGE_CLASS = {
     'together-left': 'arr-start',
     'together-right': 'arr-end',
-    split: 'arr-split'
+    split: 'arr-split',
+    // owner QA 2026-07-07 (FormStudio port): buttons share the full row width;
+    // Back gains a boxed outline so a stretched text link doesn't float oddly
+    stretch: 'arr-stretch'
 };
 
 export default class FinalSubmitBar extends LightningElement {
