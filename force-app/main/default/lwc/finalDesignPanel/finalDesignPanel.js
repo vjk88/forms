@@ -204,6 +204,12 @@ export default class FinalDesignPanel extends LightningElement {
                     continue;
                 }
             }
+            if (c.needsValueOf) {
+                const def = this._controlDef(c.needsValueOf);
+                if (!def || !this._effective(def.control)) {
+                    continue;
+                }
+            }
             const value = this._effective(c);
             const vm = {
                 key: c.key,
