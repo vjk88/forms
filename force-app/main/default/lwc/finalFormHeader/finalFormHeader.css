@@ -8,7 +8,8 @@
     padding: var(--c-space-5);
     border-radius: var(--c-radius);
     margin-bottom: var(--c-space-5);
-    background: var(--c-header-bg);
+    background-color: var(--c-header-bg);
+    background-image: var(--c-header-bg-gradient, none);
     font-family: var(--c-font-body);
 }
 

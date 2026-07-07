@@ -68,9 +68,10 @@ export default class FinalFormHeader extends LightningElement {
             : 100;
         const veil = `color-mix(in srgb, var(--c-header-bg) ${100 - opacity}%, transparent)`;
         return (
-            `background-image: linear-gradient(${veil}, ${veil}), url("${url}");` +
-            ' background-size: auto, cover;' +
-            ' background-position: center, center;'
+            `background-image: linear-gradient(${veil}, ${veil}), url("${url}"),` +
+            ' var(--c-header-bg-gradient, none);' +
+            ' background-size: auto, cover, auto;' +
+            ' background-position: center, center, center;'
         );
     }
 

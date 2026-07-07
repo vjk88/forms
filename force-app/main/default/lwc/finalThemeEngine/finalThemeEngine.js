@@ -182,8 +182,24 @@ const DEFAULT_PROPS = {
         meshIntensity: 'subtle'
     },
     fieldStates: { error: '#b42318', required: '#b42318' },
-    pageImage: { url: null, fit: 'cover', position: 'center', scrim: 0 }
+    pageImage: { url: null, fit: 'cover', position: 'center', scrim: 0, opacity: 100 }
 };
+
+// Gradient surfaces (owner QA 2026-07-07, FormBuilder pattern): a gradient is
+// { type: 'linear'|'radial', angle: 0-360, start: hex, end: hex } stored at
+// palette.pageBgGradient / contentBgGradient / headerBgGradient. It paints as
+// a background-image layer ABOVE the surface's solid color (which stays the
+// fallback + the ink-derivation base for borders/contrast).
+function gradientLayer(g) {
+    if (!g || !g.start || !g.end) {
+        return 'none';
+    }
+    if (g.type === 'radial') {
+        return `radial-gradient(circle at 50% 0%, ${g.start}, ${g.end})`;
+    }
+    const angle = Number.isFinite(Number(g.angle)) ? Number(g.angle) : 135;
+    return `linear-gradient(${angle}deg, ${g.start}, ${g.end})`;
+}
 
 // ---------------------------------------------------------------------------
 // Color utilities (deterministic JS — no color-mix() on the wire)
@@ -445,9 +461,19 @@ export function resolveTokens(themeProps, formOverrides) {
     const submitBg = pal.submitBg || pal.accent;
     const scrimRaw = Number(img.scrim);
     const scrim = scrimRaw > 0 ? Math.min(scrimRaw, 100) / 100 : 0;
+    // Image opacity (owner QA 2026-07-07): emulated by a pageBg-tinted veil
+    // OVER the image — fading blends the image into the page fill. A slot in
+    // the fixed stack, so it can never shift the image's fit tokens.
+    const imgOpacityRaw = Number(img.opacity);
+    const imgOpacity = Number.isFinite(imgOpacityRaw)
+        ? Math.min(Math.max(imgOpacityRaw, 0), 100)
+        : 100;
+    const veilAlpha = img.url ? (100 - imgOpacity) / 100 : 0;
+    const veilColor = veilAlpha > 0 ? rgba(pal.pageBg, veilAlpha) : null;
 
     const tokens = {
-        // Page (finalPageFrame .page — fixed 2-layer stack: scrim, then the user's image)
+        // Page (finalPageFrame .page — fixed 4-layer stack, top to bottom:
+        // scrim, image-opacity veil, the user's image, gradient)
         '--c-page-bg': pal.pageBg,
         '--c-page-bg-image': img.url ? `url("${img.url}")` : 'none',
         '--c-page-bg-size': fit.size,
@@ -456,6 +482,10 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-page-scrim': scrim
             ? `linear-gradient(rgba(0, 0, 0, ${scrim}), rgba(0, 0, 0, ${scrim}))`
             : 'none',
+        '--c-page-veil': veilColor
+            ? `linear-gradient(${veilColor}, ${veilColor})`
+            : 'none',
+        '--c-page-bg-gradient': gradientLayer(pal.pageBgGradient),
 
         // Effects (finalPageFrame .fx ONLY — fixed slots, one layer per token)
         '--c-fx-mesh-1': mesh[0] ? boostMesh(mesh[0], fx.meshIntensity) : 'none',
@@ -465,6 +495,7 @@ export function resolveTokens(themeProps, formOverrides) {
 
         // Content panel
         '--c-content-bg': pal.contentBg,
+        '--c-content-bg-gradient': gradientLayer(pal.contentBgGradient),
         '--c-content-border': BORDER_WIDTHS[p.border]
             ? `${BORDER_WIDTHS[p.border]} solid ${pal.borderColor || mix(pal.text, pal.contentBg, 0.16)}`
             : 'none',
@@ -518,6 +549,7 @@ export function resolveTokens(themeProps, formOverrides) {
 
         // Header
         '--c-header-bg': pal.headerBg,
+        '--c-header-bg-gradient': gradientLayer(pal.headerBgGradient),
         '--c-header-text': pal.headerText || pal.text,
         '--c-header-text-weak': pal.headerTextWeak || pal.textWeak,
 

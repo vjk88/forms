@@ -126,7 +126,9 @@ export default class FinalNavSplitHero extends LightningElement {
         // light-header themes get readable text). Config-driven panes keep the
         // composed veil + hero-white text below, unchanged.
         if (!hasBg && !img) {
-            return 'background: var(--c-header-bg); color: var(--c-header-text);';
+            return 'background-color: var(--c-header-bg);' +
+                ' background-image: var(--c-header-bg-gradient, none);' +
+                ' color: var(--c-header-text);';
         }
         const veil = hexToRgba(
             this.opts.paneBg || '#111827',

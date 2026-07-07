@@ -224,6 +224,7 @@ export default class FinalDesignPanel extends LightningElement {
                 isText: c.type === 'text',
                 isRange: c.type === 'range',
                 isImage: c.type === 'image',
+                isGradientSurface: c.type === 'gradientSurface',
                 placeholder: c.placeholder || '',
                 min: c.min,
                 max: c.max
@@ -234,6 +235,14 @@ export default class FinalDesignPanel extends LightningElement {
                     ? tokens[c.contrastToken]
                     : undefined;
                 vm.subject = c.subject;
+            } else if (c.type === 'gradientSurface') {
+                vm.value = typeof value === 'string' ? value : '';
+                const g = getAt(this.overrides, c.gradientPath);
+                vm.gradient =
+                    g !== undefined ? g : getAt(this.themeProps, c.gradientPath);
+                vm.edited =
+                    vm.edited ||
+                    getAt(this.overrides, c.gradientPath) !== undefined;
             } else if (c.type === 'select') {
                 let current =
                     value === null || value === undefined ? '' : String(value);
@@ -475,6 +484,34 @@ export default class FinalDesignPanel extends LightningElement {
         this._apply(event.target.dataset.key, event.detail.value);
     }
 
+    /** Solid + gradient land in ONE event; each half gets sparse-delta rules. */
+    handleGradientSurface(event) {
+        const key = event.target.dataset.key;
+        const def = this._controlDef(key);
+        if (!def) {
+            return;
+        }
+        const c = def.control;
+        const { solid, gradient } = event.detail;
+        const overrides = this._ensureOverrides();
+        if (solid === getAt(this.themeProps, c.themePath)) {
+            deleteAt(overrides, c.themePath);
+        } else {
+            setAt(overrides, c.themePath, solid);
+        }
+        const themeGradient = getAt(this.themeProps, c.gradientPath);
+        if (
+            gradient === null &&
+            (themeGradient === undefined || themeGradient === null)
+        ) {
+            deleteAt(overrides, c.gradientPath);
+        } else {
+            setAt(overrides, c.gradientPath, gradient);
+        }
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
     handleSelect(event) {
         const key = event.target.dataset.key;
         const def = this._controlDef(key);
@@ -650,6 +687,9 @@ export default class FinalDesignPanel extends LightningElement {
                 deleteAt(overrides, entry.control.themePath);
                 if (entry.control.versionPath) {
                     deleteAt(overrides, entry.control.versionPath);
+                }
+                if (entry.control.gradientPath) {
+                    deleteAt(overrides, entry.control.gradientPath);
                 }
                 if (entry.control.dynamicOptions === 'fonts') {
                     deleteAt(overrides, 'customFont');
