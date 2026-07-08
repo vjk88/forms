@@ -33,10 +33,22 @@
 > hits the cap — just don't *preclude* it.
 
 ### `Form__c` — draft-side config consolidates
+> **SUPERSEDED — owner ruling 2026-07-08 (P3 slice 1): the draft is SPEC-FIRST.**
+> The working draft is a `Form_Version__c` row (`Is_Active__c=false`) whose `Spec_JSON__c` holds the
+> complete working spec — the builder edits the spec in memory and autosaves that row; publish
+> resolves tokens and activates a new version (existing `publishSpec`), then discards the draft row.
+> **Draft convention (no new fields):** the draft is the single inactive version with
+> `Version_Number__c` greater than the active version's (or any version when nothing is active).
+> Deactivated older versions are HISTORY — never mutated. `Design_Config_JSON__c` is **not
+> created**; the child structure objects (`Form_Page__c`/`Form_Section__c`/`Form_Element__c`) are
+> legacy-only (P7 deletion candidates); `Form_Response_Answer__c` joins by `Element_Key__c` (the
+> element lookup stays empty for rebuild forms). Undo/redo = in-memory JSON snapshots, matching the
+> locked P3 historyManager design.
+
 | Change | Why |
 |---|---|
-| **Add `Design_Config_JSON__c`** (LongTextArea) | The draft-side home of the spec's `layout` + `theme` + `header` + `submit` + `settings` blocks. Structure lives in the child records; publish compiles both into `Spec_JSON__c` |
-| Deprecate `Global_Styles_JSON__c` / `Layout_Config__c` / `Layout_Mode__c` | Superseded by `Design_Config_JSON__c` |
+| ~~Add `Design_Config_JSON__c`~~ | Superseded by the spec-first ruling above — never created |
+| Deprecate `Global_Styles_JSON__c` / `Layout_Config__c` / `Layout_Mode__c` | Superseded by the spec blob |
 | **Retire `Submission_Storage__c`** | The storage axis was removed from the model ([[project-form-vs-survey-model]]) — `Form_Type__c` (kept ✓) is the only axis |
 
 > **Picklist-default gotcha (found 2026-07-05):** "stop writing" isn't enough — `Layout_Mode__c`

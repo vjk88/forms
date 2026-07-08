@@ -1,0 +1,70 @@
+<template>
+    <div class="lib">
+        <header class="lib-head">
+            <h2>Forms</h2>
+            <button type="button" class="lib-refresh" onclick={handleRefresh}>
+                Refresh
+            </button>
+        </header>
+        <template lwc:if={error}>
+            <p class="lib-error" role="alert">{error}</p>
+        </template>
+        <template lwc:elseif={empty}>
+            <div class="lib-empty">
+                <h3>No forms yet</h3>
+                <p>
+                    Creation opens with the template gallery — coming in a
+                    later phase. Forms created earlier appear here.
+                </p>
+            </div>
+        </template>
+        <template lwc:elseif={rows}>
+            <table class="lib-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Object</th>
+                        <th>Version</th>
+                        <th>Last modified</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={rows} for:item="r">
+                        <tr key={r.id}>
+                            <td class="lib-name">{r.name}</td>
+                            <td>{r.objectLabel}</td>
+                            <td>{r.versionLabel}</td>
+                            <td>
+                                <lightning-formatted-date-time
+                                    value={r.modified}
+                                    year="numeric"
+                                    month="short"
+                                    day="numeric"
+                                    hour="2-digit"
+                                    minute="2-digit"
+                                ></lightning-formatted-date-time>
+                            </td>
+                            <td>
+                                <button
+                                    type="button"
+                                    class="lib-open"
+                                    data-id={r.id}
+                                    onclick={handleOpen}
+                                >
+                                    Open in Studio
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </template>
+        <template lwc:else>
+            <lightning-spinner
+                alternative-text="Loading forms"
+                size="small"
+            ></lightning-spinner>
+        </template>
+    </div>
+</template>
