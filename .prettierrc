@@ -1,5 +1,7 @@
 {
   "trailingComma": "none",
+  "tabWidth": 4,
+  "singleQuote": true,
   "plugins": [
     "prettier-plugin-apex",
     "@prettier/plugin-xml"
@@ -12,6 +14,10 @@
     {
       "files": "*.{cmp,page,component}",
       "options": { "parser": "html" }
+    },
+    {
+      "files": "*.{json,yaml,yml,md}",
+      "options": { "tabWidth": 2 }
     }
   ]
 }
