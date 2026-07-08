@@ -32,8 +32,9 @@ describe('c-final-page-frame width routing', () => {
         expect(mount({ bleed: true, maxWidth: 'wide' })).toContain(
             '--frame-max: 680px'
         );
+        // 100% not none: the var feeds calc() in grid track sizing
         expect(mount({ bleed: true, maxWidth: 'full' })).toContain(
-            '--frame-max: none'
+            '--frame-max: 100%'
         );
     });
 

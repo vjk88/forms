@@ -29,7 +29,10 @@ const BLEED_MAX_WIDTHS = {
     narrow: '480px',
     medium: '560px',
     wide: '680px',
-    full: 'none'
+    // '100%' not 'none': consumers use the var inside calc() for grid track
+    // sizing (splitHero's form column) — calc(none + …) is invalid CSS and
+    // would void the whole declaration at computed-value time.
+    full: '100%'
 };
 
 // Inside Lightning Experience the platform chrome owns the viewport. A raw

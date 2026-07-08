@@ -235,6 +235,17 @@
     gap: 0;
     min-height: 100vh;
     min-height: 100dvh;
+    /* An explicit Max width must be able to GROW the form column — the card
+       can never outgrow its grid track, so the track's min becomes
+       card + form padding. Unset resolves the min to ~96px (inert: halves
+       stay equal); capped at 60% so the brand pane never collapses. An
+       explicit width deliberately overrides any pane ratio option. */
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(
+            min(60%, calc(var(--frame-max, 0px) + 2 * var(--c-space-5))),
+            1fr
+        );
 }
 
 /* In LEX the platform chrome owns the viewport — content drives height. */
