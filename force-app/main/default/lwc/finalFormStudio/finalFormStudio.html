@@ -1,0 +1,113 @@
+<template>
+    <template lwc:if={loading}>
+        <div class="st-center">
+            <lightning-spinner
+                alternative-text="Loading the studio"
+                size="medium"
+            ></lightning-spinner>
+        </div>
+    </template>
+    <template lwc:elseif={notFound}>
+        <div class="st-center st-notfound">
+            <h2>This form isn't available</h2>
+            <p>
+                It may have been deleted, or you may not have access. Pick a
+                form from the library to keep working.
+            </p>
+            <button type="button" class="st-primary" onclick={handleExit}>
+                Go to Forms
+            </button>
+        </div>
+    </template>
+    <template lwc:elseif={spec}>
+        <header class="st-bar">
+            <button type="button" class="st-exit" onclick={handleExit}>
+                ← Exit
+            </button>
+            <span class="st-name">{formName}</span>
+            <span class="st-chip">{versionChip}</span>
+            <span class="st-saved">{savedText}</span>
+            <span class="st-spacer"></span>
+            <div class="st-modes" role="tablist">
+                <button
+                    type="button"
+                    class={buildClass}
+                    onclick={handleModeBuild}
+                >
+                    Build
+                </button>
+                <button
+                    type="button"
+                    class={designClass}
+                    onclick={handleModeDesign}
+                >
+                    Design
+                </button>
+            </div>
+            <button
+                type="button"
+                class="st-icon"
+                title="Undo — arrives with the history slice"
+                disabled
+            >
+                ↶
+            </button>
+            <button
+                type="button"
+                class="st-icon"
+                title="Redo — arrives with the history slice"
+                disabled
+            >
+                ↷
+            </button>
+            <button
+                type="button"
+                class="st-primary"
+                onclick={handlePublish}
+                disabled={publishing}
+            >
+                Publish
+            </button>
+        </header>
+
+        <div class="st-body">
+            <template lwc:if={isDesign}>
+                <aside class="st-left">
+                    <c-final-design-panel
+                        spec={spec}
+                        onspecchange={handleSpecChange}
+                        onthemeedit={handleThemeEdit}
+                    ></c-final-design-panel>
+                </aside>
+                <main class="st-stagearea">
+                    <div class="st-scroll">
+                        <c-final-form-viewer spec={spec}></c-final-form-viewer>
+                    </div>
+                </main>
+            </template>
+            <template lwc:else>
+                <div class="st-blueprint-empty">
+                    <h3>Build mode</h3>
+                    <ol>
+                        <li>Pick fields from the palette</li>
+                        <li>Arrange pages and sections</li>
+                        <li>Switch to Design to style it</li>
+                    </ol>
+                    <p class="st-hint">
+                        The structural canvas arrives with the next slice —
+                        Design mode is fully live.
+                    </p>
+                </div>
+            </template>
+        </div>
+
+        <template lwc:if={editorOpen}>
+            <c-final-theme-editor
+                theme-id={editorThemeId}
+                start-from={editorStartFrom}
+                onsave={handleThemeSaved}
+                oncancel={handleEditorCancel}
+            ></c-final-theme-editor>
+        </template>
+    </template>
+</template>
