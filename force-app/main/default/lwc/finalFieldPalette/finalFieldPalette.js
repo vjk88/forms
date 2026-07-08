@@ -56,9 +56,18 @@ export default class FinalFieldPalette extends LightningElement {
     }
 
     get tabs() {
+        // vertical icon rail (owner 2026-07-08: same grammar as the Design
+        // panel's area rail — icons + tiny labels, never horizontal text tabs)
+        const icons = {
+            fields: 'utility:list',
+            blocks: 'utility:apps',
+            logic: 'utility:strategy',
+            autofill: 'utility:magicwand'
+        };
         return ['fields', 'blocks', 'logic', 'autofill'].map((t) => ({
             key: t,
             label: t[0].toUpperCase() + t.slice(1),
+            icon: icons[t],
             cls: t === this.tab ? 'fp-tab on' : 'fp-tab'
         }));
     }

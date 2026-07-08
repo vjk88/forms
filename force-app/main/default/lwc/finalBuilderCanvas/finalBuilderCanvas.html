@@ -6,15 +6,27 @@
 
         <div class="bc-chips">
             <template for:each={pageChips} for:item="p">
-                <button
-                    key={p.id}
-                    type="button"
-                    class={p.cls}
-                    data-id={p.id}
-                    onclick={handleChip}
-                >
-                    {p.label}
-                </button>
+                <span key={p.id} class="bc-chipwrap">
+                    <button
+                        type="button"
+                        class={p.cls}
+                        data-id={p.id}
+                        onclick={handleChip}
+                    >
+                        {p.label}
+                    </button>
+                    <template lwc:if={p.removable}>
+                        <button
+                            type="button"
+                            class="bc-x bc-chip-x"
+                            title="Remove this page"
+                            data-id={p.id}
+                            onclick={handleRemovePage}
+                        >
+                            ×
+                        </button>
+                    </template>
+                </span>
             </template>
             <button type="button" class="bc-chip add" onclick={handleAddPage}>
                 + Page

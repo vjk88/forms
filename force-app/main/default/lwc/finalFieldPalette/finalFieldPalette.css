@@ -1,6 +1,7 @@
+/* Vertical icon rail (owner 2026-07-08): the same grammar as the Design
+   panel's area rail — icons + tiny labels stacked on the left edge. */
 .fp {
     display: flex;
-    flex-direction: column;
     height: 100%;
     background: #fff;
     font-family:
@@ -10,26 +11,49 @@
 
 .fp-rail {
     display: flex;
-    gap: 2px;
-    padding: 8px 10px 0;
-    border-bottom: 1px solid #e3e3e3;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 6px;
+    border-right: 1px solid #e3e3e3;
+    flex: none;
+}
+
+.fp-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden auto;
 }
 
 .fp-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 58px;
     border: 0;
+    border-radius: 8px;
     background: none;
     font: inherit;
-    font-size: 12px;
+    font-size: 9.5px;
     font-weight: 600;
     color: #5c5c5c;
-    padding: 6px 10px 8px;
+    padding: 8px 2px;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
 }
 
 .fp-tab.on {
     color: #0b6e65;
-    border-bottom-color: #0d9488;
+    background: #e6f5f2;
+}
+
+.fp-tab.on lightning-icon {
+    --sds-c-icon-color-foreground-default: #0b6e65;
+}
+
+.fp-tab:hover:not(.on) {
+    background: #f3f3f3;
 }
 
 .fp-search {

@@ -35,6 +35,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         return this.pages.map((p, i) => ({
             id: p.id,
             label: `Page ${i + 1} · ${p.name || 'Untitled'}`,
+            // the ACTIVE chip carries the remove affordance (never the only page)
+            removable:
+                i === Number(this.currentPageIndex) && this.pages.length > 1,
             cls:
                 i === Number(this.currentPageIndex)
                     ? sel.kind === 'page' && sel.id === p.id
@@ -137,6 +140,15 @@ export default class FinalBuilderCanvas extends LightningElement {
         event.stopPropagation();
         this.dispatchEvent(
             new CustomEvent('removesection', {
+                detail: { id: event.currentTarget.dataset.id }
+            })
+        );
+    }
+
+    handleRemovePage(event) {
+        event.stopPropagation();
+        this.dispatchEvent(
+            new CustomEvent('removepage', {
                 detail: { id: event.currentTarget.dataset.id }
             })
         );

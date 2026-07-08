@@ -54,6 +54,16 @@
     border-style: dashed;
 }
 
+.bc-chipwrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.bc-chip-x {
+    font-size: 13px;
+}
+
 .bc-scroll {
     flex: 1;
     overflow: auto;
