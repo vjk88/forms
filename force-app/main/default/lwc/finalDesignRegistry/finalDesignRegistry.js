@@ -600,6 +600,17 @@ const AREAS = [
                         ]
                     },
                     {
+                        key: 'labelColor',
+                        label: 'Label color',
+                        type: 'color',
+                        themePath: 'palette.labelColor',
+                        // unset = the label style derives it — show the LIVE
+                        // resolved ink, never a stale black swatch
+                        fallbackToken: '--c-label-color',
+                        contrastToken: '--c-content-bg',
+                        subject: 'Field labels'
+                    },
+                    {
                         key: 'labelStyle',
                         label: 'Label style',
                         type: 'select',
