@@ -178,6 +178,19 @@ const AREAS = [
                         min: 0,
                         max: 100,
                         fallback: 100
+                    },
+                    {
+                        key: 'pageRadius',
+                        label: 'Corner rounding (embedded)',
+                        type: 'select',
+                        themePath: 'pageRadius',
+                        emptyAsNull: true,
+                        options: [
+                            { value: '', label: 'Square' },
+                            ...RADIUS_OPTIONS.filter(
+                                (o) => o.value !== 'sharp'
+                            )
+                        ]
                     }
                 ]
             },

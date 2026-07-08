@@ -19,6 +19,8 @@
     --c-fx-mesh-4: none;
     --c-mesh-anim: paused;
     --c-mesh-blend: normal;
+    --c-mesh-filter: none;
+    --c-mesh-bleed: 0;
     --c-fx-texture: none;
     --c-content-bg: #ffffff;
     --c-content-border: 1px solid #e6e8ec;
@@ -96,12 +98,20 @@
     inset: 0;
     pointer-events: none;
     background-image: var(--c-fx-texture);
+    /* Drifting/oversized blob layers must NEVER paint outside the page (the
+       leak bug, owner screenshot 2026-07-08); corners follow the page canvas. */
+    overflow: hidden;
+    border-radius: inherit;
 }
 
 .fx-mesh {
     position: absolute;
-    inset: 0;
+    /* Bleed pairs with --c-mesh-filter: blurred layers oversize so their
+       softened edges stay outside the clipped viewport, like the mockup's
+       inset:-20% mesh. Non-blurred meshes keep inset 0 (look unchanged). */
+    inset: var(--c-mesh-bleed);
     mix-blend-mode: var(--c-mesh-blend);
+    filter: var(--c-mesh-filter);
     animation: final-mesh-drift 18s ease-in-out infinite;
     animation-play-state: var(--c-mesh-anim);
 }
@@ -169,6 +179,10 @@
 .page--embedded {
     min-height: calc(100vh - var(--frame-offset, 100vh));
     min-height: calc(100dvh - var(--frame-offset, 100dvh));
+    /* Embedded ONLY: an immersive scene inside LEX chrome reads better as a
+       deliberate rounded canvas than a naked rectangle. Guest/full-bleed
+       surfaces never round — they own the viewport. */
+    border-radius: var(--c-page-radius, 0px);
 }
 
 /*

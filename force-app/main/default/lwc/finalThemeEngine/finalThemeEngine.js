@@ -187,6 +187,10 @@ const DEFAULT_PROPS = {
     // Input-corner override (radius KEY): unset = inputs share --c-radius.
     // Lets a theme pair a curvy card with tighter inputs (Neon Nights: pill/round).
     fieldRadius: null,
+    // Page-canvas corner rounding (radius KEY) — EMBEDDED contexts only (the
+    // LEX tab paints the scene as a deliberate rounded canvas; the guest page
+    // owns the viewport and stays square/full-bleed). Conditional token.
+    pageRadius: null,
     labelPosition: 'top', // top | left
     labelStyle: 'default', // default | monoCaps | mutedSm | caps
     radius: 'soft',
@@ -200,7 +204,8 @@ const DEFAULT_PROPS = {
         textureIntensity: 'subtle',
         meshIntensity: 'subtle',
         meshAnimate: false, // slow blob drift (pageFrame pauses on reduced motion)
-        meshBlend: 'normal' // 'screen' = luminous blobs (dark pages only — screen on white is invisible)
+        meshBlend: 'normal', // 'screen' = luminous blobs (dark pages only — screen on white is invisible)
+        meshBlur: 0 // px; >0 = truly soft blobs — layers oversize (bleed) and blur, clipped by .fx
     },
     fieldStates: { error: '#b42318', required: '#b42318' },
     pageImage: { url: null, fit: 'cover', position: 'center', scrim: 0, opacity: 100 }
@@ -550,6 +555,9 @@ export function resolveTokens(themeProps, formOverrides) {
             pal.pageBgGradient,
             pal.pageBgOpacity
         ),
+        // Conditional: unset = square (guest/full-bleed default; embedded CSS
+        // falls back to 0)
+        '--c-page-radius': RADIUS[p.pageRadius],
 
         // Effects (finalPageFrame .fx ONLY — fixed slots, one layer per token)
         '--c-fx-mesh-1': mesh[0] ? boostMesh(mesh[0], fx.meshIntensity) : 'none',
@@ -561,6 +569,13 @@ export function resolveTokens(themeProps, formOverrides) {
         // 'screen' blend makes blobs luminous (Neon Nights, dark pages).
         '--c-mesh-anim': fx.meshAnimate ? 'running' : 'paused',
         '--c-mesh-blend': fx.meshBlend === 'screen' ? 'screen' : 'normal',
+        // One prop, two tokens: real blur needs the layers oversized (bleed)
+        // so the softened edges never show inside the clipped .fx viewport.
+        '--c-mesh-filter':
+            Number(fx.meshBlur) > 0
+                ? `blur(${Math.min(Number(fx.meshBlur), 120)}px)`
+                : 'none',
+        '--c-mesh-bleed': Number(fx.meshBlur) > 0 ? '-15%' : '0',
         '--c-fx-texture': textureLayer(fx.texture, fx.textureIntensity) || 'none',
 
         // Content panel
