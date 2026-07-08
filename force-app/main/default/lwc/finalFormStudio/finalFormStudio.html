@@ -25,9 +25,22 @@
                 ← Exit
             </button>
             <span class="st-name">{formName}</span>
-            <span class="st-chip">{versionChip}</span>
-            <span class="st-saved">{savedText}</span>
-            <span class="st-spacer"></span>
+            <template lwc:if={hasVersions}>
+                <select
+                    class="st-verselect"
+                    aria-label="Form version"
+                    onchange={handleVersionChange}
+                >
+                    <template for:each={versionOptions} for:item="o">
+                        <option key={o.id} value={o.id} selected={o.selected}>
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+            </template>
+            <template lwc:else>
+                <span class="st-chip">{versionChip}</span>
+            </template>
             <div class="st-modes" role="tablist">
                 <button
                     type="button"
@@ -44,6 +57,10 @@
                     Design
                 </button>
             </div>
+            <template lwc:if={isEditable}>
+                <span class="st-saved">{savedText}</span>
+            </template>
+            <span class="st-spacer"></span>
             <button
                 type="button"
                 class="st-icon"
@@ -64,14 +81,36 @@
                 type="button"
                 class="st-primary"
                 onclick={handlePublish}
-                disabled={publishing}
+                disabled={publishDisabled}
             >
                 Publish
             </button>
         </header>
 
         <div class="st-body">
-            <template lwc:if={isDesign}>
+            <template lwc:if={isReadOnly}>
+                <aside class="st-left st-left--notice">
+                    <div class="st-notice">
+                        <h3 class="st-notice-title">{readOnlyTitle}</h3>
+                        <p class="st-notice-text">{readOnlyText}</p>
+                        <button
+                            type="button"
+                            class="st-primary st-notice-btn"
+                            onclick={handleBackToEditable}
+                        >
+                            {backToEditableLabel}
+                        </button>
+                    </div>
+                </aside>
+                <main class="st-stagearea">
+                    <div class="st-scroll">
+                        <c-final-form-viewer
+                            spec={viewSpec}
+                        ></c-final-form-viewer>
+                    </div>
+                </main>
+            </template>
+            <template lwc:elseif={isDesign}>
                 <aside class="st-left">
                     <c-final-design-panel
                         spec={spec}

@@ -3,6 +3,8 @@ import FinalFormStudio from 'c/finalFormStudio';
 import { CurrentPageReference } from 'lightning/navigation';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
+import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
+import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
@@ -44,7 +46,17 @@ jest.mock(
     { virtual: true }
 );
 jest.mock(
+    '@salesforce/apex/FinalStudioController.listVersions',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
     '@salesforce/apex/FinalSpecController.publishSpec',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalSpecController.getSpec',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -64,6 +76,11 @@ const SPEC = {
     submit: { label: 'Submit' }
 };
 
+const VERSIONS = [
+    { id: 'a0V2', versionNumber: 2, isActive: false, isDraft: true },
+    { id: 'a0V1', versionNumber: 1, isActive: true, isDraft: false }
+];
+
 function mount() {
     const el = createElement('c-final-form-studio', { is: FinalFormStudio });
     document.body.appendChild(el);
@@ -71,6 +88,10 @@ function mount() {
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
+// fake-timer flush: n sequential microtask ticks without touching the clock
+const micro = (n) => {
+    return n ? Promise.resolve().then(() => micro(n - 1)) : Promise.resolve();
+};
 
 describe('c-final-form-studio', () => {
     afterEach(() => {
@@ -91,7 +112,7 @@ describe('c-final-form-studio', () => {
         expect(loadStudio).not.toHaveBeenCalled();
     });
 
-    it('loads the draft, shows the chip, renders panel + live preview', async () => {
+    it('loads the draft, shows the chip fallback (no version list), renders panel + live preview', async () => {
         loadStudio.mockResolvedValue({
             name: 'Contact us',
             specJson: JSON.stringify(SPEC),
@@ -99,6 +120,7 @@ describe('c-final-form-studio', () => {
             versionNumber: 2,
             activeVersionNumber: 1
         });
+        listVersions.mockRejectedValue(new Error('down'));
         const el = mount();
         CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
         await flush();
@@ -113,6 +135,12 @@ describe('c-final-form-studio', () => {
         expect(
             el.shadowRoot.querySelector('c-final-form-viewer')
         ).not.toBeNull();
+        // the mode toggle lives in the LEFT cluster — before the spacer
+        const bar = el.shadowRoot.querySelector('.st-bar');
+        const kids = Array.from(bar.children);
+        expect(kids.indexOf(bar.querySelector('.st-modes'))).toBeLessThan(
+            kids.indexOf(bar.querySelector('.st-spacer'))
+        );
     });
 
     it('specchange autosaves ONCE after the debounce window', async () => {
@@ -240,6 +268,138 @@ describe('c-final-form-studio', () => {
         expect(saved.resolved).toBeUndefined();
         expect(saved.theme.name).toBe('neonNights');
         jest.useRealTimers();
+    });
+
+    it('versions dropdown replaces the chip, newest first, draft selected', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V2',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue(VERSIONS);
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await flush();
+        await flush();
+        expect(el.shadowRoot.querySelector('.st-chip')).toBeNull();
+        const options = Array.from(
+            el.shadowRoot.querySelectorAll('.st-verselect option')
+        );
+        expect(options.map((o) => o.textContent)).toEqual([
+            'v2 · Draft',
+            'v1 · Published'
+        ]);
+        expect(el.shadowRoot.querySelector('.st-verselect').value).toBe(
+            'a0V2'
+        );
+    });
+
+    it('viewing a published version is read-only: notice, publish disabled, autosave NEVER fires', async () => {
+        jest.useFakeTimers();
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V2',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue(VERSIONS);
+        saveDraft.mockResolvedValue('a0V2');
+        const published = JSON.parse(JSON.stringify(SPEC));
+        published.resolved = {
+            tokens: { '--c-page-bg': '#111' },
+            engineVersion: 1
+        };
+        getSpec.mockResolvedValue(JSON.stringify(published));
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(8);
+
+        // a pending edit is flushed ONCE on the way out — never lost
+        const panel = el.shadowRoot.querySelector('c-final-design-panel');
+        const edited = JSON.parse(JSON.stringify(SPEC));
+        edited.submit.label = 'Send';
+        panel.dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: edited } })
+        );
+        const select = el.shadowRoot.querySelector('.st-verselect');
+        select.value = 'a0V1';
+        select.dispatchEvent(new CustomEvent('change'));
+        await micro(8);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+
+        // panel replaced by the notice; publish belongs to the draft only
+        expect(el.shadowRoot.querySelector('c-final-design-panel')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.st-notice-title').textContent
+        ).toBe('Viewing v1 (published) — read-only.');
+        expect(el.shadowRoot.querySelector('.st-saved')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.st-bar .st-primary').disabled
+        ).toBe(true);
+        // read-only viewing keeps `resolved` — the frozen tokens ARE what
+        // was published
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        expect(viewer.spec.resolved).toBeDefined();
+
+        jest.advanceTimersByTime(5000);
+        expect(saveDraft).toHaveBeenCalledTimes(1); // no autosave while viewing
+        jest.useRealTimers();
+    });
+
+    it('read-only covers Build mode too; Back to draft restores editing', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V2',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue(VERSIONS);
+        const published = JSON.parse(JSON.stringify(SPEC));
+        published.resolved = { tokens: { '--c-page-bg': '#111' } };
+        getSpec.mockResolvedValue(JSON.stringify(published));
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await flush();
+        await flush();
+
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await flush();
+        const select = el.shadowRoot.querySelector('.st-verselect');
+        select.value = 'a0V1';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-field-palette')
+        ).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('c-final-builder-canvas')
+        ).toBeNull();
+        expect(el.shadowRoot.querySelector('.st-notice')).not.toBeNull();
+
+        el.shadowRoot.querySelector('.st-notice-btn').click();
+        await flush();
+        expect(el.shadowRoot.querySelector('.st-notice')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('c-final-field-palette')
+        ).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('c-final-builder-canvas')
+        ).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.st-bar .st-primary').disabled
+        ).toBe(false);
+        // the select's LIVE value snaps back to the draft (selectedness is
+        // a dirty flag — the attribute alone won't move it)
+        expect(el.shadowRoot.querySelector('.st-verselect').value).toBe(
+            'a0V2'
+        );
+        // and the draft spec is intact, publish-artifact free
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        expect(viewer.spec.resolved).toBeUndefined();
     });
 
     it('bad id → friendly not-found with a way back, never a spinner', async () => {

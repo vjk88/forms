@@ -70,6 +70,62 @@ public with sharing class FinalStudioController {
         }
     }
 
+    /** One row of the top-bar versions dropdown. */
+    public class VersionEntry {
+        @AuraEnabled
+        public Id id;
+        @AuraEnabled
+        public Integer versionNumber;
+        @AuraEnabled
+        public Boolean isActive;
+        @AuraEnabled
+        public Boolean isDraft;
+    }
+
+    /**
+     * Version picker data: every version newest first, the draft flagged by
+     * the same convention loadStudio uses (single inactive above the active).
+     */
+    @AuraEnabled
+    public static List<VersionEntry> listVersions(Id formId) {
+        if (formId == null) {
+            throw new AuraHandledException('A form Id is required.');
+        }
+        try {
+            List<Form_Version__c> versions = [
+                SELECT Id, Version_Number__c, Is_Active__c
+                FROM Form_Version__c
+                WHERE Form__c = :formId
+                WITH USER_MODE
+                ORDER BY Version_Number__c DESC
+            ];
+            Form_Version__c active;
+            for (Form_Version__c v : versions) {
+                if (v.Is_Active__c) {
+                    active = v;
+                    break;
+                }
+            }
+            Form_Version__c draft = draftOf(versions, active);
+            List<VersionEntry> out = new List<VersionEntry>();
+            for (Form_Version__c v : versions) {
+                VersionEntry entry = new VersionEntry();
+                entry.id = v.Id;
+                entry.versionNumber = v.Version_Number__c == null
+                    ? null
+                    : v.Version_Number__c.intValue();
+                entry.isActive = v.Is_Active__c;
+                entry.isDraft = draft != null && v.Id == draft.Id;
+                out.add(entry);
+            }
+            return out;
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException('Versions could not be listed.');
+        }
+    }
+
     /**
      * Autosave: update the draft row, creating it (max version + 1) on the
      * first edit. Returns the draft version Id.

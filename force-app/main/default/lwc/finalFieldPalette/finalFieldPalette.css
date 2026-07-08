@@ -56,6 +56,21 @@
     background: #f3f3f3;
 }
 
+.fp-head {
+    padding: 12px 12px 0;
+}
+
+.fp-head-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.fp-head-sub {
+    font-size: 10.5px;
+    color: #5c5c5c;
+}
+
 .fp-search {
     margin: 10px;
     padding: 6px 10px;

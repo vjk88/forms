@@ -4,7 +4,9 @@ import LightningConfirm from 'lightning/confirm';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
 import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
+import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
+import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
 
@@ -49,6 +51,14 @@ export default class FinalFormStudio extends NavigationMixin(
     draftVersionId = null;
     versionNumber;
     activeVersionNumber;
+    activeVersionId = null;
+
+    /** Top-bar picker rows ({id, versionNumber, isActive, isDraft}). */
+    versions = [];
+    /** Non-null = viewing that version READ-ONLY; `spec` stays the draft. */
+    viewVersionId = null;
+    viewSpec = null;
+    viewEntry = null;
 
     mode = 'design';
     /** Build-mode state: what's selected + which page the blueprint shows. */
@@ -116,7 +126,12 @@ export default class FinalFormStudio extends NavigationMixin(
                 null;
             this.selection = null;
             this.buildPageIndex = 0;
+            this.viewVersionId = null;
+            this.viewSpec = null;
+            this.viewEntry = null;
             this.saveState = 'saved';
+            // not awaited — the picker is chrome, never a gate on first paint
+            this._refreshVersions();
         } catch (e) {
             this.notFound = true;
         } finally {
@@ -124,8 +139,31 @@ export default class FinalFormStudio extends NavigationMixin(
         }
     }
 
+    /** The picker is optional chrome — on failure fall back to the chip. */
+    async _refreshVersions() {
+        try {
+            this.versions = (await listVersions({ formId: this.formId })) || [];
+        } catch (e) {
+            this.versions = [];
+        }
+        const active = this.versions.find((v) => v.isActive);
+        this.activeVersionId = active ? active.id : null;
+    }
+
+    /** Native <option selected> only sets DEFAULT selectedness — after the
+     *  user touches the select, the live value must be forced back in sync
+     *  (e.g. "Back to draft" from the notice). */
+    renderedCallback() {
+        const sel = this.template.querySelector('.st-verselect');
+        const current = this.viewVersionId || this.editableVersionId;
+        if (sel && current && sel.value !== current) {
+            sel.value = current;
+        }
+    }
+
     // ----- top bar -----
 
+    /** Fallback when the versions list is unavailable. */
     get versionChip() {
         if (this.draftVersionId) {
             return `v${this.versionNumber} · Draft`;
@@ -133,6 +171,98 @@ export default class FinalFormStudio extends NavigationMixin(
         return this.activeVersionNumber
             ? `v${this.activeVersionNumber} · Published`
             : 'Draft';
+    }
+
+    get hasVersions() {
+        return this.versions.length > 0;
+    }
+
+    /** The one selectable state that edits: the draft, else the active. */
+    get editableVersionId() {
+        return this.draftVersionId || this.activeVersionId;
+    }
+
+    get versionOptions() {
+        const current = this.viewVersionId || this.editableVersionId;
+        return this.versions.map((v) => {
+            let label = `v${v.versionNumber}`;
+            if (v.isDraft) {
+                label += ' · Draft';
+            } else if (v.isActive) {
+                label += ' · Published';
+            }
+            return { id: v.id, label, selected: v.id === current };
+        });
+    }
+
+    // ----- read-only version viewing -----
+
+    get isReadOnly() {
+        return Boolean(this.viewVersionId);
+    }
+
+    get isEditable() {
+        return !this.isReadOnly;
+    }
+
+    get publishDisabled() {
+        return this.publishing || this.isReadOnly;
+    }
+
+    get readOnlyTitle() {
+        const v = this.viewEntry;
+        if (!v) {
+            return '';
+        }
+        const kind = v.isActive ? 'published' : 'archived';
+        return `Viewing v${v.versionNumber} (${kind}) — read-only.`;
+    }
+
+    get readOnlyText() {
+        const target = this.draftVersionId ? 'draft' : 'current version';
+        return `Switch to the ${target} to edit.`;
+    }
+
+    get backToEditableLabel() {
+        return this.draftVersionId ? 'Back to draft' : 'Back to current version';
+    }
+
+    async handleVersionChange(event) {
+        const id = event.target.value;
+        if (!id || id === this.editableVersionId) {
+            this.handleBackToEditable();
+            return;
+        }
+        const entry = this.versions.find((v) => v.id === id);
+        if (!entry) {
+            return;
+        }
+        // flush a pending edit BEFORE the read-only guards arm — switching
+        // to view history must never eat the draft's last keystrokes
+        if (this.saveState === 'dirty') {
+            clearTimeout(this._saveTimer);
+            await this._save();
+        }
+        try {
+            const json = await getSpec({ versionId: id });
+            // read-only viewing KEEPS `resolved` — the frozen tokens ARE the
+            // published render; stripping is only for specs re-entering the
+            // editor (see _load)
+            this.viewSpec = JSON.parse(json);
+            this.viewEntry = entry;
+            this.viewVersionId = id;
+            this.selection = null;
+            this.propsOpen = false;
+        } catch (e) {
+            // stay editable; renderedCallback snaps the select back
+            this.handleBackToEditable();
+        }
+    }
+
+    handleBackToEditable() {
+        this.viewVersionId = null;
+        this.viewSpec = null;
+        this.viewEntry = null;
     }
 
     get savedText() {
@@ -225,6 +355,9 @@ export default class FinalFormStudio extends NavigationMixin(
 
     /** Mutate via a deep copy, then reuse the ONE autosave path. */
     _mutate(fn) {
+        if (this.isReadOnly) {
+            return;
+        }
         const next = JSON.parse(JSON.stringify(this.spec));
         if (fn(next) === false) {
             return;
@@ -405,6 +538,9 @@ export default class FinalFormStudio extends NavigationMixin(
     // ----- edit → autosave -----
 
     handleSpecChange(event) {
+        if (this.isReadOnly) {
+            return; // viewing history is inert — autosave must never arm
+        }
         this.spec = event.detail.spec;
         this.saveState = 'dirty';
         clearTimeout(this._saveTimer);
@@ -413,6 +549,9 @@ export default class FinalFormStudio extends NavigationMixin(
     }
 
     async _save() {
+        if (this.isReadOnly) {
+            return; // belt over the cleared timer — history view never writes
+        }
         this.saveState = 'saving';
         try {
             const hadDraft = Boolean(this.draftVersionId);
@@ -421,8 +560,9 @@ export default class FinalFormStudio extends NavigationMixin(
                 specJson: JSON.stringify(this.spec)
             });
             if (!hadDraft) {
-                // first edit created the draft row — the chip must say so
+                // first edit created the draft row — chip AND picker must say so
                 this.versionNumber = (this.activeVersionNumber || 0) + 1;
+                this._refreshVersions();
             }
             this.saveState = 'saved';
         } catch (e) {
@@ -433,6 +573,9 @@ export default class FinalFormStudio extends NavigationMixin(
     // ----- publish (resolve-at-publish, P2 contract) -----
 
     async handlePublish() {
+        if (this.isReadOnly) {
+            return; // publish belongs to the editable state only
+        }
         const ok = await LightningConfirm.open({
             message: `Publish "${this.formName}"? The live form updates immediately.`,
             label: 'Publish form'
