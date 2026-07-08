@@ -46,6 +46,10 @@ export default class FinalFormViewer extends LightningElement {
     pageIndex = 0;
     _maxVisited = 0;
 
+    /** Post-submit: true renders c/finalAfterSubmit instead of the nav.
+     *  MUST be a declared field — undeclared assignments aren't reactive. */
+    completed = false;
+
     _inlineSpec;
     _urlFormId;
     _urlVersionId;
@@ -218,11 +222,18 @@ export default class FinalFormViewer extends LightningElement {
                 };
             }
         }
+        // Any spec change resets the post-submit state — the Design preview
+        // returns to the form the moment a control is touched.
+        this.completed = false;
         this.model = {
             // RAW (may be undefined): pageFrame falls back to medium for the
             // carded panel, while bleed layouts keep their locked column
             // width unless the user chose explicitly (--frame-max).
             maxWidth: spec.layout && spec.layout.maxWidth,
+            // After Submit config (owner FormBuilder port; SCHEMA §3
+            // settings.completion) — rendered by c/finalAfterSubmit on
+            // submit; redirect EXECUTION lands with P3.
+            afterSubmit: (spec.settings && spec.settings.completion) || {},
             header:
                 !layout.ownsHeader && header.style !== 'none' && hasLockup
                     ? header
@@ -326,6 +337,9 @@ export default class FinalFormViewer extends LightningElement {
 
     handleSubmit() {
         // Submission engine lands in a later slice (BUILD_PHASES — P3 gate is
-        // the first end-to-end submit). The bar's intent is contract-complete.
+        // the first end-to-end submit). Until then submit shows the configured
+        // After Submit render (owner: controls must never be dead) — P3 will
+        // save FIRST, then set this and execute any redirect.
+        this.completed = true;
     }
 }

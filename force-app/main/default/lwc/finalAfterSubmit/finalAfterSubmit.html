@@ -1,0 +1,48 @@
+<template>
+    <template lwc:if={isToast}>
+        <div class={wrapClass}>
+            <div class="toast" role="status">
+                <svg
+                    class="toast-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.4-4-4 1.7-1.7 2.3 2.3 5-5 1.7 1.7-6.7 6.7z"
+                    />
+                </svg>
+                Success! Your submission was recorded.
+            </div>
+            <div class="redirect-line">→ {toastRedirectLine}</div>
+        </div>
+    </template>
+    <template lwc:else>
+        <div class={wrapClass}>
+            <div class="screen" role="status">
+                <div class="check" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.4-4-4 1.7-1.7 2.3 2.3 5-5 1.7 1.7-6.7 6.7z"
+                        />
+                    </svg>
+                </div>
+                <lightning-formatted-rich-text
+                    class="message"
+                    value={message}
+                ></lightning-formatted-rich-text>
+                <template lwc:if={showButton}>
+                    <button
+                        type="button"
+                        class="continue"
+                        onclick={handleContinue}
+                    >
+                        {buttonLabel}
+                    </button>
+                </template>
+                <template lwc:if={showRedirect}>
+                    <div class="pill">{redirectPill}</div>
+                </template>
+            </div>
+        </div>
+    </template>
+</template>

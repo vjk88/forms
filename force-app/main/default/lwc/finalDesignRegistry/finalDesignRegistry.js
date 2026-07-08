@@ -724,6 +724,171 @@ const AREAS = [
                         fallback: '#ffffff'
                     }
                 ]
+            },
+            {
+                // After Submit (owner FormBuilder port, screenshots 2026-07-09).
+                // All spec content; `needsValue` = render-only equality gates
+                // (hidden ALWAYS keeps values, IA §6). The runtime render is
+                // c/finalAfterSubmit; redirect EXECUTION lands with P3.
+                key: 'afterSubmit',
+                label: 'After submit',
+                controls: [
+                    {
+                        key: 'asMode',
+                        label: 'After submit',
+                        type: 'tiles',
+                        path: 'settings.completion.mode',
+                        fallback: 'screen',
+                        options: [
+                            {
+                                value: 'screen',
+                                label: 'Completion screen',
+                                hint: 'Show a thank-you page'
+                            },
+                            {
+                                value: 'toast',
+                                label: 'Toast & go',
+                                hint: 'Pop a toast, jump to record / URL'
+                            }
+                        ]
+                    },
+                    {
+                        key: 'asMessage',
+                        label: 'Thank-you message',
+                        type: 'richtext',
+                        path: 'settings.completion.message',
+                        placeholder:
+                            'Thank you! Your response has been recorded.',
+                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                    },
+                    {
+                        key: 'asAutoRedirect',
+                        label: 'Auto-redirect',
+                        type: 'toggle',
+                        path: 'settings.completion.autoRedirect',
+                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                    },
+                    {
+                        key: 'asRedirectTo',
+                        label: 'Redirect to',
+                        type: 'select',
+                        path: 'settings.completion.redirectTo',
+                        fallback: 'record',
+                        options: [
+                            {
+                                value: 'record',
+                                label: 'The new / updated record'
+                            },
+                            { value: 'url', label: 'Custom URL' }
+                        ],
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asAutoRedirect', equals: true }
+                        ]
+                    },
+                    {
+                        key: 'asRedirectUrl',
+                        label: 'Redirect URL',
+                        type: 'text',
+                        path: 'settings.completion.redirectUrl',
+                        placeholder: 'https://…',
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asAutoRedirect', equals: true },
+                            { key: 'asRedirectTo', equals: 'url' }
+                        ]
+                    },
+                    {
+                        key: 'asRedirectDelay',
+                        label: 'Redirect delay (seconds)',
+                        type: 'number',
+                        path: 'settings.completion.redirectDelay',
+                        fallback: 5,
+                        min: 0,
+                        max: 60,
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asAutoRedirect', equals: true }
+                        ]
+                    },
+                    {
+                        key: 'asActionButton',
+                        label: 'Action button',
+                        type: 'toggle',
+                        path: 'settings.completion.actionButton',
+                        fallback: true,
+                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                    },
+                    {
+                        key: 'asButtonLabel',
+                        label: 'Button label',
+                        type: 'text',
+                        path: 'settings.completion.buttonLabel',
+                        placeholder: 'Continue',
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asActionButton', equals: true }
+                        ]
+                    },
+                    {
+                        key: 'asButtonGoesTo',
+                        label: 'Goes to',
+                        type: 'select',
+                        path: 'settings.completion.buttonGoesTo',
+                        fallback: 'record',
+                        options: [
+                            {
+                                value: 'record',
+                                label: 'The new / updated record'
+                            },
+                            { value: 'url', label: 'Custom URL' }
+                        ],
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asActionButton', equals: true }
+                        ]
+                    },
+                    {
+                        key: 'asButtonUrl',
+                        label: 'Button URL',
+                        type: 'text',
+                        path: 'settings.completion.buttonUrl',
+                        placeholder: 'https://…',
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asActionButton', equals: true },
+                            { key: 'asButtonGoesTo', equals: 'url' }
+                        ]
+                    },
+                    // Toast & go: same destination slots, its own gate — two
+                    // registry rows over ONE path is the OR of the mode gates.
+                    {
+                        key: 'asToastGoTo',
+                        label: 'Go to',
+                        type: 'select',
+                        path: 'settings.completion.redirectTo',
+                        fallback: 'record',
+                        options: [
+                            {
+                                value: 'record',
+                                label: 'The new / updated record'
+                            },
+                            { value: 'url', label: 'Custom URL' }
+                        ],
+                        needsValue: [{ key: 'asMode', equals: 'toast' }]
+                    },
+                    {
+                        key: 'asToastUrl',
+                        label: 'URL',
+                        type: 'text',
+                        path: 'settings.completion.redirectUrl',
+                        placeholder: 'https://…',
+                        needsValue: [
+                            { key: 'asMode', equals: 'toast' },
+                            { key: 'asToastGoTo', equals: 'url' }
+                        ]
+                    }
+                ]
             }
         ]
     }

@@ -1,0 +1,120 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+.wrap {
+    padding: var(--c-space-5) 0;
+    font-family: var(--c-font-body);
+    color: var(--c-text);
+}
+
+/* Bleed layouts dropped the panel — this card IS the content surface. */
+.wrap--card {
+    max-width: var(--frame-max, 540px);
+    margin: 0 auto;
+    padding: var(--c-space-6);
+    background-color: var(--c-content-bg);
+    background-image: var(--c-content-bg-gradient, none);
+    border: var(--c-content-border);
+    border-radius: var(--c-radius);
+    box-shadow: var(--c-content-shadow);
+    -webkit-backdrop-filter: blur(var(--c-glass-blur));
+    backdrop-filter: blur(var(--c-glass-blur));
+}
+
+/* — Completion screen — */
+
+.screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--c-space-4);
+    text-align: center;
+    padding: var(--c-space-5) var(--c-space-4);
+}
+
+.check {
+    width: 56px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    /* accent-tinted disc, accent ink — reads on light AND dark surfaces */
+    background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+}
+
+.check svg {
+    width: 32px;
+    height: 32px;
+    fill: var(--c-accent);
+}
+
+.message {
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    max-width: 46ch;
+}
+
+.continue {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--c-control-h);
+    padding: 0 var(--c-space-6);
+    border: none;
+    border-radius: var(--c-radius);
+    background-color: var(--c-submit-bg);
+    background-image: var(--c-submit-bg-gradient, none);
+    box-shadow: var(--c-submit-glow, none);
+    color: var(--c-submit-text);
+    font-family: var(--c-font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.continue:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--c-space-2);
+    padding: var(--c-space-2) var(--c-space-4);
+    border: 1px solid var(--c-field-border);
+    border-radius: 999px;
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
+/* — Toast & go — */
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-3);
+    padding: var(--c-space-4) var(--c-space-5);
+    border-radius: var(--c-radius);
+    background: var(--c-text);
+    color: var(--c-content-bg);
+    font-weight: 600;
+}
+
+.toast-icon {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: currentColor;
+}
+
+.redirect-line {
+    margin-top: var(--c-space-4);
+    padding: var(--c-space-4) var(--c-space-5);
+    border: 1px dashed var(--c-field-border);
+    border-radius: var(--c-radius);
+    color: var(--c-text-weak);
+    font-size: 0.875rem;
+}

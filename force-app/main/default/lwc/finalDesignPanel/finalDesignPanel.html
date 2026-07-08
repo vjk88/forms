@@ -323,6 +323,58 @@
                                                 </template>
                                             </div>
                                         </template>
+                                        <template lwc:elseif={c.isTiles}>
+                                            <div class="as-tiles">
+                                                <template
+                                                    for:each={c.tiles}
+                                                    for:item="t"
+                                                >
+                                                    <button
+                                                        key={t.value}
+                                                        type="button"
+                                                        class={t.cls}
+                                                        data-key={c.key}
+                                                        data-value={t.value}
+                                                        onclick={handleTile}
+                                                    >
+                                                        <span class="as-tile-label"
+                                                            >{t.label}</span
+                                                        >
+                                                        <span class="as-tile-hint"
+                                                            >{t.hint}</span
+                                                        >
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template lwc:elseif={c.isRichText}>
+                                            <div class="richtext">
+                                                <label class="rt-label"
+                                                    >{c.label}</label
+                                                >
+                                                <lightning-input-rich-text
+                                                    data-key={c.key}
+                                                    value={c.value}
+                                                    placeholder={c.placeholder}
+                                                    variant="bottom-toolbar"
+                                                    onchange={handleRichText}
+                                                ></lightning-input-rich-text>
+                                            </div>
+                                        </template>
+                                        <template lwc:elseif={c.isNumber}>
+                                            <div class="row">
+                                                <label>{c.label}</label>
+                                                <input
+                                                    type="number"
+                                                    data-key={c.key}
+                                                    min={c.min}
+                                                    max={c.max}
+                                                    value={c.value}
+                                                    placeholder={c.placeholder}
+                                                    onchange={handleNumber}
+                                                />
+                                            </div>
+                                        </template>
                                         <template lwc:elseif={c.isSelect}>
                                             <div class="row">
                                                 <template lwc:if={c.edited}>
