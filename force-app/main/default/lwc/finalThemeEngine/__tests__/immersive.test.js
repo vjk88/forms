@@ -89,6 +89,24 @@ describe('immersive capabilities', () => {
         expect(plain['--c-submit-glow']).toBe('none');
     });
 
+    it('meshBlur drives filter AND bleed together; 0 keeps legacy geometry', () => {
+        const soft = resolveTokens(null, {
+            effects: { mesh: 'neon', meshBlur: 60 }
+        });
+        expect(soft['--c-mesh-filter']).toBe('blur(60px)');
+        expect(soft['--c-mesh-bleed']).toBe('-15%');
+        const legacy = resolveTokens(null, { effects: { mesh: 'aurora' } });
+        expect(legacy['--c-mesh-filter']).toBe('none');
+        expect(legacy['--c-mesh-bleed']).toBe('0');
+    });
+
+    it('pageRadius is a conditional token keyed to the radius scale', () => {
+        expect(
+            resolveTokens(null, { pageRadius: 'xl' })['--c-page-radius']
+        ).toBe('20px');
+        expect(resolveTokens(null, {})['--c-page-radius']).toBeUndefined();
+    });
+
     it('caps label look: uppercase tracked sans in the muted ink', () => {
         const t = resolveTokens(null, { labelStyle: 'caps' });
         expect(t['--c-label-transform']).toBe('uppercase');
@@ -113,6 +131,9 @@ describe('immersive capabilities', () => {
         expect(t['--c-glass-blur']).toBe('26px');
         expect(t['--c-mesh-anim']).toBe('running');
         expect(t['--c-mesh-blend']).toBe('screen');
+        expect(t['--c-mesh-filter']).toBe('blur(60px)');
+        expect(t['--c-mesh-bleed']).toBe('-15%');
+        expect(t['--c-page-radius']).toBe('20px');
         expect(t['--c-input-bg']).toBe('rgba(255, 255, 255, 0.06)'); // dark-aware outline
         expect(t['--c-input-radius']).toBe('14px');
         expect(t['--c-radius']).toBe('24px');

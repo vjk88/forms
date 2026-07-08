@@ -29,6 +29,11 @@ const CONTRACT_V1 = [
     '--c-fx-mesh-4',
     '--c-mesh-anim',
     '--c-mesh-blend',
+    // leak/softness fixes (contract event 2026-07-08b): one meshBlur prop
+    // drives both; conditional --c-page-radius (embedded canvas rounding)
+    '--c-mesh-filter',
+    '--c-mesh-bleed',
+    '--c-page-radius',
     '--c-fx-texture',
     '--c-content-bg',
     '--c-content-border',
@@ -111,7 +116,8 @@ describe('c-final-theme-engine', () => {
                 '--c-input-radius',
                 '--c-label-font',
                 '--c-header-title-gradient',
-                '--c-header-title-fill'
+                '--c-header-title-fill',
+                '--c-page-radius'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -461,7 +467,8 @@ describe('c-final-theme-engine', () => {
                 '--c-input-radius',
                 '--c-label-font',
                 '--c-header-title-gradient',
-                '--c-header-title-fill'
+                '--c-header-title-fill',
+                '--c-page-radius'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

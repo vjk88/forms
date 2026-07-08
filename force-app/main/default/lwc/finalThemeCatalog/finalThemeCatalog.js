@@ -467,11 +467,12 @@ const THEMES = {
         typography: 'geometric',
         fieldStyle: 'outline', fieldRadius: 'round', labelStyle: 'caps',
         radius: 'pill', border: 'hairline', density: 'comfortable',
+        pageRadius: 'xl',
         effects: {
             shadow: 'deep', glass: 26,
             texture: 'grain', textureIntensity: 'subtle',
             mesh: 'neon', meshIntensity: 'subtle',
-            meshAnimate: true, meshBlend: 'screen'
+            meshAnimate: true, meshBlend: 'screen', meshBlur: 60
         },
         fieldStates: { focus: '#ff2e93', error: '#ff5470', required: '#ff2e93' }
     }
