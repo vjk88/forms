@@ -3,7 +3,7 @@ import LightningConfirm from 'lightning/confirm';
 import listFonts from '@salesforce/apex/FinalFontController.listFonts';
 import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
-import { resolveTokens } from 'c/finalThemeEngine';
+import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
 import {
@@ -207,12 +207,6 @@ export default class FinalDesignPanel extends LightningElement {
             if (c.needsValueOf) {
                 const def = this._controlDef(c.needsValueOf);
                 if (!def || !this._effective(def.control)) {
-                    continue;
-                }
-            }
-            if (c.needsMeshCustom) {
-                const def = this._controlDef('mesh');
-                if (!def || this._effective(def.control) !== 'custom') {
                     continue;
                 }
             }
@@ -506,13 +500,29 @@ export default class FinalDesignPanel extends LightningElement {
         this._apply(event.target.dataset.key, event.detail.value);
     }
 
-    // ----- custom mesh (plan B4) -----
+    // ----- custom mesh (plan B4; UX reworked per owner 2026-07-08) -----
 
-    /** Neon's colors as the starting palette for a fresh custom mesh. */
-    static MESH_SEED = ['#7a5cff', '#ff2e93', '#16e0c4', '#ffb13d'];
+    _activeMeshKey() {
+        const def = this._controlDef('mesh');
+        return def ? this._effective(def.control) : null;
+    }
 
-    /** Effective meshColors (array | {0:..} | absent) → 4 padded picker rows. */
+    /**
+     * Picker rows mirror what's actually PAINTED: a preset shows its own seed
+     * colors (so "Neon" is never a black box of fixed colors), custom shows
+     * the stored array — row count matches the painted blob count, so a
+     * 3-blob Aurora conversion never grows a phantom 4th swatch.
+     */
     _meshColorRows(value) {
+        const meshKey = this._activeMeshKey();
+        const row = (color, i) => ({
+            idx: String(i),
+            label: `Blob ${i + 1}`,
+            value: color
+        });
+        if (meshKey !== 'custom') {
+            return (MESH_SEEDS[meshKey] || MESH_SEEDS.neon).map(row);
+        }
         const list = Array.isArray(value)
             ? value
             : value && typeof value === 'object'
@@ -520,19 +530,23 @@ export default class FinalDesignPanel extends LightningElement {
                     .sort()
                     .map((k) => value[k])
               : [];
-        return FinalDesignPanel.MESH_SEED.map((seed, i) => ({
-            idx: String(i),
-            label: `Blob ${i + 1}`,
-            value: list[i] || seed
-        }));
+        const n = list.length || MESH_SEEDS.neon.length;
+        return Array.from({ length: n }, (_, i) =>
+            row(list[i] || MESH_SEEDS.neon[i] || '#888888', i)
+        );
     }
 
+    /** Editing any blob converts the active preset into a custom mesh seeded
+     *  from THAT preset — the user keeps what they were looking at. */
     handleMeshColor(event) {
         const idx = Number(event.target.dataset.idx);
         const arr = this._meshColorRows(
             this._effective(this._controlDef('meshColors').control)
         ).map((r) => r.value);
         arr[idx] = event.detail.value;
+        if (this._activeMeshKey() !== 'custom') {
+            this._apply('mesh', 'custom');
+        }
         // whole-array writes: mergeProps replaces meshColors wholesale, so a
         // sparse per-slot delta would drop the theme's other slots
         this._apply('meshColors', arr);
@@ -616,12 +630,15 @@ export default class FinalDesignPanel extends LightningElement {
         if (def && def.control.emptyAsNull && v === '') {
             v = null;
         }
-        // switching the mesh to Custom with no colors yet would render nothing
-        // — seed the neon palette so blobs appear instantly
+        // switching the mesh select to Custom with no colors yet would render
+        // nothing — seed from the preset the user was just on (else neon)
         if (key === 'mesh' && v === 'custom') {
             const mc = this._controlDef('meshColors');
             if (mc && !this._effective(mc.control)) {
-                this._apply('meshColors', [...FinalDesignPanel.MESH_SEED]);
+                const prev = this._activeMeshKey(); // pre-switch value
+                this._apply('meshColors', [
+                    ...(MESH_SEEDS[prev] || MESH_SEEDS.neon)
+                ]);
             }
         }
         if (def && !def.control.themePath && v === '') {
