@@ -5,6 +5,7 @@ import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
+import { evaluateVisibility } from 'c/finalExpressionEngine';
 
 /**
  * finalFormViewer — P0 minimal viewer: fetches one published Spec_JSON__c blob,
@@ -49,6 +50,11 @@ export default class FinalFormViewer extends LightningElement {
     /** Post-submit: true renders c/finalAfterSubmit instead of the nav.
      *  MUST be a declared field — undeclared assignments aren't reactive. */
     completed = false;
+
+    /** Live answers keyed by element id (schema §8) — fed by the valuechange
+     *  re-emit chain; drives rule evaluation now, submission in the P3
+     *  submit slice. Replaced wholesale so getters recompute. */
+    answers = {};
 
     _inlineSpec;
     _urlFormId;
@@ -225,6 +231,34 @@ export default class FinalFormViewer extends LightningElement {
         // Any spec change resets the post-submit state — the Design preview
         // returns to the form the moment a control is touched.
         this.completed = false;
+        this.answers = {};
+        // Rule support (schema §7): one walk indexes element types for the
+        // engine's date coercion and flags whether ANY rule exists — the
+        // no-rules fast path skips per-keystroke filtering entirely.
+        this._ruleTypeIndex = new Map();
+        this._hasRules = false;
+        for (const page of spec.pages || []) {
+            if (page.visibility) {
+                this._hasRules = true;
+            }
+            for (const section of page.sections || []) {
+                if (section.visibility) {
+                    this._hasRules = true;
+                }
+                for (const el of section.elements || []) {
+                    if (el.visibility) {
+                        this._hasRules = true;
+                    }
+                    const input = el.render && el.render.inputType;
+                    this._ruleTypeIndex.set(
+                        el.id,
+                        input === 'date' || input === 'datetime'
+                            ? input
+                            : el.type
+                    );
+                }
+            }
+        }
         this.model = {
             // RAW (may be undefined): pageFrame falls back to medium for the
             // carded panel, while bleed layouts keep their locked column
@@ -266,8 +300,46 @@ export default class FinalFormViewer extends LightningElement {
         this.error = undefined;
     }
 
+    /** The nav renders VISIBLE pages only — rules filter all three levels
+     *  live against the answers (no-rules specs pass through untouched). */
+    get visiblePages() {
+        if (!this.model) {
+            return [];
+        }
+        if (!this._hasRules) {
+            return this.model.pages;
+        }
+        const ctx = {
+            getValue: (id) => this.answers[id],
+            getType: (id) => this._ruleTypeIndex.get(id)
+        };
+        return this.model.pages
+            .filter((page) => evaluateVisibility(page.visibility, ctx))
+            .map((page) => ({
+                ...page,
+                sections: (page.sections || [])
+                    .filter((s) => evaluateVisibility(s.visibility, ctx))
+                    .map((s) => ({
+                        ...s,
+                        elements: (s.elements || []).filter((el) =>
+                            evaluateVisibility(el.visibility, ctx)
+                        )
+                    }))
+            }));
+    }
+
+    handleValueChange(event) {
+        const { elementId, value } = event.detail;
+        this.answers = { ...this.answers, [elementId]: value };
+        // a rule may have hidden the current page out from under us
+        const last = this.visiblePages.length - 1;
+        if (this.pageIndex > last) {
+            this.pageIndex = Math.max(last, 0);
+        }
+    }
+
     get lastPageIndex() {
-        return this.model ? this.model.pages.length - 1 : 0;
+        return this.model ? this.visiblePages.length - 1 : 0;
     }
 
     /**
@@ -279,7 +351,7 @@ export default class FinalFormViewer extends LightningElement {
         if (!this.model) {
             return [];
         }
-        return this.model.pages.map((_page, i) => i <= this._maxVisited);
+        return this.visiblePages.map((_page, i) => i <= this._maxVisited);
     }
 
     get showBack() {

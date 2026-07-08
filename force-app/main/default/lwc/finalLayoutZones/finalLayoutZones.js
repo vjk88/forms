@@ -45,4 +45,12 @@ export default class FinalLayoutZones extends LightningElement {
         const collapse = COLLAPSE_CLASS[z.collapse] || COLLAPSE_CLASS.standard;
         return `zone-grid ${arr} ${gap} ${collapse}`;
     }
+
+    /** Re-emit the answer intent across this shadow boundary (catalog rule:
+     *  plain non-composed events — every hop re-dispatches deliberately). */
+    handleValueChange(event) {
+        this.dispatchEvent(
+            new CustomEvent('valuechange', { detail: event.detail })
+        );
+    }
 }

@@ -34,6 +34,7 @@
             <template for:each={currentPageList} for:item="page">
                 <div class="page-panel" key={page.key}>
                     <c-final-layout-zones
+                    onvaluechange={handleValueChange}
                         sections={page.sections}
                         zones={page.zones}
                     ></c-final-layout-zones>

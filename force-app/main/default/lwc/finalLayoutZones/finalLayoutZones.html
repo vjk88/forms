@@ -3,6 +3,7 @@
         <div class={gridClass}>
             <template for:each={sectionList} for:item="section">
                 <c-final-section-renderer
+                    onvaluechange={handleValueChange}
                     key={section.id}
                     class="zone"
                     section={section}

@@ -24,7 +24,7 @@
         <template lwc:elseif={navCtor}>
           <lwc:component
             lwc:is={navCtor}
-            pages={model.pages}
+            pages={visiblePages}
             current-page-index={pageIndex}
             page-validity={pageValidity}
             options={model.layoutOptions}
@@ -34,6 +34,7 @@
             submit-label={model.submit.label}
             onpagechange={handlePageChange}
             onsubmit={handleSubmit}
+            onvaluechange={handleValueChange}
           >
             <!-- Slotted from the engine's template: button intents
                              never cross the primitive's shadow boundary. -->

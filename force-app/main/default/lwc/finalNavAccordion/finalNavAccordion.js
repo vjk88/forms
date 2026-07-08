@@ -79,4 +79,12 @@ export default class FinalNavAccordion extends LightningElement {
         this._openKeys = this.opts.allowMultiple ? [...open, key] : [key];
         this.dispatchEvent(new CustomEvent('pagechange', { detail: { index } }));
     }
+
+    /** Re-emit the answer intent across this shadow boundary (catalog rule:
+     *  plain non-composed events — every hop re-dispatches deliberately). */
+    handleValueChange(event) {
+        this.dispatchEvent(
+            new CustomEvent('valuechange', { detail: event.detail })
+        );
+    }
 }

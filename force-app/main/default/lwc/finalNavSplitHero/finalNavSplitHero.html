@@ -71,6 +71,7 @@
             <template for:each={currentScreenList} for:item="screen">
               <div class="screen-panel" key={screen.key} tabindex="-1">
                 <c-final-layout-zones
+                    onvaluechange={handleValueChange}
                   sections={currentSections}
                   zones={currentZones}
                 ></c-final-layout-zones>
@@ -102,6 +103,7 @@
             <template for:each={currentPageList} for:item="page">
               <div class="page-panel" key={page.key}>
                 <c-final-layout-zones
+                    onvaluechange={handleValueChange}
                   sections={page.sections}
                   zones={page.zones}
                 ></c-final-layout-zones>

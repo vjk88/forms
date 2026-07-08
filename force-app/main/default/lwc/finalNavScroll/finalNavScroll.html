@@ -6,6 +6,7 @@
                     <h2 class="divider">{page.name}</h2>
                 </template>
                 <c-final-layout-zones
+                    onvaluechange={handleValueChange}
                     sections={page.sections}
                     zones={page.zones}
                 ></c-final-layout-zones>
