@@ -238,6 +238,11 @@ export default class FinalDesignPanel extends LightningElement {
             };
             if (c.type === 'color') {
                 vm.value = typeof value === 'string' ? value : '';
+                // derived-by-default colors (e.g. label ink): show the LIVE
+                // resolved token so the swatch never lies while unset
+                if (!vm.value && c.fallbackToken) {
+                    vm.value = tokens[c.fallbackToken] || '';
+                }
                 vm.contrastWith = c.contrastToken
                     ? tokens[c.contrastToken]
                     : undefined;

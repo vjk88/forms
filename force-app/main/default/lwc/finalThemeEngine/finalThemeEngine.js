@@ -665,7 +665,8 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-label-weight': labelLook.weight,
         '--c-label-transform': labelLook.transform,
         '--c-label-tracking': labelLook.tracking,
-        '--c-label-color': labelLook.color,
+        // explicit palette.labelColor wins over the look's derived ink
+        '--c-label-color': pal.labelColor || labelLook.color,
         '--c-label-font': labelLook.font,
 
         '--c-field-focus': focus,

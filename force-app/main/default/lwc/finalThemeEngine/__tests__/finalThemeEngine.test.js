@@ -152,6 +152,16 @@ describe('c-final-theme-engine', () => {
             expect(t['--c-text']).toBe('#232019');
         });
 
+        it('palette.labelColor overrides the label look-derived ink', () => {
+            const derived = resolveTokens(theme(), { labelStyle: 'mutedSm' });
+            expect(derived['--c-label-color']).toBe('#6f6a5e'); // textWeak
+            const t = resolveTokens(theme(), {
+                labelStyle: 'mutedSm',
+                palette: { labelColor: '#123456' }
+            });
+            expect(t['--c-label-color']).toBe('#123456');
+        });
+
         it('scalar overrides (radius/density) win', () => {
             const t = resolveTokens(theme(), {
                 radius: 'pill',
