@@ -219,7 +219,10 @@ export default class FinalFormViewer extends LightningElement {
             }
         }
         this.model = {
-            maxWidth: (spec.layout && spec.layout.maxWidth) || 'medium',
+            // RAW (may be undefined): pageFrame falls back to medium for the
+            // carded panel, while bleed layouts keep their locked column
+            // width unless the user chose explicitly (--frame-max).
+            maxWidth: spec.layout && spec.layout.maxWidth,
             header:
                 !layout.ownsHeader && header.style !== 'none' && hasLockup
                     ? header
