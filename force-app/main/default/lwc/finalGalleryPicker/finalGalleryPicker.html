@@ -1,0 +1,82 @@
+<template>
+  <div class="gal-scrim" onclick={handleClose}></div>
+  <section
+    class="gal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
+  >
+    <header class="gal-head">
+      <div class="gal-words">
+        <h1 class="gal-title">{title}</h1>
+        <p class="gal-sub">{subtitle}</p>
+      </div>
+      <lightning-button-icon
+        icon-name="utility:close"
+        variant="bare"
+        alternative-text="Close"
+        title="Close"
+        onclick={handleClose}
+      ></lightning-button-icon>
+    </header>
+
+    <div class="gal-body">
+      <template lwc:if={isTheme}>
+        <c-final-theme-gallery
+          layout={layout}
+          pane-flow={paneFlow}
+          selected-theme-key={builtinSelectedKey}
+          onthemeselect={handleBuiltinTheme}
+        ></c-final-theme-gallery>
+
+        <template lwc:if={hasCustomThemes}>
+          <div class="gal-group-head">
+            <h2 class="gal-group-title">Your custom themes</h2>
+            <span class="gal-group-hint"
+              >Previewed on their base theme's palette.</span
+            >
+          </div>
+          <div class="gal-grid">
+            <template for:each={customCards} for:item="t">
+              <c-final-theme-card
+                key={t.id}
+                data-id={t.id}
+                theme-key={t.baseTheme}
+                label={t.name}
+                description="Custom theme"
+                layout={layout}
+                pane-flow={paneFlow}
+                selected={t.selected}
+                onselect={handleCustomTheme}
+              ></c-final-theme-card>
+            </template>
+          </div>
+        </template>
+      </template>
+
+      <template lwc:if={isLayout}>
+        <template for:each={layoutGroups} for:item="grp">
+          <section key={grp.id} class="gal-group">
+            <div class="gal-group-head">
+              <h2 class="gal-group-title">{grp.title}</h2>
+              <span class="gal-group-hint">{grp.hint}</span>
+            </div>
+            <div class="gal-grid">
+              <template for:each={grp.cards} for:item="l">
+                <c-final-layout-card
+                  key={l.key}
+                  layout={l.layout}
+                  pane-flow={l.paneFlow}
+                  theme-key={l.themeKey}
+                  label={l.name}
+                  selected={l.selected}
+                  onselect={handleLayout}
+                ></c-final-layout-card>
+              </template>
+            </div>
+          </section>
+        </template>
+      </template>
+    </div>
+  </section>
+</template>
