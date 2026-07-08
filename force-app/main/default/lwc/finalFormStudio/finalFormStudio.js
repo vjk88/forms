@@ -366,6 +366,22 @@ export default class FinalFormStudio extends NavigationMixin(
         });
     }
 
+    handleRemovePage(event) {
+        const id = event.detail.id;
+        this._mutate((spec) => {
+            const i = (spec.pages || []).findIndex((p) => p.id === id);
+            if (i < 0 || spec.pages.length < 2) {
+                return false; // never delete the only page
+            }
+            spec.pages.splice(i, 1);
+            this.buildPageIndex = Math.min(
+                this.buildPageIndex,
+                spec.pages.length - 1
+            );
+            this.selection = null;
+        });
+    }
+
     handleSelect(event) {
         this.selection = event.detail;
         this.propsOpen = true;

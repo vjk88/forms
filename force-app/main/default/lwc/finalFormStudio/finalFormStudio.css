@@ -159,13 +159,16 @@
 }
 
 .st-blueprint {
-    flex: 1.1;
+    flex: 1;
     min-width: 0;
 }
 
+/* Preview is a REFERENCE pane, not a co-star (owner 2026-07-08: 50% was too
+   wide) — roughly a third, the blueprint owns the center. */
 .st-buildpreview {
-    flex: 1;
-    min-width: 0;
+    flex: none;
+    width: 34%;
+    min-width: 340px;
     background: #eef1f6;
     border-left: 1px solid #e3e3e3;
 }

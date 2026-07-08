@@ -7,13 +7,19 @@
                     type="button"
                     class={t.cls}
                     data-tab={t.key}
+                    title={t.label}
                     onclick={handleTab}
                 >
-                    {t.label}
+                    <lightning-icon
+                        icon-name={t.icon}
+                        size="x-small"
+                    ></lightning-icon>
+                    <span class="fp-tab-label">{t.label}</span>
                 </button>
             </template>
         </nav>
 
+        <div class="fp-main">
         <template lwc:if={isFields}>
             <template lwc:if={noObject}>
                 <p class="fp-note">
@@ -83,5 +89,6 @@
         <template lwc:elseif={isStub}>
             <p class="fp-note">{stubLabel}</p>
         </template>
+        </div>
     </div>
 </template>
