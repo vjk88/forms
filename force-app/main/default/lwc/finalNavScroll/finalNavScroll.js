@@ -28,4 +28,12 @@ export default class FinalNavScroll extends LightningElement {
         const show = Boolean(this.options && this.options.showDividers);
         return show && (this.pages || []).length > 1;
     }
+
+    /** Re-emit the answer intent across this shadow boundary (catalog rule:
+     *  plain non-composed events — every hop re-dispatches deliberately). */
+    handleValueChange(event) {
+        this.dispatchEvent(
+            new CustomEvent('valuechange', { detail: event.detail })
+        );
+    }
 }

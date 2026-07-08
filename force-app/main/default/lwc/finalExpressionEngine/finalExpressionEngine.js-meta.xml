@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>THE rule evaluator (schema §7): visibility configs + validation entries + when gates. Pure module — one evaluator for build AND runtime.</description>
+</LightningComponentBundle>

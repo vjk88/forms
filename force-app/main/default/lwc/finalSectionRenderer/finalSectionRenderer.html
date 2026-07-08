@@ -13,6 +13,7 @@
         <div class={gridClass}>
             <template for:each={elements} for:item="el">
                 <c-final-element-renderer
+                    onvaluechange={handleValueChange}
                     key={el.id}
                     element={el}
                 ></c-final-element-renderer>
