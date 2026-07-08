@@ -102,7 +102,14 @@ export default class FinalFormStudio extends NavigationMixin(
             this.draftVersionId = out.draftVersionId;
             this.versionNumber = out.versionNumber;
             this.activeVersionNumber = out.activeVersionNumber;
-            this.spec = JSON.parse(out.specJson);
+            const spec = JSON.parse(out.specJson);
+            // `resolved` is a publish artifact (ARCH §5) — a draft seeded
+            // from a published version inherits the frozen token snapshot,
+            // and the viewer then ignores every theme change (resolved wins
+            // over the live engine by contract). Authoring always runs the
+            // engine live; Publish re-stamps `resolved` fresh.
+            delete spec.resolved;
+            this.spec = spec;
             this.objectApi =
                 (this.spec.form && this.spec.form.targetObject) ||
                 out.objectApi ||

@@ -199,6 +199,49 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('strips the resolved publish artifact so theme picks repaint the preview', async () => {
+        jest.useFakeTimers();
+        const published = JSON.parse(JSON.stringify(SPEC));
+        published.resolved = {
+            tokens: { '--c-page-bg': '#111' },
+            engineVersion: 1,
+            resolvedAt: '2026-07-08T00:00:00.000Z'
+        };
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(published),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // the live preview must get a spec WITHOUT the frozen snapshot,
+        // otherwise the viewer never runs the theme engine again
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        expect(viewer.spec.resolved).toBeUndefined();
+        expect(viewer.spec.theme.name).toBe('editorialIvory');
+
+        // and the draft autosaved after an edit stays clean of it too
+        const panel = el.shadowRoot.querySelector('c-final-design-panel');
+        const edited = JSON.parse(JSON.stringify(viewer.spec));
+        edited.theme.name = 'neonNights';
+        panel.dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: edited } })
+        );
+        jest.advanceTimersByTime(1000);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        expect(saved.resolved).toBeUndefined();
+        expect(saved.theme.name).toBe('neonNights');
+        jest.useRealTimers();
+    });
+
     it('bad id → friendly not-found with a way back, never a spinner', async () => {
         loadStudio.mockRejectedValue(new Error('nope'));
         const el = mount();
