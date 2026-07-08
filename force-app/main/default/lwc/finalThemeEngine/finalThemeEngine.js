@@ -476,7 +476,9 @@ export function resolveTokens(themeProps, formOverrides) {
         // the "Boutique underline": no shell, just the baseline (legacy
         // formThemes §3.2 — transparent border + inset box-shadow line)
         underline: {
-            bg: 'transparent',
+            // explicit palette.fieldBg wins in EVERY shell (legacy-coverage
+            // sweep 2026-07-08); the underline default stays bare
+            bg: pal.fieldBg || 'transparent',
             border: 'transparent',
             radius: '0px',
             shadow: `inset 0 -1.5px 0 0 ${fieldBorderColor}`,
@@ -484,9 +486,11 @@ export function resolveTokens(themeProps, formOverrides) {
         },
         // "Flat filled": sunken surface, no border
         filled: {
-            bg: isDarkSurface(pal)
-                ? 'rgba(255, 255, 255, 0.08)'
-                : mix(pal.text, pal.contentBg, 0.06),
+            bg:
+                pal.fieldBg ||
+                (isDarkSurface(pal)
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : mix(pal.text, pal.contentBg, 0.06)),
             border: 'transparent',
             radius: null,
             shadow: 'none',
