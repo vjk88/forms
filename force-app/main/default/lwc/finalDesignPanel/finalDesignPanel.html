@@ -297,6 +297,32 @@
                                                 onchange={handleImage}
                                             ></c-final-image-uploader>
                                         </template>
+                                        <template lwc:elseif={c.isMeshColors}>
+                                            <div class="mesh-colors">
+                                                <div class="row mc-head">
+                                                    <template lwc:if={c.edited}>
+                                                        <span
+                                                            class="dot"
+                                                            title="Customized"
+                                                        ></span>
+                                                    </template>
+                                                    <label>{c.label}</label>
+                                                </div>
+                                                <template
+                                                    for:each={c.colors}
+                                                    for:item="mc"
+                                                >
+                                                    <c-final-color-control
+                                                        key={mc.idx}
+                                                        data-key={c.key}
+                                                        data-idx={mc.idx}
+                                                        label={mc.label}
+                                                        value={mc.value}
+                                                        onchange={handleMeshColor}
+                                                    ></c-final-color-control>
+                                                </template>
+                                            </div>
+                                        </template>
                                         <template lwc:elseif={c.isSelect}>
                                             <div class="row">
                                                 <template lwc:if={c.edited}>
@@ -324,6 +350,9 @@
                                                     </template>
                                                 </select>
                                             </div>
+                                            <template lwc:if={c.hint}>
+                                                <p class="ctl-hint">{c.hint}</p>
+                                            </template>
                                         </template>
                                         <template lwc:elseif={c.isToggle}>
                                             <div class="row">
