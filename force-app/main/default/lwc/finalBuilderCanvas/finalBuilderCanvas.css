@@ -1,0 +1,191 @@
+/* The blueprint is deliberately dark + schematic (IA §4): it must read as
+   "structure", never compete with the live preview for "looks". */
+:host {
+    display: block;
+    height: 100%;
+}
+
+.bc {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #1c1f26;
+    color: #cbd2dc;
+    font-family:
+        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.bc-bar {
+    padding: 6px 14px;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    color: #8b93a1;
+    border-bottom: 1px solid #2a2e37;
+}
+
+.bc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 14px;
+}
+
+.bc-chip {
+    border: 1px solid #3a3f4b;
+    border-radius: 999px;
+    background: #232730;
+    color: #aab2bf;
+    font: inherit;
+    font-size: 11.5px;
+    padding: 4px 12px;
+    cursor: pointer;
+}
+
+.bc-chip.on {
+    border-color: #14b8a6;
+    color: #d7f5f0;
+}
+
+.bc-chip.selected {
+    box-shadow: 0 0 0 1px #14b8a6;
+}
+
+.bc-chip.add {
+    border-style: dashed;
+}
+
+.bc-scroll {
+    flex: 1;
+    overflow: auto;
+    padding: 6px 14px 20px;
+}
+
+.bc-section {
+    margin-top: 10px;
+    border: 1px solid #2f3440;
+    border-radius: 10px;
+    background: #232730;
+    padding: 8px 10px 10px;
+    cursor: pointer;
+}
+
+.bc-section.selected {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 1px #14b8a6;
+}
+
+.bc-section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 2px 6px;
+}
+
+.bc-section-title {
+    flex: 1;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #e6eaf0;
+}
+
+.bc-grip {
+    color: #565d6b;
+    font-size: 11px;
+    letter-spacing: -2px;
+    cursor: grab;
+}
+
+.bc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 7px 8px;
+    border: 1px solid #2f3440;
+    border-radius: 8px;
+    background: #1d212a;
+    cursor: pointer;
+}
+
+.bc-row.selected {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 1px #14b8a6;
+}
+
+.bc-row-label {
+    flex: none;
+    max-width: 45%;
+    font-size: 12px;
+    color: #cbd2dc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bc-req {
+    color: #f87171;
+    text-decoration: none;
+    margin-right: 2px;
+}
+
+.bc-skeleton {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: #313743;
+}
+
+.bc-x {
+    flex: none;
+    border: 0;
+    background: none;
+    color: #565d6b;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.bc-x:hover {
+    color: #f87171;
+    background: #2a2e37;
+}
+
+.bc-empty-section {
+    margin: 4px 2px 2px;
+    font-size: 11.5px;
+    color: #6b7280;
+}
+
+.bc-add-section {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 9px;
+    border: 1px dashed #3a3f4b;
+    border-radius: 10px;
+    background: none;
+    color: #8b93a1;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.bc-add-section:hover {
+    border-color: #14b8a6;
+    color: #d7f5f0;
+}
+
+.bc-empty {
+    margin: 26px auto 0;
+    max-width: 300px;
+    color: #8b93a1;
+    font-size: 12.5px;
+}
+
+.bc-empty ol {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 2;
+}

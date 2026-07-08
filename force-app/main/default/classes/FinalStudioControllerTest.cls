@@ -148,6 +148,31 @@ private class FinalStudioControllerTest {
     }
 
     @IsTest
+    static void describeFieldsMapsTypesAndRejectsUnknown() {
+        List<Map<String, Object>> fields = FinalStudioController.describeFields(
+            'Contact'
+        );
+        Assert.isFalse(fields.isEmpty(), 'Contact has palette fields');
+        Map<String, Object> lastName;
+        for (Map<String, Object> f : fields) {
+            if (f.get('apiName') == 'LastName') {
+                lastName = f;
+            }
+            Assert.isNotNull(f.get('inputType'), 'every row carries a type');
+        }
+        Assert.isNotNull(lastName, 'LastName is createable text');
+        Assert.areEqual('text', lastName.get('inputType'));
+        Assert.areEqual(true, lastName.get('required'));
+
+        try {
+            FinalStudioController.describeFields('No_Such_Object__x9');
+            Assert.fail('should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+    }
+
+    @IsTest
     static void loadMissingFormThrowsFriendly() {
         try {
             FinalStudioController.loadStudio(

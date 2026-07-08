@@ -1,0 +1,87 @@
+<template>
+    <div class="fp">
+        <nav class="fp-rail">
+            <template for:each={tabs} for:item="t">
+                <button
+                    key={t.key}
+                    type="button"
+                    class={t.cls}
+                    data-tab={t.key}
+                    onclick={handleTab}
+                >
+                    {t.label}
+                </button>
+            </template>
+        </nav>
+
+        <template lwc:if={isFields}>
+            <template lwc:if={noObject}>
+                <p class="fp-note">
+                    This form has no target object yet, so there are no fields
+                    to offer.
+                </p>
+            </template>
+            <template lwc:else>
+                <input
+                    type="search"
+                    class="fp-search"
+                    placeholder="Search fields…"
+                    value={search}
+                    oninput={handleSearch}
+                />
+                <template lwc:if={error}>
+                    <p class="fp-error" role="alert">{error}</p>
+                </template>
+                <template lwc:elseif={rows}>
+                    <template lwc:if={empty}>
+                        <p class="fp-note">No fields match.</p>
+                    </template>
+                    <ul class="fp-list">
+                        <template for:each={rows} for:item="f">
+                            <li key={f.apiName}>
+                                <button
+                                    type="button"
+                                    class={f.cls}
+                                    title={f.title}
+                                    data-api={f.apiName}
+                                    draggable="true"
+                                    onclick={handleAdd}
+                                >
+                                    <span class="fp-label">
+                                        <template lwc:if={f.required}>
+                                            <abbr
+                                                class="fp-req"
+                                                title="required"
+                                                >*</abbr
+                                            >
+                                        </template>
+                                        {f.label}
+                                    </span>
+                                    <span class="fp-type">{f.inputType}</span>
+                                    <template lwc:if={f.added}>
+                                        <span class="fp-added">ADDED</span>
+                                    </template>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+                <template lwc:else>
+                    <lightning-spinner
+                        alternative-text="Loading fields"
+                        size="small"
+                    ></lightning-spinner>
+                </template>
+            </template>
+        </template>
+        <template lwc:elseif={isBlocks}>
+            <p class="fp-note">
+                Content blocks (text, image, divider) arrive with the widgets
+                phase — the canvas already knows their drop rules.
+            </p>
+        </template>
+        <template lwc:elseif={isStub}>
+            <p class="fp-note">{stubLabel}</p>
+        </template>
+    </div>
+</template>

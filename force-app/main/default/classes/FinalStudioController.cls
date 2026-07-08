@@ -20,7 +20,7 @@ public with sharing class FinalStudioController {
         }
         try {
             List<Form__c> forms = [
-                SELECT Id, Name
+                SELECT Id, Name, Primary_Context_Object__c
                 FROM Form__c
                 WHERE Id = :formId
                 WITH USER_MODE
@@ -53,6 +53,9 @@ public with sharing class FinalStudioController {
             return new Map<String, Object>{
                 'formId' => forms[0].Id,
                 'name' => forms[0].Name,
+                // record-level fallback: pre-creation-controller specs may
+                // lack form.targetObject; the palette needs SOME object
+                'objectApi' => forms[0].Primary_Context_Object__c,
                 'specJson' => source.Spec_JSON__c,
                 'draftVersionId' => draft != null ? (Object) draft.Id : null,
                 'versionNumber' => source.Version_Number__c,
@@ -148,6 +151,106 @@ public with sharing class FinalStudioController {
         } catch (Exception e) {
             // cleanup only — an orphaned inactive row below the active
             // version is inert by the draft convention
+        }
+    }
+
+    /**
+     * Palette data (P3 canvas): the target object's createable fields, mapped
+     * to the spec's inputType vocabulary. Describe respects the running
+     * user's FLS via isAccessible/isCreateable. Reference/compound/system
+     * fields are excluded — lookups and files become widgets in P4.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> describeFields(String objectApi) {
+        if (String.isBlank(objectApi)) {
+            throw new AuraHandledException('An object API name is required.');
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe().get(objectApi);
+        if (t == null) {
+            throw new AuraHandledException('Unknown object: ' + objectApi);
+        }
+        Schema.DescribeSObjectResult d = t.getDescribe();
+        if (!d.isAccessible() || !d.isCreateable()) {
+            throw new AuraHandledException(
+                'You do not have access to ' + objectApi + '.'
+            );
+        }
+        List<Map<String, Object>> out = new List<Map<String, Object>>();
+        for (Schema.SObjectField f : d.fields.getMap().values()) {
+            Schema.DescribeFieldResult fd = f.getDescribe();
+            if (!fd.isAccessible() || !fd.isCreateable()) {
+                continue;
+            }
+            String inputType = inputTypeOf(fd.getType());
+            if (inputType == null) {
+                continue;
+            }
+            Map<String, Object> row = new Map<String, Object>{
+                'apiName' => fd.getName(),
+                'label' => fd.getLabel(),
+                'inputType' => inputType,
+                // required at the DB = must be on the form (palette seeds
+                // these dimmed + ADDED at creation, IA §4)
+                'required' => !fd.isNillable() &&
+                    !fd.isDefaultedOnCreate() &&
+                    fd.getType() != Schema.DisplayType.BOOLEAN
+            };
+            if (fd.getType() == Schema.DisplayType.PICKLIST ||
+                fd.getType() == Schema.DisplayType.MULTIPICKLIST) {
+                List<Map<String, String>> options = new List<Map<String, String>>();
+                for (Schema.PicklistEntry pe : fd.getPicklistValues()) {
+                    if (pe.isActive()) {
+                        options.add(
+                            new Map<String, String>{
+                                'value' => pe.getValue(),
+                                'label' => pe.getLabel()
+                            }
+                        );
+                    }
+                }
+                row.put('options', options);
+            }
+            out.add(row);
+        }
+        return out;
+    }
+
+    /** DisplayType → spec inputType; null = not palette material (v1). */
+    private static String inputTypeOf(Schema.DisplayType t) {
+        switch on t {
+            when STRING {
+                return 'text';
+            }
+            when EMAIL {
+                return 'email';
+            }
+            when PHONE {
+                return 'phone';
+            }
+            when URL {
+                return 'url';
+            }
+            when DOUBLE, INTEGER, LONG, CURRENCY, PERCENT {
+                return 'number';
+            }
+            when DATE {
+                return 'date';
+            }
+            when DATETIME {
+                return 'datetime';
+            }
+            when BOOLEAN {
+                return 'checkbox';
+            }
+            when TEXTAREA {
+                return 'textarea';
+            }
+            when PICKLIST, MULTIPICKLIST {
+                return 'picklist';
+            }
+            when else {
+                return null;
+            }
         }
     }
 

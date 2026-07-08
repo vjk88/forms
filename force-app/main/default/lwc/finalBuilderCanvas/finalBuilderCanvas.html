@@ -1,0 +1,100 @@
+<template>
+    <div class="bc">
+        <div class="bc-bar">
+            BLUEPRINT — structure only; the preview is the truth.
+        </div>
+
+        <div class="bc-chips">
+            <template for:each={pageChips} for:item="p">
+                <button
+                    key={p.id}
+                    type="button"
+                    class={p.cls}
+                    data-id={p.id}
+                    onclick={handleChip}
+                >
+                    {p.label}
+                </button>
+            </template>
+            <button type="button" class="bc-chip add" onclick={handleAddPage}>
+                + Page
+            </button>
+        </div>
+
+        <div class="bc-scroll">
+            <template for:each={sections} for:item="s">
+                <div
+                    key={s.id}
+                    class={s.cls}
+                    data-id={s.id}
+                    onclick={handleSectionClick}
+                >
+                    <header class="bc-section-head">
+                        <span class="bc-grip" aria-hidden="true">⋮⋮</span>
+                        <span class="bc-section-title">{s.title}</span>
+                        <button
+                            type="button"
+                            class="bc-x"
+                            title="Remove section"
+                            data-id={s.id}
+                            onclick={handleRemoveSection}
+                        >
+                            ×
+                        </button>
+                    </header>
+                    <template lwc:if={s.empty}>
+                        <p class="bc-empty-section">
+                            Empty — add fields from the palette.
+                        </p>
+                    </template>
+                    <template for:each={s.elements} for:item="el">
+                        <div
+                            key={el.id}
+                            class={el.cls}
+                            data-id={el.id}
+                            onclick={handleElementClick}
+                        >
+                            <span class="bc-grip" aria-hidden="true">⋮⋮</span>
+                            <span class="bc-row-label">
+                                <template lwc:if={el.required}>
+                                    <abbr class="bc-req" title="required"
+                                        >*</abbr
+                                    >
+                                </template>
+                                {el.label}
+                            </span>
+                            <span class="bc-skeleton" aria-hidden="true"></span>
+                            <button
+                                type="button"
+                                class="bc-x"
+                                title="Remove field"
+                                data-id={el.id}
+                                onclick={handleRemoveElement}
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <button
+                type="button"
+                class="bc-add-section"
+                onclick={handleAddSection}
+            >
+                + Section
+            </button>
+
+            <template lwc:if={isEmpty}>
+                <div class="bc-empty">
+                    <ol>
+                        <li>Pick fields from the palette</li>
+                        <li>Arrange sections and pages</li>
+                        <li>Switch to Design to style it</li>
+                    </ol>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

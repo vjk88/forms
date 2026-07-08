@@ -249,7 +249,11 @@ export default class FinalFormViewer extends LightningElement {
                     if (el.visibility) {
                         this._hasRules = true;
                     }
-                    const input = el.render && el.render.inputType;
+                    // render = publish-compiled; config = the draft-side hint
+                    // the renderer itself reads (canvas writes config.inputType)
+                    const input =
+                        (el.render && el.render.inputType) ||
+                        (el.config && el.config.inputType);
                     this._ruleTypeIndex.set(
                         el.id,
                         input === 'date' || input === 'datetime'
