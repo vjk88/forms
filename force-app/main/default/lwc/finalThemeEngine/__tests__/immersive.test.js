@@ -1,5 +1,9 @@
-import { resolveTokens } from 'c/finalThemeEngine';
+import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
+
+// hex → "r, g, b" as it appears inside the preset's rgba() strings
+const rgb = (hex) =>
+    [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
 
 // Immersive pass (Neon Nights, owner 2026-07-08): 4-slot mesh + drift/blend,
 // grain texture, numeric glass depth, gradient title ink, gradient+glow CTA,
@@ -105,6 +109,19 @@ describe('immersive capabilities', () => {
             resolveTokens(null, { pageRadius: 'xl' })['--c-page-radius']
         ).toBe('20px');
         expect(resolveTokens(null, {})['--c-page-radius']).toBeUndefined();
+    });
+
+    it('MESH_SEEDS mirror each preset exactly — count and colors (the panel shows these as live picker values)', () => {
+        for (const key of ['aurora', 'dusk', 'neon']) {
+            const t = resolveTokens(null, { effects: { mesh: key } });
+            MESH_SEEDS[key].forEach((hex, i) => {
+                expect(t[`--c-fx-mesh-${i + 1}`]).toContain(`rgba(${rgb(hex)}`);
+            });
+            const past = MESH_SEEDS[key].length + 1;
+            if (past <= 4) {
+                expect(t[`--c-fx-mesh-${past}`]).toBe('none');
+            }
+        }
     });
 
     it('custom mesh builds blobs from user colors; empty slots stay POSITIONAL', () => {

@@ -126,6 +126,16 @@ const MESHES = {
     ]
 };
 
+// Every preset's blob colors, in slot order — the panel shows these as the
+// LIVE picker values while a preset is active (owner 2026-07-08: "Neon is
+// still fixed colors" — editing any blob converts the mesh to 'custom',
+// seeded from the preset the user was looking at, never a surprise palette).
+export const MESH_SEEDS = {
+    aurora: ['#2dd4bf', '#818cf8', '#fbbf24'],
+    dusk: ['#f472b6', '#6366f1', '#38bdf8'],
+    neon: ['#7a5cff', '#ff2e93', '#16e0c4', '#ffb13d']
+};
+
 // Custom mesh (owner plan B4): mesh:'custom' builds blobs from the user's own
 // colors over the neon GEOMETRY. Alphas adapt to the blur treatment — blurred
 // layers are authored hot (blur spreads the ink), unblurred stay moderate.

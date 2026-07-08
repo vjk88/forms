@@ -217,7 +217,9 @@ const AREAS = [
                         label: 'Blob colors',
                         type: 'meshColors',
                         themePath: 'effects.meshColors',
-                        needsMeshCustom: true
+                        // visible for ANY active mesh — presets show their own
+                        // colors; editing one converts to a custom mesh (panel)
+                        needsEffect: 'mesh'
                     },
                     {
                         key: 'meshIntensity',
