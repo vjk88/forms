@@ -262,14 +262,16 @@ slot[name='actions'] {
     width: 100%;
 }
 
+/* --frame-max = an explicit Max width choice (pageFrame's tighter bleed
+   scale); unset keeps the locked 480px form column. Card and bar share it. */
 .mode-bleed slot[name='actions'] {
-    max-width: 480px;
+    max-width: var(--frame-max, 480px);
     margin: 0 auto;
 }
 
 .mode-bleed .form-card {
     width: 100%;
-    max-width: 480px;
+    max-width: var(--frame-max, 480px);
     margin: 0 auto;
     padding: var(--c-space-6);
     background: var(--c-content-bg);

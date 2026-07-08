@@ -69,7 +69,9 @@
 .question-card {
     align-self: center;
     width: 100%;
-    max-width: 540px;
+    /* --frame-max = an explicit Max width choice (pageFrame's tighter bleed
+       scale); unset keeps the locked conversational card. */
+    max-width: var(--frame-max, 540px);
     margin: 0 auto;
     padding: var(--c-space-6);
     background: var(--c-content-bg);

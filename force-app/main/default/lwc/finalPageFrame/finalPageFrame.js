@@ -20,6 +20,18 @@ const MAX_WIDTHS = {
     full: 'none'
 };
 
+// Bleed layouts own their canvas, so the panel cap is inert there — instead an
+// EXPLICIT Max width choice reaches their inner column (oneAtATime's floating
+// card, splitHero's form pane) as --frame-max, on a tighter scale (owner
+// ruling 2026-07-08: "wide" must never mean a comically wide question card).
+// Unset = no var = each layout keeps its locked default (540px card / 480px pane).
+const BLEED_MAX_WIDTHS = {
+    narrow: '480px',
+    medium: '560px',
+    wide: '680px',
+    full: 'none'
+};
+
 // Inside Lightning Experience the platform chrome owns the viewport. A raw
 // 100vh minimum guarantees a permanent double scroll there (P1 checklist #5),
 // but content-driven height strands the backdrop mid-screen (owner QA
@@ -31,7 +43,11 @@ const EMBEDDED_IN_LEX =
     /^\/lightning\//.test(window.location.pathname);
 
 export default class FinalPageFrame extends LightningElement {
-    @api maxWidth = 'medium';
+    // No initializer: an initially-undefined template binding would NOT
+    // overwrite it (LWC skips undefined in the first props pass), making
+    // "unset" indistinguishable from an explicit 'medium'. The carded path
+    // falls back to medium below; bleed treats unset as "layout default".
+    @api maxWidth;
     /**
      * Full-bleed mode (splitHero's Immersive toggle): the panel drops its
      * surface, padding, and max-width so the primitive owns the canvas
@@ -85,9 +101,11 @@ export default class FinalPageFrame extends LightningElement {
     }
 
     get panelStyle() {
-        return this.bleed
-            ? ''
-            : `max-width: ${MAX_WIDTHS[this.maxWidth] || MAX_WIDTHS.medium}`;
+        if (this.bleed) {
+            const cap = BLEED_MAX_WIDTHS[this.maxWidth];
+            return cap ? `--frame-max: ${cap}` : '';
+        }
+        return `max-width: ${MAX_WIDTHS[this.maxWidth] || MAX_WIDTHS.medium}`;
     }
 
     _applyTokens() {

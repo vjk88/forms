@@ -298,8 +298,12 @@ const AREAS = [
                         label: 'Max content width',
                         type: 'select',
                         path: 'layout.maxWidth',
-                        fallback: 'medium',
+                        // '' = unset (buttonArrangement precedent): carded
+                        // layouts read medium; bleed layouts keep their locked
+                        // column (540 card / 480 pane) until an explicit pick
+                        fallback: '',
                         options: [
+                            { value: '', label: 'Layout default' },
                             { value: 'narrow', label: 'Narrow' },
                             { value: 'medium', label: 'Medium' },
                             { value: 'wide', label: 'Wide' },

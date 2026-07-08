@@ -105,7 +105,9 @@ export function buildSampleSpec({ layout, paneFlow, themeKey, title } = {}) {
         layout: {
             type: layout || 'scroll',
             options,
-            maxWidth: 'medium',
+            // no maxWidth: unset = "Layout default" (carded panels read
+            // medium; bleed layouts keep their locked column) — pinning
+            // 'medium' here made the harness silently pick FOR the user
             zonesDefault: { arrangement: 'single', gap: 'md' }
         },
         header: {
