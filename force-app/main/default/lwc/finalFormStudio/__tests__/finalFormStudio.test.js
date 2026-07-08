@@ -152,6 +152,53 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('Build mode: palette click-add mints an element with id/binding/validation and autosaves', async () => {
+        jest.useFakeTimers();
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const palette = el.shadowRoot.querySelector('c-final-field-palette');
+        expect(palette).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('c-final-builder-canvas')
+        ).not.toBeNull();
+
+        palette.dispatchEvent(
+            new CustomEvent('addfield', {
+                detail: {
+                    field: {
+                        apiName: 'Email',
+                        label: 'Email',
+                        inputType: 'email',
+                        required: true
+                    }
+                }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        const added = saved.pages[0].sections[0].elements.at(-1);
+        expect(added.id).toMatch(/^el_[a-z0-9]{8,}$/);
+        expect(added.binding.field).toBe('Email');
+        expect(added.config.inputType).toBe('email');
+        expect(added.validation[0].type).toBe('required');
+        jest.useRealTimers();
+    });
+
     it('bad id → friendly not-found with a way back, never a spinner', async () => {
         loadStudio.mockRejectedValue(new Error('nope'));
         const el = mount();

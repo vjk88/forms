@@ -29,6 +29,17 @@ import { resolveSpecForPublish } from 'c/finalThemeCatalog';
 const FORMS_TAB = 'Final_Forms';
 const SAVE_DEBOUNCE_MS = 900;
 
+/** Schema §6: prefixed, crypto-random, client-minted, 8+ chars. */
+function mintId(prefix) {
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    let suffix = '';
+    for (const b of bytes) {
+        suffix += (b % 36).toString(36);
+    }
+    return `${prefix}_${suffix}`;
+}
+
 export default class FinalFormStudio extends NavigationMixin(
     LightningElement
 ) {
@@ -39,7 +50,11 @@ export default class FinalFormStudio extends NavigationMixin(
     versionNumber;
     activeVersionNumber;
 
-    mode = 'design'; // 'build' arrives with the canvas slice
+    mode = 'design';
+    /** Build-mode state: what's selected + which page the blueprint shows. */
+    selection = null;
+    buildPageIndex = 0;
+    objectApi = null;
     saveState = 'saved'; // saved | dirty | saving | error
     notFound = false;
     loading = true;
@@ -88,6 +103,12 @@ export default class FinalFormStudio extends NavigationMixin(
             this.versionNumber = out.versionNumber;
             this.activeVersionNumber = out.activeVersionNumber;
             this.spec = JSON.parse(out.specJson);
+            this.objectApi =
+                (this.spec.form && this.spec.form.targetObject) ||
+                out.objectApi ||
+                null;
+            this.selection = null;
+            this.buildPageIndex = 0;
             this.saveState = 'saved';
         } catch (e) {
             this.notFound = true;
@@ -141,6 +162,221 @@ export default class FinalFormStudio extends NavigationMixin(
             type: 'standard__navItemPage',
             attributes: { apiName: FORMS_TAB }
         });
+    }
+
+    // ----- Build mode: the studio owns every structural mutation -----
+
+    get usedFields() {
+        const out = [];
+        for (const page of (this.spec && this.spec.pages) || []) {
+            for (const section of page.sections || []) {
+                for (const el of section.elements || []) {
+                    if (el.binding && el.binding.field) {
+                        out.push(el.binding.field);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    get selectionLabel() {
+        const sel = this.selection;
+        if (!sel || !this.spec) {
+            return null;
+        }
+        for (const page of this.spec.pages || []) {
+            if (sel.kind === 'page' && page.id === sel.id) {
+                return page.name || 'Page';
+            }
+            for (const section of page.sections || []) {
+                if (sel.kind === 'section' && section.id === sel.id) {
+                    return section.title || 'Section';
+                }
+                for (const el of section.elements || []) {
+                    if (sel.kind === 'element' && el.id === sel.id) {
+                        return el.label || el.type;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /** The left column swaps to properties on an explicit CANVAS click only —
+     *  palette click-add selects (highlight) but keeps the palette, so bulk
+     *  adding never becomes add → back → add. */
+    propsOpen = false;
+
+    get showProperties() {
+        return (
+            this.mode === 'build' &&
+            this.propsOpen &&
+            Boolean(this.selectionLabel)
+        );
+    }
+
+    /** Mutate via a deep copy, then reuse the ONE autosave path. */
+    _mutate(fn) {
+        const next = JSON.parse(JSON.stringify(this.spec));
+        if (fn(next) === false) {
+            return;
+        }
+        this.handleSpecChange({ detail: { spec: next } });
+    }
+
+    _currentBuildPage(spec) {
+        return (spec.pages || [])[this.buildPageIndex] || null;
+    }
+
+    handleAddField(event) {
+        const field = event.detail.field;
+        this._mutate((spec) => {
+            // heal pre-creation-controller specs: the first bound field also
+            // records the target object the binding belongs to
+            if (spec.form && !spec.form.targetObject && this.objectApi) {
+                spec.form.targetObject = this.objectApi;
+            }
+            let page = this._currentBuildPage(spec);
+            if (!page) {
+                page = { id: mintId('pg'), name: 'Page 1', sections: [] };
+                spec.pages = spec.pages || [];
+                spec.pages.push(page);
+                this.buildPageIndex = 0;
+            }
+            let section = null;
+            const sel = this.selection || {};
+            if (sel.kind === 'section' || sel.kind === 'element') {
+                for (const s of page.sections || []) {
+                    if (
+                        s.id === sel.id ||
+                        (s.elements || []).some((el) => el.id === sel.id)
+                    ) {
+                        section = s;
+                    }
+                }
+            }
+            if (!section) {
+                section = (page.sections || [])[page.sections.length - 1];
+            }
+            if (!section) {
+                section = {
+                    id: mintId('sec'),
+                    title: 'Section',
+                    columns: 1,
+                    elements: []
+                };
+                page.sections = page.sections || [];
+                page.sections.push(section);
+            }
+            const element = {
+                id: mintId('el'),
+                type: 'field',
+                binding: { object: this.objectApi, field: field.apiName },
+                label: field.label,
+                required: Boolean(field.required),
+                // schema §4: `required` is authoring sugar — the validation
+                // entry is what the runtime evaluates
+                validation: field.required
+                    ? [
+                          {
+                              type: 'required',
+                              message: `${field.label} is required.`
+                          }
+                      ]
+                    : [],
+                config: { inputType: field.inputType },
+                visibility: null
+            };
+            if (field.options) {
+                element.config.options = field.options;
+            }
+            section.elements = section.elements || [];
+            section.elements.push(element);
+            this.selection = { kind: 'element', id: element.id };
+        });
+    }
+
+    handleAddPage() {
+        this._mutate((spec) => {
+            spec.pages = spec.pages || [];
+            const page = {
+                id: mintId('pg'),
+                name: `Page ${spec.pages.length + 1}`,
+                sections: []
+            };
+            spec.pages.push(page);
+            this.buildPageIndex = spec.pages.length - 1;
+            this.selection = { kind: 'page', id: page.id };
+        });
+    }
+
+    handleAddSection(event) {
+        const pageId = event.detail.pageId;
+        this._mutate((spec) => {
+            const page =
+                (spec.pages || []).find((p) => p.id === pageId) ||
+                this._currentBuildPage(spec);
+            if (!page) {
+                return false;
+            }
+            const section = {
+                id: mintId('sec'),
+                title: `Section ${(page.sections || []).length + 1}`,
+                columns: 1,
+                elements: []
+            };
+            page.sections = page.sections || [];
+            page.sections.push(section);
+            this.selection = { kind: 'section', id: section.id };
+        });
+    }
+
+    handleRemoveElement(event) {
+        const id = event.detail.id;
+        this._mutate((spec) => {
+            for (const page of spec.pages || []) {
+                for (const section of page.sections || []) {
+                    const i = (section.elements || []).findIndex(
+                        (el) => el.id === id
+                    );
+                    if (i >= 0) {
+                        section.elements.splice(i, 1);
+                        this.selection = null;
+                        return undefined;
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
+    handleRemoveSection(event) {
+        const id = event.detail.id;
+        this._mutate((spec) => {
+            for (const page of spec.pages || []) {
+                const i = (page.sections || []).findIndex((s) => s.id === id);
+                if (i >= 0) {
+                    page.sections.splice(i, 1);
+                    this.selection = null;
+                    return undefined;
+                }
+            }
+            return false;
+        });
+    }
+
+    handleSelect(event) {
+        this.selection = event.detail;
+        this.propsOpen = true;
+    }
+
+    handleBuildPageChange(event) {
+        this.buildPageIndex = event.detail.index;
+    }
+
+    handleBackToPalette() {
+        this.propsOpen = false;
     }
 
     // ----- edit → autosave -----

@@ -86,18 +86,50 @@
                 </main>
             </template>
             <template lwc:else>
-                <div class="st-blueprint-empty">
-                    <h3>Build mode</h3>
-                    <ol>
-                        <li>Pick fields from the palette</li>
-                        <li>Arrange pages and sections</li>
-                        <li>Switch to Design to style it</li>
-                    </ol>
-                    <p class="st-hint">
-                        The structural canvas arrives with the next slice —
-                        Design mode is fully live.
-                    </p>
-                </div>
+                <aside class="st-left st-left--build">
+                    <template lwc:if={showProperties}>
+                        <div class="st-props">
+                            <button
+                                type="button"
+                                class="st-back"
+                                onclick={handleBackToPalette}
+                            >
+                                ‹ Fields
+                            </button>
+                            <h3 class="st-props-title">{selectionLabel}</h3>
+                            <p class="st-props-hint">
+                                Properties arrive with the next slice — the
+                                selection already drives the blueprint
+                                highlight.
+                            </p>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <c-final-field-palette
+                            object-api={objectApi}
+                            used-fields={usedFields}
+                            onaddfield={handleAddField}
+                        ></c-final-field-palette>
+                    </template>
+                </aside>
+                <main class="st-blueprint">
+                    <c-final-builder-canvas
+                        spec={spec}
+                        selection={selection}
+                        current-page-index={buildPageIndex}
+                        onselect={handleSelect}
+                        onpagechange={handleBuildPageChange}
+                        onaddpage={handleAddPage}
+                        onaddsection={handleAddSection}
+                        onremoveelement={handleRemoveElement}
+                        onremovesection={handleRemoveSection}
+                    ></c-final-builder-canvas>
+                </main>
+                <aside class="st-buildpreview">
+                    <div class="st-scroll">
+                        <c-final-form-viewer spec={spec}></c-final-form-viewer>
+                    </div>
+                </aside>
             </template>
         </div>
 

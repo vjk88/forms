@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>The blueprint (P3, IA §4): dark schematic structure view — page chips, sections, skeleton field rows. Dumb view emitting intents; the studio owns the spec. DnD port lands in 3b.</description>
+</LightningComponentBundle>
