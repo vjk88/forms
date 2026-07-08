@@ -1,19 +1,19 @@
-import { LightningElement, api, track } from "lwc";
-import LightningConfirm from "lightning/confirm";
-import listFonts from "@salesforce/apex/FinalFontController.listFonts";
-import listCustomThemes from "@salesforce/apex/FinalThemeController.listCustomThemes";
-import getCustomTheme from "@salesforce/apex/FinalThemeController.getCustomTheme";
-import { resolveTokens, MESH_SEEDS } from "c/finalThemeEngine";
-import { getBuiltinTheme, listBuiltinThemes } from "c/finalThemeCatalog";
-import { getLayout } from "c/finalLayoutRegistry";
+import { LightningElement, api, track } from 'lwc';
+import LightningConfirm from 'lightning/confirm';
+import listFonts from '@salesforce/apex/FinalFontController.listFonts';
+import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
+import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
+import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
+import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
+import { getLayout } from 'c/finalLayoutRegistry';
 import {
-  listAreas,
-  flattenControls,
-  getAt,
-  setAt,
-  deleteAt,
-  RADIUS_ORDER
-} from "c/finalDesignRegistry";
+    listAreas,
+    flattenControls,
+    getAt,
+    setAt,
+    deleteAt,
+    RADIUS_ORDER
+} from 'c/finalDesignRegistry';
 
 /**
  * finalDesignPanel — Design mode (FORM_STUDIO_IA §5–§7).
@@ -29,891 +29,907 @@ import {
  * into the live preview (finalFormViewer.spec, preserveNav).
  */
 export default class FinalDesignPanel extends LightningElement {
-  /** Parent Form__c id — forwarded to image uploads (public/private decision). */
-  @api formId;
+    /** Parent Form__c id — forwarded to image uploads (public/private decision). */
+    @api formId;
 
-  @track advanced = false;
-  @track activeAreaKey = "theme";
-  @track pendingThemeKey = null;
-  /** 'theme' | 'layout' | null — which gallery popup is open. */
-  @track galleryMode = null;
-  @track _fonts = [];
-  @track _customThemes = [];
-  @track _customProps = null;
-  _customPropsId = null;
-  _spec = {};
+    @track advanced = false;
+    @track activeAreaKey = 'theme';
+    @track pendingThemeKey = null;
+    /** 'theme' | 'layout' | null — which gallery popup is open. */
+    @track galleryMode = null;
+    @track _fonts = [];
+    @track _customThemes = [];
+    @track _customProps = null;
+    _customPropsId = null;
+    _spec = {};
 
-  connectedCallback() {
-    // imperative (cacheable) — custom Form_Font__mdt entries for the picker
-    listFonts()
-      .then((fonts) => {
-        this._fonts = fonts || [];
-      })
-      .catch(() => {
-        this._fonts = [];
-      });
-    this.refreshThemes();
-  }
-
-  /** Re-list custom themes (host calls this after the editor saves). */
-  @api
-  refreshThemes() {
-    return listCustomThemes()
-      .then((themes) => {
-        this._customThemes = themes || [];
-      })
-      .catch(() => {
-        this._customThemes = [];
-      });
-  }
-
-  _loadCustomProps(themeId) {
-    if (this._customPropsId === themeId && this._customProps) {
-      return;
+    connectedCallback() {
+        // imperative (cacheable) — custom Form_Font__mdt entries for the picker
+        listFonts()
+            .then((fonts) => {
+                this._fonts = fonts || [];
+            })
+            .catch(() => {
+                this._fonts = [];
+            });
+        this.refreshThemes();
     }
-    this._customPropsId = themeId;
-    this._customProps = null;
-    getCustomTheme({ themeId })
-      .then((json) => {
-        if (this._customPropsId === themeId) {
-          this._customProps = JSON.parse(json);
+
+    /** Re-list custom themes (host calls this after the editor saves). */
+    @api
+    refreshThemes() {
+        return listCustomThemes()
+            .then((themes) => {
+                this._customThemes = themes || [];
+            })
+            .catch(() => {
+                this._customThemes = [];
+            });
+    }
+
+    _loadCustomProps(themeId) {
+        if (this._customPropsId === themeId && this._customProps) {
+            return;
         }
-      })
-      .catch(() => {
-        if (this._customPropsId === themeId) {
-          this._customProps = {};
+        this._customPropsId = themeId;
+        this._customProps = null;
+        getCustomTheme({ themeId })
+            .then((json) => {
+                if (this._customPropsId === themeId) {
+                    this._customProps = JSON.parse(json);
+                }
+            })
+            .catch(() => {
+                if (this._customPropsId === themeId) {
+                    this._customProps = {};
+                }
+            });
+    }
+
+    @api
+    get spec() {
+        return this._spec;
+    }
+    set spec(value) {
+        this._spec = value ? JSON.parse(JSON.stringify(value)) : {};
+        if (
+            this._spec.theme &&
+            this._spec.theme.source === 'custom' &&
+            this._spec.theme.name
+        ) {
+            this._loadCustomProps(this._spec.theme.name);
         }
-      });
-  }
-
-  @api
-  get spec() {
-    return this._spec;
-  }
-  set spec(value) {
-    this._spec = value ? JSON.parse(JSON.stringify(value)) : {};
-    if (
-      this._spec.theme &&
-      this._spec.theme.source === "custom" &&
-      this._spec.theme.name
-    ) {
-      this._loadCustomProps(this._spec.theme.name);
     }
-  }
 
-  // ----------------------------------------------------------------- state
+    // ----------------------------------------------------------------- state
 
-  get themeKey() {
-    return (this._spec.theme && this._spec.theme.name) || "";
-  }
-
-  get themeSource() {
-    return (this._spec.theme && this._spec.theme.source) || "builtin";
-  }
-
-  get themeProps() {
-    if (this.themeSource === "custom") {
-      return this._customProps; // null while loading — VMs degrade to fallbacks
+    get themeKey() {
+        return (this._spec.theme && this._spec.theme.name) || '';
     }
-    return getBuiltinTheme(this.themeKey);
-  }
 
-  get overrides() {
-    return (this._spec.theme && this._spec.theme.overrides) || {};
-  }
-
-  get tokens() {
-    return resolveTokens(this.themeProps, this.overrides);
-  }
-
-  get layoutType() {
-    return (this._spec.layout && this._spec.layout.type) || "scroll";
-  }
-
-  get layoutInfo() {
-    return getLayout(this.layoutType);
-  }
-
-  get currentPaneFlow() {
-    const o = (this._spec.layout && this._spec.layout.options) || {};
-    return o.paneFlow || "";
-  }
-
-  _controlDef(key) {
-    return flattenControls().find((c) => c.control.key === key);
-  }
-
-  _applies(entry) {
-    const gate =
-      (entry && entry.appliesTo) ||
-      (entry && entry.control && entry.control.appliesTo);
-    if (!gate) {
-      return true;
+    get themeSource() {
+        return (this._spec.theme && this._spec.theme.source) || 'builtin';
     }
-    if (gate.layouts) {
-      return gate.layouts.includes(this.layoutType);
-    }
-    if (gate.paginated) {
-      return Boolean(this.layoutInfo.paginates);
-    }
-    return true;
-  }
 
-  /** Effective value: override → theme default → spec content → fallback. */
-  _effective(control) {
-    if (control.themePath) {
-      const ov = getAt(this.overrides, control.themePath);
-      if (ov !== undefined) {
-        return ov;
-      }
-      const tv = getAt(this.themeProps, control.themePath);
-      if (tv !== undefined) {
-        return tv;
-      }
-      return control.fallback;
-    }
-    const sv = getAt(this._spec, control.path);
-    return sv === undefined ? control.fallback : sv;
-  }
-
-  _isEdited(control) {
-    return (
-      Boolean(control.themePath) &&
-      getAt(this.overrides, control.themePath) !== undefined
-    );
-  }
-
-  _hasPageImage() {
-    const def = this._controlDef("pageImage");
-    return Boolean(def && this._effective(def.control));
-  }
-
-  // ----------------------------------------------------------- view models
-
-  get controlsVM() {
-    return this._buildControls(flattenControls());
-  }
-
-  _buildControls(entries) {
-    const tokens = this.tokens;
-    const out = [];
-    for (const entry of entries) {
-      const c = entry.control;
-      if (!this._applies(entry)) {
-        continue;
-      }
-      if (c.needsImage && !this._hasPageImage()) {
-        continue;
-      }
-      if (c.needsEffect) {
-        const def = this._controlDef(c.needsEffect);
-        if (!def || !this._effective(def.control)) {
-          continue;
+    get themeProps() {
+        if (this.themeSource === 'custom') {
+            return this._customProps; // null while loading — VMs degrade to fallbacks
         }
-      }
-      if (c.needsValueOf) {
-        const def = this._controlDef(c.needsValueOf);
-        if (!def || !this._effective(def.control)) {
-          continue;
+        return getBuiltinTheme(this.themeKey);
+    }
+
+    get overrides() {
+        return (this._spec.theme && this._spec.theme.overrides) || {};
+    }
+
+    get tokens() {
+        return resolveTokens(this.themeProps, this.overrides);
+    }
+
+    get layoutType() {
+        return (this._spec.layout && this._spec.layout.type) || 'scroll';
+    }
+
+    get layoutInfo() {
+        return getLayout(this.layoutType);
+    }
+
+    get currentPaneFlow() {
+        const o = (this._spec.layout && this._spec.layout.options) || {};
+        return o.paneFlow || '';
+    }
+
+    _controlDef(key) {
+        return flattenControls().find((c) => c.control.key === key);
+    }
+
+    _applies(entry) {
+        const gate =
+            (entry && entry.appliesTo) ||
+            (entry && entry.control && entry.control.appliesTo);
+        if (!gate) {
+            return true;
         }
-      }
-      // Equality gates: [{ key, equals }] — ALL must match. Render-only:
-      // hidden controls always keep their values (IA §6).
-      if (c.needsValue) {
-        const ok = c.needsValue.every((g) => {
-          const def = this._controlDef(g.key);
-          return def && this._effective(def.control) === g.equals;
+        if (gate.layouts) {
+            return gate.layouts.includes(this.layoutType);
+        }
+        if (gate.paginated) {
+            return Boolean(this.layoutInfo.paginates);
+        }
+        return true;
+    }
+
+    /** Effective value: override → theme default → spec content → fallback. */
+    _effective(control) {
+        if (control.themePath) {
+            const ov = getAt(this.overrides, control.themePath);
+            if (ov !== undefined) {
+                return ov;
+            }
+            const tv = getAt(this.themeProps, control.themePath);
+            if (tv !== undefined) {
+                return tv;
+            }
+            return control.fallback;
+        }
+        const sv = getAt(this._spec, control.path);
+        return sv === undefined ? control.fallback : sv;
+    }
+
+    _isEdited(control) {
+        return (
+            Boolean(control.themePath) &&
+            getAt(this.overrides, control.themePath) !== undefined
+        );
+    }
+
+    _hasPageImage() {
+        const def = this._controlDef('pageImage');
+        return Boolean(def && this._effective(def.control));
+    }
+
+    // ----------------------------------------------------------- view models
+
+    get controlsVM() {
+        return this._buildControls(flattenControls());
+    }
+
+    _buildControls(entries) {
+        const tokens = this.tokens;
+        const out = [];
+        for (const entry of entries) {
+            const c = entry.control;
+            if (!this._applies(entry)) {
+                continue;
+            }
+            if (c.needsImage && !this._hasPageImage()) {
+                continue;
+            }
+            if (c.needsEffect) {
+                const def = this._controlDef(c.needsEffect);
+                if (!def || !this._effective(def.control)) {
+                    continue;
+                }
+            }
+            if (c.needsValueOf) {
+                const def = this._controlDef(c.needsValueOf);
+                if (!def || !this._effective(def.control)) {
+                    continue;
+                }
+            }
+            // Equality gates: [{ key, equals }] — ALL must match. Render-only:
+            // hidden controls always keep their values (IA §6).
+            if (c.needsValue) {
+                const ok = c.needsValue.every((g) => {
+                    const def = this._controlDef(g.key);
+                    return def && this._effective(def.control) === g.equals;
+                });
+                if (!ok) {
+                    continue;
+                }
+            }
+            const value = this._effective(c);
+            const vm = {
+                key: c.key,
+                label: c.label,
+                area: entry.area,
+                group: entry.group,
+                simple: Boolean(c.simple),
+                edited: this._isEdited(c),
+                isColor: c.type === 'color',
+                isSelect: c.type === 'select',
+                isToggle: c.type === 'toggle',
+                isText: c.type === 'text',
+                isRange: c.type === 'range',
+                isImage: c.type === 'image',
+                isGradientSurface: c.type === 'gradientSurface',
+                isMeshColors: c.type === 'meshColors',
+                isTiles: c.type === 'tiles',
+                isRichText: c.type === 'richtext',
+                isNumber: c.type === 'number',
+                placeholder: c.placeholder || '',
+                min: c.min,
+                max: c.max
+            };
+            if (c.type === 'color') {
+                vm.value = typeof value === 'string' ? value : '';
+                // derived-by-default colors (e.g. label ink): show the LIVE
+                // resolved token so the swatch never lies while unset
+                if (!vm.value && c.fallbackToken) {
+                    vm.value = tokens[c.fallbackToken] || '';
+                }
+                vm.contrastWith = c.contrastToken
+                    ? tokens[c.contrastToken]
+                    : undefined;
+                vm.subject = c.subject;
+            } else if (c.type === 'gradientSurface') {
+                vm.value = typeof value === 'string' ? value : '';
+                const g = getAt(this.overrides, c.gradientPath);
+                vm.gradient =
+                    g !== undefined
+                        ? g
+                        : getAt(this.themeProps, c.gradientPath);
+                vm.edited =
+                    vm.edited ||
+                    getAt(this.overrides, c.gradientPath) !== undefined;
+            } else if (c.type === 'meshColors') {
+                vm.colors = this._meshColorRows(value);
+            } else if (c.type === 'tiles') {
+                const current = value || c.fallback;
+                vm.tiles = c.options.map((o) => ({
+                    ...o,
+                    cls: o.value === current ? 'as-tile on' : 'as-tile'
+                }));
+            } else if (c.type === 'richtext') {
+                vm.value = typeof value === 'string' ? value : '';
+            } else if (c.type === 'number') {
+                vm.value = value === undefined || value === null ? '' : value;
+            } else if (c.type === 'select') {
+                let current =
+                    value === null || value === undefined ? '' : String(value);
+                // legacy value forms (glass: true/false) display as their
+                // mapped option so the select never shows a lie
+                if (c.valueMap && current in c.valueMap) {
+                    current = c.valueMap[current];
+                }
+                if (c.key === 'glass') {
+                    vm.hint = this._glassHint(current);
+                }
+                let options = c.options;
+                if (c.dynamicOptions === 'fonts') {
+                    options = [
+                        ...options,
+                        ...this._fonts.map((f) => ({
+                            value: `custom:${f.key}`,
+                            label: `${f.family} · custom`
+                        }))
+                    ];
+                    const cf = getAt(this.overrides, 'customFont');
+                    if (cf && cf.key) {
+                        current = `custom:${cf.key}`;
+                    }
+                    vm.edited =
+                        vm.edited ||
+                        getAt(this.overrides, 'customFont') !== undefined;
+                }
+                vm.options = options.map((o) => ({
+                    ...o,
+                    selected: o.value === current
+                }));
+            } else if (c.type === 'toggle') {
+                // _effective already applied theme default + fallback
+                vm.checked = Boolean(value);
+            } else if (c.type === 'image') {
+                vm.value = value || null;
+                vm.versionId = c.versionPath
+                    ? c.themePath
+                        ? getAt(this.overrides, c.versionPath)
+                        : getAt(this._spec, c.versionPath)
+                    : null;
+            } else {
+                vm.value = value === undefined || value === null ? '' : value;
+            }
+            out.push(vm);
+        }
+        return out;
+    }
+
+    /** Advanced: the active area's groups with their (filtered) controls. */
+    get areaVM() {
+        const area = listAreas().find((a) => a.key === this.activeAreaKey);
+        if (!area) {
+            return { groups: [] };
+        }
+        const all = this.controlsVM;
+        const groups = [];
+        for (const g of area.groups) {
+            if (!this._applies(g)) {
+                continue;
+            }
+            const controls = all.filter(
+                (c) => c.area === area.key && c.group === g.key
+            );
+            if (controls.length === 0) {
+                continue;
+            }
+            groups.push({
+                key: g.key,
+                label: g.label,
+                note: g.note || '',
+                edited: controls.some((c) => c.edited),
+                controls
+            });
+        }
+        return { label: area.label, groups, narration: this._narration() };
+    }
+
+    _narration() {
+        if (this.activeAreaKey === 'paging') {
+            if (this.layoutType === 'splitHero') {
+                return 'Split Hero owns pagination — progress renders in the brand pane.';
+            }
+            if (!this.layoutInfo.paginates) {
+                return 'Single page — nothing to page.';
+            }
+            return `The ${this.layoutType} primitive owns its progress indicator; its styling controls arrive with the builder (P3). Values you set elsewhere are kept.`;
+        }
+        if (this.activeAreaKey === 'header' && this.layoutInfo.ownsHeader) {
+            return 'Split Hero paints the header in its brand pane — these words feed the pane.';
+        }
+        return '';
+    }
+
+    get rail() {
+        return listAreas().map((a) => ({
+            key: a.key,
+            label: a.label,
+            icon: a.icon,
+            cls: a.key === this.activeAreaKey ? 'rail-btn on' : 'rail-btn'
+        }));
+    }
+
+    get simpleVM() {
+        const all = this.controlsVM;
+        const pick = (key) => all.find((c) => c.key === key);
+        return {
+            accent: pick('accent'),
+            logo: pick('logo'),
+            title: pick('title'),
+            description: pick('description'),
+            submitLabel: pick('submitLabel')
+        };
+    }
+
+    /** Composite theme identity — the same 'key' | 'custom:<id>' form the
+     *  gallery emits, so switch/no-op comparisons never cross forms. */
+    get themeValue() {
+        return this.themeSource === 'custom'
+            ? `custom:${this.themeKey}`
+            : this.themeKey;
+    }
+
+    get themeLabel() {
+        if (this.themeSource === 'custom') {
+            const t = this._customThemes.find((x) => x.id === this.themeKey);
+            return t ? `${t.name} · custom` : 'Custom theme';
+        }
+        const t = listBuiltinThemes().find((x) => x.key === this.themeKey);
+        return t ? t.name : this.themeKey || '—';
+    }
+
+    get layoutLabel() {
+        if (
+            this.layoutType === 'splitHero' &&
+            this.currentPaneFlow === 'oneAtATime'
+        ) {
+            return 'Split hero · Conversational';
+        }
+        return this.layoutInfo.label;
+    }
+
+    get customThemes() {
+        return this._customThemes;
+    }
+
+    get galleryOpen() {
+        return Boolean(this.galleryMode);
+    }
+
+    get overrideCount() {
+        return this.controlsVM.filter((c) => c.edited).length;
+    }
+
+    get hasOverrides() {
+        return this.overrideCount > 0;
+    }
+
+    get advChipCount() {
+        return this.controlsVM.filter((c) => c.edited && !c.simple).length;
+    }
+
+    get showAdvChip() {
+        return !this.advanced && this.advChipCount > 0;
+    }
+
+    get lensDesc() {
+        return this.advanced
+            ? 'Nine areas, every control — grouped by what it styles.'
+            : 'The essentials. Everything else follows the theme.';
+    }
+
+    get simpleLensClass() {
+        return this.advanced ? 'lens-btn' : 'lens-btn on';
+    }
+
+    get advancedLensClass() {
+        return this.advanced ? 'lens-btn on' : 'lens-btn';
+    }
+
+    get pendingThemeName() {
+        if (!this.pendingThemeKey) {
+            return '';
+        }
+        if (this.pendingThemeKey.startsWith('custom:')) {
+            const id = this.pendingThemeKey.slice(7);
+            const t = this._customThemes.find((x) => x.id === id);
+            return t ? t.name : 'custom theme';
+        }
+        const t = listBuiltinThemes().find(
+            (x) => x.key === this.pendingThemeKey
+        );
+        return t ? t.name : '';
+    }
+
+    /** Blast-radius rule: the editor opens ONLY via this explicit action. */
+    handleEditTheme() {
+        this.dispatchEvent(
+            new CustomEvent('themeedit', {
+                detail: {
+                    themeId:
+                        this.themeSource === 'custom' ? this.themeKey : null,
+                    startFrom:
+                        this.themeSource === 'builtin' ? this.themeKey : null
+                }
+            })
+        );
+    }
+
+    // ---------------------------------------------------------------- events
+
+    _emit() {
+        this.dispatchEvent(
+            new CustomEvent('specchange', {
+                detail: { spec: JSON.parse(JSON.stringify(this._spec)) }
+            })
+        );
+    }
+
+    _ensureOverrides() {
+        if (!this._spec.theme) {
+            this._spec.theme = { source: 'builtin', name: '', overrides: {} };
+        }
+        if (!this._spec.theme.overrides) {
+            this._spec.theme.overrides = {};
+        }
+        return this._spec.theme.overrides;
+    }
+
+    /** One write path for every control (values already type-mapped). */
+    _apply(key, value) {
+        const def = this._controlDef(key);
+        if (!def) {
+            return;
+        }
+        const c = def.control;
+        if (c.themePath) {
+            const overrides = this._ensureOverrides();
+            const themeValue = getAt(this.themeProps, c.themePath);
+            const same =
+                value === themeValue ||
+                (value === null &&
+                    (themeValue === null || themeValue === undefined));
+            if (same) {
+                deleteAt(overrides, c.themePath);
+            } else {
+                setAt(overrides, c.themePath, value);
+            }
+        } else if (value === undefined) {
+            deleteAt(this._spec, c.path);
+        } else {
+            setAt(this._spec, c.path, value);
+        }
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    handleColor(event) {
+        this._apply(event.target.dataset.key, event.detail.value);
+    }
+
+    // ----- custom mesh (plan B4; UX reworked per owner 2026-07-08) -----
+
+    _activeMeshKey() {
+        const def = this._controlDef('mesh');
+        return def ? this._effective(def.control) : null;
+    }
+
+    /**
+     * Picker rows mirror what's actually PAINTED: a preset shows its own seed
+     * colors (so "Neon" is never a black box of fixed colors), custom shows
+     * the stored array — row count matches the painted blob count, so a
+     * 3-blob Aurora conversion never grows a phantom 4th swatch.
+     */
+    _meshColorRows(value) {
+        const meshKey = this._activeMeshKey();
+        const row = (color, i) => ({
+            idx: String(i),
+            label: `Blob ${i + 1}`,
+            value: color
         });
-        if (!ok) {
-          continue;
+        if (meshKey !== 'custom') {
+            return (MESH_SEEDS[meshKey] || MESH_SEEDS.neon).map(row);
         }
-      }
-      const value = this._effective(c);
-      const vm = {
-        key: c.key,
-        label: c.label,
-        area: entry.area,
-        group: entry.group,
-        simple: Boolean(c.simple),
-        edited: this._isEdited(c),
-        isColor: c.type === "color",
-        isSelect: c.type === "select",
-        isToggle: c.type === "toggle",
-        isText: c.type === "text",
-        isRange: c.type === "range",
-        isImage: c.type === "image",
-        isGradientSurface: c.type === "gradientSurface",
-        isMeshColors: c.type === "meshColors",
-        isTiles: c.type === "tiles",
-        isRichText: c.type === "richtext",
-        isNumber: c.type === "number",
-        placeholder: c.placeholder || "",
-        min: c.min,
-        max: c.max
-      };
-      if (c.type === "color") {
-        vm.value = typeof value === "string" ? value : "";
-        // derived-by-default colors (e.g. label ink): show the LIVE
-        // resolved token so the swatch never lies while unset
-        if (!vm.value && c.fallbackToken) {
-          vm.value = tokens[c.fallbackToken] || "";
+        const list = Array.isArray(value)
+            ? value
+            : value && typeof value === 'object'
+              ? Object.keys(value)
+                    .sort()
+                    .map((k) => value[k])
+              : [];
+        const n = list.length || MESH_SEEDS.neon.length;
+        return Array.from({ length: n }, (_, i) =>
+            row(list[i] || MESH_SEEDS.neon[i] || '#888888', i)
+        );
+    }
+
+    /** Editing any blob converts the active preset into a custom mesh seeded
+     *  from THAT preset — the user keeps what they were looking at. */
+    handleMeshColor(event) {
+        const idx = Number(event.target.dataset.idx);
+        const arr = this._meshColorRows(
+            this._effective(this._controlDef('meshColors').control)
+        ).map((r) => r.value);
+        arr[idx] = event.detail.value;
+        if (this._activeMeshKey() !== 'custom') {
+            this._apply('mesh', 'custom');
         }
-        vm.contrastWith = c.contrastToken ? tokens[c.contrastToken] : undefined;
-        vm.subject = c.subject;
-      } else if (c.type === "gradientSurface") {
-        vm.value = typeof value === "string" ? value : "";
-        const g = getAt(this.overrides, c.gradientPath);
-        vm.gradient =
-          g !== undefined ? g : getAt(this.themeProps, c.gradientPath);
-        vm.edited =
-          vm.edited || getAt(this.overrides, c.gradientPath) !== undefined;
-      } else if (c.type === "meshColors") {
-        vm.colors = this._meshColorRows(value);
-      } else if (c.type === "tiles") {
-        const current = value || c.fallback;
-        vm.tiles = c.options.map((o) => ({
-          ...o,
-          cls: o.value === current ? "as-tile on" : "as-tile"
-        }));
-      } else if (c.type === "richtext") {
-        vm.value = typeof value === "string" ? value : "";
-      } else if (c.type === "number") {
-        vm.value = value === undefined || value === null ? "" : value;
-      } else if (c.type === "select") {
-        let current =
-          value === null || value === undefined ? "" : String(value);
-        // legacy value forms (glass: true/false) display as their
-        // mapped option so the select never shows a lie
-        if (c.valueMap && current in c.valueMap) {
-          current = c.valueMap[current];
+        // whole-array writes: mergeProps replaces meshColors wholesale, so a
+        // sparse per-slot delta would drop the theme's other slots
+        this._apply('meshColors', arr);
+    }
+
+    /** Frost is invisible behind an opaque fill — say so instead of looking dead. */
+    _glassHint(current) {
+        if (!current) {
+            return '';
         }
-        if (c.key === "glass") {
-          vm.hint = this._glassHint(current);
+        const bgDef = this._controlDef('contentBg');
+        const opDef = this._controlDef('contentBgOpacity');
+        const bg = bgDef ? this._effective(bgDef.control) : '';
+        const op = opDef ? Number(this._effective(opDef.control)) : 100;
+        const translucent =
+            (typeof bg === 'string' &&
+                (bg.startsWith('rgba') || bg === 'transparent')) ||
+            (Number.isFinite(op) && op < 100);
+        return translucent
+            ? ''
+            : 'Frost only shows through a see-through fill — lower Body › Fill opacity or pick a translucent color.';
+    }
+
+    /** Solid + gradient land in ONE event; each half gets sparse-delta rules. */
+    handleGradientSurface(event) {
+        const key = event.target.dataset.key;
+        const def = this._controlDef(key);
+        if (!def) {
+            return;
         }
-        let options = c.options;
-        if (c.dynamicOptions === "fonts") {
-          options = [
-            ...options,
-            ...this._fonts.map((f) => ({
-              value: `custom:${f.key}`,
-              label: `${f.family} · custom`
-            }))
-          ];
-          const cf = getAt(this.overrides, "customFont");
-          if (cf && cf.key) {
-            current = `custom:${cf.key}`;
-          }
-          vm.edited =
-            vm.edited || getAt(this.overrides, "customFont") !== undefined;
+        const c = def.control;
+        const { solid, gradient } = event.detail;
+        const overrides = this._ensureOverrides();
+        if (solid === getAt(this.themeProps, c.themePath)) {
+            deleteAt(overrides, c.themePath);
+        } else {
+            setAt(overrides, c.themePath, solid);
         }
-        vm.options = options.map((o) => ({
-          ...o,
-          selected: o.value === current
-        }));
-      } else if (c.type === "toggle") {
-        // _effective already applied theme default + fallback
-        vm.checked = Boolean(value);
-      } else if (c.type === "image") {
-        vm.value = value || null;
-        vm.versionId = c.versionPath
-          ? c.themePath
-            ? getAt(this.overrides, c.versionPath)
-            : getAt(this._spec, c.versionPath)
-          : null;
-      } else {
-        vm.value = value === undefined || value === null ? "" : value;
-      }
-      out.push(vm);
-    }
-    return out;
-  }
-
-  /** Advanced: the active area's groups with their (filtered) controls. */
-  get areaVM() {
-    const area = listAreas().find((a) => a.key === this.activeAreaKey);
-    if (!area) {
-      return { groups: [] };
-    }
-    const all = this.controlsVM;
-    const groups = [];
-    for (const g of area.groups) {
-      if (!this._applies(g)) {
-        continue;
-      }
-      const controls = all.filter(
-        (c) => c.area === area.key && c.group === g.key
-      );
-      if (controls.length === 0) {
-        continue;
-      }
-      groups.push({
-        key: g.key,
-        label: g.label,
-        note: g.note || "",
-        edited: controls.some((c) => c.edited),
-        controls
-      });
-    }
-    return { label: area.label, groups, narration: this._narration() };
-  }
-
-  _narration() {
-    if (this.activeAreaKey === "paging") {
-      if (this.layoutType === "splitHero") {
-        return "Split Hero owns pagination — progress renders in the brand pane.";
-      }
-      if (!this.layoutInfo.paginates) {
-        return "Single page — nothing to page.";
-      }
-      return `The ${this.layoutType} primitive owns its progress indicator; its styling controls arrive with the builder (P3). Values you set elsewhere are kept.`;
-    }
-    if (this.activeAreaKey === "header" && this.layoutInfo.ownsHeader) {
-      return "Split Hero paints the header in its brand pane — these words feed the pane.";
-    }
-    return "";
-  }
-
-  get rail() {
-    return listAreas().map((a) => ({
-      key: a.key,
-      label: a.label,
-      icon: a.icon,
-      cls: a.key === this.activeAreaKey ? "rail-btn on" : "rail-btn"
-    }));
-  }
-
-  get simpleVM() {
-    const all = this.controlsVM;
-    const pick = (key) => all.find((c) => c.key === key);
-    return {
-      accent: pick("accent"),
-      logo: pick("logo"),
-      title: pick("title"),
-      description: pick("description"),
-      submitLabel: pick("submitLabel")
-    };
-  }
-
-  /** Composite theme identity — the same 'key' | 'custom:<id>' form the
-   *  gallery emits, so switch/no-op comparisons never cross forms. */
-  get themeValue() {
-    return this.themeSource === "custom"
-      ? `custom:${this.themeKey}`
-      : this.themeKey;
-  }
-
-  get themeLabel() {
-    if (this.themeSource === "custom") {
-      const t = this._customThemes.find((x) => x.id === this.themeKey);
-      return t ? `${t.name} · custom` : "Custom theme";
-    }
-    const t = listBuiltinThemes().find((x) => x.key === this.themeKey);
-    return t ? t.name : this.themeKey || "—";
-  }
-
-  get layoutLabel() {
-    if (
-      this.layoutType === "splitHero" &&
-      this.currentPaneFlow === "oneAtATime"
-    ) {
-      return "Split hero · Conversational";
-    }
-    return this.layoutInfo.label;
-  }
-
-  get customThemes() {
-    return this._customThemes;
-  }
-
-  get galleryOpen() {
-    return Boolean(this.galleryMode);
-  }
-
-  get overrideCount() {
-    return this.controlsVM.filter((c) => c.edited).length;
-  }
-
-  get hasOverrides() {
-    return this.overrideCount > 0;
-  }
-
-  get advChipCount() {
-    return this.controlsVM.filter((c) => c.edited && !c.simple).length;
-  }
-
-  get showAdvChip() {
-    return !this.advanced && this.advChipCount > 0;
-  }
-
-  get lensDesc() {
-    return this.advanced
-      ? "Nine areas, every control — grouped by what it styles."
-      : "The essentials. Everything else follows the theme.";
-  }
-
-  get simpleLensClass() {
-    return this.advanced ? "lens-btn" : "lens-btn on";
-  }
-
-  get advancedLensClass() {
-    return this.advanced ? "lens-btn on" : "lens-btn";
-  }
-
-  get pendingThemeName() {
-    if (!this.pendingThemeKey) {
-      return "";
-    }
-    if (this.pendingThemeKey.startsWith("custom:")) {
-      const id = this.pendingThemeKey.slice(7);
-      const t = this._customThemes.find((x) => x.id === id);
-      return t ? t.name : "custom theme";
-    }
-    const t = listBuiltinThemes().find((x) => x.key === this.pendingThemeKey);
-    return t ? t.name : "";
-  }
-
-  /** Blast-radius rule: the editor opens ONLY via this explicit action. */
-  handleEditTheme() {
-    this.dispatchEvent(
-      new CustomEvent("themeedit", {
-        detail: {
-          themeId: this.themeSource === "custom" ? this.themeKey : null,
-          startFrom: this.themeSource === "builtin" ? this.themeKey : null
+        const themeGradient = getAt(this.themeProps, c.gradientPath);
+        if (
+            gradient === null &&
+            (themeGradient === undefined || themeGradient === null)
+        ) {
+            deleteAt(overrides, c.gradientPath);
+        } else {
+            setAt(overrides, c.gradientPath, gradient);
         }
-      })
-    );
-  }
-
-  // ---------------------------------------------------------------- events
-
-  _emit() {
-    this.dispatchEvent(
-      new CustomEvent("specchange", {
-        detail: { spec: JSON.parse(JSON.stringify(this._spec)) }
-      })
-    );
-  }
-
-  _ensureOverrides() {
-    if (!this._spec.theme) {
-      this._spec.theme = { source: "builtin", name: "", overrides: {} };
+        this._spec = { ...this._spec };
+        this._emit();
     }
-    if (!this._spec.theme.overrides) {
-      this._spec.theme.overrides = {};
-    }
-    return this._spec.theme.overrides;
-  }
 
-  /** One write path for every control (values already type-mapped). */
-  _apply(key, value) {
-    const def = this._controlDef(key);
-    if (!def) {
-      return;
-    }
-    const c = def.control;
-    if (c.themePath) {
-      const overrides = this._ensureOverrides();
-      const themeValue = getAt(this.themeProps, c.themePath);
-      const same =
-        value === themeValue ||
-        (value === null && (themeValue === null || themeValue === undefined));
-      if (same) {
-        deleteAt(overrides, c.themePath);
-      } else {
-        setAt(overrides, c.themePath, value);
-      }
-    } else if (value === undefined) {
-      deleteAt(this._spec, c.path);
-    } else {
-      setAt(this._spec, c.path, value);
-    }
-    this._spec = { ...this._spec };
-    this._emit();
-  }
-
-  handleColor(event) {
-    this._apply(event.target.dataset.key, event.detail.value);
-  }
-
-  // ----- custom mesh (plan B4; UX reworked per owner 2026-07-08) -----
-
-  _activeMeshKey() {
-    const def = this._controlDef("mesh");
-    return def ? this._effective(def.control) : null;
-  }
-
-  /**
-   * Picker rows mirror what's actually PAINTED: a preset shows its own seed
-   * colors (so "Neon" is never a black box of fixed colors), custom shows
-   * the stored array — row count matches the painted blob count, so a
-   * 3-blob Aurora conversion never grows a phantom 4th swatch.
-   */
-  _meshColorRows(value) {
-    const meshKey = this._activeMeshKey();
-    const row = (color, i) => ({
-      idx: String(i),
-      label: `Blob ${i + 1}`,
-      value: color
-    });
-    if (meshKey !== "custom") {
-      return (MESH_SEEDS[meshKey] || MESH_SEEDS.neon).map(row);
-    }
-    const list = Array.isArray(value)
-      ? value
-      : value && typeof value === "object"
-        ? Object.keys(value)
-            .sort()
-            .map((k) => value[k])
-        : [];
-    const n = list.length || MESH_SEEDS.neon.length;
-    return Array.from({ length: n }, (_, i) =>
-      row(list[i] || MESH_SEEDS.neon[i] || "#888888", i)
-    );
-  }
-
-  /** Editing any blob converts the active preset into a custom mesh seeded
-   *  from THAT preset — the user keeps what they were looking at. */
-  handleMeshColor(event) {
-    const idx = Number(event.target.dataset.idx);
-    const arr = this._meshColorRows(
-      this._effective(this._controlDef("meshColors").control)
-    ).map((r) => r.value);
-    arr[idx] = event.detail.value;
-    if (this._activeMeshKey() !== "custom") {
-      this._apply("mesh", "custom");
-    }
-    // whole-array writes: mergeProps replaces meshColors wholesale, so a
-    // sparse per-slot delta would drop the theme's other slots
-    this._apply("meshColors", arr);
-  }
-
-  /** Frost is invisible behind an opaque fill — say so instead of looking dead. */
-  _glassHint(current) {
-    if (!current) {
-      return "";
-    }
-    const bgDef = this._controlDef("contentBg");
-    const opDef = this._controlDef("contentBgOpacity");
-    const bg = bgDef ? this._effective(bgDef.control) : "";
-    const op = opDef ? Number(this._effective(opDef.control)) : 100;
-    const translucent =
-      (typeof bg === "string" &&
-        (bg.startsWith("rgba") || bg === "transparent")) ||
-      (Number.isFinite(op) && op < 100);
-    return translucent
-      ? ""
-      : "Frost only shows through a see-through fill — lower Body › Fill opacity or pick a translucent color.";
-  }
-
-  /** Solid + gradient land in ONE event; each half gets sparse-delta rules. */
-  handleGradientSurface(event) {
-    const key = event.target.dataset.key;
-    const def = this._controlDef(key);
-    if (!def) {
-      return;
-    }
-    const c = def.control;
-    const { solid, gradient } = event.detail;
-    const overrides = this._ensureOverrides();
-    if (solid === getAt(this.themeProps, c.themePath)) {
-      deleteAt(overrides, c.themePath);
-    } else {
-      setAt(overrides, c.themePath, solid);
-    }
-    const themeGradient = getAt(this.themeProps, c.gradientPath);
-    if (
-      gradient === null &&
-      (themeGradient === undefined || themeGradient === null)
-    ) {
-      deleteAt(overrides, c.gradientPath);
-    } else {
-      setAt(overrides, c.gradientPath, gradient);
-    }
-    this._spec = { ...this._spec };
-    this._emit();
-  }
-
-  handleSelect(event) {
-    const key = event.target.dataset.key;
-    const def = this._controlDef(key);
-    let v = event.target.value;
-    // custom font route: the picker value custom:<key> becomes a
-    // customFont override object; picking a built-in pairing clears it
-    if (def && def.control.dynamicOptions === "fonts") {
-      const overrides = this._ensureOverrides();
-      if (v.startsWith("custom:")) {
-        const font = this._fonts.find((f) => `custom:${f.key}` === v);
-        if (font) {
-          setAt(overrides, "customFont", {
-            key: font.key,
-            family: font.family,
-            fallback: font.fallback,
-            resource: font.resource,
-            regularPath: font.regularPath,
-            boldPath: font.boldPath
-          });
-          deleteAt(overrides, "typography");
-          this._spec = { ...this._spec };
-          this._emit();
+    handleSelect(event) {
+        const key = event.target.dataset.key;
+        const def = this._controlDef(key);
+        let v = event.target.value;
+        // custom font route: the picker value custom:<key> becomes a
+        // customFont override object; picking a built-in pairing clears it
+        if (def && def.control.dynamicOptions === 'fonts') {
+            const overrides = this._ensureOverrides();
+            if (v.startsWith('custom:')) {
+                const font = this._fonts.find((f) => `custom:${f.key}` === v);
+                if (font) {
+                    setAt(overrides, 'customFont', {
+                        key: font.key,
+                        family: font.family,
+                        fallback: font.fallback,
+                        resource: font.resource,
+                        regularPath: font.regularPath,
+                        boldPath: font.boldPath
+                    });
+                    deleteAt(overrides, 'typography');
+                    this._spec = { ...this._spec };
+                    this._emit();
+                }
+                return;
+            }
+            deleteAt(overrides, 'customFont');
         }
-        return;
-      }
-      deleteAt(overrides, "customFont");
-    }
-    if (def && def.control.emptyAsNull && v === "") {
-      v = null;
-    }
-    // switching the mesh select to Custom with no colors yet would render
-    // nothing — seed from the preset the user was just on (else neon)
-    if (key === "mesh" && v === "custom") {
-      const mc = this._controlDef("meshColors");
-      if (mc && !this._effective(mc.control)) {
-        const prev = this._activeMeshKey(); // pre-switch value
-        this._apply("meshColors", [...(MESH_SEEDS[prev] || MESH_SEEDS.neon)]);
-      }
-    }
-    if (def && !def.control.themePath && v === "") {
-      // plain selects: '' means "layout default" → drop the key
-      this._apply(key, undefined);
-      return;
-    }
-    this._apply(key, v);
-  }
-
-  handleToggle(event) {
-    this._apply(event.target.dataset.key, event.target.checked);
-  }
-
-  handleTile(event) {
-    this._apply(
-      event.currentTarget.dataset.key,
-      event.currentTarget.dataset.value
-    );
-  }
-
-  handleRichText(event) {
-    // empty editor → drop the key so the runtime default carries
-    this._apply(event.target.dataset.key, event.target.value || undefined);
-  }
-
-  handleNumber(event) {
-    const n = Number(event.target.value);
-    this._apply(
-      event.target.dataset.key,
-      event.target.value === "" || !Number.isFinite(n) ? undefined : n
-    );
-  }
-
-  handleText(event) {
-    this._apply(event.target.dataset.key, event.target.value);
-  }
-
-  handleRange(event) {
-    this._apply(event.target.dataset.key, Number(event.target.value));
-  }
-
-  handleImage(event) {
-    const key = event.target.dataset.key;
-    const def = this._controlDef(key);
-    if (!def) {
-      return;
-    }
-    const c = def.control;
-    const { url, contentVersionId } = event.detail;
-    const root = c.themePath ? this._ensureOverrides() : this._spec;
-    const urlPath = c.themePath || c.path;
-    if (url) {
-      setAt(root, urlPath, url);
-      if (c.versionPath) {
-        setAt(root, c.versionPath, contentVersionId);
-      }
-    } else {
-      deleteAt(root, urlPath);
-      if (c.versionPath) {
-        deleteAt(root, c.versionPath);
-      }
-    }
-    this._spec = { ...this._spec };
-    this._emit();
-  }
-
-  // ----- lens + rail -----
-
-  handleLensSimple() {
-    this.advanced = false;
-  }
-
-  handleLensAdvanced() {
-    this.advanced = true;
-  }
-
-  handleRail(event) {
-    this.activeAreaKey = event.currentTarget.dataset.area;
-  }
-
-  // ----- Simple LOOK chips (same values the Advanced selects drive) -----
-
-  handleLook(event) {
-    const look = event.target.dataset.look;
-    if (look === "airy" || look === "dense") {
-      this._apply("density", look === "airy" ? "comfortable" : "compact");
-      return;
-    }
-    const radiusDef = this._controlDef("radius");
-    const current = this._effective(radiusDef.control) || "soft";
-    const i = RADIUS_ORDER.indexOf(current);
-    const next =
-      look === "rounder"
-        ? Math.min(i + 1, RADIUS_ORDER.length - 1)
-        : Math.max(i - 1, 0);
-    this._apply("radius", RADIUS_ORDER[next]);
-  }
-
-  // ----- gallery popups (theme + layout share ONE shell) -----
-
-  handleOpenGallery(event) {
-    this.galleryMode = event.currentTarget.dataset.gallery;
-  }
-
-  handleGalleryClose() {
-    this.galleryMode = null;
-  }
-
-  // ----- theme switch (confirm gate, IA §6) -----
-
-  /** Gallery picks land in the SAME confirm gate the old dropdown used. */
-  handleGalleryTheme(event) {
-    this.galleryMode = null;
-    const next = event.detail.value;
-    if (next === this.themeValue) {
-      return;
-    }
-    if (this.hasOverrides) {
-      this.pendingThemeKey = next;
-      return;
-    }
-    this._switchTheme(next, false);
-  }
-
-  handleConfirmKeep() {
-    this._switchTheme(this.pendingThemeKey, false);
-    this.pendingThemeKey = null;
-  }
-
-  handleConfirmClear() {
-    this._switchTheme(this.pendingThemeKey, true);
-    this.pendingThemeKey = null;
-  }
-
-  handleConfirmCancel() {
-    this.pendingThemeKey = null;
-  }
-
-  _switchTheme(key, clearOverrides) {
-    if (!this._spec.theme) {
-      this._spec.theme = { source: "builtin", overrides: {} };
-    }
-    if (key.startsWith("custom:")) {
-      const id = key.slice(7);
-      this._spec.theme.source = "custom";
-      this._spec.theme.name = id;
-      this._loadCustomProps(id);
-    } else {
-      this._spec.theme.source = "builtin";
-      this._spec.theme.name = key;
-    }
-    if (clearOverrides) {
-      this._spec.theme.overrides = {};
-    }
-    this._spec = { ...this._spec };
-    this._emit();
-  }
-
-  // ----- layout switch (no gate: theme overrides are layout-agnostic) -----
-
-  handleGalleryLayout(event) {
-    this.galleryMode = null;
-    const { layout, paneFlow } = event.detail;
-    if (
-      layout === this.layoutType &&
-      (paneFlow || "") === this.currentPaneFlow
-    ) {
-      return;
-    }
-    this._switchLayout(layout, paneFlow || "");
-  }
-
-  /**
-   * Options are rebuilt the way the creation flow builds a spec's layout
-   * (buildSampleSpec/FinalFormCreateController): they are layout-specific,
-   * so a stale splitHero paneFlow must never ride into a stepper spec.
-   * Layout-agnostic keys (maxWidth) and zonesDefault carry over; fullBleed
-   * survives a splitHero→splitHero variant switch — set on THIS layout.
-   */
-  _switchLayout(type, paneFlow) {
-    const prev = this._spec.layout || {};
-    const options = {};
-    if (type === "splitHero") {
-      if (paneFlow === "oneAtATime") {
-        options.paneFlow = "oneAtATime";
-      }
-      if (
-        prev.type === "splitHero" &&
-        prev.options &&
-        prev.options.fullBleed !== undefined
-      ) {
-        options.fullBleed = prev.options.fullBleed;
-      }
-    }
-    this._spec.layout = {
-      ...prev,
-      type,
-      options,
-      zonesDefault: prev.zonesDefault || { arrangement: "single", gap: "md" }
-    };
-    this._spec = { ...this._spec };
-    this._emit();
-  }
-
-  // ----- reset (IA §6: per group + all) -----
-
-  handleGroupReset(event) {
-    event.stopPropagation();
-    const groupKey = event.target.dataset.group;
-    const overrides = this._ensureOverrides();
-    for (const entry of flattenControls()) {
-      if (
-        entry.area === this.activeAreaKey &&
-        entry.group === groupKey &&
-        entry.control.themePath
-      ) {
-        deleteAt(overrides, entry.control.themePath);
-        if (entry.control.versionPath) {
-          deleteAt(overrides, entry.control.versionPath);
+        if (def && def.control.emptyAsNull && v === '') {
+            v = null;
         }
-        if (entry.control.gradientPath) {
-          deleteAt(overrides, entry.control.gradientPath);
+        // switching the mesh select to Custom with no colors yet would render
+        // nothing — seed from the preset the user was just on (else neon)
+        if (key === 'mesh' && v === 'custom') {
+            const mc = this._controlDef('meshColors');
+            if (mc && !this._effective(mc.control)) {
+                const prev = this._activeMeshKey(); // pre-switch value
+                this._apply('meshColors', [
+                    ...(MESH_SEEDS[prev] || MESH_SEEDS.neon)
+                ]);
+            }
         }
-        if (entry.control.dynamicOptions === "fonts") {
-          deleteAt(overrides, "customFont");
+        if (def && !def.control.themePath && v === '') {
+            // plain selects: '' means "layout default" → drop the key
+            this._apply(key, undefined);
+            return;
         }
-      }
+        this._apply(key, v);
     }
-    this._spec = { ...this._spec };
-    this._emit();
-  }
 
-  async handleResetAll() {
-    const ok = await LightningConfirm.open({
-      message: `Reset all ${this.overrideCount} customization(s) to the theme's defaults?`,
-      label: "Reset all customizations",
-      theme: "warning"
-    });
-    if (ok) {
-      this._ensureOverrides();
-      this._spec.theme.overrides = {};
-      this._spec = { ...this._spec };
-      this._emit();
+    handleToggle(event) {
+        this._apply(event.target.dataset.key, event.target.checked);
     }
-  }
+
+    handleTile(event) {
+        this._apply(
+            event.currentTarget.dataset.key,
+            event.currentTarget.dataset.value
+        );
+    }
+
+    handleRichText(event) {
+        // empty editor → drop the key so the runtime default carries
+        this._apply(event.target.dataset.key, event.target.value || undefined);
+    }
+
+    handleNumber(event) {
+        const n = Number(event.target.value);
+        this._apply(
+            event.target.dataset.key,
+            event.target.value === '' || !Number.isFinite(n) ? undefined : n
+        );
+    }
+
+    handleText(event) {
+        this._apply(event.target.dataset.key, event.target.value);
+    }
+
+    handleRange(event) {
+        this._apply(event.target.dataset.key, Number(event.target.value));
+    }
+
+    handleImage(event) {
+        const key = event.target.dataset.key;
+        const def = this._controlDef(key);
+        if (!def) {
+            return;
+        }
+        const c = def.control;
+        const { url, contentVersionId } = event.detail;
+        const root = c.themePath ? this._ensureOverrides() : this._spec;
+        const urlPath = c.themePath || c.path;
+        if (url) {
+            setAt(root, urlPath, url);
+            if (c.versionPath) {
+                setAt(root, c.versionPath, contentVersionId);
+            }
+        } else {
+            deleteAt(root, urlPath);
+            if (c.versionPath) {
+                deleteAt(root, c.versionPath);
+            }
+        }
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    // ----- lens + rail -----
+
+    handleLensSimple() {
+        this.advanced = false;
+    }
+
+    handleLensAdvanced() {
+        this.advanced = true;
+    }
+
+    handleRail(event) {
+        this.activeAreaKey = event.currentTarget.dataset.area;
+    }
+
+    // ----- Simple LOOK chips (same values the Advanced selects drive) -----
+
+    handleLook(event) {
+        const look = event.target.dataset.look;
+        if (look === 'airy' || look === 'dense') {
+            this._apply('density', look === 'airy' ? 'comfortable' : 'compact');
+            return;
+        }
+        const radiusDef = this._controlDef('radius');
+        const current = this._effective(radiusDef.control) || 'soft';
+        const i = RADIUS_ORDER.indexOf(current);
+        const next =
+            look === 'rounder'
+                ? Math.min(i + 1, RADIUS_ORDER.length - 1)
+                : Math.max(i - 1, 0);
+        this._apply('radius', RADIUS_ORDER[next]);
+    }
+
+    // ----- gallery popups (theme + layout share ONE shell) -----
+
+    handleOpenGallery(event) {
+        this.galleryMode = event.currentTarget.dataset.gallery;
+    }
+
+    handleGalleryClose() {
+        this.galleryMode = null;
+    }
+
+    // ----- theme switch (confirm gate, IA §6) -----
+
+    /** Gallery picks land in the SAME confirm gate the old dropdown used. */
+    handleGalleryTheme(event) {
+        this.galleryMode = null;
+        const next = event.detail.value;
+        if (next === this.themeValue) {
+            return;
+        }
+        if (this.hasOverrides) {
+            this.pendingThemeKey = next;
+            return;
+        }
+        this._switchTheme(next, false);
+    }
+
+    handleConfirmKeep() {
+        this._switchTheme(this.pendingThemeKey, false);
+        this.pendingThemeKey = null;
+    }
+
+    handleConfirmClear() {
+        this._switchTheme(this.pendingThemeKey, true);
+        this.pendingThemeKey = null;
+    }
+
+    handleConfirmCancel() {
+        this.pendingThemeKey = null;
+    }
+
+    _switchTheme(key, clearOverrides) {
+        if (!this._spec.theme) {
+            this._spec.theme = { source: 'builtin', overrides: {} };
+        }
+        if (key.startsWith('custom:')) {
+            const id = key.slice(7);
+            this._spec.theme.source = 'custom';
+            this._spec.theme.name = id;
+            this._loadCustomProps(id);
+        } else {
+            this._spec.theme.source = 'builtin';
+            this._spec.theme.name = key;
+        }
+        if (clearOverrides) {
+            this._spec.theme.overrides = {};
+        }
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    // ----- layout switch (no gate: theme overrides are layout-agnostic) -----
+
+    handleGalleryLayout(event) {
+        this.galleryMode = null;
+        const { layout, paneFlow } = event.detail;
+        if (
+            layout === this.layoutType &&
+            (paneFlow || '') === this.currentPaneFlow
+        ) {
+            return;
+        }
+        this._switchLayout(layout, paneFlow || '');
+    }
+
+    /**
+     * Options are rebuilt the way the creation flow builds a spec's layout
+     * (buildSampleSpec/FinalFormCreateController): they are layout-specific,
+     * so a stale splitHero paneFlow must never ride into a stepper spec.
+     * Layout-agnostic keys (maxWidth) and zonesDefault carry over; fullBleed
+     * survives a splitHero→splitHero variant switch — set on THIS layout.
+     */
+    _switchLayout(type, paneFlow) {
+        const prev = this._spec.layout || {};
+        const options = {};
+        if (type === 'splitHero') {
+            if (paneFlow === 'oneAtATime') {
+                options.paneFlow = 'oneAtATime';
+            }
+            if (
+                prev.type === 'splitHero' &&
+                prev.options &&
+                prev.options.fullBleed !== undefined
+            ) {
+                options.fullBleed = prev.options.fullBleed;
+            }
+        }
+        this._spec.layout = {
+            ...prev,
+            type,
+            options,
+            zonesDefault: prev.zonesDefault || {
+                arrangement: 'single',
+                gap: 'md'
+            }
+        };
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    // ----- reset (IA §6: per group + all) -----
+
+    handleGroupReset(event) {
+        event.stopPropagation();
+        const groupKey = event.target.dataset.group;
+        const overrides = this._ensureOverrides();
+        for (const entry of flattenControls()) {
+            if (
+                entry.area === this.activeAreaKey &&
+                entry.group === groupKey &&
+                entry.control.themePath
+            ) {
+                deleteAt(overrides, entry.control.themePath);
+                if (entry.control.versionPath) {
+                    deleteAt(overrides, entry.control.versionPath);
+                }
+                if (entry.control.gradientPath) {
+                    deleteAt(overrides, entry.control.gradientPath);
+                }
+                if (entry.control.dynamicOptions === 'fonts') {
+                    deleteAt(overrides, 'customFont');
+                }
+            }
+        }
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    async handleResetAll() {
+        const ok = await LightningConfirm.open({
+            message: `Reset all ${this.overrideCount} customization(s) to the theme's defaults?`,
+            label: 'Reset all customizations',
+            theme: 'warning'
+        });
+        if (ok) {
+            this._ensureOverrides();
+            this._spec.theme.overrides = {};
+            this._spec = { ...this._spec };
+            this._emit();
+        }
+    }
 }

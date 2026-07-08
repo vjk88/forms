@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>66.0</apiVersion>
     <isExposed>false</isExposed>
-    <description>Design mode (rebuild): the settings panel — Simple/Advanced lens over the ONE control registry, 9-area rail, sparse theme overrides with edited-dots/reset/confirm-gate safety semantics (FORM_STUDIO_IA §5-7). Builder-only; never ships to the guest bundle.</description>
+    <description
+    >Design mode (rebuild): the settings panel — Simple/Advanced lens over the ONE control registry, 9-area rail, sparse theme overrides with edited-dots/reset/confirm-gate safety semantics (FORM_STUDIO_IA §5-7). Builder-only; never ships to the guest bundle.</description>
 </LightningComponentBundle>
