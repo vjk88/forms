@@ -377,6 +377,22 @@ const AREAS = [
                         ]
                     },
                     {
+                        // legacy-coverage sweep 2026-07-08: the runtime always
+                        // supported header.arrangement; only the control was missing
+                        key: 'headerArrangement',
+                        label: 'Arrangement',
+                        type: 'select',
+                        path: 'header.arrangement',
+                        fallback: 'stacked',
+                        options: [
+                            { value: 'stacked', label: 'Stacked' },
+                            { value: 'logoBeside', label: 'Logo beside text' },
+                            { value: 'inline', label: 'Inline (one row)' },
+                            { value: 'centered', label: 'Centered' },
+                            { value: 'textOnly', label: 'Text only' }
+                        ]
+                    },
+                    {
                         key: 'brandName',
                         label: 'Brand name',
                         type: 'text',
@@ -557,6 +573,17 @@ const AREAS = [
                             { value: 'underline', label: 'Boutique underline' },
                             { value: 'filled', label: 'Flat filled' }
                         ]
+                    },
+                    {
+                        // legacy-coverage sweep 2026-07-08: old build had
+                        // inputBackground; explicit fill wins in EVERY shell
+                        key: 'fieldBg',
+                        label: 'Input fill',
+                        type: 'color',
+                        themePath: 'palette.fieldBg',
+                        fallbackToken: '--c-input-bg',
+                        contrastToken: '--c-text',
+                        subject: 'Input text'
                     },
                     {
                         key: 'fieldBorderColor',

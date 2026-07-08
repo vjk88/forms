@@ -152,6 +152,16 @@ describe('c-final-theme-engine', () => {
             expect(t['--c-text']).toBe('#232019');
         });
 
+        it('palette.fieldBg wins in EVERY input shell (legacy inputBackground)', () => {
+            for (const fieldStyle of ['outline', 'underline', 'filled']) {
+                const t = resolveTokens(theme(), {
+                    fieldStyle,
+                    palette: { fieldBg: '#101828' }
+                });
+                expect(t['--c-input-bg']).toBe('#101828');
+            }
+        });
+
         it('palette.labelColor overrides the label look-derived ink', () => {
             const derived = resolveTokens(theme(), { labelStyle: 'mutedSm' });
             expect(derived['--c-label-color']).toBe('#6f6a5e'); // textWeak
