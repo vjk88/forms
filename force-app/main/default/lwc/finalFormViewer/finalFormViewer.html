@@ -15,7 +15,13 @@
         ></c-final-form-header>
       </template>
       <div slot="body">
-        <template lwc:if={navCtor}>
+        <template lwc:if={completed}>
+          <c-final-after-submit
+            config={model.afterSubmit}
+            bleed={model.bleed}
+          ></c-final-after-submit>
+        </template>
+        <template lwc:elseif={navCtor}>
           <lwc:component
             lwc:is={navCtor}
             pages={model.pages}

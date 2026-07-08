@@ -71,12 +71,21 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "expiryDays": 30,
       "delivery": "link"             // "email" | "link"
     },
-    "completion": {
-      "outcome": "message",          // "message" | "redirect"
-      "thankYou": "<p>Thanks!</p>",  // rich text
-      "redirectUrl": null,
-      "showSummary": false,
-      "allowAnother": false
+    "completion": {                  // After Submit (owner FormBuilder port, screenshots 2026-07-09;
+                                     // rendered by c/finalAfterSubmit — display in P2, EXECUTION in P3)
+      "mode": "screen",              // "screen" (thank-you page) | "toast" (success toast + go)
+      "message": "<p>Thanks!</p>",   // rich text (screen); default thank-you when absent
+      "autoRedirect": false,         // screen only — toast ALWAYS redirects
+      "redirectTo": "record",        // "record" (the new/updated record) | "url" — shared by
+                                     // screen auto-redirect AND toast
+      "redirectUrl": null,           // when redirectTo="url"
+      "redirectDelay": 5,            // seconds (screen auto-redirect)
+      "actionButton": true,          // screen: the Continue button
+      "buttonLabel": "Continue",
+      "buttonGoesTo": "record",      // "record" | "url"
+      "buttonUrl": null,
+      "showSummary": false,          // v2 (deferred — response summary on the screen)
+      "allowAnother": false          // v2 (deferred — "submit another response")
     }
   },
 

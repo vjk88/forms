@@ -342,6 +342,65 @@
     color: #8a6d1f;
 }
 
+/* After-submit mode tiles (FormBuilder pattern — two cards, one choice). */
+.as-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+.as-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 8px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #fff;
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.as-tile.on {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 1px #0d9488;
+}
+
+.as-tile-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #181818;
+}
+
+.as-tile.on .as-tile-label {
+    color: #0b6e65;
+}
+
+.as-tile-hint {
+    font-size: 10.5px;
+    line-height: 1.35;
+    color: #5c5c5c;
+}
+
+.richtext {
+    padding: 6px 0;
+}
+
+.rt-label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.row input[type='number'] {
+    font: inherit;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    padding: 4px 8px;
+    width: 72px;
+}
+
 .linkbtn {
     border: 0;
     background: none;

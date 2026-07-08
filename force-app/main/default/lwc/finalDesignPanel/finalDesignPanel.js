@@ -210,6 +210,17 @@ export default class FinalDesignPanel extends LightningElement {
                     continue;
                 }
             }
+            // Equality gates: [{ key, equals }] — ALL must match. Render-only:
+            // hidden controls always keep their values (IA §6).
+            if (c.needsValue) {
+                const ok = c.needsValue.every((g) => {
+                    const def = this._controlDef(g.key);
+                    return def && this._effective(def.control) === g.equals;
+                });
+                if (!ok) {
+                    continue;
+                }
+            }
             const value = this._effective(c);
             const vm = {
                 key: c.key,
@@ -226,6 +237,9 @@ export default class FinalDesignPanel extends LightningElement {
                 isImage: c.type === 'image',
                 isGradientSurface: c.type === 'gradientSurface',
                 isMeshColors: c.type === 'meshColors',
+                isTiles: c.type === 'tiles',
+                isRichText: c.type === 'richtext',
+                isNumber: c.type === 'number',
                 placeholder: c.placeholder || '',
                 min: c.min,
                 max: c.max
@@ -251,6 +265,16 @@ export default class FinalDesignPanel extends LightningElement {
                     getAt(this.overrides, c.gradientPath) !== undefined;
             } else if (c.type === 'meshColors') {
                 vm.colors = this._meshColorRows(value);
+            } else if (c.type === 'tiles') {
+                const current = value || c.fallback;
+                vm.tiles = c.options.map((o) => ({
+                    ...o,
+                    cls: o.value === current ? 'as-tile on' : 'as-tile'
+                }));
+            } else if (c.type === 'richtext') {
+                vm.value = typeof value === 'string' ? value : '';
+            } else if (c.type === 'number') {
+                vm.value = value === undefined || value === null ? '' : value;
             } else if (c.type === 'select') {
                 let current =
                     value === null || value === undefined ? '' : String(value);
@@ -651,6 +675,26 @@ export default class FinalDesignPanel extends LightningElement {
 
     handleToggle(event) {
         this._apply(event.target.dataset.key, event.target.checked);
+    }
+
+    handleTile(event) {
+        this._apply(
+            event.currentTarget.dataset.key,
+            event.currentTarget.dataset.value
+        );
+    }
+
+    handleRichText(event) {
+        // empty editor → drop the key so the runtime default carries
+        this._apply(event.target.dataset.key, event.target.value || undefined);
+    }
+
+    handleNumber(event) {
+        const n = Number(event.target.value);
+        this._apply(
+            event.target.dataset.key,
+            event.target.value === '' || !Number.isFinite(n) ? undefined : n
+        );
     }
 
     handleText(event) {

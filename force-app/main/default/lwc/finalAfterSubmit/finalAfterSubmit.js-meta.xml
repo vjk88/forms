@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Rebuild: post-submit render (completion screen / toast) off spec.afterSubmit — display only; the P3 submit engine executes redirects. Doubles as the Design-mode preview.</description>
+</LightningComponentBundle>
