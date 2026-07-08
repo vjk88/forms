@@ -126,6 +126,33 @@ const MESHES = {
     ]
 };
 
+// Custom mesh (owner plan B4): mesh:'custom' builds blobs from the user's own
+// colors over the neon GEOMETRY. Alphas adapt to the blur treatment — blurred
+// layers are authored hot (blur spreads the ink), unblurred stay moderate.
+const MESH_GEOMETRY = [
+    { g: '50% 50% at 6% 2%', hot: 0.85, base: 0.55 },
+    { g: '45% 45% at 94% 10%', hot: 0.8, base: 0.5 },
+    { g: '48% 48% at 30% 104%', hot: 0.8, base: 0.5 },
+    { g: '34% 34% at 82% 96%', hot: 0.7, base: 0.45 }
+];
+
+function customMesh(colors, blurred) {
+    // Tolerate both array and {0:..,1:..} object form (sparse-override paths).
+    const list = Array.isArray(colors)
+        ? colors
+        : colors && typeof colors === 'object'
+          ? Object.keys(colors)
+                .sort()
+                .map((k) => colors[k])
+          : [];
+    // POSITIONAL — an empty slot stays null so mesh tokens 1..4 never shift.
+    return MESH_GEOMETRY.map((slot, i) =>
+        list[i]
+            ? `radial-gradient(${slot.g}, ${rgba(list[i], blurred ? slot.hot : slot.base)}, transparent 70%)`
+            : null
+    );
+}
+
 // A texture is ONE self-tiling layer (intrinsic-size SVG data URI — tiles naturally,
 // needs no background-size, so it can never collide with the image's fit tokens).
 // Intensity parametrizes the ink opacity (owner QA 2026-07-07: the fixed 0.05
@@ -238,6 +265,14 @@ function gradientLayer(g, fillOpacity) {
 // keeps reading the raw fill. color-mix because theme fills aren't always hex
 // (rgba and color-mix strings exist in the catalog); at 100/unset the color
 // passes through untouched so existing themes emit byte-identical tokens.
+function glassPx(g) {
+    if (g === true) {
+        return '14px';
+    }
+    const n = Number(g);
+    return Number.isFinite(n) && n > 0 ? `${Math.min(n, 60)}px` : '0px';
+}
+
 function withFillOpacity(color, pct) {
     const n = Number(pct);
     if (!color || !Number.isFinite(n) || n >= 100) {
@@ -511,7 +546,10 @@ export function resolveTokens(themeProps, formOverrides) {
         fonts = { body: stack, display: stack };
     }
     const fit = PAGE_FIT[img.fit] || PAGE_FIT.cover;
-    const mesh = MESHES[fx.mesh] || [];
+    const mesh =
+        fx.mesh === 'custom'
+            ? customMesh(fx.meshColors, Number(fx.meshBlur) > 0)
+            : MESHES[fx.mesh] || [];
     const focus = fs.focus || pal.accent;
     const submitBg = pal.submitBg || pal.accent;
 
@@ -591,12 +629,9 @@ export function resolveTokens(themeProps, formOverrides) {
             ? `${BORDER_WIDTHS[p.border]} solid ${pal.borderColor || mix(pal.text, pal.contentBg, 0.16)}`
             : 'none',
         '--c-content-shadow': SHADOWS[fx.shadow] || SHADOWS.none,
-        '--c-glass-blur':
-            typeof fx.glass === 'number'
-                ? `${Math.max(fx.glass, 0)}px`
-                : fx.glass
-                  ? '14px'
-                  : '0px',
+        // true = legacy 14px; numbers AND numeric strings (the panel's depth
+        // select writes strings) = custom depth, capped sane.
+        '--c-glass-blur': glassPx(fx.glass),
 
         // Section (pad only — bg/border/shadow stay unset so the preset decides)
         '--c-section-pad': density.sectionPad,

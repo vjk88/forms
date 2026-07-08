@@ -210,6 +210,12 @@ export default class FinalDesignPanel extends LightningElement {
                     continue;
                 }
             }
+            if (c.needsMeshCustom) {
+                const def = this._controlDef('mesh');
+                if (!def || this._effective(def.control) !== 'custom') {
+                    continue;
+                }
+            }
             const value = this._effective(c);
             const vm = {
                 key: c.key,
@@ -225,6 +231,7 @@ export default class FinalDesignPanel extends LightningElement {
                 isRange: c.type === 'range',
                 isImage: c.type === 'image',
                 isGradientSurface: c.type === 'gradientSurface',
+                isMeshColors: c.type === 'meshColors',
                 placeholder: c.placeholder || '',
                 min: c.min,
                 max: c.max
@@ -243,9 +250,19 @@ export default class FinalDesignPanel extends LightningElement {
                 vm.edited =
                     vm.edited ||
                     getAt(this.overrides, c.gradientPath) !== undefined;
+            } else if (c.type === 'meshColors') {
+                vm.colors = this._meshColorRows(value);
             } else if (c.type === 'select') {
                 let current =
                     value === null || value === undefined ? '' : String(value);
+                // legacy value forms (glass: true/false) display as their
+                // mapped option so the select never shows a lie
+                if (c.valueMap && current in c.valueMap) {
+                    current = c.valueMap[current];
+                }
+                if (c.key === 'glass') {
+                    vm.hint = this._glassHint(current);
+                }
                 let options = c.options;
                 if (c.dynamicOptions === 'fonts') {
                     options = [
@@ -484,6 +501,56 @@ export default class FinalDesignPanel extends LightningElement {
         this._apply(event.target.dataset.key, event.detail.value);
     }
 
+    // ----- custom mesh (plan B4) -----
+
+    /** Neon's colors as the starting palette for a fresh custom mesh. */
+    static MESH_SEED = ['#7a5cff', '#ff2e93', '#16e0c4', '#ffb13d'];
+
+    /** Effective meshColors (array | {0:..} | absent) → 4 padded picker rows. */
+    _meshColorRows(value) {
+        const list = Array.isArray(value)
+            ? value
+            : value && typeof value === 'object'
+              ? Object.keys(value)
+                    .sort()
+                    .map((k) => value[k])
+              : [];
+        return FinalDesignPanel.MESH_SEED.map((seed, i) => ({
+            idx: String(i),
+            label: `Blob ${i + 1}`,
+            value: list[i] || seed
+        }));
+    }
+
+    handleMeshColor(event) {
+        const idx = Number(event.target.dataset.idx);
+        const arr = this._meshColorRows(
+            this._effective(this._controlDef('meshColors').control)
+        ).map((r) => r.value);
+        arr[idx] = event.detail.value;
+        // whole-array writes: mergeProps replaces meshColors wholesale, so a
+        // sparse per-slot delta would drop the theme's other slots
+        this._apply('meshColors', arr);
+    }
+
+    /** Frost is invisible behind an opaque fill — say so instead of looking dead. */
+    _glassHint(current) {
+        if (!current) {
+            return '';
+        }
+        const bgDef = this._controlDef('contentBg');
+        const opDef = this._controlDef('contentBgOpacity');
+        const bg = bgDef ? this._effective(bgDef.control) : '';
+        const op = opDef ? Number(this._effective(opDef.control)) : 100;
+        const translucent =
+            (typeof bg === 'string' &&
+                (bg.startsWith('rgba') || bg === 'transparent')) ||
+            (Number.isFinite(op) && op < 100);
+        return translucent
+            ? ''
+            : 'Frost only shows through a see-through fill — lower Body › Fill opacity or pick a translucent color.';
+    }
+
     /** Solid + gradient land in ONE event; each half gets sparse-delta rules. */
     handleGradientSurface(event) {
         const key = event.target.dataset.key;
@@ -543,6 +610,14 @@ export default class FinalDesignPanel extends LightningElement {
         }
         if (def && def.control.emptyAsNull && v === '') {
             v = null;
+        }
+        // switching the mesh to Custom with no colors yet would render nothing
+        // — seed the neon palette so blobs appear instantly
+        if (key === 'mesh' && v === 'custom') {
+            const mc = this._controlDef('meshColors');
+            if (mc && !this._effective(mc.control)) {
+                this._apply('meshColors', [...FinalDesignPanel.MESH_SEED]);
+            }
         }
         if (def && !def.control.themePath && v === '') {
             // plain selects: '' means "layout default" → drop the key

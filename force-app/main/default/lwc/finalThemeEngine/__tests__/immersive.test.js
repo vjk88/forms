@@ -107,6 +107,40 @@ describe('immersive capabilities', () => {
         expect(resolveTokens(null, {})['--c-page-radius']).toBeUndefined();
     });
 
+    it('custom mesh builds blobs from user colors; empty slots stay POSITIONAL', () => {
+        const t = resolveTokens(null, {
+            effects: { mesh: 'custom', meshColors: ['#ff0000', '#00ff00'] }
+        });
+        expect(t['--c-fx-mesh-1']).toContain('rgba(255, 0, 0, 0.55)');
+        expect(t['--c-fx-mesh-2']).toContain('rgba(0, 255, 0, 0.5)');
+        expect(t['--c-fx-mesh-3']).toBe('none'); // slot 3 empty, slot 2 did NOT shift
+        expect(t['--c-fx-mesh-4']).toBe('none');
+    });
+
+    it('custom mesh accepts the {0:..} object form and goes hot when blurred', () => {
+        const t = resolveTokens(null, {
+            effects: {
+                mesh: 'custom',
+                meshColors: { 0: '#ff0000' },
+                meshBlur: 60
+            }
+        });
+        expect(t['--c-fx-mesh-1']).toContain('rgba(255, 0, 0, 0.85)');
+        expect(t['--c-mesh-filter']).toBe('blur(60px)');
+    });
+
+    it('glass coerces numeric strings (panel depth select) and caps sane', () => {
+        expect(
+            resolveTokens(null, { effects: { glass: '26' } })['--c-glass-blur']
+        ).toBe('26px');
+        expect(
+            resolveTokens(null, { effects: { glass: 999 } })['--c-glass-blur']
+        ).toBe('60px');
+        expect(
+            resolveTokens(null, { effects: { glass: false } })['--c-glass-blur']
+        ).toBe('0px');
+    });
+
     it('caps label look: uppercase tracked sans in the muted ink', () => {
         const t = resolveTokens(null, { labelStyle: 'caps' });
         expect(t['--c-label-transform']).toBe('uppercase');

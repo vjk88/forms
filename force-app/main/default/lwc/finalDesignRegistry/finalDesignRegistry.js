@@ -208,8 +208,16 @@ const AREAS = [
                             { value: '', label: 'None' },
                             { value: 'aurora', label: 'Aurora' },
                             { value: 'dusk', label: 'Dusk' },
-                            { value: 'neon', label: 'Neon' }
+                            { value: 'neon', label: 'Neon' },
+                            { value: 'custom', label: 'Custom colors' }
                         ]
+                    },
+                    {
+                        key: 'meshColors',
+                        label: 'Blob colors',
+                        type: 'meshColors',
+                        themePath: 'effects.meshColors',
+                        needsMeshCustom: true
                     },
                     {
                         key: 'meshIntensity',
@@ -258,8 +266,17 @@ const AREAS = [
                     {
                         key: 'glass',
                         label: 'Glass blur',
-                        type: 'toggle',
-                        themePath: 'effects.glass'
+                        type: 'select',
+                        themePath: 'effects.glass',
+                        emptyAsNull: true,
+                        // legacy boolean theme values display as their depths
+                        valueMap: { true: '14', false: '' },
+                        options: [
+                            { value: '', label: 'Off' },
+                            { value: '8', label: 'Subtle' },
+                            { value: '14', label: 'Standard' },
+                            { value: '26', label: 'Deep' }
+                        ]
                     }
                 ]
             }
