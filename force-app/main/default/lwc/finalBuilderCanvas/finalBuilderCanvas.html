@@ -11,7 +11,13 @@
                         type="button"
                         class={p.cls}
                         data-id={p.id}
+                        draggable="true"
                         onclick={handleChip}
+                        ondragstart={handleChipDragStart}
+                        ondragend={handleDragEndClear}
+                        ondragover={handleChipDragOver}
+                        ondragleave={handleDragLeave}
+                        ondrop={handleChipDrop}
                     >
                         {p.label}
                     </button>
@@ -36,10 +42,24 @@
         <div class="bc-scroll">
             <template for:each={sections} for:item="s">
                 <div
+                    key={s.gapKey}
+                    class="bc-gap"
+                    data-before={s.id}
+                    ondragover={handleGapDragOver}
+                    ondragleave={handleGapLeave}
+                    ondrop={handleGapDrop}
+                ></div>
+                <div
                     key={s.id}
                     class={s.cls}
                     data-id={s.id}
+                    draggable="true"
                     onclick={handleSectionClick}
+                    ondragstart={handleSectionDragStart}
+                    ondragend={handleDragEndClear}
+                    ondragover={handleSecDragOver}
+                    ondragleave={handleDragLeave}
+                    ondrop={handleSectionDrop}
                 >
                     <header class="bc-section-head">
                         <span class="bc-grip" aria-hidden="true">⋮⋮</span>
@@ -64,7 +84,14 @@
                             key={el.id}
                             class={el.cls}
                             data-id={el.id}
+                            data-section-id={el.sectionId}
+                            draggable="true"
                             onclick={handleElementClick}
+                            ondragstart={handleElementDragStart}
+                            ondragend={handleDragEndClear}
+                            ondragover={handleElDragOver}
+                            ondragleave={handleDragLeave}
+                            ondrop={handleElementDrop}
                         >
                             <span class="bc-grip" aria-hidden="true">⋮⋮</span>
                             <span class="bc-row-label">
@@ -89,6 +116,12 @@
                     </template>
                 </div>
             </template>
+            <div
+                class="bc-gap bc-gap-end"
+                ondragover={handleGapDragOver}
+                ondragleave={handleGapLeave}
+                ondrop={handleGapDrop}
+            ></div>
 
             <button
                 type="button"

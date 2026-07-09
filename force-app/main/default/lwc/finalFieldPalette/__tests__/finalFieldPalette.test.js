@@ -14,7 +14,12 @@ jest.mock(
 );
 
 const FIELDS = [
-    { apiName: 'LastName', label: 'Last Name', inputType: 'text', required: true },
+    {
+        apiName: 'LastName',
+        label: 'Last Name',
+        inputType: 'text',
+        required: true
+    },
     { apiName: 'Email', label: 'Email', inputType: 'email', required: false }
 ];
 
@@ -58,9 +63,9 @@ describe('c-final-field-palette', () => {
         const el = mount();
         describeFields.emit(FIELDS);
         await flush();
-        expect(
-            el.shadowRoot.querySelector('.fp-head-label').textContent
-        ).toBe('Fields — Contact');
+        expect(el.shadowRoot.querySelector('.fp-head-label').textContent).toBe(
+            'Fields — Contact'
+        );
         expect(el.shadowRoot.querySelector('.fp-head-sub').textContent).toBe(
             'primary object'
         );
@@ -92,5 +97,37 @@ describe('c-final-field-palette', () => {
         expect(el.shadowRoot.querySelector('.fp-note').textContent).toContain(
             'rules slice'
         );
+    });
+
+    it('dragstart stamps the typed marker + JSON payload; ADDED rows refuse the drag', async () => {
+        const { PALETTE_FIELD_MIME } = require('c/finalBuilderCanvas');
+        const el = mount({ usedFields: ['Email'] });
+        describeFields.emit(FIELDS);
+        await flush();
+        const items = el.shadowRoot.querySelectorAll('.fp-item');
+
+        const store = {};
+        const dt = {
+            types: [],
+            effectAllowed: '',
+            setData(t, v) {
+                store[t] = v;
+                this.types.push(t);
+            }
+        };
+        const start = new CustomEvent('dragstart', { cancelable: true });
+        start.dataTransfer = dt;
+        items[0].dispatchEvent(start); // LastName — draggable
+        expect(dt.types).toContain(PALETTE_FIELD_MIME);
+        expect(dt.effectAllowed).toBe('copy');
+        expect(JSON.parse(store['text/plain'])).toEqual({
+            t: 'palette-field',
+            field: expect.objectContaining({ apiName: 'LastName' })
+        });
+
+        const blocked = new CustomEvent('dragstart', { cancelable: true });
+        blocked.dataTransfer = dt;
+        items[1].dispatchEvent(blocked); // Email is ADDED
+        expect(blocked.defaultPrevented).toBe(true);
     });
 });
