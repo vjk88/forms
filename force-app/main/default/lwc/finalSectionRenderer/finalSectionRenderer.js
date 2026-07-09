@@ -69,4 +69,21 @@ export default class FinalSectionRenderer extends LightningElement {
             new CustomEvent('valuechange', { detail: event.detail })
         );
     }
+
+    /**
+     * Preview-click sync (P3): announce which element was clicked. COMPOSED
+     * deliberately — this is the one hop-free event, because synthetic
+     * shadow RETARGETS composedPath, so the viewer can never resolve the
+     * clicked element from its own listener; only this component sees it.
+     * Inert unless an authoring viewer upstream chooses to listen.
+     */
+    handleElementClick(event) {
+        this.dispatchEvent(
+            new CustomEvent('elementclick', {
+                bubbles: true,
+                composed: true,
+                detail: { elementId: event.currentTarget.dataset.elId }
+            })
+        );
+    }
 }

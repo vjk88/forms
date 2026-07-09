@@ -23,9 +23,10 @@ export default class FinalFormViewer extends LightningElement {
     /**
      * Builder-preview mode: clicks on rendered elements re-emit as
      * `elementselect` {elementId} so the studio can sync its selection
-     * (P3 preview-click requirement). Resolved via composedPath against the
-     * data-el-id the section renderer stamps — no nav primitive knows.
-     * Never set on published/guest renders.
+     * (P3 preview-click requirement). The section renderer announces the
+     * clicked element with a COMPOSED `elementclick` (synthetic shadow
+     * retargets composedPath, so the viewer cannot resolve it from here) —
+     * no nav primitive knows. Never set on published/guest renders.
      */
     @api authoring = false;
 
@@ -340,23 +341,16 @@ export default class FinalFormViewer extends LightningElement {
             }));
     }
 
-    handleAuthoringClick(event) {
-        if (!this.authoring) {
+    handleElementClick(event) {
+        event.stopPropagation(); // the announcement ends at the viewer
+        if (!this.authoring || !event.detail || !event.detail.elementId) {
             return;
         }
-        for (const node of event.composedPath()) {
-            if (node === event.currentTarget) {
-                return; // walked out of the form without hitting an element
-            }
-            if (node.dataset && node.dataset.elId) {
-                this.dispatchEvent(
-                    new CustomEvent('elementselect', {
-                        detail: { elementId: node.dataset.elId }
-                    })
-                );
-                return;
-            }
-        }
+        this.dispatchEvent(
+            new CustomEvent('elementselect', {
+                detail: { elementId: event.detail.elementId }
+            })
+        );
     }
 
     handleValueChange(event) {

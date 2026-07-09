@@ -5,10 +5,11 @@ jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
 }));
 
-// Preview-click selection sync (P3): in authoring mode a click anywhere in a
-// rendered element resolves — via composedPath against the data-el-id the
-// section renderer stamps — to `elementselect` {elementId}. Published/guest
-// renders (no `authoring`) never emit it.
+// Preview-click selection sync (P3): a click on a rendered element makes the
+// section renderer announce a COMPOSED `elementclick` (synthetic shadow
+// retargets composedPath — the org proved the viewer can't resolve clicks
+// itself); an authoring viewer re-emits it as `elementselect` {elementId}.
+// Published/guest renders (no `authoring`) swallow it.
 const SPEC = {
     specVersion: 1,
     form: { name: 'Sync' },
