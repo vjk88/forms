@@ -162,7 +162,7 @@ describe('c-final-field-palette', () => {
         el.shadowRoot.querySelector('[data-tab="blocks"]').click();
         await flush();
 
-        const items = el.shadowRoot.querySelectorAll('.fp-item');
+        const items = el.shadowRoot.querySelectorAll('.fp-item[data-type]');
         expect([...items].map((i) => i.dataset.type)).toEqual([
             'richText',
             'image',
@@ -197,5 +197,50 @@ describe('c-final-field-palette', () => {
             t: 'palette-el',
             elType: 'richText'
         });
+    });
+
+    it('Repeating Group is a first-class item (§4): click + typed drag; disabled without an object', async () => {
+        const { PALETTE_REP_MIME } = require('c/finalBuilderCanvas');
+        const el = mount();
+        describeFields.emit(FIELDS);
+        await flush();
+        el.shadowRoot.querySelector('[data-tab="blocks"]').click();
+        await flush();
+
+        const item = el.shadowRoot.querySelector('.fp-item:not([data-type])');
+        expect(item.textContent).toContain('Repeating Group');
+        expect(item.disabled).toBe(false);
+
+        const adds = [];
+        el.addEventListener('addrepeater', () => adds.push(1));
+        item.click();
+        expect(adds).toHaveLength(1);
+
+        const store = {};
+        const dt = {
+            types: [],
+            effectAllowed: '',
+            setData(t, v) {
+                store[t] = v;
+                this.types.push(t);
+            }
+        };
+        const start = new CustomEvent('dragstart', { cancelable: true });
+        start.dataTransfer = dt;
+        item.dispatchEvent(start);
+        expect(dt.types).toContain(PALETTE_REP_MIME);
+        expect(dt.effectAllowed).toBe('copy');
+        expect(JSON.parse(store['text/plain'])).toEqual({ t: 'palette-rep' });
+
+        // §4.5: no primary context object → inform-and-abort (disabled + why)
+        el.objectApi = undefined;
+        await flush();
+        const dead = el.shadowRoot.querySelector('.fp-item:not([data-type])');
+        expect(dead.disabled).toBe(true);
+        expect(dead.title).toContain('target object');
+        const blocked = new CustomEvent('dragstart', { cancelable: true });
+        blocked.dataTransfer = dt;
+        dead.dispatchEvent(blocked);
+        expect(blocked.defaultPrevented).toBe(true);
     });
 });

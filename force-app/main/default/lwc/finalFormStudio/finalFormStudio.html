@@ -149,11 +149,17 @@
                             >
                                 ‹ Fields
                             </button>
-                            <h3 class="st-props-title">{selectionLabel}</h3>
-                            <p class="st-props-hint">
-                                Property editing is coming soon. Your selection
-                                is highlighted on the blueprint.
-                            </p>
+                            <c-final-property-panel
+                                node={selectedNode}
+                                kind={selectedKind}
+                                binding-object-api={selectionBindingObject}
+                                used-fields={selectionUsedFields}
+                                onpropchange={handlePropChange}
+                                onconfigchange={handleConfigChange}
+                                onrepeatchange={handleRepeatChange}
+                                onbindingchange={handleBindingChange}
+                                onaddchildfield={handleAddChildField}
+                            ></c-final-property-panel>
                         </div>
                     </template>
                     <template lwc:else>
@@ -163,6 +169,7 @@
                             used-labels={usedLabels}
                             onaddfield={handleAddField}
                             onaddblock={handleAddBlock}
+                            onaddrepeater={handleAddRepeater}
                         ></c-final-field-palette>
                     </template>
                 </aside>
@@ -180,6 +187,7 @@
                         onremovepage={handleRemovePage}
                         ondropfield={handleDropField}
                         ondropblock={handleDropBlock}
+                        ondroprepeater={handleDropRepeater}
                         onmoveelement={handleMoveElement}
                         onmovesection={handleMoveSection}
                         onmovepage={handleMovePage}
@@ -204,6 +212,14 @@
                 onsave={handleThemeSaved}
                 oncancel={handleEditorCancel}
             ></c-final-theme-editor>
+        </template>
+
+        <template lwc:if={relPickerOpen}>
+            <c-final-relationship-picker
+                object-api={objectApi}
+                onpick={handleRelPick}
+                oncancel={handleRelCancel}
+            ></c-final-relationship-picker>
         </template>
     </template>
 </template>

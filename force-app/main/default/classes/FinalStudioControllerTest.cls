@@ -56,9 +56,7 @@ private class FinalStudioControllerTest {
 
         Map<String, Object> out = FinalStudioController.loadStudio(f.Id);
         Assert.isNull(out.get('draftVersionId'), 'history is not a draft');
-        Assert.isTrue(
-            String.valueOf(out.get('specJson')).contains('"active"')
-        );
+        Assert.isTrue(String.valueOf(out.get('specJson')).contains('"active"'));
     }
 
     @IsTest
@@ -89,7 +87,7 @@ private class FinalStudioControllerTest {
         );
         Assert.isTrue(
             [SELECT Spec_JSON__c FROM Form_Version__c WHERE Id = :draftId]
-            .Spec_JSON__c.contains('"n":2')
+                .Spec_JSON__c.contains('"n":2')
         );
     }
 
@@ -113,8 +111,18 @@ private class FinalStudioControllerTest {
     @IsTest
     static void discardDeletesOnlyInactiveRows() {
         Form__c f = makeForm('Discard test');
-        Form_Version__c active = makeVersion(f.Id, 1, true, '{"specVersion":1}');
-        Form_Version__c draft = makeVersion(f.Id, 2, false, '{"specVersion":1}');
+        Form_Version__c active = makeVersion(
+            f.Id,
+            1,
+            true,
+            '{"specVersion":1}'
+        );
+        Form_Version__c draft = makeVersion(
+            f.Id,
+            2,
+            false,
+            '{"specVersion":1}'
+        );
 
         FinalStudioController.discardDraft(draft.Id);
         Assert.areEqual(
@@ -134,7 +142,12 @@ private class FinalStudioControllerTest {
         Form__c f = makeForm('Versions test');
         makeVersion(f.Id, 1, false, '{"specVersion":1}'); // history
         makeVersion(f.Id, 2, true, '{"specVersion":1}');
-        Form_Version__c draft = makeVersion(f.Id, 3, false, '{"specVersion":1}');
+        Form_Version__c draft = makeVersion(
+            f.Id,
+            3,
+            false,
+            '{"specVersion":1}'
+        );
 
         List<FinalStudioController.VersionEntry> rows = FinalStudioController.listVersions(
             f.Id
@@ -208,6 +221,33 @@ private class FinalStudioControllerTest {
 
         try {
             FinalStudioController.describeFields('No_Such_Object__x9');
+            Assert.fail('should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+    }
+
+    @IsTest
+    static void describeChildRelationshipsFindsContactUnderAccount() {
+        List<Map<String, Object>> rels = FinalStudioController.describeChildRelationships(
+            'Account'
+        );
+        Assert.isFalse(rels.isEmpty(), 'Account has creatable children');
+        Map<String, Object> contacts;
+        for (Map<String, Object> r : rels) {
+            Assert.isNotNull(r.get('linkingField'), 'every row carries a link');
+            if (
+                r.get('childObject') == 'Contact' &&
+                r.get('linkingField') == 'AccountId'
+            ) {
+                contacts = r;
+            }
+        }
+        Assert.isNotNull(contacts, 'Contacts via AccountId is offered');
+        Assert.areEqual('Contacts', contacts.get('relationshipName'));
+
+        try {
+            FinalStudioController.describeChildRelationships('No_Such__x9');
             Assert.fail('should throw');
         } catch (AuraHandledException e) {
             Assert.isTrue(true);

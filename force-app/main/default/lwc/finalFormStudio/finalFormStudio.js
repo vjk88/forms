@@ -330,6 +330,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         const out = [];
         for (const page of (this.spec && this.spec.pages) || []) {
             for (const section of page.sections || []) {
+                if (section.repeat) {
+                    // child-object bindings live in the repeater's scope —
+                    // they must never mark PARENT palette fields as used
+                    continue;
+                }
                 for (const el of section.elements || []) {
                     if (el.binding && el.binding.field) {
                         out.push(el.binding.field);
@@ -348,6 +353,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         const out = [];
         for (const page of (this.spec && this.spec.pages) || []) {
             for (const section of page.sections || []) {
+                if (section.repeat) {
+                    continue;
+                }
                 for (const el of section.elements || []) {
                     if (
                         el.type === 'field' &&
@@ -362,33 +370,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return out;
     }
 
-    get selectionLabel() {
-        const sel = this.selection;
-        if (!sel || !this.spec) {
-            return null;
-        }
-        for (const page of this.spec.pages || []) {
-            if (sel.kind === 'page' && page.id === sel.id) {
-                return page.name || 'Page';
-            }
-            for (const section of page.sections || []) {
-                if (sel.kind === 'section' && section.id === sel.id) {
-                    if (section.block) {
-                        const first = (section.elements || [])[0];
-                        return (first && first.label) || 'Block';
-                    }
-                    return section.title || 'Section';
-                }
-                for (const el of section.elements || []) {
-                    if (sel.kind === 'element' && el.id === sel.id) {
-                        return el.label || el.type;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     /** The left column swaps to properties on an explicit CANVAS click only —
      *  palette click-add selects (highlight) but keeps the palette, so bulk
      *  adding never becomes add → back → add. */
@@ -398,8 +379,174 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return (
             this.mode === 'build' &&
             this.propsOpen &&
-            Boolean(this.selectionLabel)
+            Boolean(this.selectedTarget)
         );
+    }
+
+    /**
+     * The selection resolved against a spec (CANVAS_RULES §5): the panel's
+     * inspectors are per-type, and a BLOCK wrapper section is edited as its
+     * one content element — the wrapper is serialization plumbing (§3), not
+     * something an author should ever see properties for. The same resolver
+     * runs on the live spec (getters below) and inside _mutate's copy
+     * (patch application), so the panel and the patch always agree on the
+     * target.
+     */
+    _selectionTarget(spec) {
+        const sel = this.selection;
+        if (!sel || !spec) {
+            return null;
+        }
+        for (const page of spec.pages || []) {
+            if (sel.kind === 'page' && page.id === sel.id) {
+                return { kind: 'page', node: page, section: null };
+            }
+            for (const section of page.sections || []) {
+                if (sel.kind === 'section' && section.id === sel.id) {
+                    if (section.block) {
+                        const el = (section.elements || [])[0];
+                        return el
+                            ? { kind: 'element', node: el, section }
+                            : null;
+                    }
+                    return { kind: 'section', node: section, section };
+                }
+                for (const el of section.elements || []) {
+                    if (sel.kind === 'element' && el.id === sel.id) {
+                        return { kind: 'element', node: el, section };
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    get selectedTarget() {
+        return this.spec ? this._selectionTarget(this.spec) : null;
+    }
+
+    get selectedNode() {
+        const t = this.selectedTarget;
+        return t ? t.node : null;
+    }
+
+    get selectedKind() {
+        const t = this.selectedTarget;
+        return t ? t.kind : null;
+    }
+
+    /** What a field element binds against: the repeater's child object when
+     *  it lives inside one, else the form's primary object. */
+    get selectionBindingObject() {
+        const t = this.selectedTarget;
+        if (t && t.section && t.section.repeat) {
+            return t.section.repeat.childObject;
+        }
+        return this.objectApi;
+    }
+
+    /** Binding-picker dedupe is scoped like the palette's (§2): parent
+     *  elements against the whole form, child elements against their own
+     *  repeater section only. */
+    get selectionUsedFields() {
+        const t = this.selectedTarget;
+        if (t && t.section && t.section.repeat) {
+            return (t.section.elements || [])
+                .map((el) => el.binding && el.binding.field)
+                .filter(Boolean);
+        }
+        return this.usedFields;
+    }
+
+    /** Apply a panel intent to the selected node via the ONE mutate path. */
+    _patchSelection(fn) {
+        this._mutate((spec) => {
+            const t = this._selectionTarget(spec);
+            if (!t) {
+                return false;
+            }
+            fn(t);
+            return undefined;
+        });
+    }
+
+    handlePropChange(event) {
+        const patch = event.detail.patch || {};
+        this._patchSelection((t) => {
+            Object.assign(t.node, patch);
+            // schema §4: `required` is authoring sugar — the validation
+            // entry is the one truth the runtime evaluates
+            if ('required' in patch && t.kind === 'element') {
+                const entries = (t.node.validation || []).filter(
+                    (v) => v.type !== 'required'
+                );
+                if (patch.required) {
+                    entries.push({
+                        type: 'required',
+                        message: `${t.node.label || 'This field'} is required.`
+                    });
+                }
+                t.node.validation = entries;
+            }
+        });
+    }
+
+    handleConfigChange(event) {
+        const patch = event.detail.patch || {};
+        this._patchSelection((t) => {
+            t.node.config = { ...(t.node.config || {}), ...patch };
+        });
+    }
+
+    handleRepeatChange(event) {
+        const patch = event.detail.patch || {};
+        this._patchSelection((t) => {
+            if (!t.node.repeat) {
+                return;
+            }
+            t.node.repeat = { ...t.node.repeat, ...patch };
+        });
+    }
+
+    /** Rebinding rewires the storage target and the input widget; the label
+     *  stays — it's the author's copy, not the field's. */
+    handleBindingChange(event) {
+        const field = event.detail.field;
+        this._patchSelection((t) => {
+            const obj =
+                t.section && t.section.repeat
+                    ? t.section.repeat.childObject
+                    : this.objectApi;
+            t.node.binding = { object: obj, field: field.apiName };
+            const config = {
+                ...(t.node.config || {}),
+                inputType: field.inputType
+            };
+            if (field.options) {
+                config.options = field.options;
+            } else {
+                delete config.options;
+            }
+            t.node.config = config;
+        });
+    }
+
+    /** Repeater inspector (§4.4): child fields join the section bound to
+     *  the CHILD object — ordinary elements otherwise (schema §4.1). */
+    handleAddChildField(event) {
+        const field = event.detail.field;
+        this._patchSelection((t) => {
+            if (!t.node.repeat) {
+                return;
+            }
+            const element = this._mintElement(
+                null,
+                field,
+                t.node.repeat.childObject
+            );
+            t.node.elements = t.node.elements || [];
+            t.node.elements.push(element);
+        });
     }
 
     /** Mutate via a deep copy, then reuse the ONE autosave path. */
@@ -420,15 +567,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     /** Palette field payload → spec element (click-add AND drag-drop). Also
      *  heals pre-creation-controller specs: the first bound field records
-     *  the target object the binding belongs to. */
-    _mintElement(spec, field) {
-        if (spec.form && !spec.form.targetObject && this.objectApi) {
+     *  the target object the binding belongs to. `objectApi` overrides the
+     *  binding object for repeater child fields (spec may be null then —
+     *  child bindings never heal the form's target). */
+    _mintElement(spec, field, objectApi) {
+        if (spec && spec.form && !spec.form.targetObject && this.objectApi) {
             spec.form.targetObject = this.objectApi;
         }
         const element = {
             id: mintId('el'),
             type: 'field',
-            binding: { object: this.objectApi, field: field.apiName },
+            binding: {
+                object: objectApi || this.objectApi,
+                field: field.apiName
+            },
             label: field.label,
             required: Boolean(field.required),
             // schema §4: `required` is authoring sugar — the validation
@@ -659,6 +811,85 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.handleDropBlock({
             detail: { blockType: event.detail.blockType }
         });
+    }
+
+    // ----- the Repeating Group flow (CANVAS_RULES §4) -----
+
+    /** Non-null while the relationship picker is open: where the group
+     *  lands once a child object is picked. Nothing is minted before then —
+     *  Cancel simply abandons the drop. */
+    relPickerOpen = false;
+    _pendingRepeat = null;
+
+    handleAddRepeater() {
+        const page = this._currentBuildPage(this.spec);
+        this._pendingRepeat = {
+            pageId: (page && page.id) || null,
+            beforeSectionId: null
+        };
+        this.relPickerOpen = true;
+    }
+
+    handleDropRepeater(event) {
+        const { beforeSectionId, pageId } = event.detail;
+        this._pendingRepeat = {
+            beforeSectionId: beforeSectionId || null,
+            pageId: pageId || null
+        };
+        this.relPickerOpen = true;
+    }
+
+    /** §4.3: picking mints the repeatable section AT the drop position,
+     *  titled by the child object, selected, inspector open (its child-field
+     *  list is how fields get in — the parent palette never feeds it). */
+    handleRelPick(event) {
+        const rel = event.detail.relationship;
+        const at = this._pendingRepeat || {};
+        this.relPickerOpen = false;
+        this._pendingRepeat = null;
+        this._mutate((spec) => {
+            const page =
+                (spec.pages || []).find((p) => p.id === at.pageId) ||
+                this._currentBuildPage(spec);
+            if (!page) {
+                return false;
+            }
+            const section = {
+                id: mintId('sec'),
+                title: rel.childObjectLabel,
+                columns: 1,
+                elements: [],
+                repeat: {
+                    childObject: rel.childObject,
+                    relationshipField: rel.linkingField,
+                    relationshipName: rel.relationshipName,
+                    style: 'stacked',
+                    addLabel: `Add ${rel.childObjectLabel}`,
+                    removeLabel: 'Remove',
+                    entryLabel: `${rel.childObjectLabel} {index}`,
+                    min: 1,
+                    max: null
+                }
+            };
+            page.sections = page.sections || [];
+            const at2 = at.beforeSectionId
+                ? page.sections.findIndex((s) => s.id === at.beforeSectionId)
+                : -1;
+            if (at2 >= 0) {
+                page.sections.splice(at2, 0, section);
+            } else {
+                page.sections.push(section);
+            }
+            this.buildPageIndex = spec.pages.indexOf(page);
+            this.selection = { kind: 'section', id: section.id };
+            this.propsOpen = true;
+            return undefined;
+        });
+    }
+
+    handleRelCancel() {
+        this.relPickerOpen = false;
+        this._pendingRepeat = null;
     }
 
     handleMoveElement(event) {

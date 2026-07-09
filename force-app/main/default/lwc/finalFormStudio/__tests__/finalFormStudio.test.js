@@ -441,9 +441,186 @@ describe('c-final-form-studio', () => {
             })
         );
         await Promise.resolve();
-        expect(el.shadowRoot.querySelector('.st-props-title').textContent).toBe(
-            'Nickname'
+        const panel = el.shadowRoot.querySelector('c-final-property-panel');
+        expect(panel).not.toBeNull();
+        expect(panel.kind).toBe('element');
+        expect(panel.node.label).toBe('Nickname');
+    });
+
+    it('property intents: required sugar syncs the validation entry; rebind rewires config (§5)', async () => {
+        jest.useFakeTimers();
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'A',
+                        elements: [
+                            {
+                                id: 'el_1',
+                                type: 'field',
+                                label: 'First',
+                                required: false,
+                                validation: [],
+                                config: { inputType: 'text' }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            objectApi: 'Contact',
+            specJson: JSON.stringify(structured),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const canvas = el.shadowRoot.querySelector('c-final-builder-canvas');
+        canvas.dispatchEvent(
+            new CustomEvent('select', {
+                detail: { kind: 'element', id: 'el_1' }
+            })
         );
+        await Promise.resolve();
+        const panel = el.shadowRoot.querySelector('c-final-property-panel');
+
+        panel.dispatchEvent(
+            new CustomEvent('propchange', {
+                detail: { patch: { required: true } }
+            })
+        );
+        panel.dispatchEvent(
+            new CustomEvent('bindingchange', {
+                detail: {
+                    field: {
+                        apiName: 'Email',
+                        label: 'Email',
+                        inputType: 'email'
+                    }
+                }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        const elx = saved.pages[0].sections[0].elements[0];
+        expect(elx.required).toBe(true);
+        expect(elx.validation).toEqual([
+            { type: 'required', message: 'First is required.' }
+        ]);
+        expect(elx.binding).toEqual({ object: 'Contact', field: 'Email' });
+        expect(elx.config.inputType).toBe('email');
+        expect(elx.label).toBe('First'); // the author's copy survives a rebind
+        jest.useRealTimers();
+    });
+
+    it('repeater flow (§4): drop opens the picker, pick mints the section AT the position, child fields bind to the child', async () => {
+        jest.useFakeTimers();
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.form.targetObject = 'Account';
+        structured.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    { id: 'sec_1', title: 'A', elements: [] },
+                    { id: 'sec_2', title: 'B', elements: [] }
+                ]
+            }
+        ];
+        loadStudio.mockResolvedValue({
+            name: 'Accounts',
+            objectApi: 'Account',
+            specJson: JSON.stringify(structured),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const canvas = el.shadowRoot.querySelector('c-final-builder-canvas');
+
+        // nothing mints before a child object is picked
+        canvas.dispatchEvent(
+            new CustomEvent('droprepeater', {
+                detail: { beforeSectionId: 'sec_2', pageId: 'pg_1' }
+            })
+        );
+        await Promise.resolve();
+        const picker = el.shadowRoot.querySelector(
+            'c-final-relationship-picker'
+        );
+        expect(picker).not.toBeNull();
+        expect(saveDraft).not.toHaveBeenCalled();
+
+        picker.dispatchEvent(
+            new CustomEvent('pick', {
+                detail: {
+                    relationship: {
+                        relationshipName: 'Contacts',
+                        childObject: 'Contact',
+                        childObjectLabel: 'Contact',
+                        linkingField: 'AccountId'
+                    }
+                }
+            })
+        );
+        await Promise.resolve();
+        // picker gone, inspector open on the new group
+        expect(
+            el.shadowRoot.querySelector('c-final-relationship-picker')
+        ).toBeNull();
+        const panel = el.shadowRoot.querySelector('c-final-property-panel');
+        expect(panel.kind).toBe('section');
+        expect(panel.node.repeat.childObject).toBe('Contact');
+
+        // §4.4: the inspector's child list adds CHILD-bound elements
+        panel.dispatchEvent(
+            new CustomEvent('addchildfield', {
+                detail: {
+                    field: {
+                        apiName: 'LastName',
+                        label: 'Last Name',
+                        inputType: 'text',
+                        required: true
+                    }
+                }
+            })
+        );
+        panel.dispatchEvent(
+            new CustomEvent('repeatchange', {
+                detail: { patch: { style: 'table' } }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+        const pg = saved.pages[0];
+        // minted AT the drop position: between sec_1 and sec_2
+        expect(pg.sections.map((s) => s.title)).toEqual(['A', 'Contact', 'B']);
+        const rep = pg.sections[1];
+        expect(rep.repeat.relationshipField).toBe('AccountId');
+        expect(rep.repeat.style).toBe('table');
+        expect(rep.repeat.entryLabel).toBe('Contact {index}');
+        expect(rep.elements[0].binding).toEqual({
+            object: 'Contact',
+            field: 'LastName'
+        });
+        expect(rep.elements[0].validation[0].type).toBe('required');
+        jest.useRealTimers();
     });
 
     it('strips the resolved publish artifact so theme picks repaint the preview', async () => {

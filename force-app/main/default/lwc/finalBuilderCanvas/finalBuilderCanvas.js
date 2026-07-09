@@ -31,6 +31,7 @@ import { LightningElement, api } from 'lwc';
  *  during dragover; the JSON payload is not until drop). */
 export const PALETTE_FIELD_MIME = 'final/palette-field';
 export const PALETTE_EL_MIME = 'final/palette-el';
+export const PALETTE_REP_MIME = 'final/palette-rep';
 
 /** Blueprint labels for standalone content blocks (schema §4 v1 types). */
 const BLOCK_LABELS = {
@@ -118,6 +119,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (Array.prototype.includes.call(types, PALETTE_EL_MIME)) {
             return 'palette-el';
         }
+        if (Array.prototype.includes.call(types, PALETTE_REP_MIME)) {
+            return 'palette-rep';
+        }
         return null;
     }
 
@@ -169,6 +173,12 @@ export default class FinalBuilderCanvas extends LightningElement {
                 blockLabel: isBlock
                     ? BLOCK_LABELS[first && first.type] || 'Block'
                     : null,
+                // §4: a repeatable section wears its child object on the
+                // blueprint — the structural fact a schematic must show
+                repeatChip:
+                    s.repeat && s.repeat.childObject
+                        ? `↻ repeats · ${s.repeat.childObject}`
+                        : null,
                 title: s.title || 'Untitled section',
                 cls: isBlock
                     ? selected
@@ -225,7 +235,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         }
         // §1: content blocks land anywhere (into field sections, or as a
         // sibling BEFORE another block — the drop handler decides which).
-        if (kind === 'palette-el') {
+        // A Repeating Group IS a section (§4) — it inserts before, like a
+        // section reorder, never inside.
+        if (kind === 'palette-el' || kind === 'palette-rep') {
             return true;
         }
         // §3: content blocks hold nothing — fields/elements never enter.
@@ -268,8 +280,14 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (!kind) {
             return false;
         }
-        // sections/pages reorder anywhere; blocks also drop in gaps (§1)
-        if (kind === 'section' || kind === 'page' || kind === 'palette-el') {
+        // sections/pages reorder anywhere; blocks and repeaters also drop
+        // in gaps (§1/§4)
+        if (
+            kind === 'section' ||
+            kind === 'page' ||
+            kind === 'palette-el' ||
+            kind === 'palette-rep'
+        ) {
             return true;
         }
         const sec = this._sectionAt(target);
@@ -373,11 +391,11 @@ export default class FinalBuilderCanvas extends LightningElement {
             this._clearHighlight();
             return;
         }
-        // §3: a section drag, or content over a BLOCK, is a sibling
-        // insertion (line before) — everything else drops IN (highlight).
+        // §3/§4: a section or repeater drag, or content over a BLOCK, is a
+        // sibling insertion (line before) — everything else drops IN.
         this._setHighlight(
             node,
-            kind === 'section' || (sec && sec.block)
+            kind === 'section' || kind === 'palette-rep' || (sec && sec.block)
                 ? 'bc-drop-before'
                 : 'bc-drop-on'
         );
@@ -390,9 +408,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (!kind) {
             return;
         }
-        // A SECTION drag over a field keeps the section-level line — you're
-        // reordering sections, not fields; let it reach the parent.
-        if (kind === 'section') {
+        // A SECTION (or repeater — it IS a section, §4) drag over a field
+        // keeps the section-level line; let it reach the parent.
+        if (kind === 'section' || kind === 'palette-rep') {
             return;
         }
         e.stopPropagation();
@@ -410,7 +428,11 @@ export default class FinalBuilderCanvas extends LightningElement {
     // get no line and the gatekeeper leaves them a native no-drop.
     handleGapDragOver(e) {
         const kind = this._kindOf(e);
-        if (kind !== 'section' && kind !== 'palette-el') {
+        if (
+            kind !== 'section' &&
+            kind !== 'palette-el' &&
+            kind !== 'palette-rep'
+        ) {
             this._clearHighlight();
             return;
         }
@@ -474,6 +496,12 @@ export default class FinalBuilderCanvas extends LightningElement {
                 sectionId,
                 beforeId: null
             });
+        } else if (data.t === 'palette-rep') {
+            // §4: the group lands BEFORE this section, never inside it
+            this._emit('droprepeater', {
+                beforeSectionId: sectionId,
+                pageId
+            });
         } else if (data.t === 'palette-el') {
             const sec = this._sectionById(sectionId);
             if (sec && sec.block) {
@@ -509,6 +537,11 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (data.t === 'section') {
             this._emit('movesection', {
                 id: data.id,
+                beforeSectionId: ds.sectionId,
+                pageId
+            });
+        } else if (data.t === 'palette-rep') {
+            this._emit('droprepeater', {
                 beforeSectionId: ds.sectionId,
                 pageId
             });
@@ -551,6 +584,13 @@ export default class FinalBuilderCanvas extends LightningElement {
             });
             return;
         }
+        if (data.t === 'palette-rep') {
+            this._emit('droprepeater', {
+                beforeSectionId: e.currentTarget.dataset.before || null,
+                pageId: this.currentPage && this.currentPage.id
+            });
+            return;
+        }
         if (data.t !== 'section') {
             return; // fields/elements never land in gaps (§1)
         }
@@ -585,6 +625,8 @@ export default class FinalBuilderCanvas extends LightningElement {
         } else if (data.t === 'palette-el') {
             // block onto a page chip → standalone at that page's end
             this._emit('dropblock', { blockType: data.elType, pageId });
+        } else if (data.t === 'palette-rep') {
+            this._emit('droprepeater', { pageId });
         }
     }
 
