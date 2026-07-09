@@ -88,9 +88,36 @@
                 </template>
             </template>
             <template lwc:elseif={isBlocks}>
-                <p class="fp-note">
-                    Content blocks (text, image, divider) arrive with the
-                    widgets phase — the canvas already knows their drop rules.
+                <header class="fp-head">
+                    <span class="fp-head-label">Content blocks</span>
+                    <span class="fp-head-sub"
+                        >drop into sections or between them</span
+                    >
+                </header>
+                <ul class="fp-list">
+                    <template for:each={blocks} for:item="b">
+                        <li key={b.type}>
+                            <button
+                                type="button"
+                                class="fp-item"
+                                title={b.title}
+                                data-type={b.type}
+                                draggable="true"
+                                onclick={handleAddBlock}
+                                ondragstart={handleBlockDragStart}
+                            >
+                                <lightning-icon
+                                    icon-name={b.icon}
+                                    size="x-small"
+                                ></lightning-icon>
+                                <span class="fp-label">{b.label}</span>
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+                <p class="fp-note fp-note-sub">
+                    Blocks repeat freely — drag as many as you need. The
+                    Repeating Group joins them with the properties slice.
                 </p>
             </template>
             <template lwc:elseif={isStub}>

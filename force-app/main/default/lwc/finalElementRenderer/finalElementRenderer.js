@@ -33,6 +33,41 @@ export default class FinalElementRenderer extends LightningElement {
         return this.el.type === 'field';
     }
 
+    // ---- content blocks (schema §4: binding null always) ----
+
+    get isRichText() {
+        return this.el.type === 'richText';
+    }
+
+    get isImage() {
+        return this.el.type === 'image';
+    }
+
+    get isDivider() {
+        return this.el.type === 'divider';
+    }
+
+    get isSpacer() {
+        return this.el.type === 'spacer';
+    }
+
+    get richTextHtml() {
+        return this.cfg.html || '<p>Add your text…</p>';
+    }
+
+    get hasImageSrc() {
+        return Boolean(this.cfg.src);
+    }
+
+    get imageAlt() {
+        return this.cfg.alt || '';
+    }
+
+    get spacerStyle() {
+        const h = Number(this.cfg.height);
+        return `height: ${h > 0 ? h : 24}px`;
+    }
+
     get isTextarea() {
         return this.isField && this.cfg.inputType === 'textarea';
     }

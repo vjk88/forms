@@ -79,7 +79,10 @@ describe('c-final-field-palette', () => {
         await flush();
         el.shadowRoot.querySelector('[data-tab="blocks"]').click();
         await flush();
-        expect(el.shadowRoot.querySelector('.fp-head')).toBeNull();
+        // Blocks has its OWN header — never the object one
+        expect(el.shadowRoot.querySelector('.fp-head-label').textContent).toBe(
+            'Content blocks'
+        );
     });
 
     it('search filters; Blocks/Logic tabs are honest stubs', async () => {
@@ -129,5 +132,70 @@ describe('c-final-field-palette', () => {
         blocked.dataTransfer = dt;
         items[1].dispatchEvent(blocked); // Email is ADDED
         expect(blocked.defaultPrevented).toBe(true);
+    });
+
+    it('unbound legacy elements dedupe by LABEL — canvas is the truth (owner rule)', async () => {
+        // "Last Name" exists on the canvas as an unbound demo element: the
+        // palette must show it ADDED and refuse click-add and drag alike
+        const el = mount({ usedFields: [], usedLabels: ['last name'] });
+        describeFields.emit(FIELDS);
+        await flush();
+        const items = el.shadowRoot.querySelectorAll('.fp-item');
+        expect(items[0].classList.contains('added')).toBe(true); // LastName
+
+        const handler = jest.fn();
+        el.addEventListener('addfield', handler);
+        items[0].click();
+        expect(handler).not.toHaveBeenCalled();
+
+        const start = new CustomEvent('dragstart', { cancelable: true });
+        start.dataTransfer = { types: [], setData() {} };
+        items[0].dispatchEvent(start);
+        expect(start.defaultPrevented).toBe(true);
+    });
+
+    it('Blocks tab lists the schema roster; click-add + drag stamp palette-el', async () => {
+        const { PALETTE_EL_MIME } = require('c/finalBuilderCanvas');
+        const el = mount();
+        describeFields.emit(FIELDS);
+        await flush();
+        el.shadowRoot.querySelector('[data-tab="blocks"]').click();
+        await flush();
+
+        const items = el.shadowRoot.querySelectorAll('.fp-item');
+        expect([...items].map((i) => i.dataset.type)).toEqual([
+            'richText',
+            'image',
+            'divider',
+            'spacer'
+        ]);
+
+        const adds = [];
+        el.addEventListener('addblock', (e) => adds.push(e.detail));
+        items[2].click();
+        items[2].click(); // blocks repeat freely — no ADDED dedupe
+        expect(adds).toEqual([
+            { blockType: 'divider' },
+            { blockType: 'divider' }
+        ]);
+
+        const store = {};
+        const dt = {
+            types: [],
+            effectAllowed: '',
+            setData(t, v) {
+                store[t] = v;
+                this.types.push(t);
+            }
+        };
+        const start = new CustomEvent('dragstart', { cancelable: true });
+        start.dataTransfer = dt;
+        items[0].dispatchEvent(start);
+        expect(dt.types).toContain(PALETTE_EL_MIME);
+        expect(dt.effectAllowed).toBe('copy');
+        expect(JSON.parse(store['text/plain'])).toEqual({
+            t: 'palette-el',
+            elType: 'richText'
+        });
     });
 });

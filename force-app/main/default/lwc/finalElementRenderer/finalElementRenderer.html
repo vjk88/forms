@@ -54,6 +54,35 @@
             </template>
         </div>
     </template>
+    <template lwc:elseif={isRichText}>
+        <div class="block-richtext">
+            <lightning-formatted-rich-text
+                value={richTextHtml}
+            ></lightning-formatted-rich-text>
+        </div>
+    </template>
+    <template lwc:elseif={isImage}>
+        <template lwc:if={hasImageSrc}>
+            <img class="block-image" src={cfg.src} alt={imageAlt} />
+        </template>
+        <template lwc:else>
+            <!-- src arrives with the properties slice — an honest frame
+                 beats an invisible element the author can't find -->
+            <div class="block-image-empty">
+                <lightning-icon
+                    icon-name="utility:image"
+                    size="small"
+                ></lightning-icon>
+                <span>Image — pick a file in its properties</span>
+            </div>
+        </template>
+    </template>
+    <template lwc:elseif={isDivider}>
+        <hr class="block-divider" />
+    </template>
+    <template lwc:elseif={isSpacer}>
+        <div class="block-spacer" style={spacerStyle} aria-hidden="true"></div>
+    </template>
     <template lwc:else>
         <div class="unsupported">
             <lightning-icon

@@ -27,9 +27,18 @@ import { LightningElement, api } from 'lwc';
  * bc- prefixed classes (LEX .stage leak lesson).
  */
 
-/** Typed marker finalFieldPalette stamps on its drags (types are visible
+/** Typed markers finalFieldPalette stamps on its drags (types are visible
  *  during dragover; the JSON payload is not until drop). */
 export const PALETTE_FIELD_MIME = 'final/palette-field';
+export const PALETTE_EL_MIME = 'final/palette-el';
+
+/** Blueprint labels for standalone content blocks (schema §4 v1 types). */
+const BLOCK_LABELS = {
+    richText: 'Display text',
+    image: 'Image',
+    divider: 'Divider',
+    spacer: 'Spacer'
+};
 
 export default class FinalBuilderCanvas extends LightningElement {
     @api spec;
@@ -100,9 +109,13 @@ export default class FinalBuilderCanvas extends LightningElement {
             return this._dragKind;
         }
         const types = (e.dataTransfer && e.dataTransfer.types) || [];
-        return Array.prototype.includes.call(types, PALETTE_FIELD_MIME)
-            ? 'palette-field'
-            : null;
+        if (Array.prototype.includes.call(types, PALETTE_FIELD_MIME)) {
+            return 'palette-field';
+        }
+        if (Array.prototype.includes.call(types, PALETTE_EL_MIME)) {
+            return 'palette-el';
+        }
+        return null;
     }
 
     get pages() {
@@ -140,26 +153,42 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (!page) {
             return [];
         }
-        return (page.sections || []).map((s) => ({
-            id: s.id,
-            gapKey: `gap_${s.id}`,
-            title: s.title || 'Untitled section',
-            cls:
-                sel.kind === 'section' && sel.id === s.id
-                    ? 'bc-section selected'
-                    : 'bc-section',
-            empty: !(s.elements || []).length,
-            elements: (s.elements || []).map((el) => ({
-                id: el.id,
-                sectionId: s.id,
-                label: el.label || el.type,
-                required: Boolean(el.required),
-                cls:
-                    sel.kind === 'element' && sel.id === el.id
-                        ? 'bc-row selected'
-                        : 'bc-row'
-            }))
-        }));
+        return (page.sections || []).map((s) => {
+            const selected = sel.kind === 'section' && sel.id === s.id;
+            // §3: a standalone content block is a marked wrapper section —
+            // the blueprint renders it as a compact block row, not a box
+            const isBlock = Boolean(s.block);
+            const first = (s.elements || [])[0];
+            return {
+                id: s.id,
+                gapKey: `gap_${s.id}`,
+                isBlock,
+                blockLabel: isBlock
+                    ? BLOCK_LABELS[first && first.type] || 'Block'
+                    : null,
+                title: s.title || 'Untitled section',
+                cls: isBlock
+                    ? selected
+                        ? 'bc-block selected'
+                        : 'bc-block'
+                    : selected
+                      ? 'bc-section selected'
+                      : 'bc-section',
+                empty: !(s.elements || []).length,
+                elements: isBlock
+                    ? []
+                    : (s.elements || []).map((el) => ({
+                          id: el.id,
+                          sectionId: s.id,
+                          label: el.label || el.type,
+                          required: Boolean(el.required),
+                          cls:
+                              sel.kind === 'element' && sel.id === el.id
+                                  ? 'bc-row selected'
+                                  : 'bc-row'
+                      }))
+            };
+        });
     }
 
     get isEmpty() {
@@ -191,10 +220,18 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (kind === 'section' || kind === 'page') {
             return true;
         }
+        // §1: content blocks land anywhere (into field sections, or as a
+        // sibling BEFORE another block — the drop handler decides which).
+        if (kind === 'palette-el') {
+            return true;
+        }
+        // §3: content blocks hold nothing — fields/elements never enter.
+        if (sec.block) {
+            return false;
+        }
         // §1: a palette field never lands in a repeater (child fields come
         // from the repeater's inspector); §2: an element only moves between
-        // sections sharing its data context. Content blocks (§3) refuse both
-        // when they exist — repeat is the only non-parent context so far.
+        // sections sharing its data context.
         if (kind === 'palette-field') {
             return this._sig(sec) === 'parent';
         }
@@ -228,7 +265,8 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (!kind) {
             return false;
         }
-        if (kind === 'section' || kind === 'page') {
+        // sections/pages reorder anywhere; blocks also drop in gaps (§1)
+        if (kind === 'section' || kind === 'page' || kind === 'palette-el') {
             return true;
         }
         const sec = this._sectionAt(target);
@@ -332,9 +370,13 @@ export default class FinalBuilderCanvas extends LightningElement {
             this._clearHighlight();
             return;
         }
+        // §3: a section drag, or content over a BLOCK, is a sibling
+        // insertion (line before) — everything else drops IN (highlight).
         this._setHighlight(
             node,
-            kind === 'section' ? 'bc-drop-before' : 'bc-drop-on'
+            kind === 'section' || (sec && sec.block)
+                ? 'bc-drop-before'
+                : 'bc-drop-on'
         );
     }
 
@@ -360,12 +402,12 @@ export default class FinalBuilderCanvas extends LightningElement {
         this._setHighlight(node, 'bc-drop-before');
     }
 
-    // Inter-section gap — reorders a section here. Fields can't live between
-    // sections (§1), so they get no line and the gatekeeper leaves them a
-    // native no-drop.
+    // Inter-section gap — a section reorders here, a palette block lands
+    // here STANDALONE (§1/§3). Fields can't live between sections, so they
+    // get no line and the gatekeeper leaves them a native no-drop.
     handleGapDragOver(e) {
         const kind = this._kindOf(e);
-        if (kind !== 'section') {
+        if (kind !== 'section' && kind !== 'palette-el') {
             this._clearHighlight();
             return;
         }
@@ -429,6 +471,23 @@ export default class FinalBuilderCanvas extends LightningElement {
                 sectionId,
                 beforeId: null
             });
+        } else if (data.t === 'palette-el') {
+            const sec = this._sectionById(sectionId);
+            if (sec && sec.block) {
+                // §3: onto a block → a standalone SIBLING before it
+                this._emit('dropblock', {
+                    blockType: data.elType,
+                    beforeSectionId: sectionId,
+                    pageId
+                });
+            } else {
+                // into a field section → a content element, appended
+                this._emit('dropblock', {
+                    blockType: data.elType,
+                    sectionId,
+                    beforeId: null
+                });
+            }
         }
     }
 
@@ -462,6 +521,13 @@ export default class FinalBuilderCanvas extends LightningElement {
                 sectionId: ds.sectionId,
                 beforeId: ds.id
             });
+        } else if (data.t === 'palette-el') {
+            // a content block dropped on a field row → inserted right there
+            this._emit('dropblock', {
+                blockType: data.elType,
+                sectionId: ds.sectionId,
+                beforeId: ds.id
+            });
         }
     }
 
@@ -470,7 +536,19 @@ export default class FinalBuilderCanvas extends LightningElement {
         e.stopPropagation();
         this._clearDnd();
         const data = this._readDrag(e);
-        if (!data || data.t !== 'section') {
+        if (!data) {
+            return;
+        }
+        if (data.t === 'palette-el') {
+            // §1: a block in a gap = standalone, right here
+            this._emit('dropblock', {
+                blockType: data.elType,
+                beforeSectionId: e.currentTarget.dataset.before || null,
+                pageId: this.currentPage && this.currentPage.id
+            });
+            return;
+        }
+        if (data.t !== 'section') {
             return; // fields/elements never land in gaps (§1)
         }
         this._emit('movesection', {
@@ -501,6 +579,9 @@ export default class FinalBuilderCanvas extends LightningElement {
             this._emit('moveelement', { id: data.id, pageId });
         } else if (data.t === 'palette-field') {
             this._emit('dropfield', { field: data.field, pageId });
+        } else if (data.t === 'palette-el') {
+            // block onto a page chip → standalone at that page's end
+            this._emit('dropblock', { blockType: data.elType, pageId });
         }
     }
 
