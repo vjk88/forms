@@ -91,6 +91,9 @@
                         <header class="bc-section-head">
                             <span class="bc-grip" aria-hidden="true">⋮⋮</span>
                             <span class="bc-section-title">{s.title}</span>
+                            <template lwc:if={s.repeatChip}>
+                                <span class="bc-repeat">{s.repeatChip}</span>
+                            </template>
                             <button
                                 type="button"
                                 class="bc-x"
@@ -102,9 +105,17 @@
                             </button>
                         </header>
                         <template lwc:if={s.empty}>
-                            <p class="bc-empty-section">
-                                Empty — add fields from the palette.
-                            </p>
+                            <template lwc:if={s.repeatChip}>
+                                <p class="bc-empty-section">
+                                    Empty — add child fields from this
+                                    group&#8217;s properties.
+                                </p>
+                            </template>
+                            <template lwc:else>
+                                <p class="bc-empty-section">
+                                    Empty — add fields from the palette.
+                                </p>
+                            </template>
                         </template>
                         <template for:each={s.elements} for:item="el">
                             <div

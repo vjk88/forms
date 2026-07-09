@@ -297,6 +297,53 @@ describe('c-final-builder-canvas', () => {
         ]);
     });
 
+    it('palette repeater: sibling line on sections, gap + chip drops emit droprepeater (§4)', () => {
+        const el = mount();
+        const drops = [];
+        el.addEventListener('droprepeater', (e) => drops.push(e.detail));
+        const dt = makeDataTransfer();
+        dt.types.push('final/palette-rep');
+
+        // over a section → allowed, copy, sibling insertion line (never IN)
+        const section = el.shadowRoot.querySelector('.bc-section');
+        const over = dragEvent('dragover', dt);
+        const pd = jest.spyOn(over, 'preventDefault');
+        section.dispatchEvent(over);
+        expect(pd).toHaveBeenCalled();
+        expect(dt.dropEffect).toBe('copy');
+        expect(section.classList.contains('bc-drop-before')).toBe(true);
+
+        dt.setData('text/plain', JSON.stringify({ t: 'palette-rep' }));
+        section.dispatchEvent(dragEvent('drop', dt));
+
+        const gap = el.shadowRoot.querySelector('.bc-gap-end');
+        gap.dispatchEvent(dragEvent('dragover', dt));
+        expect(gap.classList.contains('bc-gap-over')).toBe(true);
+        gap.dispatchEvent(dragEvent('drop', dt));
+
+        const chips = el.shadowRoot.querySelectorAll('.bc-chip');
+        chips[1].dispatchEvent(dragEvent('drop', dt));
+
+        expect(drops).toEqual([
+            { beforeSectionId: 'sec_1', pageId: 'pg_1' },
+            { beforeSectionId: null, pageId: 'pg_1' },
+            { pageId: 'pg_2' }
+        ]);
+    });
+
+    it('repeat sections wear the child-object chip on the blueprint', () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages[0].sections.push({
+            id: 'sec_rep',
+            title: 'Line items',
+            repeat: { childObject: 'OrderItem__c' },
+            elements: []
+        });
+        const el = mount({ spec });
+        const chip = el.shadowRoot.querySelector('.bc-repeat');
+        expect(chip.textContent).toContain('OrderItem__c');
+    });
+
     it('element drags cannot enter a repeater section (§2 data-context signatures)', () => {
         const spec = JSON.parse(JSON.stringify(SPEC));
         spec.pages[0].sections.push({

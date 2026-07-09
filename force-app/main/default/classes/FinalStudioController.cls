@@ -197,7 +197,7 @@ public with sharing class FinalStudioController {
             List<Form_Version__c> rows = [
                 SELECT Id, Is_Active__c
                 FROM Form_Version__c
-                WHERE Id = :draftVersionId AND Is_Active__c = false
+                WHERE Id = :draftVersionId AND Is_Active__c = FALSE
                 WITH USER_MODE
                 LIMIT 1
             ];
@@ -248,11 +248,13 @@ public with sharing class FinalStudioController {
                 // required at the DB = must be on the form (palette seeds
                 // these dimmed + ADDED at creation, IA §4)
                 'required' => !fd.isNillable() &&
-                    !fd.isDefaultedOnCreate() &&
-                    fd.getType() != Schema.DisplayType.BOOLEAN
+                !fd.isDefaultedOnCreate() &&
+                fd.getType() != Schema.DisplayType.BOOLEAN
             };
-            if (fd.getType() == Schema.DisplayType.PICKLIST ||
-                fd.getType() == Schema.DisplayType.MULTIPICKLIST) {
+            if (
+                fd.getType() == Schema.DisplayType.PICKLIST ||
+                fd.getType() == Schema.DisplayType.MULTIPICKLIST
+            ) {
                 List<Map<String, String>> options = new List<Map<String, String>>();
                 for (Schema.PicklistEntry pe : fd.getPicklistValues()) {
                     if (pe.isActive()) {
@@ -267,6 +269,61 @@ public with sharing class FinalStudioController {
                 row.put('options', options);
             }
             out.add(row);
+        }
+        return out;
+    }
+
+    /**
+     * Repeater flow (CANVAS_RULES §4): the primary object's child
+     * relationships — the candidates the relationship picker offers. Each
+     * carries the child object + label and the child's lookup field back to
+     * the parent (repeat.relationshipField — the linking field the submit
+     * engine sets, never an authored element). Describe-level access checks
+     * mirror describeFields; the linking field itself must be createable or
+     * the submit engine could never populate it.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> describeChildRelationships(
+        String objectApi
+    ) {
+        if (String.isBlank(objectApi)) {
+            throw new AuraHandledException('An object API name is required.');
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe().get(objectApi);
+        if (t == null) {
+            throw new AuraHandledException('Unknown object: ' + objectApi);
+        }
+        List<Map<String, Object>> out = new List<Map<String, Object>>();
+        for (
+            Schema.ChildRelationship cr : t.getDescribe()
+                .getChildRelationships()
+        ) {
+            if (cr.getRelationshipName() == null) {
+                continue;
+            }
+            Schema.DescribeSObjectResult child = cr.getChildSObject()
+                .getDescribe();
+            if (
+                !child.isAccessible() ||
+                !child.isCreateable() ||
+                !child.isQueryable() ||
+                child.isDeprecatedAndHidden()
+            ) {
+                continue;
+            }
+            Schema.DescribeFieldResult link = cr.getField().getDescribe();
+            if (!link.isCreateable()) {
+                continue;
+            }
+            out.add(
+                new Map<String, Object>{
+                    'relationshipName' => cr.getRelationshipName(),
+                    'childObject' => child.getName(),
+                    'childObjectLabel' => child.getLabel(),
+                    'linkingField' => link.getName(),
+                    'linkingFieldLabel' => link.getLabel()
+                }
+            );
         }
         return out;
     }
@@ -342,8 +399,10 @@ public with sharing class FinalStudioController {
                         activeNumber = v.Version_Number__c;
                     }
                 }
-                hasDraft = maxNumber > 0 &&
-                    (activeNumber == null || maxNumber > activeNumber);
+                hasDraft =
+                    maxNumber > 0 &&
+                    (activeNumber == null ||
+                    maxNumber > activeNumber);
                 out.add(
                     new Map<String, Object>{
                         'id' => f.Id,

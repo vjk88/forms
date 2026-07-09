@@ -1,0 +1,355 @@
+<template>
+    <div class="pp">
+        <header class="pp-head">
+            <h3 class="pp-title">{title}</h3>
+            <p class="pp-sub">{subtitle}</p>
+        </header>
+
+        <!-- FIELD (§5: per-type — only a field's own properties) -->
+        <template lwc:if={isField}>
+            <div class="pp-group">
+                <lightning-input
+                    label="Label"
+                    data-prop="label"
+                    value={n.label}
+                    onchange={handleLabel}
+                ></lightning-input>
+
+                <label class="pp-label" for="binding">Salesforce field</label>
+                <select
+                    id="binding"
+                    class="pp-select pp-binding"
+                    onchange={handleBinding}
+                >
+                    <template lwc:if={isUnbound}>
+                        <option value="__unbound__" selected disabled>
+                            Not bound — pick a field
+                        </option>
+                    </template>
+                    <template for:each={bindingOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                            disabled={o.disabled}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+                <template lwc:if={bindingError}>
+                    <p class="pp-error" role="alert">{bindingError}</p>
+                </template>
+                <p class="pp-hint">
+                    Answers save to this field when the form is submitted.
+                </p>
+
+                <lightning-input
+                    type="toggle"
+                    label="Required"
+                    data-prop="required"
+                    checked={n.required}
+                    message-toggle-active=""
+                    message-toggle-inactive=""
+                    onchange={handleRequired}
+                ></lightning-input>
+                <lightning-input
+                    label="Placeholder"
+                    data-prop="placeholder"
+                    value={n.placeholder}
+                    onchange={handlePlaceholder}
+                ></lightning-input>
+                <lightning-input
+                    label="Help text"
+                    data-prop="help"
+                    value={n.help}
+                    field-level-help="Shows as an info bubble beside the label"
+                    onchange={handleHelp}
+                ></lightning-input>
+
+                <label class="pp-label" for="labelpos">Label position</label>
+                <select
+                    id="labelpos"
+                    class="pp-select pp-labelpos"
+                    onchange={handleLabelPosition}
+                >
+                    <template for:each={labelPositionOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+
+                <label class="pp-label" for="labelstyle">Label style</label>
+                <select
+                    id="labelstyle"
+                    class="pp-select pp-labelstyle"
+                    onchange={handleLabelStyle}
+                >
+                    <template for:each={labelStyleOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+
+                <lightning-input
+                    type="toggle"
+                    label="Read-only"
+                    data-prop="readonly"
+                    checked={n.readOnly}
+                    message-toggle-active=""
+                    message-toggle-inactive=""
+                    onchange={handleReadOnly}
+                ></lightning-input>
+            </div>
+        </template>
+
+        <!-- DISPLAY TEXT -->
+        <template lwc:elseif={isRichText}>
+            <div class="pp-group">
+                <lightning-input-rich-text
+                    label="Text"
+                    data-prop="html"
+                    label-visible
+                    value={cfg.html}
+                    onchange={handleRichText}
+                ></lightning-input-rich-text>
+            </div>
+        </template>
+
+        <!-- IMAGE -->
+        <template lwc:elseif={isImage}>
+            <div class="pp-group">
+                <lightning-input
+                    type="url"
+                    label="Image URL"
+                    data-prop="src"
+                    value={cfg.src}
+                    placeholder="https://…"
+                    onchange={handleImageSrc}
+                ></lightning-input>
+                <lightning-input
+                    label="Alt text"
+                    data-prop="alt"
+                    value={cfg.alt}
+                    field-level-help="Read by screen readers; shown if the image can't load"
+                    onchange={handleImageAlt}
+                ></lightning-input>
+                <p class="pp-hint">
+                    Paste a public image link. Uploading a file from here is on
+                    the roadmap.
+                </p>
+            </div>
+        </template>
+
+        <!-- SPACER -->
+        <template lwc:elseif={isSpacer}>
+            <div class="pp-group">
+                <lightning-input
+                    type="number"
+                    label="Height (px)"
+                    data-prop="height"
+                    value={spacerHeight}
+                    min="4"
+                    max="240"
+                    step="4"
+                    onchange={handleSpacerHeight}
+                ></lightning-input>
+            </div>
+        </template>
+
+        <!-- DIVIDER -->
+        <template lwc:elseif={isDivider}>
+            <p class="pp-hint pp-only">
+                A divider has no settings — its color and weight follow the
+                theme. Drag it where you need the break.
+            </p>
+        </template>
+
+        <!-- REPEATING GROUP (§4: DEDICATED — never plain section props) -->
+        <template lwc:elseif={isRepeater}>
+            <div class="pp-group">
+                <lightning-input
+                    label="Group title"
+                    data-prop="title"
+                    value={n.title}
+                    onchange={handleTitle}
+                ></lightning-input>
+
+                <label class="pp-label" for="repstyle">Entries look like</label>
+                <select
+                    id="repstyle"
+                    class="pp-select pp-repstyle"
+                    onchange={handleRepeatStyle}
+                >
+                    <template for:each={repeatStyleOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+
+                <lightning-input
+                    label="Add button label"
+                    data-prop="addlabel"
+                    value={repeat.addLabel}
+                    onchange={handleAddLabel}
+                ></lightning-input>
+                <lightning-input
+                    label="Entry label"
+                    data-prop="entrylabel"
+                    value={repeat.entryLabel}
+                    field-level-help="\{index} becomes the entry number"
+                    onchange={handleEntryLabel}
+                ></lightning-input>
+                <div class="pp-minmax">
+                    <lightning-input
+                        type="number"
+                        label="Min entries"
+                        data-prop="min"
+                        value={repeat.min}
+                        min="0"
+                        onchange={handleMin}
+                    ></lightning-input>
+                    <lightning-input
+                        type="number"
+                        label="Max entries"
+                        data-prop="max"
+                        value={repeat.max}
+                        min="1"
+                        onchange={handleMax}
+                    ></lightning-input>
+                </div>
+            </div>
+
+            <div class="pp-group">
+                <h4 class="pp-grouptitle">{childHeading}</h4>
+                <p class="pp-hint">
+                    Click a field to add it to every entry of this group.
+                </p>
+                <template lwc:if={childError}>
+                    <p class="pp-error" role="alert">{childError}</p>
+                </template>
+                <template lwc:elseif={childLoading}>
+                    <lightning-spinner
+                        alternative-text="Loading child fields"
+                        size="small"
+                    ></lightning-spinner>
+                </template>
+                <ul class="pp-childlist">
+                    <template for:each={childRows} for:item="f">
+                        <li key={f.apiName}>
+                            <button
+                                type="button"
+                                class={f.cls}
+                                title={f.title}
+                                data-api={f.apiName}
+                                onclick={handleAddChildField}
+                            >
+                                <span class="pp-childlabel">
+                                    <template lwc:if={f.required}>
+                                        <abbr class="pp-req" title="required"
+                                            >*</abbr
+                                        >
+                                    </template>
+                                    {f.label}
+                                </span>
+                                <span class="pp-childtype">{f.inputType}</span>
+                                <template lwc:if={f.added}>
+                                    <span class="pp-added">ADDED</span>
+                                </template>
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+
+        <!-- SECTION -->
+        <template lwc:elseif={isSection}>
+            <div class="pp-group">
+                <lightning-input
+                    label="Title"
+                    data-prop="title"
+                    value={n.title}
+                    onchange={handleTitle}
+                ></lightning-input>
+                <lightning-textarea
+                    label="Description"
+                    data-prop="description"
+                    value={n.description}
+                    onchange={handleDescription}
+                ></lightning-textarea>
+
+                <label class="pp-label" for="columns">Columns</label>
+                <select
+                    id="columns"
+                    class="pp-select pp-columns"
+                    onchange={handleColumns}
+                >
+                    <template for:each={columnsOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+
+                <label class="pp-label" for="style">Style</label>
+                <select
+                    id="style"
+                    class="pp-select pp-style"
+                    onchange={handleStyle}
+                >
+                    <template for:each={styleOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+            </div>
+        </template>
+
+        <!-- PAGE -->
+        <template lwc:elseif={isPage}>
+            <div class="pp-group">
+                <lightning-input
+                    label="Page name"
+                    data-prop="pagename"
+                    value={n.name}
+                    onchange={handlePageName}
+                ></lightning-input>
+                <p class="pp-hint">
+                    Visibility rules for pages arrive with the logic slice.
+                </p>
+            </div>
+        </template>
+
+        <!-- forward-compat: unknown element types stay honest -->
+        <template lwc:elseif={isOtherElement}>
+            <p class="pp-hint pp-only">
+                This element type doesn&#8217;t have an editor yet.
+            </p>
+        </template>
+    </div>
+</template>

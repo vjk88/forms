@@ -1,0 +1,55 @@
+<template>
+    <div class="rp-overlay" role="presentation" onclick={handleOverlayClick}>
+        <div
+            class="rp-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Choose what this group repeats"
+        >
+            <header class="rp-head">
+                <h3 class="rp-title">What should this group repeat?</h3>
+                <p class="rp-sub">
+                    Each entry the visitor adds becomes one related record.
+                </p>
+            </header>
+
+            <template lwc:if={loading}>
+                <lightning-spinner
+                    alternative-text="Loading child objects"
+                    size="small"
+                ></lightning-spinner>
+            </template>
+            <template lwc:elseif={error}>
+                <p class="rp-error" role="alert">{error}</p>
+            </template>
+            <template lwc:elseif={empty}>
+                <p class="rp-note">{emptyText}</p>
+            </template>
+            <template lwc:else>
+                <ul class="rp-list">
+                    <template for:each={rows} for:item="r">
+                        <li key={r.key}>
+                            <button
+                                type="button"
+                                class="rp-item"
+                                data-key={r.key}
+                                onclick={handlePick}
+                            >
+                                <span class="rp-item-label"
+                                    >{r.childObjectLabel}</span
+                                >
+                                <span class="rp-item-via">{r.via}</span>
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+
+            <footer class="rp-foot">
+                <button type="button" class="rp-cancel" onclick={handleCancel}>
+                    Cancel
+                </button>
+            </footer>
+        </div>
+    </div>
+</template>

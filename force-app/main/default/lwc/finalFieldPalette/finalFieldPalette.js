@@ -1,6 +1,10 @@
 import { LightningElement, api, wire } from 'lwc';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
-import { PALETTE_FIELD_MIME, PALETTE_EL_MIME } from 'c/finalBuilderCanvas';
+import {
+    PALETTE_FIELD_MIME,
+    PALETTE_EL_MIME,
+    PALETTE_REP_MIME
+} from 'c/finalBuilderCanvas';
 
 /** Schema §4 v1 content types — blocks repeat freely (no ADDED dedupe). */
 const BLOCKS = [
@@ -114,6 +118,22 @@ export default class FinalFieldPalette extends LightningElement {
         return BLOCKS;
     }
 
+    /** §4.5: a Repeating Group needs a primary context object — without
+     *  one the item is disabled and says why (inform-and-abort, no toast). */
+    get repeaterDisabled() {
+        return !this.objectApi;
+    }
+
+    get repeaterTitle() {
+        return this.objectApi
+            ? 'A group of fields the visitor can repeat — each entry becomes a related record'
+            : 'Set the form’s target object first — a Repeating Group creates records related to it';
+    }
+
+    get repeaterCls() {
+        return this.repeaterDisabled ? 'fp-item added' : 'fp-item';
+    }
+
     _isUsed(field) {
         return (
             (this.usedFields || []).includes(field.apiName) ||
@@ -187,6 +207,28 @@ export default class FinalFieldPalette extends LightningElement {
             })
         );
         event.dataTransfer.setData(PALETTE_EL_MIME, '1');
+        event.dataTransfer.effectAllowed = 'copy';
+    }
+
+    /** The Repeating Group is a first-class palette item (§4.1): the drop
+     *  position is chosen now, the child object in the picker that follows. */
+    handleAddRepeater() {
+        if (this.repeaterDisabled) {
+            return;
+        }
+        this.dispatchEvent(new CustomEvent('addrepeater'));
+    }
+
+    handleRepeaterDragStart(event) {
+        if (this.repeaterDisabled) {
+            event.preventDefault();
+            return;
+        }
+        event.dataTransfer.setData(
+            'text/plain',
+            JSON.stringify({ t: 'palette-rep' })
+        );
+        event.dataTransfer.setData(PALETTE_REP_MIME, '1');
         event.dataTransfer.effectAllowed = 'copy';
     }
 

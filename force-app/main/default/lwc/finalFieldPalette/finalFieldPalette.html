@@ -116,9 +116,33 @@
                     </template>
                 </ul>
                 <p class="fp-note fp-note-sub">
-                    Blocks repeat freely — drag as many as you need. The
-                    Repeating Group joins them with the properties slice.
+                    Blocks repeat freely — drag as many as you need.
                 </p>
+                <header class="fp-head">
+                    <span class="fp-head-label">Structure</span>
+                    <span class="fp-head-sub"
+                        >each entry becomes a related record</span
+                    >
+                </header>
+                <ul class="fp-list">
+                    <li>
+                        <button
+                            type="button"
+                            class={repeaterCls}
+                            title={repeaterTitle}
+                            draggable="true"
+                            disabled={repeaterDisabled}
+                            onclick={handleAddRepeater}
+                            ondragstart={handleRepeaterDragStart}
+                        >
+                            <lightning-icon
+                                icon-name="utility:layers"
+                                size="x-small"
+                            ></lightning-icon>
+                            <span class="fp-label">Repeating Group</span>
+                        </button>
+                    </li>
+                </ul>
             </template>
             <template lwc:elseif={isStub}>
                 <p class="fp-note">{stubLabel}</p>

@@ -128,6 +128,19 @@
     color: #e6eaf0;
 }
 
+/* §4: a repeatable section wears its child object on the blueprint */
+.bc-repeat {
+    flex: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #2dd4bf;
+    border: 1px solid rgb(45 212 191 / 35%);
+    border-radius: 999px;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+
 .bc-grip {
     color: #565d6b;
     font-size: 11px;

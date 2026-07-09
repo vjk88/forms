@@ -1,0 +1,155 @@
+.pp {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-family:
+        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #181818;
+    font-size: 12.5px;
+}
+
+.pp-head {
+    padding-bottom: 2px;
+}
+
+.pp-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.pp-sub {
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: #5c5c5c;
+}
+
+.pp-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #efefef;
+}
+
+.pp-grouptitle {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.pp-label {
+    font-size: 12px;
+    font-weight: 400;
+    color: #444;
+    margin-bottom: -6px;
+}
+
+.pp-select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    background: #fff;
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.pp-select:focus-visible {
+    outline: 2px solid #0d9488;
+    outline-offset: 1px;
+}
+
+.pp-hint {
+    margin: 0;
+    color: #5c5c5c;
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+
+.pp-only {
+    padding-top: 10px;
+    border-top: 1px solid #efefef;
+}
+
+.pp-error {
+    margin: 0;
+    color: #b42318;
+    font-size: 11.5px;
+}
+
+.pp-minmax {
+    display: flex;
+    gap: 10px;
+}
+
+.pp-minmax > * {
+    flex: 1;
+    min-width: 0;
+}
+
+/* child-object field list (repeater inspector §4.4) — palette grammar */
+.pp-childlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pp-childfield {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 6px;
+    padding: 7px 10px;
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pp-childfield:hover:not(.added) {
+    border-color: #0d9488;
+}
+
+.pp-childfield.added {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.pp-childlabel {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pp-childtype {
+    flex: none;
+    font-size: 10px;
+    color: #5c5c5c;
+    border: 1px solid #e3e3e3;
+    border-radius: 999px;
+    padding: 1px 7px;
+}
+
+.pp-added {
+    flex: none;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #0b6e65;
+}
+
+.pp-req {
+    color: #b42318;
+    text-decoration: none;
+    margin-right: 2px;
+}
