@@ -42,9 +42,7 @@ function mintId(prefix) {
     return `${prefix}_${suffix}`;
 }
 
-export default class FinalFormStudio extends NavigationMixin(
-    LightningElement
-) {
+export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     @track spec;
     formId;
     formName = '';
@@ -132,7 +130,7 @@ export default class FinalFormStudio extends NavigationMixin(
             this.saveState = 'saved';
             // not awaited — the picker is chrome, never a gate on first paint
             this._refreshVersions();
-        } catch (e) {
+        } catch {
             this.notFound = true;
         } finally {
             this.loading = false;
@@ -143,7 +141,7 @@ export default class FinalFormStudio extends NavigationMixin(
     async _refreshVersions() {
         try {
             this.versions = (await listVersions({ formId: this.formId })) || [];
-        } catch (e) {
+        } catch {
             this.versions = [];
         }
         const active = this.versions.find((v) => v.isActive);
@@ -190,6 +188,9 @@ export default class FinalFormStudio extends NavigationMixin(
                 label += ' · Draft';
             } else if (v.isActive) {
                 label += ' · Published';
+            } else {
+                // same word the read-only notice uses — one vocabulary
+                label += ' · Archived';
             }
             return { id: v.id, label, selected: v.id === current };
         });
@@ -224,7 +225,9 @@ export default class FinalFormStudio extends NavigationMixin(
     }
 
     get backToEditableLabel() {
-        return this.draftVersionId ? 'Back to draft' : 'Back to current version';
+        return this.draftVersionId
+            ? 'Back to draft'
+            : 'Back to current version';
     }
 
     async handleVersionChange(event) {
@@ -253,7 +256,7 @@ export default class FinalFormStudio extends NavigationMixin(
             this.viewVersionId = id;
             this.selection = null;
             this.propsOpen = false;
-        } catch (e) {
+        } catch {
             // stay editable; renderedCallback snaps the select back
             this.handleBackToEditable();
         }
@@ -286,11 +289,31 @@ export default class FinalFormStudio extends NavigationMixin(
         return this.mode === 'design' ? 'st-mode on' : 'st-mode';
     }
 
+    get isBuildPressed() {
+        return String(this.mode === 'build');
+    }
+
+    get isDesignPressed() {
+        return String(this.mode === 'design');
+    }
+
+    /** Top-bar read-only pill — the left notice alone was too easy to miss. */
+    get readOnlyBadge() {
+        const v = this.viewEntry;
+        return v ? `Read-only · viewing v${v.versionNumber}` : 'Read-only';
+    }
+
     handleModeBuild() {
+        if (this.isReadOnly) {
+            return;
+        }
         this.mode = 'build';
     }
 
     handleModeDesign() {
+        if (this.isReadOnly) {
+            return;
+        }
         this.mode = 'design';
     }
 
@@ -469,6 +492,7 @@ export default class FinalFormStudio extends NavigationMixin(
             page.sections = page.sections || [];
             page.sections.push(section);
             this.selection = { kind: 'section', id: section.id };
+            return undefined;
         });
     }
 
@@ -519,6 +543,7 @@ export default class FinalFormStudio extends NavigationMixin(
                 spec.pages.length - 1
             );
             this.selection = null;
+            return undefined;
         });
     }
 
@@ -565,7 +590,7 @@ export default class FinalFormStudio extends NavigationMixin(
                 this._refreshVersions();
             }
             this.saveState = 'saved';
-        } catch (e) {
+        } catch {
             this.saveState = 'error';
         }
     }
@@ -601,7 +626,7 @@ export default class FinalFormStudio extends NavigationMixin(
                 await discardDraft({ draftVersionId: this.draftVersionId });
             }
             await this._load();
-        } catch (e) {
+        } catch {
             this.saveState = 'error';
         } finally {
             this.publishing = false;

@@ -78,6 +78,30 @@
     color: #5c5c5c;
 }
 
+/* read-only must be legible from the BAR, not just the left notice */
+.st-robadge {
+    padding: 4px 12px;
+    border: 1px solid #e7c96a;
+    border-radius: 999px;
+    background: #fdf6e0;
+    color: #6b5310;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.st-rolink {
+    border: 0;
+    background: none;
+    color: #0b6e65;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 2px;
+    white-space: nowrap;
+}
+
 .st-spacer {
     flex: 1;
 }
@@ -103,6 +127,12 @@
 .st-mode.on {
     background: #0d9488;
     color: #fff;
+}
+
+/* read-only view: the switch would change nothing — say so visually */
+.st-mode:disabled {
+    opacity: 0.45;
+    cursor: default;
 }
 
 .st-icon {

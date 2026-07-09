@@ -41,10 +41,12 @@
             <template lwc:else>
                 <span class="st-chip">{versionChip}</span>
             </template>
-            <div class="st-modes" role="tablist">
+            <div class="st-modes">
                 <button
                     type="button"
                     class={buildClass}
+                    aria-pressed={isBuildPressed}
+                    disabled={isReadOnly}
                     onclick={handleModeBuild}
                 >
                     Build
@@ -52,6 +54,8 @@
                 <button
                     type="button"
                     class={designClass}
+                    aria-pressed={isDesignPressed}
+                    disabled={isReadOnly}
                     onclick={handleModeDesign}
                 >
                     Design
@@ -60,11 +64,21 @@
             <template lwc:if={isEditable}>
                 <span class="st-saved">{savedText}</span>
             </template>
+            <template lwc:else>
+                <span class="st-robadge">🔒 {readOnlyBadge}</span>
+                <button
+                    type="button"
+                    class="st-rolink"
+                    onclick={handleBackToEditable}
+                >
+                    {backToEditableLabel}
+                </button>
+            </template>
             <span class="st-spacer"></span>
             <button
                 type="button"
                 class="st-icon"
-                title="Undo — arrives with the history slice"
+                title="Undo isn't available yet"
                 disabled
             >
                 ↶
@@ -72,7 +86,7 @@
             <button
                 type="button"
                 class="st-icon"
-                title="Redo — arrives with the history slice"
+                title="Redo isn't available yet"
                 disabled
             >
                 ↷
@@ -137,9 +151,8 @@
                             </button>
                             <h3 class="st-props-title">{selectionLabel}</h3>
                             <p class="st-props-hint">
-                                Properties arrive with the next slice — the
-                                selection already drives the blueprint
-                                highlight.
+                                Property editing is coming soon. Your selection
+                                is highlighted on the blueprint.
                             </p>
                         </div>
                     </template>
