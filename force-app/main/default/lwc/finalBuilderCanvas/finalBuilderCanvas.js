@@ -69,9 +69,12 @@ export default class FinalBuilderCanvas extends LightningElement {
         const kind = this._kindOf(e);
         const allow = this._dragAllowedAt(e.target, kind);
         if (e.dataTransfer) {
+            // EVERY palette kind is a copy — real browsers CANCEL the drop
+            // when dropEffect disagrees with the source's effectAllowed
+            // (jsdom doesn't, so only org QA catches a mismatch here)
             e.dataTransfer.dropEffect = !allow
                 ? 'none'
-                : kind === 'palette-field'
+                : kind && kind.indexOf('palette') === 0
                   ? 'copy'
                   : 'move';
         }

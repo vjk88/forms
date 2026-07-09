@@ -237,6 +237,9 @@ describe('c-final-builder-canvas', () => {
         const pd = jest.spyOn(over, 'preventDefault');
         gap.dispatchEvent(over);
         expect(pd).toHaveBeenCalled();
+        // must agree with the palette's effectAllowed='copy' or real
+        // browsers cancel the drop (the org-QA bug jsdom can't see)
+        expect(dt.dropEffect).toBe('copy');
         expect(gap.classList.contains('bc-gap-over')).toBe(true);
 
         dt.setData(
