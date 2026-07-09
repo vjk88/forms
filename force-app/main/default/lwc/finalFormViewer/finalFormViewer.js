@@ -21,6 +21,16 @@ export default class FinalFormViewer extends LightningElement {
     @api versionId;
 
     /**
+     * Builder-preview mode: clicks on rendered elements re-emit as
+     * `elementselect` {elementId} so the studio can sync its selection
+     * (P3 preview-click requirement). The section renderer announces the
+     * clicked element with a COMPOSED `elementclick` (synthetic shadow
+     * retargets composedPath, so the viewer cannot resolve it from here) —
+     * no nav primitive knows. Never set on published/guest renders.
+     */
+    @api authoring = false;
+
+    /**
      * Inline spec (pre-save preview — creation flow step 3, builder preview
      * later). When set, it wins over formId/versionId and no Apex load runs.
      * Re-setting it re-applies; navigation position survives when the layout
@@ -136,7 +146,7 @@ export default class FinalFormViewer extends LightningElement {
                         themeId: spec.theme.name
                     });
                     theme = JSON.parse(json);
-                } catch (e) {
+                } catch {
                     theme = null;
                 }
                 if (seq !== this._applySeq) {
@@ -183,19 +193,18 @@ export default class FinalFormViewer extends LightningElement {
         const header = spec.header || {};
         const hasLockup = Boolean(
             header.title ||
-                header.description ||
-                header.brandName ||
-                (header.logo && header.logo.url) ||
-                (header.highlight && header.highlight.text)
+            header.description ||
+            header.brandName ||
+            (header.logo && header.logo.url) ||
+            (header.highlight && header.highlight.text)
         );
-        const zonesDefault =
-            (spec.layout && spec.layout.zonesDefault) || {};
+        const zonesDefault = (spec.layout && spec.layout.zonesDefault) || {};
         let options = (spec.layout && spec.layout.options) || {};
         // splitHero's brand pane replaces formHeader (registry: ownsHeader);
         // its Pane Flow = One at a Time also owns the advance, like oneAtATime.
         const ownsAdvance = Boolean(
             layout.ownsAdvance ||
-                (layout.ownsHeader && options.paneFlow === 'oneAtATime')
+            (layout.ownsHeader && options.paneFlow === 'oneAtATime')
         );
 
         // ownsHeader layouts: the pane IS the header (catalog §2). A spec with
@@ -207,10 +216,10 @@ export default class FinalFormViewer extends LightningElement {
         if (layout.ownsHeader && header.style !== 'none') {
             const paneConfigured = Boolean(
                 options.paneTitle ||
-                    options.paneSubtitle ||
-                    options.paneBrandName ||
-                    (options.paneLogo && options.paneLogo.url) ||
-                    (options.paneHighlight && options.paneHighlight.text)
+                options.paneSubtitle ||
+                options.paneBrandName ||
+                (options.paneLogo && options.paneLogo.url) ||
+                (options.paneHighlight && options.paneHighlight.text)
             );
             if (!paneConfigured && hasLockup) {
                 options = {
@@ -330,6 +339,18 @@ export default class FinalFormViewer extends LightningElement {
                         )
                     }))
             }));
+    }
+
+    handleElementClick(event) {
+        event.stopPropagation(); // the announcement ends at the viewer
+        if (!this.authoring || !event.detail || !event.detail.elementId) {
+            return;
+        }
+        this.dispatchEvent(
+            new CustomEvent('elementselect', {
+                detail: { elementId: event.detail.elementId }
+            })
+        );
     }
 
     handleValueChange(event) {

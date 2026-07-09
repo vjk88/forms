@@ -84,6 +84,36 @@
     box-shadow: 0 0 0 1px #14b8a6;
 }
 
+/* ---- DnD highlights (applied IMPERATIVELY — never via re-render) ---- */
+/* "drops in here" — a field/element landing inside this section */
+.bc-drop-on {
+    border-color: #14b8a6 !important;
+    box-shadow:
+        0 0 0 1px #14b8a6,
+        inset 0 0 0 100vmax rgba(20, 184, 166, 0.08);
+}
+
+/* insertion line ABOVE the node — section reorder / element placement */
+.bc-drop-before {
+    box-shadow: 0 -3px 0 0 #14b8a6;
+}
+
+/* inter-section gap: invisible until a section drag is over it */
+.bc-gap {
+    height: 8px;
+    margin: 2px 4px;
+    border-radius: 4px;
+}
+
+.bc-gap-end {
+    height: 14px;
+}
+
+.bc-gap.bc-gap-over {
+    background: rgba(20, 184, 166, 0.35);
+    outline: 1px dashed #14b8a6;
+}
+
 .bc-section-head {
     display: flex;
     align-items: center;

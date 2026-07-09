@@ -1,65 +1,66 @@
 <template>
-  <template lwc:if={error}>
-    <div class="viewer-error" role="alert">{error}</div>
-  </template>
-  <template lwc:elseif={model}>
-    <c-final-page-frame
-      tokens={tokens}
-      max-width={model.maxWidth}
-      bleed={model.bleed}
-    >
-      <template lwc:if={model.header}>
-        <c-final-form-header
-          slot="header"
-          header={model.header}
-        ></c-final-form-header>
-      </template>
-      <div slot="body">
-        <template lwc:if={completed}>
-          <c-final-after-submit
-            config={model.afterSubmit}
+    <template lwc:if={error}>
+        <div class="viewer-error" role="alert">{error}</div>
+    </template>
+    <template lwc:elseif={model}>
+        <c-final-page-frame
+            tokens={tokens}
+            max-width={model.maxWidth}
             bleed={model.bleed}
-          ></c-final-after-submit>
-        </template>
-        <template lwc:elseif={navCtor}>
-          <lwc:component
-            lwc:is={navCtor}
-            pages={visiblePages}
-            current-page-index={pageIndex}
-            page-validity={pageValidity}
-            options={model.layoutOptions}
-            lockup={model.paneLockup}
-            arrangement={model.buttonArrangement}
-            bleed={model.bleed}
-            submit-label={model.submit.label}
-            onpagechange={handlePageChange}
-            onsubmit={handleSubmit}
-            onvaluechange={handleValueChange}
-          >
-            <!-- Slotted from the engine's template: button intents
+            onelementclick={handleElementClick}
+        >
+            <template lwc:if={model.header}>
+                <c-final-form-header
+                    slot="header"
+                    header={model.header}
+                ></c-final-form-header>
+            </template>
+            <div slot="body">
+                <template lwc:if={completed}>
+                    <c-final-after-submit
+                        config={model.afterSubmit}
+                        bleed={model.bleed}
+                    ></c-final-after-submit>
+                </template>
+                <template lwc:elseif={navCtor}>
+                    <lwc:component
+                        lwc:is={navCtor}
+                        pages={visiblePages}
+                        current-page-index={pageIndex}
+                        page-validity={pageValidity}
+                        options={model.layoutOptions}
+                        lockup={model.paneLockup}
+                        arrangement={model.buttonArrangement}
+                        bleed={model.bleed}
+                        submit-label={model.submit.label}
+                        onpagechange={handlePageChange}
+                        onsubmit={handleSubmit}
+                        onvaluechange={handleValueChange}
+                    >
+                        <!-- Slotted from the engine's template: button intents
                              never cross the primitive's shadow boundary. -->
-            <c-final-submit-bar
-              slot="actions"
-              config={model.submit}
-              show-back={showBack}
-              show-next={showNext}
-              show-submit={showSubmit}
-              arrangement={model.buttonArrangement}
-              onback={handleBack}
-              onnext={handleNext}
-              onsubmit={handleSubmit}
-            ></c-final-submit-bar>
-          </lwc:component>
-        </template>
-      </div>
-    </c-final-page-frame>
-  </template>
-  <template lwc:else>
-    <div class="viewer-loading">
-      <lightning-spinner
-        alternative-text="Loading form"
-        size="medium"
-      ></lightning-spinner>
-    </div>
-  </template>
+                        <c-final-submit-bar
+                            slot="actions"
+                            config={model.submit}
+                            show-back={showBack}
+                            show-next={showNext}
+                            show-submit={showSubmit}
+                            arrangement={model.buttonArrangement}
+                            onback={handleBack}
+                            onnext={handleNext}
+                            onsubmit={handleSubmit}
+                        ></c-final-submit-bar>
+                    </lwc:component>
+                </template>
+            </div>
+        </c-final-page-frame>
+    </template>
+    <template lwc:else>
+        <div class="viewer-loading">
+            <lightning-spinner
+                alternative-text="Loading form"
+                size="medium"
+            ></lightning-spinner>
+        </div>
+    </template>
 </template>

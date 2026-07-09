@@ -392,14 +392,88 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return (spec.pages || [])[this.buildPageIndex] || null;
     }
 
+    /** Palette field payload → spec element (click-add AND drag-drop). Also
+     *  heals pre-creation-controller specs: the first bound field records
+     *  the target object the binding belongs to. */
+    _mintElement(spec, field) {
+        if (spec.form && !spec.form.targetObject && this.objectApi) {
+            spec.form.targetObject = this.objectApi;
+        }
+        const element = {
+            id: mintId('el'),
+            type: 'field',
+            binding: { object: this.objectApi, field: field.apiName },
+            label: field.label,
+            required: Boolean(field.required),
+            // schema §4: `required` is authoring sugar — the validation
+            // entry is what the runtime evaluates
+            validation: field.required
+                ? [
+                      {
+                          type: 'required',
+                          message: `${field.label} is required.`
+                      }
+                  ]
+                : [],
+            config: { inputType: field.inputType },
+            visibility: null
+        };
+        if (field.options) {
+            element.config.options = field.options;
+        }
+        return element;
+    }
+
+    _mintSection(title) {
+        return { id: mintId('sec'), title, columns: 1, elements: [] };
+    }
+
+    _findSection(spec, sectionId) {
+        for (const page of spec.pages || []) {
+            const section = (page.sections || []).find(
+                (s) => s.id === sectionId
+            );
+            if (section) {
+                return { page, section };
+            }
+        }
+        return null;
+    }
+
+    _findElement(spec, elId) {
+        for (const page of spec.pages || []) {
+            for (const section of page.sections || []) {
+                const index = (section.elements || []).findIndex(
+                    (el) => el.id === elId
+                );
+                if (index >= 0) {
+                    return {
+                        page,
+                        section,
+                        index,
+                        element: section.elements[index]
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    /** A page's last section, minted if the page has none (the legacy
+     *  _ensureSectionOnPage behavior for chip drops). */
+    _lastSectionOf(page) {
+        page.sections = page.sections || [];
+        let section = page.sections[page.sections.length - 1];
+        if (!section) {
+            section = this._mintSection('Section');
+            page.sections.push(section);
+        }
+        return section;
+    }
+
     handleAddField(event) {
         const field = event.detail.field;
         this._mutate((spec) => {
-            // heal pre-creation-controller specs: the first bound field also
-            // records the target object the binding belongs to
-            if (spec.form && !spec.form.targetObject && this.objectApi) {
-                spec.form.targetObject = this.objectApi;
-            }
             let page = this._currentBuildPage(spec);
             if (!page) {
                 page = { id: mintId('pg'), name: 'Page 1', sections: [] };
@@ -423,41 +497,171 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 section = (page.sections || [])[page.sections.length - 1];
             }
             if (!section) {
-                section = {
-                    id: mintId('sec'),
-                    title: 'Section',
-                    columns: 1,
-                    elements: []
-                };
+                section = this._mintSection('Section');
                 page.sections = page.sections || [];
                 page.sections.push(section);
             }
-            const element = {
-                id: mintId('el'),
-                type: 'field',
-                binding: { object: this.objectApi, field: field.apiName },
-                label: field.label,
-                required: Boolean(field.required),
-                // schema §4: `required` is authoring sugar — the validation
-                // entry is what the runtime evaluates
-                validation: field.required
-                    ? [
-                          {
-                              type: 'required',
-                              message: `${field.label} is required.`
-                          }
-                      ]
-                    : [],
-                config: { inputType: field.inputType },
-                visibility: null
-            };
-            if (field.options) {
-                element.config.options = field.options;
-            }
+            const element = this._mintElement(spec, field);
             section.elements = section.elements || [];
             section.elements.push(element);
             this.selection = { kind: 'element', id: element.id };
         });
+    }
+
+    // ----- DnD intents (slice 3b — the canvas validated, the studio moves) -----
+
+    /** Palette field dropped at a position: into a section (before an
+     *  element or appended), or onto a page chip (that page's last section). */
+    handleDropField(event) {
+        const { field, sectionId, beforeId, pageId } = event.detail;
+        this._mutate((spec) => {
+            let section = null;
+            if (sectionId) {
+                const hit = this._findSection(spec, sectionId);
+                section = hit && hit.section;
+            } else if (pageId) {
+                const page = (spec.pages || []).find((p) => p.id === pageId);
+                if (!page) {
+                    return false;
+                }
+                section = this._lastSectionOf(page);
+                // a drop onto a page chip means "work there now"
+                this.buildPageIndex = spec.pages.indexOf(page);
+            }
+            if (!section) {
+                return false;
+            }
+            const element = this._mintElement(spec, field);
+            section.elements = section.elements || [];
+            const at = beforeId
+                ? section.elements.findIndex((el) => el.id === beforeId)
+                : -1;
+            if (at >= 0) {
+                section.elements.splice(at, 0, element);
+            } else {
+                section.elements.push(element);
+            }
+            this.selection = { kind: 'element', id: element.id };
+            return undefined;
+        });
+    }
+
+    handleMoveElement(event) {
+        const { id, sectionId, beforeId, pageId } = event.detail;
+        if (beforeId === id) {
+            return; // dropped on itself
+        }
+        this._mutate((spec) => {
+            const src = this._findElement(spec, id);
+            if (!src) {
+                return false;
+            }
+            let target = null;
+            if (sectionId) {
+                const hit = this._findSection(spec, sectionId);
+                target = hit && hit.section;
+            } else if (pageId) {
+                const page = (spec.pages || []).find((p) => p.id === pageId);
+                if (!page) {
+                    return false;
+                }
+                target = this._lastSectionOf(page);
+            }
+            if (!target) {
+                return false;
+            }
+            src.section.elements.splice(src.index, 1);
+            target.elements = target.elements || [];
+            const at = beforeId
+                ? target.elements.findIndex((el) => el.id === beforeId)
+                : -1;
+            if (at >= 0) {
+                target.elements.splice(at, 0, src.element);
+            } else {
+                target.elements.push(src.element);
+            }
+            this.selection = { kind: 'element', id };
+            return undefined;
+        });
+    }
+
+    handleMoveSection(event) {
+        const { id, beforeSectionId, pageId } = event.detail;
+        if (id === beforeSectionId) {
+            return;
+        }
+        this._mutate((spec) => {
+            let srcPage = null;
+            let srcIdx = -1;
+            for (const p of spec.pages || []) {
+                const i = (p.sections || []).findIndex((s) => s.id === id);
+                if (i >= 0) {
+                    srcPage = p;
+                    srcIdx = i;
+                    break;
+                }
+            }
+            const target = (spec.pages || []).find((p) => p.id === pageId);
+            if (!srcPage || !target) {
+                return false;
+            }
+            const [section] = srcPage.sections.splice(srcIdx, 1);
+            target.sections = target.sections || [];
+            const at = beforeSectionId
+                ? target.sections.findIndex((s) => s.id === beforeSectionId)
+                : -1;
+            if (at >= 0) {
+                target.sections.splice(at, 0, section);
+            } else {
+                target.sections.push(section);
+            }
+            this.selection = { kind: 'section', id };
+            return undefined;
+        });
+    }
+
+    handleMovePage(event) {
+        const { id, beforeId } = event.detail;
+        if (id === beforeId) {
+            return;
+        }
+        this._mutate((spec) => {
+            const pages = spec.pages || [];
+            const activeId = (pages[this.buildPageIndex] || {}).id;
+            const from = pages.findIndex((p) => p.id === id);
+            if (from < 0) {
+                return false;
+            }
+            const [page] = pages.splice(from, 1);
+            const at = beforeId
+                ? pages.findIndex((p) => p.id === beforeId)
+                : -1;
+            if (at >= 0) {
+                pages.splice(at, 0, page);
+            } else {
+                pages.push(page);
+            }
+            // the blueprint keeps showing the page the user was on
+            const keep = pages.findIndex((p) => p.id === activeId);
+            this.buildPageIndex = keep >= 0 ? keep : 0;
+            this.selection = { kind: 'page', id };
+            return undefined;
+        });
+    }
+
+    /** Preview-click selection sync (P3 requirement): a click on an element
+     *  in the live preview selects it on the blueprint + opens properties. */
+    handlePreviewSelect(event) {
+        const id = event.detail.elementId;
+        (this.spec.pages || []).forEach((p, i) => {
+            for (const s of p.sections || []) {
+                if ((s.elements || []).some((el) => el.id === id)) {
+                    this.buildPageIndex = i;
+                }
+            }
+        });
+        this.selection = { kind: 'element', id };
+        this.propsOpen = true;
     }
 
     handleAddPage() {

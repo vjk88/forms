@@ -176,11 +176,19 @@
                         onremoveelement={handleRemoveElement}
                         onremovesection={handleRemoveSection}
                         onremovepage={handleRemovePage}
+                        ondropfield={handleDropField}
+                        onmoveelement={handleMoveElement}
+                        onmovesection={handleMoveSection}
+                        onmovepage={handleMovePage}
                     ></c-final-builder-canvas>
                 </main>
                 <aside class="st-buildpreview">
                     <div class="st-scroll">
-                        <c-final-form-viewer spec={spec}></c-final-form-viewer>
+                        <c-final-form-viewer
+                            spec={spec}
+                            authoring
+                            onelementselect={handlePreviewSelect}
+                        ></c-final-form-viewer>
                     </div>
                 </aside>
             </template>

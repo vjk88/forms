@@ -227,6 +227,142 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('DnD intents: dropfield at position, moveelement across sections, movepage keeps the active page', async () => {
+        jest.useFakeTimers();
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'A',
+                        elements: [
+                            { id: 'el_1', type: 'field', label: 'First' },
+                            { id: 'el_2', type: 'field', label: 'Second' }
+                        ]
+                    },
+                    { id: 'sec_2', title: 'B', elements: [] }
+                ]
+            },
+            { id: 'pg_2', name: 'Two', sections: [] }
+        ];
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(structured),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const canvas = el.shadowRoot.querySelector('c-final-builder-canvas');
+
+        // palette field dropped BEFORE el_2
+        canvas.dispatchEvent(
+            new CustomEvent('dropfield', {
+                detail: {
+                    field: {
+                        apiName: 'Email',
+                        label: 'Email',
+                        inputType: 'email'
+                    },
+                    sectionId: 'sec_1',
+                    beforeId: 'el_2'
+                }
+            })
+        );
+        // el_1 moved to the empty section
+        canvas.dispatchEvent(
+            new CustomEvent('moveelement', {
+                detail: { id: 'el_1', sectionId: 'sec_2', beforeId: null }
+            })
+        );
+        // pg_2 reordered before pg_1 — the active page (pg_1) stays shown
+        canvas.dispatchEvent(
+            new CustomEvent('movepage', {
+                detail: { id: 'pg_2', beforeId: 'pg_1' }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        expect(saved.pages.map((p) => p.id)).toEqual(['pg_2', 'pg_1']);
+        const pg1 = saved.pages[1];
+        expect(pg1.sections[0].elements.map((e) => e.label)).toEqual([
+            'Email',
+            'Second'
+        ]);
+        expect(pg1.sections[1].elements.map((e) => e.id)).toEqual(['el_1']);
+        // blueprint still shows pg_1 (index followed the page across the move)
+        await Promise.resolve();
+        await Promise.resolve();
+        const chips = el.shadowRoot
+            .querySelector('c-final-builder-canvas')
+            .shadowRoot.querySelectorAll('.bc-chip');
+        expect(chips[1].classList.contains('on')).toBe(true);
+        jest.useRealTimers();
+    });
+
+    it('preview click selects the element and opens properties (authoring sync)', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify({
+                ...SPEC,
+                pages: [
+                    {
+                        id: 'pg_1',
+                        name: 'One',
+                        sections: [
+                            {
+                                id: 'sec_1',
+                                title: 'A',
+                                elements: [
+                                    {
+                                        id: 'el_9',
+                                        type: 'field',
+                                        label: 'Nickname'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+
+        const preview = el.shadowRoot.querySelector(
+            '.st-buildpreview c-final-form-viewer'
+        );
+        expect(preview.authoring).toBe(true);
+        preview.dispatchEvent(
+            new CustomEvent('elementselect', {
+                detail: { elementId: 'el_9' }
+            })
+        );
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelector('.st-props-title').textContent).toBe(
+            'Nickname'
+        );
+    });
+
     it('strips the resolved publish artifact so theme picks repaint the preview', async () => {
         jest.useFakeTimers();
         const published = JSON.parse(JSON.stringify(SPEC));
@@ -291,9 +427,7 @@ describe('c-final-form-studio', () => {
             'v2 · Draft',
             'v1 · Published'
         ]);
-        expect(el.shadowRoot.querySelector('.st-verselect').value).toBe(
-            'a0V2'
-        );
+        expect(el.shadowRoot.querySelector('.st-verselect').value).toBe('a0V2');
     });
 
     it('viewing a published version is read-only: notice, publish disabled, autosave NEVER fires', async () => {
@@ -372,9 +506,7 @@ describe('c-final-form-studio', () => {
         select.value = 'a0V1';
         select.dispatchEvent(new CustomEvent('change'));
         await flush();
-        expect(
-            el.shadowRoot.querySelector('c-final-field-palette')
-        ).toBeNull();
+        expect(el.shadowRoot.querySelector('c-final-field-palette')).toBeNull();
         expect(
             el.shadowRoot.querySelector('c-final-builder-canvas')
         ).toBeNull();
@@ -394,9 +526,7 @@ describe('c-final-form-studio', () => {
         ).toBe(false);
         // the select's LIVE value snaps back to the draft (selectedness is
         // a dirty flag — the attribute alone won't move it)
-        expect(el.shadowRoot.querySelector('.st-verselect').value).toBe(
-            'a0V2'
-        );
+        expect(el.shadowRoot.querySelector('.st-verselect').value).toBe('a0V2');
         // and the draft spec is intact, publish-artifact free
         const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
         expect(viewer.spec.resolved).toBeUndefined();

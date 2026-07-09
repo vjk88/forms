@@ -1,5 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
+import { PALETTE_FIELD_MIME } from 'c/finalBuilderCanvas';
 
 /**
  * finalFieldPalette — the builder's left rail (FORM_STUDIO_IA §4).
@@ -121,5 +122,25 @@ export default class FinalFieldPalette extends LightningElement {
         this.dispatchEvent(
             new CustomEvent('addfield', { detail: { field: { ...field } } })
         );
+    }
+
+    /** Drag-to-canvas. The canvas can't see this component's state mid-drag
+     *  (drag DATA is protected until drop), so the drag KIND rides as a
+     *  typed dataTransfer marker; the payload itself is text/plain JSON. */
+    handleDragStart(event) {
+        const apiName = event.currentTarget.dataset.api;
+        const field = (this.fields || []).find((f) => f.apiName === apiName);
+        if (!field || (this.usedFields || []).includes(apiName)) {
+            event.preventDefault(); // ADDED rows don't drag
+            return;
+        }
+        event.dataTransfer.setData(
+            'text/plain',
+            JSON.stringify({ t: 'palette-field', field: { ...field } })
+        );
+        event.dataTransfer.setData(PALETTE_FIELD_MIME, '1');
+        // palette items are COPIED into the form (must agree with the
+        // canvas gatekeeper's dropEffect or the native badge flickers)
+        event.dataTransfer.effectAllowed = 'copy';
     }
 }
