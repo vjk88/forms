@@ -62,6 +62,25 @@ const LAYOUT_GROUPS = [
     }
 ];
 
+/**
+ * The card vocabulary IS the user-facing layout name — whatever surface
+ * echoes the current layout (the panel's LAYOUT row) must say what the
+ * card the user clicked said, not the registry's internal label.
+ */
+export function layoutCardName(layoutType, paneFlow) {
+    for (const group of LAYOUT_GROUPS) {
+        for (const card of group.cards) {
+            if (
+                card.layout === layoutType &&
+                (card.paneFlow || '') === (paneFlow || '')
+            ) {
+                return card.name;
+            }
+        }
+    }
+    return null;
+}
+
 export default class FinalGalleryPicker extends LightningElement {
     /** 'theme' | 'layout' — which roster the shell shows. */
     @api mode = 'theme';

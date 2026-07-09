@@ -402,7 +402,7 @@ describe('c-final-design-panel', () => {
         );
         expect(
             el.shadowRoot.querySelectorAll('.entry-name')[1].textContent
-        ).toBe('Split hero · Conversational');
+        ).toBe('Split Hero · Conversational');
         const gallery = await openGallery(el, 'layout');
         expect(gallery.mode).toBe('layout');
         expect(gallery.layout).toBe('splitHero');

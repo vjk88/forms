@@ -6,6 +6,7 @@ import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme
 import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
+import { layoutCardName } from 'c/finalGalleryPicker';
 import {
     listAreas,
     flattenControls,
@@ -418,13 +419,12 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     get layoutLabel() {
-        if (
-            this.layoutType === 'splitHero' &&
-            this.currentPaneFlow === 'oneAtATime'
-        ) {
-            return 'Split hero · Conversational';
-        }
-        return this.layoutInfo.label;
+        // one vocabulary: the row echoes the gallery card the user clicked,
+        // never the registry's internal label ("Wizard steps" vs "Stepper")
+        return (
+            layoutCardName(this.layoutType, this.currentPaneFlow) ||
+            this.layoutInfo.label
+        );
     }
 
     get customThemes() {
