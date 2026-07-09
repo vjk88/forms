@@ -61,9 +61,45 @@
     background: #f7f7f7;
 }
 
+/* the versions dropdown wears the chip's clothes — same quiet pill */
+.st-verselect {
+    padding: 3px 10px;
+    border: 1px solid #d8d8d8;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 11.5px;
+    color: #5c5c5c;
+    background: #f7f7f7;
+    cursor: pointer;
+}
+
 .st-saved {
     font-size: 12px;
     color: #5c5c5c;
+}
+
+/* read-only must be legible from the BAR, not just the left notice */
+.st-robadge {
+    padding: 4px 12px;
+    border: 1px solid #e7c96a;
+    border-radius: 999px;
+    background: #fdf6e0;
+    color: #6b5310;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.st-rolink {
+    border: 0;
+    background: none;
+    color: #0b6e65;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 2px;
+    white-space: nowrap;
 }
 
 .st-spacer {
@@ -91,6 +127,12 @@
 .st-mode.on {
     background: #0d9488;
     color: #fff;
+}
+
+/* read-only view: the switch would change nothing — say so visually */
+.st-mode:disabled {
+    opacity: 0.45;
+    cursor: default;
 }
 
 .st-icon {
@@ -163,14 +205,37 @@
     min-width: 0;
 }
 
-/* Preview is a REFERENCE pane, not a co-star (owner 2026-07-08: 50% was too
-   wide) — roughly a third, the blueprint owns the center. */
+/* Owner ruling (FormBuilder Pro mockup): the preview is at least HALF the
+   workspace — the blueprint takes the rest. (An earlier comment here claimed
+   the owner wanted "roughly a third"; that was a misread.) */
 .st-buildpreview {
     flex: none;
-    width: 34%;
+    width: 50%;
     min-width: 340px;
     background: #eef1f6;
     border-left: 1px solid #e3e3e3;
+}
+
+/* Read-only version viewing: the editing column collapses to a slim notice —
+   the preview is the whole point of visiting history. */
+.st-left--notice {
+    width: 300px;
+}
+
+.st-notice {
+    padding: 16px 14px;
+}
+
+.st-notice-title {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+}
+
+.st-notice-text {
+    margin: 0 0 14px;
+    color: #5c5c5c;
+    font-size: 12.5px;
+    line-height: 1.5;
 }
 
 .st-props {

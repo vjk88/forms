@@ -130,6 +130,48 @@ private class FinalStudioControllerTest {
     }
 
     @IsTest
+    static void listVersionsFlagsTheDraftNewestFirst() {
+        Form__c f = makeForm('Versions test');
+        makeVersion(f.Id, 1, false, '{"specVersion":1}'); // history
+        makeVersion(f.Id, 2, true, '{"specVersion":1}');
+        Form_Version__c draft = makeVersion(f.Id, 3, false, '{"specVersion":1}');
+
+        List<FinalStudioController.VersionEntry> rows = FinalStudioController.listVersions(
+            f.Id
+        );
+        Assert.areEqual(3, rows.size());
+        Assert.areEqual(3, rows[0].versionNumber, 'newest first');
+        Assert.areEqual(draft.Id, rows[0].id);
+        Assert.isTrue(rows[0].isDraft, 'inactive above active is THE draft');
+        Assert.isFalse(rows[0].isActive);
+        Assert.areEqual(2, rows[1].versionNumber);
+        Assert.isTrue(rows[1].isActive);
+        Assert.isFalse(rows[1].isDraft);
+        Assert.isFalse(rows[2].isDraft, 'history below active is not a draft');
+        Assert.isFalse(rows[2].isActive);
+    }
+
+    @IsTest
+    static void listVersionsWithoutDraftFlagsNothingAndRequiresId() {
+        Form__c f = makeForm('No-draft versions');
+        makeVersion(f.Id, 1, true, '{"specVersion":1}');
+
+        List<FinalStudioController.VersionEntry> rows = FinalStudioController.listVersions(
+            f.Id
+        );
+        Assert.areEqual(1, rows.size());
+        Assert.isTrue(rows[0].isActive);
+        Assert.isFalse(rows[0].isDraft, 'no draft exists — nothing flagged');
+
+        try {
+            FinalStudioController.listVersions(null);
+            Assert.fail('should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+    }
+
+    @IsTest
     static void listFormsReportsDraftAndActiveState() {
         Form__c f = makeForm('List test');
         makeVersion(f.Id, 1, true, '{"specVersion":1}');

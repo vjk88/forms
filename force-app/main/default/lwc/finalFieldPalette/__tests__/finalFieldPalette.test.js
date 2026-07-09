@@ -54,6 +54,29 @@ describe('c-final-field-palette', () => {
         expect(handler.mock.calls[0][0].detail.field.apiName).toBe('LastName');
     });
 
+    it('Fields header names the primary object; absent without one', async () => {
+        const el = mount();
+        describeFields.emit(FIELDS);
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.fp-head-label').textContent
+        ).toBe('Fields — Contact');
+        expect(el.shadowRoot.querySelector('.fp-head-sub').textContent).toBe(
+            'primary object'
+        );
+
+        el.objectApi = undefined; // no target object → note, no header
+        await flush();
+        expect(el.shadowRoot.querySelector('.fp-head')).toBeNull();
+        expect(el.shadowRoot.querySelector('.fp-note')).not.toBeNull();
+
+        el.objectApi = 'Contact';
+        await flush();
+        el.shadowRoot.querySelector('[data-tab="blocks"]').click();
+        await flush();
+        expect(el.shadowRoot.querySelector('.fp-head')).toBeNull();
+    });
+
     it('search filters; Blocks/Logic tabs are honest stubs', async () => {
         const el = mount();
         describeFields.emit(FIELDS);

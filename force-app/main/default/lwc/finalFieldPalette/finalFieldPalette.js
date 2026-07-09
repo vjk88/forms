@@ -41,6 +41,11 @@ export default class FinalFieldPalette extends LightningElement {
         return !this.objectApi;
     }
 
+    /** Panel header names WHOSE fields these are ("Fields — Contact"). */
+    get fieldsHeading() {
+        return `Fields — ${this.objectApi}`;
+    }
+
     get isBlocks() {
         return this.tab === 'blocks';
     }
