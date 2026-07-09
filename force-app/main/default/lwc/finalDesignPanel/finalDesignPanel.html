@@ -56,28 +56,41 @@
             <div class="scroll">
                 <div class="entry">
                     <span class="entry-k">THEME</span>
-                    <select
-                        class="entry-select"
-                        aria-label="Theme"
-                        onchange={handleThemePick}
+                    <span class="entry-name" title={themeLabel}
+                        >{themeLabel}</span
                     >
-                        <template for:each={themeOptions} for:item="o">
-                            <option
-                                key={o.value}
-                                value={o.value}
-                                selected={o.selected}
-                            >
-                                {o.label}
-                            </option>
-                        </template>
-                    </select>
                     <button
-                        class="linkbtn"
+                        class="linkbtn entry-change"
+                        type="button"
+                        data-gallery="theme"
+                        title="Pick a theme from the gallery"
+                        onclick={handleOpenGallery}
+                    >
+                        Change…
+                    </button>
+                    <button
+                        class="linkbtn entry-edit"
                         type="button"
                         title="Create or edit a custom theme"
                         onclick={handleEditTheme}
                     >
                         Edit…
+                    </button>
+                </div>
+
+                <div class="entry">
+                    <span class="entry-k">LAYOUT</span>
+                    <span class="entry-name" title={layoutLabel}
+                        >{layoutLabel}</span
+                    >
+                    <button
+                        class="linkbtn entry-change"
+                        type="button"
+                        data-gallery="layout"
+                        title="Pick a layout from the gallery"
+                        onclick={handleOpenGallery}
+                    >
+                        Change…
                     </button>
                 </div>
 
@@ -231,7 +244,8 @@
 
                     <p class="lens-note">
                         Need image backgrounds, fonts, field styling? They live
-                        in <b>Advanced</b>. Switching modes never changes your
+                        in
+                        <b>Advanced</b>. Switching modes never changes your
                         settings.
                     </p>
                 </template>
@@ -276,7 +290,9 @@
                                                 onchange={handleColor}
                                             ></c-final-color-control>
                                         </template>
-                                        <template lwc:elseif={c.isGradientSurface}>
+                                        <template
+                                            lwc:elseif={c.isGradientSurface}
+                                        >
                                             <c-final-gradient-control
                                                 data-key={c.key}
                                                 label={c.label}
@@ -337,10 +353,12 @@
                                                         data-value={t.value}
                                                         onclick={handleTile}
                                                     >
-                                                        <span class="as-tile-label"
+                                                        <span
+                                                            class="as-tile-label"
                                                             >{t.label}</span
                                                         >
-                                                        <span class="as-tile-hint"
+                                                        <span
+                                                            class="as-tile-hint"
                                                             >{t.hint}</span
                                                         >
                                                     </button>
@@ -462,5 +480,18 @@
                 </template>
             </div>
         </div>
+
+        <template lwc:if={galleryOpen}>
+            <c-final-gallery-picker
+                mode={galleryMode}
+                layout={layoutType}
+                pane-flow={currentPaneFlow}
+                theme-value={themeValue}
+                custom-themes={customThemes}
+                onthemepick={handleGalleryTheme}
+                onlayoutpick={handleGalleryLayout}
+                onclose={handleGalleryClose}
+            ></c-final-gallery-picker>
+        </template>
     </div>
 </template>

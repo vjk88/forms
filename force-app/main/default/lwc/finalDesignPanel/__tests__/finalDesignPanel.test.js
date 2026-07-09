@@ -24,13 +24,15 @@ jest.mock(
 );
 import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 
+// eslint-disable-next-line @lwc/lwc/no-async-operation
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function mount(spec) {
     const el = createElement('c-final-design-panel', {
         is: FinalDesignPanel
     });
-    el.spec = spec || buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
+    el.spec =
+        spec || buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
     document.body.appendChild(el);
     return el;
 }
@@ -40,14 +42,36 @@ function lastSpec(handler) {
 }
 
 async function goAdvanced(el) {
-    el.shadowRoot
-        .querySelectorAll('.lens-btn')[1]
-        .click();
+    el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
     await flush();
 }
 
 async function openArea(el, key) {
     el.shadowRoot.querySelector(`.rail-btn[data-area="${key}"]`).click();
+    await flush();
+}
+
+async function openGallery(el, which) {
+    el.shadowRoot
+        .querySelector(`.entry-change[data-gallery="${which}"]`)
+        .click();
+    await flush();
+    return el.shadowRoot.querySelector('c-final-gallery-picker');
+}
+
+async function pickTheme(el, value) {
+    const gallery = await openGallery(el, 'theme');
+    gallery.dispatchEvent(new CustomEvent('themepick', { detail: { value } }));
+    await flush();
+}
+
+async function pickLayout(el, layout, paneFlow) {
+    const gallery = await openGallery(el, 'layout');
+    gallery.dispatchEvent(
+        new CustomEvent('layoutpick', {
+            detail: { layout, paneFlow: paneFlow || '' }
+        })
+    );
     await flush();
 }
 
@@ -155,6 +179,19 @@ describe('c-final-design-panel', () => {
         expect(lastSpec(handler).theme.overrides.palette).toBeUndefined();
     });
 
+    it('theme row: name + Change… opens the gallery popup in theme mode', async () => {
+        const el = mount();
+        expect(
+            el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
+        ).toBe('Nordic Minimalist');
+        const gallery = await openGallery(el, 'theme');
+        expect(gallery).not.toBeNull();
+        expect(gallery.mode).toBe('theme');
+        // theme cards preview in the CURRENT layout
+        expect(gallery.layout).toBe('stepper');
+        expect(gallery.themeValue).toBe('nordic');
+    });
+
     it('theme switch with overrides opens the confirm gate; Keep preserves them', async () => {
         const el = mount();
         const handler = jest.fn();
@@ -165,10 +202,11 @@ describe('c-final-design-panel', () => {
                 new CustomEvent('change', { detail: { value: '#123456' } })
             );
         await flush();
-        const select = el.shadowRoot.querySelector('.entry-select');
-        select.value = 'editorialIvory';
-        select.dispatchEvent(new CustomEvent('change'));
-        await flush();
+        await pickTheme(el, 'editorialIvory');
+        // the gallery closes; the pick parks in the confirm gate
+        expect(
+            el.shadowRoot.querySelector('c-final-gallery-picker')
+        ).toBeNull();
         expect(el.shadowRoot.querySelector('.confirm')).not.toBeNull();
         el.shadowRoot.querySelector('.confirm-go').click();
         await flush();
@@ -187,10 +225,7 @@ describe('c-final-design-panel', () => {
                 new CustomEvent('change', { detail: { value: '#123456' } })
             );
         await flush();
-        const select = el.shadowRoot.querySelector('.entry-select');
-        select.value = 'editorialIvory';
-        select.dispatchEvent(new CustomEvent('change'));
-        await flush();
+        await pickTheme(el, 'editorialIvory');
         el.shadowRoot.querySelectorAll('.confirm-alt')[0].click();
         await flush();
         const spec = lastSpec(handler);
@@ -198,16 +233,24 @@ describe('c-final-design-panel', () => {
         expect(spec.theme.overrides).toEqual({});
     });
 
-    it('clean theme switch needs no confirm', async () => {
+    it('clean theme switch needs no confirm and closes the gallery', async () => {
         const el = mount();
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        const select = el.shadowRoot.querySelector('.entry-select');
-        select.value = 'editorialIvory';
-        select.dispatchEvent(new CustomEvent('change'));
-        await flush();
+        await pickTheme(el, 'editorialIvory');
         expect(el.shadowRoot.querySelector('.confirm')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('c-final-gallery-picker')
+        ).toBeNull();
         expect(lastSpec(handler).theme.name).toBe('editorialIvory');
+    });
+
+    it('re-picking the current theme is a no-op', async () => {
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickTheme(el, 'nordic');
+        expect(handler).not.toHaveBeenCalled();
     });
 
     it('Simple shows the advanced-overrides chip for non-simple deviations', async () => {
@@ -302,7 +345,7 @@ describe('c-final-design-panel', () => {
         expect(theme.overrides.typography).toBe('editorial');
     });
 
-    it('custom themes list in the picker; picking one switches source + fetches props', async () => {
+    it('custom themes flow into the gallery; picking one switches source + fetches props', async () => {
         listCustomThemes.mockResolvedValueOnce([
             { id: 'a0AXX0000001', name: 'Brand Purple', baseTheme: 'nordic' }
         ]);
@@ -310,12 +353,13 @@ describe('c-final-design-panel', () => {
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
         await flush();
-        const select = el.shadowRoot.querySelector('.entry-select');
-        expect(
-            [...select.querySelectorAll('option')].map((o) => o.value)
-        ).toContain('custom:a0AXX0000001');
-        select.value = 'custom:a0AXX0000001';
-        select.dispatchEvent(new CustomEvent('change'));
+        const gallery = await openGallery(el, 'theme');
+        expect(gallery.customThemes.map((t) => t.id)).toContain('a0AXX0000001');
+        gallery.dispatchEvent(
+            new CustomEvent('themepick', {
+                detail: { value: 'custom:a0AXX0000001' }
+            })
+        );
         await flush();
         const theme = lastSpec(handler).theme;
         expect(theme.source).toBe('custom');
@@ -326,17 +370,126 @@ describe('c-final-design-panel', () => {
             'c-final-color-control[data-key="accent"]'
         );
         expect(accent.value).toBe('#7c2d9c');
+        // the row names the pick
+        expect(
+            el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
+        ).toBe('Brand Purple · custom');
     });
 
-    it('Edit… dispatches the explicit themeedit action (blast-radius rule)', async () => {
+    it('Edit… dispatches the explicit themeedit action (blast-radius rule); Change… does not', async () => {
         const el = mount();
         const handler = jest.fn();
         el.addEventListener('themeedit', handler);
-        el.shadowRoot.querySelector('.entry .linkbtn').click();
+        el.shadowRoot
+            .querySelector('.entry-change[data-gallery="theme"]')
+            .click();
+        await flush();
+        expect(handler).not.toHaveBeenCalled();
+        el.shadowRoot.querySelector('.entry-edit').click();
         expect(handler.mock.calls[0][0].detail).toEqual({
             themeId: null,
             startFrom: 'nordic'
         });
+    });
+
+    it('layout row: label + Change… opens the gallery popup in layout mode', async () => {
+        const el = mount(
+            buildSampleSpec({
+                layout: 'splitHero',
+                paneFlow: 'oneAtATime',
+                themeKey: 'nordic'
+            })
+        );
+        expect(
+            el.shadowRoot.querySelectorAll('.entry-name')[1].textContent
+        ).toBe('Split Hero · Conversational');
+        const gallery = await openGallery(el, 'layout');
+        expect(gallery.mode).toBe('layout');
+        expect(gallery.layout).toBe('splitHero');
+        expect(gallery.paneFlow).toBe('oneAtATime');
+    });
+
+    it('layout pick emits specchange with the new type + reconciled options', async () => {
+        const spec = buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
+        spec.layout.maxWidth = 'wide';
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'splitHero', 'oneAtATime');
+        expect(
+            el.shadowRoot.querySelector('c-final-gallery-picker')
+        ).toBeNull();
+        const next = lastSpec(handler).layout;
+        expect(next.type).toBe('splitHero');
+        expect(next.options).toEqual({ paneFlow: 'oneAtATime' });
+        // layout-agnostic knobs carry over untouched
+        expect(next.maxWidth).toBe('wide');
+        expect(next.zonesDefault).toEqual({ arrangement: 'single', gap: 'md' });
+    });
+
+    it('leaving splitHero drops its layout-specific options', async () => {
+        const spec = buildSampleSpec({
+            layout: 'splitHero',
+            paneFlow: 'oneAtATime',
+            themeKey: 'nordic'
+        });
+        spec.layout.options.fullBleed = false;
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'scroll');
+        const next = lastSpec(handler).layout;
+        expect(next.type).toBe('scroll');
+        expect(next.options).toEqual({});
+    });
+
+    it('splitHero variant switch keeps fullBleed; re-picking the current layout is a no-op', async () => {
+        const spec = buildSampleSpec({
+            layout: 'splitHero',
+            themeKey: 'nordic'
+        });
+        spec.layout.options.fullBleed = false;
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'splitHero', 'oneAtATime');
+        expect(lastSpec(handler).layout.options).toEqual({
+            paneFlow: 'oneAtATime',
+            fullBleed: false
+        });
+        handler.mockClear();
+        await pickLayout(el, 'splitHero', 'oneAtATime');
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('layout pick with theme overrides present needs NO confirm (overrides are layout-agnostic)', async () => {
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        el.shadowRoot
+            .querySelector('c-final-color-control[data-key="accent"]')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: '#123456' } })
+            );
+        await flush();
+        await pickLayout(el, 'tabs');
+        expect(el.shadowRoot.querySelector('.confirm')).toBeNull();
+        const spec = lastSpec(handler);
+        expect(spec.layout.type).toBe('tabs');
+        expect(spec.theme.overrides.palette.accent).toBe('#123456');
+    });
+
+    it('gallery close event dismisses the popup without a spec change', async () => {
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        const gallery = await openGallery(el, 'layout');
+        gallery.dispatchEvent(new CustomEvent('close'));
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-gallery-picker')
+        ).toBeNull();
+        expect(handler).not.toHaveBeenCalled();
     });
 
     it('plain content controls (title) write spec paths, never overrides', async () => {

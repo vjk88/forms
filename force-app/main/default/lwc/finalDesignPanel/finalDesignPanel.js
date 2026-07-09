@@ -6,6 +6,7 @@ import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme
 import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
+import { layoutCardName } from 'c/finalGalleryPicker';
 import {
     listAreas,
     flattenControls,
@@ -35,6 +36,8 @@ export default class FinalDesignPanel extends LightningElement {
     @track advanced = false;
     @track activeAreaKey = 'theme';
     @track pendingThemeKey = null;
+    /** 'theme' | 'layout' | null — which gallery popup is open. */
+    @track galleryMode = null;
     @track _fonts = [];
     @track _customThemes = [];
     @track _customProps = null;
@@ -130,6 +133,11 @@ export default class FinalDesignPanel extends LightningElement {
 
     get layoutInfo() {
         return getLayout(this.layoutType);
+    }
+
+    get currentPaneFlow() {
+        const o = (this._spec.layout && this._spec.layout.options) || {};
+        return o.paneFlow || '';
     }
 
     _controlDef(key) {
@@ -259,7 +267,9 @@ export default class FinalDesignPanel extends LightningElement {
                 vm.value = typeof value === 'string' ? value : '';
                 const g = getAt(this.overrides, c.gradientPath);
                 vm.gradient =
-                    g !== undefined ? g : getAt(this.themeProps, c.gradientPath);
+                    g !== undefined
+                        ? g
+                        : getAt(this.themeProps, c.gradientPath);
                 vm.edited =
                     vm.edited ||
                     getAt(this.overrides, c.gradientPath) !== undefined;
@@ -375,10 +385,7 @@ export default class FinalDesignPanel extends LightningElement {
             key: a.key,
             label: a.label,
             icon: a.icon,
-            cls:
-                a.key === this.activeAreaKey
-                    ? 'rail-btn on'
-                    : 'rail-btn'
+            cls: a.key === this.activeAreaKey ? 'rail-btn on' : 'rail-btn'
         }));
     }
 
@@ -394,23 +401,38 @@ export default class FinalDesignPanel extends LightningElement {
         };
     }
 
-    get themeOptions() {
-        const current =
-            this.themeSource === 'custom'
-                ? `custom:${this.themeKey}`
-                : this.themeKey;
-        return [
-            ...listBuiltinThemes().map((t) => ({
-                value: t.key,
-                label: t.name,
-                selected: t.key === current
-            })),
-            ...this._customThemes.map((t) => ({
-                value: `custom:${t.id}`,
-                label: `${t.name} · custom`,
-                selected: `custom:${t.id}` === current
-            }))
-        ];
+    /** Composite theme identity — the same 'key' | 'custom:<id>' form the
+     *  gallery emits, so switch/no-op comparisons never cross forms. */
+    get themeValue() {
+        return this.themeSource === 'custom'
+            ? `custom:${this.themeKey}`
+            : this.themeKey;
+    }
+
+    get themeLabel() {
+        if (this.themeSource === 'custom') {
+            const t = this._customThemes.find((x) => x.id === this.themeKey);
+            return t ? `${t.name} · custom` : 'Custom theme';
+        }
+        const t = listBuiltinThemes().find((x) => x.key === this.themeKey);
+        return t ? t.name : this.themeKey || '—';
+    }
+
+    get layoutLabel() {
+        // one vocabulary: the row echoes the gallery card the user clicked,
+        // never the registry's internal label ("Wizard steps" vs "Stepper")
+        return (
+            layoutCardName(this.layoutType, this.currentPaneFlow) ||
+            this.layoutInfo.label
+        );
+    }
+
+    get customThemes() {
+        return this._customThemes;
+    }
+
+    get galleryOpen() {
+        return Boolean(this.galleryMode);
     }
 
     get overrideCount() {
@@ -631,9 +653,7 @@ export default class FinalDesignPanel extends LightningElement {
         if (def && def.control.dynamicOptions === 'fonts') {
             const overrides = this._ensureOverrides();
             if (v.startsWith('custom:')) {
-                const font = this._fonts.find(
-                    (f) => `custom:${f.key}` === v
-                );
+                const font = this._fonts.find((f) => `custom:${f.key}` === v);
                 if (font) {
                     setAt(overrides, 'customFont', {
                         key: font.key,
@@ -749,10 +769,7 @@ export default class FinalDesignPanel extends LightningElement {
     handleLook(event) {
         const look = event.target.dataset.look;
         if (look === 'airy' || look === 'dense') {
-            this._apply(
-                'density',
-                look === 'airy' ? 'comfortable' : 'compact'
-            );
+            this._apply('density', look === 'airy' ? 'comfortable' : 'compact');
             return;
         }
         const radiusDef = this._controlDef('radius');
@@ -765,11 +782,23 @@ export default class FinalDesignPanel extends LightningElement {
         this._apply('radius', RADIUS_ORDER[next]);
     }
 
+    // ----- gallery popups (theme + layout share ONE shell) -----
+
+    handleOpenGallery(event) {
+        this.galleryMode = event.currentTarget.dataset.gallery;
+    }
+
+    handleGalleryClose() {
+        this.galleryMode = null;
+    }
+
     // ----- theme switch (confirm gate, IA §6) -----
 
-    handleThemePick(event) {
-        const next = event.target.value;
-        if (next === this.themeKey) {
+    /** Gallery picks land in the SAME confirm gate the old dropdown used. */
+    handleGalleryTheme(event) {
+        this.galleryMode = null;
+        const next = event.detail.value;
+        if (next === this.themeValue) {
             return;
         }
         if (this.hasOverrides) {
@@ -809,6 +838,55 @@ export default class FinalDesignPanel extends LightningElement {
         if (clearOverrides) {
             this._spec.theme.overrides = {};
         }
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    // ----- layout switch (no gate: theme overrides are layout-agnostic) -----
+
+    handleGalleryLayout(event) {
+        this.galleryMode = null;
+        const { layout, paneFlow } = event.detail;
+        if (
+            layout === this.layoutType &&
+            (paneFlow || '') === this.currentPaneFlow
+        ) {
+            return;
+        }
+        this._switchLayout(layout, paneFlow || '');
+    }
+
+    /**
+     * Options are rebuilt the way the creation flow builds a spec's layout
+     * (buildSampleSpec/FinalFormCreateController): they are layout-specific,
+     * so a stale splitHero paneFlow must never ride into a stepper spec.
+     * Layout-agnostic keys (maxWidth) and zonesDefault carry over; fullBleed
+     * survives a splitHero→splitHero variant switch — set on THIS layout.
+     */
+    _switchLayout(type, paneFlow) {
+        const prev = this._spec.layout || {};
+        const options = {};
+        if (type === 'splitHero') {
+            if (paneFlow === 'oneAtATime') {
+                options.paneFlow = 'oneAtATime';
+            }
+            if (
+                prev.type === 'splitHero' &&
+                prev.options &&
+                prev.options.fullBleed !== undefined
+            ) {
+                options.fullBleed = prev.options.fullBleed;
+            }
+        }
+        this._spec.layout = {
+            ...prev,
+            type,
+            options,
+            zonesDefault: prev.zonesDefault || {
+                arrangement: 'single',
+                gap: 'md'
+            }
+        };
         this._spec = { ...this._spec };
         this._emit();
     }
