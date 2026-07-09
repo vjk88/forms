@@ -224,6 +224,79 @@ describe('c-final-builder-canvas', () => {
         ]);
     });
 
+    it('palette block: gap shows the slot; gap drop = standalone, section drop = element inside (§1/§3)', () => {
+        const el = mount();
+        const drops = [];
+        el.addEventListener('dropblock', (e) => drops.push(e.detail));
+        const dt = makeDataTransfer();
+        dt.types.push('final/palette-el');
+
+        // gaps accept blocks (unlike fields) — highlight + preventDefault
+        const gap = el.shadowRoot.querySelector('.bc-gap');
+        const over = dragEvent('dragover', dt);
+        const pd = jest.spyOn(over, 'preventDefault');
+        gap.dispatchEvent(over);
+        expect(pd).toHaveBeenCalled();
+        // must agree with the palette's effectAllowed='copy' or real
+        // browsers cancel the drop (the org-QA bug jsdom can't see)
+        expect(dt.dropEffect).toBe('copy');
+        expect(gap.classList.contains('bc-gap-over')).toBe(true);
+
+        dt.setData(
+            'text/plain',
+            JSON.stringify({ t: 'palette-el', elType: 'divider' })
+        );
+        gap.dispatchEvent(dragEvent('drop', dt));
+        // into the section body → an element, appended
+        el.shadowRoot
+            .querySelector('.bc-section')
+            .dispatchEvent(dragEvent('drop', dt));
+        expect(drops).toEqual([
+            { blockType: 'divider', beforeSectionId: 'sec_1', pageId: 'pg_1' },
+            { blockType: 'divider', sectionId: 'sec_1', beforeId: null }
+        ]);
+    });
+
+    it('block sections render as compact rows, refuse fields, and take sibling blocks before them (§3)', () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages[0].sections.push({
+            id: 'sec_blk',
+            title: '',
+            style: 'plain',
+            block: true,
+            elements: [
+                { id: 'el_blk', type: 'richText', label: 'Display text' }
+            ]
+        });
+        const el = mount({ spec });
+        const block = el.shadowRoot.querySelector('.bc-block');
+        expect(block.textContent).toContain('Display text');
+
+        // a dragged FIELD gets a native no-drop over the block
+        const dtField = makeDataTransfer();
+        dtField.types.push(PALETTE_FIELD_MIME);
+        const overField = dragEvent('dragover', dtField);
+        const pdField = jest.spyOn(overField, 'preventDefault');
+        block.dispatchEvent(overField);
+        expect(pdField).not.toHaveBeenCalled();
+
+        // a palette BLOCK over it = sibling insertion line + standalone drop
+        const drops = [];
+        el.addEventListener('dropblock', (e) => drops.push(e.detail));
+        const dtEl = makeDataTransfer();
+        dtEl.types.push('final/palette-el');
+        block.dispatchEvent(dragEvent('dragover', dtEl));
+        expect(block.classList.contains('bc-drop-before')).toBe(true);
+        dtEl.setData(
+            'text/plain',
+            JSON.stringify({ t: 'palette-el', elType: 'spacer' })
+        );
+        block.dispatchEvent(dragEvent('drop', dtEl));
+        expect(drops).toEqual([
+            { blockType: 'spacer', beforeSectionId: 'sec_blk', pageId: 'pg_1' }
+        ]);
+    });
+
     it('element drags cannot enter a repeater section (§2 data-context signatures)', () => {
         const spec = JSON.parse(JSON.stringify(SPEC));
         spec.pages[0].sections.push({

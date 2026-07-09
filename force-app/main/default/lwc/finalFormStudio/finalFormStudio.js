@@ -340,6 +340,28 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return out;
     }
 
+    /** Labels of UNBOUND field elements (legacy/demo specs carry no
+     *  binding) — the palette dedupes those by label so its ADDED state
+     *  always agrees with what the canvas shows (owner rule: a field on
+     *  the canvas can never be added again). */
+    get usedLabels() {
+        const out = [];
+        for (const page of (this.spec && this.spec.pages) || []) {
+            for (const section of page.sections || []) {
+                for (const el of section.elements || []) {
+                    if (
+                        el.type === 'field' &&
+                        el.label &&
+                        !(el.binding && el.binding.field)
+                    ) {
+                        out.push(el.label.toLowerCase());
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
     get selectionLabel() {
         const sel = this.selection;
         if (!sel || !this.spec) {
@@ -351,6 +373,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             }
             for (const section of page.sections || []) {
                 if (sel.kind === 'section' && section.id === sel.id) {
+                    if (section.block) {
+                        const first = (section.elements || [])[0];
+                        return (first && first.label) || 'Block';
+                    }
                     return section.title || 'Section';
                 }
                 for (const el of section.elements || []) {
@@ -543,6 +569,95 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             }
             this.selection = { kind: 'element', id: element.id };
             return undefined;
+        });
+    }
+
+    /** Schema §4: content elements always carry binding null. Labels feed
+     *  the blueprint; config defaults keep a fresh block visibly useful
+     *  until its properties editor lands. */
+    _mintBlockElement(blockType) {
+        const defaults = {
+            richText: { label: 'Display text', config: { html: '' } },
+            image: { label: 'Image', config: {} },
+            divider: { label: 'Divider', config: {} },
+            spacer: { label: 'Spacer', config: { height: 24 } }
+        };
+        const d = defaults[blockType] || { label: blockType, config: {} };
+        return {
+            id: mintId('el'),
+            type: blockType,
+            binding: null,
+            label: d.label,
+            required: false,
+            validation: [],
+            config: d.config,
+            visibility: null
+        };
+    }
+
+    /**
+     * Content block placed (CANVAS_RULES §1/§3): INTO a field section
+     * ({sectionId, beforeId}) as an ordinary element, or STANDALONE
+     * ({pageId, beforeSectionId}) as a marked wrapper section — the legacy
+     * serialization invariant, spec-shaped.
+     */
+    handleDropBlock(event) {
+        const { blockType, sectionId, beforeId, beforeSectionId, pageId } =
+            event.detail;
+        this._mutate((spec) => {
+            const element = this._mintBlockElement(blockType);
+            if (sectionId) {
+                const hit = this._findSection(spec, sectionId);
+                if (!hit || hit.section.block) {
+                    return false; // §3: blocks hold nothing
+                }
+                const els = (hit.section.elements = hit.section.elements || []);
+                const at = beforeId
+                    ? els.findIndex((el) => el.id === beforeId)
+                    : -1;
+                if (at >= 0) {
+                    els.splice(at, 0, element);
+                } else {
+                    els.push(element);
+                }
+            } else {
+                const page =
+                    (spec.pages || []).find((p) => p.id === pageId) ||
+                    this._currentBuildPage(spec);
+                if (!page) {
+                    return false;
+                }
+                const wrapper = {
+                    id: mintId('sec'),
+                    title: '',
+                    style: 'plain',
+                    columns: 1,
+                    block: true,
+                    elements: [element]
+                };
+                page.sections = page.sections || [];
+                const at = beforeSectionId
+                    ? page.sections.findIndex((s) => s.id === beforeSectionId)
+                    : -1;
+                if (at >= 0) {
+                    page.sections.splice(at, 0, wrapper);
+                } else {
+                    page.sections.push(wrapper);
+                }
+                if (pageId) {
+                    this.buildPageIndex = spec.pages.indexOf(page);
+                }
+            }
+            this.selection = { kind: 'element', id: element.id };
+            return undefined;
+        });
+    }
+
+    /** Palette click-add: a standalone block at the end of the current
+     *  page (palette stays — same bulk-add ruling as fields). */
+    handleAddBlock(event) {
+        this.handleDropBlock({
+            detail: { blockType: event.detail.blockType }
         });
     }
 

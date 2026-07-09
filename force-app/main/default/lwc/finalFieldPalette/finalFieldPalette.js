@@ -1,6 +1,34 @@
 import { LightningElement, api, wire } from 'lwc';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
-import { PALETTE_FIELD_MIME } from 'c/finalBuilderCanvas';
+import { PALETTE_FIELD_MIME, PALETTE_EL_MIME } from 'c/finalBuilderCanvas';
+
+/** Schema §4 v1 content types — blocks repeat freely (no ADDED dedupe). */
+const BLOCKS = [
+    {
+        type: 'richText',
+        label: 'Display text',
+        icon: 'utility:text',
+        title: 'Rich text — headings, paragraphs, links'
+    },
+    {
+        type: 'image',
+        label: 'Image',
+        icon: 'utility:image',
+        title: 'An image block'
+    },
+    {
+        type: 'divider',
+        label: 'Divider',
+        icon: 'utility:rules',
+        title: 'A horizontal rule between content'
+    },
+    {
+        type: 'spacer',
+        label: 'Spacer',
+        icon: 'utility:expand_alt',
+        title: 'Vertical breathing room'
+    }
+];
 
 /**
  * finalFieldPalette — the builder's left rail (FORM_STUDIO_IA §4).
@@ -18,6 +46,10 @@ export default class FinalFieldPalette extends LightningElement {
     @api objectApi;
     /** Bound field API names already on the canvas (dedupe → ADDED chip). */
     @api usedFields = [];
+    /** Labels of UNBOUND field elements on the canvas (legacy/demo specs
+     *  carry no binding — the canvas is the truth the ADDED state must
+     *  agree with, so those dedupe by label). Lowercased by the studio. */
+    @api usedLabels = [];
 
     tab = 'fields';
     search = '';
@@ -78,11 +110,21 @@ export default class FinalFieldPalette extends LightningElement {
         }));
     }
 
+    get blocks() {
+        return BLOCKS;
+    }
+
+    _isUsed(field) {
+        return (
+            (this.usedFields || []).includes(field.apiName) ||
+            (this.usedLabels || []).includes(field.label.toLowerCase())
+        );
+    }
+
     get rows() {
         if (!this.fields) {
             return null;
         }
-        const used = new Set(this.usedFields || []);
         const q = this.search.trim().toLowerCase();
         return this.fields
             .filter(
@@ -91,14 +133,17 @@ export default class FinalFieldPalette extends LightningElement {
                     f.label.toLowerCase().includes(q) ||
                     f.apiName.toLowerCase().includes(q)
             )
-            .map((f) => ({
-                ...f,
-                added: used.has(f.apiName),
-                cls: used.has(f.apiName) ? 'fp-item added' : 'fp-item',
-                title: used.has(f.apiName)
-                    ? `${f.label} is already on the form`
-                    : `Add ${f.label}`
-            }));
+            .map((f) => {
+                const added = this._isUsed(f);
+                return {
+                    ...f,
+                    added,
+                    cls: added ? 'fp-item added' : 'fp-item',
+                    title: added
+                        ? `${f.label} is already on the form`
+                        : `Add ${f.label}`
+                };
+            });
     }
 
     get empty() {
@@ -116,12 +161,33 @@ export default class FinalFieldPalette extends LightningElement {
     handleAdd(event) {
         const apiName = event.currentTarget.dataset.api;
         const field = (this.fields || []).find((f) => f.apiName === apiName);
-        if (!field || (this.usedFields || []).includes(apiName)) {
+        if (!field || this._isUsed(field)) {
             return;
         }
         this.dispatchEvent(
             new CustomEvent('addfield', { detail: { field: { ...field } } })
         );
+    }
+
+    /** Blocks repeat freely — click-add mints one at the end of the page. */
+    handleAddBlock(event) {
+        this.dispatchEvent(
+            new CustomEvent('addblock', {
+                detail: { blockType: event.currentTarget.dataset.type }
+            })
+        );
+    }
+
+    handleBlockDragStart(event) {
+        event.dataTransfer.setData(
+            'text/plain',
+            JSON.stringify({
+                t: 'palette-el',
+                elType: event.currentTarget.dataset.type
+            })
+        );
+        event.dataTransfer.setData(PALETTE_EL_MIME, '1');
+        event.dataTransfer.effectAllowed = 'copy';
     }
 
     /** Drag-to-canvas. The canvas can't see this component's state mid-drag
@@ -130,7 +196,7 @@ export default class FinalFieldPalette extends LightningElement {
     handleDragStart(event) {
         const apiName = event.currentTarget.dataset.api;
         const field = (this.fields || []).find((f) => f.apiName === apiName);
-        if (!field || (this.usedFields || []).includes(apiName)) {
+        if (!field || this._isUsed(field)) {
             event.preventDefault(); // ADDED rows don't drag
             return;
         }

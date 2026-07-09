@@ -311,6 +311,89 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('content blocks: standalone wrapper in a gap, element into a section, click-add appends (§3/§6)', async () => {
+        jest.useFakeTimers();
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'A',
+                        elements: [
+                            { id: 'el_1', type: 'field', label: 'First' }
+                        ]
+                    }
+                ]
+            }
+        ];
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(structured),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const canvas = el.shadowRoot.querySelector('c-final-builder-canvas');
+        const palette = el.shadowRoot.querySelector('c-final-field-palette');
+
+        // standalone divider dropped in the gap BEFORE sec_1
+        canvas.dispatchEvent(
+            new CustomEvent('dropblock', {
+                detail: {
+                    blockType: 'divider',
+                    beforeSectionId: 'sec_1',
+                    pageId: 'pg_1'
+                }
+            })
+        );
+        // display text dropped INTO sec_1 before el_1
+        canvas.dispatchEvent(
+            new CustomEvent('dropblock', {
+                detail: {
+                    blockType: 'richText',
+                    sectionId: 'sec_1',
+                    beforeId: 'el_1'
+                }
+            })
+        );
+        // click-add a spacer → standalone at the page's end
+        palette.dispatchEvent(
+            new CustomEvent('addblock', { detail: { blockType: 'spacer' } })
+        );
+        jest.advanceTimersByTime(1000);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        const pg = saved.pages[0];
+        expect(pg.sections.map((s) => Boolean(s.block))).toEqual([
+            true,
+            false,
+            true
+        ]);
+        // §6 shape: wrapper carries ONE content element, chromeless
+        expect(pg.sections[0].style).toBe('plain');
+        expect(pg.sections[0].elements).toHaveLength(1);
+        expect(pg.sections[0].elements[0].type).toBe('divider');
+        expect(pg.sections[0].elements[0].binding).toBeNull();
+        // in-section drop landed before el_1
+        expect(pg.sections[1].elements.map((e) => e.type)).toEqual([
+            'richText',
+            'field'
+        ]);
+        expect(pg.sections[2].elements[0].type).toBe('spacer');
+        jest.useRealTimers();
+    });
+
     it('preview click selects the element and opens properties (authoring sync)', async () => {
         loadStudio.mockResolvedValue({
             name: 'Contact us',

@@ -160,7 +160,9 @@
                         <c-final-field-palette
                             object-api={objectApi}
                             used-fields={usedFields}
+                            used-labels={usedLabels}
                             onaddfield={handleAddField}
+                            onaddblock={handleAddBlock}
                         ></c-final-field-palette>
                     </template>
                 </aside>
@@ -177,6 +179,7 @@
                         onremovesection={handleRemoveSection}
                         onremovepage={handleRemovePage}
                         ondropfield={handleDropField}
+                        ondropblock={handleDropBlock}
                         onmoveelement={handleMoveElement}
                         onmovesection={handleMoveSection}
                         onmovepage={handleMovePage}

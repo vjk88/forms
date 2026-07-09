@@ -140,3 +140,34 @@
     color: var(--c-text-weak);
     font-size: 0.8125rem;
 }
+
+/* ---- content blocks (schema section 4: image / richText / divider / spacer) ---- */
+.block-richtext {
+    color: var(--c-text);
+    font-size: var(--c-font-size, 0.9375rem);
+    line-height: 1.6;
+}
+
+.block-image {
+    display: block;
+    max-width: 100%;
+    border-radius: var(--c-radius);
+}
+
+.block-image-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2);
+    min-height: 96px;
+    border: 1px dashed var(--c-text-weak);
+    border-radius: var(--c-radius);
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
+.block-divider {
+    border: 0;
+    border-top: 1px solid var(--c-input-border, var(--c-text-weak));
+    margin: var(--c-space-3) 0;
+}
