@@ -984,6 +984,65 @@ describe('c-final-form-studio', () => {
         expect(viewer.spec.resolved).toBeUndefined();
     });
 
+    it('undo/redo (slice 6): steps restore, persist via autosave, and never re-record', async () => {
+        jest.useFakeTimers();
+        loadStudio.mockResolvedValue({
+            name: 'History',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+
+        // fresh load: nothing to step through
+        expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(true);
+        expect(el.shadowRoot.querySelector('.st-redo').disabled).toBe(true);
+
+        const panel = el.shadowRoot.querySelector('c-final-design-panel');
+        const edit = (label) => {
+            const spec = JSON.parse(JSON.stringify(SPEC));
+            spec.submit.label = label;
+            panel.dispatchEvent(
+                new CustomEvent('specchange', { detail: { spec } })
+            );
+        };
+        edit('One');
+        jest.advanceTimersByTime(2000); // past coalescing AND the autosave
+        edit('Two');
+        jest.advanceTimersByTime(2000);
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(false);
+
+        el.shadowRoot.querySelector('.st-undo').click();
+        await Promise.resolve();
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        expect(viewer.spec.submit.label).toBe('One');
+        // the restored state autosaves like any edit
+        jest.advanceTimersByTime(1000);
+        expect(
+            JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson).submit.label
+        ).toBe('One');
+
+        // one more step back reaches the loaded state; redo walks forward
+        el.shadowRoot.querySelector('.st-undo').click();
+        await Promise.resolve();
+        expect(viewer.spec.submit.label).toBe('Submit');
+        expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(true);
+        el.shadowRoot.querySelector('.st-redo').click();
+        await Promise.resolve();
+        expect(viewer.spec.submit.label).toBe('One');
+
+        // a NEW edit kills the redo branch (undo never re-records)
+        edit('Three');
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelector('.st-redo').disabled).toBe(true);
+        jest.useRealTimers();
+    });
+
     it('bad id → friendly not-found with a way back, never a spinner', async () => {
         loadStudio.mockRejectedValue(new Error('nope'));
         const el = mount();

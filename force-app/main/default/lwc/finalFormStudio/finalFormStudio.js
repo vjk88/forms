@@ -9,6 +9,7 @@ import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
+import { createHistory } from 'c/finalHistoryManager';
 
 /**
  * finalFormStudio — the builder shell (FORM_STUDIO_IA §2–4, P3 slice 1).
@@ -71,6 +72,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     _saveTimer;
     _redirected = false;
 
+    /** Undo/redo (slice 6): in-memory snapshot history per loaded form.
+     *  The manager isn't reactive — these mirrored flags drive the bar. */
+    _history = createHistory();
+    canUndo = false;
+    canRedo = false;
+
+    _syncHistoryFlags() {
+        this.canUndo = this._history.canUndo;
+        this.canRedo = this._history.canRedo;
+    }
+
     /**
      * LEX CACHES nav-item component instances — a one-shot guard here left a
      * reused instance stuck on the pre-redirect state forever. React to every
@@ -118,6 +130,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // engine live; Publish re-stamps `resolved` fresh.
             delete spec.resolved;
             this.spec = spec;
+            this._history.reset(JSON.stringify(spec));
+            this._syncHistoryFlags();
             this.objectApi =
                 (this.spec.form && this.spec.form.targetObject) ||
                 out.objectApi ||
@@ -1295,10 +1309,51 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return; // viewing history is inert — autosave must never arm
         }
         this.spec = event.detail.spec;
+        this._history.record(JSON.stringify(this.spec));
+        this._syncHistoryFlags();
         this.saveState = 'dirty';
         clearTimeout(this._saveTimer);
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         this._saveTimer = setTimeout(() => this._save(), SAVE_DEBOUNCE_MS);
+    }
+
+    // ----- undo / redo (slice 6: restored states persist like edits,
+    // WITHOUT re-recording — the manager already holds them) -----
+
+    get undoDisabled() {
+        return !this.canUndo || this.isReadOnly;
+    }
+
+    get redoDisabled() {
+        return !this.canRedo || this.isReadOnly;
+    }
+
+    handleUndo() {
+        this._applyHistory(this._history.undo());
+    }
+
+    handleRedo() {
+        this._applyHistory(this._history.redo());
+    }
+
+    _applyHistory(snapshot) {
+        this._syncHistoryFlags();
+        if (!snapshot || this.isReadOnly) {
+            return;
+        }
+        this.spec = JSON.parse(snapshot);
+        this.saveState = 'dirty';
+        clearTimeout(this._saveTimer);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._saveTimer = setTimeout(() => this._save(), SAVE_DEBOUNCE_MS);
+        // a restored state may not contain the selection or the shown page
+        if (this.selection && !this._selectionTarget(this.spec)) {
+            this.selection = null;
+        }
+        const last = (this.spec.pages || []).length - 1;
+        if (this.buildPageIndex > last) {
+            this.buildPageIndex = Math.max(last, 0);
+        }
     }
 
     async _save() {

@@ -77,17 +77,19 @@
             <span class="st-spacer"></span>
             <button
                 type="button"
-                class="st-icon"
-                title="Undo isn't available yet"
-                disabled
+                class="st-icon st-undo"
+                title="Undo"
+                disabled={undoDisabled}
+                onclick={handleUndo}
             >
                 ↶
             </button>
             <button
                 type="button"
-                class="st-icon"
-                title="Redo isn't available yet"
-                disabled
+                class="st-icon st-redo"
+                title="Redo"
+                disabled={redoDisabled}
+                onclick={handleRedo}
             >
                 ↷
             </button>
