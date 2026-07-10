@@ -1,4 +1,4 @@
-import { LightningElement, track, wire } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import LightningConfirm from 'lightning/confirm';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
@@ -77,6 +77,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     _history = createHistory();
     canUndo = false;
     canRedo = false;
+
+    /** Hosted mode (the FinalStudio VF full-page host via Lightning Out):
+     *  CurrentPageReference never emits outside LEX, so the host seeds the
+     *  form id and supplies an absolute exit URL. In LEX both stay unset
+     *  and the URL contract below is untouched. */
+    @api hostFormId;
+    @api exitUrl;
+
+    connectedCallback() {
+        if (this.hostFormId && !this.formId) {
+            this.formId = this.hostFormId;
+            this._load();
+        }
+    }
 
     _syncHistoryFlags() {
         this.canUndo = this._history.canUndo;
@@ -332,6 +346,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     handleExit() {
+        if (this.exitUrl) {
+            // VF host: NavigationMixin has no runtime outside LEX
+            window.location.assign(this.exitUrl);
+            return;
+        }
         this[NavigationMixin.Navigate]({
             type: 'standard__navItemPage',
             attributes: { apiName: FORMS_TAB }

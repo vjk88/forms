@@ -5,10 +5,10 @@ It supersedes `docs/redesign/DESIGN_MODE_IA.md` (old build; reference only — d
 
 **Interactive baselines** (the mockups ARE the spec where prose is ambiguous):
 
-| File | What it locks |
-|---|---|
+| File                         | What it locks                                                      |
+| ---------------------------- | ------------------------------------------------------------------ |
 | `design_panel_ia_modes.html` | The studio: Build mode, Design mode, Simple/Advanced lens, top bar |
-| `app_home_proposal.html` | The app: 6-tab structure, Home, Forms library, LEX chrome behavior |
+| `app_home_proposal.html`     | The app: 6-tab structure, Home, Forms library, LEX chrome behavior |
 
 `design_panel_ia_proposal.html` (5-area) and `design_panel_ia_expanded.html` (9-area standalone)
 are superseded exploration — kept untracked, do not build from them.
@@ -17,14 +17,14 @@ are superseded exploration — kept untracked, do not build from them.
 
 ## 1. The app — six tabs, one job each
 
-| Tab | Its one job | Never on it |
-|---|---|---|
-| **Home** | Start or flag work: greeting, pulse stat tiles, Continue editing, Needs attention, Recently edited (3 cards) → "View all forms" | Search, the full library, charts |
-| **Forms** | The library. Search + type toggle + status chips + count in ONE row directly above the grid | Analytics, greetings |
-| **Responses** | Cross-form submission explorer, survey answers, export | — |
-| **Analytics** | Funnels, drop-off by page, trends (survey analytics P1–P3) | — |
-| **Templates** | The creation gallery as a browsable destination; org templates | — |
-| **Settings** | App-level defaults only: brand kit, spam, hosting adapters (future) | Per-form settings |
+| Tab           | Its one job                                                                                                                     | Never on it                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **Home**      | Start or flag work: greeting, pulse stat tiles, Continue editing, Needs attention, Recently edited (3 cards) → "View all forms" | Search, the full library, charts |
+| **Forms**     | The library. Search + type toggle + status chips + count in ONE row directly above the grid                                     | Analytics, greetings             |
+| **Responses** | Cross-form submission explorer, survey answers, export                                                                          | —                                |
+| **Analytics** | Funnels, drop-off by page, trends (survey analytics P1–P3)                                                                      | —                                |
+| **Templates** | The creation gallery as a browsable destination; org templates                                                                  | —                                |
+| **Settings**  | App-level defaults only: brand kit, spam, hosting adapters (future)                                                             | Per-form settings                |
 
 **The coherence rule that produced this:** search belongs to the library; the library is not the
 home page. Home carries zero search — everything on it is already curated. Analytics appears on
@@ -43,6 +43,12 @@ in the mockup). One IA, two chromes, zero duplication.
 - **Studio**: escapes LEX chrome — VF page `showHeader="false" standardStylesheets="false"` +
   Lightning Out. ⚠️ Lightning Out is Beta: re-verify viability at packaging (2GP); the fallback is
   a LEX app page in console-style full width, same components.
+  - **BUILT 2026-07-10:** `/apex/FinalStudio?c__formId=…` (page `FinalStudio` +
+    `FinalStudioPageController` + aura dep app `finalStudioOut`). The host passes `hostFormId` +
+    `exitUrl` into `c/finalFormStudio` (`CurrentPageReference` never emits outside LEX); Exit /
+    not-found use `exitUrl` → `{orgDomain}/lightning/n/Final_Forms`. The library's **Open in
+    Studio** navigates here (`standard__webPage`, own browser tab); the LEX `Final_Studio` tab
+    still works unchanged.
 - **URL contract (locked):** the builder takes its form from the URL, nothing else.
   - LEX: `c__formId` state param (custom params require the `c__` prefix), read via the
     `CurrentPageReference` wire; app-home Edit buttons navigate with that state.
@@ -105,17 +111,17 @@ WORDS (title, subtitle) · FINISH (submit label, thank-you message). Footer copy
 
 Icon rail, hairline-clustered:
 
-| Cluster | Area | Groups (baseline) |
-|---|---|---|
-| Identity | **Theme** | Palette (accent, button text + badge, text, muted) |
-| | **Type** | Fonts (pairing) · Scale (title size, base size) |
-| | **Backdrop** | Page background (fill, image, scrim) · Atmosphere (mesh, texture, glass) |
-| Structure | **Layout** | Frame (max width, density; NO breakpoint control — collapse is container-driven, locked) |
-| | **Paging** | Progress (indicator, stepper placement, free vs gated navigation) |
-| Surfaces | **Header** | Branding & words (style, logo, title, subtitle, highlight) · Surface (fill, banner) |
-| | **Body** | Content panel (fill, shadow, rounding) · Sections (style preset, inner padding) |
-| | **Fields** | Inputs (fill, focus color, error color) · Labels (position, style) |
-| Finish | **Actions** | Buttons (submit label, arrangement, next/back labels) · Completion (outcome, thank-you/redirect, review page) |
+| Cluster   | Area         | Groups (baseline)                                                                                             |
+| --------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| Identity  | **Theme**    | Palette (accent, button text + badge, text, muted)                                                            |
+|           | **Type**     | Fonts (pairing) · Scale (title size, base size)                                                               |
+|           | **Backdrop** | Page background (fill, image, scrim) · Atmosphere (mesh, texture, glass)                                      |
+| Structure | **Layout**   | Frame (max width, density; NO breakpoint control — collapse is container-driven, locked)                      |
+|           | **Paging**   | Progress (indicator, stepper placement, free vs gated navigation)                                             |
+| Surfaces  | **Header**   | Branding & words (style, logo, title, subtitle, highlight) · Surface (fill, banner)                           |
+|           | **Body**     | Content panel (fill, shadow, rounding) · Sections (style preset, inner padding)                               |
+|           | **Fields**   | Inputs (fill, focus color, error color) · Labels (position, style)                                            |
+| Finish    | **Actions**  | Buttons (submit label, arrangement, next/back labels) · Completion (outcome, thank-you/redirect, review page) |
 
 Vocabulary: user-facing label is **"Backdrop"** on the rail but plain words inside
 ("Page background", "Atmosphere") — never token names. Surface-model vocabulary
@@ -127,7 +133,7 @@ Vocabulary: user-facing label is **"Backdrop"** on the rail but plain words insi
   from the theme default.
 - **Reset to theme** chip per group (visible only when edited); resets that group, nothing else.
 - **Theme-switch confirm gate:** switching themes with edits present shows an inline confirm —
-  "Switching to *X* resets *N* edited control(s) to the new theme's defaults" — Switch / Keep my edits.
+  "Switching to _X_ resets _N_ edited control(s) to the new theme's defaults" — Switch / Keep my edits.
   Clean forms switch silently.
 - **Hidden keeps values:** when a layout owns a concern (e.g. Split Hero owns pagination), the
   controls are **parked with a narration**, values kept — never destroyed, never silently dropped.
@@ -138,11 +144,11 @@ Vocabulary: user-facing label is **"Backdrop"** on the rail but plain words insi
 
 Keyed to the consumer, computed live from the actual pair (accent × button text):
 
-| Ratio | Badge | Fix hint |
-|---|---|---|
-| ≥ 4.5:1 | `4.6:1 · AA ✓` (pass, green) | — |
-| ≥ 3:1 | `3.7:1 · large text only` (warn, amber) | "button labels need 4.5:1. Darken the color." |
-| < 3:1 | `2.1:1 · fails AA ✗` (fail, red) | "unreadable. Pick a darker color." |
+| Ratio   | Badge                                   | Fix hint                                      |
+| ------- | --------------------------------------- | --------------------------------------------- |
+| ≥ 4.5:1 | `4.6:1 · AA ✓` (pass, green)            | —                                             |
+| ≥ 3:1   | `3.7:1 · large text only` (warn, amber) | "button labels need 4.5:1. Darken the color." |
+| < 3:1   | `2.1:1 · fails AA ✗` (fail, red)        | "unreadable. Pick a darker color."            |
 
 Never a binary pass/fail at 3:1 — that miscalibration (from the reference mockup) marked failing
 button text as "AA Pass". WCAG: 4.5:1 normal text, 3:1 only for large text (≥18px / bold ≥14px).

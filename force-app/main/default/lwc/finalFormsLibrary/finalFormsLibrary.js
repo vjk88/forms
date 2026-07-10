@@ -6,12 +6,12 @@ import listForms from '@salesforce/apex/FinalStudioController.listForms';
 /**
  * finalFormsLibrary — the Forms tab (FORM_STUDIO_IA §1/§2).
  *
- * The library IS the picker: Open in Studio navigates to the studio tab with
- * `c__formId` state — the ONLY way a form reaches the builder. Creation is
- * gallery-first and lands in P6; this slice lists and opens.
+ * The library IS the picker: Open in Studio navigates to the full-page VF
+ * host with `c__formId` — the ONLY way a form reaches the builder. Creation
+ * is gallery-first and lands in P6; this slice lists and opens.
  */
 
-const STUDIO_TAB = 'Final_Studio';
+const STUDIO_PAGE = '/apex/FinalStudio';
 
 export default class FinalFormsLibrary extends NavigationMixin(
     LightningElement
@@ -46,10 +46,13 @@ export default class FinalFormsLibrary extends NavigationMixin(
     }
 
     handleOpen(event) {
+        // Full-page studio (owner 2026-07-10): the VF host escapes LEX
+        // chrome; standard__webPage opens it in its own browser tab.
         this[NavigationMixin.Navigate]({
-            type: 'standard__navItemPage',
-            attributes: { apiName: STUDIO_TAB },
-            state: { c__formId: event.currentTarget.dataset.id }
+            type: 'standard__webPage',
+            attributes: {
+                url: `${STUDIO_PAGE}?c__formId=${event.currentTarget.dataset.id}`
+            }
         });
     }
 

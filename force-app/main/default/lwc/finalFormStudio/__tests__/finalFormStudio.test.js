@@ -112,6 +112,40 @@ describe('c-final-form-studio', () => {
         expect(loadStudio).not.toHaveBeenCalled();
     });
 
+    it('hosted mode (VF full page): hostFormId seeds the load, Exit uses exitUrl', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Hosted',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V9',
+            versionNumber: 1,
+            activeVersionNumber: null
+        });
+        listVersions.mockResolvedValue([]);
+        const orig = window.location;
+        const assign = jest.fn();
+        delete window.location;
+        window.location = { assign };
+
+        const el = createElement('c-final-form-studio', {
+            is: FinalFormStudio
+        });
+        el.hostFormId = 'a0F7';
+        el.exitUrl = 'https://org.my.salesforce.com/lightning/n/Final_Forms';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+
+        // no CurrentPageReference emission anywhere — the seed did the load
+        expect(loadStudio).toHaveBeenCalledWith({ formId: 'a0F7' });
+        el.shadowRoot.querySelector('.st-exit').click();
+        expect(assign).toHaveBeenCalledWith(
+            'https://org.my.salesforce.com/lightning/n/Final_Forms'
+        );
+        expect(NAVIGATE).toHaveLength(0);
+
+        window.location = orig;
+    });
+
     it('loads the draft, shows the chip fallback (no version list), renders panel + live preview', async () => {
         loadStudio.mockResolvedValue({
             name: 'Contact us',
