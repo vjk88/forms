@@ -12,6 +12,16 @@ jest.mock(
     },
     { virtual: true }
 );
+jest.mock(
+    '@salesforce/apex/FormAssetController.uploadImage',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FormAssetController.deleteImage',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
 
 const FIELDS = [
     { apiName: 'Email', label: 'Email', inputType: 'email', required: false },
@@ -20,13 +30,6 @@ const FIELDS = [
         label: 'Last Name',
         inputType: 'text',
         required: true
-    },
-    {
-        apiName: 'Level__c',
-        label: 'Level',
-        inputType: 'picklist',
-        required: false,
-        options: [{ value: 'A', label: 'A' }]
     }
 ];
 
@@ -41,18 +44,28 @@ function mount(props) {
 
 const flush = () => Promise.resolve();
 
-describe('c-final-property-panel', () => {
+const seg = (el, containerLabel) => {
+    const flds = el.shadowRoot.querySelectorAll('.pp-fld');
+    for (const fld of flds) {
+        const label = fld.querySelector('.pp-label');
+        if (label && label.textContent === containerLabel) {
+            return fld.querySelectorAll('.pp-seg-btn');
+        }
+    }
+    return null;
+};
+
+describe('c-final-property-panel (the FormStudio port)', () => {
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);
         }
     });
 
-    it('field inspector edits label/required/placeholder and emits intents', async () => {
+    it('field inspector: label + Behavior segmented; the binding is READ-ONLY (never a picker)', async () => {
         const el = mount({
             kind: 'element',
             bindingObjectApi: 'Contact',
-            usedFields: ['Email'],
             node: {
                 id: 'el_1',
                 type: 'field',
@@ -62,12 +75,13 @@ describe('c-final-property-panel', () => {
                 config: { inputType: 'email' }
             }
         });
-        describeFields.emit(FIELDS);
         await flush();
 
+        // binding surfaces as info only — owner: the drag already chose it
         expect(el.shadowRoot.querySelector('.pp-sub').textContent).toContain(
             'Contact.Email'
         );
+        expect(el.shadowRoot.querySelector('select.pp-binding')).toBeNull();
 
         const events = [];
         el.addEventListener('propchange', (e) => events.push(e.detail));
@@ -75,111 +89,221 @@ describe('c-final-property-panel', () => {
         label.value = 'Work email';
         label.dispatchEvent(new CustomEvent('change'));
 
-        const required = el.shadowRoot.querySelector('[data-prop="required"]');
-        required.checked = true;
-        required.dispatchEvent(new CustomEvent('change'));
-
+        const behavior = seg(el, 'Behavior');
+        expect([...behavior].map((b) => b.textContent.trim())).toEqual([
+            'Editable',
+            'Required',
+            'Read only'
+        ]);
+        behavior[1].click();
         expect(events).toEqual([
             { patch: { label: 'Work email' } },
-            { patch: { required: true } }
+            { patch: { required: true, readOnly: false } }
         ]);
     });
 
-    it('binding picker lists fields, disables ones taken ELSEWHERE, emits bindingchange', async () => {
+    it('Display as: picklist choices + the options editor emits configchange', async () => {
         const el = mount({
             kind: 'element',
             bindingObjectApi: 'Contact',
-            usedFields: ['Email', 'LastName'], // Email is its OWN binding
             node: {
                 id: 'el_1',
                 type: 'field',
-                label: 'Email',
-                binding: { object: 'Contact', field: 'Email' },
+                label: 'Level',
+                binding: { object: 'Contact', field: 'Level__c' },
+                config: {
+                    inputType: 'picklist',
+                    renderAs: 'Radio_Buttons',
+                    options: [{ label: 'A', value: 'A' }]
+                }
+            }
+        });
+        await flush();
+        const renderAs = el.shadowRoot.querySelector('.pp-renderas');
+        expect(renderAs).not.toBeNull();
+        const values = [...renderAs.querySelectorAll('option')].map(
+            (o) => o.value
+        );
+        expect(values).toEqual(['Default', 'Radio_Buttons', 'Dropdown']);
+
+        const events = [];
+        el.addEventListener('configchange', (e) => events.push(e.detail));
+        const optLabel = el.shadowRoot.querySelector(
+            '.pp-optrow [data-field="label"]'
+        );
+        optLabel.value = 'Gold';
+        optLabel.dispatchEvent(new CustomEvent('change'));
+        expect(events[0].patch.options).toEqual([
+            { label: 'Gold', value: 'A' }
+        ]);
+
+        el.shadowRoot.querySelector('.pp-add').click();
+        expect(events[1].patch.options).toHaveLength(2);
+    });
+
+    it('Width renders ONLY in multi-column sections and spans segmented (legacy showWidth)', async () => {
+        const one = mount({
+            kind: 'element',
+            sectionColumns: 1,
+            node: { id: 'el_1', type: 'field', label: 'A', config: {} }
+        });
+        await flush();
+        expect(seg(one, 'Width')).toBeNull();
+        document.body.removeChild(one);
+
+        const el = mount({
+            kind: 'element',
+            sectionColumns: 3,
+            node: {
+                id: 'el_1',
+                type: 'field',
+                label: 'A',
+                width: 1,
                 config: {}
             }
         });
-        describeFields.emit(FIELDS);
         await flush();
-
-        const options = el.shadowRoot.querySelectorAll('.pp-binding option');
-        const byValue = {};
-        options.forEach((o) => {
-            byValue[o.value] = o;
-        });
-        expect(byValue.Email.disabled).toBe(false); // own binding stays pickable
-        expect(byValue.LastName.disabled).toBe(true); // taken elsewhere
-
-        const picks = [];
-        el.addEventListener('bindingchange', (e) => picks.push(e.detail));
-        const select = el.shadowRoot.querySelector('.pp-binding');
-        select.value = 'Level__c';
-        select.dispatchEvent(new CustomEvent('change'));
-        expect(picks[0].field.apiName).toBe('Level__c');
-        expect(picks[0].field.options).toBeTruthy();
+        const width = seg(el, 'Width');
+        expect([...width].map((b) => b.textContent.trim())).toEqual([
+            '1',
+            '2',
+            'Full'
+        ]);
+        const events = [];
+        el.addEventListener('propchange', (e) => events.push(e.detail));
+        width[2].click();
+        expect(events).toEqual([{ patch: { width: 3 } }]);
     });
 
-    it('unbound field shows the placeholder option and an honest subtitle', async () => {
-        const el = mount({
+    it('content inspectors: callout tone, spacer size, consent acceptance (all segmented)', async () => {
+        const callout = mount({
             kind: 'element',
-            bindingObjectApi: 'Contact',
-            usedFields: [],
-            node: { id: 'el_1', type: 'field', label: 'First name' }
+            node: {
+                id: 'el_c',
+                type: 'callout',
+                label: 'Callout',
+                config: { variant: 'info', html: '' }
+            }
         });
-        describeFields.emit(FIELDS);
         await flush();
-        expect(el.shadowRoot.querySelector('.pp-sub').textContent).toContain(
-            'not bound'
-        );
-        const first = el.shadowRoot.querySelector('.pp-binding option');
-        expect(first.textContent).toContain('Not bound');
-    });
+        const cfg = [];
+        callout.addEventListener('configchange', (e) => cfg.push(e.detail));
+        seg(callout, 'Tone')[2].click(); // Warning
+        expect(cfg).toEqual([{ patch: { variant: 'warning' } }]);
+        document.body.removeChild(callout);
 
-    it('per-type inspectors: spacer edits height, divider has no settings (§5)', async () => {
-        const el = mount({
+        const spacer = mount({
             kind: 'element',
             node: {
                 id: 'el_s',
                 type: 'spacer',
                 label: 'Spacer',
-                config: { height: 24 }
+                config: { size: 'medium' }
+            }
+        });
+        await flush();
+        const sc = [];
+        spacer.addEventListener('configchange', (e) => sc.push(e.detail));
+        seg(spacer, 'Size')[2].click();
+        expect(sc).toEqual([{ patch: { size: 'large' } }]);
+        document.body.removeChild(spacer);
+
+        const consent = mount({
+            kind: 'element',
+            node: {
+                id: 'el_k',
+                type: 'consent',
+                label: 'Consent',
+                required: true,
+                config: { html: '<p>Terms</p>' }
+            }
+        });
+        await flush();
+        const pc = [];
+        consent.addEventListener('propchange', (e) => pc.push(e.detail));
+        seg(consent, 'Acceptance')[1].click(); // Optional
+        expect(pc).toEqual([{ patch: { required: false } }]);
+    });
+
+    it('Empty space: the 1-column note; standalone Block style emits blockstylechange', async () => {
+        const empty = mount({
+            kind: 'element',
+            sectionColumns: 1,
+            node: { id: 'el_e', type: 'emptySpace', label: 'Empty space' }
+        });
+        await flush();
+        expect(
+            empty.shadowRoot.querySelector('.pp-hint').textContent
+        ).toContain('more than one column');
+        document.body.removeChild(empty);
+
+        const block = mount({
+            kind: 'element',
+            blockStyle: 'plain',
+            node: {
+                id: 'el_r',
+                type: 'richText',
+                label: 'Display text',
+                config: { html: '' }
+            }
+        });
+        await flush();
+        const changes = [];
+        block.addEventListener('blockstylechange', (e) =>
+            changes.push(e.detail)
+        );
+        seg(block, 'Block style')[1].click(); // Card
+        expect(changes).toEqual([{ style: 'card' }]);
+    });
+
+    it('section inspector = the legacy surface: columns 1-4, header toggle + icon picker, collapsible', async () => {
+        const el = mount({
+            kind: 'section',
+            node: {
+                id: 'sec_1',
+                title: 'Contact',
+                columns: 1,
+                elements: [],
+                showHeader: true
             }
         });
         await flush();
         const events = [];
-        el.addEventListener('configchange', (e) => events.push(e.detail));
-        const height = el.shadowRoot.querySelector('[data-prop="height"]');
-        height.value = '48';
-        height.dispatchEvent(new CustomEvent('change'));
-        expect(events).toEqual([{ patch: { height: 48 } }]);
-
-        el.node = { id: 'el_d', type: 'divider', label: 'Divider' };
-        await flush();
-        expect(el.shadowRoot.querySelector('.pp-hint').textContent).toContain(
-            'no settings'
-        );
-        expect(el.shadowRoot.querySelector('[data-prop]')).toBeNull();
-    });
-
-    it('section inspector edits title/columns/style — never shown for repeaters', async () => {
-        const el = mount({
-            kind: 'section',
-            node: { id: 'sec_1', title: 'Contact', columns: 1, elements: [] }
-        });
-        await flush();
-        const events = [];
         el.addEventListener('propchange', (e) => events.push(e.detail));
-        const cols = el.shadowRoot.querySelector('.pp-columns');
-        cols.value = '2';
-        cols.dispatchEvent(new CustomEvent('change'));
-        expect(events).toEqual([{ patch: { columns: 2 } }]);
+
+        const cols = seg(el, 'Columns');
+        expect(cols).toHaveLength(4);
+        cols[3].click();
+        expect(events.at(-1)).toEqual({ patch: { columns: 4 } });
+
+        // icon picker: search narrows, pick emits utility:name
+        const search = el.shadowRoot.querySelector('.pp-icsearch input');
+        search.value = 'email';
+        search.dispatchEvent(new Event('input'));
+        await flush();
+        const icons = el.shadowRoot.querySelectorAll('.pp-ic');
+        expect(icons).toHaveLength(1);
+        icons[0].click();
+        expect(events.at(-1)).toEqual({ patch: { icon: 'utility:email' } });
+
+        // header + collapsible toggles
+        const toggles = el.shadowRoot.querySelectorAll('.pp-toggle');
+        expect(toggles[0].textContent.trim()).toBe('Header shown');
+        toggles[0].click();
+        expect(events.at(-1)).toEqual({ patch: { showHeader: false } });
+        toggles[1].click();
+        expect(events.at(-1)).toEqual({ patch: { collapsible: true } });
+
+        // NO delete button anywhere (owner delta)
+        expect(el.shadowRoot.textContent).not.toContain('Delete');
     });
 
-    it('repeater inspector is DEDICATED (§4): repeat props + child fields deduped in-section', async () => {
+    it('repeater inspector stays DEDICATED: legacy labels, max 0 = unlimited, child dedupe', async () => {
         const el = mount({
             kind: 'section',
             node: {
                 id: 'sec_r',
-                title: 'Team members',
+                title: 'Team',
                 elements: [
                     {
                         id: 'el_c1',
@@ -193,7 +317,6 @@ describe('c-final-property-panel', () => {
                     relationshipField: 'AccountId',
                     style: 'stacked',
                     addLabel: 'Add Contact',
-                    entryLabel: 'Contact {index}',
                     min: 1,
                     max: null
                 }
@@ -202,41 +325,42 @@ describe('c-final-property-panel', () => {
         describeFields.emit(FIELDS);
         await flush();
 
-        // dedicated: repeat controls present, generic section style select absent
-        expect(el.shadowRoot.querySelector('.pp-repstyle')).not.toBeNull();
-        expect(el.shadowRoot.querySelector('.pp-style')).toBeNull();
-        expect(el.shadowRoot.querySelector('.pp-sub').textContent).toContain(
+        // dedicated: repeat controls, never the section surface
+        expect(seg(el, 'Display style')).toHaveLength(3);
+        expect(seg(el, 'Columns')).toBeNull();
+        expect(el.shadowRoot.querySelector('.pp-ro').textContent).toBe(
             'Contact'
         );
 
-        const rows = el.shadowRoot.querySelectorAll('.pp-childfield');
-        expect(rows).toHaveLength(3);
-        const added = el.shadowRoot.querySelector('.pp-childfield.added');
-        expect(added.textContent).toContain('Last Name');
+        const reps = [];
+        el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+        const max = el.shadowRoot.querySelector('[data-prop="max"]');
+        max.value = '0';
+        max.dispatchEvent(new CustomEvent('change'));
+        expect(reps).toEqual([{ patch: { max: null } }]); // 0 = unlimited
 
+        const rows = el.shadowRoot.querySelectorAll('.pp-childfield');
+        expect(rows).toHaveLength(2);
         const adds = [];
         el.addEventListener('addchildfield', (e) => adds.push(e.detail));
-        // an ADDED row refuses the click
-        added.click();
-        // a fresh row adds
+        el.shadowRoot
+            .querySelector('.pp-childfield[data-api="LastName"]')
+            .click(); // ADDED → refused
         el.shadowRoot.querySelector('.pp-childfield[data-api="Email"]').click();
         expect(adds).toHaveLength(1);
         expect(adds[0].field.apiName).toBe('Email');
-
-        const reps = [];
-        el.addEventListener('repeatchange', (e) => reps.push(e.detail));
-        const style = el.shadowRoot.querySelector('.pp-repstyle');
-        style.value = 'table';
-        style.dispatchEvent(new CustomEvent('change'));
-        expect(reps).toEqual([{ patch: { style: 'table' } }]);
     });
 
-    it('page inspector renames the page', async () => {
+    it('visibility group renders on every inspector (rule editor present)', async () => {
         const el = mount({
             kind: 'page',
-            node: { id: 'pg_1', name: 'Details', sections: [] }
+            node: { id: 'pg_1', name: 'Details', sections: [] },
+            ruleSources: [{ id: 'el_1', label: 'Email' }]
         });
         await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-rule-editor')
+        ).not.toBeNull();
         const events = [];
         el.addEventListener('propchange', (e) => events.push(e.detail));
         const name = el.shadowRoot.querySelector('[data-prop="pagename"]');

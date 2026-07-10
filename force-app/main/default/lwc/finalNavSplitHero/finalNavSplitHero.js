@@ -98,7 +98,8 @@ export default class FinalNavSplitHero extends LightningElement {
 
     get layoutClass() {
         const side = this.opts.side === 'right' ? 'side-right' : 'side-left';
-        const ratio = this.opts.ratio === 'third' ? 'ratio-third' : 'ratio-half';
+        const ratio =
+            this.opts.ratio === 'third' ? 'ratio-third' : 'ratio-half';
         const sticky = this.opts.sticky ? ' sticky-pane' : '';
         const bleed = this.bleedOn ? ' mode-bleed' : '';
         const lex = EMBEDDED_IN_LEX ? ' in-lex' : '';
@@ -112,27 +113,32 @@ export default class FinalNavSplitHero extends LightningElement {
     get showLockup() {
         return Boolean(
             this.bleedOn &&
-                this.lockup &&
-                (this.lockup.title || this.lockup.description)
+            this.lockup &&
+            (this.lockup.title || this.lockup.description)
         );
     }
 
     /** Veil over image: first background layer (topmost) is the composed rgba. */
     get paneStyle() {
-        const hasBg = this.opts.paneBg !== undefined && this.opts.paneBg !== null;
+        const hasBg =
+            this.opts.paneBg !== undefined && this.opts.paneBg !== null;
         const img = this.opts.paneImage && this.opts.paneImage.url;
         // No explicit pane config → the THEME dresses the pane: its header
         // surface + header text (so split themes paint their brand panel, and
         // light-header themes get readable text). Config-driven panes keep the
         // composed veil + hero-white text below, unchanged.
         if (!hasBg && !img) {
-            return 'background-color: var(--c-header-bg);' +
+            return (
+                'background-color: var(--c-header-bg);' +
                 ' background-image: var(--c-header-bg-gradient, none);' +
-                ' color: var(--c-header-text);';
+                ' color: var(--c-header-text);'
+            );
         }
         const veil = hexToRgba(
             this.opts.paneBg || '#111827',
-            this.opts.paneBgOpacity === undefined ? 100 : this.opts.paneBgOpacity
+            this.opts.paneBgOpacity === undefined
+                ? 100
+                : this.opts.paneBgOpacity
         );
         if (!img) {
             return `background: ${veil}`;
@@ -168,7 +174,11 @@ export default class FinalNavSplitHero extends LightningElement {
             cls: `zone zone-${zone}`,
             blocks: blocks
                 .filter((b) => (placement[b.kind] || defaults[b.kind]) === zone)
-                .filter((b) => (b.kind === 'highlight' ? b.highlight && b.highlight.text : b.html))
+                .filter((b) => {
+                    return b.kind === 'highlight'
+                        ? b.highlight && b.highlight.text
+                        : b.html;
+                })
                 .map((b) => ({
                     ...b,
                     key: b.kind,
@@ -182,11 +192,16 @@ export default class FinalNavSplitHero extends LightningElement {
     // ---- progress (renders in the brand pane) ----
 
     get stepCount() {
-        return this.oneAtATime ? this._screens.length : (this._pages || []).length;
+        return this.oneAtATime
+            ? this._screens.length
+            : (this._pages || []).length;
     }
 
     get stepNumber() {
-        return (this.oneAtATime ? this.screenIndex : this.currentPageIndex || 0) + 1;
+        return (
+            (this.oneAtATime ? this.screenIndex : this.currentPageIndex || 0) +
+            1
+        );
     }
 
     get showProgressSteps() {
@@ -218,7 +233,9 @@ export default class FinalNavSplitHero extends LightningElement {
 
     get currentPageList() {
         const page = (this._pages || [])[this.currentPageIndex || 0];
-        return page ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }] : [];
+        return page
+            ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }]
+            : [];
     }
 
     // ---- form pane: One-at-a-Time flow (shared finalStepFlow engine) ----
@@ -273,7 +290,9 @@ export default class FinalNavSplitHero extends LightningElement {
         if (!this.keyboardAdvanceOn || this.onLastScreen) {
             return;
         }
-        const origin = event.composedPath ? event.composedPath()[0] : event.target;
+        const origin = event.composedPath
+            ? event.composedPath()[0]
+            : event.target;
         if (shouldAdvanceOnKey(event, origin)) {
             event.preventDefault();
             this._go(this.screenIndex + 1);
@@ -281,7 +300,9 @@ export default class FinalNavSplitHero extends LightningElement {
     }
 
     handleFocusIn(event) {
-        const origin = event.composedPath ? event.composedPath()[0] : event.target;
+        const origin = event.composedPath
+            ? event.composedPath()[0]
+            : event.target;
         this.multilineFocus = isMultilineTarget(origin);
     }
 
@@ -299,13 +320,28 @@ export default class FinalNavSplitHero extends LightningElement {
             return;
         }
         const fromPage = this._screens[this.screenIndex].pageIndex;
-        this.screenIndex = index;
         const toPage = this._screens[index].pageIndex;
+        // F8 advance-denial (same rule as oneAtATime): forward page-crossing
+        // needs the current page valid; the viewer reveals the failures.
+        if (
+            toPage > fromPage &&
+            this.pageValidity &&
+            this.pageValidity[fromPage] === false
+        ) {
+            this.dispatchEvent(
+                new CustomEvent('advanceblocked', {
+                    detail: { pageIndex: fromPage }
+                })
+            );
+            return;
+        }
+        this.screenIndex = index;
         if (toPage !== fromPage) {
             this.dispatchEvent(
                 new CustomEvent('pagechange', { detail: { index: toPage } })
             );
         }
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         requestAnimationFrame(() => {
             const panel = this.template.querySelector('.screen-panel');
             if (panel) {

@@ -86,12 +86,43 @@
     margin-bottom: var(--c-space-4);
 }
 
+.sec-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--c-space-2);
+}
+
+.sec-icon {
+    flex: none;
+    --slds-c-icon-color-foreground-default: var(--c-accent, var(--c-text));
+}
+
 .sec-title {
     margin: 0;
     font-family: var(--c-font-display);
     font-size: 1.05rem;
     font-weight: 600;
     color: var(--c-text);
+}
+
+/* Collapsible fold toggle — rides the title row's far edge. */
+.sec-fold {
+    margin-left: auto;
+    border: 0;
+    background: none;
+    padding: var(--c-space-1);
+    border-radius: var(--c-radius);
+    cursor: pointer;
+    --slds-c-icon-color-foreground-default: var(--c-text-weak);
+}
+
+.sec-fold:hover {
+    --slds-c-icon-color-foreground-default: var(--c-text);
+}
+
+.sec-fold:focus-visible {
+    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    outline-offset: 1px;
 }
 
 .sec-desc {
@@ -117,9 +148,21 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 @container section (max-width: 640px) {
     .cols-2,
-    .cols-3 {
+    .cols-3,
+    .cols-4 {
         grid-template-columns: 1fr;
+    }
+
+    /* single column → spans are meaningless; let content flow */
+    .cols-2 > c-final-element-renderer,
+    .cols-3 > c-final-element-renderer,
+    .cols-4 > c-final-element-renderer {
+        grid-column: auto !important;
     }
 }

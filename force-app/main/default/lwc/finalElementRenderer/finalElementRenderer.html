@@ -39,6 +39,63 @@
                     onchange={handleChange}
                 ></lightning-textarea>
             </template>
+            <template lwc:elseif={isDropdown}>
+                <lightning-combobox
+                    label={el.label}
+                    placeholder={el.placeholder}
+                    options={options}
+                    required={el.required}
+                    disabled={el.readOnly}
+                    field-level-help={nativeHelp}
+                    variant="label-hidden"
+                    onchange={handleDetailChange}
+                ></lightning-combobox>
+            </template>
+            <template lwc:elseif={isRadioGroup}>
+                <lightning-radio-group
+                    label={el.label}
+                    options={options}
+                    required={el.required}
+                    disabled={el.readOnly}
+                    variant="label-hidden"
+                    name={el.id}
+                    onchange={handleDetailChange}
+                ></lightning-radio-group>
+            </template>
+            <template lwc:elseif={isCheckboxGroup}>
+                <lightning-checkbox-group
+                    label={el.label}
+                    options={options}
+                    required={el.required}
+                    disabled={el.readOnly}
+                    variant="label-hidden"
+                    name={el.id}
+                    onchange={handleDetailChange}
+                ></lightning-checkbox-group>
+            </template>
+            <template lwc:elseif={isToggle}>
+                <lightning-input
+                    type="toggle"
+                    label={el.label}
+                    required={el.required}
+                    disabled={el.readOnly}
+                    variant="label-hidden"
+                    message-toggle-active=""
+                    message-toggle-inactive=""
+                    onchange={handleCheckedChange}
+                ></lightning-input>
+            </template>
+            <template lwc:elseif={isSlider}>
+                <lightning-slider
+                    label={el.label}
+                    min={slider.min}
+                    max={slider.max}
+                    step={slider.step}
+                    disabled={el.readOnly}
+                    variant="label-hidden"
+                    onchange={handleDetailChange}
+                ></lightning-slider>
+            </template>
             <template lwc:else>
                 <lightning-input
                     type={inputType}
@@ -52,6 +109,14 @@
                     onchange={handleChange}
                 ></lightning-input>
             </template>
+
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
         </div>
     </template>
     <template lwc:elseif={isRichText}>
@@ -63,17 +128,57 @@
     </template>
     <template lwc:elseif={isImage}>
         <template lwc:if={hasImageSrc}>
-            <img class="block-image" src={cfg.src} alt={imageAlt} />
+            <img
+                class="block-image"
+                src={cfg.src}
+                alt={imageAlt}
+                style={imageStyle}
+            />
         </template>
         <template lwc:else>
-            <!-- src arrives with the properties slice — an honest frame
+            <!-- src arrives from its properties' Upload — an honest frame
                  beats an invisible element the author can't find -->
             <div class="block-image-empty">
                 <lightning-icon
                     icon-name="utility:image"
                     size="small"
                 ></lightning-icon>
-                <span>Image — pick a file in its properties</span>
+                <span>Image — upload a file in its properties</span>
+            </div>
+        </template>
+    </template>
+    <template lwc:elseif={isCallout}>
+        <div class={calloutClass}>
+            <lightning-icon
+                class="callout-icon"
+                icon-name={calloutIcon}
+                size="x-small"
+            ></lightning-icon>
+            <lightning-formatted-rich-text
+                value={calloutHtml}
+            ></lightning-formatted-rich-text>
+        </div>
+    </template>
+    <template lwc:elseif={isConsent}>
+        <div class="block-consent">
+            <lightning-input
+                type="checkbox"
+                label={el.label}
+                required={el.required}
+                variant="label-hidden"
+                onchange={handleCheckedChange}
+            ></lightning-input>
+            <div class="consent-text">
+                <lightning-formatted-rich-text
+                    value={consentHtml}
+                ></lightning-formatted-rich-text>
+            </div>
+        </div>
+        <template lwc:if={hasErrors}>
+            <div class="field-errors" role="alert">
+                <template for:each={errors} for:item="msg">
+                    <p key={msg} class="field-error">{msg}</p>
+                </template>
             </div>
         </template>
     </template>
@@ -82,6 +187,24 @@
     </template>
     <template lwc:elseif={isSpacer}>
         <div class="block-spacer" style={spacerStyle} aria-hidden="true"></div>
+    </template>
+    <template lwc:elseif={isEmptySpace}>
+        <!-- grid-cell filler: real layout, zero paint -->
+        <div class="block-emptyspace" aria-hidden="true"></div>
+    </template>
+    <template lwc:elseif={isFile}>
+        <div class="block-file">
+            <template lwc:if={el.label}>
+                <span class="field-label">{el.label}</span>
+            </template>
+            <div class="block-file-frame">
+                <lightning-icon
+                    icon-name="utility:upload"
+                    size="small"
+                ></lightning-icon>
+                <span>File upload arrives with a later step.</span>
+            </div>
+        </div>
     </template>
     <template lwc:else>
         <div class="unsupported">

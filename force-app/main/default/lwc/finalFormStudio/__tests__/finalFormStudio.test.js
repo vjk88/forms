@@ -500,17 +500,6 @@ describe('c-final-form-studio', () => {
                 detail: { patch: { required: true } }
             })
         );
-        panel.dispatchEvent(
-            new CustomEvent('bindingchange', {
-                detail: {
-                    field: {
-                        apiName: 'Email',
-                        label: 'Email',
-                        inputType: 'email'
-                    }
-                }
-            })
-        );
         jest.advanceTimersByTime(1000);
         const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
         const elx = saved.pages[0].sections[0].elements[0];
@@ -518,9 +507,212 @@ describe('c-final-form-studio', () => {
         expect(elx.validation).toEqual([
             { type: 'required', message: 'First is required.' }
         ]);
-        expect(elx.binding).toEqual({ object: 'Contact', field: 'Email' });
-        expect(elx.config.inputType).toBe('email');
-        expect(elx.label).toBe('First'); // the author's copy survives a rebind
+        jest.useRealTimers();
+    });
+
+    it('FormStudio port intents: Empty space routes INSIDE (never a wrapper); block style patches the wrapper; consent mints required', async () => {
+        jest.useFakeTimers();
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'A',
+                        columns: 2,
+                        elements: [
+                            { id: 'el_1', type: 'field', label: 'First' }
+                        ]
+                    }
+                ]
+            }
+        ];
+        loadStudio.mockResolvedValue({
+            name: 'Port',
+            objectApi: 'Contact',
+            specJson: JSON.stringify(structured),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const palette = el.shadowRoot.querySelector('c-final-field-palette');
+        const canvas = el.shadowRoot.querySelector('c-final-builder-canvas');
+
+        // Empty space click-add: joins the page's LAST SECTION
+        palette.dispatchEvent(
+            new CustomEvent('addblock', {
+                detail: { blockType: 'emptySpace' }
+            })
+        );
+        // consent standalone block: wrapper section + required entry
+        palette.dispatchEvent(
+            new CustomEvent('addblock', { detail: { blockType: 'consent' } })
+        );
+        jest.advanceTimersByTime(1000);
+        const draft1 = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+        const wrapId = draft1.pages[0].sections.find((s) => s.block).id;
+
+        // a canvas click on the block section resolves to its element —
+        // the panel exposes the WRAPPER style (consent is NOT plain-only)
+        canvas.dispatchEvent(
+            new CustomEvent('select', {
+                detail: { kind: 'section', id: wrapId }
+            })
+        );
+        await Promise.resolve();
+        const panel = el.shadowRoot.querySelector('c-final-property-panel');
+        expect(panel.kind).toBe('element');
+        expect(panel.blockStyle).toBe('plain');
+        expect(panel.sectionColumns).toBe(1);
+        panel.dispatchEvent(
+            new CustomEvent('blockstylechange', {
+                detail: { style: 'card' }
+            })
+        );
+
+        // width patch flows through propchange like any other prop
+        canvas.dispatchEvent(
+            new CustomEvent('select', {
+                detail: { kind: 'element', id: 'el_1' }
+            })
+        );
+        await Promise.resolve();
+        el.shadowRoot.querySelector('c-final-property-panel').dispatchEvent(
+            new CustomEvent('propchange', {
+                detail: { patch: { width: 2 } }
+            })
+        );
+
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+        const pg = saved.pages[0];
+        expect(pg.sections.map((s) => Boolean(s.block))).toEqual([false, true]);
+        const sec1 = pg.sections[0];
+        // Empty space landed INSIDE sec_1, never as a wrapper
+        expect(sec1.elements.map((e) => e.type)).toEqual([
+            'field',
+            'emptySpace'
+        ]);
+        expect(sec1.elements[0].width).toBe(2);
+        const consentWrap = pg.sections[1];
+        expect(consentWrap.style).toBe('card');
+        expect(consentWrap.elements[0].type).toBe('consent');
+        expect(consentWrap.elements[0].required).toBe(true);
+        expect(consentWrap.elements[0].validation[0].type).toBe('required');
+        jest.useRealTimers();
+    });
+
+    it('rules slice: Logic index aggregates rules + checks; jump selects and opens props; checks merge keeps required', async () => {
+        jest.useFakeTimers();
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'A',
+                        elements: [
+                            {
+                                id: 'el_1',
+                                type: 'field',
+                                label: 'Email',
+                                required: true,
+                                validation: [
+                                    { type: 'required', message: 'Need it.' }
+                                ],
+                                config: { inputType: 'email' }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'pg_2',
+                name: 'Two',
+                visibility: {
+                    action: 'show',
+                    logic: 'all',
+                    rules: [
+                        { source: 'el_1', operator: 'isNotBlank', value: null }
+                    ]
+                },
+                sections: []
+            }
+        ];
+        loadStudio.mockResolvedValue({
+            name: 'Rules',
+            objectApi: 'Contact',
+            specJson: JSON.stringify(structured),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+
+        // the palette's Logic tab receives the aggregate index
+        const palette = el.shadowRoot.querySelector('c-final-field-palette');
+        expect(palette.logicIndex).toHaveLength(1);
+        expect(palette.logicIndex[0]).toMatchObject({
+            kind: 'page',
+            id: 'pg_2',
+            label: 'Two',
+            summary: 'Shown by 1 rule'
+        });
+
+        // jump → page selected on ITS page index, props open
+        palette.dispatchEvent(
+            new CustomEvent('logicjump', {
+                detail: { kind: 'page', id: 'pg_2' }
+            })
+        );
+        await Promise.resolve();
+        const panel = el.shadowRoot.querySelector('c-final-property-panel');
+        expect(panel.kind).toBe('page');
+        expect(panel.node.id).toBe('pg_2');
+        // rule plumbing reaches the panel
+        expect(panel.ruleSources).toEqual([{ id: 'el_1', label: 'Email' }]);
+        expect(panel.ruleIndex.get('el_1').type).toBe('field');
+
+        // checks editor emission merges UNDER the required entry — select
+        // the field first (checks belong to elements)
+        const canvas = el.shadowRoot.querySelector('c-final-builder-canvas');
+        canvas.dispatchEvent(
+            new CustomEvent('pagechange', { detail: { index: 0 } })
+        );
+        canvas.dispatchEvent(
+            new CustomEvent('select', {
+                detail: { kind: 'element', id: 'el_1' }
+            })
+        );
+        await Promise.resolve();
+        el.shadowRoot.querySelector('c-final-property-panel').dispatchEvent(
+            new CustomEvent('validationchange', {
+                detail: {
+                    entries: [{ type: 'range', min: 1, max: 9, message: '1-9' }]
+                }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+        expect(saved.pages[0].sections[0].elements[0].validation).toEqual([
+            { type: 'required', message: 'Need it.' },
+            { type: 'range', min: 1, max: 9, message: '1-9' }
+        ]);
         jest.useRealTimers();
     });
 

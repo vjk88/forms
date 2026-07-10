@@ -96,7 +96,9 @@ export default class FinalNavOneAtATime extends LightningElement {
 
     /** Continue while stepping; the Submit label on the final screen. */
     get primaryLabel() {
-        return this.onLastScreen ? this.submitLabel || 'Submit' : this.advanceLabel;
+        return this.onLastScreen
+            ? this.submitLabel || 'Submit'
+            : this.advanceLabel;
     }
 
     get layoutClass() {
@@ -155,7 +157,9 @@ export default class FinalNavOneAtATime extends LightningElement {
         if (!this.keyboardAdvanceOn || this.onLastScreen) {
             return;
         }
-        const origin = event.composedPath ? event.composedPath()[0] : event.target;
+        const origin = event.composedPath
+            ? event.composedPath()[0]
+            : event.target;
         if (shouldAdvanceOnKey(event, origin)) {
             event.preventDefault();
             this._go(this.screenIndex + 1);
@@ -163,7 +167,9 @@ export default class FinalNavOneAtATime extends LightningElement {
     }
 
     handleFocusIn(event) {
-        const origin = event.composedPath ? event.composedPath()[0] : event.target;
+        const origin = event.composedPath
+            ? event.composedPath()[0]
+            : event.target;
         this.multilineFocus = isMultilineTarget(origin);
     }
 
@@ -185,14 +191,30 @@ export default class FinalNavOneAtATime extends LightningElement {
             return;
         }
         const fromPage = this._screens[this.screenIndex].pageIndex;
-        this.screenIndex = index;
         const toPage = this._screens[index].pageIndex;
+        // F8 advance-denial: crossing FORWARD off an invalid page is
+        // refused; the viewer reveals that page's failures. Moves within
+        // the page and going back stay free.
+        if (
+            toPage > fromPage &&
+            this.pageValidity &&
+            this.pageValidity[fromPage] === false
+        ) {
+            this.dispatchEvent(
+                new CustomEvent('advanceblocked', {
+                    detail: { pageIndex: fromPage }
+                })
+            );
+            return;
+        }
+        this.screenIndex = index;
         if (toPage !== fromPage) {
             this.dispatchEvent(
                 new CustomEvent('pagechange', { detail: { index: toPage } })
             );
         }
         // Focus lands on the new screen (contract: focus moves on advance).
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
         requestAnimationFrame(() => {
             const panel = this.template.querySelector('.screen-panel');
             if (panel) {

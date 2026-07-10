@@ -156,3 +156,15 @@
     letter-spacing: 0.06em;
     color: #0b6e65;
 }
+
+/* Logic index rows: owner label + what the rule does */
+.fp-logic {
+    flex-wrap: wrap;
+    cursor: pointer;
+}
+
+.fp-logic-summary {
+    flex: 1 0 100%;
+    font-size: 11px;
+    color: #5c5c5c;
+}

@@ -97,9 +97,27 @@ describe('c-final-field-palette', () => {
 
         el.shadowRoot.querySelector('[data-tab="logic"]').click();
         await flush();
+        // Logic is LIVE (slice 5): empty state, then the aggregate index
         expect(el.shadowRoot.querySelector('.fp-note').textContent).toContain(
-            'rules slice'
+            'No rules yet'
         );
+        el.logicIndex = [
+            {
+                key: 'k1',
+                kind: 'element',
+                id: 'el_9',
+                label: 'Email',
+                summary: 'Hidden by 2 rules'
+            }
+        ];
+        await flush();
+        const jumps = [];
+        el.addEventListener('logicjump', (e) => jumps.push(e.detail));
+        const row = el.shadowRoot.querySelector('.fp-logic');
+        expect(row.textContent).toContain('Email');
+        expect(row.textContent).toContain('Hidden by 2 rules');
+        row.click();
+        expect(jumps).toEqual([{ kind: 'element', id: 'el_9' }]);
     });
 
     it('dragstart stamps the typed marker + JSON payload; ADDED rows refuse the drag', async () => {
@@ -162,21 +180,32 @@ describe('c-final-field-palette', () => {
         el.shadowRoot.querySelector('[data-tab="blocks"]').click();
         await flush();
 
+        // the FULL FormStudio roster (BUILDER_SURFACES §1, minus Hero) +
+        // the inside-only Empty space under its Layout group
         const items = el.shadowRoot.querySelectorAll('.fp-item[data-type]');
         expect([...items].map((i) => i.dataset.type)).toEqual([
             'richText',
             'image',
+            'callout',
             'divider',
-            'spacer'
+            'spacer',
+            'consent',
+            'file',
+            'emptySpace'
         ]);
 
         const adds = [];
         el.addEventListener('addblock', (e) => adds.push(e.detail));
-        items[2].click();
-        items[2].click(); // blocks repeat freely — no ADDED dedupe
+        const divider = el.shadowRoot.querySelector(
+            '.fp-item[data-type="divider"]'
+        );
+        divider.click();
+        divider.click(); // blocks repeat freely — no ADDED dedupe
+        el.shadowRoot.querySelector('.fp-item[data-type="emptySpace"]').click();
         expect(adds).toEqual([
             { blockType: 'divider' },
-            { blockType: 'divider' }
+            { blockType: 'divider' },
+            { blockType: 'emptySpace' }
         ]);
 
         const store = {};
@@ -196,6 +225,29 @@ describe('c-final-field-palette', () => {
         expect(JSON.parse(store['text/plain'])).toEqual({
             t: 'palette-el',
             elType: 'richText'
+        });
+
+        // Empty space rides its OWN inside-only marker (palette-cell)
+        const { PALETTE_CELL_MIME } = require('c/finalBuilderCanvas');
+        const cellStore = {};
+        const cellDt = {
+            types: [],
+            effectAllowed: '',
+            setData(t, v) {
+                cellStore[t] = v;
+                this.types.push(t);
+            }
+        };
+        const cellStart = new CustomEvent('dragstart', { cancelable: true });
+        cellStart.dataTransfer = cellDt;
+        el.shadowRoot
+            .querySelector('.fp-item[data-type="emptySpace"]')
+            .dispatchEvent(cellStart);
+        expect(cellDt.types).toContain(PALETTE_CELL_MIME);
+        expect(cellDt.types).not.toContain(PALETTE_EL_MIME);
+        expect(JSON.parse(cellStore['text/plain'])).toEqual({
+            t: 'palette-el',
+            elType: 'emptySpace'
         });
     });
 

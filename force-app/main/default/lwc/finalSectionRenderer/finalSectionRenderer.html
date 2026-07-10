@@ -2,24 +2,50 @@
     <div class={sectionClass} style={surfaceStyle}>
         <template lwc:if={hasHeader}>
             <header class="sec-head">
-                <template lwc:if={sec.title}>
-                    <h3 class="sec-title">{sec.title}</h3>
-                </template>
+                <div class="sec-title-row">
+                    <template lwc:if={headerIcon}>
+                        <lightning-icon
+                            class="sec-icon"
+                            icon-name={headerIcon}
+                            size="x-small"
+                        ></lightning-icon>
+                    </template>
+                    <template lwc:if={sec.title}>
+                        <h3 class="sec-title">{sec.title}</h3>
+                    </template>
+                    <template lwc:if={isCollapsible}>
+                        <button
+                            type="button"
+                            class="sec-fold"
+                            aria-expanded={toggleExpanded}
+                            title="Expand or collapse this section"
+                            onclick={handleToggleCollapse}
+                        >
+                            <lightning-icon
+                                icon-name={chevronIcon}
+                                size="x-small"
+                            ></lightning-icon>
+                        </button>
+                    </template>
+                </div>
                 <template lwc:if={sec.description}>
                     <p class="sec-desc">{sec.description}</p>
                 </template>
             </header>
         </template>
-        <div class={gridClass}>
-            <template for:each={elements} for:item="el">
-                <c-final-element-renderer
-                    onvaluechange={handleValueChange}
-                    key={el.id}
-                    element={el}
-                    data-el-id={el.id}
-                    onclick={handleElementClick}
-                ></c-final-element-renderer>
-            </template>
-        </div>
+        <template lwc:if={showBody}>
+            <div class={gridClass}>
+                <template for:each={gridElements} for:item="g">
+                    <c-final-element-renderer
+                        onvaluechange={handleValueChange}
+                        key={g.el.id}
+                        element={g.el}
+                        data-el-id={g.el.id}
+                        style={g.spanStyle}
+                        onclick={handleElementClick}
+                    ></c-final-element-renderer>
+                </template>
+            </div>
+        </template>
     </div>
 </template>

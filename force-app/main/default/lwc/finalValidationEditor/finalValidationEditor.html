@@ -1,0 +1,126 @@
+<template>
+    <div class="ve">
+        <template lwc:if={empty}>
+            <p class="ve-empty">
+                No extra checks. Add one for email, phone, ranges, length, or
+                matching answers — no formulas needed.
+            </p>
+        </template>
+        <ul class="ve-list">
+            <template for:each={rows} for:item="r">
+                <li key={r.key} class="ve-entry">
+                    <div class="ve-entry-head">
+                        <select
+                            class="ve-select ve-type"
+                            aria-label="Check type"
+                            data-index={r.index}
+                            onchange={handlePreset}
+                        >
+                            <template for:each={r.presetOptions} for:item="o">
+                                <option
+                                    key={o.value}
+                                    value={o.value}
+                                    selected={o.selected}
+                                >
+                                    {o.label}
+                                </option>
+                            </template>
+                        </select>
+                        <button
+                            type="button"
+                            class="ve-x"
+                            title="Remove this check"
+                            data-index={r.index}
+                            onclick={handleRemove}
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    <template lwc:if={r.isRange}>
+                        <div class="ve-minmax">
+                            <input
+                                type="number"
+                                class="ve-input"
+                                placeholder="Min"
+                                aria-label="Minimum"
+                                data-index={r.index}
+                                data-param="min"
+                                value={r.entry.min}
+                                onchange={handleParam}
+                            />
+                            <input
+                                type="number"
+                                class="ve-input"
+                                placeholder="Max"
+                                aria-label="Maximum"
+                                data-index={r.index}
+                                data-param="max"
+                                value={r.entry.max}
+                                onchange={handleParam}
+                            />
+                        </div>
+                    </template>
+                    <template lwc:elseif={r.isLength}>
+                        <div class="ve-minmax">
+                            <input
+                                type="number"
+                                class="ve-input"
+                                placeholder="Min characters"
+                                aria-label="Minimum characters"
+                                data-index={r.index}
+                                data-param="minLen"
+                                value={r.entry.minLen}
+                                onchange={handleParam}
+                            />
+                            <input
+                                type="number"
+                                class="ve-input"
+                                placeholder="Max characters"
+                                aria-label="Maximum characters"
+                                data-index={r.index}
+                                data-param="maxLen"
+                                value={r.entry.maxLen}
+                                onchange={handleParam}
+                            />
+                        </div>
+                    </template>
+                    <template lwc:elseif={r.isMatch}>
+                        <select
+                            class="ve-select"
+                            aria-label="Answer to match"
+                            data-index={r.index}
+                            data-param="compareTo"
+                            onchange={handleParam}
+                        >
+                            <option value="">Pick the answer to match…</option>
+                            <template for:each={r.sourceOptions} for:item="o">
+                                <option
+                                    key={o.value}
+                                    value={o.value}
+                                    selected={o.selected}
+                                >
+                                    {o.label}
+                                </option>
+                            </template>
+                        </select>
+                    </template>
+
+                    <input
+                        type="text"
+                        class="ve-input"
+                        placeholder="Error message the visitor sees"
+                        aria-label="Error message"
+                        data-index={r.index}
+                        data-param="message"
+                        value={r.entry.message}
+                        onchange={handleParam}
+                    />
+                </li>
+            </template>
+        </ul>
+        <button type="button" class="ve-add" onclick={handleAdd}>
+            + Add check
+        </button>
+    </div>
+</template>
