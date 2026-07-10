@@ -46,7 +46,7 @@ describe('c-final-forms-library', () => {
         NAVIGATE.length = 0;
     });
 
-    it('lists forms and opens the studio with c__formId state', async () => {
+    it('lists forms and opens the full-page studio host with c__formId', async () => {
         const el = createElement('c-final-forms-library', {
             is: FinalFormsLibrary
         });
@@ -67,8 +67,10 @@ describe('c-final-forms-library', () => {
         expect(cells[2].textContent).toBe('v3 + draft');
 
         el.shadowRoot.querySelector('.lib-open').click();
-        expect(NAVIGATE[0].attributes.apiName).toBe('Final_Studio');
-        expect(NAVIGATE[0].state.c__formId).toBe('a0F1');
+        expect(NAVIGATE[0].type).toBe('standard__webPage');
+        expect(NAVIGATE[0].attributes.url).toBe(
+            '/apex/FinalStudio?c__formId=a0F1'
+        );
     });
 
     it('empty list → gallery-first empty state, not a blank void', async () => {
