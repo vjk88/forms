@@ -445,17 +445,189 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.objectApi;
     }
 
-    /** Binding-picker dedupe is scoped like the palette's (§2): parent
-     *  elements against the whole form, child elements against their own
-     *  repeater section only. */
-    get selectionUsedFields() {
+    /** The hosting section's column count — the panel's Width control scope
+     *  (legacy showWidth: only meaningful past one column). */
+    get selectionSectionColumns() {
         const t = this.selectedTarget;
-        if (t && t.section && t.section.repeat) {
-            return (t.section.elements || [])
-                .map((el) => el.binding && el.binding.field)
-                .filter(Boolean);
+        const s = t && t.section;
+        return s && [1, 2, 3, 4].includes(s.columns) ? s.columns : 1;
+    }
+
+    /** Standalone block framing (legacy): only when the element is alone in
+     *  its block wrapper AND not a plain-only type (divider/callout/spacer —
+     *  their frame is meaningless). Null hides the control. */
+    get selectionBlockStyle() {
+        const t = this.selectedTarget;
+        if (
+            t &&
+            t.kind === 'element' &&
+            t.section &&
+            t.section.block &&
+            !['divider', 'callout', 'spacer'].includes(t.node.type)
+        ) {
+            return t.section.style || 'plain';
         }
-        return this.usedFields;
+        return null;
+    }
+
+    handleBlockStyleChange(event) {
+        const style = event.detail.style;
+        this._patchSelection((t) => {
+            if (t.section && t.section.block) {
+                t.section.style = style;
+            }
+        });
+    }
+
+    /**
+     * Rule sources for the SELECTED node (§7 scoping): field elements only
+     * (rules read answers), excluding elements in OTHER repeat sections —
+     * a repeater's elements may only drive rules inside their own section.
+     */
+    get selectionRuleSources() {
+        const t = this.selectedTarget;
+        const hostRepeat =
+            t && t.section && t.section.repeat ? t.section.id : null;
+        const out = [];
+        for (const page of (this.spec && this.spec.pages) || []) {
+            for (const section of page.sections || []) {
+                const repeatId = section.repeat ? section.id : null;
+                if (repeatId && repeatId !== hostRepeat) {
+                    continue;
+                }
+                for (const el of section.elements || []) {
+                    if (el.type === 'field') {
+                        out.push({ id: el.id, label: el.label || el.id });
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Map(id → {type, repeatSectionId}) — lintVisibility's element index.
+     *  Date subtypes pass through so gt/lt lint matches runtime coercion. */
+    get ruleIndexMap() {
+        const map = new Map();
+        for (const page of (this.spec && this.spec.pages) || []) {
+            for (const section of page.sections || []) {
+                for (const el of section.elements || []) {
+                    const input = el.config && el.config.inputType;
+                    map.set(el.id, {
+                        type:
+                            input === 'date' || input === 'datetime'
+                                ? input
+                                : el.type,
+                        repeatSectionId: section.repeat ? section.id : null
+                    });
+                }
+            }
+        }
+        return map;
+    }
+
+    get selectionHostRepeat() {
+        const t = this.selectedTarget;
+        return t && t.section && t.section.repeat ? t.section.id : null;
+    }
+
+    /** The Logic rail's aggregate index: every visibility rule and every
+     *  extra check on the form, labeled by its owner. */
+    get logicIndex() {
+        const out = [];
+        const add = (kind, id, label, summary) => {
+            out.push({
+                key: `${kind}_${id}_${out.length}`,
+                kind,
+                id,
+                label,
+                summary
+            });
+        };
+        const visSummary = (v) => {
+            const n = (v.rules || []).length;
+            return `${v.action === 'hide' ? 'Hidden' : 'Shown'} by ${n} rule${n === 1 ? '' : 's'}`;
+        };
+        for (const page of (this.spec && this.spec.pages) || []) {
+            if (page.visibility) {
+                add(
+                    'page',
+                    page.id,
+                    page.name || 'Page',
+                    visSummary(page.visibility)
+                );
+            }
+            for (const section of page.sections || []) {
+                if (section.visibility) {
+                    add(
+                        'section',
+                        section.id,
+                        section.title || 'Section',
+                        visSummary(section.visibility)
+                    );
+                }
+                for (const el of section.elements || []) {
+                    if (el.visibility) {
+                        add(
+                            'element',
+                            el.id,
+                            el.label || el.type,
+                            visSummary(el.visibility)
+                        );
+                    }
+                    const checks = (el.validation || []).filter(
+                        (v) => v.type !== 'required'
+                    );
+                    if (checks.length) {
+                        add(
+                            'element',
+                            el.id,
+                            el.label || el.type,
+                            `${checks.length} check${checks.length === 1 ? '' : 's'}`
+                        );
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Logic-rail jump: land on the owner's page, select it, open props. */
+    handleLogicJump(event) {
+        const { kind, id } = event.detail;
+        (this.spec.pages || []).forEach((page, i) => {
+            if (kind === 'page' && page.id === id) {
+                this.buildPageIndex = i;
+            }
+            for (const section of page.sections || []) {
+                if (kind === 'section' && section.id === id) {
+                    this.buildPageIndex = i;
+                }
+                if (
+                    kind === 'element' &&
+                    (section.elements || []).some((el) => el.id === id)
+                ) {
+                    this.buildPageIndex = i;
+                }
+            }
+        });
+        this.selection = { kind, id };
+        this.propsOpen = true;
+    }
+
+    /** Checks editor emission: the toggle's required entry survives.
+     *  Elements only — validation means nothing on pages/sections. */
+    handleValidationChange(event) {
+        const entries = event.detail.entries || [];
+        this._patchSelection((t) => {
+            if (t.kind !== 'element') {
+                return;
+            }
+            const required = (t.node.validation || []).filter(
+                (v) => v.type === 'required'
+            );
+            t.node.validation = [...required, ...entries];
+        });
     }
 
     /** Apply a panel intent to the selected node via the ONE mutate path. */
@@ -505,29 +677,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 return;
             }
             t.node.repeat = { ...t.node.repeat, ...patch };
-        });
-    }
-
-    /** Rebinding rewires the storage target and the input widget; the label
-     *  stays — it's the author's copy, not the field's. */
-    handleBindingChange(event) {
-        const field = event.detail.field;
-        this._patchSelection((t) => {
-            const obj =
-                t.section && t.section.repeat
-                    ? t.section.repeat.childObject
-                    : this.objectApi;
-            t.node.binding = { object: obj, field: field.apiName };
-            const config = {
-                ...(t.node.config || {}),
-                inputType: field.inputType
-            };
-            if (field.options) {
-                config.options = field.options;
-            } else {
-                delete config.options;
-            }
-            t.node.config = config;
         });
     }
 
@@ -725,17 +874,24 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     /** Schema §4: content elements always carry binding null. Labels feed
-     *  the blueprint; config defaults keep a fresh block visibly useful
-     *  until its properties editor lands. */
+     *  the blueprint; config defaults keep a fresh block visibly useful.
+     *  Roster = BUILDER_SURFACES §1 (the FormStudio set, minus Hero). */
     _mintBlockElement(blockType) {
         const defaults = {
             richText: { label: 'Display text', config: { html: '' } },
             image: { label: 'Image', config: {} },
+            callout: {
+                label: 'Callout',
+                config: { variant: 'info', html: '' }
+            },
             divider: { label: 'Divider', config: {} },
-            spacer: { label: 'Spacer', config: { height: 24 } }
+            spacer: { label: 'Spacer', config: { size: 'medium' } },
+            consent: { label: 'Consent', config: { html: '' } },
+            file: { label: 'File Upload', config: {} },
+            emptySpace: { label: 'Empty space', config: {} }
         };
         const d = defaults[blockType] || { label: blockType, config: {} };
-        return {
+        const element = {
             id: mintId('el'),
             type: blockType,
             binding: null,
@@ -745,6 +901,15 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             config: d.config,
             visibility: null
         };
+        if (blockType === 'consent') {
+            // legacy default: acceptance required (a false answer fails the
+            // required entry — engine §7)
+            element.required = true;
+            element.validation = [
+                { type: 'required', message: 'Please accept to continue.' }
+            ];
+        }
+        return element;
     }
 
     /**
@@ -778,6 +943,19 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     this._currentBuildPage(spec);
                 if (!page) {
                     return false;
+                }
+                if (blockType === 'emptySpace') {
+                    // BUILDER_SURFACES §1: Empty space is INSIDE-only — a
+                    // pageless placement joins the page's last section, it
+                    // never becomes a standalone wrapper
+                    const section = this._lastSectionOf(page);
+                    section.elements = section.elements || [];
+                    section.elements.push(element);
+                    if (pageId) {
+                        this.buildPageIndex = spec.pages.indexOf(page);
+                    }
+                    this.selection = { kind: 'element', id: element.id };
+                    return undefined;
                 }
                 const wrapper = {
                     id: mintId('sec'),

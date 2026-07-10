@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Rules editors: as-built mockup (P3 slice 5)</title>
+        <style>
+            :root {
+                --teal: #0d9488;
+                --teal-dark: #0b6e65;
+                --teal-bg: #e6f5f2;
+                --ink: #181818;
+                --muted: #5c5c5c;
+                --line: #e3e3e3;
+                --err: #b42318;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 28px;
+                font:
+                    13px/1.5 -apple-system,
+                    'Segoe UI',
+                    Roboto,
+                    Helvetica,
+                    Arial,
+                    sans-serif;
+                color: var(--ink);
+                background: #f4f4f2;
+            }
+            h1 {
+                font-size: 19px;
+                margin: 0 0 4px;
+            }
+            .ruling {
+                max-width: 72ch;
+                margin: 0 0 24px;
+                color: var(--muted);
+            }
+            .ruling strong {
+                color: var(--ink);
+            }
+            .boards {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            .board {
+                width: 320px;
+                background: #fff;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                padding: 14px;
+                box-shadow: 0 2px 10px rgb(0 0 0 / 5%);
+            }
+            .board > h2 {
+                font-size: 11px;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--muted);
+                margin: 0 0 10px;
+            }
+            .back {
+                color: var(--teal-dark);
+                font-weight: 600;
+                font-size: 12.5px;
+            }
+            .pp-title {
+                font-size: 14px;
+                font-weight: 700;
+                margin: 8px 0 0;
+            }
+            .pp-sub {
+                font-size: 11px;
+                color: var(--muted);
+                margin: 2px 0 0;
+            }
+            .group {
+                border-top: 1px solid #efefef;
+                margin-top: 12px;
+                padding-top: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .group h3 {
+                font-size: 12px;
+                margin: 0;
+            }
+            label {
+                font-size: 12px;
+                color: #444;
+                display: block;
+                margin-bottom: 2px;
+            }
+            input,
+            select {
+                width: 100%;
+                padding: 6px 9px;
+                border: 1px solid #d8d8d8;
+                border-radius: 6px;
+                font: inherit;
+                font-size: 12px;
+                background: #fff;
+            }
+            .row {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .row .grow {
+                flex: 1;
+            }
+            .rule {
+                display: flex;
+                gap: 6px;
+                padding: 8px;
+                border: 1px solid #e8e8e8;
+                border-radius: 8px;
+                background: #fafafa;
+            }
+            .rule .num {
+                flex: none;
+                width: 16px;
+                height: 16px;
+                margin-top: 5px;
+                display: grid;
+                place-items: center;
+                border-radius: 999px;
+                background: var(--teal-bg);
+                color: var(--teal-dark);
+                font-size: 9.5px;
+                font-weight: 700;
+            }
+            .rule .fields {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .x {
+                border: 0;
+                background: none;
+                color: var(--muted);
+                font-size: 14px;
+                cursor: pointer;
+                padding: 2px;
+            }
+            .add {
+                align-self: flex-start;
+                border: 1px dashed #b8b8b8;
+                border-radius: 8px;
+                background: none;
+                font: inherit;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--teal-dark);
+                padding: 6px 12px;
+                cursor: pointer;
+            }
+            .hint {
+                font-size: 11.5px;
+                color: var(--muted);
+                margin: 0;
+            }
+            .lint {
+                margin: 0;
+                padding: 8px 10px;
+                border: 1px solid #f2c6c2;
+                border-radius: 8px;
+                background: #fef1f1;
+                color: var(--err);
+                font-size: 11.5px;
+                list-style: none;
+            }
+            .idx-item {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 2px 8px;
+                width: 100%;
+                text-align: left;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: #fff;
+                padding: 8px 10px;
+                margin-top: 6px;
+                cursor: pointer;
+                font: inherit;
+            }
+            .idx-item:hover {
+                border-color: var(--teal);
+            }
+            .idx-item b {
+                font-size: 12.5px;
+            }
+            .idx-item span {
+                flex: 1 0 100%;
+                font-size: 11px;
+                color: var(--muted);
+            }
+            .note {
+                max-width: 72ch;
+                margin-top: 26px;
+                color: var(--muted);
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Rules editors: as-built mockup (P3 slice 5)</h1>
+        <p class="ruling">
+            Owner ruling (2026-07-08):
+            <strong
+                >rules render ON the element / section / page properties</strong
+            >; the palette's
+            <strong>Logic rail is only the aggregate index</strong>
+            (see everything, jump to the owner). Declarative rows per the
+            Lightning-record-page pattern, never raw expressions. Lint runs the
+            same engine the runtime evaluates with.
+        </p>
+
+        <div class="boards">
+            <div class="board">
+                <h2>Field properties: Visibility + Checks</h2>
+                <div class="back">‹ Fields</div>
+                <div class="pp-title">Email</div>
+                <div class="pp-sub">Field · Contact.Email</div>
+
+                <div class="group">
+                    <h3>Checks</h3>
+                    <div class="rule">
+                        <div class="fields">
+                            <select>
+                                <option>Format (regular expression)</option>
+                            </select>
+                            <input value="^\S+@\S+$" />
+                            <input value="Enter a valid email" />
+                        </div>
+                        <button class="x">×</button>
+                    </div>
+                    <button class="add">+ Add check</button>
+                    <p class="hint">
+                        Required is the toggle above; these are the extra
+                        checks.
+                    </p>
+                </div>
+
+                <div class="group">
+                    <h3>Visibility</h3>
+                    <div class="row">
+                        <select style="width: 76px">
+                            <option>Show</option>
+                            <option>Hide</option>
+                        </select>
+                        <span class="hint">this field when</span>
+                        <select class="grow">
+                            <option>ALL rules match</option>
+                            <option>ANY rule matches</option>
+                            <option>Custom logic…</option>
+                        </select>
+                    </div>
+                    <div class="rule">
+                        <div class="num">1</div>
+                        <div class="fields">
+                            <select>
+                                <option>Newsletter</option>
+                            </select>
+                            <select>
+                                <option>Equals</option>
+                            </select>
+                            <input value="Yes" />
+                        </div>
+                        <button class="x">×</button>
+                    </div>
+                    <button class="add">+ Add rule</button>
+                </div>
+            </div>
+
+            <div class="board">
+                <h2>Lint (same engine as runtime)</h2>
+                <div class="pp-title">Delivery notes</div>
+                <div class="pp-sub">Field · not bound yet</div>
+                <div class="group">
+                    <h3>Visibility</h3>
+                    <div class="row">
+                        <select style="width: 76px">
+                            <option>Show</option>
+                        </select>
+                        <span class="hint">this field when</span>
+                        <select class="grow">
+                            <option>Custom logic…</option>
+                        </select>
+                    </div>
+                    <input value="1 AND (" />
+                    <div class="rule">
+                        <div class="num">1</div>
+                        <div class="fields">
+                            <select>
+                                <option>Qty (inside Line items ↻)</option>
+                            </select>
+                            <select>
+                                <option>Greater than</option>
+                            </select>
+                            <input value="abc" />
+                        </div>
+                        <button class="x">×</button>
+                    </div>
+                    <ul class="lint">
+                        <li>
+                            Rule 1: elements inside a repeatable section can't
+                            drive rules outside it.
+                        </li>
+                        <li>
+                            Rule 1: greater/less-than needs a numeric value or a
+                            date source.
+                        </li>
+                        <li>The custom logic expression is malformed.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="board">
+                <h2>Logic rail: the aggregate index</h2>
+                <div class="pp-title" style="margin-top: 0">Logic</div>
+                <div class="pp-sub">
+                    every rule on this form — click to edit
+                </div>
+                <button class="idx-item">
+                    <b>Page 2 · Your needs</b><span>Shown by 1 rule</span>
+                </button>
+                <button class="idx-item">
+                    <b>Email</b><span>1 check</span>
+                </button>
+                <button class="idx-item">
+                    <b>Discount code</b><span>Hidden by 2 rules</span>
+                </button>
+                <p class="hint" style="margin-top: 8px">
+                    A row jumps to its owner: lands on that page, selects it,
+                    opens its properties.
+                </p>
+            </div>
+        </div>
+
+        <p class="note">
+            Runtime contract shipped with this slice (F8):
+            <b>pageValidity</b> is computed from the validation entries. Next /
+            Continue / Submit deny on an invalid page and only then reveal the
+            failures inline under the fields (they live-update as the visitor
+            types). Gated steppers lock steps past the first invalid page.
+            <code>when</code> gates on validation entries are engine-ready but
+            have no editor yet (DEFERRED).
+        </p>
+    </body>
+</html>

@@ -90,10 +90,11 @@
                     >
                         <header class="bc-section-head">
                             <span class="bc-grip" aria-hidden="true">⋮⋮</span>
-                            <span class="bc-section-title">{s.title}</span>
+                            <span class="bc-tag">{s.title}</span>
                             <template lwc:if={s.repeatChip}>
                                 <span class="bc-repeat">{s.repeatChip}</span>
                             </template>
+                            <span class="bc-flex"></span>
                             <button
                                 type="button"
                                 class="bc-x"
@@ -104,59 +105,63 @@
                                 ×
                             </button>
                         </header>
-                        <template lwc:if={s.empty}>
-                            <template lwc:if={s.repeatChip}>
-                                <p class="bc-empty-section">
-                                    Empty — add child fields from this
-                                    group&#8217;s properties.
-                                </p>
-                            </template>
-                            <template lwc:else>
-                                <p class="bc-empty-section">
-                                    Empty — add fields from the palette.
-                                </p>
-                            </template>
+                        <template lwc:if={s.desc}>
+                            <p class="bc-sec-desc">{s.desc}</p>
                         </template>
-                        <template for:each={s.elements} for:item="el">
-                            <div
-                                key={el.id}
-                                class={el.cls}
-                                data-id={el.id}
-                                data-section-id={el.sectionId}
-                                draggable="true"
-                                onclick={handleElementClick}
-                                ondragstart={handleElementDragStart}
-                                ondragend={handleDragEndClear}
-                                ondragover={handleElDragOver}
-                                ondragleave={handleDragLeave}
-                                ondrop={handleElementDrop}
-                            >
-                                <span class="bc-grip" aria-hidden="true"
-                                    >⋮⋮</span
-                                >
-                                <span class="bc-row-label">
-                                    <template lwc:if={el.required}>
-                                        <abbr class="bc-req" title="required"
-                                            >*</abbr
-                                        >
-                                    </template>
-                                    {el.label}
-                                </span>
-                                <span
-                                    class="bc-skeleton"
-                                    aria-hidden="true"
-                                ></span>
-                                <button
-                                    type="button"
-                                    class="bc-x"
-                                    title="Remove field"
+                        <div class="bc-grid" style={s.gridStyle}>
+                            <template for:each={s.elements} for:item="el">
+                                <div
+                                    key={el.id}
+                                    class={el.cls}
+                                    style={el.spanStyle}
                                     data-id={el.id}
-                                    onclick={handleRemoveElement}
+                                    data-section-id={el.sectionId}
+                                    draggable="true"
+                                    onclick={handleElementClick}
+                                    ondragstart={handleElementDragStart}
+                                    ondragend={handleDragEndClear}
+                                    ondragover={handleElDragOver}
+                                    ondragleave={handleDragLeave}
+                                    ondrop={handleElementDrop}
                                 >
-                                    ×
-                                </button>
-                            </div>
-                        </template>
+                                    <div class="bc-row-top">
+                                        <span class="bc-row-label">
+                                            <template lwc:if={el.required}>
+                                                <abbr
+                                                    class="bc-req"
+                                                    title="required"
+                                                    >*</abbr
+                                                >
+                                            </template>
+                                            <template lwc:if={el.isField}>
+                                                {el.label}
+                                            </template>
+                                            <template lwc:else>
+                                                <span class="bc-ctype"
+                                                    >{el.typeLabel}</span
+                                                >
+                                            </template>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            class="bc-x"
+                                            title="Remove"
+                                            data-id={el.id}
+                                            onclick={handleRemoveElement}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    <span
+                                        class="bc-skeleton"
+                                        aria-hidden="true"
+                                    ></span>
+                                </div>
+                            </template>
+                            <template lwc:if={s.empty}>
+                                <div class="bc-drop-empty">{s.emptyText}</div>
+                            </template>
+                        </div>
                     </div>
                 </template>
             </template>

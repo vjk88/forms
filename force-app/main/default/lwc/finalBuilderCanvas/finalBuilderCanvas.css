@@ -71,11 +71,12 @@
 }
 
 .bc-section {
-    margin-top: 10px;
+    position: relative;
+    margin-top: 16px;
     border: 1px solid #2f3440;
     border-radius: 10px;
     background: #232730;
-    padding: 8px 10px 10px;
+    padding: 10px 10px 12px;
     cursor: pointer;
 }
 
@@ -118,14 +119,44 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 2px 2px 6px;
+    margin-top: -20px;
+    padding: 0 2px 6px;
 }
 
-.bc-section-title {
+.bc-flex {
     flex: 1;
-    font-size: 12.5px;
+}
+
+/* Section title as the border TAG (the FormBuilder look): a small teal
+   pill riding the section's top edge. */
+.bc-tag {
+    flex: none;
+    max-width: 60%;
+    font-size: 10px;
     font-weight: 700;
-    color: #e6eaf0;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #2dd4bf;
+    background: #1c1f26;
+    border: 1px solid rgb(45 212 191 / 45%);
+    border-radius: 999px;
+    padding: 2px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bc-sec-desc {
+    margin: 2px 2px 8px;
+    font-size: 11px;
+    color: #8b93a1;
+}
+
+/* The REAL column grid — the blueprint shows the layout being built. */
+.bc-grid {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
 }
 
 /* §4: a repeatable section wears its child object on the blueprint */
@@ -148,31 +179,53 @@
     cursor: grab;
 }
 
+/* Element CARD (dashed, label above skeleton — the FormBuilder grid cell). */
 .bc-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-    padding: 7px 8px;
-    border: 1px solid #2f3440;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px dashed #3a4150;
     border-radius: 8px;
     background: #1d212a;
     cursor: pointer;
 }
 
+.bc-row:hover {
+    border-color: #4a5364;
+}
+
 .bc-row.selected {
+    border-style: solid;
     border-color: #14b8a6;
     box-shadow: 0 0 0 1px #14b8a6;
 }
 
+.bc-row-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
 .bc-row-label {
-    flex: none;
-    max-width: 45%;
+    flex: 1;
+    min-width: 0;
     font-size: 12px;
     color: #cbd2dc;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* content elements wear their type, small-caps muted */
+.bc-ctype {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #8b93a1;
 }
 
 .bc-req {
@@ -182,10 +235,21 @@
 }
 
 .bc-skeleton {
-    flex: 1;
+    display: block;
     height: 8px;
     border-radius: 4px;
     background: #313743;
+}
+
+.bc-drop-empty {
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    min-height: 56px;
+    border: 1px dashed #3a4150;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 11.5px;
 }
 
 .bc-x {
@@ -203,12 +267,6 @@
 .bc-x:hover {
     color: #f87171;
     background: #2a2e37;
-}
-
-.bc-empty-section {
-    margin: 4px 2px 2px;
-    font-size: 11.5px;
-    color: #6b7280;
 }
 
 .bc-add-section {

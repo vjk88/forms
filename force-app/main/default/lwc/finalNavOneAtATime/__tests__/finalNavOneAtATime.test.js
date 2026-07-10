@@ -63,6 +63,33 @@ describe('c-final-nav-one-at-a-time', () => {
         expect(progressText(cmp)).toBe('1 of 1');
     });
 
+    it('F8 advance-denial: forward off an invalid page dispatches advanceblocked and stays put', async () => {
+        const cmp = await mount();
+        cmp.pageValidity = [false, true];
+        await Promise.resolve();
+        const blocked = [];
+        cmp.addEventListener('advanceblocked', (e) => blocked.push(e.detail));
+
+        // s1 → s2 stays INSIDE page 1 — free even while the page is invalid
+        cmp.shadowRoot.querySelector('.primary-btn').click();
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('2 of 3');
+        expect(blocked).toHaveLength(0);
+
+        // s2 → s3 crosses to page 2 — denied, announced, position kept
+        cmp.shadowRoot.querySelector('.primary-btn').click();
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('2 of 3');
+        expect(blocked).toEqual([{ pageIndex: 0 }]);
+
+        // valid page → the same move goes through
+        cmp.pageValidity = [true, true];
+        await Promise.resolve();
+        cmp.shadowRoot.querySelector('.primary-btn').click();
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('3 of 3');
+    });
+
     it('last screen swaps the primary to Submit and dispatches submit', async () => {
         const cmp = await mount([
             { id: 'p1', sections: [{ id: 's1', elements: [] }] }

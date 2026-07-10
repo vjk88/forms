@@ -119,6 +119,29 @@
                     Blocks repeat freely — drag as many as you need.
                 </p>
                 <header class="fp-head">
+                    <span class="fp-head-label">Layout</span>
+                    <span class="fp-head-sub">inside sections only</span>
+                </header>
+                <ul class="fp-list">
+                    <li>
+                        <button
+                            type="button"
+                            class="fp-item"
+                            title="Fills a grid cell in a multi-column section"
+                            data-type="emptySpace"
+                            draggable="true"
+                            onclick={handleAddBlock}
+                            ondragstart={handleCellDragStart}
+                        >
+                            <lightning-icon
+                                icon-name="utility:layout"
+                                size="x-small"
+                            ></lightning-icon>
+                            <span class="fp-label">Empty space</span>
+                        </button>
+                    </li>
+                </ul>
+                <header class="fp-head">
                     <span class="fp-head-label">Structure</span>
                     <span class="fp-head-sub"
                         >each entry becomes a related record</span
@@ -142,6 +165,40 @@
                             <span class="fp-label">Repeating Group</span>
                         </button>
                     </li>
+                </ul>
+            </template>
+            <template lwc:elseif={isLogic}>
+                <header class="fp-head">
+                    <span class="fp-head-label">Logic</span>
+                    <span class="fp-head-sub"
+                        >every rule on this form — click to edit</span
+                    >
+                </header>
+                <template lwc:if={logicEmpty}>
+                    <p class="fp-note">
+                        No rules yet. Select any field, section, or page and add
+                        visibility rules or checks from its properties — they
+                        all show up here.
+                    </p>
+                </template>
+                <ul class="fp-list">
+                    <template for:each={logicIndex} for:item="r">
+                        <li key={r.key}>
+                            <button
+                                type="button"
+                                class="fp-item fp-logic"
+                                title="Edit in its properties"
+                                data-kind={r.kind}
+                                data-id={r.id}
+                                onclick={handleLogicJump}
+                            >
+                                <span class="fp-label">{r.label}</span>
+                                <span class="fp-logic-summary"
+                                    >{r.summary}</span
+                                >
+                            </button>
+                        </li>
+                    </template>
                 </ul>
             </template>
             <template lwc:elseif={isStub}>

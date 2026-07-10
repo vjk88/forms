@@ -1,0 +1,136 @@
+<template>
+    <div class="re">
+        <template lwc:if={hasRules}>
+            <div class="re-head">
+                <select
+                    class="re-select re-action"
+                    aria-label="Show or hide"
+                    onchange={handleAction}
+                >
+                    <template for:each={actionOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+                <span class="re-when">this {noun} when</span>
+                <select
+                    class="re-select re-logic"
+                    aria-label="Rule logic"
+                    onchange={handleLogic}
+                >
+                    <template for:each={logicOptions} for:item="o">
+                        <option
+                            key={o.value}
+                            value={o.value}
+                            selected={o.selected}
+                        >
+                            {o.label}
+                        </option>
+                    </template>
+                </select>
+            </div>
+
+            <template lwc:if={isCustomLogic}>
+                <input
+                    type="text"
+                    class="re-custom"
+                    placeholder="1 AND (2 OR 3)"
+                    aria-label="Custom logic expression"
+                    value={customLogic}
+                    onchange={handleCustomLogic}
+                />
+            </template>
+
+            <ul class="re-rules">
+                <template for:each={rows} for:item="r">
+                    <li key={r.key} class="re-rule">
+                        <span class="re-num">{r.number}</span>
+                        <div class="re-rule-fields">
+                            <select
+                                class="re-select re-source"
+                                aria-label="Source question"
+                                data-index={r.index}
+                                data-prop="source"
+                                onchange={handleRuleField}
+                            >
+                                <template
+                                    for:each={r.sourceOptions}
+                                    for:item="o"
+                                >
+                                    <option
+                                        key={o.value}
+                                        value={o.value}
+                                        selected={o.selected}
+                                    >
+                                        {o.label}
+                                    </option>
+                                </template>
+                            </select>
+                            <select
+                                class="re-select re-operator"
+                                aria-label="Operator"
+                                data-index={r.index}
+                                data-prop="operator"
+                                onchange={handleRuleField}
+                            >
+                                <template
+                                    for:each={r.operatorOptions}
+                                    for:item="o"
+                                >
+                                    <option
+                                        key={o.value}
+                                        value={o.value}
+                                        selected={o.selected}
+                                    >
+                                        {o.label}
+                                    </option>
+                                </template>
+                            </select>
+                            <template lwc:if={r.needsValue}>
+                                <input
+                                    type="text"
+                                    class="re-value"
+                                    placeholder="Value"
+                                    aria-label="Comparison value"
+                                    data-index={r.index}
+                                    data-prop="value"
+                                    value={r.value}
+                                    onchange={handleRuleField}
+                                />
+                            </template>
+                        </div>
+                        <button
+                            type="button"
+                            class="re-x"
+                            title="Remove this rule"
+                            data-index={r.index}
+                            onclick={handleRemoveRule}
+                        >
+                            ×
+                        </button>
+                    </li>
+                </template>
+            </ul>
+
+            <template lwc:if={hasProblems}>
+                <ul class="re-problems" role="alert">
+                    <template for:each={problems} for:item="p">
+                        <li key={p}>{p}</li>
+                    </template>
+                </ul>
+            </template>
+        </template>
+        <template lwc:else>
+            <p class="re-empty">{emptyHint}</p>
+        </template>
+
+        <button type="button" class="re-add" onclick={handleAddRule}>
+            + Add rule
+        </button>
+    </div>
+</template>

@@ -32,14 +32,24 @@ import { LightningElement, api } from 'lwc';
 export const PALETTE_FIELD_MIME = 'final/palette-field';
 export const PALETTE_EL_MIME = 'final/palette-el';
 export const PALETTE_REP_MIME = 'final/palette-rep';
+/** Inside-only content (Empty space — a grid-cell filler, BUILDER_SURFACES
+ *  §1): lands in sections like a field, never in gaps or block wrappers. */
+export const PALETTE_CELL_MIME = 'final/palette-cell';
 
-/** Blueprint labels for standalone content blocks (schema §4 v1 types). */
+/** Blueprint labels for content types (schema §4 / BUILDER_SURFACES §1). */
 const BLOCK_LABELS = {
     richText: 'Display text',
     image: 'Image',
     divider: 'Divider',
-    spacer: 'Spacer'
+    spacer: 'Spacer',
+    callout: 'Callout',
+    consent: 'Consent',
+    emptySpace: 'Empty space',
+    file: 'File upload'
 };
+
+/** Always span the whole grid (mirrors finalSectionRenderer — runtime parity). */
+const FULL_WIDTH_TYPES = new Set(['divider', 'spacer']);
 
 export default class FinalBuilderCanvas extends LightningElement {
     @api spec;
@@ -122,6 +132,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (Array.prototype.includes.call(types, PALETTE_REP_MIME)) {
             return 'palette-rep';
         }
+        if (Array.prototype.includes.call(types, PALETTE_CELL_MIME)) {
+            return 'palette-cell';
+        }
         return null;
     }
 
@@ -166,6 +179,7 @@ export default class FinalBuilderCanvas extends LightningElement {
             // the blueprint renders it as a compact block row, not a box
             const isBlock = Boolean(s.block);
             const first = (s.elements || [])[0];
+            const cols = [1, 2, 3, 4].includes(s.columns) ? s.columns : 1;
             return {
                 id: s.id,
                 gapKey: `gap_${s.id}`,
@@ -180,6 +194,13 @@ export default class FinalBuilderCanvas extends LightningElement {
                         ? `↻ repeats · ${s.repeat.childObject}`
                         : null,
                 title: s.title || 'Untitled section',
+                desc: !isBlock && s.description ? s.description : null,
+                // the blueprint re-renders the REAL grid (owner: FormBuilder
+                // did; a single-column schematic hides the layout being built)
+                gridStyle: `grid-template-columns: repeat(${cols}, minmax(0, 1fr))`,
+                emptyText: s.repeat
+                    ? 'Empty — add child fields from this group’s properties.'
+                    : 'Drop fields here',
                 cls: isBlock
                     ? selected
                         ? 'bc-block selected'
@@ -190,16 +211,29 @@ export default class FinalBuilderCanvas extends LightningElement {
                 empty: !(s.elements || []).length,
                 elements: isBlock
                     ? []
-                    : (s.elements || []).map((el) => ({
-                          id: el.id,
-                          sectionId: s.id,
-                          label: el.label || el.type,
-                          required: Boolean(el.required),
-                          cls:
-                              sel.kind === 'element' && sel.id === el.id
-                                  ? 'bc-row selected'
-                                  : 'bc-row'
-                      }))
+                    : (s.elements || []).map((el) => {
+                          const isField = el.type === 'field';
+                          const span = FULL_WIDTH_TYPES.has(el.type)
+                              ? cols
+                              : Math.min(
+                                    Math.max(Number(el.width) || 1, 1),
+                                    cols
+                                );
+                          return {
+                              id: el.id,
+                              sectionId: s.id,
+                              isField,
+                              label: el.label || el.type,
+                              typeLabel: BLOCK_LABELS[el.type] || el.type,
+                              required: Boolean(el.required),
+                              spanStyle:
+                                  cols > 1 ? `grid-column: span ${span}` : '',
+                              cls:
+                                  sel.kind === 'element' && sel.id === el.id
+                                      ? 'bc-row selected'
+                                      : 'bc-row'
+                          };
+                      })
             };
         });
     }
@@ -243,6 +277,11 @@ export default class FinalBuilderCanvas extends LightningElement {
         // §3: content blocks hold nothing — fields/elements never enter.
         if (sec.block) {
             return false;
+        }
+        // inside-only content (Empty space): any real section, any context —
+        // it's an unbound grid filler (BUILDER_SURFACES §1)
+        if (kind === 'palette-cell') {
+            return true;
         }
         // §1: a palette field never lands in a repeater (child fields come
         // from the repeater's inspector); §2: an element only moves between

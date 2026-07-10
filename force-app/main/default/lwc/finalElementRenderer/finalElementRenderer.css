@@ -171,3 +171,117 @@
     border-top: 1px solid var(--c-input-border, var(--c-text-weak));
     margin: var(--c-space-3) 0;
 }
+
+/* Callout (BUILDER_SURFACES §5): tone icon + rich message on a tinted panel.
+   Tones stay literal (semantic colors, not theme accents) with a theme-aware
+   text color so dark themes keep contrast. */
+.block-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-space-2);
+    padding: var(--c-space-3);
+    border-radius: var(--c-radius);
+    border: 1px solid;
+    color: var(--c-text);
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.tone-info {
+    border-color: rgb(1 118 211 / 35%);
+    background: rgb(1 118 211 / 8%);
+}
+
+.tone-info .callout-icon {
+    --slds-c-icon-color-foreground-default: #0176d3;
+}
+
+.tone-success {
+    border-color: rgb(5 150 105 / 35%);
+    background: rgb(5 150 105 / 8%);
+}
+
+.tone-success .callout-icon {
+    --slds-c-icon-color-foreground-default: #059669;
+}
+
+.tone-warning {
+    border-color: rgb(221 127 20 / 40%);
+    background: rgb(221 127 20 / 10%);
+}
+
+.tone-warning .callout-icon {
+    --slds-c-icon-color-foreground-default: #dd7f14;
+}
+
+.tone-error {
+    border-color: rgb(186 5 23 / 35%);
+    background: rgb(186 5 23 / 8%);
+}
+
+.tone-error .callout-icon {
+    --slds-c-icon-color-foreground-default: #ba0517;
+}
+
+.callout-icon {
+    flex: none;
+    margin-top: 2px;
+}
+
+/* Consent: checkbox beside the rich terms text — one row, one answer. */
+.block-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-space-2);
+}
+
+.block-consent lightning-input {
+    flex: none;
+    margin-top: 1px;
+}
+
+.consent-text {
+    flex: 1;
+    min-width: 0;
+    color: var(--c-text);
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+/* Empty space: a real grid cell, zero paint. */
+.block-emptyspace {
+    min-height: var(--c-control-h);
+}
+
+/* File upload placeholder (the widget arrives with its own slice). */
+.block-file-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2);
+    min-height: 72px;
+    margin-top: var(--c-space-1);
+    border: 1px dashed var(--c-text-weak);
+    border-radius: var(--c-radius);
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
+/* Validation failures (annotated by the viewer post-reveal) — themed via
+   the field-state token, never raw SLDS red. */
+.field-errors {
+    margin-top: 4px;
+}
+
+.field-error {
+    margin: 0;
+    color: var(--c-field-error, #b42318);
+    font-size: 0.8em;
+    line-height: 1.45;
+}
+
+.has-errors lightning-input,
+.has-errors lightning-textarea {
+    --slds-c-input-color-border: var(--c-field-error, #b42318);
+    --sds-c-input-color-border: var(--c-field-error, #b42318);
+}

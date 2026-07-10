@@ -3,22 +3,30 @@ import describeFields from '@salesforce/apex/FinalStudioController.describeField
 import {
     PALETTE_FIELD_MIME,
     PALETTE_EL_MIME,
-    PALETTE_REP_MIME
+    PALETTE_REP_MIME,
+    PALETTE_CELL_MIME
 } from 'c/finalBuilderCanvas';
 
-/** Schema §4 v1 content types — blocks repeat freely (no ADDED dedupe). */
+/** The FormStudio content roster (BUILDER_SURFACES §1, minus retired Hero) —
+ *  blocks repeat freely (no ADDED dedupe). */
 const BLOCKS = [
     {
         type: 'richText',
         label: 'Display text',
-        icon: 'utility:text',
+        icon: 'utility:richtextbulletedlist',
         title: 'Rich text — headings, paragraphs, links'
     },
     {
         type: 'image',
         label: 'Image',
         icon: 'utility:image',
-        title: 'An image block'
+        title: 'An uploaded image'
+    },
+    {
+        type: 'callout',
+        label: 'Callout',
+        icon: 'utility:info',
+        title: 'A highlighted info / success / warning / error message'
     },
     {
         type: 'divider',
@@ -31,6 +39,18 @@ const BLOCKS = [
         label: 'Spacer',
         icon: 'utility:expand_alt',
         title: 'Vertical breathing room'
+    },
+    {
+        type: 'consent',
+        label: 'Consent',
+        icon: 'utility:check',
+        title: 'Terms text with an agree checkbox'
+    },
+    {
+        type: 'file',
+        label: 'File Upload',
+        icon: 'utility:upload',
+        title: 'Respondents attach files when they submit'
     }
 ];
 
@@ -54,6 +74,10 @@ export default class FinalFieldPalette extends LightningElement {
      *  carry no binding — the canvas is the truth the ADDED state must
      *  agree with, so those dedupe by label). Lowercased by the studio. */
     @api usedLabels = [];
+    /** The Logic rail's aggregate index (owner ruling: rules render ON the
+     *  properties; this tab lists every rule and jumps to its owner):
+     *  [{key, kind, id, label, summary}]. */
+    @api logicIndex = [];
 
     tab = 'fields';
     search = '';
@@ -87,14 +111,20 @@ export default class FinalFieldPalette extends LightningElement {
         return this.tab === 'blocks';
     }
 
+    get isLogic() {
+        return this.tab === 'logic';
+    }
+
+    get logicEmpty() {
+        return !(this.logicIndex || []).length;
+    }
+
     get isStub() {
-        return this.tab === 'logic' || this.tab === 'autofill';
+        return this.tab === 'autofill';
     }
 
     get stubLabel() {
-        return this.tab === 'logic'
-            ? 'Logic — visibility & validation editors arrive with the rules slice.'
-            : 'Autofill — prefill mapping arrives with a later slice.';
+        return 'Autofill — prefill mapping arrives with a later slice.';
     }
 
     get tabs() {
@@ -210,6 +240,17 @@ export default class FinalFieldPalette extends LightningElement {
         event.dataTransfer.effectAllowed = 'copy';
     }
 
+    /** Empty space is INSIDE-only (BUILDER_SURFACES §1): its own typed
+     *  marker gives it field-like validity — sections yes, gaps/blocks no. */
+    handleCellDragStart(event) {
+        event.dataTransfer.setData(
+            'text/plain',
+            JSON.stringify({ t: 'palette-el', elType: 'emptySpace' })
+        );
+        event.dataTransfer.setData(PALETTE_CELL_MIME, '1');
+        event.dataTransfer.effectAllowed = 'copy';
+    }
+
     /** The Repeating Group is a first-class palette item (§4.1): the drop
      *  position is chosen now, the child object in the picker that follows. */
     handleAddRepeater() {
@@ -217,6 +258,14 @@ export default class FinalFieldPalette extends LightningElement {
             return;
         }
         this.dispatchEvent(new CustomEvent('addrepeater'));
+    }
+
+    /** Logic index row → jump to the owner (select + open its properties). */
+    handleLogicJump(event) {
+        const { kind, id } = event.currentTarget.dataset;
+        this.dispatchEvent(
+            new CustomEvent('logicjump', { detail: { kind, id } })
+        );
     }
 
     handleRepeaterDragStart(event) {

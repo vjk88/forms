@@ -153,12 +153,18 @@
                                 node={selectedNode}
                                 kind={selectedKind}
                                 binding-object-api={selectionBindingObject}
-                                used-fields={selectionUsedFields}
+                                section-columns={selectionSectionColumns}
+                                block-style={selectionBlockStyle}
+                                form-id={formId}
+                                rule-sources={selectionRuleSources}
+                                rule-index={ruleIndexMap}
+                                host-repeat-section-id={selectionHostRepeat}
                                 onpropchange={handlePropChange}
                                 onconfigchange={handleConfigChange}
                                 onrepeatchange={handleRepeatChange}
-                                onbindingchange={handleBindingChange}
+                                onblockstylechange={handleBlockStyleChange}
                                 onaddchildfield={handleAddChildField}
+                                onvalidationchange={handleValidationChange}
                             ></c-final-property-panel>
                         </div>
                     </template>
@@ -167,9 +173,11 @@
                             object-api={objectApi}
                             used-fields={usedFields}
                             used-labels={usedLabels}
+                            logic-index={logicIndex}
                             onaddfield={handleAddField}
                             onaddblock={handleAddBlock}
                             onaddrepeater={handleAddRepeater}
+                            onlogicjump={handleLogicJump}
                         ></c-final-field-palette>
                     </template>
                 </aside>

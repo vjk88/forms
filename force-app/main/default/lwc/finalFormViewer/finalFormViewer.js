@@ -5,7 +5,7 @@ import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
-import { evaluateVisibility } from 'c/finalExpressionEngine';
+import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 
 /**
  * finalFormViewer — P0 minimal viewer: fetches one published Spec_JSON__c blob,
@@ -55,7 +55,11 @@ export default class FinalFormViewer extends LightningElement {
 
     /** Step-flow state (paginated layouts). The viewer is the engine for now. */
     pageIndex = 0;
-    _maxVisited = 0;
+
+    /** Pages whose validation failures are SHOWN (a blocked advance or
+     *  submit reveals them; before that a half-typed form stays quiet).
+     *  Reassigned wholesale so the getters recompute. */
+    _revealed = [];
 
     /** Post-submit: true renders c/finalAfterSubmit instead of the nav.
      *  MUST be a declared field — undeclared assignments aren't reactive. */
@@ -186,7 +190,6 @@ export default class FinalFormViewer extends LightningElement {
             this._appliedLayoutType === (spec.layout && spec.layout.type);
         if (!keepNav) {
             this.pageIndex = 0;
-            this._maxVisited = 0;
         }
         this._appliedLayoutType = spec.layout ? spec.layout.type : undefined;
 
@@ -241,11 +244,13 @@ export default class FinalFormViewer extends LightningElement {
         // returns to the form the moment a control is touched.
         this.completed = false;
         this.answers = {};
+        this._revealed = [];
         // Rule support (schema §7): one walk indexes element types for the
         // engine's date coercion and flags whether ANY rule exists — the
         // no-rules fast path skips per-keystroke filtering entirely.
         this._ruleTypeIndex = new Map();
         this._hasRules = false;
+        this._hasValidation = false;
         for (const page of spec.pages || []) {
             if (page.visibility) {
                 this._hasRules = true;
@@ -257,6 +262,9 @@ export default class FinalFormViewer extends LightningElement {
                 for (const el of section.elements || []) {
                     if (el.visibility) {
                         this._hasRules = true;
+                    }
+                    if ((el.validation || []).length) {
+                        this._hasValidation = true;
                     }
                     // render = publish-compiled; config = the draft-side hint
                     // the renderer itself reads (canvas writes config.inputType)
@@ -313,32 +321,65 @@ export default class FinalFormViewer extends LightningElement {
         this.error = undefined;
     }
 
+    _ruleCtx() {
+        return {
+            getValue: (id) => this.answers[id],
+            getType: (id) => this._ruleTypeIndex.get(id)
+        };
+    }
+
     /** The nav renders VISIBLE pages only — rules filter all three levels
-     *  live against the answers (no-rules specs pass through untouched). */
+     *  live against the answers, and REVEALED pages carry their elements'
+     *  validation failures inline (`el.errors`, rendered by the element
+     *  renderer). No-rules no-reveal specs pass through untouched. */
     get visiblePages() {
         if (!this.model) {
             return [];
         }
-        if (!this._hasRules) {
+        const needErrors =
+            this._hasValidation && (this._revealed || []).length > 0;
+        if (!this._hasRules && !needErrors) {
             return this.model.pages;
         }
-        const ctx = {
-            getValue: (id) => this.answers[id],
-            getType: (id) => this._ruleTypeIndex.get(id)
-        };
-        return this.model.pages
-            .filter((page) => evaluateVisibility(page.visibility, ctx))
-            .map((page) => ({
+        const ctx = this._ruleCtx();
+        let pages = this.model.pages;
+        if (this._hasRules) {
+            pages = pages.filter((page) =>
+                evaluateVisibility(page.visibility, ctx)
+            );
+        }
+        return pages.map((page, pi) => {
+            const reveal = needErrors && this._revealed.includes(pi);
+            return {
                 ...page,
                 sections: (page.sections || [])
-                    .filter((s) => evaluateVisibility(s.visibility, ctx))
+                    .filter(
+                        (s) =>
+                            !this._hasRules ||
+                            evaluateVisibility(s.visibility, ctx)
+                    )
                     .map((s) => ({
                         ...s,
-                        elements: (s.elements || []).filter((el) =>
-                            evaluateVisibility(el.visibility, ctx)
-                        )
+                        elements: (s.elements || [])
+                            .filter(
+                                (el) =>
+                                    !this._hasRules ||
+                                    evaluateVisibility(el.visibility, ctx)
+                            )
+                            .map((el) => {
+                                if (!reveal) {
+                                    return el;
+                                }
+                                const errors = validateElement(
+                                    el,
+                                    this.answers[el.id],
+                                    ctx
+                                );
+                                return errors.length ? { ...el, errors } : el;
+                            })
                     }))
-            }));
+            };
+        });
     }
 
     handleElementClick(event) {
@@ -368,15 +409,28 @@ export default class FinalFormViewer extends LightningElement {
     }
 
     /**
-     * Per-page validity — the engine's truth the primitives render gating from.
-     * No validation engine yet (P1): a page counts valid once visited, so gated
-     * steppers gate on "how far you've been", never further.
+     * Per-page validity — the engine's truth the primitives render gating
+     * from (F8): a page is valid when every visible element on it passes its
+     * validation entries against the current answers. Specs without
+     * validation are all-valid without recompute.
      */
     get pageValidity() {
         if (!this.model) {
             return [];
         }
-        return this.visiblePages.map((_page, i) => i <= this._maxVisited);
+        if (!this._hasValidation) {
+            return this.visiblePages.map(() => true);
+        }
+        const ctx = this._ruleCtx();
+        return this.visiblePages.map((page) =>
+            (page.sections || []).every((s) =>
+                (s.elements || []).every(
+                    (el) =>
+                        validateElement(el, this.answers[el.id], ctx).length ===
+                        0
+                )
+            )
+        );
     }
 
     get showBack() {
@@ -413,16 +467,25 @@ export default class FinalFormViewer extends LightningElement {
             index <= this.lastPageIndex
         ) {
             this.pageIndex = index;
-            this._maxVisited = Math.max(this._maxVisited, index);
+        }
+    }
+
+    /** A blocked advance shows the page's failures (before that, a
+     *  half-typed form stays quiet); they live-update as answers change. */
+    _reveal(pageIndex) {
+        if (!this._revealed.includes(pageIndex)) {
+            this._revealed = [...this._revealed, pageIndex];
         }
     }
 
     handleNext() {
-        // Page validation runs here once the validation engine lands (P1 later
-        // slices only need the flow; blocked-state UX is already in submitBar).
+        // F8 advance-denial: an invalid page refuses Next and shows why.
+        if (this.pageValidity[this.pageIndex] === false) {
+            this._reveal(this.pageIndex);
+            return;
+        }
         if (this.pageIndex < this.lastPageIndex) {
             this.pageIndex += 1;
-            this._maxVisited = Math.max(this._maxVisited, this.pageIndex);
         }
     }
 
@@ -432,11 +495,24 @@ export default class FinalFormViewer extends LightningElement {
         }
     }
 
+    /** ownsAdvance primitives deny their own forward moves (same F8 rule)
+     *  and announce the blocked page — the viewer reveals its failures. */
+    handleAdvanceBlocked(event) {
+        const index = event.detail ? event.detail.pageIndex : undefined;
+        this._reveal(typeof index === 'number' ? index : this.pageIndex);
+    }
+
     handleSubmit() {
-        // Submission engine lands in a later slice (BUILD_PHASES — P3 gate is
-        // the first end-to-end submit). Until then submit shows the configured
-        // After Submit render (owner: controls must never be dead) — P3 will
-        // save FIRST, then set this and execute any redirect.
+        // Submit validates EVERY visible page; the first invalid one becomes
+        // the current page with its failures shown. Record creation lands
+        // with the submit engine (P3 slice 7) — this is the gate before it.
+        const validity = this.pageValidity;
+        const firstInvalid = validity.findIndex((ok) => ok === false);
+        if (firstInvalid >= 0) {
+            this.pageIndex = firstInvalid;
+            this._reveal(firstInvalid);
+            return;
+        }
         this.completed = true;
     }
 }
