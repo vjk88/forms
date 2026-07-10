@@ -34,18 +34,66 @@
             </header>
         </template>
         <template lwc:if={showBody}>
-            <div class={gridClass}>
-                <template for:each={gridElements} for:item="g">
-                    <c-final-element-renderer
-                        onvaluechange={handleValueChange}
-                        key={g.el.id}
-                        element={g.el}
-                        data-el-id={g.el.id}
-                        style={g.spanStyle}
-                        onclick={handleElementClick}
-                    ></c-final-element-renderer>
-                </template>
-            </div>
+            <template lwc:if={isRepeat}>
+                <div class="rep-entries">
+                    <template for:each={repeatEntries} for:item="entry">
+                        <div key={entry.key} class="rep-entry">
+                            <div class="rep-entry-head">
+                                <span class="rep-entry-label"
+                                    >{entry.label}</span
+                                >
+                                <template lwc:if={entry.canRemove}>
+                                    <button
+                                        type="button"
+                                        class="rep-remove"
+                                        title={removeTitle}
+                                        data-key={entry.key}
+                                        onclick={handleRemoveEntry}
+                                    >
+                                        ×
+                                    </button>
+                                </template>
+                            </div>
+                            <div class={gridClass}>
+                                <template
+                                    for:each={entry.elements}
+                                    for:item="g"
+                                >
+                                    <c-final-element-renderer
+                                        onvaluechange={handleValueChange}
+                                        key={g.el.id}
+                                        element={g.el}
+                                        style={g.spanStyle}
+                                    ></c-final-element-renderer>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    <template lwc:if={showAdd}>
+                        <button
+                            type="button"
+                            class="rep-add"
+                            onclick={handleAddEntry}
+                        >
+                            + {addLabel}
+                        </button>
+                    </template>
+                </div>
+            </template>
+            <template lwc:else>
+                <div class={gridClass}>
+                    <template for:each={gridElements} for:item="g">
+                        <c-final-element-renderer
+                            onvaluechange={handleValueChange}
+                            key={g.el.id}
+                            element={g.el}
+                            data-el-id={g.el.id}
+                            style={g.spanStyle}
+                            onclick={handleElementClick}
+                        ></c-final-element-renderer>
+                    </template>
+                </div>
+            </template>
         </template>
     </div>
 </template>

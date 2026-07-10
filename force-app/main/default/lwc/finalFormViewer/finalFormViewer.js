@@ -1,6 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
-import { CurrentPageReference } from 'lightning/navigation';
+import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
@@ -16,7 +17,7 @@ import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
  * the engine runs live (builder-preview semantics — fine for internal P0).
  * `?c__formId=` / `?c__versionId=` URL params override the configured properties.
  */
-export default class FinalFormViewer extends LightningElement {
+export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api formId;
     @api versionId;
 
@@ -64,6 +65,12 @@ export default class FinalFormViewer extends LightningElement {
     /** Post-submit: true renders c/finalAfterSubmit instead of the nav.
      *  MUST be a declared field — undeclared assignments aren't reactive. */
     completed = false;
+
+    /** Submit-engine state (slice 7). */
+    submitError;
+    submittedRecordId = null;
+    _submitting = false;
+    _startedAt = null;
 
     /** Live answers keyed by element id (schema §8) — fed by the valuechange
      *  re-emit chain; drives rule evaluation now, submission in the P3
@@ -245,6 +252,9 @@ export default class FinalFormViewer extends LightningElement {
         this.completed = false;
         this.answers = {};
         this._revealed = [];
+        this.submitError = undefined;
+        this.submittedRecordId = null;
+        this._startedAt = new Date().toISOString();
         // Rule support (schema §7): one walk indexes element types for the
         // engine's date coercion and flags whether ANY rule exists — the
         // no-rules fast path skips per-keystroke filtering entirely.
@@ -367,7 +377,10 @@ export default class FinalFormViewer extends LightningElement {
                                     evaluateVisibility(el.visibility, ctx)
                             )
                             .map((el) => {
-                                if (!reveal) {
+                                // repeat entries answer as ONE consolidated
+                                // value — per-entry failure display is
+                                // DEFERRED, so never annotate inside
+                                if (!reveal || s.repeat) {
                                     return el;
                                 }
                                 const errors = validateElement(
@@ -422,14 +435,18 @@ export default class FinalFormViewer extends LightningElement {
             return this.visiblePages.map(() => true);
         }
         const ctx = this._ruleCtx();
+        // repeat sections validate server/entry-side (DEFERRED per-entry
+        // gating) — their child elements never read the flat answers store
         return this.visiblePages.map((page) =>
-            (page.sections || []).every((s) =>
-                (s.elements || []).every(
-                    (el) =>
-                        validateElement(el, this.answers[el.id], ctx).length ===
-                        0
+            (page.sections || [])
+                .filter((s) => !s.repeat)
+                .every((s) =>
+                    (s.elements || []).every(
+                        (el) =>
+                            validateElement(el, this.answers[el.id], ctx)
+                                .length === 0
+                    )
                 )
-            )
         );
     }
 
@@ -502,10 +519,9 @@ export default class FinalFormViewer extends LightningElement {
         this._reveal(typeof index === 'number' ? index : this.pageIndex);
     }
 
-    handleSubmit() {
+    async handleSubmit() {
         // Submit validates EVERY visible page; the first invalid one becomes
-        // the current page with its failures shown. Record creation lands
-        // with the submit engine (P3 slice 7) — this is the gate before it.
+        // the current page with its failures shown.
         const validity = this.pageValidity;
         const firstInvalid = validity.findIndex((ok) => ok === false);
         if (firstInvalid >= 0) {
@@ -513,6 +529,96 @@ export default class FinalFormViewer extends LightningElement {
             this._reveal(firstInvalid);
             return;
         }
-        this.completed = true;
+        if (this._submitting) {
+            return; // one click, one record
+        }
+        // Previews SIMULATE: the studio's authoring/inline specs (and the
+        // read-only history view) must never create records.
+        if (this.authoring || this._inlineSpec) {
+            this.completed = true;
+            return;
+        }
+        this._submitting = true;
+        this.submitError = undefined;
+        try {
+            const res = await submitForm({
+                formId: this.effectiveFormId || null,
+                versionId: this.effectiveVersionId || null,
+                payloadJson: JSON.stringify(this._payload())
+            });
+            this.submittedRecordId = res ? res.recordId : null;
+            this.completed = true;
+            this._scheduleCompletion();
+        } catch (e) {
+            this.submitError =
+                (e && e.body && e.body.message) ||
+                'Your response could not be saved. Please try again.';
+        } finally {
+            this._submitting = false;
+        }
+    }
+
+    /** Schema §8: answers keyed by element id; repeat sections answer as
+     *  ONE consolidated `repeat:{sectionId}` entry → the repeats map. */
+    _payload() {
+        const answers = {};
+        const repeats = {};
+        for (const key of Object.keys(this.answers)) {
+            if (key.indexOf('repeat:') === 0) {
+                repeats[key.slice(7)] = this.answers[key];
+            } else {
+                answers[key] = this.answers[key];
+            }
+        }
+        return {
+            answers,
+            repeats,
+            meta: {
+                startedAt: this._startedAt,
+                submittedAt: new Date().toISOString()
+            }
+        };
+    }
+
+    // ----- After Submit EXECUTION (settings.completion — display is
+    // c/finalAfterSubmit's; navigation is ours) -----
+
+    _scheduleCompletion() {
+        const c = (this.model && this.model.afterSubmit) || {};
+        if (c.mode === 'toast') {
+            // toast ALWAYS redirects (schema §3) — a beat to read the bar
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => this._navigate(c.redirectTo, c.redirectUrl), 1500);
+            return;
+        }
+        if (c.autoRedirect) {
+            const delay = Number(c.redirectDelay);
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(
+                () => this._navigate(c.redirectTo, c.redirectUrl),
+                (Number.isFinite(delay) && delay >= 0 ? delay : 5) * 1000
+            );
+        }
+    }
+
+    handleAfterContinue(event) {
+        const { goesTo, url } = event.detail || {};
+        this._navigate(goesTo, url);
+    }
+
+    _navigate(dest, url) {
+        if (dest === 'url' && url) {
+            window.location.assign(url);
+            return;
+        }
+        if (this.submittedRecordId) {
+            this[NavigationMixin.Navigate]({
+                type: 'standard__recordPage',
+                attributes: {
+                    recordId: this.submittedRecordId,
+                    actionName: 'view'
+                }
+            });
+        }
     }
 }

@@ -66,11 +66,9 @@ export default class FinalSectionRenderer extends LightningElement {
         return `grid cols-${this.columns}`;
     }
 
-    /** Each element with its grid-column span resolved (width clamped to
-     *  the column count; full-width types take the whole row). */
-    get gridElements() {
+    _gridFor(elements, idSuffix) {
         const cols = this.columns;
-        return (this.sec.elements || []).map((el) => {
+        return (elements || []).map((el) => {
             let span = 1;
             if (FULL_WIDTH_TYPES.has(el.type)) {
                 span = cols;
@@ -78,10 +76,99 @@ export default class FinalSectionRenderer extends LightningElement {
                 span = Math.min(Math.max(Number(el.width) || 1, 1), cols);
             }
             return {
-                el,
+                el: idSuffix ? { ...el, id: `${el.id}::${idSuffix}` } : el,
                 spanStyle: cols > 1 ? `grid-column: span ${span}` : ''
             };
         });
+    }
+
+    /** Each element with its grid-column span resolved (width clamped to
+     *  the column count; full-width types take the whole row). */
+    get gridElements() {
+        return this._gridFor(this.sec.elements, null);
+    }
+
+    // ---- repeatable sections (schema §4.1 — defined once, instantiated
+    // at runtime; entries answer as ONE consolidated value) ----
+
+    /** Entry keys are LOCAL state (reactive); values live off-render. The
+     *  consolidated answer rides the ordinary valuechange chain as
+     *  elementId `repeat:{sectionId}` → the §8 entries array — no new
+     *  event plumbing through the seven navs. */
+    entryKeys = null;
+    _entrySeq = 0;
+    _entryValues = {};
+
+    get isRepeat() {
+        return Boolean(this.sec.repeat);
+    }
+
+    get repeatCfg() {
+        return this.sec.repeat || {};
+    }
+
+    get minEntries() {
+        return Math.max(Number(this.repeatCfg.min) || 1, 1);
+    }
+
+    _currentKeys() {
+        if (!this.entryKeys) {
+            const keys = [];
+            for (let i = 0; i < this.minEntries; i++) {
+                keys.push(`en_${i}`);
+            }
+            this._entrySeq = this.minEntries;
+            return keys;
+        }
+        return this.entryKeys;
+    }
+
+    get repeatEntries() {
+        const keys = this._currentKeys();
+        const template = this.repeatCfg.entryLabel || 'Entry {index}';
+        const canRemove = keys.length > this.minEntries;
+        return keys.map((key, i) => ({
+            key,
+            label: template.replace('{index}', String(i + 1)),
+            canRemove,
+            elements: this._gridFor(this.sec.elements, key)
+        }));
+    }
+
+    get showAdd() {
+        const max = Number(this.repeatCfg.max);
+        return !(max > 0 && this._currentKeys().length >= max);
+    }
+
+    get addLabel() {
+        return this.repeatCfg.addLabel || 'Add another';
+    }
+
+    get removeTitle() {
+        return this.repeatCfg.removeLabel || 'Remove';
+    }
+
+    handleAddEntry() {
+        this.entryKeys = [...this._currentKeys(), `en_${this._entrySeq++}`];
+        this._dispatchRepeat();
+    }
+
+    handleRemoveEntry(event) {
+        const key = event.currentTarget.dataset.key;
+        this.entryKeys = this._currentKeys().filter((k) => k !== key);
+        delete this._entryValues[key];
+        this._dispatchRepeat();
+    }
+
+    _dispatchRepeat() {
+        const entries = this._currentKeys().map(
+            (key) => this._entryValues[key] || {}
+        );
+        this.dispatchEvent(
+            new CustomEvent('valuechange', {
+                detail: { elementId: `repeat:${this.sec.id}`, value: entries }
+            })
+        );
     }
 
     get hasHeader() {
@@ -132,8 +219,23 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     /** Re-emit the answer intent across this shadow boundary (catalog rule:
-     *  plain non-composed events — every hop re-dispatches deliberately). */
+     *  plain non-composed events — every hop re-dispatches deliberately).
+     *  Repeat entries fold their instanced answers into the section's ONE
+     *  consolidated value instead. */
     handleValueChange(event) {
+        if (this.isRepeat) {
+            const { elementId, value } = event.detail;
+            const at = elementId.lastIndexOf('::');
+            if (at > 0) {
+                const elId = elementId.slice(0, at);
+                const key = elementId.slice(at + 2);
+                const values = this._entryValues[key] || {};
+                values[elId] = value;
+                this._entryValues[key] = values;
+                this._dispatchRepeat();
+                return;
+            }
+        }
         this.dispatchEvent(
             new CustomEvent('valuechange', { detail: event.detail })
         );

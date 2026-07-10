@@ -13,3 +13,18 @@
     position: relative;
     min-height: 240px;
 }
+
+/* Submit failure — the response was NOT recorded; say so where the eye is. */
+.viewer-submit-error {
+    margin: 0 0 var(--c-space-4);
+    padding: var(--c-space-3) var(--c-space-4);
+    border: 1px solid var(--c-field-error, #b42318);
+    border-radius: var(--c-radius);
+    background: color-mix(
+        in srgb,
+        var(--c-field-error, #b42318) 8%,
+        transparent
+    );
+    color: var(--c-field-error, #b42318);
+    font-size: 0.875rem;
+}

@@ -20,9 +20,15 @@
                     <c-final-after-submit
                         config={model.afterSubmit}
                         bleed={model.bleed}
+                        oncontinue={handleAfterContinue}
                     ></c-final-after-submit>
                 </template>
                 <template lwc:elseif={navCtor}>
+                    <template lwc:if={submitError}>
+                        <div class="viewer-submit-error" role="alert">
+                            {submitError}
+                        </div>
+                    </template>
                     <lwc:component
                         lwc:is={navCtor}
                         pages={visiblePages}
