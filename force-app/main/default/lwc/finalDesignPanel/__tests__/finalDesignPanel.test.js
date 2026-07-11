@@ -322,6 +322,49 @@ describe('c-final-design-panel', () => {
         expect(lastSpec(handler).layout.options.narrowMode).toBe('progressBar');
     });
 
+    it('header surface: splitHero hides fill + banner (pane owns the header); others keep them', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
+        );
+        await goAdvanced(el);
+        await openArea(el, 'header');
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-gradient-control[data-key="headerBg"]'
+            )
+        ).toBeNull();
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-image-uploader[data-key="bannerImage"]'
+            )
+        ).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('input[data-key="headerBgOpacity"]')
+        ).toBeNull();
+        // text colors stay — they ink the theme-dressed pane
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-color-control[data-key="headerText"]'
+            )
+        ).not.toBeNull();
+
+        const el2 = mount(
+            buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' })
+        );
+        await goAdvanced(el2);
+        await openArea(el2, 'header');
+        expect(
+            el2.shadowRoot.querySelector(
+                'c-final-gradient-control[data-key="headerBg"]'
+            )
+        ).not.toBeNull();
+        expect(
+            el2.shadowRoot.querySelector(
+                'c-final-image-uploader[data-key="bannerImage"]'
+            )
+        ).not.toBeNull();
+    });
+
     it('paging: tabs, rail, and oneAtATime each get their own group', async () => {
         const el = mount(
             buildSampleSpec({ layout: 'tabs', themeKey: 'nordic' })
