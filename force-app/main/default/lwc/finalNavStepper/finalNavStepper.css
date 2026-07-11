@@ -8,37 +8,7 @@
     font-family: var(--c-font-body);
 }
 
-/* — Left rail placement — */
-.place-rail {
-    display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
-    column-gap: var(--c-space-5);
-    align-items: start;
-}
-
-.rail-narrow.place-rail {
-    grid-template-columns: 140px minmax(0, 1fr);
-}
-
-.rail-wide.place-rail {
-    grid-template-columns: 260px minmax(0, 1fr);
-}
-
-.place-rail .step-list {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--c-space-3);
-}
-
-.place-rail .step-item {
-    flex: none;
-}
-
-.place-rail .step-item::after {
-    display: none;
-}
-
-/* — Step list (top placement default) — */
+/* — Step list (the strip always rides the top) — */
 /* Sticky wayfinding (owner 2026-07-11): progress you can't see isn't
    progress. The strip rides the page's ONE scrollbar — sticky never adds a
    scroll container. Surface-matched background (+ the panel's glass blur) so
@@ -55,15 +25,6 @@
     background: var(--c-content-bg);
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));
-}
-
-.place-rail .steps {
-    top: var(--c-space-4);
-    margin-bottom: 0;
-    padding: 0;
-    background: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
 }
 
 .step-list {
@@ -227,30 +188,31 @@
     }
 }
 
-/* — Narrow container: the rail collapses to a compact top bar of numbered
-     chips (contract narrow behavior; shared threshold constant). — */
+/* The narrow-collapse BAR mounts alongside the list (CSS owns the swap):
+   hidden wide, shown narrow. When the MAIN mode is already the bar, the
+   mode rules render it and these never fire. */
+.narrow-bar:not(.mode-progressBar) .progress-track {
+    display: none;
+}
+
+/* — Narrow container: numbered steps don't fit, so the strip collapses to
+     the picked Small-screens treatment — dots (default) or the progress
+     bar (contract narrow behavior; shared threshold constant). — */
 @container stepper (max-width: 540px) {
-    .place-rail {
-        display: block;
+    .narrow-dots .step-marker {
+        width: 12px;
+        height: 12px;
+        font-size: 0;
+        background: var(--c-field-border);
+        border: none;
     }
 
-    /* collapsed to a top bar — take the top-strip sticky treatment */
-    .place-rail .steps {
-        margin-bottom: var(--c-space-5);
-        top: 0;
-        padding: var(--c-space-2) 0;
-        background: var(--c-content-bg);
-        -webkit-backdrop-filter: blur(var(--c-glass-blur));
-        backdrop-filter: blur(var(--c-glass-blur));
+    .narrow-dots .step-btn.active .step-marker,
+    .narrow-dots .step-btn.done .step-marker {
+        background: var(--c-accent);
     }
 
-    .place-rail .step-list {
-        flex-direction: row;
-        align-items: center;
-        gap: var(--c-space-2);
-    }
-
-    .place-rail .step-label {
+    .narrow-dots .step-label {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -259,12 +221,16 @@
         white-space: nowrap;
     }
 
-    .place-rail .step-item {
-        flex: 0 0 auto;
+    .narrow-dots .step-item::after {
+        height: 1px;
     }
 
-    .place-rail .step-item::after {
+    .narrow-bar .step-list {
         display: none;
+    }
+
+    .narrow-bar:not(.mode-progressBar) .progress-track {
+        display: block;
     }
 }
 

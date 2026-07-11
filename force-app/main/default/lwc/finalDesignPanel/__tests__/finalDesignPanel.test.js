@@ -307,20 +307,19 @@ describe('c-final-design-panel', () => {
         await flush();
         expect(lastSpec(handler).layout.options.mode).toBe('dots');
 
-        // rail width hides until placement = left rail (needsValue gate)
+        // placement was removed (owner 2026-07-11: the strip is always on
+        // top); Small screens picks the narrow collapse instead
         expect(
-            el.shadowRoot.querySelector('select[data-key="stepperRailWidth"]')
+            el.shadowRoot.querySelector('select[data-key="stepperPlacement"]')
         ).toBeNull();
-        const placement = el.shadowRoot.querySelector(
-            'select[data-key="stepperPlacement"]'
+        const narrow = el.shadowRoot.querySelector(
+            'select[data-key="stepperNarrow"]'
         );
-        placement.value = 'leftRail';
-        placement.dispatchEvent(new CustomEvent('change'));
+        expect(narrow).not.toBeNull();
+        narrow.value = 'progressBar';
+        narrow.dispatchEvent(new CustomEvent('change'));
         await flush();
-        expect(lastSpec(handler).layout.options.placement).toBe('leftRail');
-        expect(
-            el.shadowRoot.querySelector('select[data-key="stepperRailWidth"]')
-        ).not.toBeNull();
+        expect(lastSpec(handler).layout.options.narrowMode).toBe('progressBar');
     });
 
     it('paging: tabs, rail, and oneAtATime each get their own group', async () => {
@@ -341,8 +340,16 @@ describe('c-final-design-panel', () => {
         );
         await goAdvanced(el2);
         await openArea(el2, 'paging');
+        const railContent = el2.shadowRoot.querySelector(
+            'select[data-key="railContent"]'
+        );
+        expect(railContent).not.toBeNull();
+        // 'Progress only' was cut (owner 2026-07-11): links, or links+progress
         expect(
-            el2.shadowRoot.querySelector('select[data-key="railContent"]')
+            [...railContent.querySelectorAll('option')].map((o) => o.value)
+        ).toEqual(['', 'both']);
+        expect(
+            el2.shadowRoot.querySelector('select[data-key="railNavigation"]')
         ).not.toBeNull();
 
         const el3 = mount(

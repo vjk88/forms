@@ -32,6 +32,8 @@
 
 | 20 | **Runtime enforcement of settings.availability + spam** | `settings.availability` (closed/opensAt/closesAt/responseCap/closedMessage) and `spamProtection` are authored + stored but NOT enforced by the viewer or FinalSubmitController yet; guest submit needs its own allow-listed elevated controller (RUNTIME_NOTES) before any public exposure | [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) §3 · RUNTIME_NOTES | Belongs to the hosting/guest slice — internal-only until then |
 
+| 21 | **Split Hero progress-bar treatment** | The brand pane's `progressStyle: 'horizontal'` bar doesn't look good as rendered (owner 2026-07-11: "we need to talk about Progress bar in Split hero"). Needs a design conversation before any rework — placement, sizing, and how it sits against the pane's brand blocks | `finalNavSplitHero` progress block · [LAYOUT_REFINEMENTS_SPEC.md](./LAYOUT_REFINEMENTS_SPEC.md) (amend there when discussed) | **Owner call 2026-07-11: talk first.** Natural companion to the parked stepper 3-state reskin + OneAtATime header pass (#16) |
+
 **Rules of the ledger:** an item leaves this list only by (a) being scheduled into a named phase of
 a version plan, or (b) being explicitly killed. Adding an item here requires pointing to where its
 spec lives (write the spec first, park it second).

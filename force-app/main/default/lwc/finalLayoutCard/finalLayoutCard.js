@@ -22,12 +22,12 @@ const META = {
     tabs: { label: 'Tabbed pages', hint: 'Pages shown as tabs.' },
     accordion: { label: 'Accordion', hint: 'Collapsible panels.' },
     rail: { label: 'Side rail', hint: 'Navigation down the side.' },
-    oneAtATime: { label: 'One at a time', hint: 'One question per screen.' },
+    oneAtATime: { label: 'One at a time', hint: 'One section per screen.' },
     splitHero: { label: 'Split hero', hint: 'Brand panel beside the form.' }
 };
 const SPLIT_ONE_META = {
     label: 'Split hero · Conversational',
-    hint: 'Brand panel, one question at a time.'
+    hint: 'Brand panel, one section at a time.'
 };
 
 export default class FinalLayoutCard extends LightningElement {

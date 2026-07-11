@@ -23,6 +23,7 @@
                                     class={page.cls}
                                     type="button"
                                     data-index={page.index}
+                                    disabled={page.disabled}
                                     aria-current={page.ariaCurrent}
                                     onclick={handlePageClick}
                                 >
@@ -51,7 +52,7 @@
                 <template for:each={currentPageList} for:item="page">
                     <div class="page-panel" key={page.key}>
                         <c-final-layout-zones
-                    onvaluechange={handleValueChange}
+                            onvaluechange={handleValueChange}
                             sections={page.sections}
                             zones={page.zones}
                         ></c-final-layout-zones>
