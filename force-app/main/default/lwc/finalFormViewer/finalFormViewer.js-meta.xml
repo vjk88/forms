@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>66.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Final Form Viewer</masterLabel>
-    <description>Rebuild viewer (P0): renders a published Spec_JSON__c through the final* pipeline — engine tokens, layout registry, pageFrame chrome.</description>
+    <description
+    >Rebuild viewer (P0): renders a published Spec_JSON__c through the final* pipeline — engine tokens, layout registry, pageFrame chrome.</description>
     <capabilities>
         <capability>lightning__dynamicComponent</capability>
     </capabilities>
@@ -11,13 +12,37 @@
         <target>lightning__AppPage</target>
         <target>lightning__HomePage</target>
         <target>lightning__Tab</target>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
     </targets>
     <targetConfigs>
         <targetConfig targets="lightning__AppPage,lightning__HomePage">
-            <property name="formId" type="String" label="Form Id"
-                description="Form to render (active published version). A ?c__formId= URL parameter overrides this."/>
-            <property name="versionId" type="String" label="Version Id (optional)"
-                description="Render a specific version instead. A ?c__versionId= URL parameter overrides this."/>
+            <property
+                name="formId"
+                type="String"
+                label="Form Id"
+                description="Form to render (active published version). A ?c__formId= URL parameter overrides this."
+            />
+            <property
+                name="versionId"
+                type="String"
+                label="Version Id (optional)"
+                description="Render a specific version instead. A ?c__versionId= URL parameter overrides this."
+            />
+        </targetConfig>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+                name="formId"
+                type="String"
+                label="Form Id"
+                description="Form to render (active published version). A ?c__formId= URL parameter overrides this."
+            />
+            <property
+                name="versionId"
+                type="String"
+                label="Version Id (optional)"
+                description="Render a specific version instead. A ?c__versionId= URL parameter overrides this."
+            />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>
