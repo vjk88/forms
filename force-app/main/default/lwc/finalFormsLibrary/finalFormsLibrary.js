@@ -1,5 +1,4 @@
 import { LightningElement, wire } from 'lwc';
-import { NavigationMixin } from 'lightning/navigation';
 import { refreshApex } from '@salesforce/apex';
 import listForms from '@salesforce/apex/FinalStudioController.listForms';
 
@@ -13,9 +12,22 @@ import listForms from '@salesforce/apex/FinalStudioController.listForms';
 
 const STUDIO_PAGE = '/apex/FinalStudio';
 
-export default class FinalFormsLibrary extends NavigationMixin(
-    LightningElement
-) {
+/**
+ * The lightning.force.com host serves /apex pages WRAPPED in LEX chrome
+ * (tabs + search bar) — the raw page lives on the enhanced-domain VF host:
+ * {mydomain}--c.{partition}.vf.force.com. Salesforce bounce-authenticates
+ * the VF domain automatically, so a direct absolute URL is safe. On any
+ * other host (VF itself, my.salesforce.com) the relative URL serves raw.
+ */
+export function studioUrl(formId) {
+    const m = window.location.hostname.match(
+        /^([^.]+)\.(.*)lightning\.force\.com$/
+    );
+    const base = m ? `https://${m[1]}--c.${m[2]}vf.force.com` : '';
+    return `${base}${STUDIO_PAGE}?c__formId=${formId}`;
+}
+
+export default class FinalFormsLibrary extends LightningElement {
     rows;
     error;
     _wired;
@@ -46,14 +58,12 @@ export default class FinalFormsLibrary extends NavigationMixin(
     }
 
     handleOpen(event) {
-        // Full-page studio (owner 2026-07-10): the VF host escapes LEX
-        // chrome; standard__webPage opens it in its own browser tab.
-        this[NavigationMixin.Navigate]({
-            type: 'standard__webPage',
-            attributes: {
-                url: `${STUDIO_PAGE}?c__formId=${event.currentTarget.dataset.id}`
-            }
-        });
+        // Full-page studio (owner 2026-07-10). window.open, NOT the nav
+        // service: the LEX router intercepts standard__webPage for ANY
+        // salesforce-domain URL and wraps it in one:alohaPage — LEX chrome
+        // around an iframe. A user-gesture window.open to the VF domain is
+        // the only path the router never touches.
+        window.open(studioUrl(event.currentTarget.dataset.id), '_blank');
     }
 
     handleRefresh() {
