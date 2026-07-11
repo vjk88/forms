@@ -11,8 +11,9 @@
  *   state, and reset = delete the delta.
  * - Plain controls (`path`) write spec content (header words, submit labels,
  *   layout frame) — content has no "edited vs theme" concept, no reset chip.
- * - `appliesTo` gates by layout: `{ layouts: [...] }` or `{ paginated: true }`.
- *   Hidden ALWAYS keeps values (IA §6) — filtering is render-only.
+ * - `appliesTo` gates by layout: `{ layouts: [...] }`, `{ notLayouts: [...] }`
+ *   or `{ paginated: true }`. Hidden ALWAYS keeps values (IA §6) — filtering
+ *   is render-only.
  */
 
 export const RADIUS_ORDER = [
@@ -629,11 +630,16 @@ const AREAS = [
                 label: 'Surface',
                 controls: [
                     {
+                        // Split Hero owns its header (the brand pane): the
+                        // standard header's fill/banner never paint there, so
+                        // the knobs hide (owner 2026-07-11). Text colors stay —
+                        // they ink the theme-dressed pane.
                         key: 'headerBg',
                         label: 'Fill',
                         type: 'gradientSurface',
                         themePath: 'palette.headerBg',
-                        gradientPath: 'palette.headerBgGradient'
+                        gradientPath: 'palette.headerBgGradient',
+                        appliesTo: { notLayouts: ['splitHero'] }
                     },
                     {
                         key: 'headerBgOpacity',
@@ -642,14 +648,16 @@ const AREAS = [
                         themePath: 'palette.headerBgOpacity',
                         min: 0,
                         max: 100,
-                        fallback: 100
+                        fallback: 100,
+                        appliesTo: { notLayouts: ['splitHero'] }
                     },
                     {
                         key: 'bannerImage',
                         label: 'Banner image',
                         type: 'image',
                         path: 'header.bgImage.url',
-                        versionPath: 'header.bgImage.versionId'
+                        versionPath: 'header.bgImage.versionId',
+                        appliesTo: { notLayouts: ['splitHero'] }
                     },
                     {
                         key: 'bannerOpacity',
@@ -659,7 +667,8 @@ const AREAS = [
                         needsValueOf: 'bannerImage',
                         min: 0,
                         max: 100,
-                        fallback: 100
+                        fallback: 100,
+                        appliesTo: { notLayouts: ['splitHero'] }
                     },
                     {
                         key: 'headerText',

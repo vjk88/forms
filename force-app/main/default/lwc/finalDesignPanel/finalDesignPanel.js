@@ -154,6 +154,9 @@ export default class FinalDesignPanel extends LightningElement {
         if (gate.layouts) {
             return gate.layouts.includes(this.layoutType);
         }
+        if (gate.notLayouts) {
+            return !gate.notLayouts.includes(this.layoutType);
+        }
         if (gate.paginated) {
             return Boolean(this.layoutInfo.paginates);
         }
