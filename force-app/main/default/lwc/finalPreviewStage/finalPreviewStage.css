@@ -1,0 +1,71 @@
+/* ps- prefix on all chrome classes (reference-lex-css-class-collision). */
+:host {
+    display: block;
+}
+
+.ps-bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    background: #fff;
+    border-bottom: 1px solid #ececec;
+}
+
+.ps-devices {
+    display: inline-flex;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ps-device {
+    border: 0;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    color: #444;
+    padding: 4px 12px;
+    cursor: pointer;
+}
+
+.ps-device + .ps-device {
+    border-left: 1px solid #d8d8d8;
+}
+
+.ps-device.on {
+    background: #0d9488;
+    color: #fff;
+    font-weight: 600;
+}
+
+.ps-refresh {
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1;
+    color: #444;
+    padding: 4px 9px;
+    cursor: pointer;
+}
+
+.ps-refresh:hover,
+.ps-device:hover:not(.on) {
+    background: #f4f4f4;
+}
+
+/* The scaled canvas still occupies its unscaled layout box — clip the ghost
+   overflow; JS pins this element's height to the visual (scaled) height. */
+.ps-viewport {
+    overflow: hidden;
+}
+
+.ps-canvas {
+    transform-origin: top left;
+}

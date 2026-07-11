@@ -1,0 +1,40 @@
+<template>
+    <div class="ps-bar">
+        <div class="ps-devices" role="group" aria-label="Preview device">
+            <template for:each={deviceButtons} for:item="d">
+                <button
+                    key={d.key}
+                    type="button"
+                    class={d.cls}
+                    aria-pressed={d.pressed}
+                    data-device={d.key}
+                    onclick={handleDevice}
+                >
+                    {d.label}
+                </button>
+            </template>
+        </div>
+        <button
+            type="button"
+            class="ps-refresh"
+            title="Restart preview"
+            aria-label="Restart preview"
+            onclick={handleRefresh}
+        >
+            ⟳
+        </button>
+    </div>
+    <div class="ps-viewport">
+        <div class="ps-canvas" style={canvasStyle}>
+            <template for:each={frames} for:item="f">
+                <c-final-form-viewer
+                    key={f.key}
+                    spec={spec}
+                    authoring={authoring}
+                    embedded
+                    onelementselect={handleElementSelect}
+                ></c-final-form-viewer>
+            </template>
+        </div>
+    </div>
+</template>

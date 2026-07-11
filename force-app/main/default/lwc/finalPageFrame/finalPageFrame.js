@@ -59,9 +59,25 @@ export default class FinalPageFrame extends LightningElement {
      */
     @api bleed = false;
 
+    /**
+     * Embedded-surface override (tri-state). Undefined = auto-detect via the
+     * URL (real LEX hosting). Previews force it: the studio's stage sets true
+     * so the embedded-only treatments (page corner rounding, viewport-fill
+     * min-height) render regardless of where the studio itself is hosted —
+     * the /apex/FinalStudio host broke the URL sniff for previews.
+     */
+    @api embedded;
+
     _tokens = {};
     _appliedKeys = [];
     _connected = false;
+
+    get _isEmbedded() {
+        if (this.embedded === undefined || this.embedded === null) {
+            return EMBEDDED_IN_LEX;
+        }
+        return Boolean(this.embedded);
+    }
 
     @api
     get tokens() {
@@ -80,7 +96,13 @@ export default class FinalPageFrame extends LightningElement {
     }
 
     renderedCallback() {
-        if (!EMBEDDED_IN_LEX || this._embedMeasured) {
+        // Measure only in AUTO mode: a forcing host (the preview stage)
+        // supplies its own --frame-offset for the synthetic device viewport.
+        if (
+            this.embedded !== undefined ||
+            !EMBEDDED_IN_LEX ||
+            this._embedMeasured
+        ) {
             return;
         }
         const page = this.template.querySelector('.page');
@@ -95,7 +117,7 @@ export default class FinalPageFrame extends LightningElement {
     }
 
     get pageClass() {
-        const embedded = EMBEDDED_IN_LEX ? ' page--embedded' : '';
+        const embedded = this._isEmbedded ? ' page--embedded' : '';
         return (this.bleed ? 'page page--bleed' : 'page') + embedded;
     }
 

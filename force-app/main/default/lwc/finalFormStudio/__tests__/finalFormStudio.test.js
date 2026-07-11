@@ -87,6 +87,12 @@ function mount() {
     return el;
 }
 
+// previews render through the device stage now — drill into its shadow
+function previewViewer(el) {
+    const stage = el.shadowRoot.querySelector('c-final-preview-stage');
+    return stage && stage.shadowRoot.querySelector('c-final-form-viewer');
+}
+
 const flush = () => new Promise((r) => setTimeout(r, 0));
 // fake-timer flush: n sequential microtask ticks without touching the clock
 const micro = (n) => {
@@ -166,9 +172,7 @@ describe('c-final-form-studio', () => {
         expect(
             el.shadowRoot.querySelector('c-final-design-panel')
         ).not.toBeNull();
-        expect(
-            el.shadowRoot.querySelector('c-final-form-viewer')
-        ).not.toBeNull();
+        expect(previewViewer(el)).not.toBeNull();
         // the mode toggle lives in the LEFT cluster — before the spacer
         const bar = el.shadowRoot.querySelector('.st-bar');
         const kids = Array.from(bar.children);
@@ -465,9 +469,10 @@ describe('c-final-form-studio', () => {
         el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
         await Promise.resolve();
 
-        const preview = el.shadowRoot.querySelector(
-            '.st-buildpreview c-final-form-viewer'
+        const stage = el.shadowRoot.querySelector(
+            '.st-buildpreview c-final-preview-stage'
         );
+        const preview = stage.shadowRoot.querySelector('c-final-form-viewer');
         expect(preview.authoring).toBe(true);
         preview.dispatchEvent(
             new CustomEvent('elementselect', {
@@ -873,7 +878,7 @@ describe('c-final-form-studio', () => {
 
         // the live preview must get a spec WITHOUT the frozen snapshot,
         // otherwise the viewer never runs the theme engine again
-        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        const viewer = previewViewer(el);
         expect(viewer.spec.resolved).toBeUndefined();
         expect(viewer.spec.theme.name).toBe('editorialIvory');
 
@@ -961,7 +966,7 @@ describe('c-final-form-studio', () => {
         ).toBe(true);
         // read-only viewing keeps `resolved` — the frozen tokens ARE what
         // was published
-        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        const viewer = previewViewer(el);
         expect(viewer.spec.resolved).toBeDefined();
 
         jest.advanceTimersByTime(5000);
@@ -1014,7 +1019,7 @@ describe('c-final-form-studio', () => {
         // a dirty flag — the attribute alone won't move it)
         expect(el.shadowRoot.querySelector('.st-verselect').value).toBe('a0V2');
         // and the draft spec is intact, publish-artifact free
-        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        const viewer = previewViewer(el);
         expect(viewer.spec.resolved).toBeUndefined();
     });
 
@@ -1053,7 +1058,7 @@ describe('c-final-form-studio', () => {
 
         el.shadowRoot.querySelector('.st-undo').click();
         await Promise.resolve();
-        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        const viewer = previewViewer(el);
         expect(viewer.spec.submit.label).toBe('One');
         // the restored state autosaves like any edit
         jest.advanceTimersByTime(1000);
