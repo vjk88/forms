@@ -139,3 +139,15 @@ Two regimes; every layout is exactly one of them:
   still. Short content centers via auto BLOCK margins (never `justify-content:center` — clips
   overflow top). Narrow containers RELEASE the cap back to document flow.
 - Carded (non-bleed) splitHero = document-style with a sticky brand pane.
+
+## 6 · Split Hero widths (owner ruling 2026-07-11: "scale with screen")
+
+- **Panes**: grid fractions, never pixels — `1fr 1fr` default (form pane = 50% of the layout on
+  any screen), `ratio: 'third'` → `1fr 2fr` (form 66%). Bleed's explicit-Max-width track growth
+  stays capped at 60% so the brand pane never collapses.
+- **Floating form card (bleed)**: default is PROPORTIONAL — `max(90%, 480px)` of its pane
+  (90% of the pane with a 480px floor; `width:100%` still caps it on phones). The old locked
+  480px default made content look ~30% of a large screen while the pane was 50%. An explicit
+  Max width pick (`--frame-max`: 480/560/680px/100%) deliberately overrides the proportional
+  default — reading-width remains a CHOICE (2026-07-08 "no comically wide card" ruling now
+  applies to the explicit scale only). The slotted actions bar shares the same expression.

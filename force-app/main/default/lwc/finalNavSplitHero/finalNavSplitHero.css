@@ -285,15 +285,18 @@ slot[name='actions'] {
 }
 
 /* --frame-max = an explicit Max width choice (pageFrame's tighter bleed
-   scale); unset keeps the locked 480px form column. Card and bar share it. */
+   scale); unset = PROPORTIONAL default (owner 2026-07-11: "scale with
+   screen"): the card fills 90% of its pane with a 480px floor so small
+   panes never cramp it — width:100% still caps it at the pane on phones.
+   Card and bar share the expression. */
 .mode-bleed slot[name='actions'] {
-    max-width: var(--frame-max, 480px);
+    max-width: var(--frame-max, max(90%, 480px));
     margin: 0 auto;
 }
 
 .mode-bleed .form-card {
     width: 100%;
-    max-width: var(--frame-max, 480px);
+    max-width: var(--frame-max, max(90%, 480px));
     /* auto BLOCK margins: centered while short, top-anchored + scrollable
        the moment content outgrows the pane (they collapse to 0 on overflow) */
     margin: auto;
