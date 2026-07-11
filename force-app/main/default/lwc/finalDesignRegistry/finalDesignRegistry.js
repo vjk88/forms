@@ -187,9 +187,7 @@ const AREAS = [
                         emptyAsNull: true,
                         options: [
                             { value: '', label: 'Square' },
-                            ...RADIUS_OPTIONS.filter(
-                                (o) => o.value !== 'sharp'
-                            )
+                            ...RADIUS_OPTIONS.filter((o) => o.value !== 'sharp')
                         ]
                     }
                 ]
@@ -352,6 +350,200 @@ const AREAS = [
                             {
                                 value: 'oneAtATime',
                                 label: 'One question at a time'
+                            }
+                        ]
+                    },
+                    {
+                        key: 'heroProgress',
+                        label: 'Progress (brand pane)',
+                        type: 'select',
+                        path: 'layout.options.progressStyle',
+                        fallback: 'default',
+                        options: [
+                            { value: 'default', label: 'Step dots' },
+                            { value: 'horizontal', label: 'Progress bar' },
+                            { value: 'none', label: 'None' }
+                        ]
+                    }
+                ]
+            },
+            {
+                key: 'steps',
+                label: 'Steps',
+                appliesTo: { layouts: ['stepper'] },
+                controls: [
+                    {
+                        key: 'stepperMode',
+                        label: 'Progress indicator',
+                        type: 'select',
+                        path: 'layout.options.mode',
+                        fallback: 'numbered',
+                        options: [
+                            { value: 'numbered', label: 'Numbered steps' },
+                            { value: 'dots', label: 'Dots' },
+                            { value: 'progressBar', label: 'Progress bar' }
+                        ]
+                    },
+                    {
+                        key: 'stepperPlacement',
+                        label: 'Placement',
+                        type: 'select',
+                        path: 'layout.options.placement',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Across the top' },
+                            { value: 'leftRail', label: 'Left rail' }
+                        ]
+                    },
+                    {
+                        key: 'stepperRailWidth',
+                        label: 'Rail width',
+                        type: 'select',
+                        path: 'layout.options.railWidth',
+                        fallback: '',
+                        needsValue: [
+                            { key: 'stepperPlacement', equals: 'leftRail' }
+                        ],
+                        options: [
+                            { value: 'narrow', label: 'Narrow' },
+                            { value: '', label: 'Standard' },
+                            { value: 'wide', label: 'Wide' }
+                        ]
+                    },
+                    {
+                        key: 'stepperNavigation',
+                        label: 'Step access',
+                        type: 'select',
+                        path: 'layout.options.navigation',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Unlock in order' },
+                            { value: 'free', label: 'Jump to any step' }
+                        ]
+                    },
+                    {
+                        key: 'stepperCount',
+                        label: '“Step 2 of 5” text',
+                        type: 'toggle',
+                        path: 'layout.options.showStepCount',
+                        fallback: false
+                    }
+                ]
+            },
+            {
+                key: 'tabstrip',
+                label: 'Tab strip',
+                appliesTo: { layouts: ['tabs'] },
+                controls: [
+                    {
+                        key: 'tabStyle',
+                        label: 'Style',
+                        type: 'select',
+                        path: 'layout.options.tabStyle',
+                        fallback: 'underline',
+                        options: [
+                            { value: 'underline', label: 'Underline' },
+                            { value: 'pills', label: 'Pills' },
+                            { value: 'enclosed', label: 'Enclosed' }
+                        ]
+                    },
+                    {
+                        key: 'tabAlignment',
+                        label: 'Alignment',
+                        type: 'select',
+                        path: 'layout.options.tabAlignment',
+                        fallback: 'left',
+                        options: [
+                            { value: 'left', label: 'Left' },
+                            { value: 'center', label: 'Centered' },
+                            { value: 'fullWidth', label: 'Stretch across' }
+                        ]
+                    }
+                ]
+            },
+            {
+                key: 'sideRail',
+                label: 'Side rail',
+                appliesTo: { layouts: ['rail'] },
+                controls: [
+                    {
+                        key: 'railSide',
+                        label: 'Side',
+                        type: 'select',
+                        path: 'layout.options.side',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Left' },
+                            { value: 'right', label: 'Right' }
+                        ]
+                    },
+                    {
+                        key: 'railWidth',
+                        label: 'Rail width',
+                        type: 'select',
+                        path: 'layout.options.railWidth',
+                        fallback: '',
+                        options: [
+                            { value: 'narrow', label: 'Narrow' },
+                            { value: '', label: 'Standard' },
+                            { value: 'wide', label: 'Wide' }
+                        ]
+                    },
+                    {
+                        key: 'railContent',
+                        label: 'Rail shows',
+                        type: 'select',
+                        path: 'layout.options.railContent',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Page links' },
+                            { value: 'progress', label: 'Progress only' },
+                            { value: 'both', label: 'Links + progress' }
+                        ]
+                    },
+                    {
+                        key: 'railNarrow',
+                        label: 'Small screens',
+                        type: 'select',
+                        path: 'layout.options.narrowBehavior',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Chips across the top' },
+                            { value: 'drawer', label: 'Collapse into a menu' }
+                        ]
+                    }
+                ]
+            },
+            {
+                key: 'questionFlow',
+                label: 'Question flow',
+                appliesTo: { layouts: ['oneAtATime'] },
+                controls: [
+                    {
+                        key: 'advanceLabel',
+                        label: 'Continue button label',
+                        type: 'text',
+                        path: 'layout.options.advanceLabel',
+                        placeholder: 'Continue'
+                    },
+                    {
+                        key: 'oaatProgress',
+                        label: 'Progress bar',
+                        type: 'toggle',
+                        path: 'layout.options.showProgressBar',
+                        fallback: true
+                    },
+                    {
+                        key: 'advanceTrigger',
+                        label: 'Advance with',
+                        type: 'select',
+                        path: 'layout.options.advanceTrigger',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Button click' },
+                            {
+                                value: 'keyboard',
+                                label: 'Button or Return key'
                             }
                         ]
                     }
@@ -699,7 +891,10 @@ const AREAS = [
                         fallback: '',
                         options: [
                             { value: '', label: 'Layout default' },
-                            { value: 'together-left', label: 'Together · left' },
+                            {
+                                value: 'together-left',
+                                label: 'Together · left'
+                            },
                             {
                                 value: 'together-right',
                                 label: 'Together · right'

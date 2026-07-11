@@ -268,7 +268,7 @@ describe('c-final-design-panel', () => {
         expect(chip.textContent).toContain('1');
     });
 
-    it('paging: splitHero gets pane controls, stepper gets the parked narration', async () => {
+    it('paging: splitHero gets pane controls (incl. progress style)', async () => {
         const el = mount(
             buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
         );
@@ -277,21 +277,85 @@ describe('c-final-design-panel', () => {
         expect(
             el.shadowRoot.querySelector('input[data-key="fullBleed"]')
         ).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('select[data-key="heroProgress"]')
+        ).not.toBeNull();
         expect(el.shadowRoot.querySelector('.narrate').textContent).toContain(
             'brand pane'
         );
+    });
+
+    it('paging: stepper gets real step controls, no stale narration', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' })
+        );
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await goAdvanced(el);
+        await openArea(el, 'paging');
+        expect(el.shadowRoot.querySelector('.narrate')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('input[data-key="fullBleed"]')
+        ).toBeNull();
+
+        const mode = el.shadowRoot.querySelector(
+            'select[data-key="stepperMode"]'
+        );
+        expect(mode).not.toBeNull();
+        mode.value = 'dots';
+        mode.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(lastSpec(handler).layout.options.mode).toBe('dots');
+
+        // rail width hides until placement = left rail (needsValue gate)
+        expect(
+            el.shadowRoot.querySelector('select[data-key="stepperRailWidth"]')
+        ).toBeNull();
+        const placement = el.shadowRoot.querySelector(
+            'select[data-key="stepperPlacement"]'
+        );
+        placement.value = 'leftRail';
+        placement.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(lastSpec(handler).layout.options.placement).toBe('leftRail');
+        expect(
+            el.shadowRoot.querySelector('select[data-key="stepperRailWidth"]')
+        ).not.toBeNull();
+    });
+
+    it('paging: tabs, rail, and oneAtATime each get their own group', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'tabs', themeKey: 'nordic' })
+        );
+        await goAdvanced(el);
+        await openArea(el, 'paging');
+        expect(
+            el.shadowRoot.querySelector('select[data-key="tabStyle"]')
+        ).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('select[data-key="stepperMode"]')
+        ).toBeNull();
 
         const el2 = mount(
-            buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' })
+            buildSampleSpec({ layout: 'rail', themeKey: 'nordic' })
         );
         await goAdvanced(el2);
         await openArea(el2, 'paging');
         expect(
-            el2.shadowRoot.querySelector('input[data-key="fullBleed"]')
-        ).toBeNull();
-        expect(el2.shadowRoot.querySelector('.narrate').textContent).toContain(
-            'owns its progress indicator'
+            el2.shadowRoot.querySelector('select[data-key="railContent"]')
+        ).not.toBeNull();
+
+        const el3 = mount(
+            buildSampleSpec({ layout: 'oneAtATime', themeKey: 'nordic' })
         );
+        await goAdvanced(el3);
+        await openArea(el3, 'paging');
+        expect(
+            el3.shadowRoot.querySelector('input[data-key="advanceLabel"]')
+        ).not.toBeNull();
+        expect(
+            el3.shadowRoot.querySelector('input[data-key="oaatProgress"]')
+        ).not.toBeNull();
     });
 
     it('LOOK chips step radius + density (Simple drives the same registry values)', async () => {
