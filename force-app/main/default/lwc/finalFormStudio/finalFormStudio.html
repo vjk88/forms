@@ -120,9 +120,9 @@
                 </aside>
                 <main class="st-stagearea">
                     <div class="st-scroll">
-                        <c-final-form-viewer
+                        <c-final-preview-stage
                             spec={viewSpec}
-                        ></c-final-form-viewer>
+                        ></c-final-preview-stage>
                     </div>
                 </main>
             </template>
@@ -136,7 +136,9 @@
                 </aside>
                 <main class="st-stagearea">
                     <div class="st-scroll">
-                        <c-final-form-viewer spec={spec}></c-final-form-viewer>
+                        <c-final-preview-stage
+                            spec={spec}
+                        ></c-final-preview-stage>
                     </div>
                 </main>
             </template>
@@ -205,11 +207,11 @@
                 </main>
                 <aside class="st-buildpreview">
                     <div class="st-scroll">
-                        <c-final-form-viewer
+                        <c-final-preview-stage
                             spec={spec}
                             authoring
                             onelementselect={handlePreviewSelect}
-                        ></c-final-form-viewer>
+                        ></c-final-preview-stage>
                     </div>
                 </aside>
             </template>

@@ -32,6 +32,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api authoring = false;
 
     /**
+     * Embedded-surface override forwarded to the page frame (tri-state:
+     * undefined = frame auto-detects from the URL). The studio's preview
+     * stage forces true so embedded-only page treatments render in previews
+     * hosted outside /lightning/ (the VF full-page studio).
+     */
+    @api embedded;
+
+    /**
      * Inline spec (pre-save preview — creation flow step 3, builder preview
      * later). When set, it wins over formId/versionId and no Apex load runs.
      * Re-setting it re-applies; navigation position survives when the layout

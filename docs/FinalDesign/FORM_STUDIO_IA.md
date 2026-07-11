@@ -77,6 +77,15 @@ change would re-flow the editing surface). So structure and presentation are spl
   changes when layouts/themes are added. Bar copy: "BLUEPRINT — structure only; the preview is the truth."
 - **Live preview (right):** the real published render, same parser (one-parser rule — preview IS
   the runtime). Desktop/Mobile device toggle.
+  - **BUILT 2026-07-11 as `c/finalPreviewStage`** (all three preview surfaces: Build, Design,
+    read-only history). Devices = Desktop 1280 / Tablet 768 / Mobile 390 + restart (full viewer
+    remount). Mechanism: shells are container-query responsive, so the stage lays the viewer out
+    at the DEVICE width and `transform: scale()`s it to the pane — layout width is what container
+    queries see, so a 50% pane still renders the true desktop arrangement (no iframe; one-parser
+    rule intact). The stage also forces `embedded` on the viewer (`finalPageFrame @api embedded`
+    tri-state; undefined = URL auto-detect for real hosting) so embedded-only page treatments
+    (corner rounding, viewport-fill min-height via the `--frame-offset` synthetic device viewport)
+    render in previews on any host — the VF studio at /apex/ broke the old URL sniff.
 - **Left column = palette ⇄ properties swap.** Rail: Fields / Blocks / Logic / Autofill. Selecting
   a blueprint element swaps the palette column for that element's properties (`‹ Fields` back row);
   the preview never moves. Properties drive blueprint AND preview — one model, two projections.
