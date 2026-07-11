@@ -113,11 +113,14 @@ export default class FinalPageFrame extends LightningElement {
         // Custom property read by .page--embedded; measured once per mount —
         // LEX chrome height is stable, and re-measuring on scroll would jitter.
         this.template.host.style.setProperty('--frame-offset', `${top}px`);
-        // Sticky-chrome pin offset: LEX's FIXED header overlays the window's
-        // top, so top:0 sticky elements pin invisibly UNDER it. The measured
-        // frame top ≈ chrome height — pin below that. Unset (VF/guest hosts,
-        // the preview's own scroll container) falls back to 0 in consumers.
-        this.template.host.style.setProperty('--c-sticky-top', `${top}px`);
+        // Nav chrome must NOT pin inside LEX embeds (owner screenshot
+        // 2026-07-11): top:0 pins invisibly UNDER LEX's fixed header, and the
+        // measured frame top OVERSHOOTS it (it includes scrollable bands like
+        // the tab title), leaving the strip afloat mid-content with a gap
+        // above. The fixed-chrome height is unknowable from in here — so in
+        // LEX the strips flow with the document. Surfaces we own (VF/guest,
+        // the preview stage's scroll container) keep the sticky default.
+        this.template.host.style.setProperty('--c-nav-sticky', 'static');
         this._embedMeasured = true;
     }
 
