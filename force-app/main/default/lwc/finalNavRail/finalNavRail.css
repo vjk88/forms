@@ -39,9 +39,9 @@
 }
 
 .sticky-rail .rail {
-    position: sticky;
-    /* --c-sticky-top clears LEX's fixed header (pageFrame measures it). */
-    top: calc(var(--c-sticky-top, 0px) + var(--c-space-4));
+    /* --c-nav-sticky: static inside LEX embeds (pageFrame decides). */
+    position: var(--c-nav-sticky, sticky);
+    top: var(--c-space-4);
 }
 
 /* — Docked mode (default): the page holds still, ONLY the content column
@@ -254,7 +254,7 @@
        survives narrow too); surface-matched bg so content never bleeds
        through. Drawer mode goes static — a pinned closed drawer is noise. */
     .narrow-topbar.sticky-rail .rail {
-        top: var(--c-sticky-top, 0px);
+        top: 0;
         z-index: 2;
         padding: var(--c-space-2) 0;
         background: var(--c-content-bg);

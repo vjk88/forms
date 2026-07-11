@@ -11,9 +11,9 @@
 /* Sticky wayfinding (owner 2026-07-11): the strip pins while the page's ONE
    scrollbar moves content under it; surface-matched bg + panel glass blur. */
 .tab-strip {
-    position: sticky;
-    /* --c-sticky-top: LEX's fixed header height (pageFrame measures it). */
-    top: var(--c-sticky-top, 0px);
+    /* --c-nav-sticky: static inside LEX embeds (pageFrame decides). */
+    position: var(--c-nav-sticky, sticky);
+    top: 0;
     z-index: 2;
     margin-bottom: var(--c-space-5);
     padding: var(--c-space-2) 0;

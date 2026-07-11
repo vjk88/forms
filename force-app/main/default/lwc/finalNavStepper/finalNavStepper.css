@@ -44,10 +44,11 @@
    scroll container. Surface-matched background (+ the panel's glass blur) so
    scrolled content never shows through the pinned strip. */
 .steps {
-    position: sticky;
-    /* --c-sticky-top: LEX's fixed header height (pageFrame measures it);
-       0 everywhere the window top is really the top. */
-    top: var(--c-sticky-top, 0px);
+    /* --c-nav-sticky: pageFrame sets `static` inside LEX embeds (the fixed
+       chrome's height is unknowable — a mid-content pin looks broken, owner
+       2026-07-11). Everywhere we own the viewport this stays sticky. */
+    position: var(--c-nav-sticky, sticky);
+    top: 0;
     z-index: 2;
     margin-bottom: var(--c-space-5);
     padding: var(--c-space-2) 0;
@@ -57,7 +58,7 @@
 }
 
 .place-rail .steps {
-    top: calc(var(--c-sticky-top, 0px) + var(--c-space-4));
+    top: var(--c-space-4);
     margin-bottom: 0;
     padding: 0;
     background: none;
@@ -236,7 +237,7 @@
     /* collapsed to a top bar — take the top-strip sticky treatment */
     .place-rail .steps {
         margin-bottom: var(--c-space-5);
-        top: var(--c-sticky-top, 0px);
+        top: 0;
         padding: var(--c-space-2) 0;
         background: var(--c-content-bg);
         -webkit-backdrop-filter: blur(var(--c-glass-blur));
