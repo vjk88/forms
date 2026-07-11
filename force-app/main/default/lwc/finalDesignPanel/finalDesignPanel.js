@@ -370,9 +370,9 @@ export default class FinalDesignPanel extends LightningElement {
                 return 'Split Hero owns pagination — progress renders in the brand pane.';
             }
             if (!this.layoutInfo.paginates) {
-                return 'Single page — nothing to page.';
+                return 'This layout shows every page at once — nothing to page.';
             }
-            return `The ${this.layoutType} primitive owns its progress indicator; its styling controls arrive with the builder (P3). Values you set elsewhere are kept.`;
+            return '';
         }
         if (this.activeAreaKey === 'header' && this.layoutInfo.ownsHeader) {
             return 'Split Hero paints the header in its brand pane — these words feed the pane.';
