@@ -23,17 +23,22 @@ describe('c-final-nav-rail sticky default', () => {
         }
     });
 
-    it('sticky-rail by default (no options)', async () => {
+    it('sticky-rail AND dock by default (no options)', async () => {
         const cmp = await mount();
-        expect(cmp.shadowRoot.querySelector('.layout').className).toContain(
-            'sticky-rail'
-        );
+        const cls = cmp.shadowRoot.querySelector('.layout').className;
+        expect(cls).toContain('sticky-rail');
+        // docked: page holds still, only .content scrolls (owner 2026-07-11)
+        expect(cls).toContain('dock');
     });
 
-    it('explicit sticky:false opts out', async () => {
-        const cmp = await mount({ sticky: false });
+    it('explicit sticky:false / dock:false opt out independently', async () => {
+        let cmp = await mount({ sticky: false });
         expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
             'sticky-rail'
+        );
+        cmp = await mount({ dock: false });
+        expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
+            'dock'
         );
     });
 });

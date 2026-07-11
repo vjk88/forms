@@ -234,8 +234,14 @@
      card on the page backdrop. fullBleed:false skips ALL of this. — */
 .mode-bleed {
     gap: 0;
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* The split OWNS the viewport (owner 2026-07-11): page height caps at
+       100% and the FORM pane scrolls internally — the sanctioned inner-scroll
+       exception (split-screen pattern; brand pane never leaves the screen).
+       --frame-offset makes one expression true on every host: 0 on VF/guest
+       (full viewport), the measured chrome height in LEX embeds (remaining
+       viewport), the synthetic device viewport in the studio preview stage. */
+    height: calc(100vh - var(--frame-offset, 0px));
+    height: calc(100dvh - var(--frame-offset, 0px));
     /* An explicit Max width must be able to GROW the form column — the card
        can never outgrow its grid track, so the track's min becomes
        card + form padding. Unset resolves the min to ~96px (inert: halves
@@ -249,18 +255,22 @@
         );
 }
 
-/* In LEX the platform chrome owns the viewport — content drives height. */
-.in-lex.mode-bleed {
-    min-height: 0;
-}
-
 .mode-bleed .pane {
     border-radius: 0;
     padding: var(--c-space-6);
+    /* fit the viewport track — never force it taller than the screen */
+    min-height: 0;
 }
 
 .mode-bleed .form {
     padding: var(--c-space-6) var(--c-space-5);
+    /* THE scrolling pane (grid items must be allowed to fit the track).
+       justify-content stays flex-start: centering under overflow clips the
+       top unreachably — the card's auto margins center it safely instead. */
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    justify-content: flex-start;
 }
 
 /* The slotted submit bar shrink-wrapped (~414px) inside the wide form column,
@@ -284,7 +294,9 @@ slot[name='actions'] {
 .mode-bleed .form-card {
     width: 100%;
     max-width: var(--frame-max, 480px);
-    margin: 0 auto;
+    /* auto BLOCK margins: centered while short, top-anchored + scrollable
+       the moment content outgrows the pane (they collapse to 0 on overflow) */
+    margin: auto;
     padding: var(--c-space-6);
     background: var(--c-content-bg);
     border: var(--c-content-border);
@@ -330,8 +342,12 @@ slot[name='actions'] {
         position: static;
     }
 
+    /* stacked panes: release the viewport cap and the inner scroll — one
+       document flow again (a scroll-trap inside a stacked column is the
+       legacy height bug, not the split-screen pattern) */
     .mode-bleed {
         min-height: 0;
+        height: auto;
     }
 
     .mode-bleed .pane {
@@ -341,6 +357,7 @@ slot[name='actions'] {
 
     .mode-bleed .form {
         padding: var(--c-space-5) var(--c-space-4);
+        overflow-y: visible;
     }
 
     .brand {

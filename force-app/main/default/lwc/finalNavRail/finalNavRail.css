@@ -44,6 +44,30 @@
     top: calc(var(--c-sticky-top, 0px) + var(--c-space-4));
 }
 
+/* — Docked mode (default): the page holds still, ONLY the content column
+     scrolls. Height = the viewport below this layout's own measured top
+     (--rail-dock-top), minus the page's bottom padding so the page never
+     outgrows the screen. The sanctioned inner scroll — same split-screen
+     model as splitHero's form pane. — */
+.dock {
+    /* below us sit the panel's AND the page's bottom paddings (space-6 each) */
+    height: calc(100vh - var(--rail-dock-top, 240px) - 2 * var(--c-space-6));
+    height: calc(100dvh - var(--rail-dock-top, 240px) - 2 * var(--c-space-6));
+    align-items: stretch;
+}
+
+.dock .content {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.dock .rail {
+    /* fits the track; scrolls itself only if a form has absurdly many pages */
+    min-height: 0;
+    overflow-y: auto;
+}
+
 /* Drawer toggle exists for the narrow drawer mode only — hidden wide. */
 .drawer-toggle {
     display: none;
@@ -240,6 +264,17 @@
 
     .narrow-drawer.sticky-rail .rail {
         position: static;
+    }
+
+    /* stacked: release the viewport cap and inner scroll — one document flow
+       (a scroll trap inside a stacked column is the legacy height bug) */
+    .dock {
+        height: auto;
+    }
+
+    .dock .content,
+    .dock .rail {
+        overflow-y: visible;
     }
 }
 
