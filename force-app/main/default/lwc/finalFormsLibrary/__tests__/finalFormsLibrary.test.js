@@ -1,29 +1,6 @@
 import { createElement } from 'lwc';
-import FinalFormsLibrary from 'c/finalFormsLibrary';
+import FinalFormsLibrary, { studioUrl } from 'c/finalFormsLibrary';
 import listForms from '@salesforce/apex/FinalStudioController.listForms';
-
-const NAVIGATE = [];
-jest.mock(
-    'lightning/navigation',
-    () => {
-        const {
-            createTestWireAdapter
-        } = require('@salesforce/wire-service-jest-util');
-        const Navigate = Symbol('Navigate');
-        const NavigationMixin = (Base) =>
-            class extends Base {
-                [Navigate](pageRef) {
-                    NAVIGATE.push(pageRef);
-                }
-            };
-        NavigationMixin.Navigate = Navigate;
-        return {
-            CurrentPageReference: createTestWireAdapter(jest.fn()),
-            NavigationMixin
-        };
-    },
-    { virtual: true }
-);
 
 jest.mock(
     '@salesforce/apex/FinalStudioController.listForms',
@@ -43,10 +20,11 @@ describe('c-final-forms-library', () => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);
         }
-        NAVIGATE.length = 0;
+        jest.restoreAllMocks();
     });
 
-    it('lists forms and opens the full-page studio host with c__formId', async () => {
+    it('lists forms; Open = window.open (the LEX router aloha-wraps ALL nav-service URLs)', async () => {
+        const open = jest.spyOn(window, 'open').mockReturnValue(null);
         const el = createElement('c-final-forms-library', {
             is: FinalFormsLibrary
         });
@@ -67,10 +45,37 @@ describe('c-final-forms-library', () => {
         expect(cells[2].textContent).toBe('v3 + draft');
 
         el.shadowRoot.querySelector('.lib-open').click();
-        expect(NAVIGATE[0].type).toBe('standard__webPage');
-        expect(NAVIGATE[0].attributes.url).toBe(
-            '/apex/FinalStudio?c__formId=a0F1'
+        expect(open).toHaveBeenCalledWith(
+            '/apex/FinalStudio?c__formId=a0F1',
+            '_blank'
         );
+    });
+
+    it('studioUrl targets the RAW VF host — lightning.force.com wraps /apex in LEX chrome', () => {
+        const orig = window.location;
+        const at = (hostname) => {
+            delete window.location;
+            window.location = { hostname };
+        };
+        try {
+            at('acme.lightning.force.com');
+            expect(studioUrl('a1')).toBe(
+                'https://acme--c.vf.force.com/apex/FinalStudio?c__formId=a1'
+            );
+            at('rev-5e-dev-ed.develop.lightning.force.com');
+            expect(studioUrl('a2')).toBe(
+                'https://rev-5e-dev-ed--c.develop.vf.force.com/apex/FinalStudio?c__formId=a2'
+            );
+            at('acme--uat.sandbox.lightning.force.com');
+            expect(studioUrl('a3')).toBe(
+                'https://acme--uat--c.sandbox.vf.force.com/apex/FinalStudio?c__formId=a3'
+            );
+            // non-lightning hosts already serve /apex raw — stay relative
+            at('acme.my.salesforce.com');
+            expect(studioUrl('a4')).toBe('/apex/FinalStudio?c__formId=a4');
+        } finally {
+            window.location = orig;
+        }
     });
 
     it('empty list → gallery-first empty state, not a blank void', async () => {
