@@ -32,20 +32,28 @@ const LAYOUT_GROUPS = [
     {
         id: 'paginated',
         title: 'Paginated / Nav-driven',
-        hint: 'Steps, side panels, one question at a time',
+        hint: 'Steps, side panels, one section at a time',
         cards: [
             { layout: 'stepper', themeKey: 'mintStepper', name: 'Stepper' },
-            { layout: 'splitHero', themeKey: 'marbleSplit', name: 'Split Hero' },
+            {
+                layout: 'splitHero',
+                themeKey: 'marbleSplit',
+                name: 'Split Hero'
+            },
             {
                 layout: 'splitHero',
                 paneFlow: 'oneAtATime',
                 themeKey: 'auraSplit',
                 name: 'Split Hero · Conversational',
                 description:
-                    'Start from the Split Hero layout, one question at a time.'
+                    'Start from the Split Hero layout, one section at a time.'
             },
             { layout: 'rail', themeKey: 'execNav', name: 'Side Nav' },
-            { layout: 'oneAtATime', themeKey: 'lavender', name: 'One at a Time' }
+            {
+                layout: 'oneAtATime',
+                themeKey: 'lavender',
+                name: 'One at a Time'
+            }
         ]
     },
     {
@@ -184,7 +192,9 @@ export default class FinalCreationGallery extends LightningElement {
     }
 
     get chosenThemeLabel() {
-        const t = listBuiltinThemes().find((x) => x.key === this.chosenThemeKey);
+        const t = listBuiltinThemes().find(
+            (x) => x.key === this.chosenThemeKey
+        );
         return t ? t.name : 'Pick a theme';
     }
     handleChangeTheme() {
@@ -241,7 +251,10 @@ export default class FinalCreationGallery extends LightningElement {
             .slice(0, 50)
             .map((o) => ({
                 ...o,
-                cls: o.value === this.chosenObject ? 'obj-item is-on' : 'obj-item'
+                cls:
+                    o.value === this.chosenObject
+                        ? 'obj-item is-on'
+                        : 'obj-item'
             }));
     }
     get hasObjectResults() {

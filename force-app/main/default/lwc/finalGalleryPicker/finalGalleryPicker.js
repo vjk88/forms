@@ -29,7 +29,7 @@ const LAYOUT_GROUPS = [
     {
         id: 'paginated',
         title: 'Paginated / Nav-driven',
-        hint: 'Steps, side panels, one question at a time',
+        hint: 'Steps, side panels, one section at a time',
         cards: [
             { layout: 'stepper', themeKey: 'mintStepper', name: 'Stepper' },
             {

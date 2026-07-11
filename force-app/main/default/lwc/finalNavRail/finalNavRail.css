@@ -120,6 +120,12 @@
     box-shadow: var(--c-focus-ring);
 }
 
+/* Gated mode: locked pages read as parked, not broken (stepper parity). */
+.rail-link:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
 .rail-link.active {
     background: var(--c-section-bg);
     color: var(--c-text);

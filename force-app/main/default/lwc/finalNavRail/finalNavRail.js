@@ -3,8 +3,11 @@ import { LightningElement, api, track } from 'lwc';
 /**
  * finalNavRail — persistent side-nav primitive (catalog §2).
  *
- * A page list (and/or progress) beside the content pane. Free navigation;
- * dispatches `pagechange`, hosts the slotted submitBar under the content.
+ * A page list (and/or progress) beside the content pane. Free navigation by
+ * default; `navigation: 'gated'` locks pages past the first not-yet-valid one
+ * (opt-IN — the stepper's convention inverted, so existing rail forms keep
+ * their jump-anywhere behavior). Dispatches `pagechange`, hosts the slotted
+ * submitBar under the content.
  * A11y: nav list of buttons with aria-current="page" on the active entry.
  *
  * Narrow behavior is an ENUM (contract): `topBar` collapses the rail to a
@@ -21,7 +24,7 @@ export default class FinalNavRail extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { side, railWidth, railContent, sticky, narrowBehavior } */
+    /** Spec layout.options: { side, railWidth, railContent, sticky, narrowBehavior, navigation } */
     @api options;
 
     @track drawerOpen = false;
@@ -79,15 +82,29 @@ export default class FinalNavRail extends LightningElement {
         );
     }
 
+    /** Index of the first page the last validation run left invalid. */
+    get firstBlocked() {
+        const validity = this.pageValidity || [];
+        for (let i = 0; i < (this.pages || []).length; i++) {
+            if (!validity[i]) {
+                return i;
+            }
+        }
+        return (this.pages || []).length;
+    }
+
     get pageList() {
         const current = this.currentPageIndex || 0;
+        const gated = this.opts.navigation === 'gated';
+        const reachable = this.firstBlocked;
         return (this.pages || []).map((page, index) => ({
             key: page.id || `pg_${index}`,
             label: page.name || `Page ${index + 1}`,
             number: index + 1,
             index,
             cls: index === current ? 'rail-link active' : 'rail-link',
-            ariaCurrent: index === current ? 'page' : null
+            ariaCurrent: index === current ? 'page' : null,
+            disabled: gated && index > reachable
         }));
     }
 

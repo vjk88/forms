@@ -19,7 +19,7 @@ export default class FinalNavStepper extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { placement, mode, navigation, showStepCount, railWidth } */
+    /** Spec layout.options: { mode, navigation, showStepCount, narrowMode } */
     @api options;
 
     get opts() {
@@ -36,17 +36,32 @@ export default class FinalNavStepper extends LightningElement {
 
     /**
      * Two nested divs on purpose: `.stepper` is the size container, `.layout`
-     * carries placement — a container query can never style its own container,
-     * so the queried classes must live on a descendant.
+     * carries the queried classes — a container query can never style its own
+     * container, so they must live on a descendant. The strip always sits on
+     * top (owner 2026-07-11: left-rail placement removed).
      */
     get layoutClass() {
-        const place = this.opts.placement === 'leftRail' ? 'place-rail' : 'place-top';
-        const rail = { narrow: 'rail-narrow', wide: 'rail-wide' }[this.opts.railWidth] || 'rail-standard';
-        return `layout ${place} ${rail}`;
+        return 'layout';
     }
 
     get stepsClass() {
-        return `steps mode-${this.mode}`;
+        // Narrow collapse (container query flips it): dots by default, a
+        // progress bar on request. The wide mode is untouched either way.
+        const narrow =
+            this.opts.narrowMode === 'progressBar'
+                ? 'narrow-bar'
+                : 'narrow-dots';
+        return `steps mode-${this.mode} ${narrow}`;
+    }
+
+    /** The bar markup also mounts when it's only the NARROW collapse target —
+     *  CSS shows exactly one of list/bar per container width. */
+    get showBar() {
+        return this.isProgressBar || this.opts.narrowMode === 'progressBar';
+    }
+
+    get showList() {
+        return !this.isProgressBar;
     }
 
     /** Index of the first page the last validation run left invalid. */
@@ -91,7 +106,9 @@ export default class FinalNavStepper extends LightningElement {
 
     get progressPercent() {
         const count = (this.pages || []).length;
-        return count ? Math.round((((this.currentPageIndex || 0) + 1) / count) * 100) : 0;
+        return count
+            ? Math.round((((this.currentPageIndex || 0) + 1) / count) * 100)
+            : 0;
     }
 
     get progressFillStyle() {
@@ -102,13 +119,17 @@ export default class FinalNavStepper extends LightningElement {
     /** One-item list so the keyed template remounts (and animates) per step. */
     get currentPageList() {
         const page = (this.pages || [])[this.currentPageIndex || 0];
-        return page ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }] : [];
+        return page
+            ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }]
+            : [];
     }
 
     handleStepClick(event) {
         const index = Number(event.currentTarget.dataset.index);
         if (index !== this.currentPageIndex) {
-            this.dispatchEvent(new CustomEvent('pagechange', { detail: { index } }));
+            this.dispatchEvent(
+                new CustomEvent('pagechange', { detail: { index } })
+            );
         }
     }
 

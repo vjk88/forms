@@ -349,7 +349,7 @@ const AREAS = [
                             { value: '', label: 'All fields together' },
                             {
                                 value: 'oneAtATime',
-                                label: 'One question at a time'
+                                label: 'One section at a time'
                             }
                         ]
                     },
@@ -385,29 +385,14 @@ const AREAS = [
                         ]
                     },
                     {
-                        key: 'stepperPlacement',
-                        label: 'Placement',
+                        key: 'stepperNarrow',
+                        label: 'Small screens',
                         type: 'select',
-                        path: 'layout.options.placement',
+                        path: 'layout.options.narrowMode',
                         fallback: '',
                         options: [
-                            { value: '', label: 'Across the top' },
-                            { value: 'leftRail', label: 'Left rail' }
-                        ]
-                    },
-                    {
-                        key: 'stepperRailWidth',
-                        label: 'Rail width',
-                        type: 'select',
-                        path: 'layout.options.railWidth',
-                        fallback: '',
-                        needsValue: [
-                            { key: 'stepperPlacement', equals: 'leftRail' }
-                        ],
-                        options: [
-                            { value: 'narrow', label: 'Narrow' },
-                            { value: '', label: 'Standard' },
-                            { value: 'wide', label: 'Wide' }
+                            { value: '', label: 'Dots' },
+                            { value: 'progressBar', label: 'Progress bar' }
                         ]
                     },
                     {
@@ -497,8 +482,21 @@ const AREAS = [
                         fallback: '',
                         options: [
                             { value: '', label: 'Page links' },
-                            { value: 'progress', label: 'Progress only' },
                             { value: 'both', label: 'Links + progress' }
+                        ]
+                    },
+                    {
+                        key: 'railNavigation',
+                        label: 'Step access',
+                        type: 'select',
+                        path: 'layout.options.navigation',
+                        // opposite default to the stepper: the rail was born
+                        // free-navigation, so '' must stay that way — gating
+                        // is the explicit opt-in the primitive reads
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Jump to any page' },
+                            { value: 'gated', label: 'Unlock in order' }
                         ]
                     },
                     {
@@ -515,8 +513,8 @@ const AREAS = [
                 ]
             },
             {
-                key: 'questionFlow',
-                label: 'Question flow',
+                key: 'sectionFlow',
+                label: 'Section flow',
                 appliesTo: { layouts: ['oneAtATime'] },
                 controls: [
                     {

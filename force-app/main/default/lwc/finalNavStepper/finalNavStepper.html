@@ -2,7 +2,7 @@
     <div class="stepper">
         <div class={layoutClass}>
             <nav class={stepsClass} aria-label="Form steps">
-                <template lwc:if={isProgressBar}>
+                <template lwc:if={showBar}>
                     <div
                         class="progress-track"
                         role="progressbar"
@@ -10,10 +10,13 @@
                         aria-valuemin="0"
                         aria-valuemax="100"
                     >
-                        <div class="progress-fill" style={progressFillStyle}></div>
+                        <div
+                            class="progress-fill"
+                            style={progressFillStyle}
+                        ></div>
                     </div>
                 </template>
-                <template lwc:else>
+                <template lwc:if={showList}>
                     <ol class="step-list">
                         <template for:each={stepList} for:item="step">
                             <li class="step-item" key={step.key}>
@@ -42,7 +45,7 @@
                 <template for:each={currentPageList} for:item="page">
                     <div class="page-panel" key={page.key}>
                         <c-final-layout-zones
-                    onvaluechange={handleValueChange}
+                            onvaluechange={handleValueChange}
                             sections={page.sections}
                             zones={page.zones}
                         ></c-final-layout-zones>
