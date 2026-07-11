@@ -59,6 +59,24 @@ describe('c-final-nav-split-hero', () => {
         );
     });
 
+    it('carded pane pins by default; bleed never; sticky:false opts out', async () => {
+        // carded (fullBleed:false) → sticky-pane by default
+        let cmp = await mount({ fullBleed: false });
+        expect(cmp.shadowRoot.querySelector('.layout').className).toContain(
+            'sticky-pane'
+        );
+        // explicit opt-out
+        cmp = await mount({ fullBleed: false, sticky: false });
+        expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
+            'sticky-pane'
+        );
+        // bleed (default): sticky would unstretch the full-height half
+        cmp = await mount({ sticky: true });
+        expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
+            'sticky-pane'
+        );
+    });
+
     it('progress dots carry no hard-coded color classes (review F5 rides currentColor)', async () => {
         const cmp = await mount({});
         const dots = cmp.shadowRoot.querySelectorAll('.dot');

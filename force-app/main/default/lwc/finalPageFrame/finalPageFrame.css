@@ -50,10 +50,10 @@
     --c-space-4: 16px;
     --c-space-5: 24px;
     --c-space-6: 32px;
-    --c-font-body: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-        sans-serif;
-    --c-font-display: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-        sans-serif;
+    --c-font-body:
+        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --c-font-display:
+        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 /*
@@ -72,15 +72,20 @@
     min-height: 100vh;
     min-height: 100dvh;
     box-sizing: border-box;
-    padding: var(--c-space-6) var(--c-space-4);
+    /* Breathing offset (owner 2026-07-11): document-style forms are
+       TOP-ANCHORED — never vertically centered (expanding content would yank
+       the reader) — but a short card must not hug the ceiling. ~8% of the
+       viewport reads as deliberate placement; bleed layouts zero this out. */
+    padding: clamp(32px, 8vh, 96px) var(--c-space-4) var(--c-space-6);
     color: var(--c-text);
     font-family: var(--c-font-body);
     background-color: var(--c-page-bg);
     /* Fixed 4-slot stack, top to bottom: scrim, image-opacity veil, the
        user's image, gradient. The fit/placement tokens address slot 3 by
        POSITION — no feature can ever shift which layer they land on. */
-    background-image: var(--c-page-scrim), var(--c-page-veil, none),
-        var(--c-page-bg-image), var(--c-page-bg-gradient, none);
+    background-image:
+        var(--c-page-scrim), var(--c-page-veil, none), var(--c-page-bg-image),
+        var(--c-page-bg-gradient, none);
     background-size: auto, auto, var(--c-page-bg-size), auto;
     background-position: center, center, var(--c-page-bg-position), center;
     background-repeat: no-repeat, no-repeat, var(--c-page-bg-repeat), no-repeat;

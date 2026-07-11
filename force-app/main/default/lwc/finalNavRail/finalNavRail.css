@@ -40,7 +40,8 @@
 
 .sticky-rail .rail {
     position: sticky;
-    top: var(--c-space-4);
+    /* --c-sticky-top clears LEX's fixed header (pageFrame measures it). */
+    top: calc(var(--c-sticky-top, 0px) + var(--c-space-4));
 }
 
 /* Drawer toggle exists for the narrow drawer mode only — hidden wide. */
@@ -225,7 +226,19 @@
         background: var(--c-content-bg);
     }
 
-    .sticky-rail .rail {
+    /* topBar chips: the CHIP ROW becomes the sticky element (wayfinding
+       survives narrow too); surface-matched bg so content never bleeds
+       through. Drawer mode goes static — a pinned closed drawer is noise. */
+    .narrow-topbar.sticky-rail .rail {
+        top: var(--c-sticky-top, 0px);
+        z-index: 2;
+        padding: var(--c-space-2) 0;
+        background: var(--c-content-bg);
+        -webkit-backdrop-filter: blur(var(--c-glass-blur));
+        backdrop-filter: blur(var(--c-glass-blur));
+    }
+
+    .narrow-drawer.sticky-rail .rail {
         position: static;
     }
 }
