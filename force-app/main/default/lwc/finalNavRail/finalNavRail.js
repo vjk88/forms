@@ -40,7 +40,28 @@ export default class FinalNavRail extends LightningElement {
         // Sticky by DEFAULT (owner 2026-07-11): the rail is wayfinding — it
         // must survive the scroll. Opt out with an explicit sticky:false.
         const sticky = this.opts.sticky === false ? '' : ' sticky-rail';
-        return `layout ${side} ${width} ${narrow}${sticky}`;
+        // Docked by DEFAULT (owner 2026-07-11): the whole page holds still —
+        // background, header, rail — and ONLY the content column scrolls
+        // (viewport-capped height, same model as splitHero's form pane).
+        const dock = this.opts.dock === false ? '' : ' dock';
+        return `layout ${side} ${width} ${narrow}${sticky}${dock}`;
+    }
+
+    /** Dock height = the viewport below this layout's own top edge. Measured
+     *  once per mount (chrome + page/panel padding + header above us);
+     *  --rail-dock-top feeds the CSS calc. Same posture as pageFrame's
+     *  --frame-offset — LEX chrome height is stable, re-measuring jitters. */
+    renderedCallback() {
+        if (this._dockMeasured) {
+            return;
+        }
+        const layout = this.template.querySelector('.layout');
+        if (!layout) {
+            return;
+        }
+        const top = Math.max(0, Math.round(layout.getBoundingClientRect().top));
+        this.template.host.style.setProperty('--rail-dock-top', `${top}px`);
+        this._dockMeasured = true;
     }
 
     get railClass() {
