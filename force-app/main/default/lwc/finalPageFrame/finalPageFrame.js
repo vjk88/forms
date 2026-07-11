@@ -24,7 +24,9 @@ const MAX_WIDTHS = {
 // EXPLICIT Max width choice reaches their inner column (oneAtATime's floating
 // card, splitHero's form pane) as --frame-max, on a tighter scale (owner
 // ruling 2026-07-08: "wide" must never mean a comically wide question card).
-// Unset = no var = each layout keeps its locked default (540px card / 480px pane).
+// Unset = no var = each layout keeps its own default (oneAtATime: locked 540px
+// card; splitHero: proportional — 90% of the pane, 480px floor, owner
+// 2026-07-11 "scale with screen").
 const BLEED_MAX_WIDTHS = {
     narrow: '480px',
     medium: '560px',
