@@ -34,8 +34,12 @@ export default class FinalNavRail extends LightningElement {
         const side = this.opts.side === 'right' ? 'side-right' : 'side-left';
         const width = RAIL_WIDTH_CLASS[this.opts.railWidth] || 'rail-standard';
         const narrow =
-            this.opts.narrowBehavior === 'drawer' ? 'narrow-drawer' : 'narrow-topbar';
-        const sticky = this.opts.sticky ? ' sticky-rail' : '';
+            this.opts.narrowBehavior === 'drawer'
+                ? 'narrow-drawer'
+                : 'narrow-topbar';
+        // Sticky by DEFAULT (owner 2026-07-11): the rail is wayfinding — it
+        // must survive the scroll. Opt out with an explicit sticky:false.
+        const sticky = this.opts.sticky === false ? '' : ' sticky-rail';
         return `layout ${side} ${width} ${narrow}${sticky}`;
     }
 
@@ -79,7 +83,9 @@ export default class FinalNavRail extends LightningElement {
     /** One-item list so the keyed template remounts (and animates) per page. */
     get currentPageList() {
         const page = (this.pages || [])[this.currentPageIndex || 0];
-        return page ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }] : [];
+        return page
+            ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }]
+            : [];
     }
 
     get drawerToggleLabel() {
@@ -95,7 +101,9 @@ export default class FinalNavRail extends LightningElement {
         const index = Number(event.currentTarget.dataset.index);
         this.drawerOpen = false;
         if (index !== this.currentPageIndex) {
-            this.dispatchEvent(new CustomEvent('pagechange', { detail: { index } }));
+            this.dispatchEvent(
+                new CustomEvent('pagechange', { detail: { index } })
+            );
         }
     }
 

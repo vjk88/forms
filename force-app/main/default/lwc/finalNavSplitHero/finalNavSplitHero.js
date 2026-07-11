@@ -100,7 +100,12 @@ export default class FinalNavSplitHero extends LightningElement {
         const side = this.opts.side === 'right' ? 'side-right' : 'side-left';
         const ratio =
             this.opts.ratio === 'third' ? 'ratio-third' : 'ratio-half';
-        const sticky = this.opts.sticky ? ' sticky-pane' : '';
+        // Carded split: the brand pane pins by DEFAULT while the form column
+        // scrolls (owner 2026-07-11; opt out via sticky:false). Never in
+        // bleed — sticky's align-self:start would unstretch the full-height
+        // half and collapse the immersive canvas.
+        const sticky =
+            !this.bleedOn && this.opts.sticky !== false ? ' sticky-pane' : '';
         const bleed = this.bleedOn ? ' mode-bleed' : '';
         const lex = EMBEDDED_IN_LEX ? ' in-lex' : '';
         return `layout ${side} ${ratio}${sticky}${bleed}${lex}`;

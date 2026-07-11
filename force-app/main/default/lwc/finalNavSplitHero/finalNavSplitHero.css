@@ -32,7 +32,8 @@
 
 .sticky-pane .pane {
     position: sticky;
-    top: var(--c-space-4);
+    /* --c-sticky-top clears LEX's fixed header (pageFrame measures it). */
+    top: calc(var(--c-sticky-top, 0px) + var(--c-space-4));
     align-self: start;
 }
 

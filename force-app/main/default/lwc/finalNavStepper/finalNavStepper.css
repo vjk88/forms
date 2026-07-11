@@ -39,12 +39,30 @@
 }
 
 /* — Step list (top placement default) — */
+/* Sticky wayfinding (owner 2026-07-11): progress you can't see isn't
+   progress. The strip rides the page's ONE scrollbar — sticky never adds a
+   scroll container. Surface-matched background (+ the panel's glass blur) so
+   scrolled content never shows through the pinned strip. */
 .steps {
+    position: sticky;
+    /* --c-sticky-top: LEX's fixed header height (pageFrame measures it);
+       0 everywhere the window top is really the top. */
+    top: var(--c-sticky-top, 0px);
+    z-index: 2;
     margin-bottom: var(--c-space-5);
+    padding: var(--c-space-2) 0;
+    background: var(--c-content-bg);
+    -webkit-backdrop-filter: blur(var(--c-glass-blur));
+    backdrop-filter: blur(var(--c-glass-blur));
 }
 
 .place-rail .steps {
+    top: calc(var(--c-sticky-top, 0px) + var(--c-space-4));
     margin-bottom: 0;
+    padding: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
 .step-list {
@@ -215,8 +233,14 @@
         display: block;
     }
 
+    /* collapsed to a top bar — take the top-strip sticky treatment */
     .place-rail .steps {
         margin-bottom: var(--c-space-5);
+        top: var(--c-sticky-top, 0px);
+        padding: var(--c-space-2) 0;
+        background: var(--c-content-bg);
+        -webkit-backdrop-filter: blur(var(--c-glass-blur));
+        backdrop-filter: blur(var(--c-glass-blur));
     }
 
     .place-rail .step-list {
