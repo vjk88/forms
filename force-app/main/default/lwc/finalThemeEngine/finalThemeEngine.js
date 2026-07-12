@@ -101,27 +101,44 @@ const BORDER_WIDTHS = {
 // global pick and the class-decided look can never drift apart. 'flat' stays
 // class-only (its zero side-padding is structural, not expressible in these
 // three tokens).
+// bgPct/borderPct: the same recipes as JS mix() fractions — they feed the
+// guaranteed-hex swatch companions (a color-mix() string means nothing to a
+// color picker; round-2 audit).
 const SECTION_LOOKS = {
-    plain: { bg: 'transparent', border: 'none', shadow: 'none' },
+    plain: {
+        bg: 'transparent',
+        border: 'none',
+        shadow: 'none',
+        bgPct: 0,
+        borderPct: 0
+    },
     card: {
         bg: 'color-mix(in srgb, var(--c-text) 4%, transparent)',
         border: '1px solid color-mix(in srgb, var(--c-text) 12%, transparent)',
-        shadow: '0 1px 2px rgba(15, 23, 42, 0.05)'
+        shadow: '0 1px 2px rgba(15, 23, 42, 0.05)',
+        bgPct: 0.04,
+        borderPct: 0.12
     },
     boxed: {
         bg: 'color-mix(in srgb, var(--c-text) 7%, transparent)',
         border: 'none',
-        shadow: 'none'
+        shadow: 'none',
+        bgPct: 0.07,
+        borderPct: 0
     },
     outline: {
         bg: 'transparent',
         border: '1px solid color-mix(in srgb, var(--c-text) 18%, transparent)',
-        shadow: 'none'
+        shadow: 'none',
+        bgPct: 0,
+        borderPct: 0.18
     },
     subtle: {
         bg: 'color-mix(in srgb, var(--c-text) 3%, transparent)',
         border: 'none',
-        shadow: 'none'
+        shadow: 'none',
+        bgPct: 0.03,
+        borderPct: 0
     }
 };
 
@@ -272,6 +289,9 @@ const DEFAULT_PROPS = {
     // Global section look (plain|card|boxed|outline|subtle): null = each
     // section's own preset class decides (the §3.1 rule 5 carve-out).
     sectionStyle: null,
+    // 'none' hides section borders outright — beats the look AND a custom
+    // border color (owner 2026-07-12).
+    sectionBorder: null,
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
@@ -511,13 +531,22 @@ export function resolveTokens(themeProps, formOverrides) {
         pal.fieldBg ||
         (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff');
     const focusColor = fs.focus || pal.accent;
+    // `swatch` = the guaranteed-HEX companion the panel's Input fill picker
+    // shows (round-2 audit): the painted bg can be a keyword or a translucent
+    // rgba the picker can't honestly parse — so each shell composites its
+    // real look over the content panel with mix() instead.
     const INPUT_SHELLS = {
         outline: {
             bg: outlineBg,
             border: fieldBorderColor,
             radius: null, // falls through to --c-radius via the CSS fallback
             shadow: 'none',
-            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`
+            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`,
+            swatch:
+                pal.fieldBg ||
+                (isDarkSurface(pal)
+                    ? mix('#ffffff', pal.contentBg, 0.06)
+                    : '#ffffff')
         },
         // the "Boutique underline": no shell, just the baseline (legacy
         // formThemes §3.2 — transparent border + inset box-shadow line)
@@ -528,7 +557,9 @@ export function resolveTokens(themeProps, formOverrides) {
             border: 'transparent',
             radius: '0px',
             shadow: `inset 0 -1.5px 0 0 ${fieldBorderColor}`,
-            shadowFocus: `inset 0 -2px 0 0 ${focusColor}`
+            shadowFocus: `inset 0 -2px 0 0 ${focusColor}`,
+            // transparent shows the panel through — that IS the color you see
+            swatch: pal.fieldBg || pal.contentBg
         },
         // "Flat filled": sunken surface, no border
         filled: {
@@ -540,7 +571,12 @@ export function resolveTokens(themeProps, formOverrides) {
             border: 'transparent',
             radius: null,
             shadow: 'none',
-            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`
+            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`,
+            swatch:
+                pal.fieldBg ||
+                (isDarkSurface(pal)
+                    ? mix('#ffffff', pal.contentBg, 0.08)
+                    : mix(pal.text, pal.contentBg, 0.06))
         }
     };
     const shell = INPUT_SHELLS[p.fieldStyle] || INPUT_SHELLS.outline;
@@ -613,6 +649,8 @@ export function resolveTokens(themeProps, formOverrides) {
     const focus = fs.focus || pal.accent;
     const submitBg = pal.submitBg || pal.accent;
     const sectionLook = SECTION_LOOKS[p.sectionStyle] || null;
+    // Swatch basis: unset global style = each section's default preset (card).
+    const sectionSwatchLook = sectionLook || SECTION_LOOKS.card;
 
     // Display-title gradient ink (Neon Nights): palette.headerTitleGradient =
     // { angle, stops: ['#fff', '#d9ccff 60%', '#16e0c4'] } — stops are raw CSS
@@ -715,12 +753,33 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-section-pad': density.sectionPad,
         '--c-section-bg':
             pal.sectionBg || (sectionLook ? sectionLook.bg : null),
-        '--c-section-border': pal.sectionBorderColor
-            ? `1px solid ${pal.sectionBorderColor}`
-            : sectionLook
-              ? sectionLook.border
-              : null,
+        '--c-section-border':
+            p.sectionBorder === 'none'
+                ? 'none'
+                : pal.sectionBorderColor
+                  ? `1px solid ${pal.sectionBorderColor}`
+                  : sectionLook
+                    ? sectionLook.border
+                    : null,
         '--c-section-shadow': sectionLook ? sectionLook.shadow : null,
+        // Panel-only swatch companions (guaranteed hex; the painted values
+        // are color-mix() strings a picker can't parse). Unset style shows
+        // the per-section default look (card). Borderless looks emit no
+        // border swatch — an empty picker is the honest answer there.
+        '--c-section-bg-swatch':
+            pal.sectionBg ||
+            mix(pal.text, pal.contentBg, sectionSwatchLook.bgPct),
+        '--c-section-border-swatch':
+            p.sectionBorder === 'none'
+                ? null
+                : pal.sectionBorderColor ||
+                  (sectionSwatchLook.borderPct
+                      ? mix(
+                            pal.text,
+                            pal.contentBg,
+                            sectionSwatchLook.borderPct
+                        )
+                      : null),
 
         // Field — the input surface adapts to theme darkness: a dark surface
         // gets a lifted translucent input instead of a jarring white box;
@@ -739,6 +798,8 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-input-radius': shell.radius ?? RADIUS[p.fieldRadius],
         '--c-input-shadow': shell.shadow,
         '--c-input-shadow-focus': shell.shadowFocus,
+        // Panel-only swatch companion (guaranteed hex) — no CSS consumes it.
+        '--c-input-bg-swatch': shell.swatch,
 
         // Label defaults (labelPosition + labelStyle) — flow drives the .field
         // flex axis; look drives the label typography. Per-element classes win.

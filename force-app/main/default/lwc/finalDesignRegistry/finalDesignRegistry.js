@@ -55,6 +55,7 @@ const AREAS = [
                         type: 'color',
                         themePath: 'palette.accent',
                         simple: true,
+                        fallbackToken: '--c-accent',
                         contrastToken: '--c-on-accent',
                         subject: 'Button labels'
                     },
@@ -71,6 +72,7 @@ const AREAS = [
                         label: 'Text',
                         type: 'color',
                         themePath: 'palette.text',
+                        fallbackToken: '--c-text',
                         contrastToken: '--c-content-bg',
                         subject: 'Body text'
                     },
@@ -79,6 +81,7 @@ const AREAS = [
                         label: 'Muted text',
                         type: 'color',
                         themePath: 'palette.textWeak',
+                        fallbackToken: '--c-text-weak',
                         contrastToken: '--c-content-bg',
                         subject: 'Muted text'
                     }
@@ -702,6 +705,8 @@ const AREAS = [
                         label: 'Header text',
                         type: 'color',
                         themePath: 'palette.headerText',
+                        // themes rarely set headerText — it derives from text
+                        fallbackToken: '--c-header-text',
                         contrastToken: '--c-header-bg',
                         subject: 'Header text'
                     },
@@ -710,6 +715,7 @@ const AREAS = [
                         label: 'Subtitle color',
                         type: 'color',
                         themePath: 'palette.headerTextWeak',
+                        fallbackToken: '--c-header-text-weak',
                         contrastToken: '--c-header-bg',
                         subject: 'Subtitle'
                     }
@@ -770,7 +776,10 @@ const AREAS = [
                         themePath: 'border',
                         options: [
                             { value: 'hairline', label: 'Hairline' },
-                            { value: 'bold', label: 'Bold' }
+                            { value: 'bold', label: 'Bold' },
+                            // engine emits `none` for any non-width value —
+                            // the hide option just names it (owner 2026-07-12)
+                            { value: 'none', label: 'None' }
                         ]
                     },
                     {
@@ -778,7 +787,9 @@ const AREAS = [
                         label: 'Border color',
                         type: 'color',
                         themePath: 'palette.borderColor',
-                        fallbackToken: '--c-border-color'
+                        fallbackToken: '--c-border-color',
+                        // pointless while the border is off
+                        needsValue: [{ key: 'border', notEquals: 'none' }]
                     }
                 ]
             },
@@ -810,14 +821,36 @@ const AREAS = [
                         label: 'Fill',
                         type: 'color',
                         themePath: 'palette.sectionBg',
+                        // painted value is a color-mix() string — the hex
+                        // companion shows the same tint composited in JS
+                        fallbackToken: '--c-section-bg-swatch',
                         contrastToken: '--c-text',
                         subject: 'Section content'
+                    },
+                    {
+                        // hide beats everything — the style's border AND a
+                        // custom border color (owner 2026-07-12)
+                        key: 'sectionBorder',
+                        label: 'Border',
+                        type: 'select',
+                        themePath: 'sectionBorder',
+                        emptyAsNull: true,
+                        // '' fallback so the Border-color gate below compares
+                        // cleanly while unset
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Style default' },
+                            { value: 'none', label: 'Hidden' }
+                        ]
                     },
                     {
                         key: 'sectionBorderColor',
                         label: 'Border color',
                         type: 'color',
-                        themePath: 'palette.sectionBorderColor'
+                        themePath: 'palette.sectionBorderColor',
+                        // absent for borderless looks — empty is honest there
+                        fallbackToken: '--c-section-border-swatch',
+                        needsValue: [{ key: 'sectionBorder', equals: '' }]
                     }
                 ]
             }
@@ -850,7 +883,10 @@ const AREAS = [
                         label: 'Input fill',
                         type: 'color',
                         themePath: 'palette.fieldBg',
-                        fallbackToken: '--c-input-bg',
+                        // the painted --c-input-bg can be `transparent` or a
+                        // translucent rgba the picker can't parse — the
+                        // engine's hex companion composites the real look
+                        fallbackToken: '--c-input-bg-swatch',
                         contrastToken: '--c-text',
                         subject: 'Input text'
                     },

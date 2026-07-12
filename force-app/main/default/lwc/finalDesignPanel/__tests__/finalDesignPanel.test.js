@@ -343,6 +343,31 @@ describe('c-final-design-panel', () => {
         await flush();
         expect(lastSpec(handler).theme.overrides.sectionStyle).toBe('boxed');
 
+        // border hiding (owner 2026-07-12): None/Hidden retire their color
+        // pickers (needsValue notEquals gate)
+        const bw = el.shadowRoot.querySelector('select[data-key="border"]');
+        bw.value = 'none';
+        bw.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(lastSpec(handler).theme.overrides.border).toBe('none');
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-color-control[data-key="borderColor"]'
+            )
+        ).toBeNull();
+        const sb = el.shadowRoot.querySelector(
+            'select[data-key="sectionBorder"]'
+        );
+        sb.value = 'none';
+        sb.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(lastSpec(handler).theme.overrides.sectionBorder).toBe('none');
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-color-control[data-key="sectionBorderColor"]'
+            )
+        ).toBeNull();
+
         // Focus color control is gone (focus rides the accent)
         await openArea(el, 'fields');
         expect(
