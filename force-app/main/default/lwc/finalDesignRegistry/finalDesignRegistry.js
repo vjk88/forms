@@ -63,7 +63,8 @@ const AREAS = [
                         label: 'Button text',
                         type: 'color',
                         themePath: 'palette.onAccent',
-                        fallback: '#ffffff'
+                        // unset = derived readable ink on the accent
+                        fallbackToken: '--c-on-accent'
                     },
                     {
                         key: 'text',
@@ -329,6 +330,22 @@ const AREAS = [
         icon: 'utility:forward',
         groups: [
             {
+                key: 'flow',
+                label: 'Flow',
+                appliesTo: { layouts: ['scroll'] },
+                controls: [
+                    {
+                        // finalNavScroll always read this; the switch never
+                        // existed (audit fix 2026-07-11)
+                        key: 'showDividers',
+                        label: 'Page dividers',
+                        type: 'toggle',
+                        path: 'layout.options.showDividers',
+                        fallback: false
+                    }
+                ]
+            },
+            {
                 key: 'panes',
                 label: 'Pane flow',
                 appliesTo: { layouts: ['splitHero'] },
@@ -518,6 +535,16 @@ const AREAS = [
                 label: 'Section flow',
                 appliesTo: { layouts: ['oneAtATime'] },
                 controls: [
+                    {
+                        // same option splitHero's pane group exposes — this
+                        // layout's carded look existed with no way to reach it
+                        // (audit fix 2026-07-11)
+                        key: 'oaatBleed',
+                        label: 'Immersive full-bleed',
+                        type: 'toggle',
+                        path: 'layout.options.fullBleed',
+                        fallback: true
+                    },
                     {
                         key: 'advanceLabel',
                         label: 'Continue button label',
@@ -751,7 +778,46 @@ const AREAS = [
                         label: 'Border color',
                         type: 'color',
                         themePath: 'palette.borderColor',
-                        fallback: '#d8d8d8'
+                        fallbackToken: '--c-border-color'
+                    }
+                ]
+            },
+            {
+                // ONE global section look (owner 2026-07-11) — replaces the
+                // never-built per-section style pickers. Unset = each section's
+                // own preset class decides (default Card); the engine emits
+                // --c-section-* only when something here is set.
+                key: 'sections',
+                label: 'Sections',
+                controls: [
+                    {
+                        key: 'sectionStyle',
+                        label: 'Section style',
+                        type: 'select',
+                        themePath: 'sectionStyle',
+                        emptyAsNull: true,
+                        options: [
+                            { value: '', label: 'Default (Card)' },
+                            { value: 'plain', label: 'Plain' },
+                            { value: 'card', label: 'Card' },
+                            { value: 'boxed', label: 'Boxed' },
+                            { value: 'outline', label: 'Outline' },
+                            { value: 'subtle', label: 'Subtle' }
+                        ]
+                    },
+                    {
+                        key: 'sectionBg',
+                        label: 'Fill',
+                        type: 'color',
+                        themePath: 'palette.sectionBg',
+                        contrastToken: '--c-text',
+                        subject: 'Section content'
+                    },
+                    {
+                        key: 'sectionBorderColor',
+                        label: 'Border color',
+                        type: 'color',
+                        themePath: 'palette.sectionBorderColor'
                     }
                 ]
             }
@@ -793,14 +859,12 @@ const AREAS = [
                         label: 'Input border',
                         type: 'color',
                         themePath: 'palette.fieldBorderColor',
-                        fallback: '#c9ced6'
+                        // live derived ink, never a stale static hex
+                        fallbackToken: '--c-field-border'
                     },
-                    {
-                        key: 'focus',
-                        label: 'Focus color',
-                        type: 'color',
-                        themePath: 'fieldStates.focus'
-                    },
+                    // Focus color REMOVED (owner 2026-07-11): focus rides the
+                    // accent — the engine default, and what every catalog theme
+                    // already did. fieldStates.focus stays honored for old specs.
                     {
                         key: 'error',
                         label: 'Error color',
@@ -915,6 +979,8 @@ const AREAS = [
                         label: 'Button fill',
                         type: 'color',
                         themePath: 'palette.submitBg',
+                        // unset = the accent; show THAT, not an empty swatch
+                        fallbackToken: '--c-submit-bg',
                         contrastToken: '--c-submit-text',
                         subject: 'Button labels'
                     },
@@ -923,7 +989,8 @@ const AREAS = [
                         label: 'Button label color',
                         type: 'color',
                         themePath: 'palette.submitText',
-                        fallback: '#ffffff'
+                        // unset = derived readable ink (black on light fills)
+                        fallbackToken: '--c-submit-text'
                     }
                 ]
             },

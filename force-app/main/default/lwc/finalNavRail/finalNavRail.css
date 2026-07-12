@@ -127,7 +127,13 @@
 }
 
 .rail-link.active {
-    background: var(--c-section-bg);
+    /* --c-section-bg is emitted only when a global Section style is set —
+       the ink-tint fallback keeps the highlight visible on every theme
+       (audit fix 2026-07-11: no fallback = transparent everywhere). */
+    background: var(
+        --c-section-bg,
+        color-mix(in srgb, var(--c-text) 7%, transparent)
+    );
     color: var(--c-text);
     font-weight: 600;
 }

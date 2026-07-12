@@ -373,7 +373,11 @@ export default class FinalDesignPanel extends LightningElement {
                 return 'Split Hero owns pagination — progress renders in the brand pane.';
             }
             if (!this.layoutInfo.paginates) {
-                return 'This layout shows every page at once — nothing to page.';
+                // scroll has its Flow group (page dividers); accordion is the
+                // one area left with nothing to configure
+                return this.layoutType === 'accordion'
+                    ? 'This layout shows every page at once — nothing to page.'
+                    : '';
             }
             return '';
         }

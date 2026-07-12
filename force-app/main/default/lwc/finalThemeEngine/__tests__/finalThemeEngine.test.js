@@ -37,9 +37,16 @@ const CONTRACT_V1 = [
     '--c-fx-texture',
     '--c-content-bg',
     '--c-content-border',
+    // swatch-truth ink for the Border color control (audit fix 2026-07-11)
+    '--c-border-color',
     '--c-content-shadow',
     '--c-glass-blur',
     '--c-section-pad',
+    // conditional trio: emitted only when the global Section style or an
+    // explicit section color is set (owner 2026-07-11)
+    '--c-section-bg',
+    '--c-section-border',
+    '--c-section-shadow',
     '--c-field-bg',
     '--c-field-border',
     // input shell (fieldStyle — contract event 2026-07-07, owner QA)
@@ -117,7 +124,10 @@ describe('c-final-theme-engine', () => {
                 '--c-label-font',
                 '--c-header-title-gradient',
                 '--c-header-title-fill',
-                '--c-page-radius'
+                '--c-page-radius',
+                '--c-section-bg',
+                '--c-section-border',
+                '--c-section-shadow'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -132,22 +142,60 @@ describe('c-final-theme-engine', () => {
             expect(styled['--c-label-font']).toContain('Consolas');
         });
 
-        it('never emits section surface tokens — unset means the preset decides', () => {
+        it('never emits section surface tokens while unset — the preset decides', () => {
             const t = resolveTokens(theme(), null);
             expect(t['--c-section-bg']).toBeUndefined();
             expect(t['--c-section-border']).toBeUndefined();
             expect(t['--c-section-shadow']).toBeUndefined();
         });
+
+        it('global sectionStyle emits the look; explicit colors win over it', () => {
+            const boxed = resolveTokens(theme(), { sectionStyle: 'boxed' });
+            expect(boxed['--c-section-bg']).toContain('color-mix');
+            expect(boxed['--c-section-bg']).toContain('7%');
+            expect(boxed['--c-section-border']).toBe('none');
+            expect(boxed['--c-section-shadow']).toBe('none');
+
+            const custom = resolveTokens(theme(), {
+                sectionStyle: 'outline',
+                palette: {
+                    sectionBg: '#101820',
+                    sectionBorderColor: '#3fd0c9'
+                }
+            });
+            expect(custom['--c-section-bg']).toBe('#101820');
+            expect(custom['--c-section-border']).toBe('1px solid #3fd0c9');
+
+            // colors alone (no style pick): bg emits, shadow stays unset
+            const bgOnly = resolveTokens(theme(), {
+                palette: { sectionBg: '#fffbe6' }
+            });
+            expect(bgOnly['--c-section-bg']).toBe('#fffbe6');
+            expect(bgOnly['--c-section-shadow']).toBeUndefined();
+        });
+
+        it('emits --c-border-color (the live swatch ink for Border color)', () => {
+            const t = resolveTokens(theme(), null);
+            expect(t['--c-border-color']).toBeTruthy();
+            const o = resolveTokens(theme(), {
+                palette: { borderColor: '#123123' }
+            });
+            expect(o['--c-border-color']).toBe('#123123');
+        });
     });
 
     describe('cascade (theme default → form override)', () => {
         it('override wins over theme value', () => {
-            const t = resolveTokens(theme(), { palette: { accent: '#7c3aed' } });
+            const t = resolveTokens(theme(), {
+                palette: { accent: '#7c3aed' }
+            });
             expect(t['--c-accent']).toBe('#7c3aed');
         });
 
         it('sparse override keeps untouched keys from the theme', () => {
-            const t = resolveTokens(theme(), { palette: { accent: '#7c3aed' } });
+            const t = resolveTokens(theme(), {
+                palette: { accent: '#7c3aed' }
+            });
             expect(t['--c-page-bg']).toBe('#f6f4ee');
             expect(t['--c-text']).toBe('#232019');
         });
@@ -284,7 +332,11 @@ describe('c-final-theme-engine', () => {
 
         it('every mesh slot resolves to at most ONE gradient layer', () => {
             const t = resolveTokens(theme(), { effects: { mesh: 'aurora' } });
-            for (const k of ['--c-fx-mesh-1', '--c-fx-mesh-2', '--c-fx-mesh-3']) {
+            for (const k of [
+                '--c-fx-mesh-1',
+                '--c-fx-mesh-2',
+                '--c-fx-mesh-3'
+            ]) {
                 expect(t[k].match(/gradient\(/g)).toHaveLength(1);
                 expect(t[k]).not.toMatch(/\),\s*(radial|linear|conic)/);
             }
@@ -408,9 +460,7 @@ describe('c-final-theme-engine', () => {
         it('header text falls back to body text; weak falls back to textWeak', () => {
             const t = resolveTokens({ palette: { text: '#101010' } }, null);
             expect(t['--c-header-text']).toBe('#101010');
-            expect(t['--c-header-text-weak']).toBe(
-                t['--c-text-weak']
-            );
+            expect(t['--c-header-text-weak']).toBe(t['--c-text-weak']);
         });
     });
 
@@ -419,14 +469,18 @@ describe('c-final-theme-engine', () => {
             // The type is the contract: a shorthand here silently kills every
             // nav hairline/divider/track consuming it as a color.
             for (const { key } of listBuiltinThemes()) {
-                const v = resolveTokens(getBuiltinTheme(key))['--c-field-border'];
+                const v = resolveTokens(getBuiltinTheme(key))[
+                    '--c-field-border'
+                ];
                 expect(v).toMatch(/^(#[0-9a-fA-F]{3,8}|rgba?\()/);
                 expect(v).not.toMatch(/solid|dashed|px /);
             }
         });
 
         it('palette.fieldBorderColor knob is live', () => {
-            const t = resolveTokens({ palette: { fieldBorderColor: '#123456' } });
+            const t = resolveTokens({
+                palette: { fieldBorderColor: '#123456' }
+            });
             expect(t['--c-field-border']).toBe('#123456');
         });
 
@@ -449,7 +503,10 @@ describe('c-final-theme-engine', () => {
             expect(light['--c-field-bg']).toBe('#ffffff');
             // glass (unparseable) surface falls back to the text-ink probe
             const glass = resolveTokens({
-                palette: { contentBg: 'rgba(255, 255, 255, 0.7)', text: '#f8fafc' }
+                palette: {
+                    contentBg: 'rgba(255, 255, 255, 0.7)',
+                    text: '#f8fafc'
+                }
             });
             expect(glass['--c-field-bg']).toContain('rgba');
         });
@@ -459,9 +516,14 @@ describe('c-final-theme-engine', () => {
             const ocean = resolveTokens(getBuiltinTheme('oceanBreeze'));
             expect(ocean['--c-field-border']).toMatch(/^rgba\(/);
             const glass = resolveTokens({
-                palette: { contentBg: 'rgba(255, 255, 255, 0.7)', text: '#0f172a' }
+                palette: {
+                    contentBg: 'rgba(255, 255, 255, 0.7)',
+                    text: '#0f172a'
+                }
             });
-            expect(glass['--c-field-border']).toMatch(/^rgba\(15, 23, 42, 0.3\)$/);
+            expect(glass['--c-field-border']).toMatch(
+                /^rgba\(15, 23, 42, 0.3\)$/
+            );
         });
     });
 
@@ -488,7 +550,10 @@ describe('c-final-theme-engine', () => {
                 '--c-label-font',
                 '--c-header-title-gradient',
                 '--c-header-title-fill',
-                '--c-page-radius'
+                '--c-page-radius',
+                '--c-section-bg',
+                '--c-section-border',
+                '--c-section-shadow'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()
@@ -544,7 +609,9 @@ describe('c-final-theme-catalog', () => {
     it('roster maps raw colours + quantized scales through the engine', () => {
         const brutal = resolveTokens(getBuiltinTheme('neoBrutalism'));
         expect(brutal['--c-radius']).toBe('0px'); // sharp
-        expect(brutal['--c-content-shadow']).toBe('5px 5px 0 rgba(0, 0, 0, 0.9)'); // brutal
+        expect(brutal['--c-content-shadow']).toBe(
+            '5px 5px 0 rgba(0, 0, 0, 0.9)'
+        ); // brutal
         expect(brutal['--c-content-border']).toBe('2px solid #000000'); // bold + raw colour
         expect(brutal['--c-accent']).toBe('#d946ef');
 

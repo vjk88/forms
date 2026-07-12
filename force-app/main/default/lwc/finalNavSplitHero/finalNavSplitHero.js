@@ -24,11 +24,14 @@ import {
 
 const ZONES = ['top', 'center', 'bottom'];
 
-// Inside Lightning Experience the platform chrome owns the viewport — a 100vh
-// minimum guarantees a permanent page scroll there (P1 checklist #5).
-const EMBEDDED_IN_LEX =
-    typeof window !== 'undefined' &&
-    /^\/lightning\//.test(window.location.pathname);
+// Own Back/Continue row (One-at-a-Time pane flow): the shared arrangement
+// vocabulary, mirrored from navOneAtATime so the setting means the same
+// thing on both (audit fix 2026-07-11: this row used to ignore it).
+const ARRANGE_CLASS = {
+    'together-left': 'arr-start',
+    'together-right': 'arr-end',
+    split: 'arr-split'
+};
 
 function hexToRgba(hex, opacityPct) {
     const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
@@ -58,6 +61,11 @@ export default class FinalNavSplitHero extends LightningElement {
     @api options;
     /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
     @api lockup;
+    /** Viewer-resolved action-row arrangement (LAYOUT_REFINEMENTS §3). */
+    @api arrangement;
+    /** Viewer-computed bleed (capability + fullBleed). The ONE owner of the
+     *  decision — the options fallback below only covers direct mounts. */
+    @api bleed;
 
     @track screenIndex = 0;
     @track multilineFocus = false;
@@ -90,10 +98,14 @@ export default class FinalNavSplitHero extends LightningElement {
     /**
      * Immersive full-bleed (default ON): pane and form own the whole canvas;
      * the form renders as a floating content card. `fullBleed: false` restores
-     * the carded-pane-inside-panel render exactly.
+     * the carded-pane-inside-panel render exactly. The viewer's `bleed` prop
+     * wins when passed (one owner); reading options directly is only the
+     * direct-mount fallback (tests, bare embeds).
      */
     get bleedOn() {
-        return this.opts.fullBleed !== false;
+        return this.bleed === undefined || this.bleed === null
+            ? this.opts.fullBleed !== false
+            : Boolean(this.bleed);
     }
 
     get layoutClass() {
@@ -107,8 +119,12 @@ export default class FinalNavSplitHero extends LightningElement {
         const sticky =
             !this.bleedOn && this.opts.sticky !== false ? ' sticky-pane' : '';
         const bleed = this.bleedOn ? ' mode-bleed' : '';
-        const lex = EMBEDDED_IN_LEX ? ' in-lex' : '';
-        return `layout ${side} ${ratio}${sticky}${bleed}${lex}`;
+        return `layout ${side} ${ratio}${sticky}${bleed}`;
+    }
+
+    /** Split is this layout's registry default — unknown values land there. */
+    get controlsClass() {
+        return `controls ${ARRANGE_CLASS[this.arrangement] || ARRANGE_CLASS.split}`;
     }
 
     get formCardClass() {

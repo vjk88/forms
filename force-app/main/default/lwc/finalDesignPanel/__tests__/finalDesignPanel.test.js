@@ -322,6 +322,57 @@ describe('c-final-design-panel', () => {
         expect(lastSpec(handler).layout.options.narrowMode).toBe('progressBar');
     });
 
+    it('audit batch: sections group, no Focus control, oaat bleed, scroll dividers', async () => {
+        // Body › Sections writes a sparse sectionStyle override
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await goAdvanced(el);
+        await openArea(el, 'body');
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-color-control[data-key="sectionBg"]'
+            )
+        ).not.toBeNull();
+        const style = el.shadowRoot.querySelector(
+            'select[data-key="sectionStyle"]'
+        );
+        expect(style).not.toBeNull();
+        style.value = 'boxed';
+        style.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(lastSpec(handler).theme.overrides.sectionStyle).toBe('boxed');
+
+        // Focus color control is gone (focus rides the accent)
+        await openArea(el, 'fields');
+        expect(
+            el.shadowRoot.querySelector(
+                'c-final-color-control[data-key="focus"]'
+            )
+        ).toBeNull();
+
+        // oneAtATime gets the Immersive toggle its carded look was missing
+        const el2 = mount(
+            buildSampleSpec({ layout: 'oneAtATime', themeKey: 'nordic' })
+        );
+        await goAdvanced(el2);
+        await openArea(el2, 'paging');
+        expect(
+            el2.shadowRoot.querySelector('input[data-key="oaatBleed"]')
+        ).not.toBeNull();
+
+        // scroll gets Page dividers (and loses the "nothing to page" line)
+        const el3 = mount(
+            buildSampleSpec({ layout: 'scroll', themeKey: 'nordic' })
+        );
+        await goAdvanced(el3);
+        await openArea(el3, 'paging');
+        expect(
+            el3.shadowRoot.querySelector('input[data-key="showDividers"]')
+        ).not.toBeNull();
+        expect(el3.shadowRoot.querySelector('.narrate')).toBeNull();
+    });
+
     it('header surface: splitHero hides fill + banner (pane owns the header); others keep them', async () => {
         const el = mount(
             buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })

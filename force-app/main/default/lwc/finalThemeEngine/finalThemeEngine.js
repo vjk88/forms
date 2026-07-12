@@ -10,8 +10,9 @@
  *   in here — never emitted as CSS variables (§3.3). Only semantic tokens cross the wire.
  * - `resolveTokens(null)` → `{}` — the "no theme" render comes from finalPageFrame's
  *   neutral :host fallbacks, not from this engine.
- * - `--c-section-bg/border/shadow` are intentionally NEVER emitted here: unset means
- *   "the section preset decides" (§3.1 rule 5 carve-out).
+ * - `--c-section-bg/border/shadow` emit ONLY when the global Section style (or an
+ *   explicit section fill/border color) is set — unset still means "the section
+ *   preset decides" (§3.1 rule 5 carve-out; global setting = owner 2026-07-11).
  * - Merge semantics (§4.3 cascade): `undefined` = not set, inherit up; `null` = an
  *   explicit value (e.g. `effects.mesh: null` turns the mesh off) and wins like any other.
  */
@@ -52,7 +53,8 @@ const DENSITY = {
 const FONT_STACKS = {
     system: {
         body: "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-        display: "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        display:
+            "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
     },
     editorial: {
         body: "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
@@ -60,11 +62,13 @@ const FONT_STACKS = {
     },
     mono: {
         body: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
-        display: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace"
+        display:
+            "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace"
     },
     geometric: {
         body: "'Avenir Next', 'Century Gothic', Futura, 'Trebuchet MS', sans-serif",
-        display: "'Avenir Next', 'Century Gothic', Futura, 'Trebuchet MS', sans-serif"
+        display:
+            "'Avenir Next', 'Century Gothic', Futura, 'Trebuchet MS', sans-serif"
     },
     humanist: {
         body: "Seravek, 'Gill Sans', 'Segoe UI', Verdana, sans-serif",
@@ -88,6 +92,37 @@ const SHADOWS = {
 const BORDER_WIDTHS = {
     hairline: '1px',
     bold: '2px'
+};
+
+// Global Section style (owner 2026-07-11): ONE Design-mode pick paints every
+// section, overriding the per-section preset classes via the --c-section-*
+// tokens they already read as var() overrides. The recipes ARE the presets'
+// own fallbacks (finalSectionRenderer.css) — same ink-tint color-mix, so the
+// global pick and the class-decided look can never drift apart. 'flat' stays
+// class-only (its zero side-padding is structural, not expressible in these
+// three tokens).
+const SECTION_LOOKS = {
+    plain: { bg: 'transparent', border: 'none', shadow: 'none' },
+    card: {
+        bg: 'color-mix(in srgb, var(--c-text) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--c-text) 12%, transparent)',
+        shadow: '0 1px 2px rgba(15, 23, 42, 0.05)'
+    },
+    boxed: {
+        bg: 'color-mix(in srgb, var(--c-text) 7%, transparent)',
+        border: 'none',
+        shadow: 'none'
+    },
+    outline: {
+        bg: 'transparent',
+        border: '1px solid color-mix(in srgb, var(--c-text) 18%, transparent)',
+        shadow: 'none'
+    },
+    subtle: {
+        bg: 'color-mix(in srgb, var(--c-text) 3%, transparent)',
+        border: 'none',
+        shadow: 'none'
+    }
 };
 
 // Fit is the property the user picks; size+repeat are the tokens it resolves to.
@@ -156,11 +191,12 @@ function customMesh(colors, blurred) {
                 .map((k) => colors[k])
           : [];
     // POSITIONAL — an empty slot stays null so mesh tokens 1..4 never shift.
-    return MESH_GEOMETRY.map((slot, i) =>
-        list[i]
-            ? `radial-gradient(${slot.g}, ${rgba(list[i], blurred ? slot.hot : slot.base)}, transparent 70%)`
-            : null
-    );
+    return MESH_GEOMETRY.map((slot, i) => {
+        if (!list[i]) {
+            return null;
+        }
+        return `radial-gradient(${slot.g}, ${rgba(list[i], blurred ? slot.hot : slot.base)}, transparent 70%)`;
+    });
 }
 
 // A texture is ONE self-tiling layer (intrinsic-size SVG data URI — tiles naturally,
@@ -233,6 +269,9 @@ const DEFAULT_PROPS = {
     pageRadius: null,
     labelPosition: 'top', // top | left
     labelStyle: 'default', // default | monoCaps | mutedSm | caps
+    // Global section look (plain|card|boxed|outline|subtle): null = each
+    // section's own preset class decides (the §3.1 rule 5 carve-out).
+    sectionStyle: null,
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
@@ -248,7 +287,13 @@ const DEFAULT_PROPS = {
         meshBlur: 0 // px; >0 = truly soft blobs — layers oversize (bleed) and blur, clipped by .fx
     },
     fieldStates: { error: '#b42318', required: '#b42318' },
-    pageImage: { url: null, fit: 'cover', position: 'center', scrim: 0, opacity: 100 }
+    pageImage: {
+        url: null,
+        fit: 'cover',
+        position: 'center',
+        scrim: 0,
+        opacity: 100
+    }
 };
 
 // Gradient surfaces (owner QA 2026-07-07, FormBuilder pattern): a gradient is
@@ -463,7 +508,8 @@ export function resolveTokens(themeProps, formOverrides) {
     const fieldBorderColor =
         pal.fieldBorderColor || mix(pal.text, pal.contentBg, 0.3);
     const outlineBg =
-        pal.fieldBg || (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff');
+        pal.fieldBg ||
+        (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff');
     const focusColor = fs.focus || pal.accent;
     const INPUT_SHELLS = {
         outline: {
@@ -566,6 +612,7 @@ export function resolveTokens(themeProps, formOverrides) {
             : MESHES[fx.mesh] || [];
     const focus = fs.focus || pal.accent;
     const submitBg = pal.submitBg || pal.accent;
+    const sectionLook = SECTION_LOOKS[p.sectionStyle] || null;
 
     // Display-title gradient ink (Neon Nights): palette.headerTitleGradient =
     // { angle, stops: ['#fff', '#d9ccff 60%', '#16e0c4'] } — stops are raw CSS
@@ -615,10 +662,18 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-page-radius': RADIUS[p.pageRadius],
 
         // Effects (finalPageFrame .fx ONLY — fixed slots, one layer per token)
-        '--c-fx-mesh-1': mesh[0] ? boostMesh(mesh[0], fx.meshIntensity) : 'none',
-        '--c-fx-mesh-2': mesh[1] ? boostMesh(mesh[1], fx.meshIntensity) : 'none',
-        '--c-fx-mesh-3': mesh[2] ? boostMesh(mesh[2], fx.meshIntensity) : 'none',
-        '--c-fx-mesh-4': mesh[3] ? boostMesh(mesh[3], fx.meshIntensity) : 'none',
+        '--c-fx-mesh-1': mesh[0]
+            ? boostMesh(mesh[0], fx.meshIntensity)
+            : 'none',
+        '--c-fx-mesh-2': mesh[1]
+            ? boostMesh(mesh[1], fx.meshIntensity)
+            : 'none',
+        '--c-fx-mesh-3': mesh[2]
+            ? boostMesh(mesh[2], fx.meshIntensity)
+            : 'none',
+        '--c-fx-mesh-4': mesh[3]
+            ? boostMesh(mesh[3], fx.meshIntensity)
+            : 'none',
         // Presentation of the mesh layers, not the layers themselves: drift
         // animation is declared in pageFrame CSS and toggled via play-state;
         // 'screen' blend makes blobs luminous (Neon Nights, dark pages).
@@ -631,7 +686,8 @@ export function resolveTokens(themeProps, formOverrides) {
                 ? `blur(${Math.min(Number(fx.meshBlur), 120)}px)`
                 : 'none',
         '--c-mesh-bleed': Number(fx.meshBlur) > 0 ? '-15%' : '0',
-        '--c-fx-texture': textureLayer(fx.texture, fx.textureIntensity) || 'none',
+        '--c-fx-texture':
+            textureLayer(fx.texture, fx.textureIntensity) || 'none',
 
         // Content panel
         '--c-content-bg': withFillOpacity(pal.contentBg, pal.contentBgOpacity),
@@ -642,13 +698,29 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-content-border': BORDER_WIDTHS[p.border]
             ? `${BORDER_WIDTHS[p.border]} solid ${pal.borderColor || mix(pal.text, pal.contentBg, 0.16)}`
             : 'none',
+        // The border COLOR alone — consumed by nothing in CSS; emitted so the
+        // panel's Border color swatch shows the LIVE derived ink, never a
+        // stale static hex (audit "swatch lies" fix 2026-07-11).
+        '--c-border-color':
+            pal.borderColor || mix(pal.text, pal.contentBg, 0.16),
         '--c-content-shadow': SHADOWS[fx.shadow] || SHADOWS.none,
         // true = legacy 14px; numbers AND numeric strings (the panel's depth
         // select writes strings) = custom depth, capped sane.
         '--c-glass-blur': glassPx(fx.glass),
 
-        // Section (pad only — bg/border/shadow stay unset so the preset decides)
+        // Section — pad always; bg/border/shadow ONLY when the global Section
+        // style or an explicit color is set (unset keeps the preset carve-out;
+        // null values drop via the guard below). Explicit colors win over the
+        // look, matching every other surface's layering.
         '--c-section-pad': density.sectionPad,
+        '--c-section-bg':
+            pal.sectionBg || (sectionLook ? sectionLook.bg : null),
+        '--c-section-border': pal.sectionBorderColor
+            ? `1px solid ${pal.sectionBorderColor}`
+            : sectionLook
+              ? sectionLook.border
+              : null,
+        '--c-section-shadow': sectionLook ? sectionLook.shadow : null,
 
         // Field — the input surface adapts to theme darkness: a dark surface
         // gets a lifted translucent input instead of a jarring white box;
@@ -737,7 +809,11 @@ export function resolveTokens(themeProps, formOverrides) {
     // Guard: an explicit `null`/empty palette value must never emit invalid
     // CSS (`--c-page-bg: null`). Dropping the token lets pageFrame's neutral win.
     for (const key of Object.keys(tokens)) {
-        if (tokens[key] === null || tokens[key] === undefined || tokens[key] === '') {
+        if (
+            tokens[key] === null ||
+            tokens[key] === undefined ||
+            tokens[key] === ''
+        ) {
             delete tokens[key];
         }
     }

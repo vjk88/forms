@@ -59,6 +59,41 @@ describe('c-final-nav-split-hero', () => {
         );
     });
 
+    it('viewer bleed prop wins over options; options stay the direct-mount fallback', async () => {
+        // prop false beats the default-ON fullBleed option
+        let cmp = await mount({});
+        cmp.bleed = false;
+        await Promise.resolve();
+        expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
+            'mode-bleed'
+        );
+        // prop true beats an explicit fullBleed:false
+        cmp = await mount({ fullBleed: false });
+        cmp.bleed = true;
+        await Promise.resolve();
+        expect(cmp.shadowRoot.querySelector('.layout').className).toContain(
+            'mode-bleed'
+        );
+    });
+
+    it('conversational controls row honors the arrangement (audit fix)', async () => {
+        const cmp = await mount({ paneFlow: 'oneAtATime' });
+        // default = this layout's registry split
+        expect(cmp.shadowRoot.querySelector('.controls').className).toContain(
+            'arr-split'
+        );
+        cmp.arrangement = 'together-left';
+        await Promise.resolve();
+        expect(cmp.shadowRoot.querySelector('.controls').className).toContain(
+            'arr-start'
+        );
+        cmp.arrangement = 'together-right';
+        await Promise.resolve();
+        expect(cmp.shadowRoot.querySelector('.controls').className).toContain(
+            'arr-end'
+        );
+    });
+
     it('carded pane pins by default; bleed never; sticky:false opts out', async () => {
         // carded (fullBleed:false) → sticky-pane by default
         let cmp = await mount({ fullBleed: false });

@@ -49,6 +49,13 @@
 
 .chevron.open {
     transform: rotate(90deg);
+    --sds-c-icon-color-foreground-default: var(--c-accent, var(--c-text));
+}
+
+/* The expanded panel is the "you are here" — accent its title (parity with
+   every other layout's position marker; owner ruling 2026-07-11). */
+.trigger.open {
+    color: var(--c-accent, var(--c-text));
 }
 
 .body {
