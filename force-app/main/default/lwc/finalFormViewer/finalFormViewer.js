@@ -328,9 +328,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             layoutOptions: options,
             paginates: Boolean(layout.paginates),
             ownsAdvance,
-            // Immersive full-bleed: only bleed-capable layouts (splitHero),
-            // ON by default, reverted with options.fullBleed === false — the
-            // toggle restores the carded-pane render exactly.
+            // Immersive full-bleed: only bleed-capable layouts (splitHero,
+            // oneAtATime), ON by default, reverted with fullBleed === false —
+            // the toggle restores the carded render exactly.
             bleed: Boolean(layout.bleed) && options.fullBleed !== false,
             // Only set when the spec configures the pane EXPLICITLY (above) —
             // then the form side keeps a minimal title lockup for context.

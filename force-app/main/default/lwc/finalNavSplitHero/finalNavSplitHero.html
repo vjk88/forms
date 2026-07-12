@@ -1,120 +1,144 @@
 <template>
-  <div class="split">
-    <div class={layoutClass}>
-      <aside class="pane" style={paneStyle}>
-        <div class="brand">
-          <template lwc:if={logoUrl}>
-            <img class="brand-logo" src={logoUrl} alt={opts.paneBrandName} />
-          </template>
-          <template lwc:elseif={showWordmark}>
-            <div class="brand-wordmark">{opts.paneBrandName}</div>
-          </template>
+    <div class="split">
+        <div class={layoutClass}>
+            <aside class="pane" style={paneStyle}>
+                <div class="brand">
+                    <template lwc:if={logoUrl}>
+                        <img
+                            class="brand-logo"
+                            src={logoUrl}
+                            alt={opts.paneBrandName}
+                        />
+                    </template>
+                    <template lwc:elseif={showWordmark}>
+                        <div class="brand-wordmark">{opts.paneBrandName}</div>
+                    </template>
+                </div>
+                <template for:each={zoneList} for:item="zone">
+                    <div class={zone.cls} key={zone.zone}>
+                        <template for:each={zone.blocks} for:item="block">
+                            <template lwc:if={block.isTitle}>
+                                <div class="pane-title" key={block.key}>
+                                    <lightning-formatted-rich-text
+                                        value={block.html}
+                                    ></lightning-formatted-rich-text>
+                                </div>
+                            </template>
+                            <template lwc:elseif={block.isSubtitle}>
+                                <div class="pane-subtitle" key={block.key}>
+                                    <lightning-formatted-rich-text
+                                        value={block.html}
+                                    ></lightning-formatted-rich-text>
+                                </div>
+                            </template>
+                            <template lwc:elseif={block.isHighlight}>
+                                <c-final-form-highlight
+                                    key={block.key}
+                                    highlight={block.highlight}
+                                ></c-final-form-highlight>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+                <template lwc:if={showProgressSteps}>
+                    <div class="pane-progress">
+                        <div class="dots" aria-hidden="true">
+                            <template for:each={progressDots} for:item="dot">
+                                <span class={dot.cls} key={dot.key}></span>
+                            </template>
+                        </div>
+                        <p class="progress-text">{progressText}</p>
+                    </div>
+                </template>
+                <template lwc:elseif={showProgressBar}>
+                    <div class="pane-progress">
+                        <div class="progress-track" aria-hidden="true">
+                            <div
+                                class="progress-fill"
+                                style={progressFillStyle}
+                            ></div>
+                        </div>
+                        <p class="progress-text">{progressText}</p>
+                    </div>
+                </template>
+            </aside>
+            <div
+                class="form"
+                onkeydown={handleKeydown}
+                onfocusin={handleFocusIn}
+            >
+                <div class={formCardClass}>
+                    <template lwc:if={showLockup}>
+                        <header class="lockup">
+                            <template lwc:if={lockup.title}>
+                                <h1 class="lockup-title">{lockup.title}</h1>
+                            </template>
+                            <template lwc:if={lockup.description}>
+                                <p class="lockup-desc">{lockup.description}</p>
+                            </template>
+                        </header>
+                    </template>
+                    <template lwc:if={oneAtATime}>
+                        <template
+                            for:each={currentScreenList}
+                            for:item="screen"
+                        >
+                            <div
+                                class="screen-panel"
+                                key={screen.key}
+                                tabindex="-1"
+                            >
+                                <c-final-layout-zones
+                                    onvaluechange={handleValueChange}
+                                    sections={currentSections}
+                                    zones={currentZones}
+                                ></c-final-layout-zones>
+                            </div>
+                        </template>
+                        <div class={controlsClass}>
+                            <template lwc:if={showBackLink}>
+                                <button
+                                    class="back-link"
+                                    type="button"
+                                    onclick={handleBack}
+                                >
+                                    Back
+                                </button>
+                            </template>
+                            <template lwc:if={showAdvance}>
+                                <div class="advance">
+                                    <button
+                                        class="advance-btn"
+                                        type="button"
+                                        onclick={handleAdvance}
+                                    >
+                                        Continue
+                                    </button>
+                                    <template lwc:if={keyboardHelperText}>
+                                        <p class="key-helper">
+                                            {keyboardHelperText}
+                                        </p>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <template for:each={currentPageList} for:item="page">
+                            <div class="page-panel" key={page.key}>
+                                <c-final-layout-zones
+                                    onvaluechange={handleValueChange}
+                                    sections={page.sections}
+                                    zones={page.zones}
+                                ></c-final-layout-zones>
+                            </div>
+                        </template>
+                    </template>
+                    <template lwc:if={showActionsSlot}>
+                        <slot name="actions"></slot>
+                    </template>
+                </div>
+            </div>
         </div>
-        <template for:each={zoneList} for:item="zone">
-          <div class={zone.cls} key={zone.zone}>
-            <template for:each={zone.blocks} for:item="block">
-              <template lwc:if={block.isTitle}>
-                <div class="pane-title" key={block.key}>
-                  <lightning-formatted-rich-text
-                    value={block.html}
-                  ></lightning-formatted-rich-text>
-                </div>
-              </template>
-              <template lwc:elseif={block.isSubtitle}>
-                <div class="pane-subtitle" key={block.key}>
-                  <lightning-formatted-rich-text
-                    value={block.html}
-                  ></lightning-formatted-rich-text>
-                </div>
-              </template>
-              <template lwc:elseif={block.isHighlight}>
-                <c-final-form-highlight
-                  key={block.key}
-                  highlight={block.highlight}
-                ></c-final-form-highlight>
-              </template>
-            </template>
-          </div>
-        </template>
-        <template lwc:if={showProgressSteps}>
-          <div class="pane-progress">
-            <div class="dots" aria-hidden="true">
-              <template for:each={progressDots} for:item="dot">
-                <span class={dot.cls} key={dot.key}></span>
-              </template>
-            </div>
-            <p class="progress-text">{progressText}</p>
-          </div>
-        </template>
-        <template lwc:elseif={showProgressBar}>
-          <div class="pane-progress">
-            <div class="progress-track" aria-hidden="true">
-              <div class="progress-fill" style={progressFillStyle}></div>
-            </div>
-            <p class="progress-text">{progressText}</p>
-          </div>
-        </template>
-      </aside>
-      <div class="form" onkeydown={handleKeydown} onfocusin={handleFocusIn}>
-        <div class={formCardClass}>
-          <template lwc:if={showLockup}>
-            <header class="lockup">
-              <template lwc:if={lockup.title}>
-                <h1 class="lockup-title">{lockup.title}</h1>
-              </template>
-              <template lwc:if={lockup.description}>
-                <p class="lockup-desc">{lockup.description}</p>
-              </template>
-            </header>
-          </template>
-          <template lwc:if={oneAtATime}>
-            <template for:each={currentScreenList} for:item="screen">
-              <div class="screen-panel" key={screen.key} tabindex="-1">
-                <c-final-layout-zones
-                    onvaluechange={handleValueChange}
-                  sections={currentSections}
-                  zones={currentZones}
-                ></c-final-layout-zones>
-              </div>
-            </template>
-            <div class="controls">
-              <template lwc:if={showBackLink}>
-                <button class="back-link" type="button" onclick={handleBack}>
-                  Back
-                </button>
-              </template>
-              <template lwc:if={showAdvance}>
-                <div class="advance">
-                  <button
-                    class="advance-btn"
-                    type="button"
-                    onclick={handleAdvance}
-                  >
-                    Continue
-                  </button>
-                  <template lwc:if={keyboardHelperText}>
-                    <p class="key-helper">{keyboardHelperText}</p>
-                  </template>
-                </div>
-              </template>
-            </div>
-          </template>
-          <template lwc:else>
-            <template for:each={currentPageList} for:item="page">
-              <div class="page-panel" key={page.key}>
-                <c-final-layout-zones
-                    onvaluechange={handleValueChange}
-                  sections={page.sections}
-                  zones={page.zones}
-                ></c-final-layout-zones>
-              </div>
-            </template>
-          </template>
-          <template lwc:if={showActionsSlot}>
-            <slot name="actions"></slot>
-          </template>
-        </div>
-      </div>
     </div>
-  </div>
 </template>

@@ -3,6 +3,7 @@
 exports[`c-final-theme-engine robustness & determinism full-theme snapshot — any change here is a deliberate contract event 1`] = `
 {
   "--c-accent": "#0f766e",
+  "--c-border-color": "#dcdad4",
   "--c-content-bg": "#fffdf8",
   "--c-content-bg-gradient": "none",
   "--c-content-border": "1px solid #dcdad4",

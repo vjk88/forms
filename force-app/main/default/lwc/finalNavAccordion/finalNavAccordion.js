@@ -59,9 +59,12 @@ export default class FinalNavAccordion extends LightningElement {
                 panelId: `panel-${key}`,
                 triggerId: `trigger-${key}`,
                 expanded: isOpen ? 'true' : 'false',
-                triggerCls: this.iconTrailing
-                    ? 'trigger icon-trailing'
-                    : 'trigger',
+                // open on the trigger too: the accent marks the expanded
+                // panel (owner ruling 2026-07-11 — accordion was the only
+                // multi-page layout with no accent-marked position)
+                triggerCls:
+                    (this.iconTrailing ? 'trigger icon-trailing' : 'trigger') +
+                    (isOpen ? ' open' : ''),
                 chevronCls: isOpen ? 'chevron open' : 'chevron',
                 sections: page.sections || []
             };
@@ -77,7 +80,9 @@ export default class FinalNavAccordion extends LightningElement {
             return;
         }
         this._openKeys = this.opts.allowMultiple ? [...open, key] : [key];
-        this.dispatchEvent(new CustomEvent('pagechange', { detail: { index } }));
+        this.dispatchEvent(
+            new CustomEvent('pagechange', { detail: { index } })
+        );
     }
 
     /** Re-emit the answer intent across this shadow boundary (catalog rule:

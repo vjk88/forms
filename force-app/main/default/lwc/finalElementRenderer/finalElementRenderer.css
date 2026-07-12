@@ -26,14 +26,13 @@
     --slds-c-textarea-placeholder-color: var(--c-text-weak);
     --slds-c-textarea-shadow: var(--c-input-shadow, none);
 
-    /* Focus state — --c-field-focus / --c-focus-ring were emitted from P0 but
-       never consumed (owner QA: "focus color doesn't seem to be working"). */
-    --slds-c-input-color-border-focus: var(--c-field-focus);
+    /* Focus state = the RING (shadow hook). The border-focus hooks were
+       audited inert (2026-07-11 red-override probe: the ring painted, the
+       border never did) and are deleted — focus rides the accent by design. */
     --slds-c-input-shadow-focus: var(
         --c-input-shadow-focus,
         var(--c-focus-ring)
     );
-    --slds-c-textarea-color-border-focus: var(--c-field-focus);
     --slds-c-textarea-shadow-focus: var(
         --c-input-shadow-focus,
         var(--c-focus-ring)
@@ -144,7 +143,7 @@
 /* ---- content blocks (schema section 4: image / richText / divider / spacer) ---- */
 .block-richtext {
     color: var(--c-text);
-    font-size: var(--c-font-size, 0.9375rem);
+    font-size: 0.9375rem;
     line-height: 1.6;
 }
 
@@ -168,7 +167,10 @@
 
 .block-divider {
     border: 0;
-    border-top: 1px solid var(--c-input-border, var(--c-text-weak));
+    /* --c-field-border, not the (typo'd, never-emitted) --c-input-border —
+       and not the input SHELL's border either: the underline shell pins that
+       transparent, which would vanish dividers (audit fix 2026-07-11). */
+    border-top: 1px solid var(--c-field-border, var(--c-text-weak));
     margin: var(--c-space-3) 0;
 }
 

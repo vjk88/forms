@@ -1,5 +1,16 @@
 # Design-Mode Control Audit — every CSS setting, verified
 
+> **STATUS 2026-07-11: FIXED (one owner-approved batch).** Every defect in §1/§3 and every
+> ultrareview item in §6 is resolved except the owner-ruled keeps: `finalDesignTest` STAYS
+> (owner call), the 7 curated-only tokens STAY theme-only, the label-hardcode minor was left
+> as-is. Highlights: Focus control removed (focus rides the accent); rail highlight fallback;
+> divider + phantom-token fixes; swatch truth via `fallbackToken` (+ new `--c-border-color`);
+> Split Hero declares `arrangement`/`bleed` (conversational mid-flow row obeys arrangement);
+> `.in-lex` deleted; One-at-a-Time Immersive toggle + scroll Page dividers exposed; accordion
+> accents its expanded panel; **global Section style** shipped as Design › Body › Sections
+> (style select + fill/border colors; engine emits `--c-section-*` only when set — unset keeps
+> the preset carve-out, so existing forms render byte-identical).
+
 > Owner request 2026-07-11: "check all the CSS settings one by one, do not assume anything…
 > I want a report first." **Report only — nothing in this document has been fixed.**
 >

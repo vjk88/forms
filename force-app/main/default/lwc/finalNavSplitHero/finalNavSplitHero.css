@@ -178,6 +178,25 @@
     margin-top: var(--c-space-5);
 }
 
+/* Arrangement (LAYOUT_REFINEMENTS §3, navOneAtATime parity): the together
+   modes must also neutralize .advance's auto margin — it IS the split. */
+.controls.arr-start {
+    justify-content: flex-start;
+}
+
+.controls.arr-end {
+    justify-content: flex-end;
+}
+
+.controls.arr-start .advance,
+.controls.arr-end .advance {
+    margin-left: 0;
+}
+
+.controls.arr-split {
+    justify-content: space-between;
+}
+
 .back-link {
     padding: var(--c-space-1) 0;
     border: none;
