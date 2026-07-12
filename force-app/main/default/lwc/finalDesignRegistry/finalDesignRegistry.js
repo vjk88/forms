@@ -828,6 +828,17 @@ const AREAS = [
                         subject: 'Section content'
                     },
                     {
+                        // every surface fill has one (owner 2026-07-08 rule;
+                        // sections caught up 2026-07-12)
+                        key: 'sectionBgOpacity',
+                        label: 'Fill opacity',
+                        type: 'range',
+                        themePath: 'palette.sectionBgOpacity',
+                        min: 0,
+                        max: 100,
+                        fallback: 100
+                    },
+                    {
                         // hide beats everything — the style's border AND a
                         // custom border color (owner 2026-07-12)
                         key: 'sectionBorder',
