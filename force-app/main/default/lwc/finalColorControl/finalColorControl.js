@@ -27,17 +27,19 @@ export default class FinalColorControl extends LightningElement {
     @api edited = false;
     @api disabled = false;
 
-    _value = '#000000';
+    _value = '';
 
     @api
     get value() {
         return this._value;
     }
     set value(v) {
-        const norm = normalizeHex(v);
-        if (norm) {
-            this._value = norm;
-        }
+        // Unparseable (keywords like `transparent`, color-mix() strings) →
+        // EMPTY, never a stale or default-black lie (round-2 audit: freezing
+        // on the last good value showed #000000 for tokens the picker can't
+        // parse). Systematic non-hex sources route through the engine's
+        // guaranteed-hex `--c-*-swatch` companions instead.
+        this._value = normalizeHex(v) || '';
     }
 
     handleInput(event) {
@@ -105,7 +107,10 @@ export default class FinalColorControl extends LightningElement {
  * #abc / #aabbcc (case-insensitive, # optional) → #aabbcc; else null.
  * Also accepts rgb()/rgba() strings, dropping alpha — theme defaults like
  * headerTextWeak/borderColor are often rgba, and the native picker + badge
- * need an opaque hex starting point (not a stale black swatch).
+ * need an opaque hex starting point. LIMIT (documented, round-2 audit):
+ * alpha is DROPPED, so a translucent wash approximates to its opaque ink —
+ * tokens where that lies (input fill, section surfaces) must feed the
+ * swatch from a `--c-*-swatch` companion, never the painted token.
  */
 function normalizeHex(v) {
     if (typeof v !== 'string') {

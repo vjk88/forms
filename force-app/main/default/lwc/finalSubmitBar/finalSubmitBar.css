@@ -111,6 +111,13 @@
     transform: translateY(-1px);
 }
 
+/* Submitting: the class was emitted since P3 with no rule (round-2 audit) —
+   a quiet "working" read on top of the :disabled state it rides with. */
+.primary.busy {
+    cursor: progress;
+    opacity: 0.75;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .primary,
     .primary:hover:not(:disabled) {

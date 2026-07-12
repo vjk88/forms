@@ -47,6 +47,11 @@ const CONTRACT_V1 = [
     '--c-section-bg',
     '--c-section-border',
     '--c-section-shadow',
+    // panel-only guaranteed-hex swatch companions (round-2 audit fix): the
+    // border swatch drops for borderless looks, the others always emit
+    '--c-input-bg-swatch',
+    '--c-section-bg-swatch',
+    '--c-section-border-swatch',
     '--c-field-bg',
     '--c-field-border',
     // input shell (fieldStyle — contract event 2026-07-07, owner QA)
@@ -181,6 +186,50 @@ describe('c-final-theme-engine', () => {
                 palette: { borderColor: '#123123' }
             });
             expect(o['--c-border-color']).toBe('#123123');
+        });
+
+        it('swatch companions are guaranteed HEX (round-2 audit)', () => {
+            const HEX = /^#[0-9a-f]{6}$/i;
+            // underline's painted bg is `transparent` — the swatch composites
+            const ul = resolveTokens(theme(), { fieldStyle: 'underline' });
+            expect(ul['--c-input-bg']).toBe('transparent');
+            expect(ul['--c-input-bg-swatch']).toMatch(HEX);
+            // custom fill passes through in every shell
+            const custom = resolveTokens(theme(), {
+                fieldStyle: 'underline',
+                palette: { fieldBg: '#101820' }
+            });
+            expect(custom['--c-input-bg-swatch']).toBe('#101820');
+
+            // section swatches: default (card) emits both, as hex
+            const t = resolveTokens(theme(), null);
+            expect(t['--c-section-bg-swatch']).toMatch(HEX);
+            expect(t['--c-section-border-swatch']).toMatch(HEX);
+            // borderless look → border swatch drops (empty picker is honest)
+            const boxed = resolveTokens(theme(), { sectionStyle: 'boxed' });
+            expect(boxed['--c-section-border-swatch']).toBeUndefined();
+            // explicit colors win
+            const explicit = resolveTokens(theme(), {
+                palette: {
+                    sectionBg: '#fffbe6',
+                    sectionBorderColor: '#3fd0c9'
+                }
+            });
+            expect(explicit['--c-section-bg-swatch']).toBe('#fffbe6');
+            expect(explicit['--c-section-border-swatch']).toBe('#3fd0c9');
+        });
+
+        it('border hiding (owner 2026-07-12): content None + section Hidden', () => {
+            const t = resolveTokens(theme(), { border: 'none' });
+            expect(t['--c-content-border']).toBe('none');
+            // hide beats the look AND a custom color; the swatch drops too
+            const s = resolveTokens(theme(), {
+                sectionStyle: 'card',
+                sectionBorder: 'none',
+                palette: { sectionBorderColor: '#3fd0c9' }
+            });
+            expect(s['--c-section-border']).toBe('none');
+            expect(s['--c-section-border-swatch']).toBeUndefined();
         });
     });
 

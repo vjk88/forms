@@ -10,6 +10,16 @@
 > accents its expanded panel; **global Section style** shipped as Design › Body › Sections
 > (style select + fill/border colors; engine emits `--c-section-*` only when set — unset keeps
 > the preset carve-out, so existing forms render byte-identical).
+>
+> **ROUND 2 (2026-07-12, owner-approved after explanation):** the ultrareview's re-verification
+> confirmed all round-1 fixes genuine (5 live) and found 4 more — all fixed: five remaining
+> swatch lies (accent/text/textWeak/headerText/headerTextWeak → `fallbackToken`); the color
+> picker no longer freezes on unparseable values (empty, never stale) and non-hex paints
+> (input fill's `transparent`/rgba, the sections' `color-mix()`) get guaranteed-hex
+> `--c-*-swatch` companion tokens; the submit button's emitted-but-unstyled `busy` class got a
+> quiet working state. Plus owner feature: **hide borders** — Body › Border weight gains None;
+> Body › Sections gains Border: Style default / Hidden (beats the look AND a custom color);
+> both retire their now-pointless Border-color pickers via the new `needsValue notEquals` gate.
 
 > Owner request 2026-07-11: "check all the CSS settings one by one, do not assume anything…
 > I want a report first." **Report only — nothing in this document has been fixed.**

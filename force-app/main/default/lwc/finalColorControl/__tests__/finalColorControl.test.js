@@ -19,20 +19,29 @@ describe('c-final-color-control', () => {
 
     it('renders label, hex readout, and picker with the normalized value', () => {
         const el = mount({ label: 'Accent', value: '#0D9488' });
-        expect(el.shadowRoot.querySelector('.label').textContent).toBe('Accent');
+        expect(el.shadowRoot.querySelector('.label').textContent).toBe(
+            'Accent'
+        );
         expect(el.shadowRoot.querySelector('.hex').textContent).toBe('#0d9488');
         expect(el.shadowRoot.querySelector('.picker').value).toBe('#0d9488');
     });
 
-    it('normalizes 3-digit hex and rejects garbage (keeps last good value)', () => {
+    it('normalizes 3-digit hex; garbage goes EMPTY, never a stale lie', () => {
         const el = mount({ label: 'Text', value: '#abc' });
         expect(el.value).toBe('#aabbcc');
         el.value = 'not-a-color';
-        expect(el.value).toBe('#aabbcc');
+        expect(el.value).toBe('');
+        el.value = 'transparent';
+        expect(el.value).toBe('');
+        el.value = 'color-mix(in srgb, var(--c-text) 4%, transparent)';
+        expect(el.value).toBe('');
     });
 
     it('flattens rgb()/rgba() theme defaults to opaque hex (alpha dropped)', () => {
-        const el = mount({ label: 'Subtitle', value: 'rgba(255, 255, 255, 0.7)' });
+        const el = mount({
+            label: 'Subtitle',
+            value: 'rgba(255, 255, 255, 0.7)'
+        });
         expect(el.value).toBe('#ffffff');
         el.value = 'rgb(17, 34, 51)';
         expect(el.value).toBe('#112233');
@@ -102,9 +111,9 @@ describe('c-final-color-control', () => {
         picker.value = '#0b6e65';
         picker.dispatchEvent(new CustomEvent('input'));
         await Promise.resolve();
-        expect(
-            el.shadowRoot.querySelector('.badge').className
-        ).toContain('pass');
+        expect(el.shadowRoot.querySelector('.badge').className).toContain(
+            'pass'
+        );
     });
 
     it('shows the edited dot only when the parent says so', () => {

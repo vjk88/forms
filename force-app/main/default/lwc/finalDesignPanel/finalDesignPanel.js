@@ -221,12 +221,19 @@ export default class FinalDesignPanel extends LightningElement {
                     continue;
                 }
             }
-            // Equality gates: [{ key, equals }] — ALL must match. Render-only:
-            // hidden controls always keep their values (IA §6).
+            // Equality gates: [{ key, equals }] or [{ key, notEquals }] —
+            // ALL must match. Render-only: hidden controls always keep
+            // their values (IA §6).
             if (c.needsValue) {
                 const ok = c.needsValue.every((g) => {
                     const def = this._controlDef(g.key);
-                    return def && this._effective(def.control) === g.equals;
+                    if (!def) {
+                        return false;
+                    }
+                    const eff = this._effective(def.control);
+                    return g.notEquals !== undefined
+                        ? eff !== g.notEquals
+                        : eff === g.equals;
                 });
                 if (!ok) {
                     continue;
