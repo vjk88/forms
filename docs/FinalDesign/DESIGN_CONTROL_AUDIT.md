@@ -129,3 +129,48 @@ override), `meshBlend`/`meshBlur` (Neon recipe), `submitBgGradient`, `submitGlow
 Per-element config (element-level label overrides, renderAs variants), content controls
 (titles, messages, After-Submit routing) — those are behavior/content, not CSS settings.
 The `--c-nav-sticky` token is pageFrame-internal plumbing (LEX unpin, PR #101), not a setting.
+
+## 6 · Reconciliation with the ultrareview audit (owner cross-check, 2026-07-11)
+
+The owner ran a parallel multi-agent audit (claude.ai artifact `481f0a7f`). Every finding
+below was RE-VERIFIED against the code before being accepted — none taken on faith.
+This section folds its verified findings in so THIS document is the one complete ledger.
+
+**Both audits found**: the rail active-link transparency, both phantom tokens
+(`--c-input-border` typo, `--c-font-size`), the 7 curated-only tokens.
+
+**Found only here (§1–§3)**: the entire focus investigation (ring works / border-focus hook
+inert / default = accent / removal recommendation — live-probed), the six swatch lies, the
+section-styles-have-no-owner finding, and live behavioral verification (underline shell,
+left labels, monoCaps).
+
+**Found only by the ultrareview — MISSED by this audit's first pass** (all re-verified):
+
+1. **BUG — Button arrangement ignored mid-flow on Split Hero conversational**
+   (`paneFlow: 'oneAtATime'`): the primitive renders its own `.controls` Back/Continue row
+   (hardcoded `justify-content: space-between`; no `arrangement` plumbing exists anywhere in
+   `finalNavSplitHero.js` — grep-verified zero matches). Last screen and Pages mode route
+   through the slotted `finalSubmitBar`, which does honor it.
+2. **GAP — One at a Time's Immersive full-bleed toggle is unreachable**: the layout registry
+   marks `oneAtATime` bleed-capable and the carded branch is fully built, but the `fullBleed`
+   control is gated `appliesTo: { layouts: ['splitHero'] }` — no UI path to the carded look.
+3. **GAP — scroll's `showDividers` option has no control**: `finalNavScroll.js:28` reads it;
+   no registry entry (the Paging pass this week skipped scroll as "nothing to page").
+4. **DEAD — orphaned `.in-lex` class**: `finalNavSplitHero.js:110` still appends it; zero CSS
+   rules reference it anywhere (grep-verified). Leftover from the pre-#99 LEX branch.
+5. **FRAGILITY — Split Hero drops the viewer's `bleed` prop**: no `@api bleed`; it recomputes
+   `bleedOn` from `options.fullBleed`. Agrees with the viewer today only because both read the
+   same options bag.
+6. **DEAD COMPONENT — `finalDesignTest`**: the P2 verification host, still `isExposed` as an
+   App Page after P3 shipped. Retire or document.
+7. **PRODUCT CALL — accordion never uses `--c-accent`**: the only multi-page-ish layout with
+   no accent-marked "current position" (token map confirms: accordion absent from the accent
+   consumer list). Possibly fine (no single current panel) — needs an owner ruling.
+8. **MINOR — `.label-uppercase` / `.label-muted` hardcode their sizes** instead of reading
+   `--c-label-size` / `--c-label-tracking`; also `--c-label-font` is live but dormant (no
+   shipped theme picks `monoCaps`).
+
+**Why the first pass missed them**: it traced control → paint (does every knob do something?)
+but not the reverse direction, paint/options → control (does every runtime option have a
+knob?), and it excluded component-health checks by scope. Items 2, 3 and 6 live exactly in
+those blind spots. Future audits must run BOTH directions.
