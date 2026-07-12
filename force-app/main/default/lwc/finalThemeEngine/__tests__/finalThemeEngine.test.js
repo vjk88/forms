@@ -219,6 +219,26 @@ describe('c-final-theme-engine', () => {
             expect(explicit['--c-section-border-swatch']).toBe('#3fd0c9');
         });
 
+        it('section Fill opacity wraps the fill; opacity alone activates card', () => {
+            // custom fill + opacity → color-mix wrap of the custom color
+            const t = resolveTokens(theme(), {
+                palette: { sectionBg: '#fffbe6', sectionBgOpacity: 40 }
+            });
+            expect(t['--c-section-bg']).toBe(
+                'color-mix(in srgb, #fffbe6 40%, transparent)'
+            );
+            // opacity ALONE still paints (default card tint) — never inert
+            const alone = resolveTokens(theme(), {
+                palette: { sectionBgOpacity: 40 }
+            });
+            expect(alone['--c-section-bg']).toContain('40%, transparent');
+            // full opacity + nothing else = carve-out untouched
+            const noop = resolveTokens(theme(), {
+                palette: { sectionBgOpacity: 100 }
+            });
+            expect(noop['--c-section-bg']).toBeUndefined();
+        });
+
         it('border hiding (owner 2026-07-12): content None + section Hidden', () => {
             const t = resolveTokens(theme(), { border: 'none' });
             expect(t['--c-content-border']).toBe('none');

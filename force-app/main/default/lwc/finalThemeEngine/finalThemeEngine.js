@@ -651,6 +651,11 @@ export function resolveTokens(themeProps, formOverrides) {
     const sectionLook = SECTION_LOOKS[p.sectionStyle] || null;
     // Swatch basis: unset global style = each section's default preset (card).
     const sectionSwatchLook = sectionLook || SECTION_LOOKS.card;
+    // A real translucency choice (<100) counts as a section customization —
+    // it must never be an inert slider when the style is unset.
+    const sectionBgOpacityOn =
+        Number.isFinite(Number(pal.sectionBgOpacity)) &&
+        Number(pal.sectionBgOpacity) < 100;
 
     // Display-title gradient ink (Neon Nights): palette.headerTitleGradient =
     // { angle, stops: ['#fff', '#d9ccff 60%', '#16e0c4'] } — stops are raw CSS
@@ -747,12 +752,22 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-glass-blur': glassPx(fx.glass),
 
         // Section — pad always; bg/border/shadow ONLY when the global Section
-        // style or an explicit color is set (unset keeps the preset carve-out;
-        // null values drop via the guard below). Explicit colors win over the
-        // look, matching every other surface's layering.
+        // style or an explicit color/opacity is set (unset keeps the preset
+        // carve-out; null values drop via the guard below). Explicit colors
+        // win over the look; Fill opacity wraps whatever fill is in play
+        // (every surface fill gets one — owner ruling 2026-07-08, sections
+        // caught up 2026-07-12). Setting ONLY the opacity activates the
+        // default card tint so the slider is never inert.
         '--c-section-pad': density.sectionPad,
-        '--c-section-bg':
-            pal.sectionBg || (sectionLook ? sectionLook.bg : null),
+        '--c-section-bg': withFillOpacity(
+            pal.sectionBg ||
+                (sectionLook
+                    ? sectionLook.bg
+                    : sectionBgOpacityOn
+                      ? SECTION_LOOKS.card.bg
+                      : null),
+            pal.sectionBgOpacity
+        ),
         '--c-section-border':
             p.sectionBorder === 'none'
                 ? 'none'
