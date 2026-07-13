@@ -57,7 +57,8 @@ const AREAS = [
                         simple: true,
                         fallbackToken: '--c-accent',
                         contrastToken: '--c-on-accent',
-                        subject: 'Button labels'
+                        subject: 'Button labels',
+                        hint: 'The brand color. Buttons, focus rings, active steps and links all follow it unless overridden.'
                     },
                     {
                         key: 'onAccent',
@@ -78,7 +79,8 @@ const AREAS = [
                         themePath: 'palette.text',
                         fallbackToken: '--c-text',
                         contrastToken: '--c-content-bg',
-                        subject: 'Body text'
+                        subject: 'Body text',
+                        hint: 'The main ink — typed values, section titles, general copy. Other text colors derive from it when unset.'
                     },
                     {
                         key: 'textWeak',
@@ -87,7 +89,8 @@ const AREAS = [
                         themePath: 'palette.textWeak',
                         fallbackToken: '--c-text-weak',
                         contrastToken: '--c-content-bg',
-                        subject: 'Muted text'
+                        subject: 'Muted text',
+                        hint: 'The quieter ink — help text, descriptions, step counters, back links.'
                     }
                 ]
             }
@@ -173,6 +176,7 @@ const AREAS = [
                         key: 'pageScrim',
                         label: 'Scrim',
                         type: 'range',
+                        hint: 'A dark veil over the background image — raise it to keep content readable on busy photos.',
                         themePath: 'pageImage.scrim',
                         needsImage: true,
                         min: 0,
@@ -182,6 +186,7 @@ const AREAS = [
                         key: 'pageImageOpacity',
                         label: 'Image opacity',
                         type: 'range',
+                        hint: 'Lower fades the image into the page fill color, not into transparency.',
                         themePath: 'pageImage.opacity',
                         needsImage: true,
                         min: 0,
@@ -192,6 +197,7 @@ const AREAS = [
                         key: 'pageRadius',
                         label: 'Corner rounding (embedded)',
                         type: 'select',
+                        hint: 'Rounds the whole scene where the form renders inside Salesforce; full-page and public hosts stay square.',
                         themePath: 'pageRadius',
                         emptyAsNull: true,
                         options: [
@@ -304,6 +310,7 @@ const AREAS = [
                         key: 'maxWidth',
                         label: 'Max content width',
                         type: 'select',
+                        hint: 'Layout default lets each layout pick its own comfortable width.',
                         path: 'layout.maxWidth',
                         // '' = unset (buttonArrangement precedent): carded
                         // layouts read medium; bleed layouts keep their locked
@@ -361,6 +368,7 @@ const AREAS = [
                         key: 'fullBleed',
                         label: 'Immersive full-bleed',
                         type: 'toggle',
+                        hint: 'On: the split owns the whole screen and the form floats as a card. Off: a regular carded pane inside the page.',
                         path: 'layout.options.fullBleed',
                         fallback: true
                     },
@@ -413,6 +421,7 @@ const AREAS = [
                         key: 'stepperNarrow',
                         label: 'Small screens',
                         type: 'select',
+                        hint: 'What the steps collapse into when they don’t fit — small screens, or many long step names.',
                         path: 'layout.options.narrowMode',
                         fallback: '',
                         options: [
@@ -549,6 +558,7 @@ const AREAS = [
                         key: 'oaatBleed',
                         label: 'Immersive full-bleed',
                         type: 'toggle',
+                        hint: 'On: one floating question card owns the screen. Off: sections advance inside the normal panel.',
                         path: 'layout.options.fullBleed',
                         fallback: true
                     },
@@ -714,6 +724,7 @@ const AREAS = [
                         key: 'bannerOpacity',
                         label: 'Image opacity',
                         type: 'range',
+                        hint: 'Lower fades the banner into the header fill color.',
                         path: 'header.bgImage.opacity',
                         needsValueOf: 'bannerImage',
                         min: 0,
@@ -729,7 +740,8 @@ const AREAS = [
                         // themes rarely set headerText — it derives from text
                         fallbackToken: '--c-header-text',
                         contrastToken: '--c-header-bg',
-                        subject: 'Header text'
+                        subject: 'Header text',
+                        hint: 'Title and brand ink on the header (and the Split Hero brand pane). Unset, it follows Text.'
                     },
                     {
                         key: 'headerTextWeak',
@@ -738,7 +750,8 @@ const AREAS = [
                         themePath: 'palette.headerTextWeak',
                         fallbackToken: '--c-header-text-weak',
                         contrastToken: '--c-header-bg',
-                        subject: 'Subtitle'
+                        subject: 'Subtitle',
+                        hint: 'The header’s muted ink — the subtitle line on the header’s own background.'
                     }
                 ]
             }
@@ -764,6 +777,7 @@ const AREAS = [
                         key: 'contentBgOpacity',
                         label: 'Fill opacity',
                         type: 'range',
+                        hint: 'Below 100 the panel goes see-through — pair with Glass blur for the frosted look.',
                         themePath: 'palette.contentBgOpacity',
                         min: 0,
                         max: 100,
@@ -826,6 +840,7 @@ const AREAS = [
                         key: 'sectionStyle',
                         label: 'Section style',
                         type: 'select',
+                        hint: 'Default follows the theme; picking a look forces it on every section.',
                         themePath: 'sectionStyle',
                         emptyAsNull: true,
                         options: [
@@ -841,6 +856,7 @@ const AREAS = [
                         key: 'sectionBg',
                         label: 'Fill',
                         type: 'color',
+                        hint: 'Tints every section, overriding the chosen style’s own fill.',
                         themePath: 'palette.sectionBg',
                         // painted value is a color-mix() string — the hex
                         // companion shows the same tint composited in JS
@@ -914,6 +930,7 @@ const AREAS = [
                         key: 'fieldBg',
                         label: 'Input fill',
                         type: 'color',
+                        hint: 'Paints the inside of every input. Unset, the Input style decides (underline stays transparent).',
                         themePath: 'palette.fieldBg',
                         // the painted --c-input-bg can be `transparent` or a
                         // translucent rgba the picker can't parse — the
@@ -967,6 +984,7 @@ const AREAS = [
                         key: 'labelColor',
                         label: 'Label color',
                         type: 'color',
+                        hint: 'The small captions above inputs. Unset, your Label style picks the ink.',
                         themePath: 'palette.labelColor',
                         // unset = the label style derives it — show the LIVE
                         // resolved ink, never a stale black swatch
@@ -1026,6 +1044,7 @@ const AREAS = [
                         key: 'buttonArrangement',
                         label: 'Arrangement',
                         type: 'select',
+                        hint: 'How Back / Next / Submit line up. Layout default = each layout’s own arrangement.',
                         path: 'submit.buttonArrangement',
                         fallback: '',
                         options: [
@@ -1046,6 +1065,7 @@ const AREAS = [
                         key: 'submitBg',
                         label: 'Button fill',
                         type: 'color',
+                        hint: 'Unset, buttons wear the Accent.',
                         themePath: 'palette.submitBg',
                         // unset = the accent; show THAT, not an empty swatch
                         fallbackToken: '--c-submit-bg',
@@ -1056,6 +1076,7 @@ const AREAS = [
                         key: 'submitText',
                         label: 'Button label color',
                         type: 'color',
+                        hint: 'Unset, auto-picks a readable black or white for the fill.',
                         themePath: 'palette.submitText',
                         // unset = derived readable ink (black on light fills)
                         fallbackToken: '--c-submit-text'

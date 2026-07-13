@@ -444,6 +444,9 @@
                                                     onchange={handleToggle}
                                                 />
                                             </div>
+                                            <template lwc:if={c.hint}>
+                                                <p class="ctl-hint">{c.hint}</p>
+                                            </template>
                                         </template>
                                         <template lwc:elseif={c.isRange}>
                                             <div class="row">
@@ -463,6 +466,9 @@
                                                     oninput={handleRange}
                                                 />
                                             </div>
+                                            <template lwc:if={c.hint}>
+                                                <p class="ctl-hint">{c.hint}</p>
+                                            </template>
                                         </template>
                                         <template lwc:else>
                                             <div class="row">
