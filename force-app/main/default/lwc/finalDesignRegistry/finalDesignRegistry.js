@@ -61,11 +61,15 @@ const AREAS = [
                     },
                     {
                         key: 'onAccent',
-                        label: 'Button text',
+                        // was "Button text" — a misnomer: it never touched the
+                        // Submit button (owner 2026-07-13). This is the ink ON
+                        // accent-filled chrome.
+                        label: 'Text on accent',
                         type: 'color',
                         themePath: 'palette.onAccent',
                         // unset = derived readable ink on the accent
-                        fallbackToken: '--c-on-accent'
+                        fallbackToken: '--c-on-accent',
+                        hint: 'Writing on accent-filled spots: the highlight badge, active step number, side-nav page number. Buttons have their own label color under Actions.'
                     },
                     {
                         key: 'text',

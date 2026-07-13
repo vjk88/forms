@@ -259,6 +259,9 @@ export default class FinalDesignPanel extends LightningElement {
                 isRichText: c.type === 'richtext',
                 isNumber: c.type === 'number',
                 placeholder: c.placeholder || '',
+                // registry-authored helper line (the glass select's derived
+                // hint overwrites this below — it stays the more specific one)
+                hint: c.hint || '',
                 min: c.min,
                 max: c.max
             };
