@@ -1,6 +1,8 @@
 <template>
     <div class="tabs">
-        <div class="tab-strip">
+        <!-- zero-height tripwire: leaves the viewport top == strip pinned -->
+        <div class="stuck-sentinel" aria-hidden="true"></div>
+        <div class={stripClass}>
             <div
                 class={listClass}
                 role="tablist"
@@ -34,7 +36,7 @@
             <template for:each={currentPageList} for:item="page">
                 <div class="page-panel" key={page.key}>
                     <c-final-layout-zones
-                    onvaluechange={handleValueChange}
+                        onvaluechange={handleValueChange}
                         sections={page.sections}
                         zones={page.zones}
                     ></c-final-layout-zones>

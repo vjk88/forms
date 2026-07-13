@@ -15,7 +15,9 @@
     flex: 1;
     height: 6px;
     border-radius: 999px;
-    background: var(--c-field-border);
+    /* text-ink mix, never --c-field-border (invisible on dark) — wayfinding §4;
+       groove kept per owner ruling 2026-07-12 (removal recipe: plan §7a) */
+    background: color-mix(in srgb, var(--c-text) 15%, transparent);
     overflow: hidden;
 }
 
@@ -52,7 +54,7 @@
 .progress-hairline {
     flex: 1;
     height: 2px;
-    background: var(--c-field-border);
+    background: color-mix(in srgb, var(--c-text) 18%, transparent);
     overflow: hidden;
 }
 

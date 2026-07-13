@@ -11,8 +11,7 @@
 /* — Step list (the strip always rides the top) — */
 /* Sticky wayfinding (owner 2026-07-11): progress you can't see isn't
    progress. The strip rides the page's ONE scrollbar — sticky never adds a
-   scroll container. Surface-matched background (+ the panel's glass blur) so
-   scrolled content never shows through the pinned strip. */
+   scroll container. */
 .steps {
     /* --c-nav-sticky: pageFrame sets `static` inside LEX embeds (the fixed
        chrome's height is unknowable — a mid-content pin looks broken, owner
@@ -21,7 +20,13 @@
     top: 0;
     z-index: 2;
     margin-bottom: var(--c-space-5);
-    padding: var(--c-space-2) 0;
+    padding: var(--c-space-2) var(--c-space-2);
+}
+
+/* Paint-when-pinned (wayfinding pass): the surface exists ONLY while stuck —
+   painted permanently, translucent content-bg stacks on glass-theme cards and
+   reads as a foreign band. Pinned, it masks scrolled content exactly as before. */
+.steps.is-stuck {
     background: var(--c-content-bg);
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));
@@ -42,18 +47,23 @@
     min-width: 0;
 }
 
+/* Shrinkable (0 1 auto) so the label ellipsizes instead of running off the
+   card edge — the guillotined "Page 5" bug. */
 .step-item:last-child {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
 }
 
-/* Connector line between steps */
+/* Connector line between steps. Track/connector ink is a mix of the local
+   TEXT color, never --c-field-border — that token is tuned for input outlines
+   and goes invisible on dark themes (wayfinding pass §4). */
 .step-item::after {
     content: '';
     flex: 1;
     height: 2px;
     margin: 0 var(--c-space-3);
     border-radius: 1px;
-    background: var(--c-field-border);
+    background: color-mix(in srgb, var(--c-text) 18%, transparent);
 }
 
 .step-item:last-child::after {
@@ -90,9 +100,9 @@
     width: 28px;
     height: 28px;
     flex: none;
-    border: 1px solid var(--c-field-border);
+    border: 1px solid color-mix(in srgb, var(--c-text) 30%, transparent);
     border-radius: 50%;
-    background: var(--c-content-bg);
+    background: transparent;
     color: var(--c-text-weak);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -127,7 +137,7 @@
     width: 12px;
     height: 12px;
     font-size: 0;
-    background: var(--c-field-border);
+    background: color-mix(in srgb, var(--c-text) 22%, transparent);
     border: none;
 }
 
@@ -153,7 +163,8 @@
 .progress-track {
     height: 6px;
     border-radius: 999px;
-    background: var(--c-field-border);
+    /* groove kept per owner ruling 2026-07-12 (removal recipe: plan §7a) */
+    background: color-mix(in srgb, var(--c-text) 15%, transparent);
     overflow: hidden;
 }
 
@@ -195,6 +206,57 @@
     display: none;
 }
 
+/* — Measured fit ladder (wayfinding pass §3; JS computes fit-* from the strip's
+     own width). COMPACT: numbers only, the active step keeps its label —
+     buttons stay named via aria-label. — */
+.fit-compact .step-btn:not(.active) .step-label {
+    display: none;
+}
+
+/* The active item takes the space the hidden labels gave back — equal flex
+   shares would crush the one visible label to a letter. */
+.fit-compact .item-active {
+    flex: 3 1 auto;
+}
+
+/* COLLAPSE: the numbered list doesn't fit at ANY width — same treatment as the
+   narrow container query below, driven by measurement instead of the 540px
+   floor. Mirrors those rules exactly (a container query can't be class-gated,
+   so the two paths share look by duplication — keep them in sync). */
+.fit-collapse.narrow-dots .step-marker {
+    width: 12px;
+    height: 12px;
+    font-size: 0;
+    background: color-mix(in srgb, var(--c-text) 22%, transparent);
+    border: none;
+}
+
+.fit-collapse.narrow-dots .step-btn.active .step-marker,
+.fit-collapse.narrow-dots .step-btn.done .step-marker {
+    background: var(--c-accent);
+}
+
+.fit-collapse.narrow-dots .step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.fit-collapse.narrow-dots .step-item::after {
+    height: 1px;
+}
+
+.fit-collapse.narrow-bar .step-list {
+    display: none;
+}
+
+.fit-collapse.narrow-bar:not(.mode-progressBar) .progress-track {
+    display: block;
+}
+
 /* — Narrow container: numbered steps don't fit, so the strip collapses to
      the picked Small-screens treatment — dots (default) or the progress
      bar (contract narrow behavior; shared threshold constant). — */
@@ -203,7 +265,7 @@
         width: 12px;
         height: 12px;
         font-size: 0;
-        background: var(--c-field-border);
+        background: color-mix(in srgb, var(--c-text) 22%, transparent);
         border: none;
     }
 

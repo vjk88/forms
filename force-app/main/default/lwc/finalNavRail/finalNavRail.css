@@ -12,6 +12,16 @@
     grid-template-columns: 200px minmax(0, 1fr);
     column-gap: var(--c-space-5);
     align-items: start;
+    position: relative;
+}
+
+/* Absolute so the tripwire never becomes a grid item (it would steal the rail
+   column). Sits at the layout's top — where the narrow chip row pins. */
+.stuck-sentinel {
+    position: absolute;
+    top: 0;
+    width: 0;
+    height: 0;
 }
 
 .rail-narrow {
@@ -77,7 +87,9 @@
     margin-bottom: var(--c-space-3);
     border: 1px solid var(--c-field-border);
     border-radius: var(--c-radius);
-    background: var(--c-content-bg);
+    /* transparent: content-bg here re-stacks the card surface on itself —
+       the same glass-theme band bug in button form (wayfinding pass §2) */
+    background: transparent;
     color: var(--c-text);
     font-family: var(--c-font-body);
     font-size: 0.875rem;
@@ -171,7 +183,9 @@
 .progress-track {
     height: 6px;
     border-radius: 999px;
-    background: var(--c-field-border);
+    /* text-ink mix, never --c-field-border (invisible on dark) — wayfinding §4;
+       groove kept per owner ruling 2026-07-12 (removal recipe: plan §7a) */
+    background: color-mix(in srgb, var(--c-text) 15%, transparent);
     overflow: hidden;
 }
 
@@ -263,12 +277,16 @@
     }
 
     /* topBar chips: the CHIP ROW becomes the sticky element (wayfinding
-       survives narrow too); surface-matched bg so content never bleeds
-       through. Drawer mode goes static — a pinned closed drawer is noise. */
+       survives narrow too). Drawer mode goes static — a pinned closed
+       drawer is noise. */
     .narrow-topbar.sticky-rail .rail {
         top: 0;
         z-index: 2;
         padding: var(--c-space-2) 0;
+    }
+
+    /* Paint-when-pinned (wayfinding pass): surface only while stuck. */
+    .narrow-topbar.sticky-rail .rail.is-stuck {
         background: var(--c-content-bg);
         -webkit-backdrop-filter: blur(var(--c-glass-blur));
         backdrop-filter: blur(var(--c-glass-blur));

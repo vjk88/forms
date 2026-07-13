@@ -1,5 +1,5 @@
 import { createElement } from 'lwc';
-import FinalNavStepper from 'c/finalNavStepper';
+import FinalNavStepper, { computeFitTier } from 'c/finalNavStepper';
 
 const PAGES = [
     { id: 'p1', name: 'One', sections: [] },
@@ -54,5 +54,25 @@ describe('c-final-nav-stepper', () => {
         const free = mount({ navigation: 'free' });
         btns = [...free.shadowRoot.querySelectorAll('.step-btn')];
         expect(btns.map((b) => b.disabled)).toEqual([false, false, false]);
+    });
+
+    it('strip is unpainted by default (paint-when-pinned) and mounts its tripwire', () => {
+        const el = mount(undefined);
+        expect(el.shadowRoot.querySelector('.steps').className).not.toContain(
+            'is-stuck'
+        );
+        expect(el.shadowRoot.querySelector('.stuck-sentinel')).not.toBeNull();
+    });
+
+    it('computeFitTier: full when labels fit, compact when only numbers fit, collapse below that', () => {
+        // 3 steps: labeled needs 360, compact needs 3*44+140=272
+        expect(computeFitTier(900, 3)).toBe('full');
+        expect(computeFitTier(300, 3)).toBe('compact');
+        expect(computeFitTier(200, 3)).toBe('collapse');
+        // 6 long-label steps on a wide desktop card: labeled needs 720
+        expect(computeFitTier(650, 6)).toBe('compact');
+        // degenerate inputs never throw
+        expect(computeFitTier(0, 3)).toBe('full');
+        expect(computeFitTier(800, 0)).toBe('full');
     });
 });

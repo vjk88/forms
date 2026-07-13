@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { observeStuck } from 'c/finalStuck';
 
 /**
  * finalNavTabs — tabbed-pages nav primitive (catalog §2).
@@ -26,12 +27,42 @@ export default class FinalNavTabs extends LightningElement {
     /** Spec layout.options: { tabAlignment, tabStyle, showTabIcons } */
     @api options;
 
+    /** True only while the strip is pinned — the ONLY time it paints a surface. */
+    stuck = false;
+
+    _disconnectStuck = null;
+
+    renderedCallback() {
+        if (this._disconnectStuck === null) {
+            this._disconnectStuck = observeStuck(
+                this.template.querySelector('.stuck-sentinel'),
+                this.template.querySelector('.tab-strip'),
+                (stuck) => {
+                    this.stuck = stuck;
+                }
+            );
+        }
+    }
+
+    disconnectedCallback() {
+        if (this._disconnectStuck) {
+            this._disconnectStuck();
+            this._disconnectStuck = null;
+        }
+    }
+
+    get stripClass() {
+        return this.stuck ? 'tab-strip is-stuck' : 'tab-strip';
+    }
+
     get opts() {
         return this.options || {};
     }
 
     get tabStyle() {
-        return STYLES.has(this.opts.tabStyle) ? this.opts.tabStyle : 'underline';
+        return STYLES.has(this.opts.tabStyle)
+            ? this.opts.tabStyle
+            : 'underline';
     }
 
     get listClass() {
@@ -59,7 +90,9 @@ export default class FinalNavTabs extends LightningElement {
     /** One-item list so the keyed template remounts (and animates) per tab. */
     get currentPageList() {
         const page = (this.pages || [])[this.currentPageIndex || 0];
-        return page ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }] : [];
+        return page
+            ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }]
+            : [];
     }
 
     handleTabClick(event) {
@@ -92,11 +125,16 @@ export default class FinalNavTabs extends LightningElement {
         if (index === this.currentPageIndex) {
             return;
         }
-        this.dispatchEvent(new CustomEvent('pagechange', { detail: { index } }));
+        this.dispatchEvent(
+            new CustomEvent('pagechange', { detail: { index } })
+        );
         if (focus) {
             // Roving tabindex: move focus with activation once the host updates.
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
             requestAnimationFrame(() => {
-                const tab = this.template.querySelector(`[data-index="${index}"]`);
+                const tab = this.template.querySelector(
+                    `[data-index="${index}"]`
+                );
                 if (tab) {
                     tab.focus();
                 }

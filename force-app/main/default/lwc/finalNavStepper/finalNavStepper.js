@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { observeStuck } from 'c/finalStuck';
 
 /**
  * finalNavStepper — wizard-steps nav primitive (catalog §2).
@@ -15,12 +16,80 @@ import { LightningElement, api } from 'lwc';
 
 const MODES = new Set(['numbered', 'dots', 'progressBar']);
 
+/* Fit ladder (IMPL_PLAN_PROGRESS_WAYFINDING §3): per-step space the numbered
+   list needs. Labeled = marker + gap + a usable label; compact = marker only,
+   plus one active label alongside. Tuned against live renders. */
+const MIN_LABELED_STEP = 120;
+const MIN_COMPACT_STEP = 44;
+const ACTIVE_LABEL_ROOM = 140;
+
+/**
+ * 'full' = every step labeled; 'compact' = numbers + active label only;
+ * 'collapse' = the Small-screens treatment (dots/bar) at ANY width — the
+ * numbered list simply doesn't fit. Exported for direct unit testing.
+ */
+export function computeFitTier(width, stepCount) {
+    if (!width || !stepCount) {
+        return 'full';
+    }
+    if (stepCount * MIN_LABELED_STEP <= width) {
+        return 'full';
+    }
+    if (stepCount * MIN_COMPACT_STEP + ACTIVE_LABEL_ROOM <= width) {
+        return 'compact';
+    }
+    return 'collapse';
+}
+
 export default class FinalNavStepper extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
     @api pageValidity = [];
     /** Spec layout.options: { mode, navigation, showStepCount, narrowMode } */
     @api options;
+
+    /** True only while the strip is pinned — the ONLY time it paints a surface. */
+    stuck = false;
+    /** Measured fit tier: 'full' | 'compact' | 'collapse' (ladder above). */
+    fitTier = 'full';
+
+    _disconnectStuck = null;
+    _resizeObserver = null;
+
+    renderedCallback() {
+        if (this._disconnectStuck === null) {
+            this._disconnectStuck = observeStuck(
+                this.template.querySelector('.stuck-sentinel'),
+                this.template.querySelector('.steps'),
+                (stuck) => {
+                    this.stuck = stuck;
+                }
+            );
+        }
+        if (this._resizeObserver === null) {
+            const strip = this.template.querySelector('.steps');
+            if (strip && typeof ResizeObserver !== 'undefined') {
+                this._resizeObserver = new ResizeObserver(([entry]) => {
+                    this.fitTier = computeFitTier(
+                        entry.contentRect.width,
+                        (this.pages || []).length
+                    );
+                });
+                this._resizeObserver.observe(strip);
+            }
+        }
+    }
+
+    disconnectedCallback() {
+        if (this._disconnectStuck) {
+            this._disconnectStuck();
+            this._disconnectStuck = null;
+        }
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+    }
 
     get opts() {
         return this.options || {};
@@ -51,7 +120,10 @@ export default class FinalNavStepper extends LightningElement {
             this.opts.narrowMode === 'progressBar'
                 ? 'narrow-bar'
                 : 'narrow-dots';
-        return `steps mode-${this.mode} ${narrow}`;
+        // fit-* = measured ladder (fit beats width); is-stuck = paint-when-pinned
+        const fit = this.fitTier === 'full' ? '' : ` fit-${this.fitTier}`;
+        const stuck = this.stuck ? ' is-stuck' : '';
+        return `steps mode-${this.mode} ${narrow}${fit}${stuck}`;
     }
 
     /** The bar markup also mounts when it's only the NARROW collapse target —
@@ -87,6 +159,9 @@ export default class FinalNavStepper extends LightningElement {
             if (active) cls += ' active';
             if (done) cls += ' done';
             return {
+                // item-level active: the compact fit tier grows the active
+                // item so its (only visible) label isn't crushed to a letter
+                itemCls: active ? 'step-item item-active' : 'step-item',
                 key: page.id || `pg_${index}`,
                 label: page.name || `Step ${index + 1}`,
                 number: index + 1,
