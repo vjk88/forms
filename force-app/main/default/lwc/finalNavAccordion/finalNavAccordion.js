@@ -14,7 +14,9 @@ import { LightningElement, api, track } from 'lwc';
 export default class FinalNavAccordion extends LightningElement {
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { allowMultiple, firstPanelOpen, iconPosition } */
+    /** Spec layout.options: { allowMultiple, firstPanelOpen, iconPosition } —
+     *  ALL currently DORMANT (renderer honors them; no Design-panel writer,
+     *  only seed scripts ever set them). */
     @api options;
 
     @track _openKeys;

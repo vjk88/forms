@@ -58,7 +58,7 @@ const AREAS = [
                         fallbackToken: '--c-accent',
                         contrastToken: '--c-on-accent',
                         subject: 'Button labels',
-                        hint: 'The brand color. Buttons, focus rings, active steps and links all follow it unless overridden.'
+                        hint: 'Your brand color. Buttons, the glow when you click into a field, active steps and progress bars all use it unless you override them.'
                     },
                     {
                         key: 'onAccent',
@@ -70,7 +70,7 @@ const AREAS = [
                         themePath: 'palette.onAccent',
                         // unset = derived readable ink on the accent
                         fallbackToken: '--c-on-accent',
-                        hint: 'Writing on accent-filled spots: the highlight badge, active step number, side-nav page number. Buttons have their own label color under Actions.'
+                        hint: 'Text sitting on accent-colored spots: the highlight badge, the active step number, the side-nav page number. Buttons have their own label color under Actions.'
                     },
                     {
                         key: 'text',
@@ -80,7 +80,7 @@ const AREAS = [
                         fallbackToken: '--c-text',
                         contrastToken: '--c-content-bg',
                         subject: 'Body text',
-                        hint: 'The main ink — typed values, section titles, general copy. Other text colors derive from it when unset.'
+                        hint: 'The main text color — answers people type, section titles, most words on the form. Other text colors copy it unless you set them.'
                     },
                     {
                         key: 'textWeak',
@@ -90,7 +90,9 @@ const AREAS = [
                         fallbackToken: '--c-text-weak',
                         contrastToken: '--c-content-bg',
                         subject: 'Muted text',
-                        hint: 'The quieter ink — help text, descriptions, step counters, back links.'
+                        // traced 2026-07-13: NO "help text" — field help is a
+                        // tooltip icon, and it does not ride this token
+                        hint: 'Color of the secondary text — example text inside empty inputs, section descriptions, “Step 2 of 5”, inactive tabs and steps, Back buttons.'
                     }
                 ]
             }
@@ -186,7 +188,7 @@ const AREAS = [
                         key: 'pageImageOpacity',
                         label: 'Image opacity',
                         type: 'range',
-                        hint: 'Lower fades the image into the page fill color, not into transparency.',
+                        hint: 'Lower fades the image into the page fill color rather than making it see-through.',
                         themePath: 'pageImage.opacity',
                         needsImage: true,
                         min: 0,
@@ -741,7 +743,7 @@ const AREAS = [
                         fallbackToken: '--c-header-text',
                         contrastToken: '--c-header-bg',
                         subject: 'Header text',
-                        hint: 'Title and brand ink on the header (and the Split Hero brand pane). Unset, it follows Text.'
+                        hint: 'Color of the title and brand name in the header (and Split Hero’s left pane). Empty = same as Text.'
                     },
                     {
                         key: 'headerTextWeak',
@@ -751,7 +753,7 @@ const AREAS = [
                         fallbackToken: '--c-header-text-weak',
                         contrastToken: '--c-header-bg',
                         subject: 'Subtitle',
-                        hint: 'The header’s muted ink — the subtitle line on the header’s own background.'
+                        hint: 'Color of the subtitle line in the header. Empty = same as Muted text.'
                     }
                 ]
             }
@@ -840,7 +842,7 @@ const AREAS = [
                         key: 'sectionStyle',
                         label: 'Section style',
                         type: 'select',
-                        hint: 'Default follows the theme; picking a look forces it on every section.',
+                        hint: 'Default lets each section keep its own style; picking one forces it on every section.',
                         themePath: 'sectionStyle',
                         emptyAsNull: true,
                         options: [
@@ -856,7 +858,7 @@ const AREAS = [
                         key: 'sectionBg',
                         label: 'Fill',
                         type: 'color',
-                        hint: 'Tints every section, overriding the chosen style’s own fill.',
+                        hint: 'Tints every section, replacing the fill its style would use.',
                         themePath: 'palette.sectionBg',
                         // painted value is a color-mix() string — the hex
                         // companion shows the same tint composited in JS
@@ -930,7 +932,7 @@ const AREAS = [
                         key: 'fieldBg',
                         label: 'Input fill',
                         type: 'color',
-                        hint: 'Paints the inside of every input. Unset, the Input style decides (underline stays transparent).',
+                        hint: 'Paints the inside of every input box. Empty = the Input style decides (underline stays transparent).',
                         themePath: 'palette.fieldBg',
                         // the painted --c-input-bg can be `transparent` or a
                         // translucent rgba the picker can't parse — the
@@ -984,7 +986,7 @@ const AREAS = [
                         key: 'labelColor',
                         label: 'Label color',
                         type: 'color',
-                        hint: 'The small captions above inputs. Unset, your Label style picks the ink.',
+                        hint: 'Color of the small captions above inputs (like FIRST NAME). Empty = the Label style decides.',
                         themePath: 'palette.labelColor',
                         // unset = the label style derives it — show the LIVE
                         // resolved ink, never a stale black swatch
@@ -1065,7 +1067,7 @@ const AREAS = [
                         key: 'submitBg',
                         label: 'Button fill',
                         type: 'color',
-                        hint: 'Unset, buttons wear the Accent.',
+                        hint: 'Empty = buttons wear the Accent color.',
                         themePath: 'palette.submitBg',
                         // unset = the accent; show THAT, not an empty swatch
                         fallbackToken: '--c-submit-bg',
@@ -1076,7 +1078,7 @@ const AREAS = [
                         key: 'submitText',
                         label: 'Button label color',
                         type: 'color',
-                        hint: 'Unset, auto-picks a readable black or white for the fill.',
+                        hint: 'Empty = auto-picks a readable dark or light for the button fill.',
                         themePath: 'palette.submitText',
                         // unset = derived readable ink (black on light fills)
                         fallbackToken: '--c-submit-text'

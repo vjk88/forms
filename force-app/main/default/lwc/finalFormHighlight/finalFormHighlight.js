@@ -4,7 +4,10 @@ import { LightningElement, api } from 'lwc';
  * finalFormHighlight — the announcement banner (catalog §3).
  *
  * Owns message / variant / icon / dismissible; composed by finalFormHeader
- * (and later navSplitHero's brand pane), never re-owned by its hosts.
+ * and finalNavSplitHero's brand pane, never re-owned by its hosts.
+ * NOTE: only `text` (and `placement`, splitHero) have Design-panel writers;
+ * variant/icon/dismissible are DORMANT vocabulary — renderer-only until a
+ * control exists. Default render = the 'badge' pill.
  */
 export default class FinalFormHighlight extends LightningElement {
     /** Spec `header.highlight`: { text, variant, icon, dismissible } */
@@ -13,7 +16,9 @@ export default class FinalFormHighlight extends LightningElement {
     dismissed = false;
 
     get show() {
-        return Boolean(this.highlight && this.highlight.text && !this.dismissed);
+        return Boolean(
+            this.highlight && this.highlight.text && !this.dismissed
+        );
     }
 
     get rootClass() {
