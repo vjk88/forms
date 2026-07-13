@@ -25,7 +25,9 @@ export default class FinalNavRail extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { side, railWidth, railContent, sticky, narrowBehavior, navigation } */
+    /** Spec layout.options. PRODUCT-SET: side, railWidth, railContent,
+     *  narrowBehavior, navigation. DORMANT (no Design-panel writer; defaults
+     *  apply): sticky (default on), dock (default on). */
     @api options;
 
     @track drawerOpen = false;

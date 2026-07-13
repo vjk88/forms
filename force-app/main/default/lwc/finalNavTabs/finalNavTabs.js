@@ -24,7 +24,8 @@ export default class FinalNavTabs extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { tabAlignment, tabStyle, showTabIcons } */
+    /** Spec layout.options. PRODUCT-SET: tabAlignment, tabStyle.
+     *  DORMANT (no Design-panel writer): showTabIcons. */
     @api options;
 
     /** True only while the strip is pinned — the ONLY time it paints a surface. */

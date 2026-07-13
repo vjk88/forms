@@ -54,9 +54,14 @@ export default class FinalNavSplitHero extends LightningElement {
     @api currentPageIndex = 0;
     @api pageValidity = [];
     /**
-     * Spec layout.options: side, ratio, sticky, paneImage, paneBg,
-     * paneBgOpacity, paneLogo, paneBrandName, paneTitle, paneSubtitle,
-     * paneHighlight, blockPlacement, progressStyle, navigation, paneFlow.
+     * Spec layout.options.
+     * PRODUCT-SET (Design panel / viewer write these): fullBleed, paneFlow,
+     * progressStyle, navigation — plus the pane CONTENT keys the viewer maps
+     * from the form header (paneTitle, paneSubtitle, paneBrandName, paneLogo,
+     * paneHighlight; header IS the pane editor, finalFormViewer ownsHeader).
+     * DORMANT (renderer tolerates, NO product writer — only the P0 seed
+     * script ever wrote them; do NOT present as product surface): side,
+     * ratio, sticky, paneImage, paneBg, paneBgOpacity, blockPlacement.
      */
     @api options;
     /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
