@@ -57,6 +57,24 @@
     color: var(--c-header-text-weak);
 }
 
+/* Rich-text title/description: strip the editor's <p> wrappers so the lockup
+   type scale owns the box; authored inline spans (color, size) still win. */
+.hdr-title p,
+.hdr-desc p {
+    margin: 0;
+    font: inherit;
+}
+
+.hdr-desc p + p {
+    margin-top: var(--c-space-2);
+}
+
+.hdr-desc ul,
+.hdr-desc ol {
+    margin: 0;
+    padding-left: 1.25em;
+}
+
 /* — Arrangements — */
 
 /* logoBeside: branding left, text right */

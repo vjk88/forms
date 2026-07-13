@@ -94,7 +94,33 @@
     opacity: 0.85;
 }
 
+/* Rich-text blocks: strip the editor's <p> wrappers so the pane type scale
+   owns the box; authored inline spans (color, size, italics) still win. */
+.pane-title p,
+.pane-subtitle p {
+    margin: 0;
+    font: inherit;
+}
+
+.pane-subtitle p + p {
+    margin-top: var(--c-space-2);
+}
+
+.pane-subtitle ul,
+.pane-subtitle ol {
+    margin: 0;
+    padding-left: 1.2em;
+}
+
 .pane-progress {
+    margin-top: var(--c-space-4);
+}
+
+/* Between a bottom highlight and the progress footer (owner order 2026-07-12:
+   highlight → divider → progress). currentColor per this file's ink doctrine —
+   never hard-coded white. */
+.pane-divider {
+    border-top: 1px solid color-mix(in srgb, currentColor 25%, transparent);
     margin-top: var(--c-space-4);
 }
 
@@ -347,6 +373,12 @@ slot[name='actions'] {
     color: var(--c-text-weak);
 }
 
+.lockup-title p,
+.lockup-desc p {
+    margin: 0;
+    font: inherit;
+}
+
 /* — Narrow: the pane becomes a compact top brand strip; form full-width;
      sticky off (contract narrow behavior). — */
 @container split (max-width: 540px) {
@@ -392,6 +424,7 @@ slot[name='actions'] {
 
     .zone-center,
     .zone-bottom,
+    .pane-divider,
     .pane-progress {
         display: none;
     }

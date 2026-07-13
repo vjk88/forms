@@ -682,16 +682,18 @@ describe('c-final-design-panel', () => {
         expect(handler).not.toHaveBeenCalled();
     });
 
-    it('plain content controls (title) write spec paths, never overrides', async () => {
+    it('plain content controls (title, now richtext) write spec paths, never overrides', async () => {
         const el = mount();
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        const input = el.shadowRoot.querySelector('input[data-key="title"]');
-        input.value = 'New Title';
-        input.dispatchEvent(new CustomEvent('change'));
+        const editor = el.shadowRoot.querySelector(
+            'lightning-input-rich-text[data-key="title"]'
+        );
+        editor.value = '<p>New Title</p>';
+        editor.dispatchEvent(new CustomEvent('change'));
         await flush();
         const spec = lastSpec(handler);
-        expect(spec.header.title).toBe('New Title');
+        expect(spec.header.title).toBe('<p>New Title</p>');
         expect(spec.theme.overrides || {}).toEqual({});
     });
 });

@@ -181,15 +181,36 @@ export default class FinalNavSplitHero extends LightningElement {
         return !this.logoUrl && Boolean(this.opts.paneBrandName);
     }
 
-    /** Blocks grouped into their Top/Center/Bottom zones (owner model). */
+    /** header.highlight.placement (owner 2026-07-12): 'aboveTitle' = kicker
+     *  position; anything else = bottom stack (highlight → divider → progress). */
+    get highlightAboveTitle() {
+        const hl = this.opts.paneHighlight;
+        return Boolean(hl && hl.placement === 'aboveTitle');
+    }
+
+    /** Blocks grouped into their Top/Center/Bottom zones (owner model).
+     *  Defaults centered (owner 2026-07-12): brand pins top, progress pins
+     *  bottom, the pitch floats in the middle — the mockup arrangement. */
     get zoneList() {
         const placement = this.opts.blockPlacement || {};
-        const defaults = { title: 'top', subtitle: 'top', highlight: 'bottom' };
-        const blocks = [
+        const aboveTitle = this.highlightAboveTitle;
+        const defaults = {
+            title: 'center',
+            subtitle: 'center',
+            highlight: aboveTitle ? 'center' : 'bottom'
+        };
+        const hlBlock = {
+            kind: 'highlight',
+            highlight: this.opts.paneHighlight
+        };
+        const textBlocks = [
             { kind: 'title', html: this.opts.paneTitle },
-            { kind: 'subtitle', html: this.opts.paneSubtitle },
-            { kind: 'highlight', highlight: this.opts.paneHighlight }
+            { kind: 'subtitle', html: this.opts.paneSubtitle }
         ];
+        // Within-zone order follows array order: the kicker precedes the title.
+        const blocks = aboveTitle
+            ? [hlBlock, ...textBlocks]
+            : [...textBlocks, hlBlock];
         return ZONES.map((zone) => ({
             zone,
             cls: `zone zone-${zone}`,
@@ -208,6 +229,12 @@ export default class FinalNavSplitHero extends LightningElement {
                     isHighlight: b.kind === 'highlight'
                 }))
         }));
+    }
+
+    /** Hairline between a bottom-placed highlight and the progress footer. */
+    get showPaneDivider() {
+        const hl = this.opts.paneHighlight;
+        return Boolean(hl && hl.text) && !this.highlightAboveTitle;
     }
 
     // ---- progress (renders in the brand pane) ----

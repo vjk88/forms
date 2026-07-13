@@ -206,25 +206,26 @@
 
                     <div class="s-section">WORDS</div>
                     <div class="s-card">
-                        <div class="row">
-                            <label for="s-title">Title</label>
-                            <input
-                                id="s-title"
-                                type="text"
+                        <!-- richtext like the advanced lens: header.title /
+                             .description store HTML now — a plain input would
+                             show raw tags and flatten styling on edit -->
+                        <div class="richtext">
+                            <label class="rt-label">Title</label>
+                            <lightning-input-rich-text
                                 data-key="title"
                                 value={simpleVM.title.value}
-                                onchange={handleText}
-                            />
+                                variant="bottom-toolbar"
+                                onchange={handleRichText}
+                            ></lightning-input-rich-text>
                         </div>
-                        <div class="row">
-                            <label for="s-desc">Subtitle</label>
-                            <input
-                                id="s-desc"
-                                type="text"
+                        <div class="richtext">
+                            <label class="rt-label">Subtitle</label>
+                            <lightning-input-rich-text
                                 data-key="description"
                                 value={simpleVM.description.value}
-                                onchange={handleText}
-                            />
+                                variant="bottom-toolbar"
+                                onchange={handleRichText}
+                            ></lightning-input-rich-text>
                         </div>
                     </div>
 
