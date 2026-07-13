@@ -9,7 +9,7 @@
 }
 
 /* Sticky wayfinding (owner 2026-07-11): the strip pins while the page's ONE
-   scrollbar moves content under it; surface-matched bg + panel glass blur. */
+   scrollbar moves content under it. */
 .tab-strip {
     /* --c-nav-sticky: static inside LEX embeds (pageFrame decides). */
     position: var(--c-nav-sticky, sticky);
@@ -17,6 +17,11 @@
     z-index: 2;
     margin-bottom: var(--c-space-5);
     padding: var(--c-space-2) 0;
+}
+
+/* Paint-when-pinned (wayfinding pass): surface only while stuck — permanent
+   translucent paint is the glass-theme band bug. */
+.tab-strip.is-stuck {
     background: var(--c-content-bg);
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));

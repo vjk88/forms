@@ -1,6 +1,8 @@
 <template>
     <div class="stepper">
         <div class={layoutClass}>
+            <!-- zero-height tripwire: leaves the viewport top == strip pinned -->
+            <div class="stuck-sentinel" aria-hidden="true"></div>
             <nav class={stepsClass} aria-label="Form steps">
                 <template lwc:if={showBar}>
                     <div
@@ -19,13 +21,14 @@
                 <template lwc:if={showList}>
                     <ol class="step-list">
                         <template for:each={stepList} for:item="step">
-                            <li class="step-item" key={step.key}>
+                            <li class={step.itemCls} key={step.key}>
                                 <button
                                     class={step.cls}
                                     type="button"
                                     data-index={step.index}
                                     disabled={step.disabled}
                                     aria-current={step.ariaCurrent}
+                                    aria-label={step.label}
                                     onclick={handleStepClick}
                                 >
                                     <span class="step-marker" aria-hidden="true"

@@ -34,6 +34,8 @@
 
 | 21 | **Split Hero progress-bar treatment** | The brand pane's `progressStyle: 'horizontal'` bar doesn't look good as rendered (owner 2026-07-11: "we need to talk about Progress bar in Split hero"). Needs a design conversation before any rework — placement, sizing, and how it sits against the pane's brand blocks | `finalNavSplitHero` progress block · [LAYOUT_REFINEMENTS_SPEC.md](./LAYOUT_REFINEMENTS_SPEC.md) (amend there when discussed) | **Owner call 2026-07-11: talk first.** Natural companion to the parked stepper 3-state reskin + OneAtATime header pass (#16) |
 
+| 22 | **Progress-bar groove (track) — owner reserves removal** | Groove kept and recolored in the wayfinding pass (owner 2026-07-12: "keep it, I will remove it the moment I don't like it"). If the ruling flips, the removal recipe is already written — flip 4 track backgrounds to transparent, keep the elements (the fill clips against them) | [IMPL_PLAN_PROGRESS_WAYFINDING.md](./IMPL_PLAN_PROGRESS_WAYFINDING.md) §7a | Await owner verdict after living with the recolored tracks |
+
 **Rules of the ledger:** an item leaves this list only by (a) being scheduled into a named phase of
 a version plan, or (b) being explicitly killed. Adding an item here requires pointing to where its
 spec lives (write the spec first, park it second).

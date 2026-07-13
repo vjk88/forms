@@ -1,4 +1,5 @@
 import { LightningElement, api, track } from 'lwc';
+import { observeStuck } from 'c/finalStuck';
 
 /**
  * finalNavRail — persistent side-nav primitive (catalog §2).
@@ -28,6 +29,17 @@ export default class FinalNavRail extends LightningElement {
     @api options;
 
     @track drawerOpen = false;
+    /** True only while the narrow chip row is pinned — its only painted state. */
+    stuck = false;
+
+    _disconnectStuck = null;
+
+    disconnectedCallback() {
+        if (this._disconnectStuck) {
+            this._disconnectStuck();
+            this._disconnectStuck = null;
+        }
+    }
 
     get opts() {
         return this.options || {};
@@ -55,6 +67,15 @@ export default class FinalNavRail extends LightningElement {
      *  --rail-dock-top feeds the CSS calc. Same posture as pageFrame's
      *  --frame-offset — LEX chrome height is stable, re-measuring jitters. */
     renderedCallback() {
+        if (this._disconnectStuck === null) {
+            this._disconnectStuck = observeStuck(
+                this.template.querySelector('.stuck-sentinel'),
+                this.template.querySelector('.rail'),
+                (stuck) => {
+                    this.stuck = stuck;
+                }
+            );
+        }
         if (this._dockMeasured) {
             return;
         }
@@ -68,7 +89,12 @@ export default class FinalNavRail extends LightningElement {
     }
 
     get railClass() {
-        return this.drawerOpen ? 'rail drawer-open' : 'rail';
+        let cls = this.drawerOpen ? 'rail drawer-open' : 'rail';
+        // narrow topBar paint-when-pinned; wide rail has no surface to paint
+        if (this.stuck) {
+            cls += ' is-stuck';
+        }
+        return cls;
     }
 
     get showPageList() {

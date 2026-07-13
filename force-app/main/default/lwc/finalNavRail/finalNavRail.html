@@ -14,6 +14,8 @@
                 ></lightning-icon>
                 {drawerToggleLabel}
             </button>
+            <!-- zero-height tripwire: leaves the viewport top == chips pinned -->
+            <div class="stuck-sentinel" aria-hidden="true"></div>
             <nav class={railClass} aria-label="Form pages">
                 <template lwc:if={showPageList}>
                     <ul class="rail-list">
