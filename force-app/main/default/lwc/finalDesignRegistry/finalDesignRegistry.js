@@ -635,14 +635,14 @@ const AREAS = [
                     {
                         key: 'title',
                         label: 'Title',
-                        type: 'text',
+                        type: 'richtext',
                         path: 'header.title',
                         simple: true
                     },
                     {
                         key: 'description',
                         label: 'Subtitle',
-                        type: 'text',
+                        type: 'richtext',
                         path: 'header.description',
                         simple: true
                     },
@@ -651,7 +651,24 @@ const AREAS = [
                         label: 'Highlight message',
                         type: 'text',
                         path: 'header.highlight.text',
+                        // '' fallback: the placement gate below compares the
+                        // EFFECTIVE value — unset must read '' (not undefined)
+                        // or notEquals:'' shows the gate on empty highlights.
+                        fallback: '',
                         placeholder: 'Optional announcement line'
+                    },
+                    {
+                        key: 'highlightPlacement',
+                        label: 'Highlight position',
+                        type: 'select',
+                        path: 'header.highlight.placement',
+                        fallback: '',
+                        appliesTo: { layouts: ['splitHero'] },
+                        needsValue: [{ key: 'highlight', notEquals: '' }],
+                        options: [
+                            { value: '', label: 'Pane bottom' },
+                            { value: 'aboveTitle', label: 'Above title' }
+                        ]
                     }
                 ]
             },

@@ -118,4 +118,68 @@ describe('c-final-nav-split-hero', () => {
         expect(dots.length).toBe(2); // Pages flow: one per page
         expect(dots[0].className).toBe('dot active');
     });
+
+    it('title + subtitle default to the CENTER zone (owner arrangement 2026-07-12)', async () => {
+        const cmp = await mount({ paneTitle: 'T', paneSubtitle: 'S' });
+        expect(
+            cmp.shadowRoot.querySelector('.zone-center .pane-title')
+        ).not.toBeNull();
+        expect(
+            cmp.shadowRoot.querySelector('.zone-center .pane-subtitle')
+        ).not.toBeNull();
+        expect(cmp.shadowRoot.querySelector('.zone-top').children.length).toBe(
+            0
+        );
+    });
+
+    it('blockPlacement still overrides the new defaults', async () => {
+        const cmp = await mount({
+            paneTitle: 'T',
+            blockPlacement: { title: 'top' }
+        });
+        expect(
+            cmp.shadowRoot.querySelector('.zone-top .pane-title')
+        ).not.toBeNull();
+    });
+
+    it('highlight placement aboveTitle renders the kicker BEFORE the title, no divider', async () => {
+        const cmp = await mount({
+            paneTitle: 'T',
+            paneHighlight: { text: 'H', placement: 'aboveTitle' }
+        });
+        const center = cmp.shadowRoot.querySelector('.zone-center');
+        const kids = Array.from(center.children).map((el) =>
+            el.tagName.toLowerCase()
+        );
+        expect(kids[0]).toBe('c-final-form-highlight');
+        expect(kids[1]).toBe('div'); // .pane-title follows the kicker
+        expect(cmp.shadowRoot.querySelector('.pane-divider')).toBeNull();
+    });
+
+    it('bottom highlight = highlight → divider → progress; no highlight, no divider', async () => {
+        let cmp = await mount({ paneHighlight: { text: 'H' } });
+        expect(
+            cmp.shadowRoot.querySelector('.zone-bottom c-final-form-highlight')
+        ).not.toBeNull();
+        const divider = cmp.shadowRoot.querySelector('.pane-divider');
+        expect(divider).not.toBeNull();
+        // divider sits between the zones and the progress footer
+        expect(
+            divider.nextElementSibling.className.includes('pane-progress')
+        ).toBe(true);
+
+        cmp = await mount({});
+        expect(cmp.shadowRoot.querySelector('.pane-divider')).toBeNull();
+    });
+
+    it('pane title renders rich text (header.title is a richtext field)', async () => {
+        const cmp = await mount({
+            paneTitle: '<p>See <em>your</em> numbers</p>'
+        });
+        const rich = cmp.shadowRoot.querySelector(
+            '.pane-title lightning-formatted-rich-text'
+        );
+        expect(rich).not.toBeNull();
+        expect(rich.value).toBe('<p>See <em>your</em> numbers</p>');
+    });
 });

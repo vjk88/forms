@@ -8,10 +8,19 @@
         </template>
         <div class="lockup-text">
             <template lwc:if={hdr.title}>
-                <h1 class="hdr-title">{hdr.title}</h1>
+                <h1 class="hdr-title">
+                    <lightning-formatted-rich-text
+                        value={hdr.title}
+                    ></lightning-formatted-rich-text>
+                </h1>
             </template>
             <template lwc:if={hdr.description}>
-                <p class="hdr-desc">{hdr.description}</p>
+                <!-- div, not p: rich text arrives wrapped in its own <p> -->
+                <div class="hdr-desc">
+                    <lightning-formatted-rich-text
+                        value={hdr.description}
+                    ></lightning-formatted-rich-text>
+                </div>
             </template>
         </div>
         <template lwc:if={highlight}>

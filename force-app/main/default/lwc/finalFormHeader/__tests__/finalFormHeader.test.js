@@ -61,8 +61,28 @@ describe('c-final-form-header', () => {
     it('standard keeps the brand row', async () => {
         const el = mount({ style: 'standard', title: 'T', brandName: 'ACME' });
         await flush();
+        expect(el.shadowRoot.querySelector('.brand-wordmark').textContent).toBe(
+            'ACME'
+        );
+    });
+
+    it('title + description render through formatted-rich-text (richtext fields)', async () => {
+        const el = mount({
+            style: 'standard',
+            title: '<p><strong>Bold</strong> title</p>',
+            description: 'plain subtitle'
+        });
+        await flush();
+        const title = el.shadowRoot.querySelector(
+            '.hdr-title lightning-formatted-rich-text'
+        );
+        expect(title).not.toBeNull();
+        expect(title.value).toBe('<p><strong>Bold</strong> title</p>');
+        // plain strings flow through unchanged (existing forms untouched)
         expect(
-            el.shadowRoot.querySelector('.brand-wordmark').textContent
-        ).toBe('ACME');
+            el.shadowRoot.querySelector(
+                '.hdr-desc lightning-formatted-rich-text'
+            ).value
+        ).toBe('plain subtitle');
     });
 });

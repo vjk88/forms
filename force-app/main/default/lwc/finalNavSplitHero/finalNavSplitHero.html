@@ -40,6 +40,9 @@
                         </template>
                     </div>
                 </template>
+                <template lwc:if={showPaneDivider}>
+                    <div class="pane-divider" aria-hidden="true"></div>
+                </template>
                 <template lwc:if={showProgressSteps}>
                     <div class="pane-progress">
                         <div class="dots" aria-hidden="true">
@@ -71,10 +74,19 @@
                     <template lwc:if={showLockup}>
                         <header class="lockup">
                             <template lwc:if={lockup.title}>
-                                <h1 class="lockup-title">{lockup.title}</h1>
+                                <h1 class="lockup-title">
+                                    <lightning-formatted-rich-text
+                                        value={lockup.title}
+                                    ></lightning-formatted-rich-text>
+                                </h1>
                             </template>
                             <template lwc:if={lockup.description}>
-                                <p class="lockup-desc">{lockup.description}</p>
+                                <!-- div, not p: rich text carries its own <p> -->
+                                <div class="lockup-desc">
+                                    <lightning-formatted-rich-text
+                                        value={lockup.description}
+                                    ></lightning-formatted-rich-text>
+                                </div>
                             </template>
                         </header>
                     </template>
