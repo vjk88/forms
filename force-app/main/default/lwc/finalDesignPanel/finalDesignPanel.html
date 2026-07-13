@@ -290,6 +290,9 @@
                                                 edited={c.edited}
                                                 onchange={handleColor}
                                             ></c-final-color-control>
+                                            <template lwc:if={c.hint}>
+                                                <p class="ctl-hint">{c.hint}</p>
+                                            </template>
                                         </template>
                                         <template
                                             lwc:elseif={c.isGradientSurface}
