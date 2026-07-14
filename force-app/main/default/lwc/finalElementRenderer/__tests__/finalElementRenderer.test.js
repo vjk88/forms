@@ -36,7 +36,9 @@ describe('c-final-element-renderer', () => {
             expect(help).not.toBeNull();
             // never inside a hidden region — axe aria-hidden-focus
             expect(help.closest('[aria-hidden="true"]')).toBeNull();
-            expect(help.parentElement.classList.contains('field-label-row')).toBe(true);
+            expect(
+                help.parentElement.classList.contains('field-label-row')
+            ).toBe(true);
         });
 
         it('only the label itself is aria-hidden', async () => {
@@ -55,7 +57,9 @@ describe('c-final-element-renderer', () => {
             const cmp = await mount(
                 FIELD({ help: 'hint', labelPosition: 'hidden' })
             );
-            expect(cmp.shadowRoot.querySelector('label.field-label')).toBeNull();
+            expect(
+                cmp.shadowRoot.querySelector('label.field-label')
+            ).toBeNull();
             const input = cmp.shadowRoot.querySelector('lightning-input');
             expect(input.fieldLevelHelp).toBe('hint');
         });
@@ -120,7 +124,9 @@ describe('c-final-element-renderer', () => {
         });
 
         it('checkbox emits event.target.checked — not the constant value', async () => {
-            const cmp = await mount(FIELD({ config: { inputType: 'checkbox' } }));
+            const cmp = await mount(
+                FIELD({ config: { inputType: 'checkbox' } })
+            );
             const handler = jest.fn();
             cmp.addEventListener('valuechange', handler);
             const input = cmp.shadowRoot.querySelector('lightning-input');
@@ -135,7 +141,9 @@ describe('c-final-element-renderer', () => {
         });
 
         it('clicking the custom label toggles a checkbox and emits (cross-shadow click-through)', async () => {
-            const cmp = await mount(FIELD({ config: { inputType: 'checkbox' } }));
+            const cmp = await mount(
+                FIELD({ config: { inputType: 'checkbox' } })
+            );
             const handler = jest.fn();
             cmp.addEventListener('valuechange', handler);
             const input = cmp.shadowRoot.querySelector('lightning-input');
@@ -157,5 +165,33 @@ describe('c-final-element-renderer', () => {
     it('unsupported type renders the placeholder, never crashes', async () => {
         const cmp = await mount({ id: 'x', type: 'martian' });
         expect(cmp.shadowRoot.querySelector('.unsupported')).not.toBeNull();
+    });
+
+    describe('richText empty state', () => {
+        it('no authored html → honest frame, not fake body copy', async () => {
+            const cmp = await mount({ id: 'r1', type: 'richText', config: {} });
+            expect(
+                cmp.shadowRoot.querySelector('.block-richtext-empty')
+            ).not.toBeNull();
+            expect(
+                cmp.shadowRoot.querySelector('lightning-formatted-rich-text')
+            ).toBeNull();
+        });
+
+        it('authored html renders normally', async () => {
+            const cmp = await mount({
+                id: 'r2',
+                type: 'richText',
+                config: { html: '<p>Hello</p>' }
+            });
+            expect(
+                cmp.shadowRoot.querySelector('.block-richtext-empty')
+            ).toBeNull();
+            const rt = cmp.shadowRoot.querySelector(
+                'lightning-formatted-rich-text'
+            );
+            expect(rt).not.toBeNull();
+            expect(rt.value).toBe('<p>Hello</p>');
+        });
     });
 });
