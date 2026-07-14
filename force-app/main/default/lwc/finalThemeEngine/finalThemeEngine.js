@@ -541,7 +541,7 @@ export function resolveTokens(themeProps, formOverrides) {
             border: fieldBorderColor,
             radius: null, // falls through to --c-radius via the CSS fallback
             shadow: 'none',
-            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`,
+            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.55)}`,
             swatch:
                 pal.fieldBg ||
                 (isDarkSurface(pal)
@@ -571,7 +571,7 @@ export function resolveTokens(themeProps, formOverrides) {
             border: 'transparent',
             radius: null,
             shadow: 'none',
-            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.32)}`,
+            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.55)}`,
             swatch:
                 pal.fieldBg ||
                 (isDarkSurface(pal)
@@ -841,7 +841,7 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-text-weak': pal.textWeak,
         '--c-accent': pal.accent,
         '--c-on-accent': pal.onAccent || onColor(pal.accent),
-        '--c-focus-ring': `0 0 0 3px ${rgba(focus, 0.32)}`,
+        '--c-focus-ring': `0 0 0 3px ${rgba(focus, 0.55)}`,
 
         // Header
         '--c-header-bg': withFillOpacity(pal.headerBg, pal.headerBgOpacity),
