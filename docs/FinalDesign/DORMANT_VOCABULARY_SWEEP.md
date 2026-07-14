@@ -100,15 +100,68 @@ finalElementRenderer:
 - **Consent** with no terms → renders literal **`I agree to the terms.`** (:240) — a
   guest-checkable fake consent line on a live form. Worst of the three.
 
-Recommend the PR #118 honest-frame treatment for both.
+**Fix:** PR #118 honest-frame treatment, adapted per block:
 
-## Options for each dormant key (owner rules per row)
+- **Callout** — empty `html` → the dashed hint frame ("Callout — write the message in
+  its properties"); never literal copy. Tone icon stays out of the empty state.
+- **Consent** — empty `html` → hint frame ("Consent — write the terms in its
+  properties") **and suppress the checkbox**: a consent with no terms must never be
+  something a guest can check. (Empty + `required` would otherwise gate submit on
+  agreeing to nothing.)
 
-1. **Keep as documented vocabulary** — the JSDoc PRODUCT-SET/DORMANT truthing
-   (PR #116) already prevents future false claims; cost of keeping is near zero.
-2. **Build the writer** — promote to a Design-panel control (e.g. `ratio`,
-   accordion `allowMultiple`, section `surface` when the styles pass lands).
-3. **Delete the reader** — for keys that will never get a writer
-   (e.g. `element.config.height`, `submit.placement`).
+## Recommended fixes (owner rules per row; recommendations only, no code changed)
 
-No changes made in this sweep; it is evidence for those rulings.
+Legend — **KEEP**: leave the reader, one-line DORMANT JSDoc (the PR #116 convention),
+zero cost. **BUILD**: add the writer; each build is its own slice with an
+IMPL_PLAN\_\*.md first, per process. **DELETE**: remove the reader + its CSS/tests in
+one cleanup PR.
+
+### Split Hero
+
+| Key                                      | Rec                                     | How                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ratio`                                  | **BUILD**                               | Registry select `layout.options.ratio` ('' = Half, `third` = Third), appliesTo splitHero, beside Progress style. The reader already works — this is a ~10-line registry entry + jest. Cheapest real feature in the ledger.                                                                                                                                                                                                                                |
+| `paneImage` / `paneBg` / `paneBgOpacity` | **BUILD via mapping, not new controls** | Don't invent pane-specific controls. Lift the `notLayouts: ['splitHero']` gate on the Header fill/banner/opacity controls (registry :715/:723) and extend the viewer's header→pane copy (finalFormViewer.js:243-250) to also map `header.bgImage → paneImage` and header fill → `paneBg`. One editor (Design › Header) drives the lockup on every layout; no new vocabulary, and the pane finally honors the image the panel already knows how to upload. |
+| `sticky` (pane)                          | **KEEP**                                | Sanctioned escape hatch (owner sticky-pane ruling 2026-07-11, non-bleed only). Expose only if a pinning pass ever lands.                                                                                                                                                                                                                                                                                                                                  |
+| `blockPlacement`                         | **DELETE**                              | The shipped `highlightPlacement` control covers the real need (highlight above title / bottom). The zoneList default map stays as internal mechanism; only the `opts.blockPlacement` override read goes.                                                                                                                                                                                                                                                  |
+
+### Rail / Tabs / Accordion
+
+| Key                                                           | Rec                  | How                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| rail `sticky` / `dock`                                        | **KEEP**             | Escape hatches; LEX pins everything static anyway (finalStuck discovery: no current host pins). Deleting saves nothing, exposing helps nobody.                                                                                                                                      |
+| tabs `showTabIcons` + `page.icon`                             | **DELETE (default)** | Making it real needs TWO writers (a page-inspector icon picker + a registry toggle) for a decoration nobody asked for. If the gallery-coherence pass wants page icons, rebuild both writers then — reuse the section icon-grid machinery. Until ruled otherwise, delete both reads. |
+| accordion `allowMultiple` / `firstPanelOpen` / `iconPosition` | **BUILD**            | One small slice: an Accordion layout group in the Design panel (two toggles + a Leading/Trailing segmented). Readers already work; accordion is the only layout shipping ZERO options today.                                                                                        |
+
+### Zones
+
+| Key                                 | Rec                    | How                                                                                                                                                            |
+| ----------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zonesDefault.collapse`             | **DELETE**             | Schema §4 never specced it; the file itself admits only `'source'` order exists (finalLayoutZones.js:11). Remove the read + the three collapse-\* CSS classes. |
+| `page.zones` per-page override      | **DELETE**             | Remove the merge in finalFormViewer.js:318. Resurrect only if per-page layout ever gets specced — the git history keeps the recipe.                            |
+| `zonesDefault.arrangement` / `.gap` | **KEEP (frozen seed)** | Working mechanism behind every form; just not author-editable. If the styles pass wants page-level arrangement, promote to a "Page layout" control then.       |
+
+### Section / element / submit / highlight
+
+| Key                                          | Rec               | How                                                                                                                                                                       |
+| -------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `section.surface`                            | **KEEP**          | This is SURFACE_MODEL_SPEC's landing zone — the writer arrives with the scheduled Section-as-surface work. Deleting it now = re-typing it later.                          |
+| `section.style` values `outline/subtle/flat` | **DELETE values** | Trim KNOWN_STYLES (sectionRenderer :16) to the three the Block style control offers. The 2-click rule says don't grow the segmented control to six.                       |
+| `element.disabled`                           | **DELETE**        | Remove both HTML binds; `readOnly` (Behavior control) is the product surface for non-editable fields.                                                                     |
+| per-element `labelPosition` / `labelStyle`   | **KEEP**          | By-design dormant (owner ruled label styling global-only). The theme-level controls are the product surface; surgery on the label machinery buys nothing. One-line JSDoc. |
+| `element.config.height` (spacer px)          | **DELETE**        | No final-build spec ever carried it (born in the legacy schema); the panel writes `size` presets. Drop the numeric branch (elementRenderer :220).                         |
+| `submit.placement`                           | **DELETE**        | Sticky submit bar was never ruled into LAYOUT_REFINEMENTS. Remove the read (submitBar :47) + the `.sticky` CSS block.                                                     |
+| `highlight.variant` / `icon`                 | **KEEP**          | Honest future candidate (a "highlight tone" control mirrors the callout tones). Documented DORMANT since PR #116.                                                         |
+| `highlight.dismissible`                      | **DELETE**        | Guest-side dismiss state with no persistence story — a guest re-sees the highlight on every page anyway.                                                                  |
+
+### Suggested execution order
+
+1. **Fake-copy fixes** (callout + consent) — bug-class closure, one PR, mirrors #118.
+2. **The DELETE sweep** — one cleanup PR: blockPlacement, showTabIcons + page.icon,
+   zones collapse + per-page merge, element.disabled, spacer height, submit.placement,
+   section style values, highlight.dismissible. Each removal is reader-only, so jest +
+   one org smoke pass covers it.
+3. **BUILD slices** (each with IMPL_PLAN first): accordion options → splitHero ratio →
+   header→pane image/fill mapping.
+
+KEEPs need no work — their DORMANT JSDoc lines already exist or ride the DELETE PR.
