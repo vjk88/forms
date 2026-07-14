@@ -120,11 +120,24 @@
         </div>
     </template>
     <template lwc:elseif={isRichText}>
-        <div class="block-richtext">
-            <lightning-formatted-rich-text
-                value={richTextHtml}
-            ></lightning-formatted-rich-text>
-        </div>
+        <template lwc:if={hasRichText}>
+            <div class="block-richtext">
+                <lightning-formatted-rich-text
+                    value={richTextHtml}
+                ></lightning-formatted-rich-text>
+            </div>
+        </template>
+        <template lwc:else>
+            <!-- honest frame, same reasoning as the image empty state below:
+                 an unmistakable authoring hint, never real page copy. -->
+            <div class="block-richtext-empty">
+                <lightning-icon
+                    icon-name="utility:text_color"
+                    size="small"
+                ></lightning-icon>
+                <span>Text — add content in its properties</span>
+            </div>
+        </template>
     </template>
     <template lwc:elseif={isImage}>
         <template lwc:if={hasImageSrc}>

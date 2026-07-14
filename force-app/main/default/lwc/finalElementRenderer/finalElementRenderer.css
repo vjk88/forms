@@ -165,6 +165,18 @@
     font-size: 0.8125rem;
 }
 
+.block-richtext-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2);
+    min-height: 48px;
+    border: 1px dashed var(--c-text-weak);
+    border-radius: var(--c-radius);
+    color: var(--c-text-weak);
+    font-size: 0.8125rem;
+}
+
 .block-divider {
     border: 0;
     /* --c-field-border, not the (typo'd, never-emitted) --c-input-border —

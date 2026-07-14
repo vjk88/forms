@@ -192,8 +192,12 @@ export default class FinalElementRenderer extends LightningElement {
         return this.el.type === 'file';
     }
 
+    get hasRichText() {
+        return Boolean(this.cfg.html);
+    }
+
     get richTextHtml() {
-        return this.cfg.html || '<p>Add your text…</p>';
+        return this.cfg.html || '';
     }
 
     get hasImageSrc() {
