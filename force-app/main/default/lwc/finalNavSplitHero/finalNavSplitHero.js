@@ -33,23 +33,6 @@ const ARRANGE_CLASS = {
     split: 'arr-split'
 };
 
-function hexToRgba(hex, opacityPct) {
-    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
-    if (!m) {
-        return hex || 'transparent';
-    }
-    const full =
-        m[1].length === 3
-            ? m[1]
-                  .split('')
-                  .map((c) => c + c)
-                  .join('')
-            : m[1];
-    const n = parseInt(full, 16);
-    const alpha = Math.max(0, Math.min(100, Number(opacityPct))) / 100;
-    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-}
-
 export default class FinalNavSplitHero extends LightningElement {
     @api currentPageIndex = 0;
     @api pageValidity = [];
@@ -57,13 +40,13 @@ export default class FinalNavSplitHero extends LightningElement {
      * Spec layout.options.
      * PRODUCT-SET (Design panel / viewer write these): fullBleed, paneFlow,
      * progressStyle, navigation, side, ratio (Pane side / Pane width — sweep
-     * BUILD slice 2, 2026-07-18) — plus the pane CONTENT keys the viewer maps
-     * from the form header (paneTitle, paneSubtitle, paneBrandName, paneLogo,
-     * paneHighlight; header IS the pane editor, finalFormViewer ownsHeader).
-     * DORMANT (renderer tolerates, NO product writer — do NOT present as
-     * product surface): sticky (KEEP ruling), paneImage, paneBg,
-     * paneBgOpacity (BUILD slice 3 pending). blockPlacement deleted
-     * 2026-07-18 (sweep DELETE ruling).
+     * BUILD slice 2, 2026-07-18) — plus the keys the viewer maps from the
+     * form header: paneTitle, paneSubtitle, paneBrandName, paneLogo,
+     * paneHighlight, paneImage (header IS the pane editor, finalFormViewer
+     * ownsHeader; paneImage ← header.bgImage since sweep slice 3).
+     * DORMANT (renderer tolerates, NO product writer): sticky (KEEP ruling).
+     * DELETED 2026-07-18 (sweep rulings): blockPlacement, paneBg,
+     * paneBgOpacity.
      */
     @api options;
     /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
@@ -146,35 +129,36 @@ export default class FinalNavSplitHero extends LightningElement {
         );
     }
 
-    /** Veil over image: first background layer (topmost) is the composed rgba. */
+    /**
+     * The THEME dresses the pane: its header surface + header ink. A mapped
+     * banner image (viewer: header.bgImage → paneImage) layers UNDER a
+     * header-fill veil whose strength is (100 − image opacity) — the exact
+     * finalFormHeader.surfaceStyle recipe, so the banner behaves identically
+     * on both hosts. (The paneBg/paneBgOpacity legacy veil was deleted
+     * 2026-07-18 — sweep slice 3 option (a).)
+     */
     get paneStyle() {
-        const hasBg =
-            this.opts.paneBg !== undefined && this.opts.paneBg !== null;
+        const base =
+            'background-color: var(--c-header-bg);' +
+            ' color: var(--c-header-text);';
         const img = this.opts.paneImage && this.opts.paneImage.url;
-        // No explicit pane config → the THEME dresses the pane: its header
-        // surface + header text (so split themes paint their brand panel, and
-        // light-header themes get readable text). Config-driven panes keep the
-        // composed veil + hero-white text below, unchanged.
-        if (!hasBg && !img) {
+        if (!img) {
             return (
-                'background-color: var(--c-header-bg);' +
-                ' background-image: var(--c-header-bg-gradient, none);' +
-                ' color: var(--c-header-text);'
+                base + ' background-image: var(--c-header-bg-gradient, none);'
             );
         }
-        const veil = hexToRgba(
-            this.opts.paneBg || '#111827',
-            this.opts.paneBgOpacity === undefined
-                ? 100
-                : this.opts.paneBgOpacity
-        );
-        if (!img) {
-            return `background: ${veil}`;
-        }
         const url = String(img).replace(/"/g, '%22');
+        const raw = Number(this.opts.paneImage.opacity);
+        const opacity = Number.isFinite(raw)
+            ? Math.min(Math.max(raw, 0), 100)
+            : 100;
+        const veil = `color-mix(in srgb, var(--c-header-bg) ${100 - opacity}%, transparent)`;
         return (
-            `background-image: linear-gradient(${veil}, ${veil}), url("${url}");` +
-            ' background-size: cover; background-position: center;'
+            base +
+            ` background-image: linear-gradient(${veil}, ${veil}), url("${url}"),` +
+            ' var(--c-header-bg-gradient, none);' +
+            ' background-size: auto, cover, auto;' +
+            ' background-position: center, center, center;'
         );
     }
 

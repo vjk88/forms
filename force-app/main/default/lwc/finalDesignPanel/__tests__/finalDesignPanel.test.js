@@ -398,7 +398,10 @@ describe('c-final-design-panel', () => {
         expect(el3.shadowRoot.querySelector('.narrate')).toBeNull();
     });
 
-    it('header surface: splitHero hides fill + banner (pane owns the header); others keep them', async () => {
+    it('header surface: fill + banner show on splitHero too (pane maps them — sweep slice 3)', async () => {
+        // Pre-2026-07-18 these hid on splitHero; now the pane paints
+        // --c-header-bg and the viewer maps header.bgImage → paneImage, so
+        // one editor drives the surface on every layout.
         const el = mount(
             buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
         );
@@ -408,16 +411,12 @@ describe('c-final-design-panel', () => {
             el.shadowRoot.querySelector(
                 'c-final-gradient-control[data-key="headerBg"]'
             )
-        ).toBeNull();
+        ).not.toBeNull();
         expect(
             el.shadowRoot.querySelector(
                 'c-final-image-uploader[data-key="bannerImage"]'
             )
-        ).toBeNull();
-        expect(
-            el.shadowRoot.querySelector('input[data-key="headerBgOpacity"]')
-        ).toBeNull();
-        // text colors stay — they ink the theme-dressed pane
+        ).not.toBeNull();
         expect(
             el.shadowRoot.querySelector(
                 'c-final-color-control[data-key="headerText"]'

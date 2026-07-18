@@ -759,16 +759,15 @@ const AREAS = [
                 label: 'Surface',
                 controls: [
                     {
-                        // Split Hero owns its header (the brand pane): the
-                        // standard header's fill/banner never paint there, so
-                        // the knobs hide (owner 2026-07-11). Text colors stay —
-                        // they ink the theme-dressed pane.
+                        // Splits included since 2026-07-18 (sweep slice 3):
+                        // the pane paints --c-header-bg, so Fill flows there
+                        // through the token, and the viewer maps the banner
+                        // image into the pane (header.bgImage → paneImage).
                         key: 'headerBg',
                         label: 'Fill',
                         type: 'gradientSurface',
                         themePath: 'palette.headerBg',
-                        gradientPath: 'palette.headerBgGradient',
-                        appliesTo: { notLayouts: ['splitHero'] }
+                        gradientPath: 'palette.headerBgGradient'
                     },
                     {
                         key: 'headerBgOpacity',
@@ -777,16 +776,14 @@ const AREAS = [
                         themePath: 'palette.headerBgOpacity',
                         min: 0,
                         max: 100,
-                        fallback: 100,
-                        appliesTo: { notLayouts: ['splitHero'] }
+                        fallback: 100
                     },
                     {
                         key: 'bannerImage',
                         label: 'Banner image',
                         type: 'image',
                         path: 'header.bgImage.url',
-                        versionPath: 'header.bgImage.versionId',
-                        appliesTo: { notLayouts: ['splitHero'] }
+                        versionPath: 'header.bgImage.versionId'
                     },
                     {
                         key: 'bannerOpacity',
@@ -797,8 +794,7 @@ const AREAS = [
                         needsValueOf: 'bannerImage',
                         min: 0,
                         max: 100,
-                        fallback: 100,
-                        appliesTo: { notLayouts: ['splitHero'] }
+                        fallback: 100
                     },
                     {
                         key: 'headerText',

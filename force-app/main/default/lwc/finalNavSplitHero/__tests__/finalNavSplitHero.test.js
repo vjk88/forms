@@ -51,12 +51,25 @@ describe('c-final-nav-split-hero', () => {
         expect(pane.getAttribute('style')).toContain('var(--c-header-text)');
     });
 
-    it('3-digit hex veils keep their opacity (review F17)', async () => {
+    it('legacy paneBg is ignored — pane stays theme-dressed (sweep slice 3a)', async () => {
         const cmp = await mount({ paneBg: '#fff', paneBgOpacity: 40 });
         const pane = cmp.shadowRoot.querySelector('.pane');
-        expect(pane.getAttribute('style')).toContain(
-            'rgba(255, 255, 255, 0.4)'
+        expect(pane.getAttribute('style')).toContain('var(--c-header-bg)');
+        expect(pane.getAttribute('style')).not.toContain('rgba(255');
+    });
+
+    it('mapped banner image layers under a header-fill veil at (100 − opacity)%', async () => {
+        const cmp = await mount({
+            paneImage: { url: 'https://x/img.png', opacity: 40 }
+        });
+        const style = cmp.shadowRoot
+            .querySelector('.pane')
+            .getAttribute('style');
+        expect(style).toContain('url("https://x/img.png")');
+        expect(style).toContain(
+            'color-mix(in srgb, var(--c-header-bg) 60%, transparent)'
         );
+        expect(style).toContain('var(--c-header-text)');
     });
 
     it('viewer bleed prop wins over options; options stay the direct-mount fallback', async () => {
