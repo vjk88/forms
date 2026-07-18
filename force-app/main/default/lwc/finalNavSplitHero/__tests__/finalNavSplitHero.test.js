@@ -132,6 +132,18 @@ describe('c-final-nav-split-hero', () => {
         );
     });
 
+    it('Pane side + width options drive layout classes (sweep BUILD slice 2)', async () => {
+        const cmp = await mount({ side: 'right', ratio: 'third' });
+        const layout = cmp.shadowRoot.querySelector('.layout');
+        expect(layout.classList.contains('side-right')).toBe(true);
+        expect(layout.classList.contains('ratio-third')).toBe(true);
+
+        const def = await mount({});
+        const dl = def.shadowRoot.querySelector('.layout');
+        expect(dl.classList.contains('side-left')).toBe(true);
+        expect(dl.classList.contains('ratio-half')).toBe(true);
+    });
+
     it('blockPlacement is ignored (reader deleted — sweep DELETE 2026-07-18)', async () => {
         const cmp = await mount({
             paneTitle: 'T',

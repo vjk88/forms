@@ -399,6 +399,34 @@ const AREAS = [
                             { value: 'horizontal', label: 'Progress bar' },
                             { value: 'none', label: 'None' }
                         ]
+                    },
+                    {
+                        // sweep BUILD slice 2: NEW control, same path the
+                        // rail's Side writes — deliberately NOT shared with
+                        // the rail-gated control (the appliesTo lesson,
+                        // sweep correction 2026-07-18).
+                        key: 'paneSide',
+                        label: 'Pane side',
+                        type: 'select',
+                        hint: 'Which side the brand pane sits on. The form takes the other side.',
+                        path: 'layout.options.side',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Left' },
+                            { value: 'right', label: 'Right' }
+                        ]
+                    },
+                    {
+                        key: 'paneRatio',
+                        label: 'Pane width',
+                        type: 'select',
+                        hint: 'Half = pane and form split evenly. One-third = smaller pane, more room for the form.',
+                        path: 'layout.options.ratio',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Half' },
+                            { value: 'third', label: 'One-third' }
+                        ]
                     }
                 ]
             },
