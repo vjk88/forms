@@ -593,6 +593,44 @@ const AREAS = [
                         ]
                     }
                 ]
+            },
+            {
+                // sweep BUILD slice 1 (IMPL_PLAN_ACCORDION_OPTIONS): the
+                // readers shipped with the primitive; these are their first
+                // writers.
+                key: 'accordionPanels',
+                label: 'Accordion',
+                appliesTo: { layouts: ['accordion'] },
+                controls: [
+                    {
+                        key: 'allowMultiple',
+                        label: 'Open several at once',
+                        type: 'toggle',
+                        hint: 'Off = opening a section closes the previous one.',
+                        path: 'layout.options.allowMultiple',
+                        fallback: false
+                    },
+                    {
+                        key: 'firstPanelOpen',
+                        label: 'First section starts open',
+                        type: 'toggle',
+                        hint: 'Off = every section starts closed.',
+                        path: 'layout.options.firstPanelOpen',
+                        fallback: true
+                    },
+                    {
+                        key: 'iconPosition',
+                        label: 'Arrow side',
+                        type: 'select',
+                        hint: 'Which side of the section title the open/close arrow sits on.',
+                        path: 'layout.options.iconPosition',
+                        fallback: '',
+                        options: [
+                            { value: '', label: 'Left' },
+                            { value: 'trailing', label: 'Right' }
+                        ]
+                    }
+                ]
             }
         ]
     },

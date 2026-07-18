@@ -484,6 +484,36 @@ describe('c-final-design-panel', () => {
         ).not.toBeNull();
     });
 
+    it('paging: accordion gets its options group; other layouts do not', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'accordion', themeKey: 'nordic' })
+        );
+        await goAdvanced(el);
+        await openArea(el, 'paging');
+        expect(
+            el.shadowRoot.querySelector('input[data-key="allowMultiple"]')
+        ).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('input[data-key="firstPanelOpen"]')
+        ).not.toBeNull();
+        const iconPos = el.shadowRoot.querySelector(
+            'select[data-key="iconPosition"]'
+        );
+        expect(iconPos).not.toBeNull();
+        expect(
+            [...iconPos.querySelectorAll('option')].map((o) => o.value)
+        ).toEqual(['', 'trailing']);
+
+        const el2 = mount(
+            buildSampleSpec({ layout: 'tabs', themeKey: 'nordic' })
+        );
+        await goAdvanced(el2);
+        await openArea(el2, 'paging');
+        expect(
+            el2.shadowRoot.querySelector('input[data-key="allowMultiple"]')
+        ).toBeNull();
+    });
+
     it('LOOK chips step radius + density (Simple drives the same registry values)', async () => {
         const el = mount();
         const handler = jest.fn();

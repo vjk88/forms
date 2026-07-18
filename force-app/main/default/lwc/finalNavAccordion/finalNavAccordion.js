@@ -15,8 +15,8 @@ export default class FinalNavAccordion extends LightningElement {
     @api currentPageIndex = 0;
     @api pageValidity = [];
     /** Spec layout.options: { allowMultiple, firstPanelOpen, iconPosition } —
-     *  ALL currently DORMANT (renderer honors them; no Design-panel writer,
-     *  only seed scripts ever set them). */
+     *  ALL PRODUCT-SET since 2026-07-18 (Design panel "Accordion" group,
+     *  sweep BUILD slice 1). */
     @api options;
 
     @track _openKeys;
