@@ -1,6 +1,6 @@
 # IMPL PLAN — Accordion layout options (sweep BUILD slice 1)
 
-**Status:** AWAITING OWNER REVIEW — no code yet.
+**Status:** IMPLEMENTED (PR #125, 2026-07-18) — deployed + live-verified. Awaiting owner doc cleanup.
 **Why:** DORMANT_VOCABULARY_SWEEP BUILD ruling. All three readers already work
 (finalNavAccordion.js `firstPanelOpen` :41, `iconPosition` :48, `allowMultiple` :84);
 accordion is the only layout with zero Design-panel options.
