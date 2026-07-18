@@ -13,7 +13,11 @@ import { LightningElement, api } from 'lwc';
  * (initial state from `defaultCollapsed`).
  */
 
-const KNOWN_STYLES = ['plain', 'card', 'boxed', 'outline', 'subtle', 'flat'];
+// The three values the Block style control writes. Theme-level Outline/Subtle
+// looks arrive as --c-section-* TOKENS (engine SECTION_LOOKS), never as this
+// class — the unreachable outline/subtle/flat class values were deleted
+// 2026-07-18 (sweep DELETE ruling).
+const KNOWN_STYLES = ['plain', 'card', 'boxed'];
 
 /** Elements that always span the full grid regardless of width. */
 const FULL_WIDTH_TYPES = new Set(['divider', 'spacer']);

@@ -9,17 +9,6 @@
                 ></lightning-icon>
             </template>
             <span class="hl-text">{highlight.text}</span>
-            <template lwc:if={dismissible}>
-                <button
-                    class="hl-dismiss"
-                    type="button"
-                    title="Dismiss"
-                    aria-label="Dismiss announcement"
-                    onclick={handleDismiss}
-                >
-                    &times;
-                </button>
-            </template>
         </div>
     </template>
 </template>

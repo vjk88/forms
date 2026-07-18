@@ -4,13 +4,10 @@ import { LightningElement, api } from 'lwc';
  * finalLayoutZones — arranges one page's sections into columns / grid (catalog §1).
  *
  * Owns the section loop so every nav primitive renders pages the same way.
- * Collapse is a CONTAINER query, never viewport (UIUX review #12): the
- * early/standard/late enum maps to container-width constants that live in the
- * CSS — raw px never crosses the wire.
- *
- * `collapseOrder` accepts only "source" today: schema §4 has no per-section
- * priority key yet, so source order IS the complete implementation — no dead
- * "priority" control is rendered anywhere until the schema can express it.
+ * Collapse to one column is a CONTAINER query, never viewport (UIUX review
+ * #12), at a fixed 540px constant in the CSS. (The early/standard/late
+ * `collapse` enum was deleted 2026-07-18 — sweep DELETE ruling: no writer
+ * ever existed. Same for `collapseOrder`.)
  */
 
 const ARRANGEMENT_CLASS = {
@@ -21,12 +18,6 @@ const ARRANGEMENT_CLASS = {
 };
 
 const GAP_CLASS = { sm: 'gap-sm', md: 'gap-md', lg: 'gap-lg' };
-
-const COLLAPSE_CLASS = {
-    early: 'collapse-early',
-    standard: 'collapse-standard',
-    late: 'collapse-late'
-};
 
 export default class FinalLayoutZones extends LightningElement {
     /** The page's sections (schema §4). */
@@ -40,10 +31,10 @@ export default class FinalLayoutZones extends LightningElement {
 
     get gridClass() {
         const z = this.zones || {};
-        const arr = ARRANGEMENT_CLASS[z.arrangement] || ARRANGEMENT_CLASS.single;
+        const arr =
+            ARRANGEMENT_CLASS[z.arrangement] || ARRANGEMENT_CLASS.single;
         const gap = GAP_CLASS[z.gap] || GAP_CLASS.md;
-        const collapse = COLLAPSE_CLASS[z.collapse] || COLLAPSE_CLASS.standard;
-        return `zone-grid ${arr} ${gap} ${collapse}`;
+        return `zone-grid ${arr} ${gap}`;
     }
 
     /** Re-emit the answer intent across this shadow boundary (catalog rule:

@@ -10,13 +10,6 @@
     font-family: var(--c-font-body);
 }
 
-.sticky {
-    position: sticky;
-    bottom: 0;
-    padding: var(--c-space-3) 0;
-    background: var(--c-content-bg);
-}
-
 .buttons {
     display: flex;
     align-items: center;

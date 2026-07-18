@@ -54,34 +54,6 @@
     padding: var(--c-section-pad);
 }
 
-.style-outline {
-    background: var(--c-section-bg, transparent);
-    border: var(
-        --c-section-border,
-        1px solid color-mix(in srgb, var(--c-text) 18%, transparent)
-    );
-    box-shadow: var(--c-section-shadow, none);
-    padding: var(--c-section-pad);
-}
-
-.style-subtle {
-    background: var(
-        --c-section-bg,
-        color-mix(in srgb, var(--c-text) 3%, transparent)
-    );
-    border: var(--c-section-border, none);
-    box-shadow: var(--c-section-shadow, none);
-    padding: var(--c-section-pad);
-}
-
-.style-flat {
-    background: var(--c-section-bg, transparent);
-    border: var(--c-section-border, none);
-    box-shadow: var(--c-section-shadow, none);
-    padding: var(--c-section-pad) 0;
-    border-radius: 0;
-}
-
 .sec-head {
     margin-bottom: var(--c-space-4);
 }

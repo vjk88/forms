@@ -25,7 +25,7 @@ export default class FinalNavTabs extends LightningElement {
     @api currentPageIndex = 0;
     @api pageValidity = [];
     /** Spec layout.options. PRODUCT-SET: tabAlignment, tabStyle.
-     *  DORMANT (no Design-panel writer): showTabIcons. */
+     *  (showTabIcons deleted 2026-07-18 — sweep DELETE ruling.) */
     @api options;
 
     /** True only while the strip is pinned — the ONLY time it paints a surface. */
@@ -73,7 +73,6 @@ export default class FinalNavTabs extends LightningElement {
 
     get tabList() {
         const current = this.currentPageIndex || 0;
-        const showIcons = Boolean(this.opts.showTabIcons);
         return (this.pages || []).map((page, index) => {
             const active = index === current;
             return {
@@ -82,8 +81,7 @@ export default class FinalNavTabs extends LightningElement {
                 index,
                 cls: active ? 'tab active' : 'tab',
                 selected: active ? 'true' : 'false',
-                tabindex: active ? '0' : '-1',
-                iconName: showIcons && page.icon ? `utility:${page.icon}` : null
+                tabindex: active ? '0' : '-1'
             };
         });
     }

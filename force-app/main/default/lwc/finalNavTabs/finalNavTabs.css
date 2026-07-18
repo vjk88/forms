@@ -115,10 +115,6 @@
     background: var(--c-content-bg);
 }
 
-.tab-icon {
-    --sds-c-icon-color-foreground-default: currentColor;
-}
-
 /* — Tab switch transition (keyed remount) — */
 .page-panel {
     animation: final-tab-in 0.2s ease-out;
