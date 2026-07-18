@@ -232,6 +232,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // untouched, and only then does the form side keep the minimal lockup.
         let paneLockup = null;
         if (layout.ownsHeader && header.style !== 'none') {
+            // Surface mapping (sweep slice 3): the Banner image is header
+            // surface, and on ownsHeader layouts the pane IS the header —
+            // independent of the lockup mapping below.
+            if (header.bgImage && header.bgImage.url) {
+                options = { ...options, paneImage: header.bgImage };
+            }
             const paneConfigured = Boolean(
                 options.paneTitle ||
                 options.paneSubtitle ||
