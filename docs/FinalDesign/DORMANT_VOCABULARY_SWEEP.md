@@ -1,6 +1,18 @@
 # Dormant Vocabulary Sweep (reverse audit)
 
-**Date:** 2026-07-14 · **Status:** FINDINGS — awaiting owner rulings (no code changed)
+**Date:** 2026-07-14 · **Status:** RULINGS EXECUTED (owner approved 2026-07-18)
+
+- Fake-copy fixes → **PR #122** (callout + consent honest frames; empty consent
+  loses its checkbox).
+- DELETE sweep → **PR #123** (all 9 reads removed; zones now collapse at one
+  always-on 540px constant; theme-level Outline/Subtle verified token-path-safe
+  before the class values were trimmed).
+- BUILD slices → three IMPL\*PLAN docs awaiting owner review before code:
+  IMPL_PLAN_ACCORDION_OPTIONS · IMPL_PLAN_SPLITHERO_PANE_CONTROLS ·
+  IMPL_PLAN_HEADER_PANE_SURFACE_MAP (contains one owner decision: paneBg end
+  state — and a trace discovery: header Fill already reaches the pane via
+  --c-header-bg, so only the banner image needs plumbing).
+- KEEP rows unchanged, documented in their files' JSDoc.
 
 The forward audit (DESIGN_CONTROL_AUDIT.md) started from panel controls and checked
 each one paints. This sweep runs the OTHER direction: start from every config key the
