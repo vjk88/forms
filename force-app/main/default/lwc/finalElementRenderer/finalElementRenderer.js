@@ -232,12 +232,20 @@ export default class FinalElementRenderer extends LightningElement {
         return CALLOUT_ICONS[this.cfg.variant] || CALLOUT_ICONS.info;
     }
 
+    get hasCalloutHtml() {
+        return Boolean(this.cfg.html);
+    }
+
     get calloutHtml() {
-        return this.cfg.html || '<p>Callout message…</p>';
+        return this.cfg.html || '';
+    }
+
+    get hasConsentHtml() {
+        return Boolean(this.cfg.html);
     }
 
     get consentHtml() {
-        return this.cfg.html || '<p>I agree to the terms.</p>';
+        return this.cfg.html || '';
     }
 
     /**

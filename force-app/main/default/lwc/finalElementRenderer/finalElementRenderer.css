@@ -165,7 +165,9 @@
     font-size: 0.8125rem;
 }
 
-.block-richtext-empty {
+.block-richtext-empty,
+.block-callout-empty,
+.block-consent-empty {
     display: flex;
     align-items: center;
     justify-content: center;
