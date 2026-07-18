@@ -35,19 +35,30 @@ settings.*` read across all 45 final\* components.
   renderer supports is writable from the panel.
 - **After-submit, stepper, oneAtATime, scroll: CLEAN.** Every option read has a
   registry writer (incl. `redirectUrl`, executed by finalFormViewer.js:599-607).
-- **19 dormant keys + 2 dormant value-sets** remain, all cataloged below.
+- **20 dormant keys + 2 dormant value-sets** remain, all cataloged below (count
+  corrected 2026-07-18: splitHero `side` was missed by an appliesTo-blind writer
+  check — see the correction note in the Split Hero table).
 
 ## Ledger — dormant keys (reader line-refs verified 2026-07-14)
 
 ### finalNavSplitHero (reader: finalNavSplitHero.js)
 
-| Key                        | Reader    | What it would do                             | Verdict |
-| -------------------------- | --------- | -------------------------------------------- | ------- |
-| `ratio`                    | :118      | `'third'` → 1/3 pane instead of 1/2          | DORMANT |
-| `sticky`                   | :124      | `false` → pane scrolls away (non-bleed only) | DORMANT |
-| `paneImage`                | :151      | pane background image `{url}`                | DORMANT |
-| `paneBg` / `paneBgOpacity` | :150/:164 | pane fill override + veil strength           | DORMANT |
-| `blockPlacement`           | zoneList  | per-block Top/Center/Bottom overrides        | DORMANT |
+| Key                        | Reader    | What it would do                             | Verdict                |
+| -------------------------- | --------- | -------------------------------------------- | ---------------------- |
+| `side`                     | :117      | `'right'` → brand pane on the right          | DORMANT (on splitHero) |
+| `ratio`                    | :118      | `'third'` → 1/3 pane instead of 1/2          | DORMANT                |
+| `sticky`                   | :124      | `false` → pane scrolls away (non-bleed only) | DORMANT                |
+| `paneImage`                | :151      | pane background image `{url}`                | DORMANT                |
+| `paneBg` / `paneBgOpacity` | :150/:164 | pane fill override + veil strength           | DORMANT                |
+| `blockPlacement`           | zoneList  | per-block Top/Center/Bottom overrides        | DORMANT                |
+
+**`side` correction (2026-07-18, owner-caught):** the first pass marked splitHero
+`side` product-set because a registry writer for `layout.options.side` exists
+(registry :494) — but that control is gated `appliesTo: { layouts: ['rail'] }`, and
+options are layout-scoped (the panel rebuilds them on every layout switch,
+designPanel.js:883-897), so it can never write into a splitHero spec. Writer checks
+must include the `appliesTo` gate, not just path existence. Rail's own `side` stays
+product-set.
 
 `paneTitle/paneSubtitle/paneBrandName/paneLogo/paneHighlight` are **DERIVED, not
 dormant**: finalFormViewer.js:243-250 copies `header.*` into them at runtime (Design ›
@@ -121,6 +132,7 @@ one cleanup PR.
 | Key                                      | Rec                                     | How                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ratio`                                  | **BUILD**                               | Registry select `layout.options.ratio` ('' = Half, `third` = Third), appliesTo splitHero, beside Progress style. The reader already works — this is a ~10-line registry entry + jest. Cheapest real feature in the ledger.                                                                                                                                                                                                                                |
+| `side`                                   | **BUILD (same slice as ratio)**         | "Pane side" select ('' = Left, `right` = Right) in the splitHero group — a NEW control writing the same `layout.options.side` path. Don't widen the rail control's appliesTo: it lives in the rail-labeled "Side rail" group (registry :486-500). Reader :117 already works.                                                                                                                                                                              |
 | `paneImage` / `paneBg` / `paneBgOpacity` | **BUILD via mapping, not new controls** | Don't invent pane-specific controls. Lift the `notLayouts: ['splitHero']` gate on the Header fill/banner/opacity controls (registry :715/:723) and extend the viewer's header→pane copy (finalFormViewer.js:243-250) to also map `header.bgImage → paneImage` and header fill → `paneBg`. One editor (Design › Header) drives the lockup on every layout; no new vocabulary, and the pane finally honors the image the panel already knows how to upload. |
 | `sticky` (pane)                          | **KEEP**                                | Sanctioned escape hatch (owner sticky-pane ruling 2026-07-11, non-bleed only). Expose only if a pinning pass ever lands.                                                                                                                                                                                                                                                                                                                                  |
 | `blockPlacement`                         | **DELETE**                              | The shipped `highlightPlacement` control covers the real need (highlight above title / bottom). The zoneList default map stays as internal mechanism; only the `opts.blockPlacement` override read goes.                                                                                                                                                                                                                                                  |
