@@ -311,11 +311,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 !layout.ownsHeader && header.style !== 'none' && hasLockup
                     ? header
                     : null,
-            // Each page ships with its zones config pre-merged (sparse page
-            // override on top of layout.zonesDefault — schema §4).
+            // Each page carries the layout's zonesDefault. (The per-page
+            // sparse override was deleted 2026-07-18 — sweep DELETE ruling:
+            // schema'd but no writer ever existed.)
             pages: (spec.pages || []).map((page) => ({
                 ...page,
-                zones: { ...zonesDefault, ...(page.zones || {}) }
+                zones: { ...zonesDefault }
             })),
             submit: spec.submit || {},
             // Action-row arrangement (LAYOUT_REFINEMENTS §3): form override wins,

@@ -53,32 +53,14 @@
     grid-column: span 4;
 }
 
-/* Collapse-to-one-column breakpoints — CONTAINER width constants (the enum's
-   engine-side values), never viewport, never wire-crossing px (review #12).
-   early = gives up columns first while narrowing; late = holds them longest. */
-@container zones (max-width: 680px) {
-    .collapse-early {
-        grid-template-columns: 1fr;
-    }
-    .collapse-early .zone {
-        grid-column: auto;
-    }
-}
-
+/* Collapse to one column — CONTAINER width constant, never viewport, never
+   wire-crossing px (review #12). One breakpoint for every arrangement (the
+   early/late enum was deleted with its never-written `collapse` option). */
 @container zones (max-width: 540px) {
-    .collapse-standard {
+    .zone-grid {
         grid-template-columns: 1fr;
     }
-    .collapse-standard .zone {
-        grid-column: auto;
-    }
-}
-
-@container zones (max-width: 400px) {
-    .collapse-late {
-        grid-template-columns: 1fr;
-    }
-    .collapse-late .zone {
+    .zone-grid .zone {
         grid-column: auto;
     }
 }

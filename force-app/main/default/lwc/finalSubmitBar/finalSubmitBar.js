@@ -25,7 +25,8 @@ const ARRANGE_CLASS = {
 };
 
 export default class FinalSubmitBar extends LightningElement {
-    /** Spec `submit` block: { label, placement, nextLabel, backLabel } */
+    /** Spec `submit` block: { label, nextLabel, backLabel }.
+     *  (`placement: 'sticky'` deleted 2026-07-18 — sweep DELETE ruling.) */
     @api config;
     /** Which buttons this nav context shows. Scroll = submit only (the default). */
     @api showBack = false;
@@ -44,8 +45,7 @@ export default class FinalSubmitBar extends LightningElement {
 
     get rootClass() {
         const arr = ARRANGE_CLASS[this.arrangement] || ARRANGE_CLASS.split;
-        const sticky = this.cfg.placement === 'sticky' ? ' sticky' : '';
-        return `bar ${arr}${sticky}`;
+        return `bar ${arr}`;
     }
 
     get submitLabel() {

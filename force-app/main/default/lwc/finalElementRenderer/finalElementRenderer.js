@@ -214,10 +214,9 @@ export default class FinalElementRenderer extends LightningElement {
     }
 
     get spacerStyle() {
-        // legacy sizes (small/medium/large); a raw number keeps working
-        const h =
-            SPACER_HEIGHTS[this.cfg.size] ||
-            (Number(this.cfg.height) > 0 ? Number(this.cfg.height) : 28);
+        // size presets only (panel writer); the legacy raw-px `height`
+        // tolerance was deleted 2026-07-18 (sweep DELETE ruling).
+        const h = SPACER_HEIGHTS[this.cfg.size] || 28;
         return `height: ${h}px`;
     }
 

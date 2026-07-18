@@ -20,13 +20,6 @@
                         tabindex={tab.tabindex}
                         onclick={handleTabClick}
                     >
-                        <template lwc:if={tab.iconName}>
-                            <lightning-icon
-                                class="tab-icon"
-                                icon-name={tab.iconName}
-                                size="xx-small"
-                            ></lightning-icon>
-                        </template>
                         {tab.label}
                     </button>
                 </template>

@@ -59,9 +59,10 @@ export default class FinalNavSplitHero extends LightningElement {
      * progressStyle, navigation — plus the pane CONTENT keys the viewer maps
      * from the form header (paneTitle, paneSubtitle, paneBrandName, paneLogo,
      * paneHighlight; header IS the pane editor, finalFormViewer ownsHeader).
-     * DORMANT (renderer tolerates, NO product writer — only the P0 seed
-     * script ever wrote them; do NOT present as product surface): side,
-     * ratio, sticky, paneImage, paneBg, paneBgOpacity, blockPlacement.
+     * DORMANT (renderer tolerates, NO product writer — do NOT present as
+     * product surface): side, ratio, sticky, paneImage, paneBg,
+     * paneBgOpacity. (blockPlacement deleted 2026-07-18, sweep DELETE
+     * ruling; side/ratio + the pane surface trio are approved BUILD slices.)
      */
     @api options;
     /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
@@ -197,9 +198,8 @@ export default class FinalNavSplitHero extends LightningElement {
      *  Defaults centered (owner 2026-07-12): brand pins top, progress pins
      *  bottom, the pitch floats in the middle — the mockup arrangement. */
     get zoneList() {
-        const placement = this.opts.blockPlacement || {};
         const aboveTitle = this.highlightAboveTitle;
-        const defaults = {
+        const placement = {
             title: 'center',
             subtitle: 'center',
             highlight: aboveTitle ? 'center' : 'bottom'
@@ -220,7 +220,7 @@ export default class FinalNavSplitHero extends LightningElement {
             zone,
             cls: `zone zone-${zone}`,
             blocks: blocks
-                .filter((b) => (placement[b.kind] || defaults[b.kind]) === zone)
+                .filter((b) => placement[b.kind] === zone)
                 .filter((b) => {
                     return b.kind === 'highlight'
                         ? b.highlight && b.highlight.text

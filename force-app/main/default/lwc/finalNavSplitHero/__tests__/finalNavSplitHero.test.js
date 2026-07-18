@@ -132,13 +132,16 @@ describe('c-final-nav-split-hero', () => {
         );
     });
 
-    it('blockPlacement still overrides the new defaults', async () => {
+    it('blockPlacement is ignored (reader deleted — sweep DELETE 2026-07-18)', async () => {
         const cmp = await mount({
             paneTitle: 'T',
             blockPlacement: { title: 'top' }
         });
         expect(
             cmp.shadowRoot.querySelector('.zone-top .pane-title')
+        ).toBeNull();
+        expect(
+            cmp.shadowRoot.querySelector('.zone-center .pane-title')
         ).not.toBeNull();
     });
 
