@@ -161,37 +161,60 @@
         </template>
     </template>
     <template lwc:elseif={isCallout}>
-        <div class={calloutClass}>
-            <lightning-icon
-                class="callout-icon"
-                icon-name={calloutIcon}
-                size="x-small"
-            ></lightning-icon>
-            <lightning-formatted-rich-text
-                value={calloutHtml}
-            ></lightning-formatted-rich-text>
-        </div>
-    </template>
-    <template lwc:elseif={isConsent}>
-        <div class="block-consent">
-            <lightning-input
-                type="checkbox"
-                label={el.label}
-                required={el.required}
-                variant="label-hidden"
-                onchange={handleCheckedChange}
-            ></lightning-input>
-            <div class="consent-text">
+        <template lwc:if={hasCalloutHtml}>
+            <div class={calloutClass}>
+                <lightning-icon
+                    class="callout-icon"
+                    icon-name={calloutIcon}
+                    size="x-small"
+                ></lightning-icon>
                 <lightning-formatted-rich-text
-                    value={consentHtml}
+                    value={calloutHtml}
                 ></lightning-formatted-rich-text>
             </div>
-        </div>
-        <template lwc:if={hasErrors}>
-            <div class="field-errors" role="alert">
-                <template for:each={errors} for:item="msg">
-                    <p key={msg} class="field-error">{msg}</p>
-                </template>
+        </template>
+        <template lwc:else>
+            <div class="block-callout-empty">
+                <lightning-icon
+                    icon-name="utility:announcement"
+                    size="small"
+                ></lightning-icon>
+                <span>Callout — write the message in its properties</span>
+            </div>
+        </template>
+    </template>
+    <template lwc:elseif={isConsent}>
+        <template lwc:if={hasConsentHtml}>
+            <div class="block-consent">
+                <lightning-input
+                    type="checkbox"
+                    label={el.label}
+                    required={el.required}
+                    variant="label-hidden"
+                    onchange={handleCheckedChange}
+                ></lightning-input>
+                <div class="consent-text">
+                    <lightning-formatted-rich-text
+                        value={consentHtml}
+                    ></lightning-formatted-rich-text>
+                </div>
+            </div>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
+        </template>
+        <template lwc:else>
+            <!-- no checkbox: an empty consent must never be guest-checkable -->
+            <div class="block-consent-empty">
+                <lightning-icon
+                    icon-name="utility:approval"
+                    size="small"
+                ></lightning-icon>
+                <span>Consent — write the terms in its properties</span>
             </div>
         </template>
     </template>

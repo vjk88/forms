@@ -194,4 +194,61 @@ describe('c-final-element-renderer', () => {
             expect(rt.value).toBe('<p>Hello</p>');
         });
     });
+
+    describe('callout empty state', () => {
+        it('no authored message → honest frame, no fake copy, no tone icon', async () => {
+            const cmp = await mount({ id: 'c1', type: 'callout', config: {} });
+            expect(
+                cmp.shadowRoot.querySelector('.block-callout-empty')
+            ).not.toBeNull();
+            expect(cmp.shadowRoot.querySelector('.block-callout')).toBeNull();
+            expect(
+                cmp.shadowRoot.querySelector('lightning-formatted-rich-text')
+            ).toBeNull();
+        });
+
+        it('authored message renders the tinted panel + tone icon', async () => {
+            const cmp = await mount({
+                id: 'c2',
+                type: 'callout',
+                config: { html: '<p>Heads up</p>', variant: 'warning' }
+            });
+            expect(
+                cmp.shadowRoot.querySelector('.block-callout-empty')
+            ).toBeNull();
+            expect(
+                cmp.shadowRoot.querySelector('.block-callout.tone-warning')
+            ).not.toBeNull();
+        });
+    });
+
+    describe('consent empty state', () => {
+        it('no authored terms → honest frame and NO checkbox (never guest-checkable)', async () => {
+            const cmp = await mount({ id: 'n1', type: 'consent', config: {} });
+            expect(
+                cmp.shadowRoot.querySelector('.block-consent-empty')
+            ).not.toBeNull();
+            expect(cmp.shadowRoot.querySelector('lightning-input')).toBeNull();
+        });
+
+        it('authored terms render checkbox + rich terms', async () => {
+            const cmp = await mount({
+                id: 'n2',
+                type: 'consent',
+                label: 'Agree',
+                config: { html: '<p>The real terms</p>' }
+            });
+            expect(
+                cmp.shadowRoot.querySelector('.block-consent-empty')
+            ).toBeNull();
+            expect(
+                cmp.shadowRoot.querySelector('lightning-input')
+            ).not.toBeNull();
+            const rt = cmp.shadowRoot.querySelector(
+                '.consent-text lightning-formatted-rich-text'
+            );
+            expect(rt).not.toBeNull();
+            expect(rt.value).toBe('<p>The real terms</p>');
+        });
+    });
 });
