@@ -7,7 +7,7 @@
 - DELETE sweep → **PR #123** (all 9 reads removed; zones now collapse at one
   always-on 540px constant; theme-level Outline/Subtle verified token-path-safe
   before the class values were trimmed).
-- BUILD slices → three IMPL\*PLAN docs awaiting owner review before code:
+- BUILD slices → ALL SHIPPED 2026-07-18: accordion options **PR #125**, splitHero Pane side/width **PR #126**, header→pane surface map **PR #127** (owner chose option (a): paneBg veil deleted; splitHero's only dormant key left is sticky). Plans:
   IMPL_PLAN_ACCORDION_OPTIONS · IMPL_PLAN_SPLITHERO_PANE_CONTROLS ·
   IMPL_PLAN_HEADER_PANE_SURFACE_MAP (contains one owner decision: paneBg end
   state — and a trace discovery: header Fill already reaches the pane via

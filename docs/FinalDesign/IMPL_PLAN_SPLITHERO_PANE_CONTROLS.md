@@ -1,6 +1,6 @@
 # IMPL PLAN — Split Hero pane Side + Width controls (sweep BUILD slice 2)
 
-**Status:** AWAITING OWNER REVIEW — no code yet.
+**Status:** IMPLEMENTED (PR #126, 2026-07-18) — deployed + live-verified. Awaiting owner doc cleanup.
 **Why:** DORMANT_VOCABULARY_SWEEP BUILD rulings for `ratio` and `side` (the
 owner-caught appliesTo correction). Both readers already work
 (finalNavSplitHero.js `side` :117, `ratio` :118-119).

@@ -1,6 +1,6 @@
 # IMPL PLAN — Header surface controls drive the Split Hero pane (sweep BUILD slice 3)
 
-**Status:** AWAITING OWNER REVIEW — no code yet. **One owner decision inside (§4).**
+**Status:** IMPLEMENTED (PR #127, 2026-07-18) — owner chose §4 option (a); deployed + live-verified. Awaiting owner doc cleanup.
 **Why:** DORMANT_VOCABULARY_SWEEP BUILD ruling for the pane surface trio
 (`paneImage` / `paneBg` / `paneBgOpacity`). Design › Header's Fill + Banner controls
 are hidden on splitHero (`appliesTo: { notLayouts: ['splitHero'] }`, registry
