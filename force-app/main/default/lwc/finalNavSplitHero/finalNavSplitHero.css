@@ -66,6 +66,12 @@
     letter-spacing: 0.04em;
 }
 
+/* Rich-text wordmark: same <p> strip as the pane title/subtitle. */
+.brand-wordmark p {
+    margin: 0;
+    font: inherit;
+}
+
 .zone {
     display: flex;
     flex-direction: column;

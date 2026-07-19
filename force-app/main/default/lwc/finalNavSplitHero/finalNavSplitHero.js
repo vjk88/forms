@@ -172,6 +172,14 @@ export default class FinalNavSplitHero extends LightningElement {
         return !this.logoUrl && Boolean(this.opts.paneBrandName);
     }
 
+    /** Brand name is rich text; alt text must be plain. */
+    get logoAlt() {
+        const plain = String(this.opts.paneBrandName || '')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        return plain || 'Logo';
+    }
+
     /** header.highlight.placement (owner 2026-07-12): 'aboveTitle' = kicker
      *  position; anything else = bottom stack (highlight → divider → progress). */
     get highlightAboveTitle() {

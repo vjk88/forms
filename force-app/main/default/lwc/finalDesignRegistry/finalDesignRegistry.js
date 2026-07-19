@@ -672,25 +672,33 @@ const AREAS = [
                 label: 'Branding & words',
                 controls: [
                     {
+                        // 'minimal' deleted 2026-07-18 (owner: indistinguishable
+                        // from standard — and its background:none silently ate
+                        // the Fill color). Hidden on splitHero: the pane always
+                        // shows the lockup, 'none' can't apply there.
                         key: 'headerStyle',
-                        label: 'Header style',
+                        label: 'Header',
                         type: 'select',
+                        hint: 'Hidden removes the whole header band from the form.',
                         path: 'header.style',
                         fallback: 'standard',
+                        appliesTo: { notLayouts: ['splitHero'] },
                         options: [
-                            { value: 'standard', label: 'Standard' },
-                            { value: 'minimal', label: 'Minimal' },
-                            { value: 'none', label: 'None' }
+                            { value: 'standard', label: 'Shown' },
+                            { value: 'none', label: 'Hidden' }
                         ]
                     },
                     {
                         // legacy-coverage sweep 2026-07-08: the runtime always
-                        // supported header.arrangement; only the control was missing
+                        // supported header.arrangement; only the control was
+                        // missing. Hidden on splitHero (owner 2026-07-18): the
+                        // pane arranges its own lockup, this knob did nothing.
                         key: 'headerArrangement',
                         label: 'Arrangement',
                         type: 'select',
                         path: 'header.arrangement',
                         fallback: 'stacked',
+                        appliesTo: { notLayouts: ['splitHero'] },
                         options: [
                             { value: 'stacked', label: 'Stacked' },
                             { value: 'logoBeside', label: 'Logo beside text' },
@@ -700,11 +708,12 @@ const AREAS = [
                         ]
                     },
                     {
+                        // rich text since 2026-07-18 (owner) — same machinery
+                        // as Title/Subtitle; renders as the wordmark
                         key: 'brandName',
                         label: 'Brand name',
-                        type: 'text',
-                        path: 'header.brandName',
-                        placeholder: 'Typeset as a wordmark'
+                        type: 'richtext',
+                        path: 'header.brandName'
                     },
                     {
                         key: 'logo',
