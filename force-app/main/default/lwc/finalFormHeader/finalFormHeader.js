@@ -44,8 +44,9 @@ export default class FinalFormHeader extends LightningElement {
     }
 
     get rootClass() {
-        const style = this.hdr.style === 'minimal' ? 'minimal' : 'standard';
-        return `hdr style-${style} ${ARRANGEMENT_CLASS[this.arrangement]}`;
+        // 'minimal' deleted 2026-07-18 (owner ruling — its background:none
+        // silently ate the Fill); legacy specs render standard.
+        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}`;
     }
 
     /**
@@ -58,7 +59,7 @@ export default class FinalFormHeader extends LightningElement {
      */
     get surfaceStyle() {
         const img = this.hdr.bgImage && this.hdr.bgImage.url;
-        if (this.hdr.style === 'minimal' || !img) {
+        if (!img) {
             return '';
         }
         const url = String(img).replace(/"/g, '%22');
@@ -76,9 +77,7 @@ export default class FinalFormHeader extends LightningElement {
     }
 
     get showBranding() {
-        // minimal = the compact lockup (legacy formDesigner port): title +
-        // description + highlight only — no brand row, no surface.
-        return this.arrangement !== 'textOnly' && this.hdr.style !== 'minimal';
+        return this.arrangement !== 'textOnly';
     }
 
     get logoUrl() {
@@ -91,11 +90,17 @@ export default class FinalFormHeader extends LightningElement {
     }
 
     get showWordmark() {
-        return this.showBranding && !this.logoUrl && Boolean(this.hdr.brandName);
+        return (
+            this.showBranding && !this.logoUrl && Boolean(this.hdr.brandName)
+        );
     }
 
+    /** Brand name is rich text; alt text must be plain. */
     get logoAlt() {
-        return this.hdr.brandName || 'Logo';
+        const plain = String(this.hdr.brandName || '')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        return plain || 'Logo';
     }
 
     get highlight() {

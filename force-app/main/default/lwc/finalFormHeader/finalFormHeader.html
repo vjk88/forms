@@ -4,7 +4,11 @@
             <img class="brand-logo" src={logoUrl} alt={logoAlt} />
         </template>
         <template lwc:elseif={showWordmark}>
-            <div class="brand-wordmark">{hdr.brandName}</div>
+            <div class="brand-wordmark">
+                <lightning-formatted-rich-text
+                    value={hdr.brandName}
+                ></lightning-formatted-rich-text>
+            </div>
         </template>
         <div class="lockup-text">
             <template lwc:if={hdr.title}>

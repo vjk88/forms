@@ -214,7 +214,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             header.description ||
             header.brandName ||
             (header.logo && header.logo.url) ||
-            (header.highlight && header.highlight.text)
+            (header.highlight && header.highlight.text) ||
+            // a banner alone still earns the band (owner 2026-07-18: surface
+            // config must never silently paint nothing)
+            (header.bgImage && header.bgImage.url)
         );
         const zonesDefault = (spec.layout && spec.layout.zonesDefault) || {};
         let options = (spec.layout && spec.layout.options) || {};
@@ -231,7 +234,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // 2026-07-06: "header on the right" bug). Explicit pane config wins
         // untouched, and only then does the form side keep the minimal lockup.
         let paneLockup = null;
-        if (layout.ownsHeader && header.style !== 'none') {
+        // NOTE: no header.style gate here — the pane always shows its lockup.
+        // 'none' can't be chosen on splitHero (control hidden 2026-07-18) and
+        // a stale value set on another layout must not blank the pane.
+        if (layout.ownsHeader) {
             // Surface mapping (sweep slice 3): the Banner image is header
             // surface, and on ownsHeader layouts the pane IS the header —
             // independent of the lockup mapping below.

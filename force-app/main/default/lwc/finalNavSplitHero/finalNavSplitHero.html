@@ -4,14 +4,14 @@
             <aside class="pane" style={paneStyle}>
                 <div class="brand">
                     <template lwc:if={logoUrl}>
-                        <img
-                            class="brand-logo"
-                            src={logoUrl}
-                            alt={opts.paneBrandName}
-                        />
+                        <img class="brand-logo" src={logoUrl} alt={logoAlt} />
                     </template>
                     <template lwc:elseif={showWordmark}>
-                        <div class="brand-wordmark">{opts.paneBrandName}</div>
+                        <div class="brand-wordmark">
+                            <lightning-formatted-rich-text
+                                value={opts.paneBrandName}
+                            ></lightning-formatted-rich-text>
+                        </div>
                     </template>
                 </div>
                 <template for:each={zoneList} for:item="zone">

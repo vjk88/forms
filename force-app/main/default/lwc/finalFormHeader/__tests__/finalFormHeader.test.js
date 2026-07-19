@@ -44,7 +44,7 @@ describe('c-final-form-header', () => {
         ).toContain('var(--c-header-bg) 70%, transparent');
     });
 
-    it('minimal: compact lockup — no surface style, no brand row', async () => {
+    it("legacy 'minimal' renders as standard (option deleted 2026-07-18 — it silently ate the Fill)", async () => {
         const el = mount({
             style: 'minimal',
             title: 'T',
@@ -53,17 +53,38 @@ describe('c-final-form-header', () => {
         });
         await flush();
         const hdr = el.shadowRoot.querySelector('.hdr');
-        expect(hdr.className).toContain('style-minimal');
-        expect(hdr.getAttribute('style')).toBeFalsy();
-        expect(el.shadowRoot.querySelector('.brand-wordmark')).toBeNull();
+        expect(hdr.className).toContain('style-standard');
+        expect(hdr.className).not.toContain('style-minimal');
+        // the surface paints (banner + veil), the brand row shows
+        expect(hdr.getAttribute('style')).toContain('url("/sfc/banner")');
+        expect(el.shadowRoot.querySelector('.brand-wordmark')).not.toBeNull();
     });
 
-    it('standard keeps the brand row', async () => {
-        const el = mount({ style: 'standard', title: 'T', brandName: 'ACME' });
+    it('standard keeps the brand row; wordmark is rich text with plain alt fallback', async () => {
+        const el = mount({
+            style: 'standard',
+            title: 'T',
+            brandName: '<p><em>ACME</em></p>'
+        });
         await flush();
-        expect(el.shadowRoot.querySelector('.brand-wordmark').textContent).toBe(
-            'ACME'
+        const mark = el.shadowRoot.querySelector(
+            '.brand-wordmark lightning-formatted-rich-text'
         );
+        expect(mark).not.toBeNull();
+        expect(mark.value).toBe('<p><em>ACME</em></p>');
+    });
+
+    it('rich brand name + logo → alt text is the TAG-STRIPPED name', async () => {
+        const el = mount({
+            style: 'standard',
+            title: 'T',
+            brandName: '<p><em>ACME</em></p>',
+            logo: { url: '/sfc/logo' }
+        });
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.brand-logo').getAttribute('alt')
+        ).toBe('ACME');
     });
 
     it('title + description render through formatted-rich-text (richtext fields)', async () => {
