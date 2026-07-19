@@ -1,11 +1,15 @@
 # Guest Delivery · Prefill · Custom Lookup — Program Spec
 
-**Status:** SPEC APPROVED-IN-PRINCIPLE (owner rulings 2026-07-19) — each phase still
-gets its own IMPL_PLAN before code.
-**Owner rulings:** hosting = Experience Cloud **LWR** template + iframe embed bridge
-(an Aura-template site also works; the server family is host-agnostic) · order =
-**Guest → Prefill → Lookup** · lookup v1 = **Core + dependent** (recently-viewed,
-inline +New, SOQL WHERE hatch deferred to v2).
+**Status:** ACTIVE — owner started Phase A on 2026-07-19 ("lets start phase A -
+guest render"); each phase still gets its own IMPL_PLAN before code (Phase A's:
+[IMPL_PLAN_PHASE_A_GUEST_RENDER.md](./IMPL_PLAN_PHASE_A_GUEST_RENDER.md)).
+**Correction (2026-07-19):** this doc was first merged while the owner's hosting
+questions were still open — the earlier "owner rulings: hosting" stamp was wrong.
+**Owner rulings that stand:** order = **Guest → Prefill → Lookup** · lookup v1 =
+**Core + dependent** (recently-viewed, inline +New, SOQL WHERE hatch deferred to
+v2). **Hosting settled by reality, not ruling:** the org already runs an LWR site
+(rev-5e-dev-ed.develop.my.site.com) with the viewer placed on it; the server
+family is host-agnostic either way. Iframe embed = bridge per Phase A4.
 **Security law:** everything here obeys [RUNTIME_NOTES.md](./RUNTIME_NOTES.md) — this
 spec adds build shape, not new security rules.
 
