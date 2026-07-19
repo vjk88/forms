@@ -99,7 +99,33 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     connectedCallback() {
+        if (this._connectedOnce) {
+            this._refreshNavCtor();
+        }
+        this._connectedOnce = true;
         this._load();
+    }
+
+    /**
+     * LWR page caching (Experience Cloud) can reconnect a SURVIVING viewer
+     * instance into a freshly rebuilt Locker realm (tab-away/tab-back). The
+     * statically imported children re-upgrade fine, but the `lwc:is` ctor
+     * cached on this instance still points at the OLD realm's class — the new
+     * realm's registry refuses it ("Illegal constructor" /
+     * "getDefinition of undefined") and the page goes blank. `_load()` can't
+     * help: the `_loadedKey` guard short-circuits on an unchanged form. So on
+     * every reconnect, drop the cached ctor and re-resolve it through the
+     * registry so the CURRENT realm supplies the class. Spec, answers, and
+     * page position all survive — only the nav element remounts.
+     * (FINALFORMVIEWER_EXPERIENCE_CLOUD_BLANK_PAGE.md, Option B.)
+     */
+    async _refreshNavCtor() {
+        if (!this._appliedLayoutType && !this.navCtor) {
+            return; // nothing applied yet — first _load/_apply owns it
+        }
+        this.navCtor = undefined; // unmount the stale element first
+        const module = await getLayout(this._appliedLayoutType).load();
+        this.navCtor = module.default;
     }
 
     get effectiveFormId() {
