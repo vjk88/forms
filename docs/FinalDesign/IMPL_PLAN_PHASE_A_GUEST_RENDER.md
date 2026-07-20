@@ -26,6 +26,14 @@ publishSpec` only flips `Form_Version__c` rows. The guest gate (`Status__c =
    save nothing. A2 adds a delegate-submit contract (below).
 3. **No overflow ContentVersion path exists in any Final\* class** — `Spec_JSON__c`
    is served whole. Guest family mirrors that (no overflow work in Phase A).
+4. **Image public-ness is frozen at upload time.** `FinalAssetController` decides
+   public ContentDistribution vs internal shepherd URL from `Allowed_Adapters__c`
+   AT UPLOAD ([FinalAssetController.cls:69](../../force-app/main/default/classes/FinalAssetController.cls#L69)).
+   Upload a logo while the form is private, enable Public link later ⇒ the spec
+   still carries the internal URL ⇒ broken images for every guest. Handled in
+   A1.5 + A1 projection (below). Built-in theme images (static resource) carry a
+   separate risk: their baked URLs may not resolve on the site domain — A2 must
+   live-check a themed form with images EARLY.
 
 ## Slices (each = branch + PR, in order)
 
@@ -47,9 +55,16 @@ class the guest profile gets. Two `@AuraEnabled` methods:
      - `settings.prefill` (arrives Phase B with its own guest rules)
      - kept intact: `resolved.tokens`, `layout`, `header`, `pages` structure,
        `settings.completion`, `settings.availability.closedMessage`
-  3. A closed/not-yet-open form (A3 vocabulary) still returns the projection plus
-     a `guest.closed = true` + `closedMessage` flag so the viewer can render the
-     closed screen instead of fields.
+  3. A closed/not-yet-open form (A3 vocabulary) returns ONLY
+     `{ closed: true, closedMessage }` — no projection (a bot that can't submit
+     gets no form structure either). The HOST renders the closed screen; the
+     viewer never mounts. (Corrected 2026-07-20 — first draft contradicted
+     itself between A1 and A2 here.)
+  4. **Serve-time image URL rewrite** (find #4): for each spec image that stores
+     `contentVersionId`, the projection swaps the URL for that version's public
+     `ContentDistribution.ContentDownloadUrl` when one exists (read-only query,
+     no DML in the read path). Missing distribution ⇒ URL passes through
+     (renders broken for guests until the toggle re-mints — see A1.5).
 - `submitGuest(Id formId, String payloadJson)`: same hard gate re-checked (a
   replayed POST against a closed form dies server-side), then the shared engine in
   guest posture. Result mirrors `SubmitResult` but returns **no recordId** to the
@@ -66,8 +81,10 @@ repeat children in ONE savepoint). `inherited sharing`; takes a posture enum:
 - `GUEST`: **the published spec IS the allow-list** — the engine only ever maps
   fields the spec binds (client-sent field names are impossible by construction;
   stray answer keys are ignored). No stripInaccessible; DML via
-  `Database.insert(records, AccessLevel.SYSTEM_MODE)` — explicit, because API v66+
-  user-mode defaults would make guest inserts fail (salesforce skill rule).
+  `Database.insert(records, true, AccessLevel.SYSTEM_MODE)` (allOrNone explicit) —
+  system mode stated explicitly because **v67** flips the DML default to user
+  mode (org is v66 today; the explicitness is future-proofing + audit clarity —
+  corrected 2026-07-20, first draft misattributed this to v66).
   Insert-only forever: `form.saveMode = 'update'` specs are REFUSED at the gate
   for guests (RUNTIME_NOTES: guests never update).
 
@@ -87,6 +104,13 @@ Id formId, Boolean enabled)` (`with sharing`, `as user`) that adds/removes
   the link can view and submit — no Salesforce login") in the design panel's
   **Settings area**, new "Sharing" group beside After submit. Default OFF for
   every existing and new form — publishing alone never exposes anything.
+- **Enabling the toggle also re-mints image links** (find #4): `setGuestAccess(
+true)` walks the form's linked ContentVersions and creates any missing public
+  `ContentDistribution` (internal-user context — guests never trigger DML for
+  this). Combined with A1's serve-time URL rewrite, images uploaded BEFORE the
+  toggle flip render for guests without re-uploading or rewriting stored specs.
+  Disabling does NOT delete distributions in v1 (already-shared links keep
+  working by ContentDistribution's nature; noted in the setup doc).
 
 ### A2 — Host: `c/finalGuestHost` + viewer delegate-submit
 
@@ -119,9 +143,10 @@ In `FinalGuestController` (vocabulary already authored+stored, DEFERRED #20):
   inside the guest submit savepoint; cap reached ⇒ closed behavior. (Counting
   target-object records is wrong — other processes create them too.)
 - Honeypot (`spamProtection='honeypot'`): host renders a visually-hidden input
-  (autocomplete bait) whose value rides `payload.meta.hp`; non-empty ⇒ the server
-  returns a **fake success** (no record) so bots learn nothing. `'captcha'`
-  stays schema-only (deferred).
+  (autocomplete bait); the HOST merges its value into the viewer-emitted payload
+  as `meta.hp` before calling Apex (the viewer builds the payload and knows
+  nothing of the bait); non-empty ⇒ the server returns a **fake success** (no
+  record) so bots learn nothing. `'captcha'` stays schema-only (deferred).
 - Rate limit: per-window counter in Platform Cache keyed by guest session id;
   **degrades to no-op when no cache capacity is provisioned** (dev orgs default
   to 0) — documented in GUEST_SITE_SETUP.
