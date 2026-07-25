@@ -75,9 +75,6 @@ re-save the toggle to re-mint.
 
 ## 6. Embedding in an external website (iframe)
 
-> The postMessage height bridge + copy-paste snippet arrive in **Phase A4**. This
-> section is the site-side configuration that A4 builds on.
-
 ### Allow the embedding domain (clickjacking)
 
 By default Salesforce refuses to be framed. Site → **Administration →
@@ -86,7 +83,36 @@ Security & Privacy → Clickjack Protection** (and **CSP / Trusted Sites** for
 Framing stays blocked for every other domain — that's the desired posture, not a
 limitation.
 
-### Minimal embed (fixed height, no script)
+### Auto-height embed (recommended)
+
+The host posts its rendered height to the parent page (Typeform pattern), so the
+iframe grows and shrinks with the form (page changes, validation, the thank-you
+screen) with no scrollbar. Paste both the `<iframe>` and the ~10-line listener:
+
+```html
+<iframe
+  id="finalform"
+  src="https://<your-site-domain>/<page>?formId=a0Xxxxxxxxxxxxx"
+  style="width:100%;height:600px;border:0"
+  title="Form"
+></iframe>
+<script>
+  window.addEventListener('message', function (e) {
+    // one-way, number only — the form never receives anything back
+    if (e.data && e.data.type === 'finalforms:height' && e.data.height) {
+      document.getElementById('finalform').style.height = e.data.height + 'px';
+    }
+  });
+</script>
+```
+
+> Security note: the message carries a **height number only**, and the bridge is
+> outbound-only (the form has no inbound listener). To be strict, also check
+> `e.origin === 'https://<your-site-domain>'` inside the listener.
+
+### Fixed-height embed (no script)
+
+If you can't add a script, use a fixed height and let the iframe scroll:
 
 ```html
 <iframe
@@ -95,9 +121,6 @@ limitation.
   title="Form"
 ></iframe>
 ```
-
-A responsive auto-height version (listening for the A4 height message) ships with
-Phase A4.
 
 ### Known risk — third-party cookies
 
