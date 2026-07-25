@@ -47,8 +47,9 @@ private class FinalSpecControllerTest {
             LocaleSidKey = 'en_US',
             ProfileId = p.Id,
             TimeZoneSidKey = 'America/Los_Angeles',
-            UserName =
-                'finalspec.' + System.currentTimeMillis() + '@example.com'
+            UserName = 'finalspec.' +
+                System.currentTimeMillis() +
+                '@example.com'
         );
         insert u;
         PermissionSet ps = [
@@ -125,7 +126,9 @@ private class FinalSpecControllerTest {
     }
 
     private static String resolvedSpec(String marker) {
-        return '{"specVersion":1,"marker":"' + marker + '",' +
+        return '{"specVersion":1,"marker":"' +
+            marker +
+            '",' +
             '"resolved":{"tokens":{"--c-accent":"#123456"},"engineVersion":1,' +
             '"resolvedAt":"2026-07-06T00:00:00Z"}}';
     }
@@ -153,7 +156,7 @@ private class FinalSpecControllerTest {
             [
                 SELECT COUNT()
                 FROM Form_Version__c
-                WHERE Form__c = :form.Id AND Is_Active__c = true
+                WHERE Form__c = :form.Id AND Is_Active__c = TRUE
             ],
             'Exactly ONE active version after publish'
         );
@@ -161,6 +164,30 @@ private class FinalSpecControllerTest {
         Assert.isTrue(
             FinalSpecController.getSpec(form.Id, null)
                 .contains('"marker":"published"')
+        );
+    }
+
+    @IsTest
+    static void publishStampsFormPublished() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+
+        Test.startTest();
+        FinalSpecController.publishSpec(form.Id, resolvedSpec('pub'));
+        Test.stopTest();
+
+        Form__c after = [
+            SELECT Status__c, Published_Date__c
+            FROM Form__c
+            WHERE Id = :form.Id
+        ];
+        Assert.areEqual(
+            'Published',
+            after.Status__c,
+            'publish marks the form Published (guest gate condition 1)'
+        );
+        Assert.isNotNull(
+            after.Published_Date__c,
+            'publish stamps the timestamp'
         );
     }
 
@@ -181,12 +208,14 @@ private class FinalSpecControllerTest {
     @IsTest
     static void publishRefusesGarbage() {
         Form__c form = [SELECT Id FROM Form__c LIMIT 1];
-        for (String bad : new List<String>{
-            null,
-            'not json',
-            '{"specVersion":2,"resolved":{"tokens":{"x":"y"}}}',
-            '{"specVersion":1,"resolved":{"tokens":{}}}'
-        }) {
+        for (
+            String bad : new List<String>{
+                null,
+                'not json',
+                '{"specVersion":2,"resolved":{"tokens":{"x":"y"}}}',
+                '{"specVersion":1,"resolved":{"tokens":{}}}'
+            }
+        ) {
             try {
                 FinalSpecController.publishSpec(form.Id, bad);
                 Assert.fail('Expected exception for: ' + bad);

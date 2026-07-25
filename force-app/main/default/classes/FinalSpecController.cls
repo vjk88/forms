@@ -26,7 +26,7 @@ public with sharing class FinalSpecController {
                 versions = [
                     SELECT Spec_JSON__c
                     FROM Form_Version__c
-                    WHERE Form__c = :formId AND Is_Active__c = true
+                    WHERE Form__c = :formId AND Is_Active__c = TRUE
                     WITH USER_MODE
                     ORDER BY Version_Number__c DESC
                     LIMIT 1
@@ -36,7 +36,9 @@ public with sharing class FinalSpecController {
                     'A form Id or version Id is required.'
                 );
             }
-            if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+            if (
+                versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)
+            ) {
                 throw new AuraHandledException(
                     'No published specification found for this form.'
                 );
@@ -104,7 +106,7 @@ public with sharing class FinalSpecController {
             List<Form_Version__c> actives = [
                 SELECT Id
                 FROM Form_Version__c
-                WHERE Form__c = :formId AND Is_Active__c = true
+                WHERE Form__c = :formId AND Is_Active__c = TRUE
                 WITH USER_MODE
             ];
             for (Form_Version__c v : actives) {
@@ -129,6 +131,19 @@ public with sharing class FinalSpecController {
                 Engine_Version__c = engineVersion
             );
             insert as user published;
+
+            // Gate writer (Phase A1.5): publishing marks the form Published and
+            // stamps when. Status__c = 'Published' is the guest gate's FIRST
+            // condition (FinalGuestController) — without this a final-build form
+            // stays Draft forever and can never be served to a guest. The legacy
+            // Layout_Config__c / Schema_Snapshot__c fields are deliberately NOT
+            // written (final layout/schema truth = Spec_JSON__c); their
+            // publish-time validation rules are deactivated for the final build.
+            update as user new Form__c(
+                Id = formId,
+                Status__c = 'Published',
+                Published_Date__c = Datetime.now()
+            );
             return published.Id;
         } catch (Exception e) {
             Database.rollback(sp);

@@ -266,4 +266,94 @@ private class FinalStudioControllerTest {
             Assert.isTrue(true);
         }
     }
+
+    // ----- guest access toggle (A1.5) -----
+
+    @IsTest
+    static void guestAccessEnableAddsAdapterThenDisableRemoves() {
+        Form__c f = makeForm('Guest toggle');
+
+        Boolean isPublic = FinalStudioController.setGuestAccess(f.Id, true);
+        Assert.isTrue(isPublic, 'enable returns the public state');
+        Assert.isTrue(
+            [SELECT Allowed_Adapters__c FROM Form__c WHERE Id = :f.Id]
+                .Allowed_Adapters__c.contains('Public_Guest'),
+            'Public_Guest added'
+        );
+        // idempotent — enabling again keeps exactly one value
+        Assert.isTrue(
+            FinalStudioController.setGuestAccess(f.Id, true),
+            'still public'
+        );
+
+        Boolean stillPublic = FinalStudioController.setGuestAccess(f.Id, false);
+        Assert.isFalse(stillPublic, 'disable returns not-public');
+        String adapters = [
+            SELECT Allowed_Adapters__c
+            FROM Form__c
+            WHERE Id = :f.Id
+        ]
+        .Allowed_Adapters__c;
+        Assert.isTrue(
+            String.isBlank(adapters) || !adapters.contains('Public_Guest'),
+            'Public_Guest removed'
+        );
+    }
+
+    @IsTest
+    static void guestAccessEnableRemintsLinkedImages() {
+        Form__c f = makeForm('Remint');
+        ContentVersion cv = new ContentVersion(
+            Title = 'logo',
+            PathOnClient = 'logo.png',
+            VersionData = Blob.valueOf('x'),
+            IsMajorVersion = true
+        );
+        insert cv;
+        Id docId = [
+            SELECT ContentDocumentId
+            FROM ContentVersion
+            WHERE Id = :cv.Id
+        ]
+        .ContentDocumentId;
+        insert new ContentDocumentLink(
+            ContentDocumentId = docId,
+            LinkedEntityId = f.Id,
+            ShareType = 'V',
+            Visibility = 'AllUsers'
+        );
+        Assert.areEqual(
+            0,
+            [
+                SELECT COUNT()
+                FROM ContentDistribution
+                WHERE ContentVersionId = :cv.Id
+            ],
+            'no public link before enabling'
+        );
+
+        Test.startTest();
+        FinalStudioController.setGuestAccess(f.Id, true);
+        Test.stopTest();
+
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM ContentDistribution
+                WHERE ContentVersionId = :cv.Id
+            ],
+            're-mint created the public distribution'
+        );
+    }
+
+    @IsTest
+    static void guestAccessGuardsNullId() {
+        try {
+            FinalStudioController.setGuestAccess(null, true);
+            Assert.fail('should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+    }
 }

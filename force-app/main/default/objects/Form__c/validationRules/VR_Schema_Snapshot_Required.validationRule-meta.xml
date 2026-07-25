@@ -1,7 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>VR_Schema_Snapshot_Required</fullName>
-    <active>true</active>
+    <!-- DEACTIVATED (final build, Phase A1.5): required the LEGACY storage
+         field Schema_Snapshot__c on publish. The final build's schema truth
+         lives in Form_Version__c.Spec_JSON__c bindings; publishing a final
+         form leaves this legacy field blank by design. Purge-bound with the
+         rest of the legacy storage model. -->
+    <active>false</active>
     <errorConditionFormula>AND(
   ISPICKVAL(Status__c, &quot;Published&quot;),
   ISBLANK(Schema_Snapshot__c)
