@@ -18,7 +18,8 @@
  *    can't name an object or field; the insert is system-mode; guests never
  *    update (a saveMode='update' spec is refused).
  *
- * Availability windows, response caps, and spam checks land in slice A3.
+ * Availability windows (status/opensAt/closesAt) + honeypot spam check are
+ * enforced here (A3). Response caps + per-window rate limiting are deferred.
  */
 public without sharing class FinalGuestController {
     private static final String UNAVAILABLE = 'This form is not available.';
