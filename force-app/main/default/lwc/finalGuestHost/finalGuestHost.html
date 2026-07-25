@@ -19,9 +19,14 @@
                     aria-hidden="true"
                 />
             </template>
+            <!-- embedded: the guest form lives INSIDE the Experience site's
+                 chrome, so the page frame must hug its content instead of
+                 forcing a full 100vh (which left empty space below the form
+                 and made the iframe too tall). -->
             <c-final-form-viewer
                 lwc:ref="viewer"
                 spec={spec}
+                embedded
                 delegate-submit
                 onsubmitrequest={handleSubmitRequest}
             ></c-final-form-viewer>
