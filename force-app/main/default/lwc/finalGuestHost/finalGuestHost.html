@@ -1,36 +1,38 @@
 <template>
-    <template lwc:if={error}>
-        <div class="guest-unavailable" role="alert">
-            <p class="guest-unavailable__message">{error}</p>
-        </div>
-    </template>
-    <template lwc:elseif={spec}>
-        <template lwc:if={showHoneypot}>
-            <!-- Honeypot: off-screen bait a real user never sees; a filled
-                 value = a bot (server returns a fake success). -->
-            <input
-                lwc:ref="honeypot"
-                class="hp-field"
-                type="text"
-                name="website"
-                tabindex="-1"
-                autocomplete="off"
-                aria-hidden="true"
-            />
+    <div lwc:ref="root" class="guest-root">
+        <template lwc:if={error}>
+            <div class="guest-unavailable" role="alert">
+                <p class="guest-unavailable__message">{error}</p>
+            </div>
         </template>
-        <c-final-form-viewer
-            lwc:ref="viewer"
-            spec={spec}
-            delegate-submit
-            onsubmitrequest={handleSubmitRequest}
-        ></c-final-form-viewer>
-    </template>
-    <template lwc:else>
-        <div class="guest-loading">
-            <lightning-spinner
-                alternative-text="Loading form"
-                size="medium"
-            ></lightning-spinner>
-        </div>
-    </template>
+        <template lwc:elseif={spec}>
+            <template lwc:if={showHoneypot}>
+                <!-- Honeypot: off-screen bait a real user never sees; a filled
+                     value = a bot (server returns a fake success). -->
+                <input
+                    lwc:ref="honeypot"
+                    class="hp-field"
+                    type="text"
+                    name="website"
+                    tabindex="-1"
+                    autocomplete="off"
+                    aria-hidden="true"
+                />
+            </template>
+            <c-final-form-viewer
+                lwc:ref="viewer"
+                spec={spec}
+                delegate-submit
+                onsubmitrequest={handleSubmitRequest}
+            ></c-final-form-viewer>
+        </template>
+        <template lwc:else>
+            <div class="guest-loading">
+                <lightning-spinner
+                    alternative-text="Loading form"
+                    size="medium"
+                ></lightning-spinner>
+            </div>
+        </template>
+    </div>
 </template>

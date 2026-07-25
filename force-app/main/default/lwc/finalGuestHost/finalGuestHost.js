@@ -39,6 +39,51 @@ export default class FinalGuestHost extends LightningElement {
         this._load();
     }
 
+    // ----- iframe embed height bridge (A4) -----
+
+    renderedCallback() {
+        if (this._observing || typeof ResizeObserver === 'undefined') {
+            return;
+        }
+        const root = this.refs.root;
+        if (!root) {
+            return;
+        }
+        this._observing = true;
+        this._ro = new ResizeObserver(() => this._postHeight());
+        this._ro.observe(root);
+        this._postHeight();
+    }
+
+    disconnectedCallback() {
+        if (this._ro) {
+            this._ro.disconnect();
+            this._ro = null;
+        }
+        this._observing = false;
+    }
+
+    /**
+     * Tell the embedding page how tall the form is so it can size the iframe
+     * (Typeform pattern). Outbound ONE-WAY, a number only — no inbound message
+     * handling. Harmless when not framed (parent === self). The parent opts in
+     * with a ~10-line listener (GUEST_SITE_SETUP embed snippet).
+     */
+    _postHeight() {
+        const root = this.refs.root;
+        if (!root) {
+            return;
+        }
+        const height = Math.ceil(root.getBoundingClientRect().height);
+        if (height && height !== this._lastHeight) {
+            this._lastHeight = height;
+            window.parent.postMessage(
+                { type: 'finalforms:height', height },
+                '*'
+            );
+        }
+    }
+
     get effectiveFormId() {
         return this._urlFormId || this.formId;
     }

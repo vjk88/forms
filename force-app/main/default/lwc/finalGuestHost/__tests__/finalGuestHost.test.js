@@ -62,6 +62,8 @@ describe('c-final-guest-host (guest site host, A2)', () => {
             document.body.removeChild(document.body.firstChild);
         }
         jest.clearAllMocks();
+        jest.restoreAllMocks();
+        delete global.ResizeObserver;
     });
 
     it('gate pass: fetches the projected spec and feeds it to the viewer', async () => {
@@ -158,6 +160,43 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         expect(submitGuest).toHaveBeenCalledTimes(1);
         const sent = JSON.parse(submitGuest.mock.calls[0][0].payloadJson);
         expect(sent.meta.hp).toBe('http://bot.example');
+    });
+
+    it('embed bridge: posts the form height to the parent window (A4)', async () => {
+        const observed = [];
+        global.ResizeObserver = class {
+            constructor(cb) {
+                this.cb = cb;
+            }
+            observe(el) {
+                observed.push(el);
+            }
+            disconnect() {}
+        };
+        jest.spyOn(
+            HTMLElement.prototype,
+            'getBoundingClientRect'
+        ).mockReturnValue({
+            height: 320,
+            width: 600,
+            top: 0,
+            left: 0,
+            bottom: 320,
+            right: 600
+        });
+        const postSpy = jest.spyOn(window, 'postMessage');
+
+        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        mount('a0Xembed');
+        await flush();
+        await flush();
+
+        expect(observed.length).toBeGreaterThan(0);
+        const msg = postSpy.mock.calls.find(
+            (c) => c[0] && c[0].type === 'finalforms:height'
+        );
+        expect(msg).toBeTruthy();
+        expect(msg[0].height).toBe(320);
     });
 
     it('no honeypot field when spamProtection is off', async () => {
