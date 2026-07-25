@@ -19,3 +19,14 @@
     justify-content: center;
     min-height: 40vh;
 }
+
+/* Honeypot: kept in the layout for bots, invisible + unreachable for people */
+.hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
