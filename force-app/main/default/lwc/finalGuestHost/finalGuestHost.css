@@ -1,0 +1,21 @@
+.guest-unavailable {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40vh;
+    padding: 2rem;
+}
+
+.guest-unavailable__message {
+    max-width: 32rem;
+    text-align: center;
+    font-size: 1rem;
+    color: #444;
+}
+
+.guest-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40vh;
+}
