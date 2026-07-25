@@ -40,6 +40,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api embedded;
 
     /**
+     * Delegated submit (guest host, Phase A2). When true, a validated submit
+     * does NOT call internal Apex or simulate — it emits `submitrequest`
+     * {payload} and waits for the host to resolve it via `completeSubmit()` or
+     * `failSubmit(message)`. The host owns the guest Apex call; the viewer stays
+     * a pure renderer that never imports the guest controller. Wins over the
+     * inline-spec simulate below (the host feeds the viewer an inline spec).
+     */
+    @api delegateSubmit = false;
+
+    /**
      * Inline spec (pre-save preview — creation flow step 3, builder preview
      * later). When set, it wins over formId/versionId and no Apex load runs.
      * Re-setting it re-applies; navigation position survives when the layout
@@ -579,6 +589,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._submitting) {
             return; // one click, one record
         }
+        // Delegated submit (guest host): validation passed — hand the payload
+        // to the host, which owns the guest Apex call. MUST precede the
+        // inline-spec simulate below, because the host feeds the viewer an
+        // inline spec.
+        if (this.delegateSubmit) {
+            this._submitting = true;
+            this.submitError = undefined;
+            this.dispatchEvent(
+                new CustomEvent('submitrequest', {
+                    detail: { payload: this._payload() }
+                })
+            );
+            return;
+        }
         // Previews SIMULATE: the studio's authoring/inline specs (and the
         // read-only history view) must never create records.
         if (this.authoring || this._inlineSpec) {
@@ -603,6 +627,29 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         } finally {
             this._submitting = false;
         }
+    }
+
+    /**
+     * Host resolved the delegated submit successfully (Phase A2). Shows the
+     * After-Submit surface. Guests get NO record id, so the record redirect in
+     * `_navigate` no-ops by construction — only a `redirectTo='url'` completion
+     * navigates.
+     */
+    @api
+    completeSubmit() {
+        this._submitting = false;
+        this.submittedRecordId = null;
+        this.completed = true;
+        this._scheduleCompletion();
+    }
+
+    /** Host's delegated submit failed: surface the message and allow retry
+     *  (the submit guard is released). */
+    @api
+    failSubmit(message) {
+        this._submitting = false;
+        this.submitError =
+            message || 'Your response could not be saved. Please try again.';
     }
 
     /** Schema §8: answers keyed by element id; repeat sections answer as

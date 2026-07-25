@@ -1,0 +1,23 @@
+<template>
+    <template lwc:if={error}>
+        <div class="guest-unavailable" role="alert">
+            <p class="guest-unavailable__message">{error}</p>
+        </div>
+    </template>
+    <template lwc:elseif={spec}>
+        <c-final-form-viewer
+            lwc:ref="viewer"
+            spec={spec}
+            delegate-submit
+            onsubmitrequest={handleSubmitRequest}
+        ></c-final-form-viewer>
+    </template>
+    <template lwc:else>
+        <div class="guest-loading">
+            <lightning-spinner
+                alternative-text="Loading form"
+                size="medium"
+            ></lightning-spinner>
+        </div>
+    </template>
+</template>

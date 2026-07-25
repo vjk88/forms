@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Final Guest Form Host</masterLabel>
+    <description
+    >Guest-site host (Phase A2): fetches a published form's projected spec via the guarded guest controller and renders it through the final* viewer. Place on a public LWR Experience Cloud page.</description>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+                name="formId"
+                type="String"
+                label="Form Id"
+                description="The published form to render. A ?formId= (or ?c__formId=) URL parameter overrides this, so one host page can serve any form."
+            />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
