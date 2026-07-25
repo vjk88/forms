@@ -187,6 +187,139 @@ public with sharing class FinalStudioController {
         }
     }
 
+    /**
+     * Guest access toggle (Phase A1.5 gate writer). Adds or removes the
+     * `Public_Guest` adapter on the form — the guest gate's SECOND condition
+     * (FinalGuestController). Default posture is OFF: publishing alone never
+     * exposes a form; a builder must deliberately turn this on.
+     *
+     * Enabling also RE-MINTS public links for images already uploaded while
+     * the form was private (FinalAssetController freezes an image's public-ness
+     * at upload time): any linked file lacking a public ContentDistribution
+     * gets one, so the guest projection's serve-time URL rewrite can resolve
+     * it. Re-mint is best-effort — it never blocks the toggle.
+     *
+     * @return the resulting public state (true = guest-accessible).
+     */
+    @AuraEnabled
+    public static Boolean setGuestAccess(Id formId, Boolean enabled) {
+        if (formId == null) {
+            throw new AuraHandledException('A form Id is required.');
+        }
+        try {
+            List<Form__c> forms = [
+                SELECT Id, Allowed_Adapters__c
+                FROM Form__c
+                WHERE Id = :formId
+                WITH USER_MODE
+                LIMIT 1
+            ];
+            if (forms.isEmpty()) {
+                throw new AuraHandledException('FORM_NOT_FOUND');
+            }
+            Form__c f = forms[0];
+            Set<String> adapters = new Set<String>();
+            if (String.isNotBlank(f.Allowed_Adapters__c)) {
+                for (String a : f.Allowed_Adapters__c.split(';')) {
+                    if (String.isNotBlank(a)) {
+                        adapters.add(a.trim());
+                    }
+                }
+            }
+            Boolean changed = enabled
+                ? adapters.add('Public_Guest')
+                : adapters.remove('Public_Guest');
+            if (changed) {
+                f.Allowed_Adapters__c = adapters.isEmpty()
+                    ? null
+                    : String.join(new List<String>(adapters), ';');
+                update as user f;
+            }
+            if (enabled) {
+                remintPublicImages(formId);
+            }
+            return adapters.contains('Public_Guest');
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException(
+                'Guest access could not be updated.'
+            );
+        }
+    }
+
+    /**
+     * Ensure every file linked to the form has a public ContentDistribution
+     * (idempotent). Best-effort: a failure here must never block enabling
+     * guest access — an un-minted image simply stays internal-only until it is
+     * re-uploaded (the guest projection passes its URL through unchanged).
+     */
+    private static void remintPublicImages(Id formId) {
+        try {
+            List<ContentDocumentLink> links = [
+                SELECT ContentDocumentId
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :formId
+                WITH USER_MODE
+            ];
+            if (links.isEmpty()) {
+                return;
+            }
+            Set<Id> docIds = new Set<Id>();
+            for (ContentDocumentLink l : links) {
+                docIds.add(l.ContentDocumentId);
+            }
+            Map<Id, ContentVersion> latestByDoc = new Map<Id, ContentVersion>();
+            for (ContentVersion cv : [
+                SELECT Id, ContentDocumentId, Title
+                FROM ContentVersion
+                WHERE ContentDocumentId IN :docIds AND IsLatest = TRUE
+                WITH USER_MODE
+            ]) {
+                latestByDoc.put(cv.ContentDocumentId, cv);
+            }
+            if (latestByDoc.isEmpty()) {
+                return;
+            }
+            Set<Id> cvIds = new Set<Id>();
+            for (ContentVersion cv : latestByDoc.values()) {
+                cvIds.add(cv.Id);
+            }
+            Set<Id> haveDistribution = new Set<Id>();
+            for (ContentDistribution cd : [
+                SELECT ContentVersionId
+                FROM ContentDistribution
+                WHERE ContentVersionId IN :cvIds
+                WITH USER_MODE
+            ]) {
+                haveDistribution.add(cd.ContentVersionId);
+            }
+            List<ContentDistribution> toCreate = new List<ContentDistribution>();
+            for (ContentVersion cv : latestByDoc.values()) {
+                if (!haveDistribution.contains(cv.Id)) {
+                    toCreate.add(
+                        new ContentDistribution(
+                            Name = cv.Title,
+                            ContentVersionId = cv.Id,
+                            PreferencesAllowViewInBrowser = true,
+                            PreferencesAllowOriginalDownload = true,
+                            PreferencesPasswordRequired = false,
+                            PreferencesNotifyOnVisit = false
+                        )
+                    );
+                }
+            }
+            if (!toCreate.isEmpty()) {
+                insert as user toCreate;
+            }
+        } catch (Exception e) {
+            System.debug(
+                LoggingLevel.WARN,
+                'remintPublicImages skipped: ' + e.getMessage()
+            );
+        }
+    }
+
     /** Post-publish cleanup: the working copy is transient — delete it. */
     @AuraEnabled
     public static void discardDraft(Id draftVersionId) {
