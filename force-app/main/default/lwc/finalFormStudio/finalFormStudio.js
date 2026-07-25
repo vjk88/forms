@@ -5,6 +5,7 @@ import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
 import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
+import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -68,6 +69,13 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     notFound = false;
     loading = true;
     publishing = false;
+
+    /** Public-link (guest access) state, A1.5b — a Form-record field, NOT part
+     *  of the versioned spec, so it lives in the chrome next to Publish rather
+     *  than the spec-driven Design panel. */
+    @track isPublic = false;
+    isPublished = false;
+    togglingPublic = false;
 
     _saveTimer;
     _redirected = false;
@@ -146,6 +154,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this.spec = spec;
             this._history.reset(JSON.stringify(spec));
             this._syncHistoryFlags();
+            this.isPublic = Boolean(out.isPublic);
+            this.isPublished = Boolean(out.isPublished);
             this.objectApi =
                 (this.spec.form && this.spec.form.targetObject) ||
                 out.objectApi ||
@@ -1394,6 +1404,49 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this.saveState = 'saved';
         } catch {
             this.saveState = 'error';
+        }
+    }
+
+    // ----- public link / guest access (A1.5b) -----
+
+    get publicDisabled() {
+        return this.togglingPublic || this.isReadOnly;
+    }
+
+    get publicHelp() {
+        // pair the term with plain meaning (owner: explain fancy terms)
+        return this.isPublished
+            ? 'Public link: anyone with the link can open and submit this form with no Salesforce login. Add the form to a public site to share it.'
+            : 'Public link: anyone with the link can submit without a Salesforce login. Turn it on now if you like — it only goes live once you Publish and add the form to a public site.';
+    }
+
+    async handleTogglePublic(event) {
+        const next = event.target.checked;
+        // exposing a form publicly is outward-facing — confirm turning it ON;
+        // turning it OFF is safe and immediate.
+        if (next) {
+            const ok = await LightningConfirm.open({
+                message:
+                    'Make this form public? Anyone with the link will be able to view and submit it with no Salesforce login.',
+                label: 'Turn on public link'
+            });
+            if (!ok) {
+                this.isPublic = false; // snap the toggle back
+                return;
+            }
+        }
+        this.togglingPublic = true;
+        try {
+            const result = await setGuestAccess({
+                formId: this.formId,
+                enabled: next
+            });
+            this.isPublic = Boolean(result);
+        } catch {
+            this.isPublic = !next; // revert on failure
+            this.saveState = 'error';
+        } finally {
+            this.togglingPublic = false;
         }
     }
 
