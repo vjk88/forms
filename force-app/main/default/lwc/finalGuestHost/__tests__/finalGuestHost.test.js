@@ -117,6 +117,57 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         expect(completeSpy).toHaveBeenCalled();
     });
 
+    it('closed form: shows the closed message, no viewer', async () => {
+        getGuestSpec.mockResolvedValue(
+            JSON.stringify({ closed: true, closedMessage: 'Closed for now.' })
+        );
+        const el = mount('a0Xclosed');
+        await flush();
+        await flush();
+
+        expect(el.shadowRoot.querySelector('c-final-form-viewer')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.guest-unavailable').textContent
+        ).toContain('Closed for now.');
+    });
+
+    it('honeypot: renders the bait field and merges its value into meta.hp', async () => {
+        getGuestSpec.mockResolvedValue(
+            JSON.stringify({
+                ...SPEC,
+                settings: { ...SPEC.settings, spamProtection: 'honeypot' }
+            })
+        );
+        submitGuest.mockResolvedValue({ success: true, childCount: 0 });
+        const el = mount('a0Xhp');
+        await flush();
+        await flush();
+
+        const hp = el.shadowRoot.querySelector('.hp-field');
+        expect(hp).not.toBeNull();
+        hp.value = 'http://bot.example';
+
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        viewer.dispatchEvent(
+            new CustomEvent('submitrequest', {
+                detail: { payload: { answers: { el_ln: 'X' }, meta: {} } }
+            })
+        );
+        await flush();
+
+        expect(submitGuest).toHaveBeenCalledTimes(1);
+        const sent = JSON.parse(submitGuest.mock.calls[0][0].payloadJson);
+        expect(sent.meta.hp).toBe('http://bot.example');
+    });
+
+    it('no honeypot field when spamProtection is off', async () => {
+        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        const el = mount('a0Xnohp');
+        await flush();
+        await flush();
+        expect(el.shadowRoot.querySelector('.hp-field')).toBeNull();
+    });
+
     it('delegated submit failure: passes the message to the viewer', async () => {
         getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
         submitGuest.mockRejectedValue({ body: { message: 'Closed.' } });

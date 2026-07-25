@@ -307,4 +307,156 @@ private class FinalGuestControllerTest {
             Assert.isTrue(true);
         }
     }
+
+    // ----- availability (A3) -----
+
+    private static String settingsSpec(String settingsInner) {
+        return '{"specVersion":1,' +
+            '"form":{"name":"C","targetObject":"Contact"},' +
+            '"settings":{' +
+            settingsInner +
+            '},' +
+            '"pages":[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
+            '{"id":"el_ln","type":"field","binding":{"object":"Contact","field":"LastName"}}]}]}]}';
+    }
+
+    private static String iso(Datetime dt) {
+        return dt.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'');
+    }
+
+    @IsTest
+    static void closedStatusReturnsFlagNotStructure() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec(
+                '"availability":{"status":"closed","closedMessage":"Done for now."}'
+            )
+        );
+        String json = FinalGuestController.getGuestSpec(f.Id);
+        Assert.isTrue(json.contains('"closed":true'), 'closed flag set');
+        Assert.isTrue(json.contains('Done for now.'), 'closed message carried');
+        Assert.isFalse(json.contains('el_ln'), 'no form structure when closed');
+    }
+
+    @IsTest
+    static void beforeOpensAtIsClosed() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec(
+                '"availability":{"opensAt":"' +
+                    iso(Datetime.now().addDays(2)) +
+                    '"}'
+            )
+        );
+        Assert.isTrue(
+            FinalGuestController.getGuestSpec(f.Id).contains('"closed":true'),
+            'before opensAt → closed'
+        );
+    }
+
+    @IsTest
+    static void afterClosesAtIsClosed() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec(
+                '"availability":{"closesAt":"' +
+                    iso(Datetime.now().addDays(-1)) +
+                    '"}'
+            )
+        );
+        Assert.isTrue(
+            FinalGuestController.getGuestSpec(f.Id).contains('"closed":true'),
+            'after closesAt → closed'
+        );
+    }
+
+    @IsTest
+    static void openWindowServesFormAndStripsAvailability() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec(
+                '"availability":{"opensAt":"' +
+                    iso(Datetime.now().addDays(-1)) +
+                    '","closesAt":"' +
+                    iso(Datetime.now().addDays(1)) +
+                    '","responseCap":5}'
+            )
+        );
+        String json = FinalGuestController.getGuestSpec(f.Id);
+        Assert.isFalse(json.contains('"closed":true'), 'in-window → open');
+        Assert.isTrue(json.contains('el_ln'), 'form structure served');
+        Assert.isFalse(
+            json.contains('availability'),
+            'availability stripped from the client'
+        );
+        Assert.isFalse(
+            json.contains('responseCap'),
+            'response cap never sent to the client'
+        );
+    }
+
+    @IsTest
+    static void submitOnClosedFormRejected() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec('"availability":{"status":"closed"}')
+        );
+        try {
+            FinalGuestController.submitGuest(f.Id, '{"answers":{"el_ln":"X"}}');
+            Assert.fail('closed form must reject a submit');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'closed submit rejected');
+        }
+    }
+
+    // ----- honeypot (A3) -----
+
+    @IsTest
+    static void honeypotFilledFakeSuccessNoRecord() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec('"spamProtection":"honeypot"')
+        );
+        FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
+            f.Id,
+            '{"answers":{"el_ln":"BotName"},"meta":{"hp":"http://spam"}}'
+        );
+        Assert.isTrue(res.success, 'bot gets a fake success');
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE LastName = 'BotName'],
+            'no record created for a tripped honeypot'
+        );
+    }
+
+    @IsTest
+    static void honeypotEmptyInsertsNormally() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            settingsSpec('"spamProtection":"honeypot"')
+        );
+        FinalGuestController.submitGuest(
+            f.Id,
+            '{"answers":{"el_ln":"RealPerson"},"meta":{"hp":""}}'
+        );
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM Contact WHERE LastName = 'RealPerson'],
+            'a real submit (empty honeypot) still inserts'
+        );
+    }
 }

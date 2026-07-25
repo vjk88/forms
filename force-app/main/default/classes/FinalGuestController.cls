@@ -27,6 +27,20 @@ public without sharing class FinalGuestController {
     public static String getGuestSpec(Id formId) {
         Form__c f = gate(formId);
         Map<String, Object> spec = parseActiveSpec(f.Id);
+        // Availability (A3): a closed / not-yet-open / past-window form returns
+        // ONLY the closed flag + message — never the form structure (a visitor
+        // who can't submit gets no projection to inspect). The host renders the
+        // closed screen; the viewer never mounts. NOTE: cacheable, so a time-
+        // window transition can serve a stale open/closed state to a cached
+        // client — submitGuest re-checks server-side, which is the real guard.
+        if (isClosed(spec)) {
+            return JSON.serialize(
+                new Map<String, Object>{
+                    'closed' => true,
+                    'closedMessage' => closedMessage(spec)
+                }
+            );
+        }
         projectForGuest(spec);
         rewriteImageUrls(spec);
         return JSON.serialize(spec);
@@ -49,6 +63,12 @@ public without sharing class FinalGuestController {
         Form__c f = gate(formId); // re-gated: a replayed POST re-checks
         Map<String, Object> spec = parseActiveSpec(f.Id);
 
+        // Availability (A3): a closed/expired form rejects even a replayed POST
+        // server-side (the closed-screen client can't reach here anyway).
+        if (isClosed(spec)) {
+            throw new AuraHandledException(closedMessage(spec));
+        }
+
         // Guests never update — a saveMode='update' spec is refused with the
         // same generic message (RUNTIME_NOTES: guest+update waits for tokens).
         Map<String, Object> form = asMap(spec.get('form'));
@@ -66,6 +86,16 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException('The payload is not valid JSON.');
         }
 
+        // Honeypot (A3): a filled hidden field means a bot. Return a FAKE
+        // success (no record) so it learns nothing — the classic honeypot
+        // posture (RUNTIME_NOTES spam layers). The host injects meta.hp.
+        if (isHoneypotTripped(spec, payload)) {
+            GuestSubmitResult fake = new GuestSubmitResult();
+            fake.success = true;
+            fake.childCount = 0;
+            return fake;
+        }
+
         FinalSubmitService.SubmitOutcome outcome = FinalSubmitService.run(
             spec,
             payload,
@@ -76,6 +106,67 @@ public without sharing class FinalGuestController {
         res.success = true;
         res.childCount = outcome.childCount;
         return res;
+    }
+
+    // ----- availability + spam (A3) -----
+
+    /** Closed = manual status='closed', OR before opensAt, OR after closesAt.
+     *  Missing/blank window bounds are simply not applied. */
+    private static Boolean isClosed(Map<String, Object> spec) {
+        Map<String, Object> avail = availability(spec);
+        if (avail == null) {
+            return false;
+        }
+        if ((String) avail.get('status') == 'closed') {
+            return true;
+        }
+        Datetime now = Datetime.now();
+        Datetime opensAt = parseIso((String) avail.get('opensAt'));
+        Datetime closesAt = parseIso((String) avail.get('closesAt'));
+        return (opensAt != null && now < opensAt) ||
+            (closesAt != null &&
+            now > closesAt);
+    }
+
+    private static String closedMessage(Map<String, Object> spec) {
+        Map<String, Object> avail = availability(spec);
+        Object msg = avail == null ? null : avail.get('closedMessage');
+        return msg instanceof String && String.isNotBlank((String) msg)
+            ? (String) msg
+            : 'This form is no longer accepting responses.';
+    }
+
+    private static Map<String, Object> availability(Map<String, Object> spec) {
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        return settings == null ? null : asMap(settings.get('availability'));
+    }
+
+    /** ISO-8601 → Datetime; blank/garbage → null (never a crash). */
+    private static Datetime parseIso(String s) {
+        if (String.isBlank(s)) {
+            return null;
+        }
+        try {
+            return (Datetime) JSON.deserialize('"' + s + '"', Datetime.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** True only when the form opts into honeypot AND the bait field carries a
+     *  value (real users never see or fill it). */
+    private static Boolean isHoneypotTripped(
+        Map<String, Object> spec,
+        Map<String, Object> payload
+    ) {
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        Object mode = settings == null ? null : settings.get('spamProtection');
+        if (mode != 'honeypot') {
+            return false;
+        }
+        Map<String, Object> meta = asMap(payload.get('meta'));
+        Object hp = meta == null ? null : meta.get('hp');
+        return hp instanceof String && String.isNotBlank((String) hp);
     }
 
     // ----- gate + spec load -----
@@ -143,6 +234,10 @@ public without sharing class FinalGuestController {
         Map<String, Object> settings = asMap(spec.get('settings'));
         if (settings != null) {
             settings.remove('prefill');
+            // availability is SERVER-enforced (getGuestSpec/submitGuest); the
+            // client never needs the window/cap. spamProtection STAYS — the
+            // host reads it to render the honeypot.
+            settings.remove('availability');
         }
         for (Object pageObj : asList(spec.get('pages'))) {
             Map<String, Object> page = asMap(pageObj);

@@ -51,7 +51,18 @@ export default class FinalGuestHost extends LightningElement {
         this._loadedKey = formId;
         try {
             const raw = await getGuestSpec({ formId });
-            this.spec = JSON.parse(raw);
+            const parsed = JSON.parse(raw);
+            // Availability closed (A3): the server returns only the closed flag
+            // + message, no form structure. Show the message; never mount the
+            // viewer.
+            if (parsed && parsed.closed) {
+                this.spec = undefined;
+                this.error =
+                    parsed.closedMessage ||
+                    'This form is no longer accepting responses.';
+                return;
+            }
+            this.spec = parsed;
             this.error = undefined;
         } catch (e) {
             this.spec = undefined;
@@ -61,13 +72,29 @@ export default class FinalGuestHost extends LightningElement {
         }
     }
 
+    /** Honeypot (A3): render the bait field only when the form opts in. */
+    get showHoneypot() {
+        return Boolean(
+            this.spec &&
+            this.spec.settings &&
+            this.spec.settings.spamProtection === 'honeypot'
+        );
+    }
+
     async handleSubmitRequest(event) {
         const viewer = this.refs.viewer;
-        const payload = event.detail && event.detail.payload;
+        const payload = (event.detail && event.detail.payload) || {};
+        // Merge the honeypot value into meta.hp — the viewer builds the payload
+        // and knows nothing of the bait; the host owns it (server checks it).
+        const hpField = this.refs.honeypot;
+        const withHp = {
+            ...payload,
+            meta: { ...(payload.meta || {}), hp: hpField ? hpField.value : '' }
+        };
         try {
             await submitGuest({
                 formId: this.effectiveFormId,
-                payloadJson: JSON.stringify(payload)
+                payloadJson: JSON.stringify(withHp)
             });
             if (viewer) {
                 viewer.completeSubmit();
