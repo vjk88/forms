@@ -167,6 +167,13 @@
     cursor: default;
 }
 
+/* Public-link toggle (A1.5b) — sits inline with the header actions */
+.st-public {
+    margin-right: 12px;
+    font-size: 12px;
+    --slds-c-input-label-font-size: 12px;
+}
+
 /* ----- workspace ----- */
 .st-body {
     display: flex;

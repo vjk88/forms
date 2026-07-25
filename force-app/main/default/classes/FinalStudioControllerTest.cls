@@ -348,6 +348,25 @@ private class FinalStudioControllerTest {
     }
 
     @IsTest
+    static void loadStudioReportsPublicState() {
+        Form__c pub = makeForm('Public load');
+        pub.Allowed_Adapters__c = 'Public_Guest';
+        update pub;
+        makeVersion(pub.Id, 1, true, '{"specVersion":1}');
+        Map<String, Object> outPub = FinalStudioController.loadStudio(pub.Id);
+        Assert.areEqual(true, outPub.get('isPublic'), 'public form → isPublic');
+
+        Form__c priv = makeForm('Private load');
+        makeVersion(priv.Id, 1, true, '{"specVersion":1}');
+        Map<String, Object> outPriv = FinalStudioController.loadStudio(priv.Id);
+        Assert.areEqual(
+            false,
+            outPriv.get('isPublic'),
+            'no adapter → not public'
+        );
+    }
+
+    @IsTest
     static void guestAccessGuardsNullId() {
         try {
             FinalStudioController.setGuestAccess(null, true);

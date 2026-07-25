@@ -20,7 +20,12 @@ public with sharing class FinalStudioController {
         }
         try {
             List<Form__c> forms = [
-                SELECT Id, Name, Primary_Context_Object__c
+                SELECT
+                    Id,
+                    Name,
+                    Primary_Context_Object__c,
+                    Status__c,
+                    Allowed_Adapters__c
                 FROM Form__c
                 WHERE Id = :formId
                 WITH USER_MODE
@@ -50,6 +55,9 @@ public with sharing class FinalStudioController {
                     'This form has no specification to edit.'
                 );
             }
+            Boolean isPublic =
+                String.isNotBlank(forms[0].Allowed_Adapters__c) &&
+                forms[0].Allowed_Adapters__c.contains('Public_Guest');
             return new Map<String, Object>{
                 'formId' => forms[0].Id,
                 'name' => forms[0].Name,
@@ -61,7 +69,10 @@ public with sharing class FinalStudioController {
                 'versionNumber' => source.Version_Number__c,
                 'activeVersionNumber' => active != null
                     ? (Object) active.Version_Number__c
-                    : null
+                    : null,
+                // guest-access state for the studio's Public-link toggle (A1.5b)
+                'isPublic' => isPublic,
+                'isPublished' => forms[0].Status__c == 'Published'
             };
         } catch (AuraHandledException e) {
             throw e;

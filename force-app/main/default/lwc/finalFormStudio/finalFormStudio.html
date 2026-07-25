@@ -93,6 +93,17 @@
             >
                 ↷
             </button>
+            <lightning-input
+                type="toggle"
+                class="st-public"
+                label="Public link"
+                message-toggle-active="Public"
+                message-toggle-inactive="Private"
+                checked={isPublic}
+                disabled={publicDisabled}
+                field-level-help={publicHelp}
+                onchange={handleTogglePublic}
+            ></lightning-input>
             <button
                 type="button"
                 class="st-primary"
