@@ -69,6 +69,180 @@
         --gap: 7px;
     }
 
+    /* ---------- styling 2: Blueprint — drafting-sheet, squared, borders not shadows ---------- */
+    :root[data-styling='blueprint'] {
+        --bg: #edf1f6;
+        --panel: #f8fafd;
+        --field: #e2e9f2;
+        --field-hover: #d6e0ed;
+        --ink: #1b2f47;
+        --muted: #5b7189;
+        --line: #c3d1e0;
+        --line-strong: #93aac2;
+        --shadow: none;
+        --grid: rgba(43, 84, 160, 0.08);
+        --r-s: 3px;
+        --r-m: 4px;
+        --r-l: 6px;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root[data-styling='blueprint'] {
+            --bg: #0f2440;
+            --panel: #163050;
+            --field: #1e3e63;
+            --field-hover: #264b77;
+            --ink: #dce8f5;
+            --muted: #8aa7c7;
+            --line: #2c4e76;
+            --line-strong: #416a99;
+            --shadow: none;
+            --grid: rgba(220, 232, 245, 0.06);
+        }
+    }
+    :root[data-styling='blueprint'][data-theme='light'] {
+        --bg: #edf1f6;
+        --panel: #f8fafd;
+        --field: #e2e9f2;
+        --field-hover: #d6e0ed;
+        --ink: #1b2f47;
+        --muted: #5b7189;
+        --line: #c3d1e0;
+        --line-strong: #93aac2;
+        --shadow: none;
+        --grid: rgba(43, 84, 160, 0.08);
+    }
+    :root[data-styling='blueprint'][data-theme='dark'] {
+        --bg: #0f2440;
+        --panel: #163050;
+        --field: #1e3e63;
+        --field-hover: #264b77;
+        --ink: #dce8f5;
+        --muted: #8aa7c7;
+        --line: #2c4e76;
+        --line-strong: #416a99;
+        --shadow: none;
+        --grid: rgba(220, 232, 245, 0.06);
+    }
+    :root[data-styling='blueprint'] body {
+        background-image:
+            linear-gradient(var(--grid) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 26px 26px;
+    }
+    [data-styling='blueprint'] .rail h1,
+    [data-styling='blueprint'] .family h2 {
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+    [data-styling='blueprint'] .rail h1 {
+        font-size: 20px;
+        line-height: 1.35;
+    }
+    [data-styling='blueprint'] .family h2 {
+        font-size: 16.5px;
+    }
+    [data-styling='blueprint'] .qcard {
+        border: 1.5px solid var(--line-strong);
+    }
+    [data-styling='blueprint'] .chip,
+    [data-styling='blueprint'] .mchip {
+        border-color: var(--line-strong);
+    }
+    [data-styling='blueprint'] .chip[aria-checked='true'],
+    [data-styling='blueprint'] .chip[aria-pressed='true'],
+    [data-styling='blueprint'] .mchip[aria-pressed='true'] {
+        border-color: var(--accent);
+    }
+    [data-styling='blueprint'] .optcard {
+        border-color: var(--line);
+    }
+    [data-styling='blueprint'] .optcard[aria-checked='true'] {
+        border-color: var(--accent);
+    }
+
+    /* ---------- styling 3: Pop — pill-round, buoyant, heavy-sans ---------- */
+    :root[data-styling='softpop'] {
+        --bg: #f7f0ed;
+        --panel: #fffdfc;
+        --field: #f3e8e6;
+        --field-hover: #ecdcd9;
+        --ink: #342028;
+        --muted: #8b6f7d;
+        --line: #eddfe2;
+        --line-strong: #d5bfc8;
+        --shadow:
+            0 2px 4px rgba(52, 32, 40, 0.05), 0 16px 40px rgba(52, 32, 40, 0.1);
+        --r-s: 14px;
+        --r-m: 20px;
+        --r-l: 28px;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root[data-styling='softpop'] {
+            --bg: #1e161a;
+            --panel: #2a1f25;
+            --field: #362933;
+            --field-hover: #41313e;
+            --ink: #f4ebf0;
+            --muted: #ac93a1;
+            --line: #3d2e37;
+            --line-strong: #57424e;
+            --shadow:
+                0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.35);
+        }
+    }
+    :root[data-styling='softpop'][data-theme='light'] {
+        --bg: #f7f0ed;
+        --panel: #fffdfc;
+        --field: #f3e8e6;
+        --field-hover: #ecdcd9;
+        --ink: #342028;
+        --muted: #8b6f7d;
+        --line: #eddfe2;
+        --line-strong: #d5bfc8;
+        --shadow:
+            0 2px 4px rgba(52, 32, 40, 0.05), 0 16px 40px rgba(52, 32, 40, 0.1);
+    }
+    :root[data-styling='softpop'][data-theme='dark'] {
+        --bg: #1e161a;
+        --panel: #2a1f25;
+        --field: #362933;
+        --field-hover: #41313e;
+        --ink: #f4ebf0;
+        --muted: #ac93a1;
+        --line: #3d2e37;
+        --line-strong: #57424e;
+        --shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+    [data-styling='softpop'] .rail h1,
+    [data-styling='softpop'] .family h2 {
+        font-family: var(--sans);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+    }
+    [data-styling='softpop'] .qlabel {
+        font-size: 18px;
+        font-weight: 700;
+    }
+    [data-styling='softpop'] .chip {
+        border-radius: 999px;
+    }
+    [data-styling='softpop'] .qcard {
+        border-color: transparent;
+    }
+    [data-styling='softpop'] .ti,
+    [data-styling='softpop'] .dd {
+        border-radius: 999px;
+        border-color: transparent;
+    }
+    [data-styling='softpop'] .ta {
+        border-radius: 18px;
+        border-color: transparent;
+    }
+    [data-styling='softpop'] .rank li {
+        border-radius: 999px;
+    }
+
     * {
         box-sizing: border-box;
     }
@@ -925,7 +1099,26 @@
         </p>
 
         <div class="rail-group">
-            <span class="eyebrow">Accent — the only theme knob</span>
+            <span class="eyebrow">Styling — same widgets, new skin</span>
+            <div class="seg" role="group" aria-label="Styling" id="styling-seg">
+                <button data-styling-key="fieldbook" aria-pressed="true">
+                    Fieldbook
+                </button>
+                <button data-styling-key="blueprint" aria-pressed="false">
+                    Blueprint
+                </button>
+                <button data-styling-key="softpop" aria-pressed="false">
+                    Pop
+                </button>
+            </div>
+            <p class="swatch-note">
+                Three complete token sets over one widget grammar — a tiny
+                version of the product's theme catalog.
+            </p>
+        </div>
+
+        <div class="rail-group">
+            <span class="eyebrow">Accent</span>
             <div class="swatches" role="group" aria-label="Accent color">
                 <button
                     class="swatch"
@@ -2005,16 +2198,64 @@
     (function () {
         var root = document.documentElement;
 
-        /* accent swatches */
-        document.querySelectorAll('.swatch').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                document.querySelectorAll('.swatch').forEach(function (b) {
-                    b.setAttribute('aria-pressed', 'false');
+        /* stylings + their accent sets — Fieldbook is the base token set */
+        var STYLINGS = {
+            fieldbook: [
+                ['Pine', '#0e7a6e'],
+                ['Iris', '#5658c8'],
+                ['Plum', '#98356f'],
+                ['Rust', '#a63d25']
+            ],
+            blueprint: [
+                ['Cobalt', '#2a53b8'],
+                ['Drafting red', '#bf3f2c'],
+                ['Deep teal', '#0d6b76'],
+                ['Graphite', '#46525c']
+            ],
+            softpop: [
+                ['Coral', '#d1493a'],
+                ['Bubblegum', '#c2417e'],
+                ['Grape', '#7a4bc8'],
+                ['Ocean', '#2f7bb6']
+            ]
+        };
+        var swatchRow = document.querySelector('.swatches');
+        function renderSwatches(key) {
+            swatchRow.innerHTML = '';
+            STYLINGS[key].forEach(function (acc, i) {
+                var b = document.createElement('button');
+                b.className = 'swatch';
+                b.style.setProperty('--sw', acc[1]);
+                b.setAttribute('aria-label', acc[0]);
+                b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+                b.addEventListener('click', function () {
+                    swatchRow.querySelectorAll('.swatch').forEach(function (s) {
+                        s.setAttribute('aria-pressed', 'false');
+                    });
+                    b.setAttribute('aria-pressed', 'true');
+                    root.style.setProperty('--accent', acc[1]);
                 });
-                btn.setAttribute('aria-pressed', 'true');
-                root.style.setProperty('--accent', btn.dataset.accent);
+                swatchRow.appendChild(b);
             });
-        });
+            root.style.setProperty('--accent', STYLINGS[key][0][1]);
+        }
+        renderSwatches('fieldbook');
+
+        /* styling switcher */
+        document
+            .querySelectorAll('#styling-seg button')
+            .forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document
+                        .querySelectorAll('#styling-seg button')
+                        .forEach(function (b) {
+                            b.setAttribute('aria-pressed', 'false');
+                        });
+                    btn.setAttribute('aria-pressed', 'true');
+                    root.setAttribute('data-styling', btn.dataset.stylingKey);
+                    renderSwatches(btn.dataset.stylingKey);
+                });
+            });
 
         /* density */
         document.querySelectorAll('[data-density]').forEach(function (btn) {
