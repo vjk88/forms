@@ -249,6 +249,16 @@ that's an attachment, not an answer value.
   questionnaires. Record Page hosting stays off the menu (locked).
 - **A11y:** chip rows are `radiogroup`s with arrow-key navigation and proper labels; card grids are
   labeled groups; every target ≥44px; image options require alt text (publish-gated).
+- **Rendering packs (owner direction 2026-07-26 — needs a spec pass):** styling is more than
+  tokens. The owner wants selectable _presentations_ of the same question — e.g. NPS as keycap
+  tiles with emoji end-labels and a fun-fact callout; Likert as full-width emoji option cards
+  (real Unicode emoji, not tinted SVG); the final long-text step with a word-count chip and
+  starter-prompt chips; a chat-thread rendering where questions arrive as bubbles and answers
+  collapse into replies. Direction demonstrated in
+  `docs/FinalDesign/survey_renderings_ux.html` (Card Deck + Chat Thread over one identical
+  survey definition). Proposed shape: a per-form **`renderingPack` key in the spec** (additive —
+  ignore-unknown keeps old runtimes safe); widgets read pack + tokens; the answer-store contract
+  is untouched. Interacts with §10 Q4 (Card Deck ≈ one-question-per-screen) — see §10 Q9.
 
 ---
 
@@ -362,3 +372,7 @@ sequencing between the prefill program and survey slices stays owner-controlled.
    single-select-only first.
 8. **Signature in surveys:** leave available (planned — it's just an element) or hide in Survey
    mode?
+9. **Rendering packs (§4):** is the Card Deck presentation (emoji option cards, keycap scales,
+   step bar) the **default survey rendering in v1**, with the plain catalog widgets as the
+   fallback pack? And is the Chat Thread rendering a v2 pack or in scope now? (This partly
+   answers Q4 — Card Deck _is_ one-question-per-screen.)
