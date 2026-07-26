@@ -151,10 +151,12 @@
     .progress i {
         display: block;
         height: 100%;
-        width: 0;
+        width: 100%;
         border-radius: 999px;
         background: var(--accent);
-        transition: width 240ms ease;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 240ms ease;
     }
 
     /* ---------- card-deck stage ---------- */
@@ -1613,7 +1615,8 @@
             stepmeta.style.visibility = 'visible';
             stepcount.textContent =
                 'Step ' + (deckIdx + 1) + ' of ' + STEPS.length;
-            stepbar.style.width = ((deckIdx + 1) / STEPS.length) * 100 + '%';
+            stepbar.style.transform =
+                'scaleX(' + (deckIdx + 1) / STEPS.length + ')';
 
             var q = STEPS[deckIdx];
             deck.appendChild(el('span', 'eyebrow-chip', q.eyebrow));
