@@ -1,0 +1,2160 @@
+<title>Survey Question Types — UX Catalog</title>
+<style>
+    /* ---------- tokens ---------- */
+    :root {
+        --accent: #0e7a6e;
+        --on-accent: #ffffff;
+        --bg: #f5f7f4;
+        --panel: #ffffff;
+        --field: #edf1ee;
+        --field-hover: #e3e9e5;
+        --ink: #18201c;
+        --muted: #5f6e67;
+        --line: #dfe6e2;
+        --line-strong: #c9d3cd;
+        --shadow:
+            0 1px 2px rgba(24, 32, 28, 0.05), 0 6px 20px rgba(24, 32, 28, 0.06);
+        --r-s: 8px;
+        --r-m: 12px;
+        --r-l: 18px;
+        --chip-pad-y: 12px;
+        --chip-pad-x: 16px;
+        --card-pad: 28px;
+        --gap: 10px;
+        --mono: ui-monospace, 'Cascadia Code', Consolas, 'SF Mono', monospace;
+        --sans: -apple-system, 'Segoe UI', system-ui, Roboto, sans-serif;
+        --serif: Georgia, 'Times New Roman', serif;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #101614;
+            --panel: #18201c;
+            --field: #212b26;
+            --field-hover: #28342e;
+            --ink: #e9efeb;
+            --muted: #92a29a;
+            --line: #2a3630;
+            --line-strong: #3a4842;
+            --shadow:
+                0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+    }
+    :root[data-theme='light'] {
+        --bg: #f5f7f4;
+        --panel: #ffffff;
+        --field: #edf1ee;
+        --field-hover: #e3e9e5;
+        --ink: #18201c;
+        --muted: #5f6e67;
+        --line: #dfe6e2;
+        --line-strong: #c9d3cd;
+        --shadow:
+            0 1px 2px rgba(24, 32, 28, 0.05), 0 6px 20px rgba(24, 32, 28, 0.06);
+    }
+    :root[data-theme='dark'] {
+        --bg: #101614;
+        --panel: #18201c;
+        --field: #212b26;
+        --field-hover: #28342e;
+        --ink: #e9efeb;
+        --muted: #92a29a;
+        --line: #2a3630;
+        --line-strong: #3a4842;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    :root[data-density='compact'] {
+        --chip-pad-y: 8px;
+        --chip-pad-x: 12px;
+        --card-pad: 20px;
+        --gap: 7px;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 15.5px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+    }
+    button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+    }
+    :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 24px 96px;
+        display: grid;
+        grid-template-columns: 232px minmax(0, 1fr);
+        gap: 48px;
+    }
+    @media (max-width: 959px) {
+        .wrap {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0;
+            padding-top: 28px;
+        }
+        .rail {
+            position: static !important;
+            margin-bottom: 32px;
+        }
+        .rail nav {
+            display: none;
+        }
+    }
+
+    /* ---------- rail ---------- */
+    .rail {
+        position: sticky;
+        top: 32px;
+        align-self: start;
+    }
+    .eyebrow {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+    .rail h1 {
+        font-family: var(--serif);
+        font-size: 30px;
+        line-height: 1.15;
+        font-weight: 400;
+        margin: 10px 0 12px;
+        text-wrap: balance;
+    }
+    .rail .lede {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0 0 24px;
+    }
+    .rail-group {
+        border-top: 1px solid var(--line);
+        padding: 16px 0;
+    }
+    .rail-group .eyebrow {
+        display: block;
+        margin-bottom: 10px;
+    }
+    .swatches {
+        display: flex;
+        gap: 8px;
+    }
+    .swatch {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        background: var(--sw);
+        padding: 0;
+    }
+    .swatch[aria-pressed='true'] {
+        border-color: var(--ink);
+        box-shadow: inset 0 0 0 2px var(--bg);
+    }
+    .swatch-note {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 10px 0 0;
+    }
+    .seg {
+        display: inline-flex;
+        background: var(--field);
+        border-radius: 999px;
+        padding: 3px;
+        gap: 2px;
+    }
+    .seg button {
+        border: 0;
+        background: transparent;
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 12.5px;
+        color: var(--muted);
+    }
+    .seg button[aria-pressed='true'] {
+        background: var(--panel);
+        color: var(--ink);
+        box-shadow: var(--shadow);
+    }
+    .rail nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .rail nav a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13.5px;
+        padding: 2px 0;
+    }
+    .rail nav a:hover {
+        color: var(--accent);
+    }
+    .legend {
+        font-size: 12.5px;
+        color: var(--muted);
+        display: grid;
+        gap: 8px;
+    }
+    .legend span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .dot-fill {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        background: var(--accent);
+        flex: none;
+    }
+    .dot-ring {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 2px solid var(--accent);
+        flex: none;
+    }
+
+    /* ---------- main ---------- */
+    .family {
+        margin: 0 0 56px;
+    }
+    .family > header {
+        margin-bottom: 20px;
+    }
+    .family h2 {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: 24px;
+        margin: 4px 0 6px;
+    }
+    .family .sub {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0;
+        max-width: 62ch;
+    }
+
+    .qcard {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--r-l);
+        box-shadow: var(--shadow);
+        padding: var(--card-pad);
+        margin-bottom: 20px;
+    }
+    .qcard.v2 {
+        border-style: dashed;
+        box-shadow: none;
+        background: transparent;
+    }
+    .qhead {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+    .qnum {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--accent);
+        flex: none;
+        padding-top: 2px;
+    }
+    .qlabel {
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+    .req {
+        color: var(--accent);
+        margin-left: 2px;
+    }
+    .qhelp {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 18px 34px;
+    }
+    .qbody {
+        margin-left: 34px;
+        container-type: inline-size;
+    }
+    @media (max-width: 640px) {
+        .qhelp,
+        .qbody {
+            margin-left: 0;
+        }
+    }
+    .badge-v2 {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.07em;
+        color: var(--muted);
+        border: 1px dashed var(--line-strong);
+        border-radius: 999px;
+        padding: 3px 10px;
+        flex: none;
+        align-self: center;
+    }
+
+    .specstrip {
+        margin: 22px 0 0 34px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+    }
+    @media (max-width: 640px) {
+        .specstrip {
+            margin-left: 0;
+        }
+    }
+    .specstrip .key {
+        color: var(--accent);
+    }
+    .specstrip .store {
+        color: var(--ink);
+    }
+
+    /* ---------- shared widget grammar ---------- */
+    .chiprow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--gap);
+    }
+    .chip {
+        min-width: 46px;
+        padding: var(--chip-pad-y) var(--chip-pad-x);
+        background: var(--field);
+        border: 1px solid transparent;
+        border-radius: var(--r-s);
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        transition:
+            background 120ms,
+            color 120ms,
+            transform 120ms;
+    }
+    .chip:hover {
+        background: var(--field-hover);
+    }
+    .chip[aria-checked='true'],
+    .chip[aria-pressed='true'] {
+        background: var(--accent);
+        color: var(--on-accent);
+    }
+    .scale-ends {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+    }
+
+    /* follow-up reveal */
+    .followup {
+        margin-top: 18px;
+    }
+    .followup[hidden] {
+        display: none;
+    }
+    .rule-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+    .rule-tag::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+    }
+
+    /* rating icons */
+    .rating-row {
+        display: flex;
+        gap: 6px;
+    }
+    .rating-row button {
+        background: none;
+        border: 0;
+        padding: 4px;
+        line-height: 0;
+        border-radius: 6px;
+    }
+    .rating-row svg {
+        width: 34px;
+        height: 34px;
+        fill: none;
+        stroke: var(--muted);
+        stroke-width: 1.6;
+        transition:
+            fill 120ms,
+            stroke 120ms,
+            transform 120ms;
+    }
+    .rating-row button.lit svg {
+        fill: var(--accent);
+        stroke: var(--accent);
+    }
+    .iconpick {
+        margin-top: 14px;
+    }
+
+    /* emoji scale */
+    .emoji-row {
+        display: flex;
+        gap: 14px;
+    }
+    .emoji-row button {
+        background: none;
+        border: 2px solid transparent;
+        border-radius: 50%;
+        padding: 6px;
+        line-height: 0;
+        transition:
+            border-color 120ms,
+            transform 120ms;
+    }
+    .emoji-row svg {
+        width: 42px;
+        height: 42px;
+        stroke: var(--muted);
+        fill: none;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        transition: stroke 120ms;
+    }
+    .emoji-row button:hover svg {
+        stroke: var(--ink);
+    }
+    .emoji-row button[aria-checked='true'] {
+        border-color: var(--accent);
+        transform: scale(1.08);
+    }
+    .emoji-row button[aria-checked='true'] svg {
+        stroke: var(--accent);
+    }
+
+    /* likert */
+    .likert {
+        display: flex;
+        gap: var(--gap);
+    }
+    .likert .chip {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+    }
+    @container (max-width: 520px) {
+        .likert {
+            flex-direction: column;
+        }
+        .likert .chip {
+            text-align: left;
+        }
+    }
+
+    /* yes / no */
+    .yesno {
+        display: flex;
+        gap: var(--gap);
+        max-width: 420px;
+    }
+    .yesno .chip {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-weight: 600;
+        padding-block: 14px;
+    }
+    .yesno svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 2.4;
+        fill: none;
+        stroke-linecap: round;
+    }
+
+    /* option cards */
+    .optcards {
+        display: grid;
+        gap: var(--gap);
+    }
+    .optcard {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        text-align: left;
+        background: var(--field);
+        border: 2px solid transparent;
+        border-radius: var(--r-m);
+        padding: 14px 16px;
+        transition:
+            background 120ms,
+            border-color 120ms;
+    }
+    .optcard:hover {
+        background: var(--field-hover);
+    }
+    .optcard[aria-checked='true'] {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+    }
+    .optcard .radio {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid var(--line-strong);
+        flex: none;
+        margin-top: 2px;
+        transition:
+            border-color 120ms,
+            box-shadow 120ms;
+    }
+    .optcard[aria-checked='true'] .radio {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 4px var(--accent);
+    }
+    .optcard b {
+        display: block;
+        font-size: 15px;
+    }
+    .optcard small {
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    /* multi chips */
+    .multichips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--gap);
+    }
+    .mchip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--field);
+        border: 2px solid transparent;
+        border-radius: 999px;
+        padding: calc(var(--chip-pad-y) - 3px) var(--chip-pad-x);
+        transition:
+            background 120ms,
+            border-color 120ms;
+    }
+    .mchip:hover {
+        background: var(--field-hover);
+    }
+    .mchip .tick {
+        display: none;
+        width: 15px;
+        height: 15px;
+        stroke: var(--accent);
+        stroke-width: 3;
+        fill: none;
+        stroke-linecap: round;
+    }
+    .mchip[aria-pressed='true'] {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+    }
+    .mchip[aria-pressed='true'] .tick {
+        display: block;
+    }
+
+    /* classic list */
+    .optlist {
+        display: grid;
+        gap: 10px;
+        max-width: 480px;
+    }
+    .optlist label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .optlist input {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--accent);
+    }
+
+    /* dropdown */
+    .dd {
+        appearance: none;
+        width: 100%;
+        max-width: 420px;
+        background: var(--field)
+            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" fill="none" stroke="%23768680" stroke-width="2" stroke-linecap="round"/></svg>')
+            no-repeat right 16px center;
+        border: 1px solid var(--line);
+        border-radius: var(--r-s);
+        padding: 12px 40px 12px 14px;
+        font: inherit;
+        color: var(--ink);
+    }
+
+    /* image choice */
+    .imggrid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--gap);
+    }
+    @container (max-width: 560px) {
+        .imggrid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    .imgopt {
+        background: none;
+        border: 2px solid var(--line);
+        border-radius: var(--r-m);
+        padding: 6px;
+        text-align: left;
+        position: relative;
+        transition: border-color 120ms;
+    }
+    .imgopt:hover {
+        border-color: var(--line-strong);
+    }
+    .imgopt[aria-checked='true'] {
+        border-color: var(--accent);
+    }
+    .imgopt .pic {
+        display: block;
+        aspect-ratio: 1;
+        border-radius: calc(var(--r-m) - 4px);
+        overflow: hidden;
+        position: relative;
+    }
+    .imgopt figcaption {
+        font-size: 12.5px;
+        padding: 8px 4px 4px;
+        color: var(--muted);
+    }
+    .imgopt[aria-checked='true'] figcaption {
+        color: var(--ink);
+    }
+    .imgopt .checkbadge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .imgopt .checkbadge svg {
+        width: 12px;
+        height: 12px;
+        stroke: var(--on-accent);
+        stroke-width: 3;
+        fill: none;
+        stroke-linecap: round;
+    }
+    .imgopt[aria-checked='true'] .checkbadge {
+        display: flex;
+    }
+    .p1 {
+        background: linear-gradient(
+            160deg,
+            #2d3561 10%,
+            #b0567a 55%,
+            #e8a15d 95%
+        );
+    }
+    .p1::after {
+        content: '';
+        position: absolute;
+        inset: 60% 20% 15%;
+        border-top: 2px solid rgba(255, 255, 255, 0.85);
+    }
+    .p2 {
+        background:
+            repeating-linear-gradient(0deg, #e9e6df 0 14px, #c9c4b8 14px 15px),
+            repeating-linear-gradient(90deg, #e9e6df 0 14px, #c9c4b8 14px 15px);
+        background-blend-mode: multiply;
+    }
+    .p2::after {
+        content: '';
+        position: absolute;
+        inset: 30% 30% 30%;
+        background: #d95f43;
+        border-radius: 50%;
+    }
+    .p3 {
+        background: #1c1a17;
+    }
+    .p3::after {
+        content: 'SPRING';
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        color: #f2ede2;
+        font: 800 1.5cqw/1 var(--sans);
+        font-size: 18px;
+        letter-spacing: 0.12em;
+    }
+    .p4 {
+        background:
+            radial-gradient(
+                120% 90% at 20% 15%,
+                #cfe3d6 0 30%,
+                transparent 31%
+            ),
+            radial-gradient(
+                130% 100% at 85% 80%,
+                #7fae94 0 45%,
+                transparent 46%
+            ),
+            #3d6b55;
+    }
+
+    /* text inputs */
+    .ti,
+    .ta {
+        width: 100%;
+        background: var(--field);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: var(--r-s);
+        padding: 12px 14px;
+        font: inherit;
+    }
+    .ti:focus,
+    .ta:focus,
+    .dd:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+        border-color: transparent;
+    }
+    .ta {
+        min-height: 110px;
+        resize: vertical;
+    }
+    .counter {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        text-align: right;
+        margin-top: 6px;
+    }
+    .factgrid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+    @container (max-width: 560px) {
+        .factgrid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .factgrid label {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    /* slider */
+    .sliderbox {
+        max-width: 480px;
+    }
+    .bubble {
+        display: inline-block;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        background: var(--accent);
+        color: var(--on-accent);
+        border-radius: 999px;
+        padding: 4px 14px;
+        margin-bottom: 14px;
+        transition: background 120ms;
+    }
+    input[type='range'] {
+        width: 100%;
+        appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--field-hover);
+        accent-color: var(--accent);
+    }
+    input[type='range']::-webkit-slider-thumb {
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 3px solid var(--panel);
+        box-shadow: var(--shadow);
+    }
+    input[type='range']::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 3px solid var(--panel);
+    }
+
+    /* v2: ranking + matrix */
+    .rank {
+        display: grid;
+        gap: 8px;
+        max-width: 480px;
+    }
+    .rank li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        list-style: none;
+        background: var(--field);
+        border-radius: var(--r-s);
+        padding: 12px 14px;
+    }
+    .rank {
+        padding-left: 0;
+        margin: 0;
+    }
+    .rank .pos {
+        font-family: var(--mono);
+        color: var(--accent);
+        font-size: 12px;
+        width: 16px;
+    }
+    .rank .grip {
+        margin-left: auto;
+        color: var(--muted);
+        letter-spacing: 1px;
+        cursor: grab;
+    }
+    .matrix-scroll {
+        overflow-x: auto;
+    }
+    .matrix {
+        border-collapse: collapse;
+        min-width: 520px;
+        width: 100%;
+        font-size: 13px;
+    }
+    .matrix th {
+        font-weight: 500;
+        color: var(--muted);
+        padding: 8px 10px;
+        text-align: center;
+        font-size: 12px;
+    }
+    .matrix td {
+        padding: 10px;
+        border-top: 1px solid var(--line);
+        text-align: center;
+    }
+    .matrix td:first-child,
+    .matrix th:first-child {
+        text-align: left;
+    }
+    .matrix .mdot {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        border: 2px solid var(--line-strong);
+        background: none;
+        padding: 0;
+    }
+    .matrix .mdot[aria-checked='true'] {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 4px var(--accent);
+    }
+
+    footer.colophon {
+        border-top: 1px solid var(--line);
+        padding-top: 20px;
+        color: var(--muted);
+        font-size: 12.5px;
+        max-width: 62ch;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            transition: none !important;
+        }
+        .emoji-row button[aria-checked='true'] {
+            transform: none;
+        }
+    }
+</style>
+
+<div class="wrap">
+    <aside class="rail">
+        <span class="eyebrow">SURVEY_PLAN.md · §2 companion</span>
+        <h1>The Question Catalog</h1>
+        <p class="lede">
+            Every v1 survey question type, rendered live. Click things —
+            selected states, reveals, and counters all work.
+        </p>
+
+        <div class="rail-group">
+            <span class="eyebrow">Accent — the only theme knob</span>
+            <div class="swatches" role="group" aria-label="Accent color">
+                <button
+                    class="swatch"
+                    style="--sw: #0e7a6e"
+                    data-accent="#0e7a6e"
+                    aria-pressed="true"
+                    aria-label="Pine"
+                ></button>
+                <button
+                    class="swatch"
+                    style="--sw: #5658c8"
+                    data-accent="#5658c8"
+                    aria-pressed="false"
+                    aria-label="Iris"
+                ></button>
+                <button
+                    class="swatch"
+                    style="--sw: #98356f"
+                    data-accent="#98356f"
+                    aria-pressed="false"
+                    aria-label="Plum"
+                ></button>
+                <button
+                    class="swatch"
+                    style="--sw: #a63d25"
+                    data-accent="#a63d25"
+                    aria-pressed="false"
+                    aria-label="Rust"
+                ></button>
+            </div>
+            <p class="swatch-note">
+                Swap it. Every selected state follows — no widget owns a private
+                color. That's the §2.0 token contract, live.
+            </p>
+        </div>
+
+        <div class="rail-group">
+            <span class="eyebrow">Density</span>
+            <div class="seg" role="group" aria-label="Density">
+                <button data-density="comfortable" aria-pressed="true">
+                    Comfortable
+                </button>
+                <button data-density="compact" aria-pressed="false">
+                    Compact
+                </button>
+            </div>
+        </div>
+
+        <div class="rail-group">
+            <span class="eyebrow">Selected-state grammar</span>
+            <div class="legend">
+                <span><i class="dot-fill"></i> Pick one → accent fill</span>
+                <span
+                    ><i class="dot-ring"></i> Pick many → accent ring +
+                    check</span
+                >
+            </div>
+        </div>
+
+        <div class="rail-group">
+            <span class="eyebrow">Families</span>
+            <nav>
+                <a href="#scales">Scales &amp; ratings</a>
+                <a href="#choices">Choices</a>
+                <a href="#open">Open &amp; typed</a>
+                <a href="#v2">Reserved for v2</a>
+            </nav>
+        </div>
+    </aside>
+
+    <main>
+        <!-- ============ SCALES ============ -->
+        <section class="family" id="scales">
+            <header>
+                <span class="eyebrow">Family 1 of 4</span>
+                <h2>Scales &amp; ratings</h2>
+                <p class="sub">
+                    One shared chip-row interaction, five flavors. Everything
+                    here stores a number — that's what makes cross-survey
+                    analytics possible later.
+                </p>
+            </header>
+
+            <!-- 1 · NPS -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">01</span
+                    ><span class="qlabel"
+                        >How likely are you to recommend Acme Outdoors to a
+                        fellow hiker?<span class="req">*</span></span
+                    >
+                </div>
+                <p class="qhelp">
+                    0 means "not a chance," 10 means "already telling everyone."
+                </p>
+                <div class="qbody">
+                    <div
+                        class="chiprow"
+                        role="radiogroup"
+                        aria-label="NPS 0 to 10"
+                        data-widget="nps"
+                    >
+                        <button class="chip" role="radio" aria-checked="false">
+                            0
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            1
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            2
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            3
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            4
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            5
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            6
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            7
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            8
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            9
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            10
+                        </button>
+                    </div>
+                    <div class="scale-ends">
+                        <span>Not at all likely</span
+                        ><span>Extremely likely</span>
+                    </div>
+                    <div class="followup" id="nps-followup" hidden>
+                        <span class="rule-tag"
+                            >visibility rule · show if answer ≤ 6</span
+                        >
+                        <textarea
+                            class="ta"
+                            placeholder="Sorry to hear that — what let you down?"
+                            aria-label="What let you down?"
+                        ></textarea>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">nps</span><span>→</span
+                    ><span class="store">Numeric_Value__c</span>
+                    <span
+                        >config: leftLabel · rightLabel · "Ask why" sugar (pick
+                        0–6 to see it)</span
+                    >
+                    <span>narrow: chips compress, then wrap 6-over-5</span>
+                </div>
+            </article>
+
+            <!-- 2 · Rating -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">02</span
+                    ><span class="qlabel"
+                        >Rate the gear-rental experience<span class="req"
+                            >*</span
+                        ></span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="rating-row"
+                        role="radiogroup"
+                        aria-label="Rating out of five"
+                        data-widget="rating"
+                    ></div>
+                    <div class="scale-ends" style="max-width: 230px">
+                        <span>Poor</span><span>Excellent</span>
+                    </div>
+                    <div class="iconpick">
+                        <div class="seg" role="group" aria-label="Icon variant">
+                            <button data-icon="star" aria-pressed="true">
+                                Star
+                            </button>
+                            <button data-icon="heart" aria-pressed="false">
+                                Heart
+                            </button>
+                            <button data-icon="thumb" aria-pressed="false">
+                                Thumb
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">rating</span><span>→</span
+                    ><span class="store">Numeric_Value__c</span>
+                    <span
+                        >config: max 5·7·10 (segmented) · icon Star/Heart/Thumb
+                        · end labels · no half-steps (v1 law)</span
+                    >
+                </div>
+            </article>
+
+            <!-- 3 · Opinion scale -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">03</span
+                    ><span class="qlabel"
+                        >How tough was the Ridgeline route?</span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="chiprow"
+                        role="radiogroup"
+                        aria-label="1 to 7"
+                        data-widget="scale"
+                    >
+                        <button class="chip" role="radio" aria-checked="false">
+                            1
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            2
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            3
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            4
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            5
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            6
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            7
+                        </button>
+                    </div>
+                    <div class="scale-ends" style="max-width: 420px">
+                        <span>A gentle stroll</span
+                        ><span>Absolutely brutal</span>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">scale</span><span>→</span
+                    ><span class="store">Numeric_Value__c</span>
+                    <span
+                        >config: min 0/1 · max 5·7·10 · end labels ·
+                        showNumbers</span
+                    >
+                </div>
+            </article>
+
+            <!-- 4 · Emoji scale -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">04</span
+                    ><span class="qlabel"
+                        >How did Saturday's trail event leave you feeling?</span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="emoji-row"
+                        role="radiogroup"
+                        aria-label="Sentiment"
+                        data-widget="emoji"
+                    >
+                        <button
+                            role="radio"
+                            aria-checked="false"
+                            aria-label="Very unhappy"
+                        >
+                            <svg viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="19" />
+                                <path d="M16 33q8-6 16 0" />
+                                <path d="M15 17l6 3M33 17l-6 3" />
+                            </svg>
+                        </button>
+                        <button
+                            role="radio"
+                            aria-checked="false"
+                            aria-label="Unhappy"
+                        >
+                            <svg viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="19" />
+                                <path d="M16 32q8-5 16 0" />
+                                <circle cx="17" cy="19" r="1.4" />
+                                <circle cx="31" cy="19" r="1.4" />
+                            </svg>
+                        </button>
+                        <button
+                            role="radio"
+                            aria-checked="false"
+                            aria-label="Neutral"
+                        >
+                            <svg viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="19" />
+                                <path d="M16 31h16" />
+                                <circle cx="17" cy="19" r="1.4" />
+                                <circle cx="31" cy="19" r="1.4" />
+                            </svg>
+                        </button>
+                        <button
+                            role="radio"
+                            aria-checked="false"
+                            aria-label="Happy"
+                        >
+                            <svg viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="19" />
+                                <path d="M16 29q8 6 16 0" />
+                                <circle cx="17" cy="19" r="1.4" />
+                                <circle cx="31" cy="19" r="1.4" />
+                            </svg>
+                        </button>
+                        <button
+                            role="radio"
+                            aria-checked="false"
+                            aria-label="Delighted"
+                        >
+                            <svg viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="19" />
+                                <path d="M15 28q9 9 18 0z" />
+                                <path d="M14 19q3-3 6 0M28 19q3-3 6 0" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">emojiScale</span><span>→</span
+                    ><span class="store">Numeric_Value__c</span>
+                    <span
+                        >config: points 3/5 · SVG faces (theme-tinted, identical
+                        on every OS) · open question §10 Q3</span
+                    >
+                </div>
+            </article>
+
+            <!-- 5 · Likert -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">05</span
+                    ><span class="qlabel"
+                        >"Checkout at the rental counter was effortless."</span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="likert"
+                        role="radiogroup"
+                        aria-label="Agreement"
+                        data-widget="likert"
+                    >
+                        <button class="chip" role="radio" aria-checked="false">
+                            Strongly disagree
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            Disagree
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            Neutral
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            Agree
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            Strongly agree
+                        </button>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">likert</span><span>→</span
+                    ><span class="store">Numeric_Value__c + Text_Value__c</span>
+                    <span
+                        >config: points 5/7 · label presets (Agreement,
+                        Satisfaction, Frequency…) · showNA</span
+                    >
+                    <span
+                        >narrow: pills stack full-width — labels never truncate
+                        (resize to see)</span
+                    >
+                </div>
+            </article>
+
+            <!-- 6 · Slider -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">06</span
+                    ><span class="qlabel"
+                        >What's a comfortable daypack budget for you?</span
+                    >
+                </div>
+                <div class="qbody">
+                    <div class="sliderbox">
+                        <span class="bubble" id="slider-out">$180</span>
+                        <input
+                            type="range"
+                            min="50"
+                            max="400"
+                            step="10"
+                            value="180"
+                            aria-label="Budget in dollars"
+                            id="slider-in"
+                        />
+                        <div class="scale-ends">
+                            <span>$50</span><span>$400</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">field · renderAs Slider</span
+                    ><span>→</span><span class="store">Numeric_Value__c</span>
+                    <span
+                        >config: min · max · step (already in the
+                        registry)</span
+                    >
+                </div>
+            </article>
+        </section>
+
+        <!-- ============ CHOICES ============ -->
+        <section class="family" id="choices">
+            <header>
+                <span class="eyebrow">Family 2 of 4</span>
+                <h2>Choices</h2>
+                <p class="sub">
+                    One machinery, three presentations — List, Chips, Cards —
+                    plus picture tiles. Pick-one fills; pick-many rings and
+                    checks.
+                </p>
+            </header>
+
+            <!-- 7 · Yes / No -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">07</span
+                    ><span class="qlabel"
+                        >Would you rent from us again?<span class="req"
+                            >*</span
+                        ></span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="yesno"
+                        role="radiogroup"
+                        aria-label="Yes or no"
+                        data-widget="yesno"
+                    >
+                        <button class="chip" role="radio" aria-checked="false">
+                            <svg viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Yes
+                        </button>
+                        <button class="chip" role="radio" aria-checked="false">
+                            <svg viewBox="0 0 20 20">
+                                <path d="M5 5l10 10M15 5L5 15" /></svg
+                            >No
+                        </button>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">yesNo</span><span>→</span
+                    ><span class="store">Boolean_Value__c</span>
+                    <span
+                        >side-by-side buttons, not a toggle — a toggle reads as
+                        a setting, not a question</span
+                    >
+                </div>
+            </article>
+
+            <!-- 8 · Single choice · cards -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">08</span
+                    ><span class="qlabel"
+                        >What brings you outdoors most often?<span class="req"
+                            >*</span
+                        ></span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="optcards"
+                        role="radiogroup"
+                        aria-label="Activity"
+                        data-widget="cards"
+                    >
+                        <button
+                            class="optcard"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="radio"></span
+                            ><span
+                                ><b>Weekend day-hikes</b
+                                ><small
+                                    >A few hours out, home by dinner</small
+                                ></span
+                            >
+                        </button>
+                        <button
+                            class="optcard"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="radio"></span
+                            ><span
+                                ><b>Multi-day treks</b
+                                ><small
+                                    >Tent, stove, and a heavy pack</small
+                                ></span
+                            >
+                        </button>
+                        <button
+                            class="optcard"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="radio"></span
+                            ><span
+                                ><b>Trail running</b
+                                ><small>Light, fast, minimal gear</small></span
+                            >
+                        </button>
+                        <button
+                            class="optcard"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="radio"></span
+                            ><span
+                                ><b>Mostly browsing</b
+                                ><small
+                                    >The gear aisle is the destination</small
+                                ></span
+                            >
+                        </button>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key"
+                        >field · renderAs Radio · optionStyle Cards</span
+                    ><span>→</span><span class="store">Text_Value__c</span>
+                    <span
+                        >per-option description line · optional icon ·
+                        allowOther</span
+                    >
+                </div>
+            </article>
+
+            <!-- 9 · Multi choice · chips + list -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">09</span
+                    ><span class="qlabel"
+                        >Which categories should we stock deeper?</span
+                    >
+                </div>
+                <p class="qhelp">Pick as many as you like.</p>
+                <div class="qbody">
+                    <div
+                        class="multichips"
+                        role="group"
+                        aria-label="Categories"
+                        data-widget="chips"
+                    >
+                        <button class="mchip" aria-pressed="false">
+                            <svg class="tick" viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Footwear
+                        </button>
+                        <button class="mchip" aria-pressed="false">
+                            <svg class="tick" viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Shelters &amp; tents
+                        </button>
+                        <button class="mchip" aria-pressed="false">
+                            <svg class="tick" viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Cook systems
+                        </button>
+                        <button class="mchip" aria-pressed="false">
+                            <svg class="tick" viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Navigation
+                        </button>
+                        <button class="mchip" aria-pressed="false">
+                            <svg class="tick" viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Winter kit
+                        </button>
+                        <button class="mchip" aria-pressed="false">
+                            <svg class="tick" viewBox="0 0 20 20">
+                                <path d="M3 11l5 5L17 5" /></svg
+                            >Dog gear
+                        </button>
+                    </div>
+                    <p class="qhelp" style="margin: 20px 0 10px">
+                        Same question as classic <strong>List</strong> style —
+                        dense, familiar, zero learning curve:
+                    </p>
+                    <div class="optlist">
+                        <label><input type="checkbox" /> Footwear</label>
+                        <label
+                            ><input type="checkbox" checked /> Shelters &amp;
+                            tents</label
+                        >
+                        <label><input type="checkbox" /> Cook systems</label>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key"
+                        >field · renderAs Checkbox_Group · optionStyle Chips |
+                        List</span
+                    ><span>→</span
+                    ><span class="store">Selected_Options_JSON__c</span>
+                    <span
+                        >stores option values, never labels — labels are
+                        editable</span
+                    >
+                </div>
+            </article>
+
+            <!-- 10 · Dropdown -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">10</span
+                    ><span class="qlabel"
+                        >Which store do you usually visit?</span
+                    >
+                </div>
+                <div class="qbody">
+                    <select class="dd" aria-label="Store">
+                        <option>Choose a store…</option>
+                        <option>Boulder Flagship</option>
+                        <option>Portland Pearl District</option>
+                        <option>Asheville Outpost</option>
+                        <option>Salt Lake City Basecamp</option>
+                        <option>Online only</option>
+                    </select>
+                </div>
+                <div class="specstrip">
+                    <span class="key">field · renderAs Dropdown</span
+                    ><span>→</span><span class="store">Text_Value__c</span>
+                    <span>the right call past ~7 options</span>
+                </div>
+            </article>
+
+            <!-- 11 · Image choice -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">11</span
+                    ><span class="qlabel"
+                        >Which poster should headline the spring launch?<span
+                            class="req"
+                            >*</span
+                        ></span
+                    >
+                </div>
+                <div class="qbody">
+                    <div
+                        class="imggrid"
+                        role="radiogroup"
+                        aria-label="Poster direction"
+                        data-widget="imgchoice"
+                    >
+                        <button
+                            class="imgopt"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="checkbadge"
+                                ><svg viewBox="0 0 20 20">
+                                    <path d="M3 11l5 5L17 5" /></svg
+                            ></span>
+                            <figure style="margin: 0">
+                                <span class="pic p1"></span>
+                                <figcaption>Dusk gradient</figcaption>
+                            </figure>
+                        </button>
+                        <button
+                            class="imgopt"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="checkbadge"
+                                ><svg viewBox="0 0 20 20">
+                                    <path d="M3 11l5 5L17 5" /></svg
+                            ></span>
+                            <figure style="margin: 0">
+                                <span class="pic p2"></span>
+                                <figcaption>Grid minimal</figcaption>
+                            </figure>
+                        </button>
+                        <button
+                            class="imgopt"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="checkbadge"
+                                ><svg viewBox="0 0 20 20">
+                                    <path d="M3 11l5 5L17 5" /></svg
+                            ></span>
+                            <figure style="margin: 0">
+                                <span class="pic p3"></span>
+                                <figcaption>Bold type</figcaption>
+                            </figure>
+                        </button>
+                        <button
+                            class="imgopt"
+                            role="radio"
+                            aria-checked="false"
+                        >
+                            <span class="checkbadge"
+                                ><svg viewBox="0 0 20 20">
+                                    <path d="M3 11l5 5L17 5" /></svg
+                            ></span>
+                            <figure style="margin: 0">
+                                <span class="pic p4"></span>
+                                <figcaption>Organic shapes</figcaption>
+                            </figure>
+                        </button>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">imageChoice</span><span>→</span
+                    ><span class="store"
+                        >Text_Value__c (option value — never the image)</span
+                    >
+                    <span
+                        >config: multiple · columns 2·3·4 · tileRatio · alt text
+                        required (publish-gated)</span
+                    >
+                    <span
+                        >narrow: 4 cols → 2 (container query — resize to
+                        see)</span
+                    >
+                </div>
+            </article>
+        </section>
+
+        <!-- ============ OPEN & TYPED ============ -->
+        <section class="family" id="open">
+            <header>
+                <span class="eyebrow">Family 3 of 4</span>
+                <h2>Open &amp; typed</h2>
+                <p class="sub">
+                    The existing field machinery, unbound. Free words go to text
+                    columns; facts go to their typed columns so they stay
+                    countable.
+                </p>
+            </header>
+
+            <!-- 12 · Text -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">12</span
+                    ><span class="qlabel"
+                        >One word for your last trip. Then — what should we
+                        build next?</span
+                    >
+                </div>
+                <div class="qbody">
+                    <input
+                        class="ti"
+                        maxlength="40"
+                        placeholder="One word…"
+                        aria-label="One word"
+                        data-counter="c-short"
+                        style="max-width: 320px"
+                    />
+                    <div class="counter" id="c-short" style="max-width: 320px">
+                        0 / 40
+                    </div>
+                    <textarea
+                        class="ta"
+                        maxlength="500"
+                        placeholder="Dream gear, dream trail, dream feature — we're listening."
+                        aria-label="What should we build next"
+                        data-counter="c-long"
+                        style="margin-top: 14px"
+                    ></textarea>
+                    <div class="counter" id="c-long">0 / 500</div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">field · Short / Long Text</span
+                    ><span>→</span><span class="store">Text_Value__c</span>
+                    <span
+                        >auto-grow textarea · maxLength + live counter · long
+                        text is the L2 sentiment substrate</span
+                    >
+                </div>
+            </article>
+
+            <!-- 13 · Typed facts -->
+            <article class="qcard">
+                <div class="qhead">
+                    <span class="qnum">13</span
+                    ><span class="qlabel">A few details about that trip</span>
+                </div>
+                <div class="qbody">
+                    <div class="factgrid">
+                        <label
+                            >Start date<input
+                                class="ti"
+                                type="date"
+                                aria-label="Start date"
+                        /></label>
+                        <label
+                            >Nights out<input
+                                class="ti"
+                                type="number"
+                                min="0"
+                                max="60"
+                                placeholder="3"
+                                aria-label="Nights out"
+                        /></label>
+                        <label
+                            >Email for the results<input
+                                class="ti"
+                                type="email"
+                                placeholder="you@trailmail.com"
+                                aria-label="Email"
+                        /></label>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key"
+                        >field · inputType date / number / email / phone</span
+                    ><span>→</span
+                    ><span class="store"
+                        >Date_Value__c · Numeric_Value__c · Text_Value__c</span
+                    >
+                    <span
+                        >validation presets (email, phone, range) already exist
+                        — spec §7</span
+                    >
+                </div>
+            </article>
+        </section>
+
+        <!-- ============ V2 ============ -->
+        <section class="family" id="v2">
+            <header>
+                <span class="eyebrow">Family 4 of 4</span>
+                <h2>Reserved for v2</h2>
+                <p class="sub">
+                    Keys reserved today, built later — ignore-unknown means
+                    shipping them costs old runtimes nothing. Dashed border =
+                    not in v1.
+                </p>
+            </header>
+
+            <article class="qcard v2">
+                <div class="qhead">
+                    <span class="qnum">—</span
+                    ><span class="qlabel"
+                        >Rank what matters most when picking a pack</span
+                    ><span class="badge-v2">v2 · key reserved</span>
+                </div>
+                <div class="qbody">
+                    <ol class="rank">
+                        <li>
+                            <span class="pos">1</span>Fit &amp; comfort<span
+                                class="grip"
+                                >⠿</span
+                            >
+                        </li>
+                        <li>
+                            <span class="pos">2</span>Weight<span class="grip"
+                                >⠿</span
+                            >
+                        </li>
+                        <li>
+                            <span class="pos">3</span>Durability<span
+                                class="grip"
+                                >⠿</span
+                            >
+                        </li>
+                        <li>
+                            <span class="pos">4</span>Price<span class="grip"
+                                >⠿</span
+                            >
+                        </li>
+                    </ol>
+                </div>
+                <div class="specstrip">
+                    <span class="key">ranking</span><span>→</span
+                    ><span class="store"
+                        >Selected_Options_JSON__c (ordered)</span
+                    >
+                    <span>drag to order · keyboard: move up/down buttons</span>
+                </div>
+            </article>
+
+            <article class="qcard v2">
+                <div class="qhead">
+                    <span class="qnum">—</span
+                    ><span class="qlabel">How was pickup day?</span
+                    ><span class="badge-v2">v2 · key reserved</span>
+                </div>
+                <div class="qbody">
+                    <div class="matrix-scroll">
+                        <table class="matrix">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Strongly disagree</th>
+                                    <th>Disagree</th>
+                                    <th>Neutral</th>
+                                    <th>Agree</th>
+                                    <th>Strongly agree</th>
+                                </tr>
+                            </thead>
+                            <tbody data-widget="matrix">
+                                <tr>
+                                    <td>Booking was easy</td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Strongly disagree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Disagree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Neutral"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Agree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Strongly agree"
+                                        ></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Staff were helpful</td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Strongly disagree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Disagree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Neutral"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Agree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Strongly agree"
+                                        ></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Gear was ready on time</td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Strongly disagree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Disagree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Neutral"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Agree"
+                                        ></button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            class="mdot"
+                                            role="radio"
+                                            aria-checked="false"
+                                            aria-label="Strongly agree"
+                                        ></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="specstrip">
+                    <span class="key">matrix</span><span>→</span
+                    ><span class="store">one answer row per matrix row</span>
+                    <span
+                        >rows share one scale · horizontal scroll on narrow,
+                        never squished columns</span
+                    >
+                </div>
+            </article>
+        </section>
+
+        <footer class="colophon">
+            Companion to <strong>docs/FinalDesign/SURVEY_PLAN.md</strong> §2.
+            Not shown here: File Upload and Signature (existing widgets,
+            unchanged in surveys) and the oneAtATime conversational layout —
+            this page shows the widgets; the layout wraps them one section per
+            screen.
+        </footer>
+    </main>
+</div>
+
+<script>
+    (function () {
+        var root = document.documentElement;
+
+        /* accent swatches */
+        document.querySelectorAll('.swatch').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.swatch').forEach(function (b) {
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                btn.setAttribute('aria-pressed', 'true');
+                root.style.setProperty('--accent', btn.dataset.accent);
+            });
+        });
+
+        /* density */
+        document.querySelectorAll('[data-density]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                btn.parentElement
+                    .querySelectorAll('button')
+                    .forEach(function (b) {
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                btn.setAttribute('aria-pressed', 'true');
+                if (btn.dataset.density === 'compact') {
+                    root.setAttribute('data-density', 'compact');
+                } else {
+                    root.removeAttribute('data-density');
+                }
+            });
+        });
+
+        /* generic pick-one groups (chips, likert, yes/no, cards, image, emoji, matrix rows) */
+        function pickOne(container, onPick) {
+            container.addEventListener('click', function (e) {
+                var btn = e.target.closest('[role="radio"]');
+                if (!btn || !container.contains(btn)) return;
+                container
+                    .querySelectorAll('[role="radio"]')
+                    .forEach(function (b) {
+                        b.setAttribute('aria-checked', 'false');
+                    });
+                btn.setAttribute('aria-checked', 'true');
+                if (onPick) onPick(btn);
+            });
+        }
+        document
+            .querySelectorAll(
+                '[data-widget="scale"], [data-widget="likert"], [data-widget="yesno"], [data-widget="cards"], [data-widget="imgchoice"], [data-widget="emoji"]'
+            )
+            .forEach(function (g) {
+                pickOne(g);
+            });
+
+        /* NPS + follow-up reveal */
+        var nps = document.querySelector('[data-widget="nps"]');
+        pickOne(nps, function (btn) {
+            document.getElementById('nps-followup').hidden =
+                parseInt(btn.textContent, 10) > 6;
+        });
+
+        /* matrix: pick-one per row */
+        document
+            .querySelectorAll('[data-widget="matrix"] tr')
+            .forEach(function (row) {
+                pickOne(row);
+            });
+
+        /* multi chips */
+        document.querySelectorAll('.mchip').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                chip.setAttribute(
+                    'aria-pressed',
+                    chip.getAttribute('aria-pressed') === 'true'
+                        ? 'false'
+                        : 'true'
+                );
+            });
+        });
+
+        /* rating: build 5 icons, hover + select fill, icon variant swap */
+        var ICONS = {
+            star: 'M17 3l4.1 8.6 9.4 1.2-6.9 6.5 1.8 9.3L17 24l-8.4 4.6 1.8-9.3-6.9-6.5 9.4-1.2z',
+            heart: 'M17 29S4 21 4 12.5C4 8 7.5 5 11.3 5c2.4 0 4.6 1.2 5.7 3.2C18.1 6.2 20.3 5 22.7 5 26.5 5 30 8 30 12.5 30 21 17 29 17 29z',
+            thumb: 'M8 15h4v14H8zM12 28V16l6-11c1.8.4 3 2 2.6 4l-1 4.5H26c1.8 0 3.2 1.7 2.8 3.5l-1.9 8.2c-.3 1.6-1.7 2.8-3.4 2.8z'
+        };
+        var ratingRow = document.querySelector('.rating-row');
+        var ratingVal = 0;
+        function buildRating(iconKey) {
+            ratingRow.innerHTML = '';
+            for (var i = 1; i <= 5; i++) {
+                (function (n) {
+                    var b = document.createElement('button');
+                    b.setAttribute('role', 'radio');
+                    b.setAttribute(
+                        'aria-checked',
+                        n === ratingVal ? 'true' : 'false'
+                    );
+                    b.setAttribute('aria-label', n + ' of 5');
+                    b.innerHTML =
+                        '<svg viewBox="0 0 34 34"><path d="' +
+                        ICONS[iconKey] +
+                        '"/></svg>';
+                    b.addEventListener('click', function () {
+                        ratingVal = n;
+                        paint(n);
+                    });
+                    b.addEventListener('mouseenter', function () {
+                        paint(n);
+                    });
+                    ratingRow.appendChild(b);
+                })(i);
+            }
+            ratingRow.addEventListener('mouseleave', function () {
+                paint(ratingVal);
+            });
+            paint(ratingVal);
+        }
+        function paint(upTo) {
+            ratingRow.querySelectorAll('button').forEach(function (b, idx) {
+                b.classList.toggle('lit', idx < upTo);
+                b.setAttribute(
+                    'aria-checked',
+                    idx + 1 === ratingVal ? 'true' : 'false'
+                );
+            });
+        }
+        buildRating('star');
+        document.querySelectorAll('[data-icon]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                btn.parentElement
+                    .querySelectorAll('button')
+                    .forEach(function (b) {
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                btn.setAttribute('aria-pressed', 'true');
+                buildRating(btn.dataset.icon);
+            });
+        });
+
+        /* slider bubble */
+        var sIn = document.getElementById('slider-in');
+        var sOut = document.getElementById('slider-out');
+        sIn.addEventListener('input', function () {
+            sOut.textContent = '$' + sIn.value;
+        });
+
+        /* live counters */
+        document.querySelectorAll('[data-counter]').forEach(function (el) {
+            var out = document.getElementById(el.dataset.counter);
+            var max = el.getAttribute('maxlength');
+            el.addEventListener('input', function () {
+                out.textContent = el.value.length + ' / ' + max;
+            });
+        });
+    })();
+</script>
