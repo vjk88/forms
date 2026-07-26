@@ -1,0 +1,1785 @@
+<title>Survey Renderings — Card Deck & Chat Thread</title>
+<style>
+    :root {
+        --accent: #5b4fe8;
+        --accent-soft: #eeecfd;
+        --on-accent: #ffffff;
+        --bg: #f7f8fc;
+        --dot: #c9cee3;
+        --panel: #ffffff;
+        --field: #f1f3fa;
+        --field-hover: #e7eaf6;
+        --ink: #171923;
+        --muted: #6a7186;
+        --line: #e4e7f2;
+        --shadow:
+            0 1px 2px rgba(23, 25, 35, 0.05), 0 10px 30px rgba(23, 25, 35, 0.08);
+        --r: 12px;
+        --r-lg: 18px;
+        --sans: -apple-system, 'Segoe UI', system-ui, Roboto, sans-serif;
+        --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --accent: #6b5ff0;
+            --accent-soft: #262347;
+            --bg: #12141c;
+            --dot: #262a3a;
+            --panel: #1a1d28;
+            --field: #232736;
+            --field-hover: #2b3042;
+            --ink: #eceef6;
+            --muted: #9aa1b5;
+            --line: #2c3145;
+            --shadow:
+                0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+    }
+    :root[data-theme='light'] {
+        --accent: #5b4fe8;
+        --accent-soft: #eeecfd;
+        --bg: #f7f8fc;
+        --dot: #c9cee3;
+        --panel: #ffffff;
+        --field: #f1f3fa;
+        --field-hover: #e7eaf6;
+        --ink: #171923;
+        --muted: #6a7186;
+        --line: #e4e7f2;
+        --shadow:
+            0 1px 2px rgba(23, 25, 35, 0.05), 0 10px 30px rgba(23, 25, 35, 0.08);
+    }
+    :root[data-theme='dark'] {
+        --accent: #6b5ff0;
+        --accent-soft: #262347;
+        --bg: #12141c;
+        --dot: #262a3a;
+        --panel: #1a1d28;
+        --field: #232736;
+        --field-hover: #2b3042;
+        --ink: #eceef6;
+        --muted: #9aa1b5;
+        --line: #2c3145;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+    body {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 15.5px;
+        line-height: 1.5;
+        color: var(--ink);
+        background-color: var(--bg);
+        /* dot grid matches the owner-supplied reference screenshots */
+        background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+        background-size: 26px 26px;
+        -webkit-font-smoothing: antialiased;
+    }
+    button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+    }
+    :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 6px;
+    }
+
+    /* ---------- top chrome ---------- */
+    .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: color-mix(in srgb, var(--panel) 88%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .brand {
+        font-weight: 800;
+        letter-spacing: -0.01em;
+    }
+    .brand span {
+        color: var(--accent);
+    }
+    .modeseg {
+        display: inline-flex;
+        background: var(--field);
+        border-radius: 999px;
+        padding: 4px;
+        gap: 2px;
+        margin-inline: auto;
+    }
+    .modeseg button {
+        border: 0;
+        background: transparent;
+        border-radius: 999px;
+        padding: 7px 18px;
+        font-weight: 700;
+        font-size: 13.5px;
+        color: var(--muted);
+    }
+    .modeseg button[aria-pressed='true'] {
+        background: var(--accent);
+        color: var(--on-accent);
+    }
+    .stepmeta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        min-width: 180px;
+        justify-content: flex-end;
+    }
+    .progress {
+        width: 90px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--field);
+        overflow: hidden;
+    }
+    .progress i {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        transition: width 240ms ease;
+    }
+
+    /* ---------- card-deck stage ---------- */
+    .stage {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 20px 96px;
+    }
+    .eyebrow-chip {
+        display: inline-block;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 11.5px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border-radius: 999px;
+        padding: 6px 14px;
+        margin-bottom: 16px;
+    }
+    .qtitle {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        line-height: 1.2;
+        margin: 0 0 6px;
+        text-wrap: balance;
+    }
+    .qtitle .quote {
+        color: var(--accent);
+        display: block;
+    }
+    .qsub {
+        color: var(--muted);
+        margin: 0 0 30px;
+        font-size: 15px;
+    }
+    .centered {
+        text-align: center;
+    }
+    .qpanel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow);
+        padding: 30px;
+        text-align: left;
+    }
+    .deck-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 26px;
+    }
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--accent);
+        color: var(--on-accent);
+        border: 0;
+        border-radius: 10px;
+        padding: 13px 26px;
+        font-weight: 700;
+        font-size: 15px;
+        transition:
+            transform 120ms,
+            filter 120ms;
+    }
+    .btn:hover {
+        filter: brightness(1.08);
+    }
+    .btn:active {
+        transform: scale(0.98);
+    }
+    .ghost {
+        background: none;
+        border: 0;
+        color: var(--muted);
+        font-weight: 700;
+        padding: 12px 4px;
+    }
+    .ghost:hover {
+        color: var(--ink);
+    }
+
+    /* keycap scales (NPS / opinion) */
+    .keycaps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+    .keycap {
+        min-width: 47px;
+        padding: 13px 0;
+        background: var(--panel);
+        border: 1.5px solid var(--line);
+        border-radius: 10px;
+        box-shadow: 0 2px 0 var(--line);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        transition:
+            background 120ms,
+            border-color 120ms,
+            transform 120ms,
+            color 120ms;
+    }
+    .keycap:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+    .keycap[aria-checked='true'] {
+        background: var(--accent);
+        border-color: var(--accent);
+        box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 60%, #000);
+        color: var(--on-accent);
+    }
+    .cap-ends {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 16px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--muted);
+    }
+    .cap-ends .hi {
+        color: var(--accent);
+    }
+    .funfact {
+        display: flex;
+        gap: 10px;
+        background: var(--accent-soft);
+        color: color-mix(in srgb, var(--accent) 70%, var(--ink));
+        border-radius: var(--r);
+        padding: 14px 16px;
+        font-size: 13.5px;
+        font-style: italic;
+        margin-top: 22px;
+    }
+    .funfact b {
+        font-style: normal;
+    }
+
+    /* emoji option cards (likert / yes-no / single) */
+    .ecards {
+        display: grid;
+        gap: 12px;
+    }
+    .ecards.cols2 {
+        grid-template-columns: 1fr 1fr;
+    }
+    .ecard {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--panel);
+        border: 1.5px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 18px;
+        text-align: left;
+        font-weight: 700;
+        font-size: 15.5px;
+        transition:
+            background 120ms,
+            border-color 120ms,
+            color 120ms,
+            transform 120ms;
+    }
+    .ecard:hover {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+    }
+    .ecard .emo {
+        font-size: 26px;
+        line-height: 1;
+    }
+    .ecard small {
+        display: block;
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 13px;
+    }
+    .ecard .check {
+        margin-left: auto;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid var(--line);
+        flex: none;
+        display: grid;
+        place-items: center;
+        transition:
+            border-color 120ms,
+            background 120ms;
+    }
+    .ecard .check svg {
+        width: 12px;
+        height: 12px;
+        stroke: var(--on-accent);
+        stroke-width: 3;
+        fill: none;
+        stroke-linecap: round;
+        opacity: 0;
+    }
+    .ecard[aria-checked='true'] {
+        background: var(--accent);
+        border-color: color-mix(in srgb, var(--accent) 60%, #000);
+        color: var(--on-accent);
+    }
+    .ecard[aria-checked='true'] small {
+        color: color-mix(in srgb, var(--on-accent) 75%, transparent);
+    }
+    .ecard[aria-checked='true'] .check {
+        border-color: var(--on-accent);
+    }
+    .ecard[aria-checked='true'] .check svg {
+        opacity: 1;
+    }
+
+    /* big-emoji rows (rating / emoji scale) */
+    .bigemoji {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+    }
+    .bigemoji button {
+        background: none;
+        border: 2px solid transparent;
+        border-radius: 16px;
+        padding: 8px 10px;
+        font-size: 38px;
+        line-height: 1;
+        filter: grayscale(1) opacity(0.55);
+        transition:
+            filter 120ms,
+            transform 120ms,
+            border-color 120ms;
+    }
+    .bigemoji button:hover {
+        filter: none;
+        transform: scale(1.12);
+    }
+    .bigemoji button.lit,
+    .bigemoji button[aria-checked='true'] {
+        filter: none;
+    }
+    .bigemoji button[aria-checked='true'] {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        transform: scale(1.12);
+    }
+
+    /* pills (multi) */
+    .pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--panel);
+        border: 1.5px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-weight: 700;
+        transition:
+            border-color 120ms,
+            background 120ms,
+            color 120ms;
+    }
+    .pill:hover {
+        border-color: var(--accent);
+    }
+    .pill[aria-pressed='true'] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+    }
+
+    /* ranking */
+    .rankstack {
+        display: grid;
+        gap: 12px;
+    }
+    .rankrow {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--panel);
+        border: 1.5px solid var(--line);
+        border-radius: 14px;
+        padding: 13px 16px;
+        font-weight: 700;
+        box-shadow: var(--shadow);
+    }
+    .rankrow:first-child {
+        border-color: var(--accent);
+    }
+    .rankbadge {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--field);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+        display: grid;
+        place-items: center;
+        flex: none;
+    }
+    .rankrow:first-child .rankbadge {
+        background: var(--accent);
+        color: var(--on-accent);
+    }
+    .rankctl {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .rankctl button {
+        background: none;
+        border: 0;
+        color: var(--muted);
+        padding: 6px;
+        border-radius: 8px;
+        line-height: 0;
+    }
+    .rankctl button:hover:not(:disabled) {
+        background: var(--field);
+        color: var(--accent);
+    }
+    .rankctl button:disabled {
+        opacity: 0.3;
+        cursor: default;
+    }
+    .rankctl svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .grip {
+        color: var(--muted);
+        font-size: 15px;
+        letter-spacing: 2px;
+        cursor: grab;
+        padding-left: 4px;
+    }
+
+    /* posters (image choice) */
+    .posters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    .poster {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        padding: 6px;
+        position: relative;
+        text-align: left;
+        transition:
+            border-color 120ms,
+            transform 120ms;
+    }
+    .poster:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+    }
+    .poster[aria-checked='true'] {
+        border-color: var(--accent);
+    }
+    .poster .pic {
+        display: block;
+        aspect-ratio: 1;
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+    .poster figcaption {
+        font-size: 13px;
+        font-weight: 700;
+        padding: 8px 4px 4px;
+    }
+    .poster .cbadge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: none;
+        place-items: center;
+    }
+    .poster .cbadge svg {
+        width: 13px;
+        height: 13px;
+        stroke: var(--on-accent);
+        stroke-width: 3;
+        fill: none;
+        stroke-linecap: round;
+    }
+    .poster[aria-checked='true'] .cbadge {
+        display: grid;
+    }
+    .g1 {
+        background: linear-gradient(
+            160deg,
+            #2d3561 10%,
+            #b0567a 55%,
+            #e8a15d 95%
+        );
+    }
+    .g2 {
+        background: repeating-linear-gradient(
+            45deg,
+            #e9e6df 0 12px,
+            #d95f43 12px 14px
+        );
+    }
+    .g3 {
+        background: #1c1a17;
+    }
+    .g3::after {
+        content: 'SPRING';
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        color: #f2ede2;
+        font-weight: 800;
+        font-size: 17px;
+        letter-spacing: 0.14em;
+    }
+    .g4 {
+        background:
+            radial-gradient(
+                120% 90% at 20% 15%,
+                #cfe3d6 0 30%,
+                transparent 31%
+            ),
+            radial-gradient(
+                130% 100% at 85% 80%,
+                #7fae94 0 45%,
+                transparent 46%
+            ),
+            #3d6b55;
+    }
+
+    /* inputs */
+    .ti,
+    .ta,
+    .dd {
+        width: 100%;
+        background: var(--field);
+        color: var(--ink);
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        padding: 13px 16px;
+        font: inherit;
+    }
+    .ti:focus,
+    .ta:focus,
+    .dd:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+        border-color: transparent;
+    }
+    .ta {
+        min-height: 150px;
+        resize: vertical;
+    }
+    .dd {
+        appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" fill="none" stroke="%236a7186" stroke-width="2" stroke-linecap="round"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        padding-right: 42px;
+    }
+    .factrow {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+    }
+    .factrow label {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    /* final text step furniture */
+    .ta-foot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+    .wordchip {
+        background: var(--field);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    .ta-foot .cheer {
+        color: var(--muted);
+        font-size: 13px;
+    }
+    .ta-foot .btn {
+        margin-left: auto;
+    }
+    .prompts {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+        justify-content: center;
+    }
+    .prompt {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        transition:
+            border-color 120ms,
+            color 120ms;
+    }
+    .prompt:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    /* slider */
+    .sliderwrap {
+        max-width: 460px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .bigval {
+        font-size: 40px;
+        font-weight: 800;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 14px;
+    }
+    input[type='range'] {
+        width: 100%;
+        appearance: none;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--field-hover);
+        accent-color: var(--accent);
+    }
+    input[type='range']::-webkit-slider-thumb {
+        appearance: none;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 4px solid var(--panel);
+        box-shadow: var(--shadow);
+    }
+    input[type='range']::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 4px solid var(--panel);
+    }
+    .range-ends {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 10px;
+    }
+
+    .fin {
+        text-align: center;
+        padding: 40px 0;
+    }
+    .fin .party {
+        font-size: 64px;
+    }
+    .fin h2 {
+        font-size: 30px;
+        font-weight: 800;
+        margin: 12px 0 6px;
+    }
+    .fin p {
+        color: var(--muted);
+    }
+    .fin code {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--accent);
+    }
+
+    /* ---------- chat mode ---------- */
+    .chatframe {
+        max-width: 620px;
+        margin: 36px auto 90px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+    .chathead {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line);
+    }
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+        flex: none;
+    }
+    .chathead b {
+        display: block;
+        font-size: 15px;
+    }
+    .chathead small {
+        color: var(--muted);
+        font-size: 12.5px;
+    }
+    .chathead .live {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+    }
+    .live i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #34a06c;
+    }
+    .thread {
+        padding: 22px 20px;
+        display: grid;
+        gap: 14px;
+        min-height: 320px;
+    }
+    .bub {
+        max-width: 82%;
+        padding: 12px 16px;
+        border-radius: 18px;
+    }
+    .bub.bot {
+        background: var(--field);
+        border-bottom-left-radius: 6px;
+        justify-self: start;
+    }
+    .bub.me {
+        background: var(--accent);
+        color: var(--on-accent);
+        border-bottom-right-radius: 6px;
+        justify-self: end;
+        font-weight: 700;
+    }
+    .bub .bq {
+        font-weight: 800;
+    }
+    .bub small {
+        display: block;
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 2px;
+    }
+    .chatwidget {
+        justify-self: start;
+        width: 100%;
+    }
+    .chatwidget .pills,
+    .chatwidget .keycaps {
+        justify-content: flex-start;
+    }
+    .chatwidget .keycap {
+        min-width: 42px;
+        padding: 10px 0;
+    }
+    .chatwidget .bigemoji {
+        justify-content: flex-start;
+    }
+    .chatwidget .bigemoji button {
+        font-size: 30px;
+    }
+    .chatwidget .ecards {
+        max-width: 420px;
+    }
+    .chatwidget .ecard {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    .chatwidget .posters {
+        grid-template-columns: 1fr 1fr;
+        max-width: 360px;
+    }
+    .chatwidget .ta {
+        min-height: 90px;
+    }
+    .chatwidget .sendrow {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .chatwidget .btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    .chatwidget .rankstack {
+        max-width: 420px;
+    }
+    .typing {
+        display: inline-flex;
+        gap: 5px;
+        padding: 14px 16px;
+    }
+    .typing i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        animation: blink 1s infinite;
+    }
+    .typing i:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+    .typing i:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+    @keyframes blink {
+        0%,
+        60%,
+        100% {
+            opacity: 0.25;
+        }
+        30% {
+            opacity: 1;
+        }
+    }
+    .restart {
+        display: block;
+        margin: 20px auto 0;
+    }
+
+    .footnote {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 0 20px 60px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 12.5px;
+    }
+    .footnote code {
+        font-family: var(--mono);
+        color: var(--accent);
+    }
+
+    [hidden] {
+        display: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            transition: none !important;
+            animation: none !important;
+        }
+        .keycap:hover,
+        .ecard:hover,
+        .poster:hover,
+        .bigemoji button:hover,
+        .bigemoji button[aria-checked='true'] {
+            transform: none;
+        }
+    }
+    @media (max-width: 620px) {
+        .qtitle {
+            font-size: 24px;
+        }
+        .qpanel {
+            padding: 20px;
+        }
+        .ecards.cols2 {
+            grid-template-columns: 1fr;
+        }
+        .stepmeta {
+            min-width: 0;
+        }
+    }
+</style>
+
+<header class="topbar">
+    <div class="brand">Acme <span>Pulse</span></div>
+    <div class="modeseg" role="group" aria-label="Rendering">
+        <button id="mode-deck" aria-pressed="true">🎴 Card Deck</button>
+        <button id="mode-chat" aria-pressed="false">💬 Chat Thread</button>
+    </div>
+    <div class="stepmeta" id="stepmeta">
+        <span id="stepcount">Step 1 of 14</span>
+        <span class="progress"><i id="stepbar"></i></span>
+    </div>
+</header>
+
+<main class="stage centered" id="deck"></main>
+
+<div id="chat" hidden>
+    <div class="chatframe">
+        <div class="chathead">
+            <div class="avatar">🦉</div>
+            <div><b>Ivy from Acme</b><small>Survey assistant</small></div>
+            <span class="live"><i></i> Online</span>
+        </div>
+        <div class="thread" id="thread"></div>
+    </div>
+    <button class="ghost restart" id="chat-restart">
+        ↻ Restart the conversation
+    </button>
+</div>
+
+<p class="footnote">
+    Rendering-pack demo for <code>SURVEY_PLAN.md</code> — one spec, two
+    presentations. Every answer still lands in the same typed answer-store
+    columns; only the rendering changes.
+</p>
+
+<script>
+    (function () {
+        'use strict';
+        var CHECK =
+            '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 11l5 5L17 5"/></svg>';
+        var UP =
+            '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 16V4M5 9l5-5 5 5"/></svg>';
+        var DOWN =
+            '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M5 11l5 5 5-5"/></svg>';
+
+        function el(tag, cls, html) {
+            var n = document.createElement(tag);
+            if (cls) n.className = cls;
+            if (html !== undefined) n.innerHTML = html;
+            return n;
+        }
+        function pickOne(container, sel, cb) {
+            container.addEventListener('click', function (e) {
+                var b = e.target.closest(sel);
+                if (!b || !container.contains(b)) return;
+                container.querySelectorAll(sel).forEach(function (x) {
+                    x.setAttribute('aria-checked', 'false');
+                });
+                b.setAttribute('aria-checked', 'true');
+                cb(b);
+            });
+        }
+
+        /* ---------------- widget builders (shared by both renderings) ---------------- */
+        var W = {};
+
+        W.keycaps = function (min, max, ends, fact, onPick) {
+            var wrap = el('div');
+            var row = el('div', 'keycaps');
+            row.setAttribute('role', 'radiogroup');
+            for (var i = min; i <= max; i++) {
+                var b = el('button', 'keycap', String(i));
+                b.setAttribute('role', 'radio');
+                b.setAttribute('aria-checked', 'false');
+                row.appendChild(b);
+            }
+            pickOne(row, '.keycap', function (b) {
+                onPick(parseInt(b.textContent, 10));
+            });
+            wrap.appendChild(row);
+            if (ends)
+                wrap.appendChild(
+                    el(
+                        'div',
+                        'cap-ends',
+                        '<span>' +
+                            ends[0] +
+                            '</span><span class="hi">' +
+                            ends[1] +
+                            '</span>'
+                    )
+                );
+            if (fact)
+                wrap.appendChild(
+                    el(
+                        'div',
+                        'funfact',
+                        '<span>ⓘ</span><span><b>Did you know?</b> ' +
+                            fact +
+                            '</span>'
+                    )
+                );
+            return wrap;
+        };
+
+        W.bigEmoji = function (emojis, fillMode, onPick) {
+            var row = el('div', 'bigemoji');
+            row.setAttribute('role', 'radiogroup');
+            emojis.forEach(function (e, idx) {
+                var b = el('button', '', e);
+                b.setAttribute('role', 'radio');
+                b.setAttribute('aria-checked', 'false');
+                b.setAttribute('aria-label', idx + 1 + ' of ' + emojis.length);
+                row.appendChild(b);
+            });
+            function paint(n) {
+                row.querySelectorAll('button').forEach(function (b, i) {
+                    b.classList.toggle('lit', fillMode && i < n);
+                });
+            }
+            var chosen = 0;
+            row.addEventListener('mouseover', function (e) {
+                var b = e.target.closest('button');
+                if (b && fillMode)
+                    paint(Array.prototype.indexOf.call(row.children, b) + 1);
+            });
+            row.addEventListener('mouseleave', function () {
+                paint(chosen);
+            });
+            pickOne(row, 'button', function (b) {
+                chosen = Array.prototype.indexOf.call(row.children, b) + 1;
+                paint(chosen);
+                onPick(chosen, b.textContent);
+            });
+            return row;
+        };
+
+        W.ecards = function (options, cols2, onPick) {
+            var grid = el('div', 'ecards' + (cols2 ? ' cols2' : ''));
+            grid.setAttribute('role', 'radiogroup');
+            options.forEach(function (o) {
+                var b = el(
+                    'button',
+                    'ecard',
+                    '<span class="emo">' +
+                        o[0] +
+                        '</span><span>' +
+                        o[1] +
+                        (o[2] ? '<small>' + o[2] + '</small>' : '') +
+                        '</span><span class="check">' +
+                        CHECK +
+                        '</span>'
+                );
+                b.setAttribute('role', 'radio');
+                b.setAttribute('aria-checked', 'false');
+                grid.appendChild(b);
+            });
+            pickOne(grid, '.ecard', function (b) {
+                var idx = Array.prototype.indexOf.call(grid.children, b);
+                onPick(options[idx][0] + ' ' + options[idx][1]);
+            });
+            return grid;
+        };
+
+        W.pills = function (options, onChange) {
+            var row = el('div', 'pills');
+            var sel = [];
+            options.forEach(function (o) {
+                var b = el('button', 'pill', o[0] + ' ' + o[1]);
+                b.setAttribute('aria-pressed', 'false');
+                b.addEventListener('click', function () {
+                    var on = b.getAttribute('aria-pressed') !== 'true';
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    var v = o[0] + ' ' + o[1];
+                    if (on) sel.push(v);
+                    else sel.splice(sel.indexOf(v), 1);
+                    onChange(sel.slice());
+                });
+                row.appendChild(b);
+            });
+            return row;
+        };
+
+        W.ranking = function (items, onChange) {
+            var stack = el('div', 'rankstack');
+            var order = items.slice();
+            function render() {
+                stack.innerHTML = '';
+                order.forEach(function (label, i) {
+                    var row = el(
+                        'div',
+                        'rankrow',
+                        '<span class="rankbadge">' +
+                            (i + 1) +
+                            '</span><span>' +
+                            label +
+                            '</span>' +
+                            '<span class="rankctl">' +
+                            '<button data-d="-1" aria-label="Move up"' +
+                            (i === 0 ? ' disabled' : '') +
+                            '>' +
+                            UP +
+                            '</button>' +
+                            '<button data-d="1" aria-label="Move down"' +
+                            (i === order.length - 1 ? ' disabled' : '') +
+                            '>' +
+                            DOWN +
+                            '</button>' +
+                            '</span><span class="grip" aria-hidden="true">⠿</span>'
+                    );
+                    row.querySelectorAll('[data-d]').forEach(function (btn) {
+                        btn.addEventListener('click', function () {
+                            var d = parseInt(btn.dataset.d, 10);
+                            order.splice(i + d, 0, order.splice(i, 1)[0]);
+                            render();
+                            onChange(order.slice());
+                        });
+                    });
+                    stack.appendChild(row);
+                });
+            }
+            render();
+            onChange(order.slice());
+            return stack;
+        };
+
+        W.posters = function (onPick) {
+            var caps = [
+                'Dusk gradient',
+                'Grid minimal',
+                'Bold type',
+                'Organic shapes'
+            ];
+            var grid = el('div', 'posters');
+            grid.setAttribute('role', 'radiogroup');
+            caps.forEach(function (c, i) {
+                var b = el(
+                    'button',
+                    'poster',
+                    '<span class="cbadge">' +
+                        CHECK +
+                        '</span><figure style="margin:0"><span class="pic g' +
+                        (i + 1) +
+                        '"></span><figcaption>' +
+                        c +
+                        '</figcaption></figure>'
+                );
+                b.setAttribute('role', 'radio');
+                b.setAttribute('aria-checked', 'false');
+                grid.appendChild(b);
+            });
+            pickOne(grid, '.poster', function (b) {
+                onPick(b.querySelector('figcaption').textContent);
+            });
+            return grid;
+        };
+
+        W.slider = function (onChange) {
+            var wrap = el('div', 'sliderwrap');
+            var val = el('div', 'bigval', '$180');
+            var input = el('input');
+            input.type = 'range';
+            input.min = 50;
+            input.max = 400;
+            input.step = 10;
+            input.value = 180;
+            input.setAttribute('aria-label', 'Budget in dollars');
+            input.addEventListener('input', function () {
+                val.textContent = '$' + input.value;
+                onChange('$' + input.value);
+            });
+            wrap.appendChild(val);
+            wrap.appendChild(input);
+            wrap.appendChild(
+                el('div', 'range-ends', '<span>$50</span><span>$400</span>')
+            );
+            onChange('$180');
+            return wrap;
+        };
+
+        /* ---------------- the survey (one definition, two renderings) ---------------- */
+        var LIKERT = [
+            ['😡', 'Strongly Disagree'],
+            ['😦', 'Disagree'],
+            ['😐', 'Neutral'],
+            ['🙂', 'Agree'],
+            ['🤩', 'Strongly Agree']
+        ];
+        var STEPS = [
+            {
+                id: 'nps',
+                eyebrow: 'The big one',
+                title: 'How likely are you to recommend Acme Outdoors to a fellow hiker?',
+                build: function (done) {
+                    return W.keycaps(
+                        0,
+                        10,
+                        ['🙁 Not at all likely', 'Extremely likely 😊'],
+                        "Acme's trail team reads every single response — yes, even the spicy ones.",
+                        function (v) {
+                            done(v + ' / 10');
+                        }
+                    );
+                },
+                ask: 'First things first — how likely are you to recommend Acme Outdoors to a fellow hiker? 0–10:'
+            },
+            {
+                id: 'rating',
+                eyebrow: 'Gear check',
+                title: 'Rate the gear-rental experience',
+                build: function (done) {
+                    return W.bigEmoji(
+                        ['⭐', '⭐', '⭐', '⭐', '⭐'],
+                        true,
+                        function (n) {
+                            done('⭐'.repeat(n) + ' (' + n + '/5)');
+                        }
+                    );
+                },
+                ask: 'How would you rate the gear-rental experience?'
+            },
+            {
+                id: 'scale',
+                eyebrow: 'Trail talk',
+                title: 'How tough was the Ridgeline route?',
+                build: function (done) {
+                    return W.keycaps(
+                        1,
+                        7,
+                        ['🌿 A gentle stroll', 'Absolutely brutal 🔥'],
+                        null,
+                        function (v) {
+                            done(v + ' / 7');
+                        }
+                    );
+                },
+                ask: 'Real talk: how tough was the Ridgeline route, 1–7?'
+            },
+            {
+                id: 'emoji',
+                eyebrow: 'Vibe check',
+                title: "How did Saturday's trail event leave you feeling?",
+                build: function (done) {
+                    return W.bigEmoji(
+                        ['😡', '😕', '😐', '😊', '🤩'],
+                        false,
+                        function (n, e) {
+                            done(e);
+                        }
+                    );
+                },
+                ask: "One emoji: how did Saturday's trail event leave you feeling?"
+            },
+            {
+                id: 'likert',
+                eyebrow: 'Usability check',
+                title: 'To what extent do you agree with the following:',
+                quote: '“Checkout at the rental counter was effortless.”',
+                build: function (done) {
+                    return W.ecards(LIKERT, false, done);
+                },
+                ask: 'Agree or disagree — “Checkout at the rental counter was effortless.”'
+            },
+            {
+                id: 'yesno',
+                eyebrow: 'Loyalty',
+                title: 'Would you rent from us again?',
+                build: function (done) {
+                    return W.ecards(
+                        [
+                            ['👍', 'Yes', 'Count me in'],
+                            ['👎', 'No', 'Not this time']
+                        ],
+                        true,
+                        done
+                    );
+                },
+                ask: 'Simple one: would you rent from us again?'
+            },
+            {
+                id: 'single',
+                eyebrow: 'About you',
+                title: 'What brings you outdoors most often?',
+                build: function (done) {
+                    return W.ecards(
+                        [
+                            [
+                                '🥾',
+                                'Weekend day-hikes',
+                                'A few hours out, home by dinner'
+                            ],
+                            [
+                                '⛰️',
+                                'Multi-day treks',
+                                'Tent, stove, and a heavy pack'
+                            ],
+                            [
+                                '🏃',
+                                'Trail running',
+                                'Light, fast, minimal gear'
+                            ],
+                            [
+                                '🛒',
+                                'Mostly browsing',
+                                'The gear aisle is the destination'
+                            ]
+                        ],
+                        false,
+                        done
+                    );
+                },
+                ask: 'What brings you outdoors most often?'
+            },
+            {
+                id: 'multi',
+                eyebrow: 'Wish list',
+                title: 'Which categories should we stock deeper?',
+                sub: 'Pick as many as you like, then continue.',
+                build: function (done) {
+                    return W.pills(
+                        [
+                            ['👟', 'Footwear'],
+                            ['⛺', 'Shelters'],
+                            ['🍳', 'Cook systems'],
+                            ['🧭', 'Navigation'],
+                            ['❄️', 'Winter kit'],
+                            ['🐕', 'Dog gear']
+                        ],
+                        function (sel) {
+                            done(sel.length ? sel.join(', ') : null);
+                        }
+                    );
+                },
+                ask: 'Which categories should we stock deeper? Tap all that apply, then hit send:',
+                chatSend: true
+            },
+            {
+                id: 'dropdown',
+                eyebrow: 'Home base',
+                title: 'Which store do you usually visit?',
+                build: function (done) {
+                    var s = el('select', 'dd');
+                    [
+                        'Choose a store…',
+                        'Boulder Flagship',
+                        'Portland Pearl District',
+                        'Asheville Outpost',
+                        'Salt Lake City Basecamp',
+                        'Online only'
+                    ].forEach(function (o, i) {
+                        var op = el('option', '', o);
+                        if (i === 0) op.value = '';
+                        s.appendChild(op);
+                    });
+                    s.setAttribute('aria-label', 'Store');
+                    s.addEventListener('change', function () {
+                        done(s.value || null);
+                    });
+                    return s;
+                },
+                ask: 'Which store is your home base?',
+                chatChips: [
+                    'Boulder Flagship',
+                    'Portland Pearl',
+                    'Asheville',
+                    'SLC Basecamp',
+                    'Online only'
+                ]
+            },
+            {
+                id: 'image',
+                eyebrow: 'Art direction',
+                title: 'Which poster should headline the spring launch?',
+                build: function (done) {
+                    return W.posters(done);
+                },
+                ask: 'Design question! Which poster should headline the spring launch?'
+            },
+            {
+                id: 'ranking',
+                eyebrow: 'Priorities',
+                title: 'Rank these in order of importance to you.',
+                sub: 'Use the arrows (or drag) to reorder from most to least important.',
+                build: function (done) {
+                    return W.ranking(
+                        ['Fit & comfort', 'Weight', 'Durability', 'Price'],
+                        function (order) {
+                            done('1. ' + order[0] + ' → 4. ' + order[3]);
+                        }
+                    );
+                },
+                ask: 'Rank what matters most in a pack — arrows to reorder, then lock it in:',
+                chatSend: true
+            },
+            {
+                id: 'slider',
+                eyebrow: 'Budget',
+                title: "What's a comfortable daypack budget for you?",
+                build: function (done) {
+                    return W.slider(done);
+                },
+                ask: 'Slide to a comfortable daypack budget:',
+                chatSend: true
+            },
+            {
+                id: 'facts',
+                eyebrow: 'Trip log',
+                title: 'A few details about your last trip',
+                build: function (done) {
+                    var g = el('div', 'factrow');
+                    var d = el('input', 'ti');
+                    d.type = 'date';
+                    d.setAttribute('aria-label', 'Start date');
+                    var n = el('input', 'ti');
+                    n.type = 'number';
+                    n.min = 0;
+                    n.max = 60;
+                    n.placeholder = '3';
+                    n.setAttribute('aria-label', 'Nights out');
+                    var m = el('input', 'ti');
+                    m.type = 'email';
+                    m.placeholder = 'you@trailmail.com';
+                    m.setAttribute('aria-label', 'Email');
+                    [
+                        ['Start date', d],
+                        ['Nights out', n],
+                        ['Email for results', m]
+                    ].forEach(function (p) {
+                        var lab = el('label', '', p[0]);
+                        lab.appendChild(p[1]);
+                        g.appendChild(lab);
+                    });
+                    g.addEventListener('input', function () {
+                        done(
+                            (n.value || '?') +
+                                ' nights' +
+                                (d.value ? ' from ' + d.value : '')
+                        );
+                    });
+                    return g;
+                },
+                ask: 'Last one before the finale — when did your last trip start, and how many nights?',
+                chatSend: true
+            },
+            {
+                id: 'longtext',
+                eyebrow: 'Final step',
+                title: 'Tell us more about your experience.',
+                sub: 'We value your perspective. Feel free to be as detailed as you like.',
+                final: true,
+                build: function (done, submitLabel) {
+                    var wrap = el('div');
+                    var panel = el('div', 'qpanel');
+                    var ta = el('textarea', 'ta');
+                    ta.placeholder = 'Start typing your thoughts here…';
+                    ta.maxLength = 1000;
+                    ta.setAttribute('aria-label', 'Your experience');
+                    var foot = el('div', 'ta-foot');
+                    var words = el('span', 'wordchip', '0 words');
+                    var cheer = el(
+                        'span',
+                        'cheer',
+                        '😊 Your perspective matters'
+                    );
+                    var send = el(
+                        'button',
+                        'btn',
+                        (submitLabel || 'Submit') +
+                            " <span aria-hidden='true'>🪁</span>"
+                    );
+                    ta.addEventListener('input', function () {
+                        var w = ta.value.trim()
+                            ? ta.value.trim().split(/\s+/).length
+                            : 0;
+                        words.textContent = w + (w === 1 ? ' word' : ' words');
+                    });
+                    send.addEventListener('click', function () {
+                        done(ta.value.trim() || '(left blank)');
+                    });
+                    foot.appendChild(words);
+                    foot.appendChild(cheer);
+                    foot.appendChild(send);
+                    panel.appendChild(ta);
+                    panel.appendChild(foot);
+                    wrap.appendChild(panel);
+                    var prompts = el('div', 'prompts');
+                    [
+                        ['💡', 'Focus on usability'],
+                        ['🎨', 'Visual design feedback'],
+                        ['⚡', 'Performance notes']
+                    ].forEach(function (p) {
+                        var b = el('button', 'prompt', p[0] + ' ' + p[1]);
+                        b.addEventListener('click', function () {
+                            ta.value += (ta.value ? '\n' : '') + p[1] + ': ';
+                            ta.focus();
+                            ta.dispatchEvent(new Event('input'));
+                        });
+                        prompts.appendChild(b);
+                    });
+                    wrap.appendChild(prompts);
+                    return wrap;
+                },
+                ask: 'Last question — tell me anything about your experience. The chips give you a starting point:'
+            }
+        ];
+
+        /* ---------------- rendering 1: CARD DECK ---------------- */
+        var deck = document.getElementById('deck');
+        var stepcount = document.getElementById('stepcount');
+        var stepbar = document.getElementById('stepbar');
+        var stepmeta = document.getElementById('stepmeta');
+        var deckIdx = 0;
+        var deckAnswers = {};
+
+        function renderDeck() {
+            deck.innerHTML = '';
+            if (deckIdx >= STEPS.length) {
+                stepmeta.style.visibility = 'hidden';
+                var fin = el(
+                    'div',
+                    'fin',
+                    '<div class="party">🎉</div><h2>Thanks — your responses are in!</h2>' +
+                        '<p>In the real runtime this submit writes one <code>Form_Response__c</code> plus ' +
+                        STEPS.length +
+                        ' typed answer rows.</p>'
+                );
+                var again = el('button', 'btn', '↻ Take it again');
+                again.addEventListener('click', function () {
+                    deckIdx = 0;
+                    deckAnswers = {};
+                    renderDeck();
+                });
+                fin.appendChild(again);
+                deck.appendChild(fin);
+                return;
+            }
+            stepmeta.style.visibility = 'visible';
+            stepcount.textContent =
+                'Step ' + (deckIdx + 1) + ' of ' + STEPS.length;
+            stepbar.style.width = ((deckIdx + 1) / STEPS.length) * 100 + '%';
+
+            var q = STEPS[deckIdx];
+            deck.appendChild(el('span', 'eyebrow-chip', q.eyebrow));
+            var t = el(
+                'h2',
+                'qtitle',
+                q.title +
+                    (q.quote
+                        ? '<span class="quote">' + q.quote + '</span>'
+                        : '')
+            );
+            deck.appendChild(t);
+            if (q.sub) deck.appendChild(el('p', 'qsub', q.sub));
+
+            var widget = q.build(function (val) {
+                deckAnswers[q.id] = val;
+                if (q.final) {
+                    deckIdx++;
+                    renderDeck();
+                }
+            });
+            if (!q.final) {
+                var panel = el('div', 'qpanel');
+                panel.appendChild(widget);
+                deck.appendChild(panel);
+                var nav = el('div', 'deck-nav');
+                var back = el('button', 'ghost', '← Back');
+                back.disabled = deckIdx === 0;
+                if (deckIdx === 0) back.style.visibility = 'hidden';
+                back.addEventListener('click', function () {
+                    deckIdx--;
+                    renderDeck();
+                });
+                var next = el(
+                    'button',
+                    'btn',
+                    (deckIdx === STEPS.length - 2
+                        ? 'Final Question'
+                        : 'Next Question') +
+                        " <span aria-hidden='true'>→</span>"
+                );
+                next.addEventListener('click', function () {
+                    deckIdx++;
+                    renderDeck();
+                });
+                nav.appendChild(back);
+                nav.appendChild(next);
+                deck.appendChild(nav);
+            } else {
+                deck.appendChild(widget);
+            }
+            deck.querySelector('h2').scrollIntoView({ block: 'nearest' });
+        }
+
+        /* ---------------- rendering 2: CHAT THREAD ---------------- */
+        var chatWrap = document.getElementById('chat');
+        var thread = document.getElementById('thread');
+        var chatIdx = 0;
+        var reduced = window.matchMedia(
+            '(prefers-reduced-motion: reduce)'
+        ).matches;
+
+        function botSay(html, cb) {
+            var typing = el('div', 'bub bot typing', '<i></i><i></i><i></i>');
+            thread.appendChild(typing);
+            typing.scrollIntoView({ block: 'nearest' });
+            setTimeout(
+                function () {
+                    typing.remove();
+                    thread.appendChild(el('div', 'bub bot', html));
+                    if (cb) cb();
+                },
+                reduced ? 0 : 520
+            );
+        }
+
+        function chatAsk() {
+            if (chatIdx >= STEPS.length) {
+                botSay(
+                    "That's everything — thanks for hiking through it with me! 🎉<br><small>One Form_Response__c + " +
+                        STEPS.length +
+                        ' typed answer rows, same as any other rendering.</small>'
+                );
+                return;
+            }
+            var q = STEPS[chatIdx];
+            botSay('<span class="bq">' + q.ask + '</span>', function () {
+                var holder = el('div', 'chatwidget');
+                var pending = null;
+                var finish = function (val) {
+                    holder.remove();
+                    thread.appendChild(el('div', 'bub me', val));
+                    chatIdx++;
+                    chatAsk();
+                };
+                var widget;
+                if (q.chatChips) {
+                    widget = el('div', 'pills');
+                    q.chatChips.forEach(function (c) {
+                        var b = el('button', 'pill', c);
+                        b.addEventListener('click', function () {
+                            finish(c);
+                        });
+                        widget.appendChild(b);
+                    });
+                } else if (q.chatSend) {
+                    widget = q.build(function (val) {
+                        pending = val;
+                    });
+                    var send = el('button', 'btn', 'Send ➤');
+                    send.addEventListener('click', function () {
+                        if (pending) finish(pending);
+                    });
+                    var row = el('div', 'sendrow');
+                    row.appendChild(send);
+                    var w2 = el('div');
+                    w2.appendChild(widget);
+                    w2.appendChild(row);
+                    widget = w2;
+                } else {
+                    widget = q.build(function (val) {
+                        setTimeout(
+                            function () {
+                                finish(val);
+                            },
+                            reduced ? 0 : 260
+                        );
+                    }, 'Send');
+                }
+                holder.appendChild(widget);
+                thread.appendChild(holder);
+                holder.scrollIntoView({ block: 'nearest' });
+            });
+        }
+
+        function startChat() {
+            thread.innerHTML = '';
+            chatIdx = 0;
+            botSay(
+                "Hey! I'm Ivy 🦉 — got 2 minutes to make Acme Outdoors better? Fourteen quick ones, promise.",
+                chatAsk
+            );
+        }
+        document
+            .getElementById('chat-restart')
+            .addEventListener('click', startChat);
+
+        /* ---------------- mode switch ---------------- */
+        var modeDeck = document.getElementById('mode-deck');
+        var modeChat = document.getElementById('mode-chat');
+        function setMode(deckOn) {
+            modeDeck.setAttribute('aria-pressed', deckOn ? 'true' : 'false');
+            modeChat.setAttribute('aria-pressed', deckOn ? 'false' : 'true');
+            deck.hidden = !deckOn;
+            chatWrap.hidden = deckOn;
+            stepmeta.style.visibility =
+                deckOn && deckIdx < STEPS.length ? 'visible' : 'hidden';
+            if (!deckOn && !thread.childElementCount) startChat();
+        }
+        modeDeck.addEventListener('click', function () {
+            setMode(true);
+        });
+        modeChat.addEventListener('click', function () {
+            setMode(false);
+        });
+
+        renderDeck();
+    })();
+</script>
