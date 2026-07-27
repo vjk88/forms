@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+            Survey Builder Mode — sample mockup (SURVEY_PLAN companion)
+        </title>
+        <style>
+            :root {
+                --ink: #16325c;
+                --ink-soft: #54698d;
+                --line: #dddbda;
+                --bg: #f3f4f6;
+                --panel: #ffffff;
+                --accent: #0176d3;
+                --accent-soft: #e8f4fd;
+                --good: #2e844a;
+                --warn: #fe9339;
+                --bad: #ea001e;
+                --note: #fff7d6;
+                --note-line: #e5c95c;
+                --radius: 10px;
+                font-size: 15px;
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                background: var(--bg);
+                color: var(--ink);
+                padding: 28px 4vw 80px;
+            }
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 4px;
+            }
+            h2 {
+                font-size: 1.15rem;
+                margin: 46px 0 6px;
+                padding-top: 18px;
+                border-top: 3px solid var(--accent);
+            }
+            h3 {
+                font-size: 0.95rem;
+                margin: 14px 0 6px;
+            }
+            p.lead {
+                color: var(--ink-soft);
+                max-width: 72ch;
+                margin-bottom: 6px;
+            }
+            .tag {
+                display: inline-block;
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                padding: 2px 8px;
+                border-radius: 999px;
+                vertical-align: 2px;
+            }
+            .tag.v1 {
+                background: #d8f3e2;
+                color: var(--good);
+            }
+            .tag.new {
+                background: #ffe8d1;
+                color: #a86403;
+            }
+            .tag.open {
+                background: #fde2e4;
+                color: var(--bad);
+            }
+            .tag.v2 {
+                background: #e5e5e5;
+                color: #555;
+            }
+
+            .plain {
+                background: var(--note);
+                border: 1px solid var(--note-line);
+                border-radius: var(--radius);
+                padding: 10px 14px;
+                margin: 10px 0 18px;
+                max-width: 80ch;
+                font-size: 0.88rem;
+            }
+            .plain b {
+                color: #7a5b00;
+            }
+
+            /* ---------- builder frame ---------- */
+            .studio {
+                display: grid;
+                grid-template-columns: 230px 1fr 300px;
+                gap: 0;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                overflow: hidden;
+                background: var(--panel);
+                box-shadow: 0 6px 24px rgba(22, 50, 92, 0.08);
+                min-height: 620px;
+            }
+            .topbar {
+                grid-column: 1/-1;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 10px 16px;
+                border-bottom: 1px solid var(--line);
+                background: #fff;
+            }
+            .topbar .crumb {
+                font-weight: 700;
+            }
+            .topbar .crumb span {
+                color: var(--ink-soft);
+                font-weight: 400;
+            }
+            .modes {
+                display: flex;
+                gap: 4px;
+                margin-left: auto;
+            }
+            .modes div {
+                padding: 5px 14px;
+                border-radius: 999px;
+                font-size: 0.8rem;
+                color: var(--ink-soft);
+                cursor: default;
+            }
+            .modes .on {
+                background: var(--accent);
+                color: #fff;
+                font-weight: 600;
+            }
+
+            /* palette */
+            .palette {
+                border-right: 1px solid var(--line);
+                padding: 12px;
+                background: #fafbfc;
+                overflow: auto;
+            }
+            .palette h4 {
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--ink-soft);
+                margin: 12px 4px 6px;
+            }
+            .pi {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 8px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: #fff;
+                margin-bottom: 5px;
+                font-size: 0.83rem;
+                cursor: grab;
+            }
+            .pi .ic {
+                width: 22px;
+                text-align: center;
+            }
+            .pi.new {
+                border-color: var(--warn);
+                background: #fff9f2;
+            }
+            .pi.dim {
+                opacity: 0.45;
+            }
+            .pi small {
+                margin-left: auto;
+                font-size: 0.62rem;
+                color: var(--warn);
+                font-weight: 700;
+            }
+
+            /* canvas */
+            .canvas {
+                padding: 22px 26px;
+                overflow: auto;
+                background: #eef1f5;
+            }
+            .qcard {
+                background: #fff;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                padding: 16px 18px;
+                margin-bottom: 14px;
+                position: relative;
+            }
+            .qcard.sel {
+                outline: 3px solid var(--accent);
+                outline-offset: 1px;
+            }
+            .qlabel {
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+            .qlabel em {
+                color: var(--bad);
+                font-style: normal;
+            }
+            .chiprow {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .chip {
+                min-width: 38px;
+                height: 38px;
+                display: grid;
+                place-items: center;
+                border: 1.5px solid var(--line);
+                border-radius: 9px;
+                font-size: 0.85rem;
+                background: #fff;
+            }
+            .chip.on {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #fff;
+                font-weight: 700;
+            }
+            .endlbl {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.7rem;
+                color: var(--ink-soft);
+                margin-top: 6px;
+            }
+            .stars {
+                font-size: 1.7rem;
+                letter-spacing: 6px;
+                color: #c9c9c9;
+            }
+            .stars b {
+                color: var(--accent);
+                font-weight: 400;
+            }
+            .tilegrid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 10px;
+                max-width: 540px;
+            }
+            .tile {
+                border: 1.5px solid var(--line);
+                border-radius: 10px;
+                overflow: hidden;
+                background: #fff;
+                text-align: center;
+                font-size: 0.78rem;
+            }
+            .tile .ph {
+                height: 64px;
+            }
+            .tile figcaption {
+                padding: 6px 4px;
+            }
+            .tile.on {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 2px var(--accent-soft) inset;
+            }
+            .tile.on figcaption::after {
+                content: ' ✓';
+                color: var(--accent);
+                font-weight: 700;
+            }
+            .g1 {
+                background: linear-gradient(135deg, #7ec8ff, #0b5cab);
+            }
+            .g2 {
+                background: linear-gradient(135deg, #ffd6a5, #e07b00);
+            }
+            .g3 {
+                background: linear-gradient(135deg, #c3f3d0, #2e844a);
+            }
+            .g4 {
+                background: linear-gradient(135deg, #e6d1ff, #7526e3);
+            }
+            .rankrow {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border: 1.5px solid var(--line);
+                border-radius: 9px;
+                padding: 9px 12px;
+                margin-bottom: 6px;
+                background: #fff;
+                max-width: 420px;
+                font-size: 0.86rem;
+            }
+            .rankrow .grip {
+                color: #b0adab;
+                cursor: grab;
+                font-size: 1rem;
+            }
+            .ranknum {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: var(--accent-soft);
+                color: var(--accent);
+                font-size: 0.72rem;
+                font-weight: 700;
+                display: grid;
+                place-items: center;
+            }
+            .rankrow.drag {
+                border-style: dashed;
+                border-color: var(--accent);
+                background: var(--accent-soft);
+            }
+            table.matrix {
+                border-collapse: collapse;
+                font-size: 0.8rem;
+                width: 100%;
+                max-width: 560px;
+            }
+            table.matrix th,
+            table.matrix td {
+                border-bottom: 1px solid var(--line);
+                padding: 8px 6px;
+                text-align: center;
+            }
+            table.matrix th:first-child,
+            table.matrix td:first-child {
+                text-align: left;
+            }
+            .dot {
+                width: 17px;
+                height: 17px;
+                border-radius: 50%;
+                border: 1.5px solid #b0adab;
+                display: inline-block;
+            }
+            .dot.on {
+                background: var(--accent);
+                border-color: var(--accent);
+            }
+            .badge {
+                position: absolute;
+                top: -9px;
+                right: 12px;
+                font-size: 0.62rem;
+                font-weight: 700;
+                background: var(--warn);
+                color: #fff;
+                padding: 2px 8px;
+                border-radius: 999px;
+            }
+
+            /* inspector */
+            .inspector {
+                border-left: 1px solid var(--line);
+                padding: 14px;
+                background: #fafbfc;
+                overflow: auto;
+                font-size: 0.83rem;
+            }
+            .inspector h4 {
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--ink-soft);
+                margin: 14px 0 6px;
+            }
+            .ctl {
+                margin-bottom: 10px;
+            }
+            .ctl label {
+                display: block;
+                font-size: 0.72rem;
+                color: var(--ink-soft);
+                margin-bottom: 3px;
+            }
+            .ctl input[type='text'] {
+                width: 100%;
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 6px 8px;
+                font-size: 0.82rem;
+                background: #fff;
+            }
+            .seg {
+                display: flex;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .seg div {
+                flex: 1;
+                text-align: center;
+                padding: 6px 0;
+                background: #fff;
+                color: var(--ink-soft);
+                font-size: 0.8rem;
+            }
+            .seg .on {
+                background: var(--accent);
+                color: #fff;
+                font-weight: 700;
+            }
+            .switch {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #fff;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 7px 10px;
+                margin-bottom: 6px;
+            }
+            .knob {
+                width: 34px;
+                height: 19px;
+                border-radius: 999px;
+                background: #c9c7c5;
+                position: relative;
+                flex: none;
+            }
+            .knob::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                background: #fff;
+            }
+            .knob.on {
+                background: var(--good);
+            }
+            .knob.on::after {
+                left: auto;
+                right: 2px;
+            }
+            .bankbtn {
+                display: block;
+                width: 100%;
+                text-align: center;
+                border: 1.5px dashed var(--accent);
+                color: var(--accent);
+                border-radius: 8px;
+                padding: 7px;
+                font-weight: 600;
+                background: var(--accent-soft);
+                margin-top: 4px;
+            }
+
+            /* callout notes */
+            .note {
+                position: relative;
+                background: #fff;
+                border: 1px solid var(--line);
+                border-left: 5px solid var(--accent);
+                border-radius: 8px;
+                padding: 10px 14px;
+                margin: 10px 0;
+                font-size: 0.86rem;
+                max-width: 80ch;
+            }
+            .note b.q {
+                color: var(--accent);
+            }
+
+            /* Q4 diagram */
+            .splitwrap {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                gap: 18px;
+                align-items: center;
+                max-width: 900px;
+            }
+            .mini {
+                background: #fff;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 12px;
+            }
+            .mini h5 {
+                font-size: 0.75rem;
+                margin-bottom: 8px;
+                color: var(--ink-soft);
+            }
+            .screen {
+                border: 2px solid var(--ink);
+                border-radius: 10px;
+                padding: 8px;
+                margin-bottom: 8px;
+                background: #fdfdfd;
+            }
+            .qq {
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 4px 8px;
+                margin: 4px 0;
+                font-size: 0.72rem;
+                background: #fff;
+            }
+            .arrow {
+                font-size: 1.6rem;
+                color: var(--accent);
+                font-weight: 700;
+            }
+            .screens-row {
+                display: flex;
+                gap: 6px;
+            }
+            .screens-row .screen {
+                flex: 1;
+                margin: 0;
+            }
+            .pagedots {
+                text-align: center;
+                font-size: 0.7rem;
+                color: var(--ink-soft);
+                margin-top: 4px;
+            }
+
+            .duo {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 18px;
+                max-width: 1000px;
+            }
+            .duo .mini {
+                padding: 16px;
+            }
+            .phone {
+                width: 230px;
+                border: 2px solid var(--ink);
+                border-radius: 18px;
+                padding: 12px 10px;
+                background: #fff;
+            }
+            .stackq {
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 8px;
+                margin-bottom: 8px;
+            }
+            .stackq .qlabel {
+                font-size: 0.78rem;
+                margin-bottom: 6px;
+            }
+            .stackq .chip {
+                min-width: 30px;
+                height: 30px;
+                font-size: 0.72rem;
+            }
+            .cdcard {
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                padding: 18px;
+                text-align: center;
+                background: linear-gradient(180deg, #ffffff, #f2f7ff);
+            }
+            .cdcard .eyebrow {
+                font-size: 0.65rem;
+                letter-spacing: 0.1em;
+                color: var(--ink-soft);
+                text-transform: uppercase;
+            }
+            .cdcard .big {
+                font-size: 1rem;
+                font-weight: 700;
+                margin: 8px 0 14px;
+            }
+            .keycaps {
+                display: flex;
+                gap: 8px;
+                justify-content: center;
+            }
+            .keycaps div {
+                width: 44px;
+                height: 48px;
+                border: 1.5px solid var(--line);
+                border-bottom-width: 4px;
+                border-radius: 9px;
+                display: grid;
+                place-items: center;
+                font-weight: 700;
+                background: #fff;
+            }
+            .keycaps .on {
+                border-color: var(--accent);
+                color: var(--accent);
+            }
+            .stepbar {
+                height: 5px;
+                background: #e3e8ef;
+                border-radius: 99px;
+                margin-top: 16px;
+                overflow: hidden;
+            }
+            .stepbar i {
+                display: block;
+                height: 100%;
+                width: 40%;
+                background: var(--accent);
+                border-radius: 99px;
+            }
+            footer {
+                margin-top: 60px;
+                font-size: 0.75rem;
+                color: var(--ink-soft);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Survey Builder Mode — sample walkthrough</h1>
+        <p class="lead">
+            Companion to <b>SURVEY_PLAN.md</b>. Everything here is a picture,
+            not code — it exists so every §10 ruling is something you can point
+            at. Yellow boxes translate the jargon.
+        </p>
+
+        <!-- ================= 1. THE BUILDER FRAME ================= -->
+        <h2>
+            1 · The builder, with a survey open <span class="tag v1">v1</span>
+        </h2>
+        <p class="lead">
+            Same Form Studio you already have — same palette / canvas /
+            inspector. A survey is just a form whose questions aren't bound to
+            Salesforce fields; answers get their own rows instead.
+        </p>
+
+        <div class="studio">
+            <div class="topbar">
+                <div class="crumb">
+                    Customer Pulse <span>· Survey · Draft v3</span>
+                </div>
+                <div class="modes">
+                    <div class="on">Build</div>
+                    <div>Design</div>
+                    <div>Logic</div>
+                    <div>Settings</div>
+                    <div>Share</div>
+                </div>
+            </div>
+
+            <!-- palette -->
+            <div class="palette">
+                <h4>Questions</h4>
+                <div class="pi"><span class="ic">💯</span> NPS</div>
+                <div class="pi"><span class="ic">⭐</span> Rating</div>
+                <div class="pi"><span class="ic">🔢</span> Opinion Scale</div>
+                <div class="pi"><span class="ic">🙂</span> Emoji Scale</div>
+                <div class="pi"><span class="ic">📊</span> Likert</div>
+                <div class="pi"><span class="ic">👍</span> Yes / No</div>
+                <div class="pi"><span class="ic">◻️</span> Single Choice</div>
+                <div class="pi"><span class="ic">☑️</span> Multiple Choice</div>
+                <div class="pi"><span class="ic">🖼️</span> Image Choice</div>
+                <div class="pi">
+                    <span class="ic">✍️</span> Short / Long Text
+                </div>
+                <div class="pi"><span class="ic">🎚️</span> Slider</div>
+                <div class="pi new">
+                    <span class="ic">↕️</span> Ranking <small>NEW v1</small>
+                </div>
+                <div class="pi new">
+                    <span class="ic">▦</span> Matrix <small>NEW v1</small>
+                </div>
+                <h4>Blocks</h4>
+                <div class="pi"><span class="ic">📝</span> Display text</div>
+                <div class="pi"><span class="ic">🖼️</span> Image</div>
+                <div class="pi"><span class="ic">📎</span> File Upload</div>
+                <div class="pi"><span class="ic">🖊️</span> Signature</div>
+                <div class="pi dim">
+                    <span class="ic">🏦</span> From Question Bank
+                    <small>L3</small>
+                </div>
+            </div>
+
+            <!-- canvas -->
+            <div class="canvas">
+                <div class="qcard">
+                    <div class="qlabel">
+                        1 · How likely are you to recommend us? <em>*</em>
+                    </div>
+                    <div class="chiprow">
+                        <div class="chip">0</div>
+                        <div class="chip">1</div>
+                        <div class="chip">2</div>
+                        <div class="chip">3</div>
+                        <div class="chip">4</div>
+                        <div class="chip">5</div>
+                        <div class="chip">6</div>
+                        <div class="chip">7</div>
+                        <div class="chip">8</div>
+                        <div class="chip on">9</div>
+                        <div class="chip">10</div>
+                    </div>
+                    <div class="endlbl">
+                        <span>Not likely</span><span>Extremely likely</span>
+                    </div>
+                </div>
+
+                <div class="qcard sel">
+                    <div class="badge">SELECTED — inspector →</div>
+                    <div class="qlabel">
+                        2 · Rate your onboarding experience <em>*</em>
+                    </div>
+                    <div class="stars"><b>★ ★ ★ ★</b> ★</div>
+                    <div class="endlbl">
+                        <span>Poor</span><span>Excellent</span>
+                    </div>
+                </div>
+
+                <div class="qcard">
+                    <div class="qlabel">
+                        3 · Which welcome-kit design do you prefer?
+                    </div>
+                    <div class="tilegrid">
+                        <figure class="tile on">
+                            <div class="ph g1"></div>
+                            <figcaption>Ocean</figcaption>
+                        </figure>
+                        <figure class="tile">
+                            <div class="ph g2"></div>
+                            <figcaption>Sunset</figcaption>
+                        </figure>
+                        <figure class="tile">
+                            <div class="ph g3"></div>
+                            <figcaption>Forest</figcaption>
+                        </figure>
+                        <figure class="tile">
+                            <div class="ph g4"></div>
+                            <figcaption>Violet</figcaption>
+                        </figure>
+                    </div>
+                </div>
+
+                <div class="qcard">
+                    <div class="qlabel">
+                        4 · Order these by importance to you
+                        <span class="tag new">NEW v1</span>
+                    </div>
+                    <div class="rankrow">
+                        <span class="grip">⠿</span
+                        ><span class="ranknum">1</span> Price
+                    </div>
+                    <div class="rankrow drag">
+                        <span class="grip">⠿</span
+                        ><span class="ranknum">2</span> Support quality
+                        &nbsp;<em
+                            style="font-size: 0.7rem; color: var(--accent)"
+                            >← being dragged</em
+                        >
+                    </div>
+                    <div class="rankrow">
+                        <span class="grip">⠿</span
+                        ><span class="ranknum">3</span> Speed of delivery
+                    </div>
+                    <div class="rankrow">
+                        <span class="grip">⠿</span
+                        ><span class="ranknum">4</span> Product features
+                    </div>
+                </div>
+
+                <div class="qcard">
+                    <div class="qlabel">
+                        5 · How much do you agree with the following?
+                        <span class="tag new">NEW v1</span>
+                    </div>
+                    <table class="matrix">
+                        <tr>
+                            <th></th>
+                            <th>Disagree</th>
+                            <th>Neutral</th>
+                            <th>Agree</th>
+                            <th>Strongly agree</th>
+                        </tr>
+                        <tr>
+                            <td>The product is easy to use</td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                        </tr>
+                        <tr>
+                            <td>Support responds quickly</td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                        </tr>
+                        <tr>
+                            <td>Pricing is fair</td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot on"></span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- inspector -->
+            <div class="inspector">
+                <h4>Question · Rating</h4>
+                <div class="ctl">
+                    <label>Label</label
+                    ><input
+                        type="text"
+                        value="Rate your onboarding experience"
+                    />
+                </div>
+                <div class="switch">
+                    <span>Required</span><span class="knob on"></span>
+                </div>
+
+                <h4>Scale</h4>
+                <div class="ctl">
+                    <label>Maximum (your ruling: 7 is gone)</label>
+                    <div class="seg">
+                        <div class="on">5</div>
+                        <div>10</div>
+                    </div>
+                </div>
+                <div class="ctl">
+                    <label>Icon</label>
+                    <div class="seg">
+                        <div class="on">★ Star</div>
+                        <div>♥ Heart</div>
+                        <div>👍 Thumb</div>
+                    </div>
+                </div>
+                <div class="ctl">
+                    <label>End labels (optional)</label>
+                    <div class="seg" style="gap: 4px; border: none">
+                        <input
+                            type="text"
+                            value="Poor"
+                            style="
+                                flex: 1;
+                                border: 1px solid var(--line);
+                                border-radius: 6px;
+                                padding: 5px;
+                            "
+                        />
+                        <input
+                            type="text"
+                            value="Excellent"
+                            style="
+                                flex: 1;
+                                border: 1px solid var(--line);
+                                border-radius: 6px;
+                                padding: 5px;
+                            "
+                        />
+                    </div>
+                </div>
+
+                <h4>Analytics</h4>
+                <div class="ctl">
+                    <label>Role</label>
+                    <div class="seg">
+                        <div class="on">Score</div>
+                        <div>Category</div>
+                        <div>None</div>
+                    </div>
+                </div>
+                <div class="ctl">
+                    <label>Topic</label><input type="text" value="Onboarding" />
+                </div>
+
+                <h4>Question Bank <span class="tag v2">L3</span></h4>
+                <a class="bankbtn">🏦 Push to Question Bank</a>
+
+                <h4>NPS inspector (when Q1 selected)</h4>
+                <div class="ctl">
+                    <label>Detractor coloring (your ruling: both ship)</label>
+                    <div class="seg">
+                        <div class="on">Theme accent</div>
+                        <div>Classic 🔴🟠🟢</div>
+                    </div>
+                </div>
+
+                <h4>Survey settings (Settings mode)</h4>
+                <div class="switch">
+                    <span>Anonymous responses</span
+                    ><span class="knob on"></span>
+                </div>
+                <div class="switch">
+                    <span>One question per screen</span
+                    ><span class="knob on"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="plain">
+            <b>Plain words:</b> the left rail is the <b>palette</b> (the menu of
+            question types you drag in), the middle is the <b>canvas</b> (your
+            survey as respondents will roughly see it), the right side is the
+            <b>inspector</b> (the settings for whichever question is selected —
+            here the Rating question, so you see its max 5/10 switch, icon
+            choice, and end labels).
+        </div>
+
+        <!-- ================= 2. YOUR RULINGS VISUALIZED ================= -->
+        <h2>2 · Your §10 rulings, visualized</h2>
+
+        <div class="note">
+            <b class="q">Q1 — Rating max:</b> segmented control now reads
+            <b>5 | 10</b> (see inspector above). The 7 came from research-style
+            "opinion scales" (odd number = a neutral midpoint). It stays
+            available on the <b>Opinion Scale</b> type where researchers expect
+            1–7; it's gone from stars, because nobody gives a hotel 7 stars.
+        </div>
+
+        <div class="note">
+            <b class="q">Q2 — NPS coloring:</b> the "Theme accent | Classic
+            🔴🟠🟢" toggle in the inspector. Theme accent = the chips use your
+            theme's color (default). Classic = detractors 0–6 red, passives 7–8
+            amber, promoters 9–10 green — the look every NPS tool made famous.
+        </div>
+
+        <div class="note">
+            <b class="q">Q3 — Emoji Scale:</b> in v1. It's the numbered chip row
+            wearing faces: 😠 😕 😐 🙂 😍
+        </div>
+
+        <div class="note">
+            <b class="q">Q5 — Images:</b> ruled as planned — a picture
+            <i>above</i> a question stays a plain Image block you stack on top
+            (no special per-question setting). Images <i>inside choices</i> (the
+            welcome-kit tiles in the canvas) are first-class: uploaded to
+            Salesforce Files through the existing image pipeline, snapshotted
+            into the published spec so guest surveys never fetch at runtime.
+        </div>
+
+        <div class="note">
+            <b class="q">Q6/Q7/Q8:</b> Anonymous toggle ships in v1 (see Survey
+            settings above) — when ON, the response record keeps scores but
+            stores no identifying links. Image Choice allows multi-select.
+            Signature stays available in surveys.
+        </div>
+
+        <!-- ================= 3. Q4 EXPLAINED ================= -->
+        <h2>
+            3 · Q4, explained properly this time
+            <span class="tag open">needs your ruling</span>
+        </h2>
+        <p class="lead">
+            Our pagination works by <b>section</b>: "one at a time" means one
+            <i>section</i> per screen. Survey tools like Typeform show one
+            <i>question</i> per screen. If you drop 5 questions into one
+            section, here's the difference:
+        </p>
+
+        <div class="splitwrap">
+            <div class="mini">
+                <h5>Today — 1 section holding 5 questions = ONE screen</h5>
+                <div class="screen">
+                    <div class="qq">1 · NPS</div>
+                    <div class="qq">2 · Rating</div>
+                    <div class="qq">3 · Image choice</div>
+                    <div class="qq">4 · Ranking</div>
+                    <div class="qq">5 · Matrix</div>
+                </div>
+                <div class="pagedots">● — one long screen</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="mini">
+                <h5>With the "One question per screen" toggle ON</h5>
+                <div class="screens-row">
+                    <div class="screen"><div class="qq">1 · NPS</div></div>
+                    <div class="screen"><div class="qq">2 · Rating</div></div>
+                    <div class="screen"><div class="qq">3 · …</div></div>
+                </div>
+                <div class="pagedots">
+                    ● ○ ○ ○ ○ — five screens, Continue between
+                </div>
+            </div>
+        </div>
+
+        <div class="plain">
+            <b>The actual question:</b> should the builder offer that toggle
+            (shown in Survey settings, right panel above), so authors don't have
+            to hand-build five one-question sections? It quietly re-uses the
+            same section-paging machinery — the toggle just makes each question
+            <i>act</i> like its own section at render time. Templates already
+            come pre-split either way. <b>Yes/no from you is all this needs.</b>
+        </div>
+
+        <!-- ================= 4. RANKING + MATRIX ================= -->
+        <h2>
+            4 · Ranking &amp; Matrix — now v1, here's what you bought
+            <span class="tag new">promoted</span>
+        </h2>
+
+        <div class="duo">
+            <div class="mini">
+                <h3>Ranking — drag to order</h3>
+                <p class="lead" style="font-size: 0.83rem">
+                    Respondents drag rows (or use arrow keys — keyboard
+                    reordering is required for accessibility). Stored as an
+                    ordered list. ≈ +1–1.5 weeks.
+                </p>
+                <div class="rankrow">
+                    <span class="grip">⠿</span
+                    ><span class="ranknum">1</span> Price
+                </div>
+                <div class="rankrow drag">
+                    <span class="grip">⠿</span
+                    ><span class="ranknum">2</span> Support quality
+                </div>
+                <div class="rankrow">
+                    <span class="grip">⠿</span
+                    ><span class="ranknum">3</span> Speed of delivery
+                </div>
+            </div>
+            <div class="mini">
+                <h3>Matrix on a phone — the part that made it expensive</h3>
+                <p class="lead" style="font-size: 0.83rem">
+                    Grids don't fit phones, so Matrix ships with a stacked
+                    mobile view: each row becomes its own mini-question. Same
+                    answers, no sideways scrolling. ≈ +2–3 weeks (this second
+                    rendering + one-answer-row-per-matrix-row storage).
+                </p>
+                <div class="phone">
+                    <div class="stackq">
+                        <div class="qlabel">The product is easy to use</div>
+                        <div class="chiprow">
+                            <div class="chip">1</div>
+                            <div class="chip">2</div>
+                            <div class="chip on">3</div>
+                            <div class="chip">4</div>
+                        </div>
+                    </div>
+                    <div class="stackq">
+                        <div class="qlabel">Support responds quickly</div>
+                        <div class="chiprow">
+                            <div class="chip">1</div>
+                            <div class="chip on">2</div>
+                            <div class="chip">3</div>
+                            <div class="chip">4</div>
+                        </div>
+                    </div>
+                    <div class="pagedots">rows stack vertically ↓</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 5. QUESTION BANK ================= -->
+        <h2>
+            5 · Question Bank — what it is, what it costs
+            <span class="tag v2">L3 · your call</span>
+        </h2>
+        <div class="plain">
+            <b>Plain words:</b> a shared library of reusable questions. You
+            write "How satisfied are you with support?" once,
+            <b>push it to the bank</b>, and every future survey can
+            <b>insert it from the bank</b>. Because every survey then asks the
+            <i>identical</i> question, you can chart "support satisfaction
+            across all surveys over time" — answers become comparable
+            <i>by construction</i> instead of by luck.
+        </div>
+        <div class="note">
+            <b>The lift: ≈ 2–3 weeks</b>, after v1 survey slices ship. One new
+            object (the bank question: label, type, config, topic), a "Push to
+            bank" button in the inspector (top-right panel), a "From Question
+            Bank" palette source (bottom-left, shown dimmed), and a link from
+            each answer back to its bank question — that link is what powers
+            cross-survey charts. The one real design decision: editing a bank
+            question <b>freezes published usages</b> (they keep the old wording)
+            — silently rewording a live question would corrupt trend lines.
+        </div>
+
+        <!-- ================= 6. Q9 RENDERING PACKS ================= -->
+        <h2>
+            6 · Q9 — the last open question: rendering packs
+            <span class="tag open">needs your ruling</span>
+        </h2>
+        <p class="lead">
+            Same survey spec, two coats of paint. A "pack" is a presentation
+            style the runtime applies — the questions and answers are identical
+            underneath. (Live demos already exist:
+            <i>survey_renderings_ux.html</i> from PR #145.)
+        </p>
+
+        <div class="duo">
+            <div class="mini">
+                <h3>Plain catalog widgets</h3>
+                <p class="lead" style="font-size: 0.8rem">
+                    The canvas look above — clean cards, your theme, all
+                    layouts.
+                </p>
+                <div class="qcard" style="margin: 0">
+                    <div class="qlabel" style="font-size: 0.85rem">
+                        Rate your onboarding
+                    </div>
+                    <div class="stars" style="font-size: 1.3rem">
+                        <b>★ ★ ★ ★</b> ★
+                    </div>
+                </div>
+            </div>
+            <div class="mini">
+                <h3>Card Deck pack — one big card per question</h3>
+                <p class="lead" style="font-size: 0.8rem">
+                    Keycap buttons, eyebrow label, step bar. Built for
+                    one-question-per-screen (it partly answers Q4 — this pack
+                    <i>is</i> that experience).
+                </p>
+                <div class="cdcard">
+                    <div class="eyebrow">Question 2 of 5</div>
+                    <div class="big">Rate your onboarding experience</div>
+                    <div class="keycaps">
+                        <div>1</div>
+                        <div>2</div>
+                        <div>3</div>
+                        <div class="on">4</div>
+                        <div>5</div>
+                    </div>
+                    <div class="stepbar"><i></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="plain">
+            <b>The actual question:</b> when someone creates a survey, which
+            look is the <b>default</b> — plain widgets or Card Deck? (Either way
+            the other remains one click away.) And the Chat Thread pack
+            (questions appear as a conversation) — v2, or in scope now?
+            <b>Two answers from you close out §10 entirely.</b>
+        </div>
+
+        <footer>
+            survey_builder_mode_mockup.html · companion to SURVEY_PLAN.md §10
+            rulings (owner, 2026-07-27) · static mockup — no live code
+        </footer>
+    </body>
+</html>
