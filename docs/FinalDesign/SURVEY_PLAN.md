@@ -80,23 +80,23 @@ down to its config options, storage column, styling, and narrow-screen behavior.
 
 ### 2.1 The v1 roster at a glance
 
-| #   | Type                                                                    | Registry key                     | What it captures           | Storage column                                         |
-| --- | ----------------------------------------------------------------------- | -------------------------------- | -------------------------- | ------------------------------------------------------ |
-| 1   | **NPS** (_Net Promoter Score — the 0–10 "would you recommend us?" row_) | `nps`                            | Loyalty, 0–10              | `Numeric_Value__c`                                     |
-| 2   | **Rating** (stars/hearts/thumbs)                                        | `rating`                         | Quick quality rating       | `Numeric_Value__c`                                     |
-| 3   | **Opinion Scale** (numbered buttons)                                    | `scale`                          | Intensity on 1–5/7/10      | `Numeric_Value__c`                                     |
-| 4   | **Emoji Scale** (smiley faces)                                          | `emojiScale`                     | Sentiment at a glance      | `Numeric_Value__c`                                     |
-| 5   | **Likert** (_the agree↔disagree scale_)                                 | `likert`                         | Attitude statements        | `Numeric_Value__c` + label in `Text_Value__c`          |
-| 6   | **Yes / No** (two big buttons)                                          | `yesNo`                          | Binary                     | `Boolean_Value__c`                                     |
-| 7   | **Single Choice** (list / chips / cards)                                | `field` + renderAs               | Pick one                   | `Text_Value__c` (option value)                         |
-| 8   | **Multiple Choice** (list / chips / cards)                              | `field` + renderAs               | Pick many                  | `Selected_Options_JSON__c`                             |
-| 9   | **Dropdown**                                                            | `field` + renderAs               | Pick one, long lists       | `Text_Value__c`                                        |
-| 10  | **Image Choice** (picture tiles)                                        | `imageChoice`                    | Pick by picture            | `Text_Value__c` / `Selected_Options_JSON__c`           |
-| 11  | **Short / Long Text**                                                   | `field`                          | Open-ended words           | `Text_Value__c`                                        |
-| 12  | **Number / Date / Email / Phone**                                       | `field` (inputType)              | Typed facts                | `Numeric_Value__c` / `Date_Value__c` / `Text_Value__c` |
-| 13  | **Slider**                                                              | `field` renderAs Slider          | Continuous value           | `Numeric_Value__c`                                     |
-| —   | **Ranking** (drag to order)                                             | `ranking` — **v2, key reserved** | Preference order           | `Selected_Options_JSON__c` (ordered)                   |
-| —   | **Matrix** (Likert grid: rows × shared scale)                           | `matrix` — **v2, key reserved**  | Many statements, one scale | one answer row per matrix row                          |
+| #   | Type                                                                    | Registry key                          | What it captures           | Storage column                                         |
+| --- | ----------------------------------------------------------------------- | ------------------------------------- | -------------------------- | ------------------------------------------------------ |
+| 1   | **NPS** (_Net Promoter Score — the 0–10 "would you recommend us?" row_) | `nps`                                 | Loyalty, 0–10              | `Numeric_Value__c`                                     |
+| 2   | **Rating** (stars/hearts/thumbs)                                        | `rating`                              | Quick quality rating       | `Numeric_Value__c`                                     |
+| 3   | **Opinion Scale** (numbered buttons)                                    | `scale`                               | Intensity on 1–5/7/10      | `Numeric_Value__c`                                     |
+| 4   | **Emoji Scale** (smiley faces)                                          | `emojiScale`                          | Sentiment at a glance      | `Numeric_Value__c`                                     |
+| 5   | **Likert** (_the agree↔disagree scale_)                                 | `likert`                              | Attitude statements        | `Numeric_Value__c` + label in `Text_Value__c`          |
+| 6   | **Yes / No** (two big buttons)                                          | `yesNo`                               | Binary                     | `Boolean_Value__c`                                     |
+| 7   | **Single Choice** (list / chips / cards)                                | `field` + renderAs                    | Pick one                   | `Text_Value__c` (option value)                         |
+| 8   | **Multiple Choice** (list / chips / cards)                              | `field` + renderAs                    | Pick many                  | `Selected_Options_JSON__c`                             |
+| 9   | **Dropdown**                                                            | `field` + renderAs                    | Pick one, long lists       | `Text_Value__c`                                        |
+| 10  | **Image Choice** (picture tiles)                                        | `imageChoice`                         | Pick by picture            | `Text_Value__c` / `Selected_Options_JSON__c`           |
+| 11  | **Short / Long Text**                                                   | `field`                               | Open-ended words           | `Text_Value__c`                                        |
+| 12  | **Number / Date / Email / Phone**                                       | `field` (inputType)                   | Typed facts                | `Numeric_Value__c` / `Date_Value__c` / `Text_Value__c` |
+| 13  | **Slider**                                                              | `field` renderAs Slider               | Continuous value           | `Numeric_Value__c`                                     |
+| 14  | **Ranking** (drag to order)                                             | `ranking` — **v1 (owner 2026-07-27)** | Preference order           | `Selected_Options_JSON__c` (ordered)                   |
+| 15  | **Matrix** (Likert grid: rows × shared scale)                           | `matrix` — **v1 (owner 2026-07-27)**  | Many statements, one scale | one answer row per matrix row                          |
 
 File upload and signature (existing widgets) remain available in surveys — files attach to the
 _response_ record via the proven `FirstPublishLocationId` savepoint pattern.
@@ -121,7 +121,7 @@ Eleven tappable chips, 0–10, in one row.
 
 #### `rating` — icon rating
 
-- **Config:** `max`: **5 / 7 / 10** (segmented; default 5) · `icon`: Star / Heart / Thumb ·
+- **Config:** `max`: **5 / 10** (segmented; default 5 — 7 cut by owner ruling 2026-07-27; the research-style 1–7 need lives on `scale`) · `icon`: Star / Heart / Thumb ·
   `leftLabel`/`rightLabel` (optional, e.g. "Poor" → "Excellent"). **No half-steps** (v1 law —
   half-star input is fiddly on touch and doubles the storage semantics for near-zero value).
 - **Styling:** unselected icons = outline in the muted text token; hover/selected = filled
@@ -376,3 +376,29 @@ sequencing between the prefill program and survey slices stays owner-controlled.
    step bar) the **default survey rendering in v1**, with the plain catalog widgets as the
    fallback pack? And is the Chat Thread rendering a v2 pack or in scope now? (This partly
    answers Q4 — Card Deck _is_ one-question-per-screen.)
+
+### §10 rulings (owner, 2026-07-27)
+
+| Q   | Ruling                                                                                                                                                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Rating `max` = **5 / 10** segmented. 7 cut from `rating` (nobody gives 7 stars); `scale` keeps 5/7/10 — the research-style 1–7 lives there                                                   |
+| 2   | **Both** — theme-accent default, classic red/amber/green as an opt-in toggle                                                                                                                 |
+| 3   | `emojiScale` **in v1** (S2)                                                                                                                                                                  |
+| 4   | **OPEN** — question was unclear; re-explained in mockup §3 (a "one question per screen" toggle that rides the existing section-paging machinery). Awaiting yes/no                            |
+| 5   | Whole-question media = composition via existing image/video blocks (no `media` config bag). **Per-option images are first-class** — config-image pipeline + publish snapshot (§5, confirmed) |
+| 6   | Anonymous toggle **in v1** (S5)                                                                                                                                                              |
+| 7   | `imageChoice.multiple` **in v1**                                                                                                                                                             |
+| 8   | Signature stays available in surveys                                                                                                                                                         |
+| 9   | **OPEN** — default pack (plain widgets vs Card Deck) + Chat Thread scope; see mockup §6                                                                                                      |
+
+**Roster change:** Ranking + Matrix **promoted to v1** (owner 2026-07-27) — roster #14/#15. Adds
+≈ +1–1.5 wk (ranking: touch + keyboard-accessible reordering) and ≈ +2–3 wk (matrix: stacked
+mobile rendering + one-answer-row-per-matrix-row storage) to the S-slice estimates.
+
+**Question Bank (L3):** owner interested; sized ≈ 2–3 wk post-v1 (bank object + push-to-bank +
+"from bank" palette source + answer→bank-question lookup; edit semantics = freeze published
+usages so trend lines never silently reword). Stays deferred until v1 survey slices ship.
+
+**Companion mockup:** [survey_builder_mode_mockup.html](./survey_builder_mode_mockup.html) —
+builder mode with every ruling visualized (owner request, 2026-07-27). **Build may not start
+until Q4 + Q9 land.**
