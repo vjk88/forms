@@ -442,3 +442,22 @@ until Q4 + Q9 land.**
   the same viewer/layouts/themes. **Plain-pack surveys look identical to forms**; Card Deck is
   deliberately different and its default-ness is exactly open question Q9. Mockup §7 documents
   this.
+
+### Addendum — builder surfaces correction (owner catch, 2026-07-27)
+
+The owner compared the mockup against the LIVE Studio build page and caught rev 1 showing a
+generic WYSIWYG canvas + permanent right inspector. **Wrong on three counts** vs FORM_STUDIO_IA
+§4, which is the law surveys ride too:
+
+1. **Center = BLUEPRINT, deliberately schematic** ("structure only; the preview is the truth") —
+   survey questions appear as skeleton chips (NPS · 0–10, RATING · ★ max 5, HIDDEN · utm_source
+   as a ghost chip), never as rendered widgets.
+2. **Right = live preview, the truth** — the ONLY place widgets render, through the one-parser
+   rule + theme tokens. Hidden fields never render there (that's their point).
+3. **Properties = palette-column swap** ("‹ Questions" back row); no permanent inspector; the
+   preview never moves.
+
+Survey mode's only surface deltas: the palette's first rail tab reads **Questions** (roster
+§2.1 + presets; no describe-driven Fields — `binding: null`), and new chip types exist for the
+new registry keys. **Survey authoring does NOT invent a second builder.** Mockup rev 2 (same
+file) now mirrors the real anatomy.
