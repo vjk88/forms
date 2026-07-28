@@ -39,15 +39,18 @@ the scale family is S2).
 
 **New fields on `Form_Response_Answer__c`** (SURVEY_PLAN §6 + DATA_MODEL_DELTA §2):
 
-| Field                 | Type         | Notes                                                        |
-| --------------------- | ------------ | ------------------------------------------------------------ |
-| `Label_Snapshot__c`   | Text(255)    | Question text at submit — analytics stay honest on rewording |
-| `Entry_Index__c`      | Number(4, 0) | Repeat-entry disambiguation; null outside repeats            |
-| `Normalized_Score__c` | Number(5, 2) | 0–100 common scale, computed at submit (L1, no backfill)     |
-| `Topic_Snapshot__c`   | Text(80)     | Topic tag at submit — one-object reporting                   |
-| `Sentiment_Score__c`  | Number(5, 2) | EMPTY in v1 (L2 landing zone)                                |
-| `Sentiment_Label__c`  | Text(40)     | EMPTY in v1                                                  |
-| `Sentiment_Source__c` | Text(80)     | EMPTY in v1                                                  |
+| Field (API name)      | Display label       | Type         | Plain meaning                                                                                    |
+| --------------------- | ------------------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| `Label_Snapshot__c`   | Question (as asked) | Text(255)    | Photocopy of the question wording at submit — reword the question later, old answers stay honest |
+| `Entry_Index__c`      | Entry #             | Number(4, 0) | Repeating sections only: which entry (1st, 2nd…) this answer came from; empty otherwise          |
+| `Normalized_Score__c` | Score (0–100)       | Number(5, 2) | Every rating converted to one 0–100 scale so different question types chart together (4/5 = 75)  |
+| `Topic_Snapshot__c`   | Topic               | Text(80)     | The question's subject tag ("Support", "Pricing") copied at submit — chart by topic, no joins    |
+| `Sentiment_Score__c`  | Sentiment Score     | Number(5, 2) | EMPTY in v1 — parking spot for future AI mood-scoring of text answers (L2)                       |
+| `Sentiment_Label__c`  | Sentiment           | Text(40)     | EMPTY in v1 — the word ("Positive"/"Negative"), same parking lot                                 |
+| `Sentiment_Source__c` | Sentiment Source    | Text(80)     | EMPTY in v1 — which AI/model did the scoring                                                     |
+
+Display labels are the owner-facing rule (2026-07-27): **API names stay technical, visible
+labels read like English** — they're what admins see in reports.
 
 **Access model (rev-2 fix — this was a hole):** `Form_Builder_Admin` gains FLS for the 7
 new fields (read+edit) for builders/analysts. But internal submits run `USER_MODE`, so
