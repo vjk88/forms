@@ -73,7 +73,7 @@ No new objects. No layout changes (answer rows are report fodder, not a UI).
 1. **Branch at the top of `run()`** (before the `targetObject` gate), null-safe (rev-2
    fix — `form` may legitimately be null at this point and rev 1's snippet NPE'd):
    `if (form != null && 'survey'.equals(form.get('type'))) return runSurvey(spec, payload, versionId, mode);`
-2. **New `runSurvey(spec, payload, mode)`** — same shape as the form path:
+2. **New `runSurvey(spec, payload, versionId, mode)`** — same shape as the form path:
    - Walk pages→sections→elements ONCE (reuse the existing walk idiom): collect
      answerable elements (id, label, type, config, analytics block), repeat sections keep
      their element lists (Entry_Index source).
