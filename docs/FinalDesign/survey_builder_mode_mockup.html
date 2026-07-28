@@ -671,10 +671,33 @@
                 <div class="pi new">
                     <span class="ic">▦</span> Matrix <small>NEW v1</small>
                 </div>
+                <div class="pi">
+                    <span class="ic">🔣</span> Typed Input
+                    <small style="color: var(--ink-soft)"
+                        >№ · 📅 · 🕐 · ✉️ · ☎️ · 🔗 · $ · %</small
+                    >
+                </div>
+                <div class="pi new">
+                    <span class="ic">🏠</span> Address <small>NEW v1</small>
+                </div>
+                <div class="pi new">
+                    <span class="ic">🙈</span> Hidden field
+                    <small>NEW v1</small>
+                </div>
+                <h4>Presets — ready-made questions</h4>
+                <div class="pi"><span class="ic">👤</span> Your name</div>
+                <div class="pi"><span class="ic">✉️</span> Your email</div>
+                <div class="pi"><span class="ic">☎️</span> Your phone</div>
+                <div class="pi">
+                    <span class="ic">😊</span> CSAT — scale 1–5
+                </div>
+                <div class="pi"><span class="ic">💪</span> CES — scale 1–7</div>
                 <h4>Blocks</h4>
                 <div class="pi"><span class="ic">📝</span> Display text</div>
                 <div class="pi"><span class="ic">🖼️</span> Image</div>
-                <div class="pi"><span class="ic">📎</span> File Upload</div>
+                <div class="pi">
+                    <span class="ic">📎</span> File Upload / 📷 Photo capture
+                </div>
                 <div class="pi"><span class="ic">🖊️</span> Signature</div>
                 <div class="pi dim">
                     <span class="ic">🏦</span> From Question Bank
@@ -803,6 +826,76 @@
                             <td><span class="dot on"></span></td>
                         </tr>
                     </table>
+                </div>
+
+                <div class="qcard">
+                    <div class="qlabel">
+                        6 · Where should we send your welcome kit?
+                        <span class="tag new">NEW v1</span>
+                    </div>
+                    <div style="display: grid; gap: 6px; max-width: 420px">
+                        <input
+                            type="text"
+                            placeholder="Street"
+                            style="
+                                border: 1px solid var(--line);
+                                border-radius: 6px;
+                                padding: 7px 9px;
+                                font-size: 0.82rem;
+                            "
+                        />
+                        <div style="display: flex; gap: 6px">
+                            <input
+                                type="text"
+                                placeholder="City"
+                                style="
+                                    flex: 2;
+                                    border: 1px solid var(--line);
+                                    border-radius: 6px;
+                                    padding: 7px 9px;
+                                    font-size: 0.82rem;
+                                "
+                            />
+                            <input
+                                type="text"
+                                placeholder="State"
+                                style="
+                                    flex: 1;
+                                    border: 1px solid var(--line);
+                                    border-radius: 6px;
+                                    padding: 7px 9px;
+                                    font-size: 0.82rem;
+                                "
+                            />
+                            <input
+                                type="text"
+                                placeholder="ZIP"
+                                style="
+                                    flex: 1;
+                                    border: 1px solid var(--line);
+                                    border-radius: 6px;
+                                    padding: 7px 9px;
+                                    font-size: 0.82rem;
+                                "
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="qcard"
+                    style="border-style: dashed; background: #fbfbfa"
+                >
+                    <div class="qlabel" style="color: var(--ink-soft)">
+                        🙈 Hidden field — utm_source
+                        <span class="tag new">NEW v1</span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--ink-soft)">
+                        Respondents never see this. It silently captures
+                        <code>?utm_source=…</code> from the survey link into the
+                        answer store — so "NPS by marketing channel" becomes a
+                        report, not a wish.
+                    </div>
                 </div>
             </div>
 
@@ -1134,6 +1227,39 @@
             the other remains one click away.) And the Chat Thread pack
             (questions appear as a conversation) — v2, or in scope now?
             <b>Two answers from you close out §10 entirely.</b>
+        </div>
+
+        <!-- ================= 7. RENDER CONSISTENCY ================= -->
+        <h2>7 · Will surveys look like our forms? (your check — verified)</h2>
+        <p class="lead">
+            You spotted that the survey demos look nothing like the current form
+            render. Correct — and traced, not assumed:
+        </p>
+        <div class="note">
+            <b class="q">Why they differ:</b> every survey demo (this page,
+            survey_question_types_ux.html, survey_renderings_ux.html) is
+            hand-styled illustration HTML — zero of the product's
+            <code>--c-*</code> theme tokens appear in them (grep-verified),
+            while the real form renderer consumes those tokens everywhere. Demos
+            show <i>ideas</i>; they don't wear <i>the product's paint</i>.
+        </div>
+        <div class="note">
+            <b class="q">The guarantee in the plan:</b> catalog principle 2.0.3
+            — every survey widget consumes the same theme tokens as today's form
+            fields (accent, field surfaces, radius scale, focus ring), no
+            private colors allowed. Surveys render inside the same viewer,
+            sections, layouts, and 30-theme catalog.
+            <b>
+                In the "plain widgets" pack, a survey looks exactly like your
+                forms do today.
+            </b>
+        </div>
+        <div class="plain">
+            <b>And that's Q9 again:</b> if same-as-forms is what you want by
+            default, rule "plain widgets default" — Card Deck (deliberately
+            different, one-big-card-per-question) stays one click away. If you
+            want surveys to <i>feel</i> like a different product, make Card Deck
+            the default. Your call closes §10.
         </div>
 
         <footer>

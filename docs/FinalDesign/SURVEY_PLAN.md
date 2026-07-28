@@ -417,3 +417,28 @@ until Q4 + Q9 land.**
   contains identity-shaped questions (name/email/phone/address presets or inputTypes), the builder
   shows a non-blocking warning chip — anonymous surveys asking "who are you" is a self-own the
   builder should catch, never silently allow.
+
+### Addendum rulings (owner, 2026-07-27, round 3)
+
+- **Typed-input flavors → v1** (roster #12 extension, ≈ hours each): **URL** (validated),
+  **Time**, **Currency**, **Percent**. Same `field` machinery, new inputTypes.
+- **Preset roster grows:** Name / Email / Phone (identity) + **CSAT** (= `scale` preset: 1–5,
+  "Very dissatisfied → Very satisfied", analytics role Score, topic Satisfaction) + **CES**
+  (= `scale` preset: 1–7, "Very difficult → Very easy", topic Effort). **Presets are NOT new
+  types** — owner confirmed understanding: CSAT literally _is_ the Opinion Scale wearing a
+  pre-filled config; that is the whole point (principle 2.0.5 by another door).
+- **Hidden field → v1** (new registry key `hidden`, ≈ 2–3 days): no widget, never rendered to
+  respondents; captures **allow-listed URL params** (utm_source, campaign, …) into
+  `Text_Value__c` at submit. Allow-list is authored in the builder — never "grab every param"
+  (open redirect-style data-smuggling guard). Rides the same URL-param plumbing as prefill;
+  align param handling with program Phase B/C token work.
+- **Photo capture → v1** (≈ 1 day): a `capture` flavor on the existing file element — opens the
+  phone camera directly. Same storage path (ContentVersion via savepoint), same size cap.
+- **Explicit NO shelf (owner ratified):** Constant Sum, Semantic Differential, MaxDiff,
+  video/audio responses, location/map pin — do not re-litigate without a customer name attached.
+- **Render-consistency clarification (owner check, verified by grep):** the survey demo HTMLs
+  use ZERO product `--c-*` tokens — they are illustrations, not product paint. The build contract
+  stays principle 2.0.3: survey widgets consume the same theme tokens as form fields, render in
+  the same viewer/layouts/themes. **Plain-pack surveys look identical to forms**; Card Deck is
+  deliberately different and its default-ness is exactly open question Q9. Mockup §7 documents
+  this.
