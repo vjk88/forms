@@ -21,10 +21,10 @@ the scale family is S2).
   ABOVE that gate.
 - **Zero Apex references `Form_Response_Answer__c`** (grep-verified in SURVEY_PLAN §0).
 - Objects exist with typed value columns:
-  - `Form_Response__c`: Form_Version**c, Contact/Account/Case/Lead/Opportunity/Campaign
-    lookups + `Related_Record_Id**c`/`Related_Record_Type**c`generic pair,`Session_Id**c`,
-`Status**c`, `Submitted_By**c`, `Submitted_Date**c`, `IP_Address**c`,
-`Completion_Time_Seconds**c`, `Primary_Record_Id**c`.
+  - `Form_Response__c`: `Form_Version__c`, Contact/Account/Case/Lead/Opportunity/Campaign
+    lookups + `Related_Record_Id__c`/`Related_Record_Type__c` generic pair, `Session_Id__c`,
+    `Status__c`, `Submitted_By__c`, `Submitted_Date__c`, `IP_Address__c`,
+    `Completion_Time_Seconds__c`, `Primary_Record_Id__c`.
   - `Form_Response_Answer__c`: `Form_Response__c` (parent), `Element_Key__c`,
     `Text_Value__c`, `Numeric_Value__c`, `Date_Value__c`, `DateTime_Value__c`,
     `Boolean_Value__c`, `Selected_Options_JSON__c`, `Lookup_Reference_Id__c`,
