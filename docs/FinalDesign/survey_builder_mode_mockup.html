@@ -1070,6 +1070,20 @@
                 <div class="switch">
                     <span>Required</span><span class="knob on"></span>
                 </div>
+                <div class="ctl">
+                    <label>Caption (optional — round-4 ruling)</label>
+                    <input
+                        type="text"
+                        value="Think of your first week with us"
+                    />
+                </div>
+                <div class="ctl">
+                    <label>Show caption as</label>
+                    <div class="seg">
+                        <div class="on">Caption line</div>
+                        <div>ⓘ Help bubble</div>
+                    </div>
+                </div>
                 <h4>Scale</h4>
                 <div class="ctl">
                     <label>Maximum (your ruling: 7 is gone)</label>
@@ -1177,8 +1191,8 @@
 
         <!-- ================= 3. Q4 ================= -->
         <h2>
-            3 · Q4, explained properly this time
-            <span class="tag open">needs your ruling</span>
+            3 · Q4 — RULED YES: the toggle ships
+            <span class="tag v1">ruled 2026-07-27</span>
         </h2>
         <p class="lead">
             Our pagination works by <b>section</b>: "one at a time" means one
@@ -1219,7 +1233,8 @@
             one-question sections? It quietly re-uses the same section-paging
             machinery — the toggle just makes each question <i>act</i> like its
             own section at render time. Templates already come pre-split either
-            way. <b>Yes/no from you is all this needs.</b>
+            way.
+            <b>RULED YES (2026-07-27): the toggle ships in Survey settings.</b>
         </div>
 
         <!-- ================= 4. RANKING + MATRIX ================= -->
@@ -1359,8 +1374,8 @@
 
         <!-- ================= 6. Q9 ================= -->
         <h2>
-            6 · Q9 — the last open question: rendering packs
-            <span class="tag open">needs your ruling</span>
+            6 · Q9 — RULED: Card Deck is the default pack
+            <span class="tag v1">ruled 2026-07-27</span>
         </h2>
         <p class="lead">
             Same survey spec, two coats of paint. A "pack" is a presentation
@@ -1393,6 +1408,19 @@
                 <div class="cdcard">
                     <div class="eyebrow">Question 2 of 5</div>
                     <div class="big">Rate your onboarding experience</div>
+                    <div
+                        style="
+                            font-size: 0.74rem;
+                            color: var(--ink-soft);
+                            margin: -8px 0 12px;
+                        "
+                    >
+                        Think of your first week with us
+                        <span style="opacity: 0.7"
+                            >— the caption line (round-4 ruling); or tuck it
+                            behind ⓘ instead</span
+                        >
+                    </div>
                     <div class="keycaps">
                         <div>1</div>
                         <div>2</div>
@@ -1410,7 +1438,11 @@
             look is the <b>default</b> — plain widgets or Card Deck? (Either way
             the other remains one click away.) And the Chat Thread pack
             (questions appear as a conversation) — v2, or in scope now?
-            <b>Two answers from you close out §10 entirely.</b>
+            <b
+                >RULED (2026-07-27): Card Deck default · plain widgets =
+                fallback · Chat Thread stays v2. §10 is CLOSED — the plan is
+                APPROVED.</b
+            >
         </div>
 
         <!-- ================= 7. RENDER CONSISTENCY ================= -->

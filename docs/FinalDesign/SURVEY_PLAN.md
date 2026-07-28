@@ -1,6 +1,6 @@
 # Survey Plan — the Surveys half of the product, on the final\* stack
 
-> **Status: DRAFT for owner review — nothing here is built until approved.**
+> **Status: APPROVED (owner, 2026-07-27) — all §10 questions ruled; build proceeds per §9 S-slices.**
 > This is the program-level plan for Surveys (the second leg of SHIP: Phase A → **Surveys** → package).
 > Companions: [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) (spec shapes this extends) ·
 > [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) (answer-store objects) ·
@@ -380,17 +380,17 @@ sequencing between the prefill program and survey slices stays owner-controlled.
 
 ### §10 rulings (owner, 2026-07-27)
 
-| Q   | Ruling                                                                                                                                                                                       |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Rating `max` = **5 / 10** segmented. 7 cut from `rating` (nobody gives 7 stars); `scale` keeps 5/7/10 — the research-style 1–7 lives there                                                   |
-| 2   | **Both** — theme-accent default, classic red/amber/green as an opt-in toggle                                                                                                                 |
-| 3   | `emojiScale` **in v1** (S2)                                                                                                                                                                  |
-| 4   | **OPEN** — question was unclear; re-explained in mockup §3 (a "one question per screen" toggle that rides the existing section-paging machinery). Awaiting yes/no                            |
-| 5   | Whole-question media = composition via existing image/video blocks (no `media` config bag). **Per-option images are first-class** — config-image pipeline + publish snapshot (§5, confirmed) |
-| 6   | Anonymous toggle **in v1** (S5)                                                                                                                                                              |
-| 7   | `imageChoice.multiple` **in v1**                                                                                                                                                             |
-| 8   | Signature stays available in surveys                                                                                                                                                         |
-| 9   | **OPEN** — default pack (plain widgets vs Card Deck) + Chat Thread scope; see mockup §6                                                                                                      |
+| Q   | Ruling                                                                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Rating `max` = **5 / 10** segmented. 7 cut from `rating` (nobody gives 7 stars); `scale` keeps 5/7/10 — the research-style 1–7 lives there                                                             |
+| 2   | **Both** — theme-accent default, classic red/amber/green as an opt-in toggle                                                                                                                           |
+| 3   | `emojiScale` **in v1** (S2)                                                                                                                                                                            |
+| 4   | **YES (2026-07-27)** — ship the "One question per screen" Survey-settings toggle; render-time auto-split riding the existing section-paging machinery (the locked one-SECTION-at-a-time ruling stands) |
+| 5   | Whole-question media = composition via existing image/video blocks (no `media` config bag). **Per-option images are first-class** — config-image pipeline + publish snapshot (§5, confirmed)           |
+| 6   | Anonymous toggle **in v1** (S5)                                                                                                                                                                        |
+| 7   | `imageChoice.multiple` **in v1**                                                                                                                                                                       |
+| 8   | Signature stays available in surveys                                                                                                                                                                   |
+| 9   | **RULED (2026-07-27)** — **Card Deck is the DEFAULT survey pack**; plain catalog widgets = the fallback pack (one click away); Chat Thread not promoted → stays v2                                     |
 
 **Roster change:** Ranking + Matrix **promoted to v1** (owner 2026-07-27) — roster #14/#15. Adds
 ≈ +1–1.5 wk (ranking: touch + keyboard-accessible reordering) and ≈ +2–3 wk (matrix: stacked
@@ -461,3 +461,18 @@ Survey mode's only surface deltas: the palette's first rail tab reads **Question
 §2.1 + presets; no describe-driven Fields — `binding: null`), and new chip types exist for the
 new registry keys. **Survey authoring does NOT invent a second builder.** Mockup rev 2 (same
 file) now mirrors the real anatomy.
+
+### Addendum rulings (owner, 2026-07-27, round 4 — §10 CLOSED)
+
+- **Q4 = YES:** "One question per screen" toggle in Survey settings. Render-time auto-split
+  only — the spec keeps authored sections; the locked one-SECTION-at-a-time ruling is untouched.
+- **Q9 = Card Deck default.** Plain catalog widgets remain the fallback pack (one click away);
+  Chat Thread stays v2 (owner did not promote it).
+- **NEW requirement — per-question caption (owner, round 4):** every question config gains
+  `description` (plain text, v1) + `descriptionDisplay`: **`caption`** (always-visible muted
+  line under the label — under the big title in Card Deck) | **`help`** (behind an ⓘ info
+  bubble beside the label). Authored in question properties ("Caption" text + display
+  segmented). Applies across packs. Empty description renders nothing — never an empty ⓘ.
+
+**§10 is closed; the plan is APPROVED. Build order stays §9: S1 (answer-store submit runtime)
+first.**
