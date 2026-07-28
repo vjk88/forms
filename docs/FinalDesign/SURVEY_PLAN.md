@@ -476,3 +476,21 @@ file) now mirrors the real anatomy.
 
 **§10 is closed; the plan is APPROVED. Build order stays §9: S1 (answer-store submit runtime)
 first.**
+
+### Addendum — creation flow ruling (owner, 2026-07-27)
+
+New Survey = the existing creation gallery ([[project-creation-gallery-first]]) with a
+**Surveys shelf** — no layout/theme/pack questions at creation, ever (the rejected-wizard rule
+holds for surveys):
+
+- Template cards (CSAT Pulse · NPS · Event Feedback · Post-Case · Research Questionnaire) are
+  complete bundles: questions + `oneAtATime` + **Card Deck** + a curated theme; the thumbnail IS
+  the look.
+- **Blank survey card defaults: `oneAtATime` + Card Deck + default theme** (Q9 ruling applied).
+- Layout / theme / pack are all changeable AFTER creation in the Studio (Design mode gallery;
+  pack = Card Deck ↔ plain toggle) — choose-by-looking, one click deep.
+- The card carries the type: picking a survey template implies answer-store; the UI never asks
+  form-vs-survey storage questions (locked model).
+
+Gallery's survey shelf ships with templates in **S5**. Implementation begins:
+[IMPL_PLAN_SURVEY_S1.md](./IMPL_PLAN_SURVEY_S1.md) (for owner review).
