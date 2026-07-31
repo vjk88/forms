@@ -2,9 +2,18 @@
     <div class="lib">
         <header class="lib-head">
             <h2>Forms</h2>
-            <button type="button" class="lib-refresh" onclick={handleRefresh}>
-                Refresh
-            </button>
+            <div class="lib-actions">
+                <button
+                    type="button"
+                    class="lib-refresh"
+                    onclick={handleRefresh}
+                >
+                    Refresh
+                </button>
+                <button type="button" class="lib-new" onclick={handleNew}>
+                    + New form
+                </button>
+            </div>
         </header>
         <template lwc:if={error}>
             <p class="lib-error" role="alert">{error}</p>
@@ -13,8 +22,8 @@
             <div class="lib-empty">
                 <h3>No forms yet</h3>
                 <p>
-                    Creation opens with the template gallery — coming in a
-                    later phase. Forms created earlier appear here.
+                    Click <b>+ New form</b> to start from a survey template or a
+                    blank layout.
                 </p>
             </div>
         </template>
@@ -65,6 +74,17 @@
                 alternative-text="Loading forms"
                 size="small"
             ></lightning-spinner>
+        </template>
+
+        <template lwc:if={showGallery}>
+            <div class="lib-overlay" role="dialog" aria-label="Create a form">
+                <div class="lib-overlay-panel">
+                    <c-final-creation-gallery
+                        onformcreated={handleFormCreated}
+                        onclose={handleGalleryClose}
+                    ></c-final-creation-gallery>
+                </div>
+            </div>
         </template>
     </div>
 </template>
