@@ -38,7 +38,13 @@ function isBlank(v) {
 }
 
 function asNumber(v) {
-    if (v === null || v === undefined || v === '' || v === true || v === false) {
+    if (
+        v === null ||
+        v === undefined ||
+        v === '' ||
+        v === true ||
+        v === false
+    ) {
         return null;
     }
     const n = Number(v);
@@ -217,7 +223,7 @@ export function validateEntry(entry, value, ctx) {
                 return new RegExp(entry.pattern).test(String(value))
                     ? null
                     : message;
-            } catch (e) {
+            } catch {
                 return null; // malformed pattern never blocks a respondent
             }
         }
@@ -229,10 +235,18 @@ export function validateEntry(entry, value, ctx) {
             if (n === null) {
                 return message;
             }
-            if (entry.min !== null && entry.min !== undefined && n < entry.min) {
+            if (
+                entry.min !== null &&
+                entry.min !== undefined &&
+                n < entry.min
+            ) {
                 return message;
             }
-            if (entry.max !== null && entry.max !== undefined && n > entry.max) {
+            if (
+                entry.max !== null &&
+                entry.max !== undefined &&
+                n > entry.max
+            ) {
                 return message;
             }
             return null;
@@ -261,7 +275,31 @@ export function validateEntry(entry, value, ctx) {
 /** All failures for one element's validation array. */
 export function validateElement(element, value, ctx) {
     const out = [];
+    const elType = element && element.type;
     for (const entry of (element && element.validation) || []) {
+        // ---- survey-type required semantics (S4 gate findings #1/#2) ----
+        if (entry.type === 'required') {
+            // yesNo: FALSE is a real answer — only consent/checkbox demand true
+            if (elType === 'yesNo' && value === false) {
+                continue;
+            }
+            // matrix: required = EVERY statement answered, and the failure
+            // names the missing rows (partial grids are silent data loss)
+            if (elType === 'matrix') {
+                const rows = (element.config && element.config.rows) || [];
+                const picks = value && typeof value === 'object' ? value : {};
+                const missing = rows.filter((r) => picks[r.value] == null);
+                if (missing.length) {
+                    out.push(
+                        entry.message ||
+                            `Please answer: ${missing
+                                .map((r) => r.label || r.value)
+                                .join(', ')}`
+                    );
+                }
+                continue;
+            }
+        }
         const failure = validateEntry(entry, value, ctx);
         if (failure) {
             out.push(failure);

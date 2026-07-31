@@ -155,6 +155,48 @@ Map<String, Object> spec = new Map<String, Object>{
                                 }
                             }
                         },
+                        // ---- S4 trio ----
+                        new Map<String, Object>{
+                            'id' => 'el_lik',
+                            'type' => 'likert',
+                            'binding' => null,
+                            'label' => 'The product is easy to use',
+                            'analytics' => new Map<String, Object>{
+                                'role' => 'score',
+                                'scaleMin' => 1,
+                                'scaleMax' => 5
+                            }
+                        },
+                        new Map<String, Object>{
+                            'id' => 'el_rank',
+                            'type' => 'ranking',
+                            'binding' => null,
+                            'label' => 'Order these by importance',
+                            'config' => new Map<String, Object>{
+                                'options' => new List<Object>{
+                                    new Map<String, Object>{ 'value' => 'price', 'label' => 'Price' },
+                                    new Map<String, Object>{ 'value' => 'support', 'label' => 'Support' },
+                                    new Map<String, Object>{ 'value' => 'speed', 'label' => 'Speed' }
+                                }
+                            }
+                        },
+                        new Map<String, Object>{
+                            'id' => 'el_mx',
+                            'type' => 'matrix',
+                            'binding' => null,
+                            'label' => 'How much do you agree?',
+                            'config' => new Map<String, Object>{
+                                'rows' => new List<Object>{
+                                    new Map<String, Object>{ 'value' => 'ease', 'label' => 'Easy to use' },
+                                    new Map<String, Object>{ 'value' => 'value', 'label' => 'Worth the price' }
+                                }
+                            },
+                            'analytics' => new Map<String, Object>{
+                                'role' => 'score',
+                                'scaleMin' => 1,
+                                'scaleMax' => 4
+                            }
+                        },
                         new Map<String, Object>{
                             'id' => 'el_mood',
                             'type' => 'emojiScale',

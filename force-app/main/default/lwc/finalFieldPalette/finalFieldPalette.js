@@ -36,10 +36,28 @@ const QUESTIONS = [
         title: 'Smiley faces — sentiment at a glance'
     },
     {
+        type: 'likert',
+        label: 'Likert',
+        icon: 'utility:list',
+        title: 'The agree↔disagree scale, labeled chips'
+    },
+    {
         type: 'yesNo',
         label: 'Yes / No',
         icon: 'utility:like',
         title: 'Two big buttons — a binary answer'
+    },
+    {
+        type: 'ranking',
+        label: 'Ranking',
+        icon: 'utility:sort',
+        title: 'Drag (or arrow-key) items into preference order'
+    },
+    {
+        type: 'matrix',
+        label: 'Matrix',
+        icon: 'utility:table',
+        title: 'Many statements, one shared scale — stacks on phones'
     },
     {
         type: 'imageChoice',

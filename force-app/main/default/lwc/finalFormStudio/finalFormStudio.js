@@ -957,6 +957,40 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     config: {},
                     analytics: score(1, 5)
                 };
+            case 'likert':
+                return {
+                    ...base,
+                    type: 'likert',
+                    label: 'How much do you agree?',
+                    config: {},
+                    analytics: score(1, 5)
+                };
+            case 'ranking':
+                return {
+                    ...base,
+                    type: 'ranking',
+                    label: 'Order these by importance',
+                    config: {
+                        options: [
+                            { value: 'opt1', label: 'First option' },
+                            { value: 'opt2', label: 'Second option' },
+                            { value: 'opt3', label: 'Third option' }
+                        ]
+                    }
+                };
+            case 'matrix':
+                return {
+                    ...base,
+                    type: 'matrix',
+                    label: 'How much do you agree with the following?',
+                    config: {
+                        rows: [
+                            { value: 'row1', label: 'First statement' },
+                            { value: 'row2', label: 'Second statement' }
+                        ]
+                    },
+                    analytics: score(1, 4)
+                };
             case 'yesNo':
                 return {
                     ...base,
