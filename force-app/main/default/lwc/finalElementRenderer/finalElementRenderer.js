@@ -44,6 +44,16 @@ const CALLOUT_ICONS = {
 // Survey scale family (SURVEY_PLAN §2.2, slice S2): one interaction grammar —
 // an ordered row of ≥44px radio chips; selected = accent fill (catalog law).
 const EMOJI_FACES = ['😠', '😕', '😐', '🙂', '😍'];
+// Screen-reader names for the faces (owner 2026-07-31): emoji scales show NO
+// end labels, so each chip must SAY its sentiment — "3 of 5" alone is
+// meaningless when the meaning lives in a picture you can't see.
+const EMOJI_SENTIMENTS = [
+    'Very unhappy',
+    'Unhappy',
+    'Neutral',
+    'Happy',
+    'Very happy'
+];
 const RATING_GLYPHS = { star: '★', heart: '♥', thumb: '👍' };
 const SCALE_SIZES = [5, 7, 10];
 
@@ -418,16 +428,22 @@ export default class FinalElementRenderer extends LightningElement {
                 // roving tabindex: the selection (or the first chip) is the
                 // one tab stop; arrows move within the group
                 tabIndex: isSel || (sel == null && v === min) ? '0' : '-1',
-                ariaLabel:
-                    this.isRating || this.isEmojiScale
-                        ? `${v} of ${max}`
-                        : String(v)
+                ariaLabel: this.isEmojiScale
+                    ? `${EMOJI_SENTIMENTS[v - min]}, ${v} of ${max}`
+                    : this.isRating
+                      ? `${v} of ${max}`
+                      : String(v)
             });
         }
         return items;
     }
 
     get hasEndLabels() {
+        // Emoji scales never render end labels (owner 2026-07-31) — the faces
+        // carry the meaning visually; screen readers get EMOJI_SENTIMENTS.
+        if (this.isEmojiScale) {
+            return false;
+        }
         return Boolean(this.cfg.leftLabel || this.cfg.rightLabel);
     }
 
