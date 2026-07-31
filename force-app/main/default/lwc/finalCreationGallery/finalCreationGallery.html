@@ -1,13 +1,88 @@
 <template>
     <div class="gallery-root">
-        <!-- ============================ GALLERY (Screen 1) ============================ -->
-        <template lwc:if={isLayoutStep}>
+        <!-- ==================== KIND (Screen 0): Form or Survey? ==================== -->
+        <template lwc:if={isKindStep}>
             <header class="g-head">
                 <div>
+                    <h1 class="g-title">What are you creating?</h1>
+                    <p class="g-sub">
+                        Pick one — you can always create the other later.
+                    </p>
+                </div>
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
+                </button>
+            </header>
+            <div class="kind-grid">
+                <button
+                    class="kind-card"
+                    type="button"
+                    onclick={handleKindForm}
+                >
+                    <span class="kind-icon">
+                        <lightning-icon
+                            icon-name="utility:form"
+                            size="medium"
+                        ></lightning-icon>
+                    </span>
+                    <span class="kind-name">Form</span>
+                    <span class="kind-blurb">
+                        Collects structured data into Salesforce records — every
+                        answer becomes a field on the object you choose.
+                    </span>
+                    <span class="kind-foot">Pick a layout &amp; theme →</span>
+                </button>
+                <button
+                    class="kind-card"
+                    type="button"
+                    onclick={handleKindSurvey}
+                >
+                    <span class="kind-icon">
+                        <lightning-icon
+                            icon-name="utility:feed"
+                            size="medium"
+                        ></lightning-icon>
+                    </span>
+                    <span class="kind-name">Survey</span>
+                    <span class="kind-blurb">
+                        Asks questions and measures sentiment — answers land in
+                        the answer store, ready for charts and topics. A
+                        Salesforce object is optional.
+                    </span>
+                    <span class="kind-foot">Pick a template &amp; theme →</span>
+                </button>
+            </div>
+        </template>
+
+        <!-- ============================ GALLERY (Form path) ============================ -->
+        <template lwc:elseif={isLayoutStep}>
+            <header class="g-head">
+                <div>
+                    <button
+                        class="d-back"
+                        type="button"
+                        onclick={handleBackToKind}
+                    >
+                        <lightning-icon
+                            icon-name="utility:back"
+                            size="x-small"
+                            alternative-text="Back"
+                        ></lightning-icon>
+                        <span>Back</span>
+                    </button>
                     <h1 class="g-title">Create a form</h1>
                     <p class="g-sub">
-                        Start from a ready-made template, or pick a layout and
-                        make it your own.
+                        Pick a layout and make it your own — form templates
+                        arrive next.
                     </p>
                 </div>
                 <button
@@ -37,7 +112,7 @@
                         icon-name="utility:apps"
                         size="x-small"
                     ></lightning-icon>
-                    <span>Templates &amp; surveys</span>
+                    <span>Form templates</span>
                 </button>
                 <button
                     class={scratchTabClass}
@@ -54,50 +129,19 @@
                 </button>
             </div>
 
-            <!-- Mode A: templates (placeholder for now) -->
+            <!-- Mode A: form templates (placeholder — surveys moved to their
+                 own path behind the kind chooser, owner 2026-07-31) -->
             <div lwc:if={isTemplateMode} class="tpl-shelf">
                 <section class="lg-group">
                     <div class="lg-head">
-                        <h2 class="lg-title">Surveys</h2>
+                        <h2 class="lg-title">Form templates</h2>
                         <span class="lg-hint"
-                            >complete and ready — answers land in the answer
-                            store, one question per screen</span
+                            >coming next — for now, start from a layout</span
                         >
                     </div>
-                    <input
-                        type="text"
-                        class="tpl-name-input"
-                        placeholder="Survey name (optional — templates carry good defaults)"
-                        value={surveyName}
-                        oninput={handleSurveyName}
-                    />
-                    <div class="tpl-grid">
-                        <template for:each={surveyTemplates} for:item="t">
-                            <button
-                                key={t.key}
-                                type="button"
-                                class="tpl-card"
-                                data-key={t.key}
-                                disabled={isCreating}
-                                onclick={handleTemplatePick}
-                            >
-                                <lightning-icon
-                                    icon-name={t.icon}
-                                    size="small"
-                                ></lightning-icon>
-                                <span class="tpl-name">{t.name}</span>
-                                <span class="tpl-blurb">{t.blurb}</span>
-                            </button>
-                        </template>
-                    </div>
-                    <template lwc:if={errorMessage}>
-                        <p class="g-error" role="alert">{errorMessage}</p>
-                    </template>
                     <p class="lg-hint">
-                        Building a FORM instead (answers become fields on a
-                        Salesforce record)? Use the "Blank form" tab — pick a
-                        layout, theme, then name it and choose its object. Form
-                        templates arrive next.
+                        Looking for surveys? Go back and pick
+                        <b>Survey</b> — templates and themes live there.
                     </p>
                 </section>
             </div>
@@ -129,13 +173,71 @@
             </div>
         </template>
 
+        <!-- ============ SURVEY TEMPLATES (Survey path, screen 1) ============ -->
+        <template lwc:elseif={isTemplatesStep}>
+            <header class="d-head">
+                <button class="d-back" type="button" onclick={handleBackToKind}>
+                    <lightning-icon
+                        icon-name="utility:back"
+                        size="x-small"
+                        alternative-text="Back"
+                    ></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
+                </button>
+            </header>
+
+            <div class="thm-head">
+                <h1 class="thm-title">Pick a survey template</h1>
+                <p class="thm-sub">
+                    Complete and ready — answers land in the answer store, one
+                    question per screen. You pick the theme next.
+                </p>
+            </div>
+
+            <section class="lg-group">
+                <div class="tpl-grid">
+                    <template for:each={surveyTemplates} for:item="t">
+                        <button
+                            key={t.key}
+                            type="button"
+                            class={t.cls}
+                            data-key={t.key}
+                            onclick={handleTemplatePick}
+                        >
+                            <lightning-icon
+                                icon-name={t.icon}
+                                size="small"
+                            ></lightning-icon>
+                            <span class="tpl-name">{t.name}</span>
+                            <span class="tpl-blurb">{t.blurb}</span>
+                        </button>
+                    </template>
+                </div>
+                <template lwc:if={errorMessage}>
+                    <p class="g-error" role="alert">{errorMessage}</p>
+                </template>
+            </section>
+        </template>
+
         <!-- ======================= THEME STEP ======================= -->
         <template lwc:elseif={isThemeStep}>
             <header class="d-head">
                 <button
                     class="d-back"
                     type="button"
-                    onclick={handleBackToLayout}
+                    onclick={handleBackFromTheme}
                 >
                     <lightning-icon
                         icon-name="utility:back"
@@ -160,12 +262,12 @@
 
             <div class="thm-head">
                 <h1 class="thm-title">Pick a theme</h1>
-                <p class="thm-sub">Each preview uses your chosen layout.</p>
+                <p class="thm-sub">{themeSub}</p>
             </div>
 
             <c-final-theme-gallery
-                layout={chosenLayout}
-                pane-flow={chosenPaneFlow}
+                layout={themeGalleryLayout}
+                pane-flow={themeGalleryPaneFlow}
                 selected-theme-key={chosenThemeKey}
                 onthemeselect={handleThemeSelect}
             ></c-final-theme-gallery>
@@ -350,6 +452,174 @@
             </div>
         </template>
 
+        <!-- ================== SURVEY DETAILS (Survey path, final) ================== -->
+        <template lwc:elseif={isSurveyDetailsStep}>
+            <header class="d-head">
+                <button
+                    class="d-back"
+                    type="button"
+                    onclick={handleBackToTheme}
+                >
+                    <lightning-icon
+                        icon-name="utility:back"
+                        size="x-small"
+                        alternative-text="Back"
+                    ></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
+                </button>
+            </header>
+
+            <div class="d-body">
+                <!-- Left: configure -->
+                <div class="d-config">
+                    <label class="d-field-label" for="cg-sname"
+                        >Survey name</label
+                    >
+                    <input
+                        id="cg-sname"
+                        class="d-input"
+                        type="text"
+                        value={surveyName}
+                        oninput={handleSurveyName}
+                        placeholder={chosenTemplateName}
+                    />
+
+                    <label class="d-field-label" for="cg-sobj"
+                        >Object
+                        <span class="d-optional">(optional)</span></label
+                    >
+                    <div class="obj-picker">
+                        <input
+                            id="cg-sobj"
+                            class="d-input"
+                            type="text"
+                            autocomplete="off"
+                            value={objectSearch}
+                            oninput={handleObjectSearch}
+                            onfocus={handleObjectFocus}
+                            onblur={handleObjectBlur}
+                            placeholder="Connect an object — or skip this"
+                        />
+                        <template lwc:if={objectOpen}>
+                            <div class="obj-list">
+                                <template for:each={objectOptions} for:item="o">
+                                    <div
+                                        key={o.value}
+                                        class={o.cls}
+                                        data-value={o.value}
+                                        data-label={o.label}
+                                        onmousedown={handleObjectPick}
+                                    >
+                                        <span class="obj-label">{o.label}</span>
+                                        <span class="obj-api">{o.value}</span>
+                                    </div>
+                                </template>
+                                <template lwc:if={hasObjectResults}></template>
+                                <template lwc:else>
+                                    <div class="obj-empty">No matches</div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <p class="d-help">
+                        Connecting an object lets questions map to its fields
+                        and prefill answers from a record. You can add or change
+                        it later in the builder.
+                    </p>
+
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Theme</span>
+                        <button
+                            class="d-theme-chip"
+                            type="button"
+                            onclick={handleChangeTheme}
+                        >
+                            <span class="d-theme-name">{chosenThemeLabel}</span>
+                            <span class="d-theme-change">
+                                <lightning-icon
+                                    icon-name="utility:image"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
+
+                    <div lwc:if={errorMessage} class="d-error" role="alert">
+                        <lightning-icon
+                            icon-name="utility:error"
+                            variant="error"
+                            size="x-small"
+                        ></lightning-icon>
+                        <span>{errorMessage}</span>
+                    </div>
+
+                    <div class="d-actions">
+                        <button
+                            class="cg-create"
+                            type="button"
+                            onclick={handleCreateSurvey}
+                            disabled={isCreating}
+                        >
+                            <template lwc:if={isCreating}>Creating…</template>
+                            <template lwc:else>Create survey</template>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: live preview -->
+                <div class="d-preview">
+                    <div class="d-preview-bar">
+                        <span class="d-preview-label">Live preview</span>
+                        <div
+                            class="dev-toggle"
+                            role="group"
+                            aria-label="Preview width"
+                        >
+                            <template for:each={deviceOptions} for:item="d">
+                                <button
+                                    key={d.value}
+                                    class={d.cls}
+                                    type="button"
+                                    data-value={d.value}
+                                    title={d.title}
+                                    onclick={handleDevice}
+                                >
+                                    <lightning-icon
+                                        icon-name={d.icon}
+                                        size="x-small"
+                                        alternative-text={d.title}
+                                    ></lightning-icon>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="d-stage" aria-hidden="true">
+                        <div
+                            class={previewFrameClass}
+                            style={previewFrameStyle}
+                        >
+                            <c-final-form-viewer
+                                spec={previewSpec}
+                            ></c-final-form-viewer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
         <!-- ============================== DONE ============================= -->
         <template lwc:elseif={isDone}>
             <div class="done">
@@ -358,7 +628,7 @@
                     variant="success"
                     size="large"
                 ></lightning-icon>
-                <h2 class="done-title">Your form is ready</h2>
+                <h2 class="done-title">{doneTitle}</h2>
                 <p class="done-sub">
                     It opens in the builder so you can make it yours.
                 </p>

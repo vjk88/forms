@@ -113,7 +113,12 @@ const SURVEY_TEMPLATES = [
 ];
 
 export default class FinalCreationGallery extends LightningElement {
-    @track step = 'layout'; // layout | theme | details | done
+    // kind → (form) layout → theme → details → done
+    // kind → (survey) templates → theme → surveyDetails → done
+    // (owner 2026-07-31: ask Form-or-Survey FIRST; surveys never pick a
+    // layout — templates and themes only)
+    @track step = 'kind';
+    @track kind = ''; // form | survey
     @track entryMode = 'scratch'; // template (placeholder) | scratch
     @track chosenLayout = '';
     @track chosenPaneFlow = '';
@@ -139,8 +144,14 @@ export default class FinalCreationGallery extends LightningElement {
     }
 
     // ---- step flags ----
+    get isKindStep() {
+        return this.step === 'kind';
+    }
     get isLayoutStep() {
         return this.step === 'layout';
+    }
+    get isTemplatesStep() {
+        return this.step === 'templates';
     }
     get isThemeStep() {
         return this.step === 'theme';
@@ -148,8 +159,28 @@ export default class FinalCreationGallery extends LightningElement {
     get isDetailsStep() {
         return this.step === 'details';
     }
+    get isSurveyDetailsStep() {
+        return this.step === 'surveyDetails';
+    }
     get isDone() {
         return this.step === 'done';
+    }
+
+    // ---- kind chooser (screen 0) ----
+    get isSurveyKind() {
+        return this.kind === 'survey';
+    }
+    handleKindForm() {
+        this.kind = 'form';
+        this.step = 'layout';
+    }
+    handleKindSurvey() {
+        this.kind = 'survey';
+        this.step = 'templates';
+    }
+    handleBackToKind() {
+        this.step = 'kind';
+        this.errorMessage = '';
     }
 
     // ---- entry toggle (template = placeholder for now) ----
@@ -175,27 +206,48 @@ export default class FinalCreationGallery extends LightningElement {
         this.entryMode = 'scratch';
     }
 
-    // ---- the Surveys shelf (S5) ----
+    // ---- the survey path: templates → theme → details (owner 2026-07-31:
+    // no layout step; the object is OPTIONAL and picked on the details
+    // screen, where questions can later map to its fields) ----
+    @track chosenTemplate = '';
+    @track surveyName = '';
+
     get surveyTemplates() {
-        return SURVEY_TEMPLATES;
+        return SURVEY_TEMPLATES.map((t) => ({
+            ...t,
+            cls:
+                t.key === this.chosenTemplate
+                    ? 'tpl-card is-selected'
+                    : 'tpl-card'
+        }));
     }
 
-    @track surveyName = '';
+    get chosenTemplateName() {
+        const t = SURVEY_TEMPLATES.find((x) => x.key === this.chosenTemplate);
+        return t ? t.name : '';
+    }
 
     handleSurveyName(e) {
         this.surveyName = e.target.value;
     }
 
     handleTemplatePick(event) {
+        this.chosenTemplate = event.currentTarget.dataset.key;
+        this.errorMessage = '';
+        this.step = 'theme';
+    }
+
+    handleCreateSurvey() {
         if (this.isCreating) {
             return;
         }
-        const templateKey = event.currentTarget.dataset.key;
         this.isCreating = true;
         this.errorMessage = '';
         createSurveyFromTemplate({
-            templateKey,
-            surveyName: this.surveyName.trim() || null
+            templateKey: this.chosenTemplate,
+            surveyName: this.surveyName.trim() || null,
+            themeName: this.chosenThemeKey || null,
+            objectApiName: this.chosenObject || null
         })
             .then((res) => {
                 this.isCreating = false;
@@ -276,19 +328,37 @@ export default class FinalCreationGallery extends LightningElement {
         this.step = 'theme';
     }
 
+    // Theme previews render the layout the creation will actually use —
+    // surveys are always the One-at-a-Time flow (templates ship it).
+    get themeGalleryLayout() {
+        return this.isSurveyKind ? 'oneAtATime' : this.chosenLayout;
+    }
+    get themeGalleryPaneFlow() {
+        return this.isSurveyKind ? '' : this.chosenPaneFlow;
+    }
+    get themeSub() {
+        return this.isSurveyKind
+            ? 'Each preview uses the survey flow — one question at a time.'
+            : 'Each preview uses your chosen layout.';
+    }
+
     // ---- live preview ----
     /**
      * The inline spec the preview viewer renders. Memoized on its real inputs
      * so unrelated re-renders (object search keystrokes) don't re-apply it.
      */
     get previewSpec() {
-        const name = this.formName.trim();
-        const key = `${this.chosenLayout}|${this.chosenPaneFlow}|${this.chosenThemeKey}|${name}`;
+        const name = this.isSurveyKind
+            ? this.surveyName.trim() || this.chosenTemplateName
+            : this.formName.trim();
+        const layout = this.isSurveyKind ? 'oneAtATime' : this.chosenLayout;
+        const paneFlow = this.isSurveyKind ? '' : this.chosenPaneFlow;
+        const key = `${this.kind}|${layout}|${paneFlow}|${this.chosenThemeKey}|${name}`;
         if (key !== this._specCacheKey) {
             this._specCacheKey = key;
             this._specCache = buildSampleSpec({
-                layout: this.chosenLayout,
-                paneFlow: this.chosenPaneFlow || undefined,
+                layout,
+                paneFlow: paneFlow || undefined,
                 themeKey: this.chosenThemeKey,
                 title: name || undefined
             });
@@ -348,10 +418,10 @@ export default class FinalCreationGallery extends LightningElement {
     }
     handleThemeSelect(e) {
         this.chosenThemeKey = e.detail.themeKey;
-        this.step = 'details';
+        this.step = this.isSurveyKind ? 'surveyDetails' : 'details';
     }
-    handleBackToLayout() {
-        this.step = 'layout';
+    handleBackFromTheme() {
+        this.step = this.isSurveyKind ? 'templates' : 'layout';
     }
     handleBackToTheme() {
         this.step = 'theme';
@@ -428,12 +498,21 @@ export default class FinalCreationGallery extends LightningElement {
     get createdStudioHref() {
         return this.createdInfo ? studioUrl(this.createdInfo.formId) : '#';
     }
+    get doneTitle() {
+        return this.isSurveyKind
+            ? 'Your survey is ready'
+            : 'Your form is ready';
+    }
+
     handleStartOver() {
-        this.step = 'layout';
+        this.step = 'kind';
+        this.kind = '';
         this.entryMode = 'scratch';
         this.chosenLayout = '';
         this.chosenPaneFlow = '';
         this.chosenThemeKey = '';
+        this.chosenTemplate = '';
+        this.surveyName = '';
         this.formName = '';
         this.chosenObject = '';
         this.objectSearch = '';

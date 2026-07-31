@@ -295,32 +295,69 @@ public with sharing class FinalFormCreateController {
     // ruling: cards are complete bundles, no wizard questions, ever) ----
 
     /**
-     * One click -> a complete DRAFT survey: questions with analytics + topics
-     * (reused from the vocabulary by name — never duplicated), oneAtATime
-     * layout, anonymous where the template warrants it. Theme/pack stay one
-     * click away in the studio's Design mode.
+     * The survey path's create (kind-first flow, owner 2026-07-31): template
+     * + theme + OPTIONAL object. Questions with analytics + topics (reused
+     * from the vocabulary by name — never duplicated), oneAtATime layout,
+     * anonymous where the template warrants it.
+     * @param templateKey   blank|csat|nps|event
+     * @param surveyName    optional — templates carry good defaults
+     * @param themeName     optional builtin theme catalog key (spec.theme)
+     * @param objectApiName optional context object — stamped as
+     *        spec.form.targetObject so questions can map to its fields and
+     *        prefill from records (survey-object program)
      */
     @AuraEnabled
     public static Map<String, Object> createSurveyFromTemplate(
         String templateKey,
-        String surveyName
+        String surveyName,
+        String themeName,
+        String objectApiName
     ) {
-        SurveyTemplate tpl = surveyTemplate(templateKey);
+        SurveyTemplate tpl = surveyTemplate(templateKey, surveyName);
         if (tpl == null) {
             throw new AuraHandledException('Unknown survey template.');
         }
-        // the shelf's optional name box wins; templates carry good defaults
-        if (String.isNotBlank(surveyName)) {
-            tpl.name = surveyName.trim().abbreviate(80);
+        // Optional context object: validate exactly like createForm — an
+        // unusable object must fail loudly, never persist silently.
+        String resolvedObject = null;
+        if (String.isNotBlank(objectApiName)) {
+            Schema.SObjectType t = Schema.getGlobalDescribe()
+                .get(objectApiName.toLowerCase());
+            if (t == null) {
+                throw new AuraHandledException('Invalid object selected.');
+            }
+            Schema.DescribeSObjectResult objDesc = t.getDescribe();
+            if (!objDesc.isUpdateable() || !objDesc.isAccessible()) {
+                throw new AuraHandledException(
+                    'You cannot use ' + objDesc.getLabel() + ' here.'
+                );
+            }
+            resolvedObject = objDesc.getName();
+            Map<String, Object> formBlock = (Map<String, Object>) tpl.spec.get(
+                'form'
+            );
+            formBlock.put('targetObject', resolvedObject);
+        }
+        if (String.isNotBlank(themeName)) {
+            tpl.spec.put(
+                'theme',
+                new Map<String, Object>{
+                    'source' => 'builtin',
+                    'name' => themeName
+                }
+            );
         }
         Savepoint sp = Database.setSavepoint();
         try {
             Form__c form = new Form__c(
                 Name = tpl.name,
                 Form_Type__c = 'Survey',
-                // legacy VR_Primary_Object_Required wants a context object on
-                // some storage modes; surveys never read it (binding: null)
-                Primary_Context_Object__c = 'Contact'
+                // the chosen optional object when present; else the legacy
+                // VR_Primary_Object_Required placeholder (surveys with no
+                // object never read it — binding: null)
+                Primary_Context_Object__c = resolvedObject == null
+                    ? 'Contact'
+                    : resolvedObject
             );
             insert as user form;
             Form_Version__c version = new Form_Version__c(
