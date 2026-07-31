@@ -41,7 +41,9 @@ export default class FinalSectionRenderer extends LightningElement {
 
     get sectionClass() {
         const style = (this.sec.style || 'card').toLowerCase();
-        return `section style-${KNOWN_STYLES.includes(style) ? style : 'card'}`;
+        const base = `section style-${KNOWN_STYLES.includes(style) ? style : 'card'}`;
+        // conversational scale — stamped by the viewer's one-per-screen split
+        return this.sec.convo ? `${base} sec-convo` : base;
     }
 
     get surfaceStyle() {

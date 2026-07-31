@@ -24,6 +24,31 @@
     box-sizing: border-box;
 }
 
+/*
+ * Conversational scale (owner 2026-07-31): one-question-per-screen sections
+ * promote their type. ONE fluid base — everything is a fixed ratio of it, so
+ * the whole tier ladder grows and shrinks together with the container (cqi =
+ * 1% of the section's width; container units, so embedded hosts scale by the
+ * space the form actually has, not the window). Floor 16px (below that iOS
+ * Safari force-zooms focused inputs), ceiling ~21px (body text plateaus —
+ * titles ride the 1.55 ratio to ~32px). The 640px measure cap keeps long
+ * questions at a readable line length and converts leftover width into
+ * deliberate framing instead of stray white space.
+ */
+.sec-convo {
+    --convo-base: clamp(1rem, 0.86rem + 1.9cqi, 1.3125rem);
+    --c-q-title-size: calc(var(--convo-base) * 1.55);
+    --c-q-title-weight: 700;
+    --c-q-title-transform: none;
+    --c-q-title-tracking: -0.01em;
+    --c-q-caption-size: calc(var(--convo-base) * 0.85);
+    --c-q-answer-size: var(--convo-base);
+    --c-q-control-h: calc(var(--c-control-h, 44px) + 6px);
+    font-size: var(--convo-base);
+    max-width: 640px;
+    margin-inline: auto;
+}
+
 .style-plain {
     background: var(--c-section-bg, transparent);
     border: var(--c-section-border, none);
