@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+    >Junction: one row per (answer × topic). Written by the survey submit runtime (system-mode fence, IMPL_PLAN_SURVEY_S1 ruling 7-2/7-3); the substrate for "average score by topic" reports when questions carry multiple tags. Tags are LIVE — renaming a Survey Topic updates every chart.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <label>Form Answer Topic</label>
+    <nameField>
+        <displayFormat>AT-{00000000}</displayFormat>
+        <label>Answer Topic #</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Form Answer Topics</pluralLabel>
+    <searchLayouts />
+    <sharingModel>ControlledByParent</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

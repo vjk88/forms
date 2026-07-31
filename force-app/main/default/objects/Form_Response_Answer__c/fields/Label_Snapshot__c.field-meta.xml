@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Label_Snapshot__c</fullName>
+    <description
+    >Photocopy of the question wording at submit time — reword the question later, old answers stay honest (SURVEY_PLAN §6).</description>
+    <externalId>false</externalId>
+    <label>Question (as asked)</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -74,6 +74,24 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
+        <object>Survey_Topic__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Form_Answer_Topic__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
         <object>Form_Section__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -413,6 +431,46 @@
         <editable>true</editable>
         <readable>true</readable>
         <field>Form_Response_Answer__c.Text_Value__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Label_Snapshot__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Entry_Index__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Normalized_Score__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Topic_Snapshot__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Sentiment_Score__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Sentiment_Label__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form_Response_Answer__c.Sentiment_Source__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Topic__c.Active__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>

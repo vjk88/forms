@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Topic_Snapshot__c</fullName>
+    <description
+    >Display-only joined topic names ("Support; Pricing") for eyeballing rows — charts group via the Form_Answer_Topic__c junction, never this string (SURVEY_PLAN round-6 topics ruling).</description>
+    <externalId>false</externalId>
+    <label>Topics (display)</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

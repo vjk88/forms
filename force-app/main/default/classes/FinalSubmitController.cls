@@ -29,7 +29,16 @@ public with sharing class FinalSubmitController {
         if (String.isBlank(payloadJson)) {
             throw new AuraHandledException('A submission payload is required.');
         }
-        Map<String, Object> spec = loadSpec(formId, versionId);
+        Form_Version__c version = loadVersion(formId, versionId);
+        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        // Availability (DEFERRED #20 → S1 ruling 7-1): the authored closed
+        // flag / open-close window now gates INTERNAL submits too — same one
+        // truth the guest controller enforces.
+        if (FinalSubmitService.isClosed(spec)) {
+            throw new AuraHandledException(
+                FinalSubmitService.closedMessage(spec)
+            );
+        }
         Map<String, Object> payload;
         try {
             payload = (Map<String, Object>) JSON.deserializeUntyped(
@@ -41,6 +50,7 @@ public with sharing class FinalSubmitController {
         FinalSubmitService.SubmitOutcome outcome = FinalSubmitService.run(
             spec,
             payload,
+            version.Id, // the SERVER-loaded version identity (never client-claimed)
             FinalSubmitService.Posture.INTERNAL
         );
         SubmitResult res = new SubmitResult();
@@ -49,12 +59,15 @@ public with sharing class FinalSubmitController {
         return res;
     }
 
-    /** The submitted version's spec: explicit version, else the ACTIVE one. */
-    private static Map<String, Object> loadSpec(Id formId, Id versionId) {
+    /** The submitted version (Id + spec): explicit version, else the ACTIVE
+     *  one. Returning the RECORD (not just the parsed spec) is the rev-2
+     *  trust fix — the service anchors survey responses to the Id the server
+     *  actually loaded. */
+    private static Form_Version__c loadVersion(Id formId, Id versionId) {
         List<Form_Version__c> versions;
         if (versionId != null) {
             versions = [
-                SELECT Spec_JSON__c
+                SELECT Id, Spec_JSON__c
                 FROM Form_Version__c
                 WHERE Id = :versionId
                 WITH USER_MODE
@@ -62,7 +75,7 @@ public with sharing class FinalSubmitController {
             ];
         } else if (formId != null) {
             versions = [
-                SELECT Spec_JSON__c
+                SELECT Id, Spec_JSON__c
                 FROM Form_Version__c
                 WHERE Form__c = :formId AND Is_Active__c = TRUE
                 WITH USER_MODE
@@ -77,10 +90,12 @@ public with sharing class FinalSubmitController {
                 'This form has no published version to submit to.'
             );
         }
+        return versions[0];
+    }
+
+    private static Map<String, Object> parseSpec(String specJson) {
         try {
-            return (Map<String, Object>) JSON.deserializeUntyped(
-                versions[0].Spec_JSON__c
-            );
+            return (Map<String, Object>) JSON.deserializeUntyped(specJson);
         } catch (Exception e) {
             throw new AuraHandledException(
                 'The form specification could not be read.'

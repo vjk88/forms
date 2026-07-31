@@ -27,18 +27,22 @@ public without sharing class FinalGuestController {
     @AuraEnabled(cacheable=true)
     public static String getGuestSpec(Id formId) {
         Form__c f = gate(formId);
-        Map<String, Object> spec = parseActiveSpec(f.Id);
-        // Availability (A3): a closed / not-yet-open / past-window form returns
-        // ONLY the closed flag + message — never the form structure (a visitor
-        // who can't submit gets no projection to inspect). The host renders the
-        // closed screen; the viewer never mounts. NOTE: cacheable, so a time-
-        // window transition can serve a stale open/closed state to a cached
-        // client — submitGuest re-checks server-side, which is the real guard.
-        if (isClosed(spec)) {
+        Form_Version__c version = activeVersion(f.Id);
+        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        // Availability (A3, helpers now shared via FinalSubmitService — one
+        // truth for both controllers; S1 ruling 7-1 adds the response cap):
+        // a closed / not-yet-open / past-window / capped form returns ONLY
+        // the closed flag + message — never the form structure. NOTE:
+        // cacheable, so a transition can serve a stale open/closed state to a
+        // cached client — submitGuest re-checks server-side, the real guard.
+        if (
+            FinalSubmitService.isClosed(spec) ||
+            FinalSubmitService.responseCapReached(spec, version.Id)
+        ) {
             return JSON.serialize(
                 new Map<String, Object>{
                     'closed' => true,
-                    'closedMessage' => closedMessage(spec)
+                    'closedMessage' => FinalSubmitService.closedMessage(spec)
                 }
             );
         }
@@ -62,12 +66,19 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException('A submission payload is required.');
         }
         Form__c f = gate(formId); // re-gated: a replayed POST re-checks
-        Map<String, Object> spec = parseActiveSpec(f.Id);
+        Form_Version__c version = activeVersion(f.Id);
+        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
 
-        // Availability (A3): a closed/expired form rejects even a replayed POST
-        // server-side (the closed-screen client can't reach here anyway).
-        if (isClosed(spec)) {
-            throw new AuraHandledException(closedMessage(spec));
+        // Availability (A3 + S1 cap): a closed/expired/capped form rejects
+        // even a replayed POST server-side (the closed-screen client can't
+        // reach here anyway). Cap re-checks HERE too — surveys go guest.
+        if (
+            FinalSubmitService.isClosed(spec) ||
+            FinalSubmitService.responseCapReached(spec, version.Id)
+        ) {
+            throw new AuraHandledException(
+                FinalSubmitService.closedMessage(spec)
+            );
         }
 
         // Guests never update — a saveMode='update' spec is refused with the
@@ -100,6 +111,7 @@ public without sharing class FinalGuestController {
         FinalSubmitService.SubmitOutcome outcome = FinalSubmitService.run(
             spec,
             payload,
+            version.Id, // the SERVER-loaded version identity (never client-claimed)
             FinalSubmitService.Posture.GUEST
         );
 
@@ -109,50 +121,8 @@ public without sharing class FinalGuestController {
         return res;
     }
 
-    // ----- availability + spam (A3) -----
-
-    /** Closed = manual status='closed', OR before opensAt, OR after closesAt.
-     *  Missing/blank window bounds are simply not applied. */
-    private static Boolean isClosed(Map<String, Object> spec) {
-        Map<String, Object> avail = availability(spec);
-        if (avail == null) {
-            return false;
-        }
-        if ((String) avail.get('status') == 'closed') {
-            return true;
-        }
-        Datetime now = Datetime.now();
-        Datetime opensAt = parseIso((String) avail.get('opensAt'));
-        Datetime closesAt = parseIso((String) avail.get('closesAt'));
-        return (opensAt != null && now < opensAt) ||
-            (closesAt != null &&
-            now > closesAt);
-    }
-
-    private static String closedMessage(Map<String, Object> spec) {
-        Map<String, Object> avail = availability(spec);
-        Object msg = avail == null ? null : avail.get('closedMessage');
-        return msg instanceof String && String.isNotBlank((String) msg)
-            ? (String) msg
-            : 'This form is no longer accepting responses.';
-    }
-
-    private static Map<String, Object> availability(Map<String, Object> spec) {
-        Map<String, Object> settings = asMap(spec.get('settings'));
-        return settings == null ? null : asMap(settings.get('availability'));
-    }
-
-    /** ISO-8601 → Datetime; blank/garbage → null (never a crash). */
-    private static Datetime parseIso(String s) {
-        if (String.isBlank(s)) {
-            return null;
-        }
-        try {
-            return (Datetime) JSON.deserialize('"' + s + '"', Datetime.class);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+    // ----- spam (A3) — availability helpers moved to FinalSubmitService
+    // (S1 ruling 7-1: ONE truth shared by both controllers) -----
 
     /** True only when the form opts into honeypot AND the bait field carries a
      *  value (real users never see or fill it). */
@@ -196,11 +166,12 @@ public without sharing class FinalGuestController {
         return f;
     }
 
-    /** Active version's parsed spec — read in system context (a guest can't
-     *  see Form_Version__c via sharing; the gate above is the trust check). */
-    private static Map<String, Object> parseActiveSpec(Id formId) {
+    /** Active version (Id + spec) — read in system context (a guest can't
+     *  see Form_Version__c via sharing; the gate above is the trust check).
+     *  Returns the RECORD so submits anchor to the SERVER-loaded version. */
+    private static Form_Version__c activeVersion(Id formId) {
         List<Form_Version__c> versions = [
-            SELECT Spec_JSON__c
+            SELECT Id, Spec_JSON__c
             FROM Form_Version__c
             WHERE Form__c = :formId AND Is_Active__c = TRUE
             ORDER BY Version_Number__c DESC
@@ -209,10 +180,12 @@ public without sharing class FinalGuestController {
         if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
             throw new AuraHandledException(UNAVAILABLE);
         }
+        return versions[0];
+    }
+
+    private static Map<String, Object> parseSpec(String specJson) {
         try {
-            return (Map<String, Object>) JSON.deserializeUntyped(
-                versions[0].Spec_JSON__c
-            );
+            return (Map<String, Object>) JSON.deserializeUntyped(specJson);
         } catch (Exception e) {
             throw new AuraHandledException(UNAVAILABLE);
         }
