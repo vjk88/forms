@@ -1,5 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
+import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyTopics';
+import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurveyTopic';
 import uploadImage from '@salesforce/apex/FormAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FormAssetController.deleteImage';
 
@@ -294,6 +296,82 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get hasCaption() {
         return Boolean(this.n.description);
+    }
+
+    // ---- topics picker (S2c — vocabulary chips, round-6 model) ----
+
+    /** Vocabulary, lazy-loaded the first time a survey question is open. */
+    allTopics;
+    topicError;
+    _topicsRequested = false;
+
+    renderedCallback() {
+        if (this.isSurveyQuestion && !this._topicsRequested) {
+            this._topicsRequested = true;
+            listSurveyTopics()
+                .then((topics) => {
+                    this.allTopics = topics;
+                })
+                .catch(() => {
+                    this.topicError =
+                        'Topics could not be loaded — try reopening.';
+                });
+        }
+    }
+
+    get topicChips() {
+        return ((this.n.analytics || {}).topics || []).filter((t) => t && t.id);
+    }
+
+    /** Datalist = vocabulary minus what's already on the question. */
+    get availableTopics() {
+        const used = new Set(this.topicChips.map((t) => t.id));
+        return (this.allTopics || []).filter((t) => !used.has(t.id));
+    }
+
+    handleRemoveTopic(event) {
+        const id = event.currentTarget.dataset.id;
+        this._patchTopics(this.topicChips.filter((t) => t.id !== id));
+    }
+
+    /** Type-or-pick: an existing name (case-insensitive) attaches the
+     *  existing topic; a new name mints one server-side (name-dedupe there
+     *  too — same-but-different tags would re-split the charts). */
+    async handleTopicEntry(event) {
+        const raw = (event.target.value || '').trim();
+        if (!raw) {
+            return;
+        }
+        event.target.value = '';
+        this.topicError = undefined;
+        const match = (this.allTopics || []).find(
+            (t) => t.name.toLowerCase() === raw.toLowerCase()
+        );
+        try {
+            const topic =
+                match || (await createSurveyTopic({ topicName: raw }));
+            if (!match) {
+                this.allTopics = [...(this.allTopics || []), topic].sort(
+                    (a, b) => a.name.localeCompare(b.name)
+                );
+            }
+            if (!this.topicChips.some((t) => t.id === topic.id)) {
+                this._patchTopics([
+                    ...this.topicChips,
+                    { id: topic.id, name: topic.name }
+                ]);
+            }
+        } catch (e) {
+            this.topicError =
+                (e && e.body && e.body.message) ||
+                'That topic could not be added.';
+        }
+    }
+
+    _patchTopics(topics) {
+        this._prop({
+            analytics: { ...(this.n.analytics || {}), topics }
+        });
     }
 
     /** Rating max: segmented 5|10 (owner ruling Q1 — never a spinner,

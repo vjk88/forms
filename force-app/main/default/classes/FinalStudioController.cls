@@ -577,4 +577,68 @@ public with sharing class FinalStudioController {
         }
         return null;
     }
+
+    // ---- survey topics (S2c — the managed tag vocabulary, round-6 model) ----
+
+    public class TopicEntry {
+        @AuraEnabled
+        public Id id;
+        @AuraEnabled
+        public String name;
+    }
+
+    /** Active topics for the question-properties picker — picked from the
+     *  vocabulary, never free-typed (topic drift is the enemy). */
+    @AuraEnabled
+    public static List<TopicEntry> listSurveyTopics() {
+        List<TopicEntry> out = new List<TopicEntry>();
+        for (Survey_Topic__c t : [
+            SELECT Id, Name
+            FROM Survey_Topic__c
+            WHERE Active__c = TRUE
+            WITH USER_MODE
+            ORDER BY Name
+            LIMIT 500
+        ]) {
+            TopicEntry e = new TopicEntry();
+            e.id = t.Id;
+            e.name = t.Name;
+            out.add(e);
+        }
+        return out;
+    }
+
+    /** Inline "new topic". An existing name (exact match) is REUSED, never
+     *  duplicated — same-but-different tags would re-split every chart the
+     *  vocabulary exists to unify. Builder CRUD comes from the permission
+     *  set; USER_MODE keeps that honest. */
+    @AuraEnabled
+    public static TopicEntry createSurveyTopic(String topicName) {
+        String name = topicName == null ? '' : topicName.trim();
+        if (String.isBlank(name)) {
+            throw new AuraHandledException('A topic needs a name.');
+        }
+        name = name.abbreviate(80);
+        List<Survey_Topic__c> existing = [
+            SELECT Id, Name
+            FROM Survey_Topic__c
+            WHERE Name = :name
+            WITH USER_MODE
+            LIMIT 1
+        ];
+        TopicEntry e = new TopicEntry();
+        if (!existing.isEmpty()) {
+            e.id = existing[0].Id;
+            e.name = existing[0].Name;
+            return e;
+        }
+        Survey_Topic__c topic = new Survey_Topic__c(
+            Name = name,
+            Active__c = true
+        );
+        insert as user topic;
+        e.id = topic.Id;
+        e.name = name;
+        return e;
+    }
 }
