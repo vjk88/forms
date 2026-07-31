@@ -55,16 +55,42 @@
             </div>
 
             <!-- Mode A: templates (placeholder for now) -->
-            <div lwc:if={isTemplateMode} class="tpl-empty">
-                <lightning-icon
-                    icon-name="utility:apps"
-                    size="medium"
-                    class="tpl-empty-icon"
-                ></lightning-icon>
-                <h2 class="tpl-empty-title">Templates are coming soon</h2>
-                <p class="tpl-empty-sub">
-                    Start from scratch while the template gallery is built.
-                </p>
+            <div lwc:if={isTemplateMode} class="tpl-shelf">
+                <section class="lg-group">
+                    <div class="lg-head">
+                        <h2 class="lg-title">Surveys</h2>
+                        <span class="lg-hint"
+                            >complete and ready — answers land in the answer
+                            store, one question per screen</span
+                        >
+                    </div>
+                    <div class="tpl-grid">
+                        <template for:each={surveyTemplates} for:item="t">
+                            <button
+                                key={t.key}
+                                type="button"
+                                class="tpl-card"
+                                data-key={t.key}
+                                disabled={isCreating}
+                                onclick={handleTemplatePick}
+                            >
+                                <lightning-icon
+                                    icon-name={t.icon}
+                                    size="small"
+                                ></lightning-icon>
+                                <span class="tpl-name">{t.name}</span>
+                                <span class="tpl-blurb">{t.blurb}</span>
+                            </button>
+                        </template>
+                    </div>
+                    <template lwc:if={errorMessage}>
+                        <p class="g-error" role="alert">{errorMessage}</p>
+                    </template>
+                    <p class="lg-hint">
+                        Form templates (pre-bound to standard objects) arrive
+                        next — start from scratch below meanwhile.
+                    </p>
+                </section>
             </div>
 
             <!-- Mode B: layouts, grouped -->
@@ -195,10 +221,7 @@
                         />
                         <template lwc:if={objectOpen}>
                             <div class="obj-list">
-                                <template
-                                    for:each={objectOptions}
-                                    for:item="o"
-                                >
+                                <template for:each={objectOptions} for:item="o">
                                     <div
                                         key={o.value}
                                         class={o.cls}
@@ -281,7 +304,11 @@
                 <div class="d-preview">
                     <div class="d-preview-bar">
                         <span class="d-preview-label">Live preview</span>
-                        <div class="dev-toggle" role="group" aria-label="Preview width">
+                        <div
+                            class="dev-toggle"
+                            role="group"
+                            aria-label="Preview width"
+                        >
                             <template for:each={deviceOptions} for:item="d">
                                 <button
                                     key={d.value}
@@ -301,7 +328,10 @@
                         </div>
                     </div>
                     <div class="d-stage" aria-hidden="true">
-                        <div class={previewFrameClass} style={previewFrameStyle}>
+                        <div
+                            class={previewFrameClass}
+                            style={previewFrameStyle}
+                        >
                             <c-final-form-viewer
                                 spec={previewSpec}
                             ></c-final-form-viewer>
