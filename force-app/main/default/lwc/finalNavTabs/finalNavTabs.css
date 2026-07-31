@@ -131,18 +131,23 @@
     }
 }
 
-/* — Narrow: fade edges signal the horizontal scroll (never wrap) — */
-@container tabs (max-width: 540px) {
-    .tab-strip {
-        mask-image: linear-gradient(
-            to right,
-            transparent,
-            #000 var(--c-space-5),
-            #000 calc(100% - var(--c-space-5)),
-            transparent
-        );
-    }
+/* Fade edges signal the horizontal scroll at ANY width (reviewer blocker
+   B3, 2026-07-31: a 20-tab survey overflowed at desktop width with zero
+   affordance — the fade was gated to the narrow query). When the strip
+   doesn't overflow, the tabs sit inside the faded margins and nothing
+   visibly changes. */
+.tab-strip {
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 var(--c-space-5),
+        #000 calc(100% - var(--c-space-5)),
+        transparent
+    );
+}
 
+/* — Narrow: left-anchor so the fade + scroll read naturally — */
+@container tabs (max-width: 540px) {
     .align-center {
         justify-content: flex-start;
     }

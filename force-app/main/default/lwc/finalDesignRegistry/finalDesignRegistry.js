@@ -360,7 +360,11 @@ const AREAS = [
                         type: 'toggle',
                         hint: 'Shows each question on its own screen when someone fills this out. Your sections in Build stay exactly as they are.',
                         path: 'settings.onePerScreen',
-                        fallback: false
+                        fallback: false,
+                        // a BEHAVIOUR decision, not a style knob — it must be
+                        // findable without the Advanced lens (reviewer 2026-07-31);
+                        // self-gates to surveys, costs forms nothing
+                        simple: true
                     }
                 ]
             },

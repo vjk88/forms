@@ -64,6 +64,12 @@ function splitOnePerScreen(pages) {
                             ...section,
                             id: `${section.id}~${el.id}`,
                             showHeader: i === 0 ? section.showHeader : false,
+                            // reviewer blocker B2 (2026-07-31): a one-question
+                            // screen is never an accordion — inherited
+                            // collapse flags left screen 1 EMPTY behind a
+                            // chevron while Next walked right past it
+                            collapsible: false,
+                            defaultCollapsed: false,
                             // conversational scale (owner 2026-07-31): a lone
                             // question is a HEADLINE, not a 13px form label —
                             // the section renderer promotes the type tiers
@@ -362,6 +368,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         );
         const zonesDefault = (spec.layout && spec.layout.zonesDefault) || {};
         let options = (spec.layout && spec.layout.options) || {};
+        if (onePerScreen && options.showStepCount === undefined) {
+            // long flows are the NORM in split mode; without the counter a
+            // 20-question stepper is unlabeled dots (reviewer 2026-07-31).
+            // An explicit authored false still wins.
+            options = { ...options, showStepCount: true };
+        }
         // splitHero's brand pane replaces formHeader (registry: ownsHeader);
         // its Pane Flow = One at a Time also owns the advance, like oneAtATime.
         const ownsAdvance = Boolean(
