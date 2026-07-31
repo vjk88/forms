@@ -285,6 +285,12 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.isElement && this.n.type === 'emojiScale';
     }
 
+    /** End labels apply to the scale family EXCEPT emoji — the faces are the
+     *  labels (owner 2026-07-31); the renderer speaks sentiment aria instead. */
+    get showEndLabels() {
+        return this.isScaleFamilyQuestion && !this.isEmojiScaleQuestion;
+    }
+
     get isScaleFamilyQuestion() {
         return (
             this.isNpsQuestion ||

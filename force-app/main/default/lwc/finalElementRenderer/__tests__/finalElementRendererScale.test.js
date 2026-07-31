@@ -116,12 +116,26 @@ describe('scale family', () => {
         expect(plain[0].className).not.toContain('nps-detractor');
     });
 
-    it('emojiScale wears the faces', () => {
+    it('emojiScale wears the faces and speaks sentiment aria', () => {
         const row = chips(
             mount({ id: 'e1', type: 'emojiScale', label: 'Feeling?' })
         );
         expect(row.length).toBe(5);
         expect(row[4].textContent.trim()).toBe('😍');
+        // owner 2026-07-31: faces carry meaning visually, aria must say it —
+        // never a bare positional "2 of 5"
+        expect(row[0].getAttribute('aria-label')).toBe('Very unhappy, 1 of 5');
+        expect(row[4].getAttribute('aria-label')).toBe('Very happy, 5 of 5');
+    });
+
+    it('emojiScale never renders end labels, even when authored', () => {
+        const el = mount({
+            id: 'e1',
+            type: 'emojiScale',
+            label: 'Feeling?',
+            config: { leftLabel: 'Bad', rightLabel: 'Great' }
+        });
+        expect(el.shadowRoot.querySelector('.scale-endlabels')).toBeNull();
     });
 
     it('caption renders as a visible line, or hides behind the help bubble', () => {
