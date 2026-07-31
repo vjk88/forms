@@ -144,10 +144,42 @@
                     </div>
                 </div>
 
-                <p class="pp-sub">
-                    Topics (chart tags) arrive with the topic picker — next
-                    slice.
-                </p>
+                <div class="pp-fld">
+                    <span class="pp-label">Topics (chart tags)</span>
+                    <template lwc:if={topicChips.length}>
+                        <div class="pp-topic-chips">
+                            <template for:each={topicChips} for:item="t">
+                                <span key={t.id} class="pp-topic-chip">
+                                    {t.name}
+                                    <button
+                                        type="button"
+                                        class="pp-topic-x"
+                                        title="Remove topic"
+                                        data-id={t.id}
+                                        onclick={handleRemoveTopic}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+                    </template>
+                    <input
+                        type="text"
+                        class="pp-input"
+                        list="pp-topic-list"
+                        placeholder="Add a topic… (type to pick or create)"
+                        onchange={handleTopicEntry}
+                    />
+                    <datalist id="pp-topic-list">
+                        <template for:each={availableTopics} for:item="t">
+                            <option key={t.id} value={t.name}></option>
+                        </template>
+                    </datalist>
+                    <template lwc:if={topicError}>
+                        <p class="pp-sub" role="alert">{topicError}</p>
+                    </template>
+                </div>
             </div>
         </template>
 

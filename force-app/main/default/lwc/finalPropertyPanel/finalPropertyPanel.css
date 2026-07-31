@@ -361,3 +361,35 @@
     border-color: #0d9488;
     background: #e6f5f2;
 }
+
+/* ---- topic chips (S2c — vocabulary tags on survey questions) ---- */
+.pp-topic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.pp-topic-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 10px;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: #0b5cab;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.pp-topic-x {
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 50%;
+}
+.pp-topic-x:hover {
+    background: rgba(11, 92, 171, 0.15);
+}
