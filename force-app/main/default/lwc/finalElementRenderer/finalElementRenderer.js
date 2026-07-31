@@ -407,6 +407,10 @@ export default class FinalElementRenderer extends LightningElement {
                         : 'scale-icon';
             } else {
                 cls = isSel ? 'scale-chip selected' : 'scale-chip';
+                if (this.isEmojiScale) {
+                    // big bare faces, not boxed chips (Card Deck treatment)
+                    cls += ' emoji-chip';
+                }
                 if (this.npsClassic) {
                     cls +=
                         v <= 6
