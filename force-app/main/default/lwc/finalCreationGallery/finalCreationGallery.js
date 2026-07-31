@@ -1,6 +1,7 @@
 import { LightningElement, track, wire } from 'lwc';
 import getUpdatableObjects from '@salesforce/apex/FinalFormCreateController.getUpdatableObjects';
 import createForm from '@salesforce/apex/FinalFormCreateController.createForm';
+import createSurveyFromTemplate from '@salesforce/apex/FinalFormCreateController.createSurveyFromTemplate';
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
 
@@ -80,6 +81,30 @@ function cardKey(c) {
     return c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout;
 }
 
+/** The Surveys shelf (S5 — creation-flow ruling: complete bundles, no
+ *  wizard). Each card = one server-side template; answers land in the
+ *  answer store, one question per screen. */
+const SURVEY_TEMPLATES = [
+    {
+        key: 'csat',
+        name: 'CSAT Pulse',
+        icon: 'utility:smiley_and_people',
+        blurb: 'How satisfied are customers? One score, one comment — charted by the Satisfaction topic.'
+    },
+    {
+        key: 'nps',
+        name: 'NPS Pulse',
+        icon: 'utility:metrics',
+        blurb: 'The classic 0–10 "would you recommend us?" plus the why — charted by the Loyalty topic.'
+    },
+    {
+        key: 'event',
+        name: 'Event Feedback',
+        icon: 'utility:event',
+        blurb: 'Rating, agreement, would-you-return, comments. Anonymous by default — honest answers.'
+    }
+];
+
 export default class FinalCreationGallery extends LightningElement {
     @track step = 'layout'; // layout | theme | details | done
     @track entryMode = 'scratch'; // template (placeholder) | scratch
@@ -141,6 +166,40 @@ export default class FinalCreationGallery extends LightningElement {
     }
     handleEntryScratch() {
         this.entryMode = 'scratch';
+    }
+
+    // ---- the Surveys shelf (S5) ----
+    get surveyTemplates() {
+        return SURVEY_TEMPLATES;
+    }
+
+    handleTemplatePick(event) {
+        if (this.isCreating) {
+            return;
+        }
+        const templateKey = event.currentTarget.dataset.key;
+        this.isCreating = true;
+        this.errorMessage = '';
+        createSurveyFromTemplate({ templateKey })
+            .then((res) => {
+                this.isCreating = false;
+                this.createdInfo = res;
+                this.step = 'done';
+                this.dispatchEvent(
+                    new CustomEvent('formcreated', {
+                        detail: {
+                            formId: res.formId,
+                            versionId: res.versionId
+                        }
+                    })
+                );
+            })
+            .catch((e) => {
+                this.isCreating = false;
+                this.errorMessage =
+                    (e && e.body && e.body.message) ||
+                    'Could not create the survey.';
+            });
     }
 
     // ---- grouped layout gallery ----

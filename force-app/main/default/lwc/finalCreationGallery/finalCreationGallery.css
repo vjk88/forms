@@ -481,3 +481,40 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ---- the Surveys shelf (S5) ---- */
+.tpl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.tpl-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 18px;
+    border: 1.5px solid #dddbda;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    transition: border-color 120ms;
+}
+.tpl-card:hover:not(:disabled) {
+    border-color: #0d9488;
+}
+.tpl-card:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.tpl-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+.tpl-blurb {
+    font-size: 0.8rem;
+    color: #54698d;
+}
