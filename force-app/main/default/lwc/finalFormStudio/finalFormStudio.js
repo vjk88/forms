@@ -957,6 +957,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     config: {},
                     analytics: score(1, 5)
                 };
+            case 'yesNo':
+                return {
+                    ...base,
+                    type: 'yesNo',
+                    label: 'Is that a yes?',
+                    config: { yesLabel: 'Yes', noLabel: 'No' }
+                };
+            case 'imageChoice':
+                return {
+                    ...base,
+                    type: 'imageChoice',
+                    label: 'Which do you prefer?',
+                    config: { multiple: false, options: [] }
+                };
             case 'surveyShortText':
                 return {
                     ...base,

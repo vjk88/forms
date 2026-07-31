@@ -36,6 +36,18 @@ const QUESTIONS = [
         title: 'Smiley faces — sentiment at a glance'
     },
     {
+        type: 'yesNo',
+        label: 'Yes / No',
+        icon: 'utility:like',
+        title: 'Two big buttons — a binary answer'
+    },
+    {
+        type: 'imageChoice',
+        label: 'Image Choice',
+        icon: 'utility:image',
+        title: 'Respondents answer by picking a picture'
+    },
+    {
         type: 'surveyShortText',
         label: 'Short Text',
         icon: 'utility:text',

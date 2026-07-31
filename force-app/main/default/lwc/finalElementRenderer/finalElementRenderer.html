@@ -30,7 +30,36 @@
                 </template>
             </template>
 
-            <template lwc:if={isTextarea}>
+            <template lwc:if={isChipChoice}>
+                <div class="choice-row" role="group" aria-label={el.label}>
+                    <template for:each={chipChoiceItems} for:item="item">
+                        <button
+                            key={item.value}
+                            type="button"
+                            class={item.cls}
+                            aria-pressed={item.ariaChecked}
+                            data-value={item.value}
+                            onclick={handleChipChoice}
+                        >
+                            <span class="choice-title">{item.display}</span>
+                            <template lwc:if={item.description}>
+                                <span class="choice-desc"
+                                    >{item.description}</span
+                                >
+                            </template>
+                        </button>
+                    </template>
+                </div>
+                <template lwc:if={showOtherInput}>
+                    <input
+                        type="text"
+                        class="choice-other"
+                        placeholder="Your own answer…"
+                        oninput={handleOtherText}
+                    />
+                </template>
+            </template>
+            <template lwc:elseif={isTextarea}>
                 <lightning-textarea
                     label={el.label}
                     placeholder={el.placeholder}
@@ -241,6 +270,114 @@
                 ></lightning-icon>
                 <span>File upload arrives with a later step.</span>
             </div>
+        </div>
+    </template>
+    <template lwc:elseif={isYesNo}>
+        <div class={fieldClass}>
+            <template lwc:if={showCustomLabel}>
+                <div class="field-label-row">
+                    <label class={labelClass} aria-hidden="true">
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
+            </template>
+            <div
+                class="scale-row yn-row"
+                role="radiogroup"
+                aria-label={el.label}
+            >
+                <template for:each={yesNoItems} for:item="item">
+                    <button
+                        key={item.value}
+                        type="button"
+                        role="radio"
+                        class={item.cls}
+                        aria-checked={item.ariaChecked}
+                        data-value={item.value}
+                        onclick={handleYesNo}
+                    >
+                        {item.display}
+                    </button>
+                </template>
+            </div>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+    <template lwc:elseif={isImageChoice}>
+        <div class={fieldClass}>
+            <template lwc:if={showCustomLabel}>
+                <div class="field-label-row">
+                    <label class={labelClass} aria-hidden="true">
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
+            </template>
+            <template lwc:if={hasImageTiles}>
+                <div class="ic-grid" role="group" aria-label={el.label}>
+                    <template for:each={imageTiles} for:item="t">
+                        <button
+                            key={t.value}
+                            type="button"
+                            class={t.cls}
+                            aria-pressed={t.ariaChecked}
+                            data-value={t.value}
+                            onclick={handleImagePick}
+                        >
+                            <template lwc:if={t.hasImage}>
+                                <img class="ic-img" src={t.url} alt="" />
+                            </template>
+                            <template lwc:else>
+                                <div class="ic-img ic-ph"></div>
+                            </template>
+                            <span class="ic-label">{t.label}</span>
+                        </button>
+                    </template>
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="block-image-empty">
+                    <lightning-icon
+                        icon-name="utility:image"
+                        size="small"
+                    ></lightning-icon>
+                    <span>Image choice — add options in its properties</span>
+                </div>
+            </template>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
         </div>
     </template>
     <template lwc:elseif={isScaleFamily}>
