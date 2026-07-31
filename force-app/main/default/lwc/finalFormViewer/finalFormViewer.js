@@ -9,6 +9,53 @@ import { ensureFont } from 'c/finalFontLoader';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 
 /**
+ * One-question-per-screen auto-split (SURVEY_PLAN §10 Q4, ruled 2026-07-27,
+ * built 2026-07-31). RENDER-TIME only — the authored spec keeps its pages and
+ * sections; each question becomes its own virtual page whose single section
+ * inherits the parent's title/style/visibility, so section theming, rules and
+ * OneAtATime's section-label eyebrow keep working. The in-card section header
+ * renders only on the section's FIRST question (the renderer's existing
+ * `showHeader !== false` escape — this is its first writer). Repeat sections
+ * stay ATOMIC: one screen for the whole repeater. Virtual pages drop `name`
+ * so steppers/tabs fall back to honest numbering (Step 1…N).
+ */
+function splitOnePerScreen(pages) {
+    const out = [];
+    const pageId = (page, suffix) => `${page.id || page.key || 'p'}~${suffix}`;
+    for (const page of pages) {
+        for (const section of page.sections || []) {
+            if (section.repeat) {
+                out.push({
+                    ...page,
+                    name: undefined,
+                    id: pageId(page, section.id),
+                    key: pageId(page, section.id),
+                    sections: [section]
+                });
+                continue;
+            }
+            (section.elements || []).forEach((el, i) => {
+                out.push({
+                    ...page,
+                    name: undefined,
+                    id: pageId(page, el.id),
+                    key: pageId(page, el.id),
+                    sections: [
+                        {
+                            ...section,
+                            id: `${section.id}~${el.id}`,
+                            showHeader: i === 0 ? section.showHeader : false,
+                            elements: [el]
+                        }
+                    ]
+                });
+            });
+        }
+    }
+    return out;
+}
+
+/**
  * finalFormViewer — P0 minimal viewer: fetches one published Spec_JSON__c blob,
  * parses it (FORM_SPEC_SCHEMA v1), resolves tokens, lazy-loads the nav primitive
  * from the registry, and hands everything to finalPageFrame.
@@ -248,12 +295,25 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return; // a newer spec landed while the primitive loaded
         }
         this.navCtor = module.default;
+        // One question per screen (Design → Paging, surveys only): the split
+        // rides paginating layouts — scroll has no paging machinery to ride.
+        const onePerScreen = Boolean(
+            spec.form &&
+            spec.form.type === 'survey' &&
+            spec.settings &&
+            spec.settings.onePerScreen &&
+            layout.paginates
+        );
+        this._onePerScreen = onePerScreen;
+        const effectivePages = onePerScreen
+            ? splitOnePerScreen(spec.pages || [])
+            : spec.pages || [];
         // Same layout + page count (a live-preview retint/retitle) keeps the
         // visitor's place; anything structural restarts at page 1.
         const keepNav =
             preserveNav &&
             this.model &&
-            this.model.pages.length === (spec.pages || []).length &&
+            this.model.pages.length === effectivePages.length &&
             this._appliedLayoutType === (spec.layout && spec.layout.type);
         if (!keepNav) {
             this.pageIndex = 0;
@@ -333,7 +393,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._ruleTypeIndex = new Map();
         this._hasRules = false;
         this._hasValidation = false;
-        for (const page of spec.pages || []) {
+        for (const page of effectivePages) {
             if (page.visibility) {
                 this._hasRules = true;
             }
@@ -378,7 +438,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // Each page carries the layout's zonesDefault. (The per-page
             // sparse override was deleted 2026-07-18 — sweep DELETE ruling:
             // schema'd but no writer ever existed.)
-            pages: (spec.pages || []).map((page) => ({
+            pages: effectivePages.map((page) => ({
                 ...page,
                 zones: { ...zonesDefault }
             })),
@@ -430,6 +490,23 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             pages = pages.filter((page) =>
                 evaluateVisibility(page.visibility, ctx)
             );
+            if (this._onePerScreen) {
+                // One-per-screen: a rule-hidden question must not leave a
+                // blank screen — virtual pages whose only element (or whole
+                // section) is hidden drop out HERE, before reveal indexes
+                // apply, so nav indexes and _revealed stay aligned.
+                // Repeaters never split; section visibility is their check.
+                pages = pages.filter((page) =>
+                    (page.sections || []).some(
+                        (s) =>
+                            evaluateVisibility(s.visibility, ctx) &&
+                            (s.repeat ||
+                                (s.elements || []).some((el) =>
+                                    evaluateVisibility(el.visibility, ctx)
+                                ))
+                    )
+                );
+            }
         }
         return pages.map((page, pi) => {
             const reveal = needErrors && this._revealed.includes(pi);

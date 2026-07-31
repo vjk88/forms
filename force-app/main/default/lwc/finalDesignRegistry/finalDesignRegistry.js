@@ -346,6 +346,25 @@ const AREAS = [
         icon: 'utility:forward',
         groups: [
             {
+                // SURVEY_PLAN §10 Q4 (ruled 2026-07-27, built 2026-07-31):
+                // render-time auto-split in the viewer — authored sections
+                // never change. Paginating layouts only; scroll has no
+                // paging machinery to ride.
+                key: 'survey',
+                label: 'Survey',
+                appliesTo: { formTypes: ['survey'], paginated: true },
+                controls: [
+                    {
+                        key: 'onePerScreen',
+                        label: 'One question per page',
+                        type: 'toggle',
+                        hint: 'Shows each question on its own screen when someone fills this out. Your sections in Build stay exactly as they are.',
+                        path: 'settings.onePerScreen',
+                        fallback: false
+                    }
+                ]
+            },
+            {
                 key: 'flow',
                 label: 'Flow',
                 appliesTo: { layouts: ['scroll'] },
