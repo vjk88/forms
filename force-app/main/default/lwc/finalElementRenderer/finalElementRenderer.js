@@ -55,6 +55,12 @@ export default class FinalElementRenderer extends LightningElement {
      *  S2 "selection doesn't paint" bug). */
     _scaleValue;
 
+    /** Choice-family local state (S3) — same declared-field law. */
+    _choiceValue;
+    _choiceValues;
+    _otherOn = false;
+    _otherText = '';
+
     get el() {
         return this.element || {};
     }
@@ -266,7 +272,10 @@ export default class FinalElementRenderer extends LightningElement {
      */
     get showCustomLabel() {
         return (
-            (this.isField || this.isScaleFamily) &&
+            (this.isField ||
+                this.isScaleFamily ||
+                this.isYesNo ||
+                this.isImageChoice) &&
             this.el.labelPosition !== 'hidden' &&
             Boolean(this.el.label)
         );
@@ -400,6 +409,207 @@ export default class FinalElementRenderer extends LightningElement {
 
     get hasEndLabels() {
         return Boolean(this.cfg.leftLabel || this.cfg.rightLabel);
+    }
+
+    // ---- choice family (S3: yesNo · imageChoice · chips/cards optionStyle) ----
+
+    get isYesNo() {
+        return this.el.type === 'yesNo';
+    }
+
+    get isImageChoice() {
+        return this.el.type === 'imageChoice';
+    }
+
+    /** field + options + optionStyle chips|cards → our presentation takes
+     *  over from the lightning radio/checkbox groups. */
+    get isChipChoice() {
+        return (
+            this.isField &&
+            this.hasOptions &&
+            (this.cfg.optionStyle === 'chips' ||
+                this.cfg.optionStyle === 'cards')
+        );
+    }
+
+    get isCardStyle() {
+        return this.cfg.optionStyle === 'cards';
+    }
+
+    /** Multi-select comes from the renderAs the choice was authored with. */
+    get choiceIsMulti() {
+        return (
+            this.renderAs === 'Checkbox_Group' ||
+            this.renderAs === 'Custom_MultiSelect' ||
+            (this.isImageChoice && Boolean(this.cfg.multiple))
+        );
+    }
+
+    get choiceSelectedSet() {
+        if (this.choiceIsMulti) {
+            const local = this._choiceValues;
+            const fromEl = Array.isArray(this.el.value) ? this.el.value : [];
+            return new Set(local || fromEl);
+        }
+        const single =
+            this._choiceValue != null
+                ? this._choiceValue
+                : typeof this.el.value === 'string'
+                  ? this.el.value
+                  : null;
+        return new Set(single != null ? [single] : []);
+    }
+
+    get yesNoItems() {
+        const sel = this.choiceSelectedSet;
+        const yes = this.cfg.yesLabel || 'Yes';
+        const no = this.cfg.noLabel || 'No';
+        return [
+            {
+                value: 'true',
+                display: yes,
+                cls: sel.has('true') ? 'yn-btn selected' : 'yn-btn',
+                ariaChecked: sel.has('true') ? 'true' : 'false'
+            },
+            {
+                value: 'false',
+                display: no,
+                cls: sel.has('false') ? 'yn-btn selected' : 'yn-btn',
+                ariaChecked: sel.has('false') ? 'true' : 'false'
+            }
+        ];
+    }
+
+    handleYesNo(event) {
+        const v = event.currentTarget.dataset.value;
+        this._choiceValue = v;
+        this.dispatchValue(v === 'true');
+    }
+
+    /** yesNo hydration: el.value is a BOOLEAN for this type. */
+    get yesNoHydrated() {
+        return typeof this.el.value === 'boolean'
+            ? String(this.el.value)
+            : null;
+    }
+
+    renderedCallback() {
+        // one-time yesNo rehydrate (boolean value → string chip key)
+        if (
+            this.isYesNo &&
+            this._choiceValue == null &&
+            this.yesNoHydrated != null
+        ) {
+            this._choiceValue = this.yesNoHydrated;
+        }
+    }
+
+    get chipChoiceItems() {
+        const sel = this.choiceSelectedSet;
+        const base = this.isCardStyle ? 'choice-card' : 'choice-chip';
+        const items = this.options.map((o) => ({
+            value: o.value,
+            display: o.label,
+            description: o.description,
+            cls: sel.has(o.value) ? `${base} selected` : base,
+            ariaChecked: sel.has(o.value) ? 'true' : 'false'
+        }));
+        if (this.cfg.allowOther) {
+            items.push({
+                value: '__other__',
+                display: 'Other…',
+                cls: this._otherOn ? `${base} selected` : base,
+                ariaChecked: this._otherOn ? 'true' : 'false'
+            });
+        }
+        return items;
+    }
+
+    get showOtherInput() {
+        return this._otherOn;
+    }
+
+    handleChipChoice(event) {
+        const v = event.currentTarget.dataset.value;
+        if (v === '__other__') {
+            this._otherOn = !this._otherOn;
+            if (!this._otherOn) {
+                this._otherText = '';
+            }
+            this._dispatchChoice();
+            return;
+        }
+        if (this.choiceIsMulti) {
+            const next = new Set(this.choiceSelectedSet);
+            if (next.has(v)) {
+                next.delete(v);
+            } else {
+                next.add(v);
+            }
+            this._choiceValues = [...next];
+        } else {
+            this._choiceValue = v;
+            this._otherOn = false;
+            this._otherText = '';
+        }
+        this._dispatchChoice();
+    }
+
+    handleOtherText(event) {
+        this._otherText = event.target.value;
+        this._dispatchChoice();
+    }
+
+    /** Single: the option value (or the typed Other text). Multi: the list
+     *  (+ Other text appended when present). */
+    _dispatchChoice() {
+        if (this.choiceIsMulti) {
+            const values = [...(this._choiceValues || [])];
+            if (this._otherOn && this._otherText.trim()) {
+                values.push(this._otherText.trim());
+            }
+            this.dispatchValue(values);
+            return;
+        }
+        if (this._otherOn) {
+            this.dispatchValue(this._otherText.trim());
+            return;
+        }
+        this.dispatchValue(this._choiceValue);
+    }
+
+    /** imageChoice tiles: authored options carry {value, label, url}. */
+    get imageTiles() {
+        const sel = this.choiceSelectedSet;
+        return (this.cfg.options || []).map((o) => ({
+            value: o.value,
+            label: o.label || o.value,
+            url: o.url,
+            hasImage: Boolean(o.url),
+            cls: sel.has(o.value) ? 'ic-tile selected' : 'ic-tile',
+            ariaChecked: sel.has(o.value) ? 'true' : 'false'
+        }));
+    }
+
+    get hasImageTiles() {
+        return (this.cfg.options || []).length > 0;
+    }
+
+    handleImagePick(event) {
+        const v = event.currentTarget.dataset.value;
+        if (this.choiceIsMulti) {
+            const next = new Set(this.choiceSelectedSet);
+            if (next.has(v)) {
+                next.delete(v);
+            } else {
+                next.add(v);
+            }
+            this._choiceValues = [...next];
+            this.dispatchValue([...next]);
+        } else {
+            this._choiceValue = v;
+            this.dispatchValue(v);
+        }
     }
 
     handleScalePick(event) {

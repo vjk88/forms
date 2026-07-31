@@ -178,3 +178,71 @@ describe('scale family', () => {
         expect(bare.shadowRoot.querySelector('.scale-endlabels')).toBeNull();
     });
 });
+
+describe('choice family (S3)', () => {
+    it('yesNo dispatches BOOLEANS from two big buttons', () => {
+        const el = mount({ id: 'e1', type: 'yesNo', label: 'Coming?' });
+        const handler = jest.fn();
+        el.addEventListener('valuechange', handler);
+        const btns = chips(el);
+        expect(btns.length).toBe(2);
+        btns[0].click();
+        expect(handler.mock.calls[0][0].detail.value).toBe(true);
+        btns[1].click();
+        expect(handler.mock.calls[1][0].detail.value).toBe(false);
+    });
+
+    it('imageChoice multi toggles a value list', () => {
+        const el = mount({
+            id: 'e1',
+            type: 'imageChoice',
+            label: 'Pick designs',
+            config: {
+                multiple: true,
+                options: [
+                    { value: 'a', label: 'A' },
+                    { value: 'b', label: 'B' }
+                ]
+            }
+        });
+        const handler = jest.fn();
+        el.addEventListener('valuechange', handler);
+        const tiles = [...el.shadowRoot.querySelectorAll('.ic-tile')];
+        tiles[0].click();
+        tiles[1].click();
+        expect(handler.mock.calls[1][0].detail.value).toEqual(['a', 'b']);
+        tiles[0].click();
+        expect(handler.mock.calls[2][0].detail.value).toEqual(['b']);
+    });
+
+    it('chips optionStyle takes over a radio field and Other reveals free text', async () => {
+        const el = mount({
+            id: 'e1',
+            type: 'field',
+            label: 'Favorite?',
+            config: {
+                renderAs: 'Radio_Buttons',
+                optionStyle: 'chips',
+                allowOther: true,
+                options: [
+                    { value: 'red', label: 'Red' },
+                    { value: 'blue', label: 'Blue' }
+                ]
+            }
+        });
+        const handler = jest.fn();
+        el.addEventListener('valuechange', handler);
+        const btns = [...el.shadowRoot.querySelectorAll('.choice-chip')];
+        expect(btns.length).toBe(3); // two options + Other
+        btns[0].click();
+        expect(handler.mock.calls[0][0].detail.value).toBe('red');
+        btns[2].click(); // Other…
+        await Promise.resolve();
+        const other = el.shadowRoot.querySelector('.choice-other');
+        expect(other).not.toBeNull();
+        other.value = 'chartreuse';
+        other.dispatchEvent(new CustomEvent('input'));
+        const last = handler.mock.calls[handler.mock.calls.length - 1];
+        expect(last[0].detail.value).toBe('chartreuse');
+    });
+});

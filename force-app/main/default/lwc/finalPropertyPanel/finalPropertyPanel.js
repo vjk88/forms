@@ -285,13 +285,111 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.isElement && this.n.type === 'emojiScale';
     }
 
-    get isSurveyQuestion() {
+    get isScaleFamilyQuestion() {
         return (
             this.isNpsQuestion ||
             this.isRatingQuestion ||
             this.isOpinionScaleQuestion ||
             this.isEmojiScaleQuestion
         );
+    }
+
+    get isYesNoQuestion() {
+        return this.isElement && this.n.type === 'yesNo';
+    }
+
+    get isImageChoiceQuestion() {
+        return this.isElement && this.n.type === 'imageChoice';
+    }
+
+    get isSurveyQuestion() {
+        return (
+            this.isScaleFamilyQuestion ||
+            this.isYesNoQuestion ||
+            this.isImageChoiceQuestion
+        );
+    }
+
+    // ---- yesNo / imageChoice inspectors (S3) ----
+
+    handleYesLabel(event) {
+        this._config({ yesLabel: event.target.value });
+    }
+
+    handleNoLabel(event) {
+        this._config({ noLabel: event.target.value });
+    }
+
+    handleImageMultiple(event) {
+        this._config({ multiple: event.target.checked });
+    }
+
+    get imageOptionRows() {
+        return ((this.cfg.options || []).length ? this.cfg.options : []).map(
+            (o, index) => ({ ...o, index, key: `${index}` })
+        );
+    }
+
+    handleImageOptionChange(event) {
+        const index = Number(event.currentTarget.dataset.index);
+        const prop = event.currentTarget.dataset.field;
+        const options = (this.cfg.options || []).map((o, i) => {
+            return i === index ? { ...o, [prop]: event.target.value } : o;
+        });
+        this._config({ options });
+    }
+
+    handleAddImageOption() {
+        const options = [
+            ...(this.cfg.options || []),
+            {
+                value: `opt${(this.cfg.options || []).length + 1}`,
+                label: '',
+                url: ''
+            }
+        ];
+        this._config({ options });
+    }
+
+    handleRemoveImageOption(event) {
+        const index = Number(event.currentTarget.dataset.index);
+        this._config({
+            options: (this.cfg.options || []).filter((o, i) => i !== index)
+        });
+    }
+
+    /** optionStyle + allowOther for CHOICE fields (renderAs radio/checkbox
+     *  with options — SURVEY_PLAN §2.2 field config additions). */
+    get showOptionStyle() {
+        return (
+            this.isField &&
+            (this.cfg.options || []).length > 0 &&
+            (this.cfg.renderAs === 'Radio_Buttons' ||
+                this.cfg.renderAs === 'Checkbox_Group' ||
+                this.cfg.renderAs === 'Custom_MultiSelect')
+        );
+    }
+
+    get optionStyleSeg() {
+        return this._seg(
+            [
+                { label: 'List', value: 'list' },
+                { label: 'Chips', value: 'chips' },
+                { label: 'Cards', value: 'cards' }
+            ],
+            this.cfg.optionStyle === 'chips' || this.cfg.optionStyle === 'cards'
+                ? this.cfg.optionStyle
+                : 'list'
+        );
+    }
+
+    handleOptionStyle(event) {
+        const v = event.currentTarget.dataset.value;
+        this._config({ optionStyle: v === 'list' ? undefined : v });
+    }
+
+    handleAllowOther(event) {
+        this._config({ allowOther: event.target.checked });
     }
 
     get hasCaption() {

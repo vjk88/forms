@@ -413,3 +413,131 @@
         transform: none;
     }
 }
+
+/* ---- choice family (S3) — same token law as the scale family ---- */
+.choice-row {
+    display: flex;
+    gap: var(--c-space-2, 6px);
+    flex-wrap: wrap;
+}
+.choice-chip,
+.choice-card,
+.yn-btn {
+    min-height: var(--c-control-h, 44px);
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 8px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    font: inherit;
+    cursor: pointer;
+    transition:
+        background 120ms,
+        border-color 120ms;
+    text-align: left;
+}
+.choice-chip {
+    padding: 8px 16px;
+}
+.choice-card {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 16px;
+}
+.choice-desc {
+    font-size: 0.8rem;
+    color: var(--c-text-weak);
+}
+.yn-btn {
+    flex: 1 1 0;
+    max-width: 200px;
+    text-align: center;
+    font-weight: 600;
+    padding: 10px 16px;
+}
+.choice-chip:hover,
+.choice-card:hover,
+.yn-btn:hover,
+.ic-tile:hover {
+    border-color: var(--c-accent);
+}
+.choice-chip.selected,
+.yn-btn.selected {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: var(--c-on-accent);
+    font-weight: 700;
+}
+.choice-card.selected,
+.ic-tile.selected {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 1.5px var(--c-accent) inset;
+}
+.choice-card.selected .choice-desc {
+    color: inherit;
+}
+.choice-chip:focus-visible,
+.choice-card:focus-visible,
+.yn-btn:focus-visible,
+.ic-tile:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+.choice-other {
+    margin-top: 8px;
+    width: 100%;
+    max-width: 420px;
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 8px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    padding: 9px 12px;
+    font: inherit;
+}
+.ic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--c-space-2, 8px);
+    max-width: 640px;
+}
+.ic-tile {
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 10px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    padding: 0 0 8px;
+    cursor: pointer;
+    overflow: hidden;
+    font: inherit;
+    transition: border-color 120ms;
+}
+.ic-img {
+    display: block;
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+}
+.ic-ph {
+    background: var(--c-field-border);
+    opacity: 0.35;
+}
+.ic-label {
+    display: block;
+    padding: 6px 8px 0;
+    font-size: 0.85rem;
+    text-align: center;
+}
+.ic-tile.selected .ic-label::after {
+    content: ' ✓';
+    color: var(--c-accent);
+    font-weight: 700;
+}
+@media (prefers-reduced-motion: reduce) {
+    .choice-chip,
+    .choice-card,
+    .yn-btn,
+    .ic-tile {
+        transition: none;
+    }
+}
