@@ -190,8 +190,33 @@ export default class FinalSectionRenderer extends LightningElement {
 
     // ---- collapsible (legacy parity — initial state from the spec) ----
 
+    /** Design-level "Section headers: Hide" (--c-sec-head-display: none).
+     *  Read from computed style — the token rides the theme bag, so no prop
+     *  carries it here. Reactive field + equality guard = one extra render
+     *  at most, never a loop. */
+    headersHidden = false;
+
+    renderedCallback() {
+        const hidden =
+            getComputedStyle(this.template.host)
+                .getPropertyValue('--c-sec-head-display')
+                .trim() === 'none';
+        if (hidden !== this.headersHidden) {
+            this.headersHidden = hidden;
+        }
+    }
+
     get isCollapsible() {
-        return Boolean(this.sec.collapsible) && this.hasHeader;
+        // headersHidden kills collapsibility outright (reviewer blocker B1,
+        // 2026-07-31): the ONLY expander lives inside the display:none
+        // header, so a defaultCollapsed section became a permanently
+        // unreachable grey bar — required questions and all. Hidden headers
+        // render their body expanded, exactly what the IMPL_PLAN promised.
+        return (
+            Boolean(this.sec.collapsible) &&
+            this.hasHeader &&
+            !this.headersHidden
+        );
     }
 
     /** Re-init when a DIFFERENT section arrives (id change), never on
