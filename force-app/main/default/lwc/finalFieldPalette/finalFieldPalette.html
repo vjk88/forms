@@ -21,7 +21,38 @@
 
         <div class="fp-main">
             <template lwc:if={isFields}>
-                <template lwc:if={noObject}>
+                <template lwc:if={surveyMode}>
+                    <header class="fp-head">
+                        <span class="fp-head-label">Questions</span>
+                        <span class="fp-head-sub"
+                            >every answer becomes a reportable row</span
+                        >
+                    </header>
+                    <ul class="fp-list">
+                        <template for:each={questions} for:item="q">
+                            <li key={q.type}>
+                                <button
+                                    type="button"
+                                    class="fp-item"
+                                    title={q.title}
+                                    data-type={q.type}
+                                    onclick={handleAddQuestion}
+                                >
+                                    <lightning-icon
+                                        icon-name={q.icon}
+                                        size="x-small"
+                                    ></lightning-icon>
+                                    <span class="fp-label">{q.label}</span>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                    <p class="fp-note fp-note-sub">
+                        Questions repeat freely — click to add to the selected
+                        section.
+                    </p>
+                </template>
+                <template lwc:elseif={noObject}>
                     <p class="fp-note">
                         This form has no target object yet, so there are no
                         fields to offer.

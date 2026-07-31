@@ -5,6 +5,152 @@
             <p class="pp-sub">{subtitle}</p>
         </header>
 
+        <!-- SURVEY QUESTION (scale family — S2b, SURVEY_PLAN §5) -->
+        <template lwc:if={isSurveyQuestion}>
+            <div class="pp-group">
+                <lightning-input
+                    label="Question"
+                    data-prop="label"
+                    value={n.label}
+                    onchange={handleLabel}
+                ></lightning-input>
+
+                <lightning-input
+                    type="toggle"
+                    label="Required"
+                    checked={n.required}
+                    message-toggle-active=""
+                    message-toggle-inactive=""
+                    onchange={handleSurveyRequired}
+                ></lightning-input>
+
+                <lightning-input
+                    label="Caption"
+                    placeholder="Optional context under the question"
+                    value={n.description}
+                    onchange={handleCaption}
+                ></lightning-input>
+                <template lwc:if={hasCaption}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Show caption as</span>
+                        <div class="pp-seg">
+                            <template for:each={captionDisplaySeg} for:item="b">
+                                <button
+                                    key={b.value}
+                                    type="button"
+                                    class={b.cls}
+                                    data-value={b.value}
+                                    onclick={handleCaptionDisplay}
+                                >
+                                    {b.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <template lwc:if={isRatingQuestion}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Maximum</span>
+                        <div class="pp-seg">
+                            <template for:each={ratingMaxSeg} for:item="b">
+                                <button
+                                    key={b.value}
+                                    type="button"
+                                    class={b.cls}
+                                    data-value={b.value}
+                                    onclick={handleRatingMax}
+                                >
+                                    {b.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="pp-fld">
+                        <span class="pp-label">Icon</span>
+                        <div class="pp-seg">
+                            <template for:each={ratingIconSeg} for:item="b">
+                                <button
+                                    key={b.value}
+                                    type="button"
+                                    class={b.cls}
+                                    data-value={b.value}
+                                    onclick={handleRatingIcon}
+                                >
+                                    {b.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <template lwc:if={isOpinionScaleQuestion}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Scale size</span>
+                        <div class="pp-seg">
+                            <template for:each={scaleSizeSeg} for:item="b">
+                                <button
+                                    key={b.value}
+                                    type="button"
+                                    class={b.cls}
+                                    data-value={b.value}
+                                    onclick={handleScaleSize}
+                                >
+                                    {b.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <template lwc:if={isNpsQuestion}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Detractor coloring</span>
+                        <div class="pp-seg">
+                            <template for:each={npsColoringSeg} for:item="b">
+                                <button
+                                    key={b.value}
+                                    type="button"
+                                    class={b.cls}
+                                    data-value={b.value}
+                                    onclick={handleNpsColoring}
+                                >
+                                    {b.label}
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="pp-fld">
+                    <span class="pp-label">End labels</span>
+                    <div class="pp-numrow">
+                        <input
+                            type="text"
+                            class="pp-input"
+                            placeholder="Left (e.g. Poor)"
+                            value={cfg.leftLabel}
+                            data-side="left"
+                            onchange={handleEndLabel}
+                        />
+                        <input
+                            type="text"
+                            class="pp-input"
+                            placeholder="Right (e.g. Excellent)"
+                            value={cfg.rightLabel}
+                            data-side="right"
+                            onchange={handleEndLabel}
+                        />
+                    </div>
+                </div>
+
+                <p class="pp-sub">
+                    Topics (chart tags) arrive with the topic picker — next
+                    slice.
+                </p>
+            </div>
+        </template>
+
         <!-- FIELD (BUILDER_SURFACES §2 — the legacy surface, minus prefill) -->
         <template lwc:if={isField}>
             <div class="pp-group">

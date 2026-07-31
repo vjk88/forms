@@ -260,8 +260,155 @@ export default class FinalPropertyPanel extends LightningElement {
             !this.hasContentLabel &&
             !this.isDivider &&
             !this.isSpacer &&
-            !this.isEmptySpace
+            !this.isEmptySpace &&
+            !this.isSurveyQuestion
         );
+    }
+
+    // ---- survey scale-family inspector (S2b — SURVEY_PLAN §5) ----
+
+    get isNpsQuestion() {
+        return this.isElement && this.n.type === 'nps';
+    }
+
+    get isRatingQuestion() {
+        return this.isElement && this.n.type === 'rating';
+    }
+
+    get isOpinionScaleQuestion() {
+        return this.isElement && this.n.type === 'scale';
+    }
+
+    get isEmojiScaleQuestion() {
+        return this.isElement && this.n.type === 'emojiScale';
+    }
+
+    get isSurveyQuestion() {
+        return (
+            this.isNpsQuestion ||
+            this.isRatingQuestion ||
+            this.isOpinionScaleQuestion ||
+            this.isEmojiScaleQuestion
+        );
+    }
+
+    get hasCaption() {
+        return Boolean(this.n.description);
+    }
+
+    /** Rating max: segmented 5|10 (owner ruling Q1 — never a spinner,
+     *  never 7). */
+    get ratingMaxSeg() {
+        return this._seg(
+            [
+                { label: '5', value: '5' },
+                { label: '10', value: '10' }
+            ],
+            String(this.cfg.max === 10 ? 10 : 5)
+        );
+    }
+
+    get ratingIconSeg() {
+        return this._seg(
+            [
+                { label: '★ Star', value: 'star' },
+                { label: '♥ Heart', value: 'heart' },
+                { label: '👍 Thumb', value: 'thumb' }
+            ],
+            this.cfg.icon || 'star'
+        );
+    }
+
+    /** Opinion Scale size: presets 5/7/10 (principle 2.0.5 — the 1–7
+     *  research scale lives HERE, not on rating). */
+    get scaleSizeSeg() {
+        return this._seg(
+            [
+                { label: '5', value: '5' },
+                { label: '7', value: '7' },
+                { label: '10', value: '10' }
+            ],
+            String([5, 7, 10].includes(this.cfg.size) ? this.cfg.size : 5)
+        );
+    }
+
+    /** NPS detractor coloring: theme accent default, classic opt-in (Q2). */
+    get npsColoringSeg() {
+        return this._seg(
+            [
+                { label: 'Theme accent', value: 'accent' },
+                { label: 'Classic 🔴🟠🟢', value: 'classic' }
+            ],
+            this.cfg.coloring === 'classic' ? 'classic' : 'accent'
+        );
+    }
+
+    /** Caption display (round-4 ruling): visible line | help bubble. */
+    get captionDisplaySeg() {
+        return this._seg(
+            [
+                { label: 'Caption line', value: 'caption' },
+                { label: 'ⓘ Help bubble', value: 'help' }
+            ],
+            this.n.descriptionDisplay === 'help' ? 'help' : 'caption'
+        );
+    }
+
+    handleSurveyRequired(event) {
+        this._prop({ required: event.target.checked });
+    }
+
+    handleCaption(event) {
+        this._prop({ description: event.target.value });
+    }
+
+    handleCaptionDisplay(event) {
+        this._prop({
+            descriptionDisplay: event.currentTarget.dataset.value
+        });
+    }
+
+    /** Scale-bound changes keep analytics.scaleMax in lockstep — normalized
+     *  scores must never disagree with the widget's own bounds. */
+    handleRatingMax(event) {
+        const max = Number(event.currentTarget.dataset.value);
+        this._config({ max });
+        this._prop({
+            analytics: {
+                ...(this.n.analytics || {}),
+                scaleMin: 1,
+                scaleMax: max
+            }
+        });
+    }
+
+    handleRatingIcon(event) {
+        this._config({ icon: event.currentTarget.dataset.value });
+    }
+
+    handleScaleSize(event) {
+        const size = Number(event.currentTarget.dataset.value);
+        this._config({ size });
+        this._prop({
+            analytics: {
+                ...(this.n.analytics || {}),
+                scaleMin: 1,
+                scaleMax: size
+            }
+        });
+    }
+
+    handleNpsColoring(event) {
+        this._config({ coloring: event.currentTarget.dataset.value });
+    }
+
+    handleEndLabel(event) {
+        const side = event.currentTarget.dataset.side;
+        const patch =
+            side === 'left'
+                ? { leftLabel: event.target.value }
+                : { rightLabel: event.target.value };
+        this._config(patch);
     }
 
     get isRepeater() {
@@ -309,7 +456,11 @@ export default class FinalPropertyPanel extends LightningElement {
             spacer: 'Spacer',
             consent: 'Consent',
             file: 'File upload',
-            emptySpace: 'Empty space'
+            emptySpace: 'Empty space',
+            nps: 'Question · NPS',
+            rating: 'Question · Rating',
+            scale: 'Question · Opinion Scale',
+            emojiScale: 'Question · Emoji Scale'
         };
         if (this.isElement) {
             return names[this.n.type] || 'Element';
