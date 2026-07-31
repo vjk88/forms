@@ -186,10 +186,12 @@
                     <template lwc:else>
                         <c-final-field-palette
                             object-api={objectApi}
+                            survey-mode={isSurvey}
                             used-fields={usedFields}
                             used-labels={usedLabels}
                             logic-index={logicIndex}
                             onaddfield={handleAddField}
+                            onaddquestion={handleAddQuestion}
                             onaddblock={handleAddBlock}
                             onaddrepeater={handleAddRepeater}
                             onlogicjump={handleLogicJump}

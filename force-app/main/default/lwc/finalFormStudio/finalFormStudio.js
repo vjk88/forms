@@ -843,6 +843,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     handleAddField(event) {
         const field = event.detail.field;
+        this._addElementToCanvas((spec) => this._mintElement(spec, field));
+    }
+
+    /** Survey question click-add (S2b): same placement rules as fields, a
+     *  different mint — questions are unbound (SURVEY_PLAN §2). */
+    handleAddQuestion(event) {
+        const questionType = event.detail.questionType;
+        this._addElementToCanvas(() => this._mintQuestion(questionType));
+    }
+
+    /** Shared click-add placement: current page (minted if none), the
+     *  selected section (or the selection's host section), else the page's
+     *  last section (minted if none). */
+    _addElementToCanvas(mint) {
         this._mutate((spec) => {
             let page = this._currentBuildPage(spec);
             if (!page) {
@@ -871,11 +885,102 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 page.sections = page.sections || [];
                 page.sections.push(section);
             }
-            const element = this._mintElement(spec, field);
+            const element = mint(spec);
+            if (!element) {
+                return false;
+            }
             section.elements = section.elements || [];
             section.elements.push(element);
             this.selection = { kind: 'element', id: element.id };
+            return undefined;
         });
+    }
+
+    /** Survey mode: the palette's first tab serves questions, not describe
+     *  fields (spec.form.type is the ONE truth — never Form_Type__c). */
+    get isSurvey() {
+        return Boolean(
+            this.spec && this.spec.form && this.spec.form.type === 'survey'
+        );
+    }
+
+    /** Question defaults (SURVEY_PLAN §2.2): analytics scale bounds ship
+     *  locked to the widget's own bounds so Normalized_Score__c is never a
+     *  backfill; topics start empty (picker = S2c). */
+    _mintQuestion(questionType) {
+        const base = {
+            id: mintId('el'),
+            binding: null,
+            required: false,
+            validation: [],
+            visibility: null
+        };
+        const score = (min, max) => ({
+            role: 'score',
+            scaleMin: min,
+            scaleMax: max,
+            topics: []
+        });
+        switch (questionType) {
+            case 'nps':
+                return {
+                    ...base,
+                    type: 'nps',
+                    label: 'How likely are you to recommend us?',
+                    config: {
+                        leftLabel: 'Not likely',
+                        rightLabel: 'Extremely likely'
+                    },
+                    analytics: score(0, 10)
+                };
+            case 'rating':
+                return {
+                    ...base,
+                    type: 'rating',
+                    label: 'How would you rate it?',
+                    config: { max: 5, icon: 'star' },
+                    analytics: score(1, 5)
+                };
+            case 'scale':
+                return {
+                    ...base,
+                    type: 'scale',
+                    label: 'How strongly do you agree?',
+                    config: { size: 5 },
+                    analytics: score(1, 5)
+                };
+            case 'emojiScale':
+                return {
+                    ...base,
+                    type: 'emojiScale',
+                    label: 'How do you feel about it?',
+                    config: {},
+                    analytics: score(1, 5)
+                };
+            case 'surveyShortText':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Your answer',
+                    config: { inputType: 'text' }
+                };
+            case 'surveyLongText':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Tell us more',
+                    config: { inputType: 'textarea' }
+                };
+            case 'surveyNumber':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'A number',
+                    config: { inputType: 'number' }
+                };
+            default:
+                return null;
+        }
     }
 
     // ----- DnD intents (slice 3b — the canvas validated, the studio moves) -----

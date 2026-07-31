@@ -7,6 +7,54 @@ import {
     PALETTE_CELL_MIME
 } from 'c/finalBuilderCanvas';
 
+/** Survey question roster (SURVEY_PLAN §2.1 — S2 slice ships the scale
+ *  family + open text/number; S3-S4 grow it). Click-add mints unbound
+ *  elements; answers land in the answer store, so no describe, no dedupe. */
+const QUESTIONS = [
+    {
+        type: 'nps',
+        label: 'NPS',
+        icon: 'utility:metrics',
+        title: 'Net Promoter Score — the 0–10 "would you recommend us?" row'
+    },
+    {
+        type: 'rating',
+        label: 'Rating',
+        icon: 'utility:favorite',
+        title: 'Stars, hearts, or thumbs — a quick quality rating'
+    },
+    {
+        type: 'scale',
+        label: 'Opinion Scale',
+        icon: 'utility:richtextnumberedlist',
+        title: 'Numbered buttons — intensity on a 1–5/7/10 scale'
+    },
+    {
+        type: 'emojiScale',
+        label: 'Emoji Scale',
+        icon: 'utility:smiley_and_people',
+        title: 'Smiley faces — sentiment at a glance'
+    },
+    {
+        type: 'surveyShortText',
+        label: 'Short Text',
+        icon: 'utility:text',
+        title: 'Open-ended words, one line'
+    },
+    {
+        type: 'surveyLongText',
+        label: 'Long Text',
+        icon: 'utility:note',
+        title: 'Open-ended words, a paragraph'
+    },
+    {
+        type: 'surveyNumber',
+        label: 'Number',
+        icon: 'utility:number_input',
+        title: 'A typed number'
+    }
+];
+
 /** The FormStudio content roster (BUILDER_SURFACES §1, minus retired Hero) —
  *  blocks repeat freely (no ADDED dedupe). */
 const BLOCKS = [
@@ -68,6 +116,22 @@ const BLOCKS = [
 export default class FinalFieldPalette extends LightningElement {
     /** The form's primary context object API name. */
     @api objectApi;
+
+    /** Survey mode (spec.form.type === 'survey'): the Fields tab serves the
+     *  QUESTION roster instead of describe-driven fields — survey questions
+     *  bind to no object (FORM_STUDIO_IA survey delta). */
+    @api surveyMode = false;
+
+    get questions() {
+        return QUESTIONS;
+    }
+
+    handleAddQuestion(event) {
+        const questionType = event.currentTarget.dataset.type;
+        this.dispatchEvent(
+            new CustomEvent('addquestion', { detail: { questionType } })
+        );
+    }
     /** Bound field API names already on the canvas (dedupe → ADDED chip). */
     @api usedFields = [];
     /** Labels of UNBOUND field elements on the canvas (legacy/demo specs
