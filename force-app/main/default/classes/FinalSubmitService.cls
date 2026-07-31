@@ -327,6 +327,16 @@ public inherited sharing class FinalSubmitService {
                 insertFenced(links);
             }
 
+            // Survey-object writeback (SURVEY_OBJECT_SPEC, owner 2026-07-31):
+            // mapped answers ALSO update the context record — USER MODE, not
+            // the fenced system-mode above (updating a business record needs
+            // the runner's real edit rights), inside this savepoint so answer
+            // rows and the record land or roll back together. Internal only;
+            // guests carry no record context (Phase B/C tokens own that).
+            if (mode == Posture.INTERNAL) {
+                applyMappedWriteback(spec, flat, answers, meta);
+            }
+
             SubmitOutcome res = new SubmitOutcome();
             res.recordId = response.Id;
             res.childCount = rows.size();
@@ -345,6 +355,101 @@ public inherited sharing class FinalSubmitService {
     private static Boolean isMatrixElement(Map<String, Object> el) {
         Object t = el.get('type');
         return t instanceof String && (String) t == 'matrix';
+    }
+
+    /**
+     * Mapped-question writeback: answers whose elements declare
+     * `mapping: {object, field}` update the meta.recordId record of the
+     * survey's targetObject. The server walks the SPEC for mappings (client
+     * input can never name a field); coercion follows the field's describe
+     * type; stripInaccessible(UPDATABLE) drops fields the runner cannot
+     * edit; `update as user` enforces CRUD + sharing.
+     */
+    private static void applyMappedWriteback(
+        Map<String, Object> spec,
+        List<Map<String, Object>> flat,
+        Map<String, Object> answers,
+        Map<String, Object> meta
+    ) {
+        String recIdStr = getStr(meta, 'recordId');
+        Map<String, Object> formNode = asMap(spec.get('form'));
+        String targetObject = formNode == null
+            ? null
+            : (String) formNode.get('targetObject');
+        if (
+            String.isBlank(recIdStr) ||
+            String.isBlank(targetObject) ||
+            answers == null
+        ) {
+            return;
+        }
+        Map<String, String> fieldByElement = FinalSurveyObjectController.mappedFields(
+            spec,
+            targetObject
+        );
+        if (fieldByElement.isEmpty()) {
+            return;
+        }
+        Id recordId;
+        try {
+            recordId = Id.valueOf(recIdStr);
+        } catch (Exception e) {
+            throw new AuraHandledException('Invalid record for this survey.');
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe()
+            .get(targetObject.toLowerCase());
+        if (t == null || recordId.getSObjectType() != t) {
+            throw new AuraHandledException('Invalid record for this survey.');
+        }
+        Map<String, Schema.SObjectField> fieldMap = t.getDescribe()
+            .fields.getMap();
+        SObject rec = t.newSObject(recordId);
+        Boolean hasWrites = false;
+        for (String elId : fieldByElement.keySet()) {
+            if (!answers.containsKey(elId) || answers.get(elId) == null) {
+                continue; // unanswered mapped questions leave the field alone
+            }
+            String field = fieldByElement.get(elId);
+            Schema.SObjectField fTok = fieldMap.get(field.toLowerCase());
+            if (fTok == null) {
+                continue; // field vanished since authoring — skip, don't die
+            }
+            rec.put(
+                field,
+                coerceForField(fTok.getDescribe(), answers.get(elId))
+            );
+            hasWrites = true;
+        }
+        if (!hasWrites) {
+            return;
+        }
+        SObjectAccessDecision decision = Security.stripInaccessible(
+            AccessType.UPDATABLE,
+            new List<SObject>{ rec }
+        );
+        update as user decision.getRecords();
+    }
+
+    /** Answer value → the mapped field's type (describe-driven). */
+    private static Object coerceForField(
+        Schema.DescribeFieldResult fd,
+        Object raw
+    ) {
+        switch on fd.getType() {
+            when BOOLEAN {
+                return raw instanceof Boolean
+                    ? raw
+                    : Boolean.valueOf(String.valueOf(raw));
+            }
+            when DOUBLE, CURRENCY, PERCENT, INTEGER, LONG {
+                return Decimal.valueOf(String.valueOf(raw));
+            }
+            when else {
+                String s = String.valueOf(raw);
+                Integer max = fd.getLength();
+                return max > 0 ? s.abbreviate(max) : s;
+            }
+        }
     }
 
     /** Matrix picks {statementKey → value} → one answer row per statement.

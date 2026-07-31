@@ -291,6 +291,65 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.isScaleFamilyQuestion && !this.isEmojiScaleQuestion;
     }
 
+    // ---- survey-object mapping (SURVEY_OBJECT_SPEC, owner 2026-07-31) ----
+    // The studio passes `mappingFields` ONLY for surveys with a connected
+    // object — its presence IS the survey-object signal; the panel stays dumb.
+    @api mappingFields;
+
+    /** inputTypes a mapped field must have, per question kind. null = the
+     *  question cannot map (matrix/ranking/multi-select — multi-row answers). */
+    get _mappingCompatTypes() {
+        if (this.isScaleFamilyQuestion || this.isLikertQuestion) {
+            return ['number'];
+        }
+        if (this.isYesNoQuestion) {
+            return ['checkbox'];
+        }
+        const textish = ['text', 'textarea', 'email', 'phone', 'url'];
+        if (this.isImageChoiceQuestion) {
+            return this.cfg.multiple ? null : textish;
+        }
+        if (this.isElement && this.n.type === 'field') {
+            const it = this.cfg.inputType || 'text';
+            return textish.includes(it) ? textish : null;
+        }
+        return null;
+    }
+
+    get showMapping() {
+        return Boolean(
+            this.mappingFields &&
+            this.mappingFields.length &&
+            this._mappingCompatTypes
+        );
+    }
+
+    get mappingOptions() {
+        const compat = this._mappingCompatTypes || [];
+        const current = (this.n.mapping && this.n.mapping.field) || '';
+        const out = [
+            { value: '', label: 'Not mapped', selected: current === '' }
+        ];
+        for (const f of this.mappingFields || []) {
+            if (compat.includes(f.inputType)) {
+                out.push({
+                    value: f.apiName,
+                    label: `${f.label} · ${f.apiName}`,
+                    selected: f.apiName === current
+                });
+            }
+        }
+        return out;
+    }
+
+    handleMappingChange(event) {
+        this.dispatchEvent(
+            new CustomEvent('mappingchange', {
+                detail: { field: event.target.value || null }
+            })
+        );
+    }
+
     get isScaleFamilyQuestion() {
         return (
             this.isNpsQuestion ||

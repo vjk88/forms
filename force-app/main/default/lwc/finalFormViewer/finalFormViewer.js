@@ -3,6 +3,7 @@ import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
+import getPrefill from '@salesforce/apex/FinalSurveyObjectController.getPrefill';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
@@ -19,6 +20,24 @@ import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
  * stay ATOMIC: one screen for the whole repeater. Virtual pages drop `name`
  * so steppers/tabs fall back to honest numbering (Step 1…N).
  */
+/** True when any question declares a survey-object mapping (spec walk —
+ *  cheap, and it gates every prefill/writeback call). */
+function specHasMappings(spec) {
+    for (const page of spec.pages || []) {
+        for (const sec of page.sections || []) {
+            if (sec.repeat) {
+                continue;
+            }
+            for (const el of sec.elements || []) {
+                if (el.mapping && el.mapping.field) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 function splitOnePerScreen(pages) {
     const out = [];
     const pageId = (page, suffix) => `${page.id || page.key || 'p'}~${suffix}`;
@@ -147,11 +166,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _urlVersionId;
     _loadedKey;
 
+    /** Record context for survey-object prefill/writeback (record-page and
+     *  embedded hosts set the property; links use ?c__recordId=). */
+    @api recordId;
+
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
         this._urlFormId = ref && ref.state ? ref.state.c__formId : undefined;
         this._urlVersionId =
             ref && ref.state ? ref.state.c__versionId : undefined;
+        this._urlRecordId =
+            ref && ref.state ? ref.state.c__recordId : undefined;
         this._load();
     }
 
@@ -462,6 +487,49 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             paneLockup
         };
         this.error = undefined;
+
+        // Survey-object prefill (SURVEY_OBJECT_SPEC): a record context +
+        // mapped questions seed initial answers. Authenticated renders only —
+        // authoring previews simulate, guests (delegateSubmit) wait for the
+        // signed-token program. _recordCtx doubles as the payload flag.
+        this._recordCtx = null;
+        const rid = this.recordId || this._urlRecordId;
+        if (
+            rid &&
+            !this.authoring &&
+            !this.delegateSubmit &&
+            spec.form &&
+            spec.form.type === 'survey' &&
+            spec.form.targetObject &&
+            specHasMappings(spec)
+        ) {
+            this._recordCtx = rid;
+            getPrefill({
+                versionId: this.effectiveVersionId || null,
+                formId: this.effectiveFormId || null,
+                recordId: rid
+            })
+                .then((values) => {
+                    if (seq !== this._applySeq || !values) {
+                        return;
+                    }
+                    const merged = { ...this.answers };
+                    let any = false;
+                    for (const k of Object.keys(values)) {
+                        if (merged[k] === undefined) {
+                            merged[k] = values[k];
+                            any = true;
+                        }
+                    }
+                    if (any) {
+                        this.answers = merged;
+                    }
+                })
+                .catch(() => {
+                    // best-effort: an unreadable record must never block the
+                    // survey itself from rendering
+                });
+        }
     }
 
     _ruleCtx() {
@@ -768,14 +836,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 answers[key] = this.answers[key];
             }
         }
-        return {
-            answers,
-            repeats,
-            meta: {
-                startedAt: this._startedAt,
-                submittedAt: new Date().toISOString()
-            }
+        const meta = {
+            startedAt: this._startedAt,
+            submittedAt: new Date().toISOString()
         };
+        if (this._recordCtx) {
+            // survey-object writeback context — server re-validates the type
+            // and walks the SPEC for mappings; never guest (guard in _apply)
+            meta.recordId = this._recordCtx;
+        }
+        return { answers, repeats, meta };
     }
 
     // ----- After Submit EXECUTION (settings.completion — display is

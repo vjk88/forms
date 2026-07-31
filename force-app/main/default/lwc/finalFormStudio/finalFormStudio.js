@@ -7,6 +7,7 @@ import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
+import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
@@ -160,6 +161,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 (this.spec.form && this.spec.form.targetObject) ||
                 out.objectApi ||
                 null;
+            this._loadMappingFields();
             this.selection = null;
             this.buildPageIndex = 0;
             this.viewVersionId = null;
@@ -713,6 +715,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         });
     }
 
+    /** Survey-object mapping (SURVEY_OBJECT_SPEC): a question either maps to
+     *  ONE field on the survey's targetObject or doesn't map at all. */
+    handleMappingChange(event) {
+        const field = event.detail.field;
+        const obj = this.objectApi;
+        this._patchSelection((t) => {
+            if (field && obj) {
+                t.node.mapping = { object: obj, field };
+            } else {
+                delete t.node.mapping;
+            }
+        });
+    }
+
     handleRepeatChange(event) {
         const patch = event.detail.patch || {};
         this._patchSelection((t) => {
@@ -894,6 +910,25 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this.selection = { kind: 'element', id: element.id };
             return undefined;
         });
+    }
+
+    /** Survey-object mapping (SURVEY_OBJECT_SPEC): the panel's field roster.
+     *  Fetched once per survey WITH a connected object; forms and object-less
+     *  surveys keep null and the panel never shows the control. */
+    mappingFields = null;
+
+    _loadMappingFields() {
+        if (!this.isSurvey || !this.objectApi) {
+            this.mappingFields = null;
+            return;
+        }
+        describeFields({ objectApi: this.objectApi })
+            .then((data) => {
+                this.mappingFields = data;
+            })
+            .catch(() => {
+                this.mappingFields = null;
+            });
     }
 
     /** Survey mode: the palette's first tab serves questions, not describe
