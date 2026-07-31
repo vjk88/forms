@@ -64,6 +64,10 @@ function splitOnePerScreen(pages) {
                             ...section,
                             id: `${section.id}~${el.id}`,
                             showHeader: i === 0 ? section.showHeader : false,
+                            // conversational scale (owner 2026-07-31): a lone
+                            // question is a HEADLINE, not a 13px form label —
+                            // the section renderer promotes the type tiers
+                            convo: true,
                             elements: [el]
                         }
                     ]

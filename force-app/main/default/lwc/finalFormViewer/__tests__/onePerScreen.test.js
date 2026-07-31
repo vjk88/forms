@@ -109,6 +109,15 @@ describe('one question per screen (survey auto-split)', () => {
         expect(pages[1].sections[0].showHeader).toBe(false);
     });
 
+    it('virtual sections carry the conversational-scale stamp; repeaters do not', async () => {
+        const cmp = await mount(SPEC('stepper', true));
+        const pages = nav(cmp).pages;
+        expect(pages[0].sections[0].convo).toBe(true);
+        expect(pages[1].sections[0].convo).toBe(true);
+        // a repeater screen is a whole unit, not a lone headline question
+        expect(pages[2].sections[0].convo).toBeUndefined();
+    });
+
     it('toggle off / non-survey / scroll layout: no split', async () => {
         const off = await mount(SPEC('stepper', false));
         expect(nav(off).pages.length).toBe(2);
