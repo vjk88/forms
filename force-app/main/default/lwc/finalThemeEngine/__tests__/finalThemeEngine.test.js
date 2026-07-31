@@ -92,6 +92,8 @@ const CONTRACT_V1 = [
     '--c-submit-text',
     '--c-submit-bg-gradient',
     '--c-submit-glow',
+    // conditional: only when Design > Sections hides every title row
+    '--c-sec-head-display',
     '--c-radius',
     '--c-space-1',
     '--c-space-2',
@@ -117,6 +119,13 @@ describe('c-final-theme-engine', () => {
             expect(t['--c-accent']).toBe('#111111');
             expect(t['--c-page-bg']).toBeDefined();
         });
+
+        it('sectionHeaders hidden emits the display token; unset emits nothing', () => {
+            const hidden = resolveTokens(null, { sectionHeaders: 'hidden' });
+            expect(hidden['--c-sec-head-display']).toBe('none');
+            const unset = resolveTokens(null, {});
+            expect('--c-sec-head-display' in unset).toBe(false);
+        });
     });
 
     describe('contract completeness (append-only tripwire)', () => {
@@ -132,7 +141,8 @@ describe('c-final-theme-engine', () => {
                 '--c-page-radius',
                 '--c-section-bg',
                 '--c-section-border',
-                '--c-section-shadow'
+                '--c-section-shadow',
+                '--c-sec-head-display'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -622,7 +632,8 @@ describe('c-final-theme-engine', () => {
                 '--c-page-radius',
                 '--c-section-bg',
                 '--c-section-border',
-                '--c-section-shadow'
+                '--c-section-shadow',
+                '--c-sec-head-display'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

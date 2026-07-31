@@ -55,6 +55,9 @@
 }
 
 .sec-head {
+    /* Design > Sections > "Section headers: Hide" — display:none also pulls
+       the header (and its collapse chevron) out of the a11y tree. */
+    display: var(--c-sec-head-display, block);
     margin-bottom: var(--c-space-4);
 }
 

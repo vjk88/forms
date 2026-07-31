@@ -910,6 +910,21 @@ const AREAS = [
                 label: 'Sections',
                 controls: [
                     {
+                        // owner 2026-07-31: one global switch; the per-section
+                        // escape is simply an empty title (renderer skips the
+                        // header when title/description/icon are all absent)
+                        key: 'sectionHeaders',
+                        label: 'Section headers',
+                        type: 'select',
+                        hint: 'Hides the title row on every section. Want to hide just one? Leave that section’s title empty in Build.',
+                        themePath: 'sectionHeaders',
+                        emptyAsNull: true,
+                        options: [
+                            { value: '', label: 'Show' },
+                            { value: 'hidden', label: 'Hide' }
+                        ]
+                    },
+                    {
                         key: 'sectionStyle',
                         label: 'Section style',
                         type: 'select',
