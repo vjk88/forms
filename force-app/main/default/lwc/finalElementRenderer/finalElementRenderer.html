@@ -19,12 +19,15 @@
                         </template>
                         {el.label}
                     </label>
-                    <template lwc:if={el.help}>
+                    <template lwc:if={helpContent}>
                         <lightning-helptext
-                            content={el.help}
+                            content={helpContent}
                         ></lightning-helptext>
                     </template>
                 </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
             </template>
 
             <template lwc:if={isTextarea}>
@@ -238,6 +241,63 @@
                 ></lightning-icon>
                 <span>File upload arrives with a later step.</span>
             </div>
+        </div>
+    </template>
+    <template lwc:elseif={isScaleFamily}>
+        <div class={fieldClass}>
+            <template lwc:if={showCustomLabel}>
+                <div class="field-label-row">
+                    <label class={labelClass} aria-hidden="true">
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
+            </template>
+            <div
+                class="scale-row"
+                role="radiogroup"
+                aria-label={el.label}
+                onkeydown={handleScaleKey}
+            >
+                <template for:each={scaleItems} for:item="item">
+                    <button
+                        key={item.value}
+                        type="button"
+                        role="radio"
+                        class={item.cls}
+                        aria-checked={item.ariaChecked}
+                        aria-label={item.ariaLabel}
+                        data-value={item.value}
+                        tabindex={item.tabIndex}
+                        onclick={handleScalePick}
+                    >
+                        {item.display}
+                    </button>
+                </template>
+            </div>
+            <template lwc:if={hasEndLabels}>
+                <div class="scale-endlabels" aria-hidden="true">
+                    <span>{cfg.leftLabel}</span>
+                    <span>{cfg.rightLabel}</span>
+                </div>
+            </template>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
         </div>
     </template>
     <template lwc:else>

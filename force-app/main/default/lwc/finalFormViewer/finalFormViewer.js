@@ -434,18 +434,29 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                     evaluateVisibility(el.visibility, ctx)
                             )
                             .map((el) => {
+                                // hydrate the element with its live answer —
+                                // stateful widgets (S2 scale family) repaint
+                                // their selection from el.value after any
+                                // model rebuild; native inputs ignore it
+                                const answered = this.answers[el.id];
+                                const base =
+                                    answered !== undefined && !s.repeat
+                                        ? { ...el, value: answered }
+                                        : el;
                                 // repeat entries answer as ONE consolidated
                                 // value — per-entry failure display is
                                 // DEFERRED, so never annotate inside
                                 if (!reveal || s.repeat) {
-                                    return el;
+                                    return base;
                                 }
                                 const errors = validateElement(
-                                    el,
+                                    base,
                                     this.answers[el.id],
                                     ctx
                                 );
-                                return errors.length ? { ...el, errors } : el;
+                                return errors.length
+                                    ? { ...base, errors }
+                                    : base;
                             })
                     }))
             };

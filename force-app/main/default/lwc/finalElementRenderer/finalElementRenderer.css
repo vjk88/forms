@@ -301,3 +301,115 @@
     --slds-c-input-color-border: var(--c-field-error, #b42318);
     --sds-c-input-color-border: var(--c-field-error, #b42318);
 }
+
+/* ---- survey scale family (S2) — theme tokens ONLY, zero private colors
+   (catalog 2.0.3); the classic NPS tones are the one sanctioned exception
+   (owner ruling Q2: opt-in semantic red/amber/green) ---- */
+.field-caption {
+    margin: 2px 0 6px;
+    font-size: 0.82rem;
+    color: var(--c-text-weak);
+}
+.scale-row {
+    display: flex;
+    gap: var(--c-space-2, 6px);
+    flex-wrap: wrap;
+}
+.scale-chip {
+    min-width: var(--c-control-h, 44px);
+    height: var(--c-control-h, 44px);
+    display: grid;
+    place-items: center;
+    padding: 0 10px;
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 8px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    font: inherit;
+    cursor: pointer;
+    transition:
+        background 120ms,
+        border-color 120ms,
+        transform 120ms;
+}
+.scale-chip:hover {
+    border-color: var(--c-accent);
+}
+.scale-chip.selected {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: var(--c-on-accent);
+    font-weight: 700;
+}
+.scale-chip:focus-visible,
+.scale-icon:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+.scale-icon {
+    min-width: var(--c-control-h, 44px);
+    height: var(--c-control-h, 44px);
+    display: grid;
+    place-items: center;
+    border: none;
+    background: none;
+    padding: 0 2px;
+    font-size: 1.7rem;
+    line-height: 1;
+    color: var(--c-text-weak);
+    opacity: 0.4;
+    cursor: pointer;
+    transition:
+        color 120ms,
+        opacity 120ms,
+        transform 120ms;
+}
+.scale-icon:hover {
+    transform: scale(1.12);
+    opacity: 0.75;
+}
+.scale-icon.filled {
+    color: var(--c-accent);
+    opacity: 1;
+}
+/* classic NPS semantic tones — opt-in only (config.coloring='classic') */
+.scale-chip.nps-detractor.selected {
+    background: #ea001e;
+    border-color: #ea001e;
+    color: #fff;
+}
+.scale-chip.nps-passive.selected {
+    background: #fe9339;
+    border-color: #fe9339;
+    color: #fff;
+}
+.scale-chip.nps-promoter.selected {
+    background: #2e844a;
+    border-color: #2e844a;
+    color: #fff;
+}
+.scale-chip.nps-detractor:hover {
+    border-color: #ea001e;
+}
+.scale-chip.nps-passive:hover {
+    border-color: #fe9339;
+}
+.scale-chip.nps-promoter:hover {
+    border-color: #2e844a;
+}
+.scale-endlabels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--c-text-weak);
+}
+@media (prefers-reduced-motion: reduce) {
+    .scale-chip,
+    .scale-icon {
+        transition: none;
+    }
+    .scale-icon:hover {
+        transform: none;
+    }
+}

@@ -6,6 +6,13 @@
 
 final String FORM_NAME = 'S1 Survey Verify';
 
+// responses restrict-delete the form — sweep them first (answers + topic
+// links cascade via their master-details)
+delete [
+    SELECT Id
+    FROM Form_Response__c
+    WHERE Form_Version__r.Form__r.Name = :FORM_NAME
+];
 delete [SELECT Id FROM Form__c WHERE Name = :FORM_NAME];
 
 // topics: reuse if present (idempotent), else create
@@ -98,6 +105,67 @@ Map<String, Object> spec = new Map<String, Object>{
                             'label' => 'Anything else?',
                             'config' => new Map<String, Object>{
                                 'inputType' => 'textarea'
+                            }
+                        },
+                        // ---- S2 scale family (widgets live from this slice) ----
+                        new Map<String, Object>{
+                            'id' => 'el_nps',
+                            'type' => 'nps',
+                            'binding' => null,
+                            'label' => 'How likely are you to recommend us?',
+                            'config' => new Map<String, Object>{
+                                'leftLabel' => 'Not likely',
+                                'rightLabel' => 'Extremely likely',
+                                'coloring' => 'classic'
+                            },
+                            'analytics' => new Map<String, Object>{
+                                'role' => 'score',
+                                'scaleMin' => 0,
+                                'scaleMax' => 10,
+                                'topics' => new List<Object>{
+                                    new Map<String, Object>{
+                                        'id' => supportId,
+                                        'name' => 'Support'
+                                    }
+                                }
+                            }
+                        },
+                        new Map<String, Object>{
+                            'id' => 'el_rate',
+                            'type' => 'rating',
+                            'binding' => null,
+                            'label' => 'Rate your onboarding',
+                            'description' => 'Think of your first week with us',
+                            'descriptionDisplay' => 'caption',
+                            'config' => new Map<String, Object>{
+                                'max' => 5,
+                                'icon' => 'star',
+                                'leftLabel' => 'Poor',
+                                'rightLabel' => 'Excellent'
+                            },
+                            'analytics' => new Map<String, Object>{
+                                'role' => 'score',
+                                'scaleMin' => 1,
+                                'scaleMax' => 5,
+                                'topics' => new List<Object>{
+                                    new Map<String, Object>{
+                                        'id' => onboardingId,
+                                        'name' => 'Onboarding'
+                                    }
+                                }
+                            }
+                        },
+                        new Map<String, Object>{
+                            'id' => 'el_mood',
+                            'type' => 'emojiScale',
+                            'binding' => null,
+                            'label' => 'How do you feel today?',
+                            'description' => 'Gut answer — no overthinking',
+                            'descriptionDisplay' => 'help',
+                            'analytics' => new Map<String, Object>{
+                                'role' => 'score',
+                                'scaleMin' => 1,
+                                'scaleMax' => 5
                             }
                         }
                     }
