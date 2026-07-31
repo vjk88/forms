@@ -1,8 +1,9 @@
 # IMPL_PLAN — Survey S1: Answer-Store Submit Runtime
 
-> **Status: rev 3 — ALL DECISIONS RULED (owner, 2026-07-27): availability gate IN (7-1
-> yes), respondent access = fenced SYSTEM MODE (7-2 b). Awaiting only the owner's "go"
-> to start code.**
+> **Status: rev 4 — ALL DECISIONS RULED (owner, 2026-07-27): availability gate IN (7-1
+> yes), respondent access = fenced SYSTEM MODE (7-2 b), topics = managed multi-tags
+> (7-3, replaces single free-text topic; Question Bank skipped). Awaiting only the
+> owner's "go" to start code.**
 > Parent: [SURVEY_PLAN.md](./SURVEY_PLAN.md) (APPROVED 2026-07-27) §6/§9 S1 ·
 > [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) §8 (submit contract) ·
 > [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) §2 · RUNTIME_NOTES (guest law).
@@ -12,7 +13,8 @@
 answer rows typed correctly. Existing `field` types render unbound (no new widgets in S1 —
 the scale family is S2).
 
-**Estimate:** ≈ 4–6 days including the availability gate (7-1), tests + org verification.
+**Estimate:** ≈ 5–7 days including the availability gate (7-1) and the topics storage
+model (7-3), tests + org verification.
 
 ---
 
@@ -44,13 +46,27 @@ the scale family is S2).
 | `Label_Snapshot__c`   | Question (as asked) | Text(255)    | Photocopy of the question wording at submit — reword the question later, old answers stay honest |
 | `Entry_Index__c`      | Entry #             | Number(4, 0) | Repeating sections only: which entry (1st, 2nd…) this answer came from; empty otherwise          |
 | `Normalized_Score__c` | Score (0–100)       | Number(5, 2) | Every rating converted to one 0–100 scale so different question types chart together (4/5 = 75)  |
-| `Topic_Snapshot__c`   | Topic               | Text(80)     | The question's subject tag ("Support", "Pricing") copied at submit — chart by topic, no joins    |
+| `Topic_Snapshot__c`   | Topics (display)    | Text(255)    | Display-only joined tag names ("Support; Pricing") for eyeballing rows — charts use the junction |
 | `Sentiment_Score__c`  | Sentiment Score     | Number(5, 2) | EMPTY in v1 — parking spot for future AI mood-scoring of text answers (L2)                       |
 | `Sentiment_Label__c`  | Sentiment           | Text(40)     | EMPTY in v1 — the word ("Positive"/"Negative"), same parking lot                                 |
 | `Sentiment_Source__c` | Sentiment Source    | Text(80)     | EMPTY in v1 — which AI/model did the scoring                                                     |
 
 Display labels are the owner-facing rule (2026-07-27): **API names stay technical, visible
 labels read like English** — they're what admins see in reports.
+
+**New objects for the topics-as-tags model (owner ruling 7-3):**
+
+- **`Survey_Topic__c`** — the managed tag vocabulary. Fields: standard Name +
+  `Active__c` (checkbox, default true; deactivate hides from the picker, never deletes
+  history). `Form_Builder_Admin` gets CRUD.
+- **`Form_Answer_Topic__c`** — junction (one row per answer × topic): master-detail to
+  `Form_Response_Answer__c` + lookup to `Survey_Topic__c`. This is what makes "average
+  score by topic" a real report when questions carry multiple tags. Tags are LIVE —
+  renaming a topic updates every chart (the photocopy rule applies to question WORDING,
+  not tags).
+
+S1 ships the objects + junction writer (hand-authored specs test multi-topic); the chips
+picker, inline "new topic", and manage UI land in S2 with the question inspectors.
 
 **Access model (rev-2 fix — this was a hole):** `Form_Builder_Admin` gains FLS for the 7
 new fields (read+edit) for builders/analysts. But internal submits run `USER_MODE`, so
@@ -93,9 +109,13 @@ No new objects. No layout changes (answer rows are report fodder, not a UI).
      date/datetime → their columns, yesNo/consent → `Boolean_Value__c`, multi-select /
      ordered lists → `Selected_Options_JSON__c`, everything else → `Text_Value__c`
      (truncate defensively at field length). Every row: `Element_Key__c` = element id,
-     `Label_Snapshot__c` = label (truncate 255), `Topic_Snapshot__c` +
-     `Normalized_Score__c` from the element's `analytics` block (linear map
-     scaleMin→scaleMax onto 0–100; skip when role ≠ score or value non-numeric).
+     `Label_Snapshot__c` = label (truncate 255), `Normalized_Score__c` from the element's
+     `analytics` block (linear map scaleMin→scaleMax onto 0–100; skip when role ≠ score
+     or value non-numeric). **Topics (7-3):** for each entry in `analytics.topics`, one
+     `Form_Answer_Topic__c` junction row (inserted after the answers, same savepoint);
+     `Topic_Snapshot__c` = joined names for display. Unknown/deleted topic ids at submit:
+     skip the junction row, keep the name in the display string (never fail a submit
+     over a tag).
    - **Repeats:** answers inside repeatable sections write one row per entry per element
      with `Entry_Index__c` — **0-based, matching the §8 payload's array order (this plan's
      decision; §8 doesn't specify a base — rev-2 honesty fix)**. NOTE the authoring gap:
@@ -144,6 +164,9 @@ No new objects. No layout changes (answer rows are report fodder, not a UI).
 6. Guest posture: runs as guest-context test user through FinalGuestController.
 7. Bulk: 200-answer survey submits in one transaction within limits.
 8. Form regression: existing form-path tests stay green (branch must be additive).
+9. Multi-topic (7-3): question with 2 tags → 2 junction rows + "A; B" display string;
+   unknown topic id → junction skipped, submit still succeeds; topic rename reflected in
+   junction-based grouping without touching stored answers.
 
 ## 6 · Deploy & verify (the gate — deploy-and-verify law)
 
@@ -168,7 +191,8 @@ closedMessage surfaces. Estimate is now **≈ 4–6 days** total.
 mode for storing responses." The response + answer insert runs in system context for the
 two app-owned objects only. The four fences are CONTRACT, not commentary:
 
-1. Scope: `Form_Response__c` + `Form_Response_Answer__c` inserts only.
+1. Scope: `Form_Response__c` + `Form_Response_Answer__c` + `Form_Answer_Topic__c`
+   inserts only (the third rides the same fence per ruling 7-3).
 2. Create-only — the system-mode path never updates or deletes.
 3. Server decides every written field; client input can never name a field or column
    (answers key by element id against the server-loaded spec).
@@ -195,7 +219,6 @@ surveys can be answered, only WHO can persist answers.
 
 New widgets (scale family S2, choices S3, likert S4, ranking/matrix per their promotions),
 rendering packs + captions (ride the widget slices), context links + anonymous UX +
-gallery templates (S5), report type + dashboard (S6), **Question Bank — PROMOTED by owner
-2026-07-27 to slice S7** (SURVEY_PLAN §9; motivation = topic consistency by construction).
-The answer object's future `Bank_Question__c` lookup is additive — S1 needs no
-placeholder.
+gallery templates (S5), report type + dashboard (S6). **Question Bank: SKIPPED by owner
+2026-07-27 (round 6)** — replaced by the managed topics-as-tags model (ruling 7-3;
+storage in S1, picker/manage UI in S2). The `Form_Element__c` lookup stays parked.
