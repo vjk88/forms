@@ -290,6 +290,34 @@
                     </p>
                 </template>
 
+                <template lwc:if={showMapping}>
+                    <div class="pp-fld">
+                        <label class="pp-label" for="qmapping"
+                            >Map to field</label
+                        >
+                        <select
+                            id="qmapping"
+                            class="pp-select"
+                            onchange={handleMappingChange}
+                        >
+                            <template for:each={mappingOptions} for:item="o">
+                                <option
+                                    key={o.value}
+                                    value={o.value}
+                                    selected={o.selected}
+                                >
+                                    {o.label}
+                                </option>
+                            </template>
+                        </select>
+                        <p class="pp-hint">
+                            Also writes this answer to the connected object's
+                            field on submit, and prefills it when the survey
+                            opens from a record.
+                        </p>
+                    </div>
+                </template>
+
                 <template lwc:if={showEndLabels}>
                     <div class="pp-fld">
                         <span class="pp-label">End labels</span>
