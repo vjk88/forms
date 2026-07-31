@@ -360,7 +360,9 @@
     box-shadow: none;
     height: auto;
     min-height: var(--c-q-control-h, var(--c-control-h, 44px));
-    padding: 4px 10px;
+    /* tight sides: five faces must fit one row even in a narrow card
+       (org QA 2026-07-31 — the chosen face wrapped to a second line) */
+    padding: 4px 6px;
     border-radius: 14px;
     font-size: calc(var(--c-q-answer-size, 1rem) * 2);
     line-height: 1;
