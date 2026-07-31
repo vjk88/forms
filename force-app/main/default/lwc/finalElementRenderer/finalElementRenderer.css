@@ -330,20 +330,58 @@
     background: var(--c-input-bg);
     color: var(--c-text);
     font: inherit;
+    font-variant-numeric: tabular-nums;
     cursor: pointer;
+    /* keycap depth (Card Deck treatment, owner artifact 2026-07-31) */
+    box-shadow: 0 2px 0 var(--c-field-border);
     transition:
         background 120ms,
         border-color 120ms,
+        box-shadow 120ms,
         transform 120ms;
 }
 .scale-chip:hover {
     border-color: var(--c-accent);
+    transform: translateY(-2px);
 }
 .scale-chip.selected {
     background: var(--c-accent);
     border-color: var(--c-accent);
     color: var(--c-on-accent);
     font-weight: 700;
+    box-shadow: 0 2px 0 color-mix(in srgb, var(--c-accent) 55%, black);
+}
+
+/* emoji scale: big bare faces — grayscale until they matter, alive when
+   chosen (Card Deck treatment; the chip box stands down entirely) */
+.scale-chip.emoji-chip {
+    border: 2px solid transparent;
+    background: none;
+    box-shadow: none;
+    height: auto;
+    min-height: var(--c-q-control-h, var(--c-control-h, 44px));
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: calc(var(--c-q-answer-size, 1rem) * 2);
+    line-height: 1;
+    filter: grayscale(1) opacity(0.55);
+    transition:
+        filter 120ms,
+        transform 120ms,
+        border-color 120ms,
+        background 120ms;
+}
+.scale-chip.emoji-chip:hover {
+    filter: none;
+    transform: scale(1.1);
+    border-color: transparent;
+}
+.scale-chip.emoji-chip.selected {
+    filter: none;
+    transform: scale(1.1);
+    border-color: var(--c-accent);
+    background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+    box-shadow: none;
 }
 .scale-chip:focus-visible,
 .scale-icon:focus-visible {
@@ -358,7 +396,7 @@
     border: none;
     background: none;
     padding: 0 2px;
-    font-size: 1.7rem;
+    font-size: calc(var(--c-q-answer-size, 1rem) * 1.7);
     line-height: 1;
     color: var(--c-text-weak);
     opacity: 0.4;
@@ -366,15 +404,30 @@
     transition:
         color 120ms,
         opacity 120ms,
+        text-shadow 120ms,
         transform 120ms;
 }
 .scale-icon:hover {
     transform: scale(1.12);
-    opacity: 0.75;
 }
 .scale-icon.filled {
     color: var(--c-accent);
     opacity: 1;
+    /* the glow (owner artifact 2026-07-31): chosen stars radiate */
+    text-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+/* cumulative hover PREVIEW — light every star up to the pointer. Only
+   rating rows contain .scale-icon, so the row-scoped selector is safe;
+   stars after the hovered one drop back to idle. */
+.scale-row:hover .scale-icon {
+    color: var(--c-accent);
+    opacity: 1;
+    text-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+.scale-row .scale-icon:hover ~ .scale-icon {
+    color: var(--c-text-weak);
+    opacity: 0.4;
+    text-shadow: none;
 }
 /* classic NPS semantic tones — opt-in only (config.coloring='classic') */
 .scale-chip.nps-detractor.selected {
@@ -413,7 +466,10 @@
     .scale-icon {
         transition: none;
     }
-    .scale-icon:hover {
+    .scale-icon:hover,
+    .scale-chip:hover,
+    .scale-chip.emoji-chip:hover,
+    .scale-chip.emoji-chip.selected {
         transform: none;
     }
 }
