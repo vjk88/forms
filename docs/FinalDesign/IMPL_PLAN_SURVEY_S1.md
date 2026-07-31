@@ -1,8 +1,8 @@
 # IMPL_PLAN — Survey S1: Answer-Store Submit Runtime
 
-> **Status: FOR OWNER REVIEW (rev 2 — owner bug review 2026-07-27 fixed: USER_MODE
-> respondent-access hole, null-form NPE, client-trusted version id, survey-repeat
-> authoring gap). No code until approved.**
+> **Status: rev 3 — ALL DECISIONS RULED (owner, 2026-07-27): availability gate IN (7-1
+> yes), respondent access = fenced SYSTEM MODE (7-2 b). Awaiting only the owner's "go"
+> to start code.**
 > Parent: [SURVEY_PLAN.md](./SURVEY_PLAN.md) (APPROVED 2026-07-27) §6/§9 S1 ·
 > [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) §8 (submit contract) ·
 > [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) §2 · RUNTIME_NOTES (guest law).
@@ -12,7 +12,7 @@
 answer rows typed correctly. Existing `field` types render unbound (no new widgets in S1 —
 the scale family is S2).
 
-**Estimate:** ≈ 3–5 days including tests + org verification.
+**Estimate:** ≈ 4–6 days including the availability gate (7-1), tests + org verification.
 
 ---
 
@@ -154,28 +154,32 @@ No new objects. No layout changes (answer rows are report fodder, not a UI).
 4. Guest link submit (Phase A rails) → same verification; screenshot.
 5. Only then: "S1 done."
 
-## 7 · Decisions for the owner (two)
+## 7 · Decisions — RULED (owner, 2026-07-27)
 
-**7-1 — Fold DEFERRED #20 (availability enforcement) into S1's guest path?** Surveys go
-guest immediately, and `settings.availability` (closed/opensAt/closesAt/responseCap +
-closedMessage) is authored-but-unenforced today. Recommendation: **yes, minimally** — a
-single gate in the spec-load path (both controllers) that returns the closed message
-before any render/submit; the spam honeypot/time-trap half can stay with the broader
-guest hardening. ≈ +0.5–1 day. Say yes/no; either way the ledger stays honest.
+**7-1 — Availability enforcement: YES, in S1 scope.** One gate in the spec-load path (both
+controllers), evaluated server-side before any render/submit: `closed` flag, `opensAt` /
+`closesAt` window, `responseCap` (count of submitted responses for the version's form) →
+return `closedMessage` (or the default). Closes the render half of DEFERRED #20; the spam
+honeypot/time-trap half stays with broader guest hardening (ledger row stands, narrowed).
+Tests: closed flag blocks; date window blocks/allows at boundaries; cap blocks at N;
+closedMessage surfaces. Estimate is now **≈ 4–6 days** total.
 
-**7-2 — Internal respondent access model (rev-2, the USER_MODE hole):** how do ordinary
-internal users get to write answer rows?
+**7-2 — Internal respondent access: (b) SYSTEM MODE, fenced.** Owner's words: "use system
+mode for storing responses." The response + answer insert runs in system context for the
+two app-owned objects only. The four fences are CONTRACT, not commentary:
 
-- **(a) `Form_Respondent` permission set** (recommended): packaged, create-only on the two
-  response objects + FLS on written fields, no read of others' responses. Explicit,
-  Security-Review-friendly; cost = admins assign it (fits permission set groups).
-- **(b) Elevated answer-store insert**: the response/answer insert runs without sharing in
-  system context for these two app-owned objects only (documented justification — the
-  answer store is app telemetry, like a platform event log); everything else stays
-  USER_MODE. Zero admin friction; needs a Security Review false-positive doc.
+1. Scope: `Form_Response__c` + `Form_Response_Answer__c` inserts only.
+2. Create-only — the system-mode path never updates or deletes.
+3. Server decides every written field; client input can never name a field or column
+   (answers key by element id against the server-loaded spec).
+4. Reads stay permission-checked everywhere — system mode covers the drop-in-the-box
+   moment only.
 
-Recommendation: **(a)** for the AppExchange posture; flip to (b) only if pilot-org
-assignment friction proves real.
+Consequences: NO `Form_Respondent` permission set is created; `Form_Builder_Admin` keeps
+read FLS for analysts; Security Review false-positive doc gets a standing entry (write
+alongside the code, not at package time). Internal guardrail: submitting user must still
+pass the spec-load gate (active published version) — system mode never widens WHICH
+surveys can be answered, only WHO can persist answers.
 
 ## 8 · Orphan ledger
 
@@ -191,4 +195,7 @@ assignment friction proves real.
 
 New widgets (scale family S2, choices S3, likert S4, ranking/matrix per their promotions),
 rendering packs + captions (ride the widget slices), context links + anonymous UX +
-gallery templates (S5), report type + dashboard (S6), Question Bank (L3).
+gallery templates (S5), report type + dashboard (S6), **Question Bank — PROMOTED by owner
+2026-07-27 to slice S7** (SURVEY_PLAN §9; motivation = topic consistency by construction).
+The answer object's future `Bank_Question__c` lookup is additive — S1 needs no
+placeholder.
