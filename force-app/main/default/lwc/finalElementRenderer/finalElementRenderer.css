@@ -640,33 +640,53 @@
     font-size: 0.9rem;
     padding-right: 8px;
 }
+/* Desktop cells are radio DOTS (owner 2026-07-31 — the input-shaped empty
+   boxes read as a broken form). The button stays the full-cell 44px hit
+   target; the visible control is a centered 18px circle. */
 .mx-dot {
     min-height: var(--c-control-h, 44px);
-    border: 1.5px solid var(--c-field-border);
-    border-radius: var(--c-input-radius, 8px);
-    background: var(--c-input-bg);
+    border: 0;
+    background: transparent;
     color: var(--c-text);
     cursor: pointer;
     font: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.mx-dot::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--c-field-border);
+    background: var(--c-input-bg);
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
 }
 .mx-dot .mx-point-label {
     display: none;
     font-size: 0.72rem;
 }
-.mx-dot:hover {
+.mx-dot:hover::before {
     border-color: var(--c-accent);
 }
-.mx-dot.selected {
+.mx-dot.selected::before {
     background: var(--c-accent);
     border-color: var(--c-accent);
 }
 .mx-dot:focus-visible {
     outline: none;
+}
+.mx-dot:focus-visible::before {
     box-shadow: var(--c-focus-ring);
 }
 @container section (max-width: 560px) {
     /* stacked mobile: each statement becomes its own mini-question and the
-       cells grow labels (SURVEY_PLAN — the second rendering matrix ships with) */
+       cells grow labels (SURVEY_PLAN — the second rendering matrix ships
+       with). The chip look lives HERE — desktop is dots-only. */
     .mx-head {
         display: none;
     }
@@ -677,6 +697,24 @@
     }
     .mx-statement {
         font-weight: 600;
+    }
+    .mx-dot {
+        border: 1.5px solid var(--c-field-border);
+        border-radius: var(--c-input-radius, 8px);
+        background: var(--c-input-bg);
+    }
+    .mx-dot::before {
+        display: none;
+    }
+    .mx-dot:hover {
+        border-color: var(--c-accent);
+    }
+    .mx-dot.selected {
+        background: var(--c-accent);
+        border-color: var(--c-accent);
+    }
+    .mx-dot:focus-visible {
+        box-shadow: var(--c-focus-ring);
     }
     .mx-dot .mx-point-label {
         display: inline;
