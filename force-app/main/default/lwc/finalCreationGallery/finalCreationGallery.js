@@ -4,6 +4,7 @@ import createForm from '@salesforce/apex/FinalFormCreateController.createForm';
 import createSurveyFromTemplate from '@salesforce/apex/FinalFormCreateController.createSurveyFromTemplate';
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
+import { studioUrl } from 'c/finalFormsLibrary';
 
 /**
  * finalCreationGallery — the guided creation flow, replicating the OLD
@@ -404,6 +405,15 @@ export default class FinalCreationGallery extends LightningElement {
 
     handleClose() {
         this.dispatchEvent(new CustomEvent('close'));
+    }
+
+    /** Done screen's primary action — a USER GESTURE, so the popup-blocker
+     *  never eats the studio window (auto-open from the create promise
+     *  would be blocked). Full-page VF host per the library's law. */
+    handleOpenStudio() {
+        if (this.createdInfo) {
+            window.open(studioUrl(this.createdInfo.formId), '_blank');
+        }
     }
     handleStartOver() {
         this.step = 'layout';

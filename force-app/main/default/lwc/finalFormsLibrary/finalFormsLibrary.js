@@ -32,6 +32,24 @@ export default class FinalFormsLibrary extends LightningElement {
     error;
     _wired;
 
+    /** Creation overlay (S5 wiring — the gallery finally has a HOST). */
+    showGallery = false;
+
+    handleNew() {
+        this.showGallery = true;
+    }
+
+    handleGalleryClose() {
+        this.showGallery = false;
+        refreshApex(this._wired);
+    }
+
+    /** Created → refresh the list; the gallery's done screen owns the
+     *  "Open in Studio" gesture (popup-safe). */
+    handleFormCreated() {
+        refreshApex(this._wired);
+    }
+
     @wire(listForms)
     wiredForms(result) {
         this._wired = result;
