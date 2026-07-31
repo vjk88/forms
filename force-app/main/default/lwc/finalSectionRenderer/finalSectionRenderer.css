@@ -109,7 +109,7 @@
 }
 
 .cols-1 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .cols-2 {
@@ -128,7 +128,7 @@
     .cols-2,
     .cols-3,
     .cols-4 {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     /* single column → spans are meaningless; let content flow */

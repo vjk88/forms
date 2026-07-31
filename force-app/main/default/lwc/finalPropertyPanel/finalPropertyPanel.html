@@ -157,6 +157,13 @@
                         <span class="pp-label">Picture options</span>
                         <template for:each={imageOptionRows} for:item="o">
                             <div key={o.key} class="pp-optrow">
+                                <template lwc:if={o.hasImage}>
+                                    <img
+                                        class="pp-opt-thumb"
+                                        src={o.url}
+                                        alt=""
+                                    />
+                                </template>
                                 <input
                                     type="text"
                                     class="pp-input"
@@ -166,15 +173,19 @@
                                     data-field="label"
                                     onchange={handleImageOptionChange}
                                 />
-                                <input
-                                    type="text"
-                                    class="pp-input"
-                                    placeholder="Image URL"
-                                    value={o.url}
-                                    data-index={o.index}
-                                    data-field="url"
-                                    onchange={handleImageOptionChange}
-                                />
+                                <label
+                                    class="pp-upload-opt"
+                                    title="Upload an image"
+                                >
+                                    Upload
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        class="pp-file-hidden"
+                                        data-index={o.index}
+                                        onchange={handleOptionImageUpload}
+                                    />
+                                </label>
                                 <button
                                     type="button"
                                     class="pp-x"
@@ -185,6 +196,9 @@
                                     ×
                                 </button>
                             </div>
+                        </template>
+                        <template lwc:if={uploadError}>
+                            <p class="pp-sub" role="alert">{uploadError}</p>
                         </template>
                         <button
                             type="button"
@@ -431,7 +445,7 @@
 
                 <template lwc:if={showOptionStyle}>
                     <div class="pp-fld">
-                        <span class="pp-label">Option style</span>
+                        <span class="pp-label">Choice look</span>
                         <div class="pp-seg">
                             <template for:each={optionStyleSeg} for:item="b">
                                 <button
@@ -454,6 +468,11 @@
                         message-toggle-inactive=""
                         onchange={handleAllowOther}
                     ></lightning-input>
+                    <p class="pp-sub">
+                        "Display as" picks the control (radio, checkboxes,
+                        dropdown). "Choice look" redraws that control's options
+                        as tappable chips or full-width cards.
+                    </p>
                 </template>
 
                 <template lwc:if={isSlider}>

@@ -5,7 +5,8 @@ private class FinalSurveyTemplatesTest {
     static void csatTemplateCreatesDraftSurvey() {
         Test.startTest();
         Map<String, Object> res = FinalFormCreateController.createSurveyFromTemplate(
-            'csat'
+            'csat',
+            null
         );
         Test.stopTest();
         Form__c form = [
@@ -43,7 +44,8 @@ private class FinalSurveyTemplatesTest {
     static void eventTemplateIsAnonymous() {
         Test.startTest();
         Map<String, Object> res = FinalFormCreateController.createSurveyFromTemplate(
-            'event'
+            'event',
+            null
         );
         Test.stopTest();
         Form_Version__c v = [
@@ -67,8 +69,8 @@ private class FinalSurveyTemplatesTest {
     @isTest
     static void templatesReuseTopicsByName() {
         Test.startTest();
-        FinalFormCreateController.createSurveyFromTemplate('csat');
-        FinalFormCreateController.createSurveyFromTemplate('csat');
+        FinalFormCreateController.createSurveyFromTemplate('csat', null);
+        FinalFormCreateController.createSurveyFromTemplate('csat', null);
         Test.stopTest();
         System.assertEquals(
             1,
@@ -81,10 +83,64 @@ private class FinalSurveyTemplatesTest {
     static void unknownTemplateRejected() {
         Boolean threw = false;
         try {
-            FinalFormCreateController.createSurveyFromTemplate('nope');
+            FinalFormCreateController.createSurveyFromTemplate('nope', null);
         } catch (Exception e) {
             threw = true;
         }
         System.assert(threw, 'unknown key rejected');
+    }
+
+    @isTest
+    static void customNameOverridesTemplateDefault() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createSurveyFromTemplate(
+            'nps',
+            '  Quarterly Pulse  '
+        );
+        Test.stopTest();
+        Form__c form = [
+            SELECT Name
+            FROM Form__c
+            WHERE Id = :(Id) res.get('formId')
+        ];
+        System.assertEquals(
+            'Quarterly Pulse',
+            form.Name,
+            'trimmed custom name wins'
+        );
+    }
+
+    @isTest
+    static void blankTemplateCreatesEmptySurvey() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createSurveyFromTemplate(
+            'blank',
+            null
+        );
+        Test.stopTest();
+        Form__c form = [
+            SELECT Name, Form_Type__c
+            FROM Form__c
+            WHERE Id = :(Id) res.get('formId')
+        ];
+        System.assertEquals('Untitled Survey', form.Name, 'default name');
+        System.assertEquals('Survey', form.Form_Type__c, 'survey typed');
+    }
+
+    @isTest
+    static void blankTemplateHonorsTheTypedName() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createSurveyFromTemplate(
+            'blank',
+            '  Lunch Feedback  '
+        );
+        Test.stopTest();
+        Form__c form = [
+            SELECT Name, Form_Type__c
+            FROM Form__c
+            WHERE Id = :(Id) res.get('formId')
+        ];
+        System.assertEquals('Lunch Feedback', form.Name, 'typed name, trimmed');
+        System.assertEquals('Survey', form.Form_Type__c, 'survey typed');
     }
 }

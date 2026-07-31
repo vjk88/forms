@@ -393,3 +393,49 @@
 .pp-topic-x:hover {
     background: rgba(11, 92, 171, 0.15);
 }
+
+/* ---- imageChoice per-option upload (2026-07-31 fixes) ---- */
+.pp-opt-thumb {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex: none;
+}
+.pp-upload-opt {
+    flex: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0b5cab;
+    cursor: pointer;
+    padding: 6px 8px;
+    border: 1px dashed #0b5cab;
+    border-radius: 6px;
+}
+.pp-file-hidden {
+    display: none;
+}
+
+/* ---- per-option image upload (owner 2026-07-31) ---- */
+.pp-opt-thumb {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex: none;
+}
+.pp-upload-opt {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border: 1.5px dashed #0d9488;
+    border-radius: 8px;
+    color: #0d9488;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: none;
+}
+.pp-file-hidden {
+    display: none;
+}

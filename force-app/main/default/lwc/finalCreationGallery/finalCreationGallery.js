@@ -87,6 +87,12 @@ function cardKey(c) {
  *  answer store, one question per screen. */
 const SURVEY_TEMPLATES = [
     {
+        key: 'blank',
+        name: 'Blank survey',
+        icon: 'utility:add',
+        blurb: 'An empty one-question-per-screen survey — build it yourself from the Questions palette.'
+    },
+    {
         key: 'csat',
         name: 'CSAT Pulse',
         icon: 'utility:smiley_and_people',
@@ -174,6 +180,12 @@ export default class FinalCreationGallery extends LightningElement {
         return SURVEY_TEMPLATES;
     }
 
+    @track surveyName = '';
+
+    handleSurveyName(e) {
+        this.surveyName = e.target.value;
+    }
+
     handleTemplatePick(event) {
         if (this.isCreating) {
             return;
@@ -181,7 +193,10 @@ export default class FinalCreationGallery extends LightningElement {
         const templateKey = event.currentTarget.dataset.key;
         this.isCreating = true;
         this.errorMessage = '';
-        createSurveyFromTemplate({ templateKey })
+        createSurveyFromTemplate({
+            templateKey,
+            surveyName: this.surveyName.trim() || null
+        })
             .then((res) => {
                 this.isCreating = false;
                 this.createdInfo = res;
@@ -407,13 +422,11 @@ export default class FinalCreationGallery extends LightningElement {
         this.dispatchEvent(new CustomEvent('close'));
     }
 
-    /** Done screen's primary action — a USER GESTURE, so the popup-blocker
-     *  never eats the studio window (auto-open from the create promise
-     *  would be blocked). Full-page VF host per the library's law. */
-    handleOpenStudio() {
-        if (this.createdInfo) {
-            window.open(studioUrl(this.createdInfo.formId), '_blank');
-        }
+    /** Done screen's primary action is a real ANCHOR — browsers never block
+     *  anchor navigation, unlike window.open (which Brave & friends eat even
+     *  on gestures; owner report 2026-07-31). */
+    get createdStudioHref() {
+        return this.createdInfo ? studioUrl(this.createdInfo.formId) : '#';
     }
     handleStartOver() {
         this.step = 'layout';

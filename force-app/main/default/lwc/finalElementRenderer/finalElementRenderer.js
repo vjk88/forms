@@ -134,6 +134,13 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
+    /** lightning-checkbox-group REQUIRES an array value — undefined crashes
+     *  the base component internally (value.indexOf) and takes the whole
+     *  Aura page down with it (owner console screenshot, 2026-07-31). */
+    get checkboxGroupValues() {
+        return Array.isArray(this.el.value) ? this.el.value : [];
+    }
+
     get isToggle() {
         return (
             this.isField &&
@@ -890,10 +897,13 @@ export default class FinalElementRenderer extends LightningElement {
         });
     }
 
-    /** `left` lays the field out as a row: label column + control (spec §4). */
+    /** `left` lays the field out as a row: label column + control (spec §4).
+     *  CHIP-FAMILY questions opt out — a 0–10 row beside a side label can
+     *  never fit; their labels stay on top (owner overflow report,
+     *  2026-07-31). */
     get fieldClass() {
         let cls = 'field';
-        if (this.el.labelPosition === 'left') {
+        if (this.el.labelPosition === 'left' && this.isField) {
             cls += ' label-left';
         }
         if (this.isTextarea) {
