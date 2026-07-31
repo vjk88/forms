@@ -1,6 +1,10 @@
 # Survey Plan — the Surveys half of the product, on the final\* stack
 
-> **Status: APPROVED (owner, 2026-07-27) — all §10 questions ruled; build proceeds per §9 S-slices.**
+> **Status: BUILT (2026-07-27, PRs #161–#168) — S1 runtime · S2 scale family · S3 choices ·
+> S4 likert/ranking/matrix (reviewer gate passed) · S5 gallery templates · S6 report type.
+> Open follow-ups: DEFERRED #25 (catalog polish) · #26 (starter report/dashboard XML) ·
+> Settings-mode IA (anonymous toggle's home). Every slice org-verified: internal + guest
+> submits, SOQL receipts, Studio screenshots.**
 > This is the program-level plan for Surveys (the second leg of SHIP: Phase A → **Surveys** → package).
 > Companions: [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) (spec shapes this extends) ·
 > [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) (answer-store objects) ·
