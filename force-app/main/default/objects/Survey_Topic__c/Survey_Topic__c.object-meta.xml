@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+    >The managed topic-tag vocabulary for survey questions (SURVEY_PLAN round-6 ruling). Builders pick topics from this list — never free-typed — so cross-survey "score by topic" charts can't drift. Deactivate hides a topic from the picker; Restrict delete keeps history intact.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <label>Survey Topic</label>
+    <nameField>
+        <label>Topic Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Survey Topics</pluralLabel>
+    <searchLayouts />
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

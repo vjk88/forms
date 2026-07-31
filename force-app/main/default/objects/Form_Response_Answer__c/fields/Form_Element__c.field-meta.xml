@@ -1,13 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Form_Element__c</fullName>
     <deleteConstraint>Restrict</deleteConstraint>
-    <description>The question this answer is for.</description>
+    <description
+    >LEGACY (old build: questions were records). The final* model keys answers by Element_Key__c — spec questions are never records, so this stays empty for survey answers. Relaxed to optional in S1 (was required, which blocked every survey insert); kept per the orphan ledger, do not delete.</description>
     <label>Form Element</label>
     <referenceTo>Form_Element__c</referenceTo>
     <relationshipLabel>Answers</relationshipLabel>
     <relationshipName>Answers</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

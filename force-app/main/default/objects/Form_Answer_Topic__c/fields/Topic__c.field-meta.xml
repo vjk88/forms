@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Topic__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description
+    >The live topic tag. Restrict delete: a topic with recorded answers can only be deactivated (Active = false), never deleted — trend history survives.</description>
+    <label>Topic</label>
+    <referenceTo>Survey_Topic__c</referenceTo>
+    <relationshipLabel>Answer Links</relationshipLabel>
+    <relationshipName>Answer_Links</relationshipName>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

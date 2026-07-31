@@ -1,9 +1,10 @@
 # IMPL_PLAN — Survey S1: Answer-Store Submit Runtime
 
-> **Status: rev 4 — ALL DECISIONS RULED (owner, 2026-07-27): availability gate IN (7-1
-> yes), respondent access = fenced SYSTEM MODE (7-2 b), topics = managed multi-tags
-> (7-3, replaces single free-text topic; Question Bank skipped). Awaiting only the
-> owner's "go" to start code.**
+> **Status: SHIPPED (2026-07-27) — gate PASSED: internal + guest survey submit
+> render-verified in the org (screenshots + SOQL: 2 responses, 6 typed answers,
+> normalized score 75.00, 4 topic-junction rows); 10/10 new tests + 25/25 regression
+> green. All decisions were ruled (7-1 yes · 7-2 system mode · 7-3 topics-as-tags).
+> Build notes: §10.**
 > Parent: [SURVEY_PLAN.md](./SURVEY_PLAN.md) (APPROVED 2026-07-27) §6/§9 S1 ·
 > [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) §8 (submit contract) ·
 > [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) §2 · RUNTIME_NOTES (guest law).
@@ -222,3 +223,25 @@ rendering packs + captions (ride the widget slices), context links + anonymous U
 gallery templates (S5), report type + dashboard (S6). **Question Bank: SKIPPED by owner
 2026-07-27 (round 6)** — replaced by the managed topics-as-tags model (ruling 7-3;
 storage in S1, picker/manage UI in S2). The `Form_Element__c` lookup stays parked.
+
+## 10 · Build notes (what the org taught us — traced, not assumed)
+
+- **Availability was half-built already:** guest A3 had closed/opensAt/closesAt +
+  honeypot enforced. 7-1's real scope became: response cap (both controllers, surveys
+  only) + the closed gate on the INTERNAL controller. Helpers moved to
+  `FinalSubmitService` — one truth, guest controller delegates.
+- **No server-side §7 validation exists — for forms either.** "Identical to forms" =
+  none. Parity kept; the gap is DEFERRED #24 (pre-Security-Review item).
+- **`Form_Element__c` landmine:** the legacy lookup on the answer object was REQUIRED
+  (old build: questions were records) — it blocked every survey insert. Relaxed to
+  optional; description updated; orphan-ledger entry stands.
+- **`Status__c` has no 'Submitted' value** — picklist is In_Progress/Completed/Abandoned;
+  responses use **'Completed'** (the rev-2 "verify the picklist" step caught this).
+- **Files:** the viewer's §8 payload carries no `files` array today, so the survey path
+  skips file handling entirely — rides whenever the form path gains it.
+- **Verify evidence:** seed `scripts/apex/seedSurveyS1.apex`; internal submit via
+  Final_P0_Test app page (thank-you screen), guest submit via the LWR site
+  (`/?formId=…` — the `vforcesite` prefix belongs to the Visualforce site and 302s away,
+  losing query params); SOQL: 2 responses (internal w/ Submitted_By, guest without),
+  6 typed answers, Normalized_Score 75.00, Topic_Snapshot "Support; Onboarding",
+  4 junction rows.
