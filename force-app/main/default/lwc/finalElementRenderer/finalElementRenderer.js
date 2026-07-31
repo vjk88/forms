@@ -41,8 +41,19 @@ const CALLOUT_ICONS = {
     error: 'utility:error'
 };
 
+// Survey scale family (SURVEY_PLAN §2.2, slice S2): one interaction grammar —
+// an ordered row of ≥44px radio chips; selected = accent fill (catalog law).
+const EMOJI_FACES = ['😠', '😕', '😐', '🙂', '😍'];
+const RATING_GLYPHS = { star: '★', heart: '♥', thumb: '👍' };
+const SCALE_SIZES = [5, 7, 10];
+
 export default class FinalElementRenderer extends LightningElement {
     @api element;
+
+    /** Scale-family local selection. MUST be a DECLARED field — LWC only
+     *  tracks declared fields; an expando assignment never repaints (the
+     *  S2 "selection doesn't paint" bug). */
+    _scaleValue;
 
     get el() {
         return this.element || {};
@@ -255,15 +266,184 @@ export default class FinalElementRenderer extends LightningElement {
      */
     get showCustomLabel() {
         return (
-            this.isField &&
+            (this.isField || this.isScaleFamily) &&
             this.el.labelPosition !== 'hidden' &&
             Boolean(this.el.label)
         );
     }
 
+    /**
+     * Per-question caption (owner round-4 ruling): `description` +
+     * `descriptionDisplay` — 'caption' renders the always-visible muted line,
+     * 'help' tucks it behind the ⓘ bubble. Empty renders nothing, never an
+     * empty ⓘ.
+     */
+    get captionText() {
+        return this.el.descriptionDisplay === 'help'
+            ? undefined
+            : this.el.description;
+    }
+
+    /** ⓘ content: authored help wins; else description-as-help. */
+    get helpContent() {
+        if (this.el.help) {
+            return this.el.help;
+        }
+        return this.el.descriptionDisplay === 'help'
+            ? this.el.description
+            : undefined;
+    }
+
     /** Help rides the visible helptext next to our label; else on the field. */
     get nativeHelp() {
-        return this.showCustomLabel ? undefined : this.el.help;
+        return this.showCustomLabel ? undefined : this.helpContent;
+    }
+
+    // ---- survey scale family (nps / rating / scale / emojiScale — S2) ----
+
+    get isNps() {
+        return this.el.type === 'nps';
+    }
+
+    get isRating() {
+        return this.el.type === 'rating';
+    }
+
+    get isScale() {
+        return this.el.type === 'scale';
+    }
+
+    get isEmojiScale() {
+        return this.el.type === 'emojiScale';
+    }
+
+    get isScaleFamily() {
+        return this.isNps || this.isRating || this.isScale || this.isEmojiScale;
+    }
+
+    /** NPS classic detractor coloring is an OPT-IN (ruling Q2); theme-accent
+     *  is the default. */
+    get npsClassic() {
+        return this.isNps && this.cfg.coloring === 'classic';
+    }
+
+    /** Current selection: local pick wins, else a value the viewer rehydrated
+     *  onto the element (matches the uncontrolled posture of native inputs). */
+    get scaleValue() {
+        if (this._scaleValue != null) {
+            return this._scaleValue;
+        }
+        return typeof this.el.value === 'number' ? this.el.value : null;
+    }
+
+    get scaleBounds() {
+        if (this.isNps) {
+            return { min: 0, max: 10 };
+        }
+        if (this.isRating) {
+            // segmented 5|10 (owner ruling Q1 — the 7 lives on `scale` only)
+            return { min: 1, max: this.cfg.max === 10 ? 10 : 5 };
+        }
+        if (this.isScale) {
+            const size = SCALE_SIZES.includes(this.cfg.size)
+                ? this.cfg.size
+                : 5;
+            return { min: 1, max: size };
+        }
+        return { min: 1, max: 5 }; // emojiScale
+    }
+
+    get scaleItems() {
+        const { min, max } = this.scaleBounds;
+        const sel = this.scaleValue;
+        const glyph = RATING_GLYPHS[this.cfg.icon] || RATING_GLYPHS.star;
+        const items = [];
+        for (let v = min; v <= max; v++) {
+            const isSel = sel != null && v === sel;
+            let cls;
+            if (this.isRating) {
+                cls =
+                    sel != null && v <= sel
+                        ? 'scale-icon filled'
+                        : 'scale-icon';
+            } else {
+                cls = isSel ? 'scale-chip selected' : 'scale-chip';
+                if (this.npsClassic) {
+                    cls +=
+                        v <= 6
+                            ? ' nps-detractor'
+                            : v <= 8
+                              ? ' nps-passive'
+                              : ' nps-promoter';
+                }
+            }
+            items.push({
+                value: v,
+                display: this.isRating
+                    ? glyph
+                    : this.isEmojiScale
+                      ? EMOJI_FACES[v - min]
+                      : String(v),
+                cls,
+                ariaChecked: isSel ? 'true' : 'false',
+                // roving tabindex: the selection (or the first chip) is the
+                // one tab stop; arrows move within the group
+                tabIndex: isSel || (sel == null && v === min) ? '0' : '-1',
+                ariaLabel:
+                    this.isRating || this.isEmojiScale
+                        ? `${v} of ${max}`
+                        : String(v)
+            });
+        }
+        return items;
+    }
+
+    get hasEndLabels() {
+        return Boolean(this.cfg.leftLabel || this.cfg.rightLabel);
+    }
+
+    handleScalePick(event) {
+        const v = Number(event.currentTarget.dataset.value);
+        this._scaleValue = v;
+        this.dispatchValue(v);
+    }
+
+    handleScaleKey(event) {
+        const keys = [
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End'
+        ];
+        if (!keys.includes(event.key)) {
+            return;
+        }
+        event.preventDefault();
+        const { min, max } = this.scaleBounds;
+        const cur = this.scaleValue;
+        let next;
+        if (event.key === 'Home') {
+            next = min;
+        } else if (event.key === 'End') {
+            next = max;
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+            next = cur == null ? min : Math.max(min, cur - 1);
+        } else {
+            next = cur == null ? min : Math.min(max, cur + 1);
+        }
+        this._scaleValue = next;
+        this.dispatchValue(next);
+        // move focus with the selection (radiogroup arrow-key contract)
+        Promise.resolve().then(() => {
+            const btn = this.template.querySelector(
+                `button[data-value="${next}"]`
+            );
+            if (btn) {
+                btn.focus();
+            }
+        });
     }
 
     /** `left` lays the field out as a row: label column + control (spec §4). */
