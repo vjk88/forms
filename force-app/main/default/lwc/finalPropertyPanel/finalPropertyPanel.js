@@ -302,12 +302,79 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.isElement && this.n.type === 'imageChoice';
     }
 
+    get isLikertQuestion() {
+        return this.isElement && this.n.type === 'likert';
+    }
+
+    get isRankingQuestion() {
+        return this.isElement && this.n.type === 'ranking';
+    }
+
+    get isMatrixQuestion() {
+        return this.isElement && this.n.type === 'matrix';
+    }
+
     get isSurveyQuestion() {
         return (
             this.isScaleFamilyQuestion ||
             this.isYesNoQuestion ||
-            this.isImageChoiceQuestion
+            this.isImageChoiceQuestion ||
+            this.isLikertQuestion ||
+            this.isRankingQuestion ||
+            this.isMatrixQuestion
         );
+    }
+
+    // ---- ranking + matrix editors (S4) ----
+
+    get plainOptionRows() {
+        return (this.cfg.options || []).map((o, index) => ({
+            ...o,
+            index,
+            key: `${index}`
+        }));
+    }
+
+    handleAddPlainOption() {
+        const options = [
+            ...(this.cfg.options || []),
+            {
+                value: this._mintOptionValue('opt'),
+                label: ''
+            }
+        ];
+        this._config({ options });
+    }
+
+    get matrixStatementRows() {
+        return (this.cfg.rows || []).map((r, index) => ({
+            ...r,
+            index,
+            key: `${index}`
+        }));
+    }
+
+    handleMatrixRowChange(event) {
+        const index = Number(event.currentTarget.dataset.index);
+        const rows = (this.cfg.rows || []).map((r, i) => {
+            return i === index ? { ...r, label: event.target.value } : r;
+        });
+        this._config({ rows });
+    }
+
+    handleAddMatrixRow() {
+        const rows = [
+            ...(this.cfg.rows || []),
+            { value: this._mintOptionValue('row'), label: '' }
+        ];
+        this._config({ rows });
+    }
+
+    handleRemoveMatrixRow(event) {
+        const index = Number(event.currentTarget.dataset.index);
+        this._config({
+            rows: (this.cfg.rows || []).filter((r, i) => i !== index)
+        });
     }
 
     // ---- yesNo / imageChoice inspectors (S3) ----
@@ -339,11 +406,18 @@ export default class FinalPropertyPanel extends LightningElement {
         this._config({ options });
     }
 
+    /** Unique option/row values — length-based minting collides after a
+     *  delete (duplicate keys corrupt renders; matrix double-selects —
+     *  S4 gate finding #4). */
+    _mintOptionValue(prefix) {
+        return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
     handleAddImageOption() {
         const options = [
             ...(this.cfg.options || []),
             {
-                value: `opt${(this.cfg.options || []).length + 1}`,
+                value: this._mintOptionValue('opt'),
                 label: '',
                 url: ''
             }

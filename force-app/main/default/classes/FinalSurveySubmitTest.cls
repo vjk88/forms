@@ -753,4 +753,91 @@ private class FinalSurveySubmitTest {
             'persisted'
         );
     }
+
+    // ----- 11: matrix expands one row per statement (S4) -----
+
+    @isTest
+    static void matrixWritesOneRowPerStatement() {
+        Form_Version__c version = makeSurvey(
+            surveySpec(
+                new List<Object>{
+                    element(
+                        'el_mx',
+                        'matrix',
+                        'Rate these',
+                        new Map<String, Object>{
+                            'rows' => new List<Object>{
+                                new Map<String, Object>{
+                                    'value' => 'ease',
+                                    'label' => 'Easy to use'
+                                },
+                                new Map<String, Object>{
+                                    'value' => 'speed',
+                                    'label' => 'Fast support'
+                                }
+                            }
+                        },
+                        new Map<String, Object>{
+                            'role' => 'score',
+                            'scaleMin' => 1,
+                            'scaleMax' => 4
+                        }
+                    )
+                },
+                null,
+                null
+            )
+        );
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            version.Id,
+            JSON.serialize(
+                new Map<String, Object>{
+                    'answers' => new Map<String, Object>{
+                        'el_mx' => new Map<String, Object>{
+                            'ease' => 4,
+                            'speed' => 2
+                        }
+                    },
+                    'repeats' => new Map<String, Object>(),
+                    'meta' => new Map<String, Object>()
+                }
+            )
+        );
+        Test.stopTest();
+        Map<String, Form_Response_Answer__c> byKey = new Map<String, Form_Response_Answer__c>();
+        for (Form_Response_Answer__c a : [
+            SELECT
+                Element_Key__c,
+                Numeric_Value__c,
+                Normalized_Score__c,
+                Label_Snapshot__c
+            FROM Form_Response_Answer__c
+            WHERE Form_Response__c = :res.recordId
+        ]) {
+            byKey.put(a.Element_Key__c, a);
+        }
+        System.assertEquals(2, byKey.size(), 'one row per statement');
+        System.assertEquals(
+            4,
+            byKey.get('el_mx:ease').Numeric_Value__c,
+            'ease pick'
+        );
+        System.assertEquals(
+            100.0,
+            byKey.get('el_mx:ease').Normalized_Score__c,
+            '4 on 1-4 = 100'
+        );
+        System.assertEquals(
+            'Rate these — Easy to use',
+            byKey.get('el_mx:ease').Label_Snapshot__c,
+            'combined photocopy'
+        );
+        System.assertEquals(
+            33.33,
+            byKey.get('el_mx:speed').Normalized_Score__c,
+            '2 on 1-4 = 33.33'
+        );
+    }
 }

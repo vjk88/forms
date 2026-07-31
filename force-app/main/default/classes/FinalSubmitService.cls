@@ -249,9 +249,25 @@ public inherited sharing class FinalSubmitService {
                 if (answers == null || !answers.containsKey(elId)) {
                     continue;
                 }
+                Object raw = answers.get(elId);
+                // matrix (S4): ONE answer row PER STATEMENT — the sole
+                // exception to one-element-one-row (SURVEY_PLAN §2.1)
+                if (isMatrixElement(el) && raw instanceof Map<String, Object>) {
+                    rows.addAll(
+                        matrixAnswerRows(
+                            el,
+                            (Map<String, Object>) raw,
+                            response.Id,
+                            null,
+                            validTopics,
+                            topicsPerRow
+                        )
+                    );
+                    continue;
+                }
                 Form_Response_Answer__c row = answerRow(
                     el,
-                    answers.get(elId),
+                    raw,
                     response.Id,
                     null,
                     validTopics,
@@ -324,6 +340,66 @@ public inherited sharing class FinalSubmitService {
                 'Your response could not be saved. Nothing was recorded.'
             );
         }
+    }
+
+    private static Boolean isMatrixElement(Map<String, Object> el) {
+        Object t = el.get('type');
+        return t instanceof String && (String) t == 'matrix';
+    }
+
+    /** Matrix picks {statementKey → value} → one answer row per statement.
+     *  Element_Key = '<elementId>:<statementKey>'; the label photocopy
+     *  carries "question — statement" so reports read standalone. Topics and
+     *  the normalized score apply PER ROW (each appends to topicsPerRow —
+     *  the caller's alignment law). */
+    private static List<Form_Response_Answer__c> matrixAnswerRows(
+        Map<String, Object> el,
+        Map<String, Object> picks,
+        Id responseId,
+        Integer entryIndex,
+        Set<Id> validTopics,
+        List<List<Id>> topicsPerRow
+    ) {
+        List<Form_Response_Answer__c> out = new List<Form_Response_Answer__c>();
+        Map<String, Object> config = asMap(el.get('config'));
+        Map<String, String> statementLabels = new Map<String, String>();
+        for (Object rObj : asList(config == null ? null : config.get('rows'))) {
+            Map<String, Object> r = asMap(rObj);
+            if (r == null || r.get('value') == null) {
+                continue;
+            }
+            String key = String.valueOf(r.get('value'));
+            Object lbl = r.get('label');
+            statementLabels.put(
+                key,
+                lbl instanceof String ? (String) lbl : key
+            );
+        }
+        Object qLabelObj = el.get('label');
+        String qLabel = qLabelObj instanceof String ? (String) qLabelObj : '';
+        String elId = (String) el.get('id');
+        for (String statementKey : picks.keySet()) {
+            Object v = picks.get(statementKey);
+            if (v == null) {
+                continue;
+            }
+            Form_Response_Answer__c row = new Form_Response_Answer__c(
+                Form_Response__c = responseId,
+                Element_Key__c = (elId + ':' + statementKey).abbreviate(255),
+                Entry_Index__c = entryIndex
+            );
+            String stLabel = statementLabels.containsKey(statementKey)
+                ? statementLabels.get(statementKey)
+                : statementKey;
+            row.Label_Snapshot__c = (qLabel + ' — ' + stLabel).abbreviate(255);
+            row.Numeric_Value__c = numOrNull(v);
+            if (row.Numeric_Value__c == null) {
+                row.Text_Value__c = String.valueOf(v);
+            }
+            applyAnalytics(row, el, validTopics, topicsPerRow);
+            out.add(row);
+        }
+        return out;
     }
 
     /** One answered element → one typed answer row; its valid topic ids are

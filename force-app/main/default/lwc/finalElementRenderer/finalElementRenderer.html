@@ -55,6 +55,7 @@
                         type="text"
                         class="choice-other"
                         placeholder="Your own answer…"
+                        aria-label={otherAriaLabel}
                         oninput={handleOtherText}
                     />
                 </template>
@@ -270,6 +271,203 @@
                 ></lightning-icon>
                 <span>File upload arrives with a later step.</span>
             </div>
+        </div>
+    </template>
+    <template lwc:elseif={isLikert}>
+        <div class={fieldClass}>
+            <template lwc:if={showCustomLabel}>
+                <div class="field-label-row">
+                    <label class={labelClass} aria-hidden="true">
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
+            </template>
+            <div
+                class="choice-row likert-row"
+                role="radiogroup"
+                aria-label={el.label}
+                onkeydown={handleScaleKey}
+            >
+                <template for:each={likertItems} for:item="item">
+                    <button
+                        key={item.value}
+                        type="button"
+                        role="radio"
+                        class={item.cls}
+                        aria-checked={item.ariaChecked}
+                        data-value={item.value}
+                        tabindex={item.tabIndex}
+                        onclick={handleLikertPick}
+                    >
+                        {item.display}
+                    </button>
+                </template>
+            </div>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+    <template lwc:elseif={isRanking}>
+        <div class={fieldClass}>
+            <template lwc:if={showCustomLabel}>
+                <div class="field-label-row">
+                    <label class={labelClass} aria-hidden="true">
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
+            </template>
+            <ol class="rank-list" aria-label={el.label}>
+                <template for:each={rankRows} for:item="r">
+                    <li
+                        key={r.value}
+                        class="rank-row"
+                        draggable="true"
+                        data-index={r.index}
+                        ondragstart={handleRankDragStart}
+                        ondragover={handleRankDragOver}
+                        ondrop={handleRankDrop}
+                    >
+                        <span class="rank-grip" aria-hidden="true">⠿</span>
+                        <span class="rank-num" aria-hidden="true"
+                            >{r.position}</span
+                        >
+                        <span class="rank-label">{r.label}</span>
+                        <span class="rank-arrows">
+                            <button
+                                type="button"
+                                class="rank-btn"
+                                title={r.upLabel}
+                                aria-label={r.upLabel}
+                                data-index={r.index}
+                                data-delta="-1"
+                                disabled={r.upDisabled}
+                                onclick={handleRankMove}
+                            >
+                                ▲
+                            </button>
+                            <button
+                                type="button"
+                                class="rank-btn"
+                                title={r.downLabel}
+                                aria-label={r.downLabel}
+                                data-index={r.index}
+                                data-delta="1"
+                                disabled={r.downDisabled}
+                                onclick={handleRankMove}
+                            >
+                                ▼
+                            </button>
+                        </span>
+                    </li>
+                </template>
+            </ol>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+    <template lwc:elseif={isMatrix}>
+        <div class={fieldClass}>
+            <template lwc:if={showCustomLabel}>
+                <div class="field-label-row">
+                    <label class={labelClass} aria-hidden="true">
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
+            </template>
+            <template lwc:if={hasMatrixRows}>
+                <div class="mx-head" aria-hidden="true">
+                    <span class="mx-corner"></span>
+                    <template for:each={matrixPoints} for:item="pt">
+                        <span key={pt.value} class="mx-col">{pt.label}</span>
+                    </template>
+                </div>
+                <template for:each={matrixRows} for:item="r">
+                    <div
+                        key={r.key}
+                        class="mx-row"
+                        role="radiogroup"
+                        aria-label={r.label}
+                    >
+                        <span class="mx-statement">{r.label}</span>
+                        <template for:each={r.cells} for:item="c">
+                            <button
+                                key={c.key}
+                                type="button"
+                                role="radio"
+                                class={c.cls}
+                                aria-checked={c.ariaChecked}
+                                aria-label={c.aria}
+                                data-row={c.row}
+                                data-value={c.value}
+                                onclick={handleMatrixPick}
+                            >
+                                <span class="mx-point-label" aria-hidden="true"
+                                    >{c.pointLabel}</span
+                                >
+                            </button>
+                        </template>
+                    </div>
+                </template>
+            </template>
+            <template lwc:else>
+                <div class="block-image-empty">
+                    <lightning-icon
+                        icon-name="utility:table"
+                        size="small"
+                    ></lightning-icon>
+                    <span>Matrix — add statements in its properties</span>
+                </div>
+            </template>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
         </div>
     </template>
     <template lwc:elseif={isYesNo}>

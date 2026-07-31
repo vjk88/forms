@@ -196,6 +196,86 @@
                     </div>
                 </template>
 
+                <template lwc:if={isRankingQuestion}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Items to rank</span>
+                        <template for:each={plainOptionRows} for:item="o">
+                            <div key={o.key} class="pp-optrow">
+                                <input
+                                    type="text"
+                                    class="pp-input"
+                                    placeholder="Item label"
+                                    value={o.label}
+                                    data-index={o.index}
+                                    data-field="label"
+                                    onchange={handleImageOptionChange}
+                                />
+                                <button
+                                    type="button"
+                                    class="pp-x"
+                                    title="Remove item"
+                                    data-index={o.index}
+                                    onclick={handleRemoveImageOption}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </template>
+                        <button
+                            type="button"
+                            class="pp-add"
+                            onclick={handleAddPlainOption}
+                        >
+                            + Add item
+                        </button>
+                    </div>
+                </template>
+
+                <template lwc:if={isMatrixQuestion}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Statements (rows)</span>
+                        <template for:each={matrixStatementRows} for:item="r">
+                            <div key={r.key} class="pp-optrow">
+                                <input
+                                    type="text"
+                                    class="pp-input"
+                                    placeholder="Statement"
+                                    value={r.label}
+                                    data-index={r.index}
+                                    onchange={handleMatrixRowChange}
+                                />
+                                <button
+                                    type="button"
+                                    class="pp-x"
+                                    title="Remove statement"
+                                    data-index={r.index}
+                                    onclick={handleRemoveMatrixRow}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </template>
+                        <button
+                            type="button"
+                            class="pp-add"
+                            onclick={handleAddMatrixRow}
+                        >
+                            + Add statement
+                        </button>
+                    </div>
+                    <p class="pp-sub">
+                        Scale: Disagree → Strongly agree (4 points). On phones
+                        each statement becomes its own mini-question.
+                    </p>
+                </template>
+
+                <template lwc:if={isLikertQuestion}>
+                    <p class="pp-sub">
+                        Scale: Strongly disagree → Strongly agree (5 labeled
+                        chips).
+                    </p>
+                </template>
+
                 <template lwc:if={isScaleFamilyQuestion}>
                     <div class="pp-fld">
                         <span class="pp-label">End labels</span>

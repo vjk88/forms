@@ -541,3 +541,154 @@
         transition: none;
     }
 }
+
+/* ---- S4: likert · ranking · matrix ---- */
+.likert-row .likert-chip {
+    flex: 1 1 auto;
+    text-align: center;
+}
+.rank-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 480px;
+}
+.rank-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 8px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    padding: 9px 12px;
+    margin-bottom: 6px;
+    cursor: grab;
+}
+.rank-row:active {
+    cursor: grabbing;
+}
+.rank-grip {
+    color: var(--c-text-weak);
+}
+.rank-num {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.rank-label {
+    flex: 1;
+}
+.rank-arrows {
+    display: flex;
+    gap: 4px;
+}
+.rank-btn {
+    min-width: 34px;
+    height: 34px;
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 8px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    cursor: pointer;
+}
+.rank-btn:hover:not(:disabled) {
+    border-color: var(--c-accent);
+}
+.rank-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.rank-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+/* matrix: grid on wide screens, stacked cards on narrow */
+.mx-head {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.4fr) repeat(
+            auto-fit,
+            minmax(70px, 1fr)
+        );
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--c-text-weak);
+    margin-bottom: 4px;
+}
+.mx-col {
+    text-align: center;
+}
+.mx-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.4fr) repeat(
+            auto-fit,
+            minmax(70px, 1fr)
+        );
+    gap: 4px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--c-field-border);
+}
+.mx-statement {
+    font-size: 0.9rem;
+    padding-right: 8px;
+}
+.mx-dot {
+    min-height: var(--c-control-h, 44px);
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--c-input-radius, 8px);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    cursor: pointer;
+    font: inherit;
+}
+.mx-dot .mx-point-label {
+    display: none;
+    font-size: 0.72rem;
+}
+.mx-dot:hover {
+    border-color: var(--c-accent);
+}
+.mx-dot.selected {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+}
+.mx-dot:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}
+@media (max-width: 560px) {
+    /* stacked mobile: each statement becomes its own mini-question and the
+       cells grow labels (SURVEY_PLAN — the second rendering matrix ships with) */
+    .mx-head {
+        display: none;
+    }
+    .mx-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 10px 0;
+    }
+    .mx-statement {
+        font-weight: 600;
+    }
+    .mx-dot .mx-point-label {
+        display: inline;
+    }
+    .mx-dot.selected .mx-point-label {
+        color: var(--c-on-accent);
+        font-weight: 700;
+    }
+}
+
+/* S4 gate finding #7: the Other input joins the focus-ring family */
+.choice-other:focus-visible {
+    outline: none;
+    box-shadow: var(--c-focus-ring);
+}

@@ -61,6 +61,12 @@ export default class FinalElementRenderer extends LightningElement {
     _otherOn = false;
     _otherText = '';
 
+    /** S4 local state: ranking order (array of values), matrix picks
+     *  (REASSIGNED map — mutation never repaints), drag source index. */
+    _rankOrder;
+    _matrixPicks;
+    _dragIndex;
+
     get el() {
         return this.element || {};
     }
@@ -275,7 +281,10 @@ export default class FinalElementRenderer extends LightningElement {
             (this.isField ||
                 this.isScaleFamily ||
                 this.isYesNo ||
-                this.isImageChoice) &&
+                this.isImageChoice ||
+                this.isLikert ||
+                this.isRanking ||
+                this.isMatrix) &&
             this.el.labelPosition !== 'hidden' &&
             Boolean(this.el.label)
         );
@@ -346,6 +355,10 @@ export default class FinalElementRenderer extends LightningElement {
     }
 
     get scaleBounds() {
+        if (this.isLikert) {
+            const pts = this.likertPoints;
+            return { min: pts[0].value, max: pts[pts.length - 1].value };
+        }
         if (this.isNps) {
             return { min: 0, max: 10 };
         }
@@ -409,6 +422,199 @@ export default class FinalElementRenderer extends LightningElement {
 
     get hasEndLabels() {
         return Boolean(this.cfg.leftLabel || this.cfg.rightLabel);
+    }
+
+    // ---- S4: likert · ranking · matrix (the promoted trio) ----
+
+    get isLikert() {
+        return this.el.type === 'likert';
+    }
+
+    /** Likert points: authored config.points, else the classic agree-5. */
+    get likertPoints() {
+        const authored = this.cfg.points;
+        if (Array.isArray(authored) && authored.length) {
+            return authored;
+        }
+        return [
+            { value: 1, label: 'Strongly disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly agree' }
+        ];
+    }
+
+    get likertItems() {
+        const sel =
+            this._scaleValue != null
+                ? this._scaleValue
+                : typeof this.el.value === 'number'
+                  ? this.el.value
+                  : null;
+        return this.likertPoints.map((pt) => ({
+            value: pt.value,
+            display: pt.label,
+            cls:
+                sel === pt.value
+                    ? 'choice-chip likert-chip selected'
+                    : 'choice-chip likert-chip',
+            ariaChecked: sel === pt.value ? 'true' : 'false',
+            tabIndex:
+                sel === pt.value ||
+                (sel == null && pt.value === this.likertPoints[0].value)
+                    ? '0'
+                    : '-1'
+        }));
+    }
+
+    handleLikertPick(event) {
+        const v = Number(event.currentTarget.dataset.value);
+        this._scaleValue = v;
+        this.dispatchValue(v);
+    }
+
+    get isRanking() {
+        return this.el.type === 'ranking';
+    }
+
+    /** Current order: local wins, else hydrated el.value (ordered values),
+     *  else the authored option order. */
+    get rankValues() {
+        if (this._rankOrder) {
+            return this._rankOrder;
+        }
+        if (Array.isArray(this.el.value) && this.el.value.length) {
+            return this.el.value;
+        }
+        return (this.cfg.options || []).map((o) => o.value);
+    }
+
+    get rankRows() {
+        const byValue = new Map(
+            (this.cfg.options || []).map((o) => [
+                o.value,
+                o.label || '(untitled)'
+            ])
+        );
+        const last = this.rankValues.length - 1;
+        return this.rankValues.map((value, index) => ({
+            value,
+            label: byValue.get(value) || value,
+            index,
+            position: index + 1,
+            upDisabled: index === 0,
+            downDisabled: index === last,
+            upLabel: `Move ${byValue.get(value) || value} up`,
+            downLabel: `Move ${byValue.get(value) || value} down`
+        }));
+    }
+
+    _commitRank(order) {
+        this._rankOrder = order;
+        this.dispatchValue(order);
+    }
+
+    handleRankMove(event) {
+        const index = Number(event.currentTarget.dataset.index);
+        const delta = Number(event.currentTarget.dataset.delta);
+        const next = [...this.rankValues];
+        const to = index + delta;
+        if (to < 0 || to >= next.length) {
+            return;
+        }
+        [next[index], next[to]] = [next[to], next[index]];
+        this._commitRank(next);
+        // keep focus on the moved row's same-direction button
+        Promise.resolve().then(() => {
+            const btn = this.template.querySelector(
+                `button[data-index="${to}"][data-delta="${delta}"]`
+            );
+            if (btn && !btn.disabled) {
+                btn.focus();
+            }
+        });
+    }
+
+    handleRankDragStart(event) {
+        this._dragIndex = Number(event.currentTarget.dataset.index);
+        event.dataTransfer.effectAllowed = 'move';
+    }
+
+    handleRankDragOver(event) {
+        event.preventDefault(); // required: makes the row a drop target
+        event.dataTransfer.dropEffect = 'move';
+    }
+
+    handleRankDrop(event) {
+        event.preventDefault();
+        const from = this._dragIndex;
+        const to = Number(event.currentTarget.dataset.index);
+        if (from == null || from === to) {
+            return;
+        }
+        const next = [...this.rankValues];
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        this._dragIndex = null;
+        this._commitRank(next);
+    }
+
+    get isMatrix() {
+        return this.el.type === 'matrix';
+    }
+
+    /** Matrix scale points: authored config.points, else agree-4. */
+    get matrixPoints() {
+        const authored = this.cfg.points;
+        if (Array.isArray(authored) && authored.length) {
+            return authored;
+        }
+        return [
+            { value: 1, label: 'Disagree' },
+            { value: 2, label: 'Neutral' },
+            { value: 3, label: 'Agree' },
+            { value: 4, label: 'Strongly agree' }
+        ];
+    }
+
+    get matrixPicksMap() {
+        if (this._matrixPicks) {
+            return this._matrixPicks;
+        }
+        return this.el.value && typeof this.el.value === 'object'
+            ? this.el.value
+            : {};
+    }
+
+    /** rows × points, each cell pre-classed — the template stays dumb. */
+    get matrixRows() {
+        const picks = this.matrixPicksMap;
+        return (this.cfg.rows || []).map((r) => ({
+            key: r.value,
+            label: r.label || '(untitled)',
+            cells: this.matrixPoints.map((pt) => ({
+                key: `${r.value}:${pt.value}`,
+                row: r.value,
+                value: pt.value,
+                pointLabel: pt.label,
+                aria: `${r.label || r.value} — ${pt.label}`,
+                cls: picks[r.value] === pt.value ? 'mx-dot selected' : 'mx-dot',
+                ariaChecked: picks[r.value] === pt.value ? 'true' : 'false'
+            }))
+        }));
+    }
+
+    get hasMatrixRows() {
+        return (this.cfg.rows || []).length > 0;
+    }
+
+    handleMatrixPick(event) {
+        const row = event.currentTarget.dataset.row;
+        const value = Number(event.currentTarget.dataset.value);
+        // REASSIGN (never mutate) — declared-field repaint law
+        this._matrixPicks = { ...this.matrixPicksMap, [row]: value };
+        this.dispatchValue(this._matrixPicks);
     }
 
     // ---- choice family (S3: yesNo · imageChoice · chips/cards optionStyle) ----
@@ -502,6 +708,17 @@ export default class FinalElementRenderer extends LightningElement {
         ) {
             this._choiceValue = this.yesNoHydrated;
         }
+        // ranking: the PRESENTED order is already an answer — commit it once
+        // so a respondent who agrees with it isn't blocked by required
+        // (S4 gate finding #2)
+        if (
+            this.isRanking &&
+            !this._rankOrder &&
+            !Array.isArray(this.el.value) &&
+            (this.cfg.options || []).length
+        ) {
+            this._commitRank(this.rankValues);
+        }
     }
 
     get chipChoiceItems() {
@@ -533,10 +750,23 @@ export default class FinalElementRenderer extends LightningElement {
         const v = event.currentTarget.dataset.value;
         if (v === '__other__') {
             this._otherOn = !this._otherOn;
+            if (this._otherOn && !this.choiceIsMulti) {
+                // single-select: Other REPLACES the previous pick — never two
+                // lit chips with a blank answer (S4 gate finding #6)
+                this._choiceValue = null;
+            }
             if (!this._otherOn) {
                 this._otherText = '';
             }
             this._dispatchChoice();
+            if (this._otherOn) {
+                Promise.resolve().then(() => {
+                    const input = this.template.querySelector('.choice-other');
+                    if (input) {
+                        input.focus();
+                    }
+                });
+            }
             return;
         }
         if (this.choiceIsMulti) {
@@ -553,6 +783,10 @@ export default class FinalElementRenderer extends LightningElement {
             this._otherText = '';
         }
         this._dispatchChoice();
+    }
+
+    get otherAriaLabel() {
+        return `${this.el.label || 'This question'} — your own answer`;
     }
 
     handleOtherText(event) {
@@ -583,7 +817,7 @@ export default class FinalElementRenderer extends LightningElement {
         const sel = this.choiceSelectedSet;
         return (this.cfg.options || []).map((o) => ({
             value: o.value,
-            label: o.label || o.value,
+            label: o.label || '(untitled)',
             url: o.url,
             hasImage: Boolean(o.url),
             cls: sel.has(o.value) ? 'ic-tile selected' : 'ic-tile',

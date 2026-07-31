@@ -45,8 +45,31 @@ const BLOCK_LABELS = {
     callout: 'Callout',
     consent: 'Consent',
     emptySpace: 'Empty space',
-    file: 'File upload'
+    file: 'File upload',
+    nps: 'NPS',
+    rating: 'Rating',
+    scale: 'Opinion scale',
+    emojiScale: 'Emoji scale',
+    likert: 'Likert',
+    yesNo: 'Yes / No',
+    imageChoice: 'Image choice',
+    ranking: 'Ranking',
+    matrix: 'Matrix'
 };
+
+/** Survey question registry keys — field-like on the blueprint: their chip
+ *  shows the authored question text (SURVEY_PLAN §2.1). */
+const SURVEY_QUESTION_TYPES = new Set([
+    'nps',
+    'rating',
+    'scale',
+    'emojiScale',
+    'likert',
+    'yesNo',
+    'imageChoice',
+    'ranking',
+    'matrix'
+]);
 
 /** Always span the whole grid (mirrors finalSectionRenderer — runtime parity). */
 const FULL_WIDTH_TYPES = new Set(['divider', 'spacer']);
@@ -212,7 +235,12 @@ export default class FinalBuilderCanvas extends LightningElement {
                 elements: isBlock
                     ? []
                     : (s.elements || []).map((el) => {
-                          const isField = el.type === 'field';
+                          // survey questions are field-like on the blueprint:
+                          // show the QUESTION TEXT, never a raw type key
+                          // (S4 gate finding #5)
+                          const isField =
+                              el.type === 'field' ||
+                              SURVEY_QUESTION_TYPES.has(el.type);
                           const span = FULL_WIDTH_TYPES.has(el.type)
                               ? cols
                               : Math.min(
