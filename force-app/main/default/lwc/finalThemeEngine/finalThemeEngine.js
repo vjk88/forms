@@ -292,6 +292,8 @@ const DEFAULT_PROPS = {
     // 'none' hides section borders outright — beats the look AND a custom
     // border color (owner 2026-07-12).
     sectionBorder: null,
+    // 'hidden' hides every section title row (owner 2026-07-31); null = show.
+    sectionHeaders: null,
     radius: 'soft',
     border: 'hairline',
     density: 'comfortable',
@@ -759,6 +761,11 @@ export function resolveTokens(themeProps, formOverrides) {
         // caught up 2026-07-12). Setting ONLY the opacity activates the
         // default card tint so the slider is never inert.
         '--c-section-pad': density.sectionPad,
+        // Section headers (owner 2026-07-31): 'hidden' removes every title
+        // row (display:none — gone from the a11y tree too). Unset = show;
+        // per-section escape stays "leave the title empty".
+        '--c-sec-head-display':
+            p.sectionHeaders === 'hidden' ? 'none' : undefined,
         '--c-section-bg': withFillOpacity(
             pal.sectionBg ||
                 (sectionLook
