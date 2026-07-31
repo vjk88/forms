@@ -1044,10 +1044,13 @@ const AREAS = [
                 label: 'Labels',
                 controls: [
                     {
+                        // Surveys are always top-aligned (owner 2026-07-31) —
+                        // the viewer clamps the label-flow tokens to match.
                         key: 'labelPosition',
                         label: 'Label position',
                         type: 'select',
                         themePath: 'labelPosition',
+                        appliesTo: { notFormTypes: ['survey'] },
                         options: [
                             { value: 'top', label: 'Top' },
                             { value: 'left', label: 'Left' }

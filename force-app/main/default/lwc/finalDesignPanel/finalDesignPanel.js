@@ -144,6 +144,12 @@ export default class FinalDesignPanel extends LightningElement {
         return flattenControls().find((c) => c.control.key === key);
     }
 
+    get formType() {
+        return (this._spec.form && this._spec.form.type) || 'form';
+    }
+
+    /** ALL present gate keys must pass (AND) — lets a control combine a
+     *  form-type gate with a layout gate (first user: survey paging). */
     _applies(entry) {
         const gate =
             (entry && entry.appliesTo) ||
@@ -151,14 +157,20 @@ export default class FinalDesignPanel extends LightningElement {
         if (!gate) {
             return true;
         }
-        if (gate.layouts) {
-            return gate.layouts.includes(this.layoutType);
+        if (gate.layouts && !gate.layouts.includes(this.layoutType)) {
+            return false;
         }
-        if (gate.notLayouts) {
-            return !gate.notLayouts.includes(this.layoutType);
+        if (gate.notLayouts && gate.notLayouts.includes(this.layoutType)) {
+            return false;
         }
-        if (gate.paginated) {
-            return Boolean(this.layoutInfo.paginates);
+        if (gate.paginated && !this.layoutInfo.paginates) {
+            return false;
+        }
+        if (gate.formTypes && !gate.formTypes.includes(this.formType)) {
+            return false;
+        }
+        if (gate.notFormTypes && gate.notFormTypes.includes(this.formType)) {
+            return false;
         }
         return true;
     }
