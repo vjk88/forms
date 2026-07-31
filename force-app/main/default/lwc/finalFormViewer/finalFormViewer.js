@@ -213,6 +213,22 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             (spec.resolved && spec.resolved.tokens) ||
             resolveTokens(theme, spec.theme ? spec.theme.overrides : null);
 
+        // Surveys are ALWAYS top-labeled (owner 2026-07-31): a theme carrying
+        // labelPosition 'left' must not sneak sideways labels in. Patched on
+        // the token bag so published resolved specs are clamped too. The
+        // values mirror the engine's LABEL_FLOWS.top (mb by var reference so
+        // density still decides the actual gap).
+        if (spec.form && spec.form.type === 'survey') {
+            this.tokens = {
+                ...this.tokens,
+                '--c-label-flow': 'column',
+                '--c-label-basis': 'none',
+                '--c-label-mb': 'var(--c-space-1)',
+                '--c-label-gap': '0px',
+                '--c-label-align': 'stretch'
+            };
+        }
+
         // Custom brand font: tokens only TYPESET the family — the @font-face
         // must be registered globally (CUSTOM_FONTS.md). Idempotent; also runs
         // for published specs since resolved tokens still name the family.
