@@ -37,7 +37,7 @@
                         icon-name="utility:apps"
                         size="x-small"
                     ></lightning-icon>
-                    <span>Start from a template</span>
+                    <span>Templates &amp; surveys</span>
                 </button>
                 <button
                     class={scratchTabClass}
@@ -50,7 +50,7 @@
                         icon-name="utility:layout"
                         size="x-small"
                     ></lightning-icon>
-                    <span>Start from scratch</span>
+                    <span>Blank form · pick a layout</span>
                 </button>
             </div>
 
@@ -64,6 +64,13 @@
                             store, one question per screen</span
                         >
                     </div>
+                    <input
+                        type="text"
+                        class="tpl-name-input"
+                        placeholder="Survey name (optional — templates carry good defaults)"
+                        value={surveyName}
+                        oninput={handleSurveyName}
+                    />
                     <div class="tpl-grid">
                         <template for:each={surveyTemplates} for:item="t">
                             <button
@@ -87,8 +94,10 @@
                         <p class="g-error" role="alert">{errorMessage}</p>
                     </template>
                     <p class="lg-hint">
-                        Form templates (pre-bound to standard objects) arrive
-                        next — start from scratch below meanwhile.
+                        Building a FORM instead (answers become fields on a
+                        Salesforce record)? Use the "Blank form" tab — pick a
+                        layout, theme, then name it and choose its object. Form
+                        templates arrive next.
                     </p>
                 </section>
             </div>
@@ -368,13 +377,14 @@
                     >
                         Done
                     </button>
-                    <button
-                        class="cg-create"
-                        type="button"
-                        onclick={handleOpenStudio}
+                    <a
+                        class="cg-create cg-open-link"
+                        href={createdStudioHref}
+                        target="_blank"
+                        rel="noopener"
                     >
                         Open in Studio
-                    </button>
+                    </a>
                 </div>
             </div>
         </template>

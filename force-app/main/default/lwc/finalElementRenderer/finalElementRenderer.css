@@ -664,7 +664,7 @@
     outline: none;
     box-shadow: var(--c-focus-ring);
 }
-@media (max-width: 560px) {
+@container section (max-width: 560px) {
     /* stacked mobile: each statement becomes its own mini-question and the
        cells grow labels (SURVEY_PLAN — the second rendering matrix ships with) */
     .mx-head {
@@ -691,4 +691,31 @@
 .choice-other:focus-visible {
     outline: none;
     box-shadow: var(--c-focus-ring);
+}
+
+/* narrow form column (container query — the studio preview shrinks the
+   CONTAINER, not the window): likert pills become full-width rows so
+   labeled options never truncate (SURVEY_PLAN narrow contract) */
+@container section (max-width: 560px) {
+    .likert-row {
+        flex-direction: column;
+    }
+    .likert-row .likert-chip {
+        width: 100%;
+        text-align: left;
+    }
+}
+
+/* flex/grid min-content overflow guards: a chip row inside a grid column
+   must be allowed to shrink + wrap (the classic min-width:auto trap —
+   owner bleed report 2026-07-31) */
+.field,
+.scale-row,
+.choice-row,
+.rank-list,
+.ic-grid,
+.mx-head,
+.mx-row {
+    min-width: 0;
+    max-width: 100%;
 }

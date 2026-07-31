@@ -302,11 +302,16 @@ public with sharing class FinalFormCreateController {
      */
     @AuraEnabled
     public static Map<String, Object> createSurveyFromTemplate(
-        String templateKey
+        String templateKey,
+        String surveyName
     ) {
         SurveyTemplate tpl = surveyTemplate(templateKey);
         if (tpl == null) {
             throw new AuraHandledException('Unknown survey template.');
+        }
+        // the shelf's optional name box wins; templates carry good defaults
+        if (String.isNotBlank(surveyName)) {
+            tpl.name = surveyName.trim().abbreviate(80);
         }
         Savepoint sp = Database.setSavepoint();
         try {
@@ -346,7 +351,10 @@ public with sharing class FinalFormCreateController {
         Map<String, Object> spec;
     }
 
-    private static SurveyTemplate surveyTemplate(String templateKey) {
+    private static SurveyTemplate surveyTemplate(
+        String templateKey,
+        String surveyName
+    ) {
         List<Object> elements;
         String name;
         Boolean anonymous = false;
@@ -434,8 +442,16 @@ public with sharing class FinalFormCreateController {
                     null
                 )
             };
+        } else if (templateKey == 'blank') {
+            name = 'Untitled Survey';
+            elements = new List<Object>();
         } else {
             return null;
+        }
+        // owner 2026-07-31: creation must never SKIP naming — the shelf's
+        // name box overrides the template default
+        if (String.isNotBlank(surveyName)) {
+            name = surveyName.trim().abbreviate(80);
         }
         Map<String, Object> settings = new Map<String, Object>();
         if (anonymous) {

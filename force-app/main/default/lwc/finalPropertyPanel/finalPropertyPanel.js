@@ -393,8 +393,53 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get imageOptionRows() {
         return ((this.cfg.options || []).length ? this.cfg.options : []).map(
-            (o, index) => ({ ...o, index, key: `${index}` })
+            (o, index) => ({
+                ...o,
+                index,
+                key: `${index}`,
+                hasImage: Boolean(o.url)
+            })
         );
+    }
+
+    /** Per-option picture upload — same proven ContentVersion pipeline as
+     *  the Image block (owner 2026-07-31: URL-only was a 'Baaaad job'). */
+    handleOptionImageUpload(event) {
+        const index = Number(event.currentTarget.dataset.index);
+        const file = event.target.files && event.target.files[0];
+        event.target.value = '';
+        if (!file) {
+            return;
+        }
+        this.uploading = true;
+        this.uploadError = undefined;
+        const reader = new FileReader();
+        reader.onload = async () => {
+            try {
+                const res = await uploadImage({
+                    base64Data: reader.result,
+                    fileName: file.name,
+                    formId: this.formId
+                });
+                const options = (this.cfg.options || []).map((o, i) => {
+                    return i === index
+                        ? {
+                              ...o,
+                              url: res.url,
+                              contentVersionId: res.contentVersionId
+                          }
+                        : o;
+                });
+                this._config({ options });
+            } catch (e) {
+                this.uploadError =
+                    (e && e.body && e.body.message) ||
+                    'The image could not be uploaded.';
+            } finally {
+                this.uploading = false;
+            }
+        };
+        reader.readAsDataURL(file);
     }
 
     handleImageOptionChange(event) {
@@ -690,10 +735,13 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get subtitle() {
         if (this.isField) {
+            // ALWAYS name the input kind — "what field is this?" should
+            // never require detective work (owner, 2026-07-31)
+            const kind = this.cfg.inputType || 'text';
             const bound = this.n.binding && this.n.binding.field;
             return bound
-                ? `Field · ${this.bindingObjectApi}.${bound}`
-                : 'Field';
+                ? `Field · ${kind} · ${this.bindingObjectApi}.${bound}`
+                : `Field · ${kind} · survey answer (no object)`;
         }
         if (this.isRepeater) {
             return `Repeating group · ${this.n.repeat.childObject}`;

@@ -518,3 +518,17 @@
     font-size: 0.8rem;
     color: #54698d;
 }
+
+.tpl-name-input {
+    width: min(420px, 100%);
+    border: 1.5px solid #dddbda;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font: inherit;
+    margin-bottom: 12px;
+}
+.cg-open-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
