@@ -290,8 +290,11 @@ that's an attachment, not an answer value.
   `imageChoice` (+ reserved: `ranking`, `matrix`). Config bags per §2.2.
 - `field` config gains `optionStyle` (List/Chips/Cards) + `allowOther` + per-option
   `description`/`icon` (Cards).
-- Element-level `analytics` block: `{ role: score|sentimentText|category|none, topic,
-scaleMin, scaleMax }` — scale bounds auto-locked for preset-scale types.
+- Element-level `analytics` block: `{ role: score|sentimentText|category|none, topics:
+[{id, name}], scaleMin, scaleMax }` — scale bounds auto-locked for preset-scale types.
+  **Topics are TAGS (owner ruling 2026-07-27, round 6):** picked from the managed
+  `Survey_Topic__c` vocabulary (multi-select chips + inline "new topic"), never free-typed;
+  a question can carry several.
 
 **`Form_Response_Answer__c` additions (beyond the already-approved `Label_Snapshot__c` +
 `Entry_Index__c`):**
@@ -335,26 +338,25 @@ lookup, generic pair as fallback.
   ("score by topic across all surveys").
 - **L2 — Free-text sentiment (deferred):** Agentforce prompt-template scorer, pluggable (an
   AppExchange listing can't assume AI entitlements). Landing-zone fields already in place (§6).
-- **L3 — Question Bank (PROMOTED, owner 2026-07-27 — now slice S7):** shared
-  `Survey_Question__c` entity + "push to bank" authoring flow — cross-survey comparability by
-  construction. Owner's motivation: **topics** — free-typed topic tags drift ("Support" vs
-  "support"); banked questions carry wording AND topic identically everywhere. Editing a bank
-  question freezes published usages (trend lines never silently reword). ≈ 2–3 wk, sequenced
-  after S6.
+- **L3 — Question Bank (SKIPPED, owner 2026-07-27 round 6):** owner chose **managed topic
+  tags** instead — the lighter fix for the same drift problem. Topic comparability now comes
+  from the shared `Survey_Topic__c` vocabulary (see §6 topics model); question-wording
+  comparability (the bank's other benefit) is consciously dropped. `ranking`-style key
+  reservation logic applies: nothing blocks a future bank; the `Form_Element__c` lookup stays
+  parked.
 
 ---
 
 ## 9 · Phasing (each slice = end-to-end vertical, render-verified gate)
 
-| Slice                           | Ships                                                                                                                                                | Gate                                                                        |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **S1 — Answer-store runtime**   | Survey submit path in `FinalSubmitService` (+ guest branch), answer-object field adds (§6), existing `field` types render unbound                    | Internal + guest survey submit render-verified; answer rows typed correctly |
-| **S2 — Scale family**           | `nps`, `rating`, `scale`, `emojiScale` — builder palette + inspectors + runtime                                                                      | All four author→publish→answer round-trip                                   |
-| **S3 — Choice upgrades**        | `optionStyle` List/Chips/Cards, `allowOther`, `yesNo`, `imageChoice`                                                                                 | Image options upload→publish→guest-render (snapshot URLs)                   |
-| **S4 — Likert + polish**        | `likert`, NPS follow-up sugar, narrow-behavior + a11y sweep across all widgets                                                                       | uiux-flow-reviewer pass on the full catalog                                 |
-| **S5 — Distribution & context** | Context-link writing (rides Phase B/C), anonymous toggle, survey gallery templates                                                                   | Tokenized case-survey link populates `Case__c`                              |
-| **S6 — Analytics L1**           | Report type + starter dashboard over normalized scores                                                                                               | "Score by topic" chart from two different surveys                           |
-| **S7 — Question Bank**          | `Survey_Question__c` object, "push to bank" in question properties, "From bank" palette source, `Bank_Question__c` lookup on answers, freeze-on-edit | Same banked question in two surveys → ONE trend line, zero topic drift      |
+| Slice                           | Ships                                                                                                                             | Gate                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **S1 — Answer-store runtime**   | Survey submit path in `FinalSubmitService` (+ guest branch), answer-object field adds (§6), existing `field` types render unbound | Internal + guest survey submit render-verified; answer rows typed correctly |
+| **S2 — Scale family**           | `nps`, `rating`, `scale`, `emojiScale` — builder palette + inspectors + runtime                                                   | All four author→publish→answer round-trip                                   |
+| **S3 — Choice upgrades**        | `optionStyle` List/Chips/Cards, `allowOther`, `yesNo`, `imageChoice`                                                              | Image options upload→publish→guest-render (snapshot URLs)                   |
+| **S4 — Likert + polish**        | `likert`, NPS follow-up sugar, narrow-behavior + a11y sweep across all widgets                                                    | uiux-flow-reviewer pass on the full catalog                                 |
+| **S5 — Distribution & context** | Context-link writing (rides Phase B/C), anonymous toggle, survey gallery templates                                                | Tokenized case-survey link populates `Case__c`                              |
+| **S6 — Analytics L1**           | Report type + starter dashboard over normalized scores                                                                            | "Score by topic" chart from two different surveys                           |
 
 Dependency note: S1–S4 need only Phase A (done). S5's context links wait on program Phases B/C —
 sequencing between the prefill program and survey slices stays owner-controlled.
@@ -512,3 +514,25 @@ Gallery's survey shelf ships with templates in **S5**. Implementation begins:
 - **Question Bank PROMOTED to slice S7** (motivation: topic consistency by construction —
   §8 L3 note). Topic autocomplete nicety superseded by the bank; revisit only if drift
   hurts before S7 lands.
+
+### Addendum rulings (owner, 2026-07-27, round 6 — topics are tags; bank skipped)
+
+- **Question Bank SKIPPED** (S7 removed from §9). Owner: "skip question bank, but get
+  topics."
+- **Topics = managed multi-tags.** The model:
+  - **`Survey_Topic__c`** — the vocabulary (Name + `Active__c`). Managed by builders:
+    the question-properties picker offers the list + inline "new topic";
+    `Form_Builder_Admin` gets CRUD. Deactivate hides from the picker, never deletes
+    history.
+  - **Question ↔ topics = many-to-many**: element `analytics.topics` array of
+    `{id, name}` in the spec (name snapshotted at publish for display only).
+  - **Answer ↔ topics**: one **`Form_Answer_Topic__c`** junction row per (answer ×
+    topic) — lookup to the answer + lookup to the live topic. This is what makes
+    "average score by topic" a real report with multi-tag questions.
+  - **Rename semantics — tags are LIVE, not snapshots**: renaming a topic record
+    updates every chart consistently (that is the point of managed tags). The
+    photocopy rule stays for question WORDING only. `Topic_Snapshot__c` on the answer
+    becomes a display-only joined string ("Support; Pricing") for eyeballing rows.
+  - **Slicing:** storage (both objects + junction writer) lands in **S1**
+    (hand-authored specs test it); the chips picker + inline-create + manage UI land
+    in **S2** with the question inspectors.
