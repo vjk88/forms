@@ -503,8 +503,12 @@
 .choice-card {
     flex: 1 1 100%;
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    /* Card Deck row anatomy (owner 2026-08-01): emoji badge left, text
+       stack beside it; text stays left-aligned even on centered stages */
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
     padding: 10px 16px;
 }
 .choice-desc {
@@ -818,4 +822,54 @@
 .mx-row {
     min-width: 0;
     max-width: 100%;
+}
+
+/* ---- Card Deck parity round 2 (owner 2026-08-01) ---- */
+
+/* per-option emoji badge + text stack (choice chips AND cards) */
+.choice-emo {
+    font-size: 1.6em;
+    line-height: 1;
+    flex: none;
+}
+.choice-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.choice-chip .choice-text {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+}
+
+/* slider: big live value readout + end labels (artifact treatment) */
+.slider-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.slider-val {
+    font-size: calc(var(--c-q-answer-size, 1rem) * 2.2);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-accent);
+    text-align: center;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+/* centered conversational stage: rows follow the section's centering cue
+   (the --c-q-justify var is set by .sec-convo; everywhere else rows keep
+   their start alignment) */
+.scale-row,
+.choice-row,
+.ic-grid,
+.yn-row {
+    justify-content: var(--c-q-justify, flex-start);
+}
+.field-label {
+    justify-content: var(--c-q-justify, flex-start);
+    width: 100%;
 }

@@ -118,6 +118,18 @@ describe('one question per screen (survey auto-split)', () => {
         expect(pages[2].sections[0].convo).toBeUndefined();
     });
 
+    it('keepTogether sections ride ONE screen through the split', async () => {
+        const spec = SPEC('stepper', true);
+        spec.pages[0].sections[0].keepTogether = true; // el_a + el_b together
+        const cmp = await mount(spec);
+        const pages = nav(cmp).pages;
+        // [el_a + el_b], repeater, el_c → 3 screens instead of 4
+        expect(pages.length).toBe(3);
+        expect(pages[0].sections[0].elements.length).toBe(2);
+        // a multi-input screen keeps the normal type scale, not the headline
+        expect(pages[0].sections[0].convo).toBeUndefined();
+    });
+
     it('toggle off / non-survey / scroll layout: no split', async () => {
         const off = await mount(SPEC('stepper', false));
         expect(nav(off).pages.length).toBe(2);

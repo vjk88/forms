@@ -109,7 +109,11 @@ export default class FinalElementRenderer extends LightningElement {
     get options() {
         return (this.cfg.options || []).map((o) => ({
             label: o.label || o.value,
-            value: o.value
+            value: o.value,
+            // Card Deck parity (owner 2026-08-01) — the normalize was
+            // silently dropping the per-option extras
+            emoji: o.emoji,
+            description: o.description
         }));
     }
 
@@ -442,6 +446,30 @@ export default class FinalElementRenderer extends LightningElement {
         return items;
     }
 
+    /** Slider live readout (Card Deck treatment): local pick wins, else the
+     *  hydrated answer, else the midpoint as a neutral resting display. */
+    get sliderValue() {
+        if (this._sliderVal != null) {
+            return this._sliderVal;
+        }
+        if (typeof this.el.value === 'number') {
+            return this.el.value;
+        }
+        const s = this.slider;
+        return Math.round((s.min + s.max) / 2);
+    }
+
+    get sliderValueDisplay() {
+        const prefix = this.cfg.valuePrefix || '';
+        const suffix = this.cfg.valueSuffix || '';
+        return `${prefix}${this.sliderValue}${suffix}`;
+    }
+
+    handleSliderChange(event) {
+        this._sliderVal = event.detail.value;
+        this.dispatchValue(event.detail.value);
+    }
+
     get hasEndLabels() {
         // Emoji scales never render end labels (owner 2026-07-31) — the faces
         // carry the meaning visually; screen readers get EMOJI_SENTIMENTS.
@@ -755,6 +783,8 @@ export default class FinalElementRenderer extends LightningElement {
             value: o.value,
             display: o.label,
             description: o.description,
+            // Card Deck parity (owner 2026-08-01): optional per-option emoji
+            emoji: o.emoji,
             cls: sel.has(o.value) ? `${base} selected` : base,
             ariaChecked: sel.has(o.value) ? 'true' : 'false'
         }));

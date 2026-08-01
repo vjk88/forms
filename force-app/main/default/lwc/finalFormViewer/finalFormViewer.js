@@ -43,7 +43,10 @@ function splitOnePerScreen(pages) {
     const pageId = (page, suffix) => `${page.id || page.key || 'p'}~${suffix}`;
     for (const page of pages) {
         for (const section of page.sections || []) {
-            if (section.repeat) {
+            // repeaters are atomic by nature; keepTogether is the AUTHORED
+            // version of the same promise (Card Deck multi-input step,
+            // owner 2026-08-01) — the whole section rides one screen
+            if (section.repeat || section.keepTogether) {
                 out.push({
                     ...page,
                     name: undefined,
