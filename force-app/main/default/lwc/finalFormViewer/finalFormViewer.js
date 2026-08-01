@@ -482,8 +482,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // Each page carries the layout's zonesDefault. (The per-page
             // sparse override was deleted 2026-07-18 — sweep DELETE ruling:
             // schema'd but no writer ever existed.)
-            pages: effectivePages.map((page) => ({
+            pages: effectivePages.map((page, i) => ({
                 ...page,
+                // Reveal identity: authored id / split key, else full-list
+                // position. Reveal bookkeeping must never use the FILTERED
+                // index — visibility rules renumber that list live and
+                // index-keyed reveals drifted onto neighboring pages.
+                revealKey: page.id || page.key || `pg_${i}`,
                 zones: { ...zonesDefault }
             })),
             submit: spec.submit || {},
@@ -580,8 +585,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             if (this._onePerScreen) {
                 // One-per-screen: a rule-hidden question must not leave a
                 // blank screen — virtual pages whose only element (or whole
-                // section) is hidden drop out HERE, before reveal indexes
-                // apply, so nav indexes and _revealed stay aligned.
+                // section) is hidden drop out HERE, so the nav never pages
+                // onto an empty screen. (Reveals key by page identity, not
+                // position, so this renumbering can't misplace errors.)
                 // Repeaters never split; section visibility is their check.
                 pages = pages.filter((page) =>
                     (page.sections || []).some(
@@ -595,8 +601,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 );
             }
         }
-        return pages.map((page, pi) => {
-            const reveal = needErrors && this._revealed.includes(pi);
+        return pages.map((page) => {
+            const reveal =
+                needErrors && this._revealed.includes(page.revealKey);
             return {
                 ...page,
                 sections: (page.sections || [])
@@ -736,10 +743,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     /** A blocked advance shows the page's failures (before that, a
-     *  half-typed form stays quiet); they live-update as answers change. */
+     *  half-typed form stays quiet); they live-update as answers change.
+     *  Stored as page revealKeys, not indexes — a rule hiding an earlier
+     *  page renumbers the visible list, and an index reveal would decorate
+     *  whichever page inherited the position. */
     _reveal(pageIndex) {
-        if (!this._revealed.includes(pageIndex)) {
-            this._revealed = [...this._revealed, pageIndex];
+        const page = this.visiblePages[pageIndex];
+        const key = page ? page.revealKey : undefined;
+        if (key !== undefined && !this._revealed.includes(key)) {
+            this._revealed = [...this._revealed, key];
         }
     }
 

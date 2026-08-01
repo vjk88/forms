@@ -162,6 +162,135 @@ describe('c-final-form-viewer gating (F8)', () => {
         expect(deepQuery(el.shadowRoot, '.step-btn[disabled]')).toBeNull();
     });
 
+    it('revealed errors stay on THEIR page when a rule hides an earlier page (identity, not index)', async () => {
+        // A (rule-hidden by toggle) · B (toggle + required email) · C (required last)
+        const spec = {
+            ...JSON.parse(JSON.stringify(SPEC)),
+            pages: [
+                {
+                    id: 'pg_a',
+                    name: 'A',
+                    visibility: {
+                        action: 'show',
+                        logic: 'all',
+                        rules: [
+                            {
+                                source: 'el_toggle',
+                                operator: 'notEquals',
+                                value: 'hide'
+                            }
+                        ]
+                    },
+                    sections: [
+                        {
+                            id: 'sec_a',
+                            style: 'plain',
+                            columns: 1,
+                            elements: [
+                                {
+                                    id: 'el_a',
+                                    type: 'field',
+                                    label: 'A field',
+                                    render: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'pg_b',
+                    name: 'B',
+                    sections: [
+                        {
+                            id: 'sec_b',
+                            style: 'plain',
+                            columns: 1,
+                            elements: [
+                                {
+                                    id: 'el_toggle',
+                                    type: 'field',
+                                    label: 'Toggle',
+                                    render: { inputType: 'text' }
+                                },
+                                {
+                                    id: 'el_email',
+                                    type: 'field',
+                                    label: 'Email',
+                                    required: true,
+                                    render: { inputType: 'text' },
+                                    validation: [
+                                        {
+                                            type: 'required',
+                                            message: 'Email is required.'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'pg_c',
+                    name: 'C',
+                    sections: [
+                        {
+                            id: 'sec_c',
+                            style: 'plain',
+                            columns: 1,
+                            elements: [
+                                {
+                                    id: 'el_last',
+                                    type: 'field',
+                                    label: 'Last',
+                                    required: true,
+                                    render: { inputType: 'text' },
+                                    validation: [
+                                        {
+                                            type: 'required',
+                                            message: 'Last is required.'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        const el = await mount(spec);
+
+        // A → B
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('next')
+        );
+        await flush();
+        // blocked Next on B reveals B's failure
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('next')
+        );
+        await flush();
+        expect(deepQuery(el.shadowRoot, '.field-error').textContent).toBe(
+            'Email is required.'
+        );
+
+        // typing 'hide' into the toggle hides page A — the visible list
+        // renumbers ([B, C]) and the view lands on C (index preserved)
+        type(el, 'hide');
+        await flush();
+        // pre-fix: reveal was stored as index 1 and now decorated C with a
+        // phantom "Last is required." the user never triggered
+        expect(deepQuery(el.shadowRoot, '.field-error')).toBeNull();
+
+        // B (now index 0) still owns its reveal — Back shows it, live
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('back')
+        );
+        await flush();
+        expect(deepQuery(el.shadowRoot, '.field-error').textContent).toBe(
+            'Email is required.'
+        );
+    });
+
     it('specs without validation stay all-valid (no gating, no errors possible)', async () => {
         const plain = JSON.parse(JSON.stringify(SPEC));
         plain.pages[0].sections[0].elements[0].validation = [];
