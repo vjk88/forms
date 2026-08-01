@@ -1209,9 +1209,24 @@ export default class FinalPropertyPanel extends LightningElement {
     handleSlider(event) {
         const { param } = event.currentTarget.dataset;
         const v = Number(event.target.value);
-        this._config({
-            slider: { ...this.slider, [param]: Number.isFinite(v) ? v : 0 }
-        });
+        // a cleared/garbage box keeps the stored value (never coerce to 0 —
+        // step 0 freezes the control); the renderer sanitizes min/max order
+        if (!Number.isFinite(v)) {
+            return;
+        }
+        if (param === 'step' && v <= 0) {
+            return;
+        }
+        this._config({ slider: { ...this.slider, [param]: v } });
+    }
+
+    /** Slider readout units — "$" + "225" + " / night". */
+    handleSliderAffix(event) {
+        const patch =
+            event.currentTarget.dataset.side === 'prefix'
+                ? { valuePrefix: event.target.value }
+                : { valueSuffix: event.target.value };
+        this._config(patch);
     }
 
     handleWidth(event) {

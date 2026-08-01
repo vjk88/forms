@@ -559,6 +559,54 @@
                             />
                         </div>
                     </div>
+                    <div class="pp-fld">
+                        <span class="pp-label">Value display</span>
+                        <div class="pp-numrow">
+                            <input
+                                type="text"
+                                class="pp-input"
+                                title="Prefix"
+                                placeholder="Prefix (e.g. $)"
+                                value={cfg.valuePrefix}
+                                data-side="prefix"
+                                onchange={handleSliderAffix}
+                            />
+                            <input
+                                type="text"
+                                class="pp-input"
+                                title="Suffix"
+                                placeholder="Suffix (e.g. /night)"
+                                value={cfg.valueSuffix}
+                                data-side="suffix"
+                                onchange={handleSliderAffix}
+                            />
+                        </div>
+                        <p class="pp-hint">
+                            Wraps the big live value — prefix before, suffix
+                            after (e.g. $225/night).
+                        </p>
+                    </div>
+                    <div class="pp-fld">
+                        <span class="pp-label">End labels</span>
+                        <div class="pp-numrow">
+                            <input
+                                type="text"
+                                class="pp-input"
+                                placeholder="Left (e.g. Tight budget)"
+                                value={cfg.leftLabel}
+                                data-side="left"
+                                onchange={handleEndLabel}
+                            />
+                            <input
+                                type="text"
+                                class="pp-input"
+                                placeholder="Right (e.g. No limit)"
+                                value={cfg.rightLabel}
+                                data-side="right"
+                                onchange={handleEndLabel}
+                            />
+                        </div>
+                    </div>
                 </template>
 
                 <lightning-input
