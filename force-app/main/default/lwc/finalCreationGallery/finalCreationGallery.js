@@ -4,7 +4,7 @@ import createForm from '@salesforce/apex/FinalFormCreateController.createForm';
 import createSurveyFromTemplate from '@salesforce/apex/FinalFormCreateController.createSurveyFromTemplate';
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
-import { studioUrl } from 'c/finalFormsLibrary';
+import { studioUrl } from 'c/finalStudioLink';
 
 /**
  * finalCreationGallery — the guided creation flow, replicating the OLD
