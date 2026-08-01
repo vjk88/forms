@@ -1,6 +1,7 @@
 import { LightningElement, wire } from 'lwc';
 import { refreshApex } from '@salesforce/apex';
 import listForms from '@salesforce/apex/FinalStudioController.listForms';
+import { studioUrl } from 'c/finalStudioLink';
 
 /**
  * finalFormsLibrary — the Forms tab (FORM_STUDIO_IA §1/§2).
@@ -8,24 +9,13 @@ import listForms from '@salesforce/apex/FinalStudioController.listForms';
  * The library IS the picker: Open in Studio navigates to the full-page VF
  * host with `c__formId` — the ONLY way a form reaches the builder. Creation
  * is gallery-first and lands in P6; this slice lists and opens.
+ *
+ * studioUrl moved to c/finalStudioLink (2026-07-31): this template hosts
+ * the creation gallery, so the gallery importing it from HERE was a module
+ * cycle — the export didn't exist yet when the gallery evaluated, crashing
+ * the creation done-screen. Re-exported for back-compat.
  */
-
-const STUDIO_PAGE = '/apex/FinalStudio';
-
-/**
- * The lightning.force.com host serves /apex pages WRAPPED in LEX chrome
- * (tabs + search bar) — the raw page lives on the enhanced-domain VF host:
- * {mydomain}--c.{partition}.vf.force.com. Salesforce bounce-authenticates
- * the VF domain automatically, so a direct absolute URL is safe. On any
- * other host (VF itself, my.salesforce.com) the relative URL serves raw.
- */
-export function studioUrl(formId) {
-    const m = window.location.hostname.match(
-        /^([^.]+)\.(.*)lightning\.force\.com$/
-    );
-    const base = m ? `https://${m[1]}--c.${m[2]}vf.force.com` : '';
-    return `${base}${STUDIO_PAGE}?c__formId=${formId}`;
-}
+export { studioUrl } from 'c/finalStudioLink';
 
 export default class FinalFormsLibrary extends LightningElement {
     rows;
