@@ -89,11 +89,22 @@ export function ruleMatches(rule, ctx) {
             return isBlank(actual);
         case 'isNotBlank':
             return !isBlank(actual);
-        case 'equals':
+        case 'equals': {
+            // multi-select answers are arrays: "equals X" = membership (the
+            // selection includes X), mirroring contains' array branch —
+            // String(array) would compare "A,B" !== "A" and never match
+            if (Array.isArray(actual)) {
+                return actual.map(String).includes(String(rule.value ?? ''));
+            }
             // loose string compare — element values arrive as input strings
             return String(actual ?? '') === String(rule.value ?? '');
-        case 'notEquals':
+        }
+        case 'notEquals': {
+            if (Array.isArray(actual)) {
+                return !actual.map(String).includes(String(rule.value ?? ''));
+            }
             return String(actual ?? '') !== String(rule.value ?? '');
+        }
         case 'contains': {
             if (isBlank(actual)) {
                 return false;
