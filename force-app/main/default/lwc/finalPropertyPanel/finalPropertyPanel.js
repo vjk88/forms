@@ -722,6 +722,12 @@ export default class FinalPropertyPanel extends LightningElement {
         this._prop({ description: event.target.value });
     }
 
+    /** Section survives the one-per-screen split as ONE screen (Card Deck
+     *  multi-input step, owner 2026-08-01). */
+    handleKeepTogether(event) {
+        this._prop({ keepTogether: event.target.checked });
+    }
+
     handleCaptionDisplay(event) {
         this._prop({
             descriptionDisplay: event.currentTarget.dataset.value
@@ -890,7 +896,10 @@ export default class FinalPropertyPanel extends LightningElement {
             key: `opt_${i}`,
             index: i,
             label: o.label || '',
-            value: o.value || ''
+            value: o.value || '',
+            // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
+            emoji: o.emoji || '',
+            description: o.description || ''
         }));
     }
 

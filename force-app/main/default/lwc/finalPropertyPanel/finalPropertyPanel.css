@@ -439,3 +439,19 @@
 .pp-file-hidden {
     display: none;
 }
+
+/* Card Deck parity (2026-08-01): option emoji + sublabel editing */
+.pp-optgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+.pp-emoji {
+    flex: 0 0 44px;
+    width: 44px;
+    text-align: center;
+}
+.pp-sublabel {
+    font-size: 0.8rem;
+}

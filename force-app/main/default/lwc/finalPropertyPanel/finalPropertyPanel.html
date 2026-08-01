@@ -432,34 +432,56 @@
                     <div class="pp-fld">
                         <span class="pp-label">Options</span>
                         <template for:each={optionRows} for:item="o">
-                            <div key={o.key} class="pp-optrow">
+                            <div key={o.key} class="pp-optgroup">
+                                <div class="pp-optrow">
+                                    <input
+                                        type="text"
+                                        class="pp-input pp-emoji"
+                                        placeholder="🙂"
+                                        title="Optional emoji shown before the label"
+                                        maxlength="4"
+                                        value={o.emoji}
+                                        data-index={o.index}
+                                        data-field="emoji"
+                                        onchange={handleOptionChange}
+                                    />
+                                    <input
+                                        type="text"
+                                        class="pp-input"
+                                        placeholder="Label"
+                                        value={o.label}
+                                        data-index={o.index}
+                                        data-field="label"
+                                        onchange={handleOptionChange}
+                                    />
+                                    <input
+                                        type="text"
+                                        class="pp-input"
+                                        placeholder="Value"
+                                        value={o.value}
+                                        data-index={o.index}
+                                        data-field="value"
+                                        onchange={handleOptionChange}
+                                    />
+                                    <button
+                                        type="button"
+                                        class="pp-x"
+                                        title="Remove option"
+                                        data-index={o.index}
+                                        onclick={handleRemoveOption}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
                                 <input
                                     type="text"
-                                    class="pp-input"
-                                    placeholder="Label"
-                                    value={o.label}
+                                    class="pp-input pp-sublabel"
+                                    placeholder="Sublabel (optional — small line under the label)"
+                                    value={o.description}
                                     data-index={o.index}
-                                    data-field="label"
+                                    data-field="description"
                                     onchange={handleOptionChange}
                                 />
-                                <input
-                                    type="text"
-                                    class="pp-input"
-                                    placeholder="Value"
-                                    value={o.value}
-                                    data-index={o.index}
-                                    data-field="value"
-                                    onchange={handleOptionChange}
-                                />
-                                <button
-                                    type="button"
-                                    class="pp-x"
-                                    title="Remove option"
-                                    data-index={o.index}
-                                    onclick={handleRemoveOption}
-                                >
-                                    ×
-                                </button>
                             </div>
                         </template>
                         <button
@@ -983,6 +1005,16 @@
                     value={n.description}
                     onchange={handleDescription}
                 ></lightning-textarea>
+
+                <lightning-input
+                    type="toggle"
+                    label="Keep on one screen"
+                    field-level-help="When the survey shows one question per page, this section's fields stay together on a single screen (like the artifact's multi-input step)."
+                    checked={n.keepTogether}
+                    message-toggle-active=""
+                    message-toggle-inactive=""
+                    onchange={handleKeepTogether}
+                ></lightning-input>
 
                 <div class="pp-fld">
                     <span class="pp-label">Collapsible</span>

@@ -47,6 +47,11 @@
     font-size: var(--convo-base);
     max-width: 640px;
     margin-inline: auto;
+    /* Card Deck stage (owner 2026-08-01): the lone question reads centered —
+       title/caption inherit text-align; answer rows read --c-q-justify.
+       Choice cards re-left-align their own text internally. */
+    text-align: center;
+    --c-q-justify: center;
 }
 
 .style-plain {

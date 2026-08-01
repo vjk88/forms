@@ -41,12 +41,19 @@
                             data-value={item.value}
                             onclick={handleChipChoice}
                         >
-                            <span class="choice-title">{item.display}</span>
-                            <template lwc:if={item.description}>
-                                <span class="choice-desc"
-                                    >{item.description}</span
+                            <template lwc:if={item.emoji}>
+                                <span class="choice-emo" aria-hidden="true"
+                                    >{item.emoji}</span
                                 >
                             </template>
+                            <span class="choice-text">
+                                <span class="choice-title">{item.display}</span>
+                                <template lwc:if={item.description}>
+                                    <span class="choice-desc"
+                                        >{item.description}</span
+                                    >
+                                </template>
+                            </span>
                         </button>
                     </template>
                 </div>
@@ -119,15 +126,27 @@
                 ></lightning-input>
             </template>
             <template lwc:elseif={isSlider}>
-                <lightning-slider
-                    label={el.label}
-                    min={slider.min}
-                    max={slider.max}
-                    step={slider.step}
-                    disabled={el.readOnly}
-                    variant="label-hidden"
-                    onchange={handleDetailChange}
-                ></lightning-slider>
+                <div class="slider-wrap">
+                    <div class="slider-val" aria-hidden="true">
+                        {sliderValueDisplay}
+                    </div>
+                    <lightning-slider
+                        label={el.label}
+                        min={slider.min}
+                        max={slider.max}
+                        step={slider.step}
+                        value={sliderValue}
+                        disabled={el.readOnly}
+                        variant="label-hidden"
+                        onchange={handleSliderChange}
+                    ></lightning-slider>
+                    <template lwc:if={hasEndLabels}>
+                        <div class="scale-endlabels" aria-hidden="true">
+                            <span>{cfg.leftLabel}</span>
+                            <span>{cfg.rightLabel}</span>
+                        </div>
+                    </template>
+                </div>
             </template>
             <template lwc:else>
                 <lightning-input
