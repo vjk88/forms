@@ -101,6 +101,19 @@ describe('one question per screen (survey auto-split)', () => {
         expect(new Set(pages.map((p) => p.id)).size).toBe(4);
     });
 
+    it('elements without ids still get unique virtual page keys (no p~undefined collisions)', async () => {
+        const spec = SPEC('stepper', true);
+        // hand-authored JSON is the only id-less path — the builder stamps ids
+        delete spec.pages[0].sections[0].elements[0].id;
+        delete spec.pages[0].sections[0].elements[1].id;
+        const cmp = await mount(spec);
+        const pages = nav(cmp).pages;
+        expect(pages.length).toBe(4);
+        const ids = pages.map((p) => p.id);
+        expect(new Set(ids).size).toBe(4);
+        expect(ids.some((id) => String(id).includes('undefined'))).toBe(false);
+    });
+
     it('section header rides only the FIRST question of its section', async () => {
         const cmp = await mount(SPEC('stepper', true));
         const pages = nav(cmp).pages;

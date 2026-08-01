@@ -62,15 +62,25 @@ describe('c-final-after-submit', () => {
         });
     });
 
-    it('toast mode: success bar + redirect line, no screen', () => {
-        const el = mount({ mode: 'toast', redirectTo: 'record' });
-        expect(el.shadowRoot.querySelector('.toast').textContent).toContain(
+    it('toast mode: success bar, no screen; redirect line only when auto-redirect is ON', () => {
+        const on = mount({
+            mode: 'toast',
+            autoRedirect: true,
+            redirectTo: 'record'
+        });
+        expect(on.shadowRoot.querySelector('.toast').textContent).toContain(
             'Success!'
         );
         expect(
-            el.shadowRoot.querySelector('.redirect-line').textContent
+            on.shadowRoot.querySelector('.redirect-line').textContent
         ).toContain('Redirecting respondent to the new / updated record');
-        expect(el.shadowRoot.querySelector('.screen')).toBeNull();
+        expect(on.shadowRoot.querySelector('.screen')).toBeNull();
+
+        // pre-fix: the line rendered even with auto-redirect disabled —
+        // promising a redirect that never happens
+        const off = mount({ mode: 'toast', redirectTo: 'record' });
+        expect(off.shadowRoot.querySelector('.toast')).not.toBeNull();
+        expect(off.shadowRoot.querySelector('.redirect-line')).toBeNull();
     });
 
     it('bleed paints its own card surface (the panel is gone there)', () => {

@@ -188,8 +188,20 @@ describe('scale family', () => {
         expect(
             el.shadowRoot.querySelector('.scale-endlabels').textContent
         ).toContain('Not likely');
+        // visual end labels are aria-hidden; the radiogroup's accessible
+        // name carries their meaning (same contract as the slider)
+        expect(
+            el.shadowRoot
+                .querySelector('[role="radiogroup"]')
+                .getAttribute('aria-label')
+        ).toBe('Recommend?, 0 = Not likely to 10 = Extremely');
         const bare = mount({ id: 'e2', type: 'nps', label: 'Recommend?' });
         expect(bare.shadowRoot.querySelector('.scale-endlabels')).toBeNull();
+        expect(
+            bare.shadowRoot
+                .querySelector('[role="radiogroup"]')
+                .getAttribute('aria-label')
+        ).toBe('Recommend?');
     });
 });
 
