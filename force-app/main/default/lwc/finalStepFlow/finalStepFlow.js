@@ -44,6 +44,9 @@ export function progressFraction(index, screens) {
  * - single-line inputs: Enter advances
  * - textarea / rich text: Ctrl/Cmd+Enter advances (Enter = newline)
  * - choice inputs (select / radio / checkbox): NEVER auto-advance
+ * - buttons / links: NEVER auto-advance — Enter is their native activation
+ *   (Back link, choice chips, rating dots); hijacking it made Enter-on-Back
+ *   advance FORWARD and Enter-on-chip advance without selecting
  * `target` must be the composed-path origin, not the retargeted host.
  */
 export function shouldAdvanceOnKey(event, target) {
@@ -55,7 +58,15 @@ export function shouldAdvanceOnKey(event, target) {
     }
     const tag = target.tagName.toLowerCase();
     const type = (target.type || '').toLowerCase();
-    if (tag === 'select' || type === 'radio' || type === 'checkbox') {
+    if (tag === 'button' || tag === 'a' || tag === 'select') {
+        return false;
+    }
+    if (
+        type === 'radio' ||
+        type === 'checkbox' ||
+        type === 'button' ||
+        type === 'submit'
+    ) {
         return false;
     }
     if (tag === 'textarea' || target.isContentEditable) {
@@ -70,7 +81,8 @@ export function isMultilineTarget(target) {
         return false;
     }
     return (
-        target.tagName.toLowerCase() === 'textarea' || Boolean(target.isContentEditable)
+        target.tagName.toLowerCase() === 'textarea' ||
+        Boolean(target.isContentEditable)
     );
 }
 
