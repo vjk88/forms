@@ -127,19 +127,26 @@
             </template>
             <template lwc:elseif={isSlider}>
                 <div class="slider-wrap">
-                    <div class="slider-val" aria-hidden="true">
+                    <div class={sliderValClass} aria-hidden="true">
                         {sliderValueDisplay}
                     </div>
-                    <lightning-slider
-                        label={el.label}
+                    <!-- native range (not lightning-slider): kills the sealed
+                         duplicate mini-labels, and lets aria-valuetext speak
+                         the formatted value ("$225") instead of a bare number -->
+                    <input
+                        type="range"
+                        class="slider-input"
                         min={slider.min}
                         max={slider.max}
                         step={slider.step}
                         value={sliderValue}
+                        style={sliderStyle}
                         disabled={el.readOnly}
-                        variant="label-hidden"
+                        aria-label={sliderAriaLabel}
+                        aria-valuetext={sliderValueDisplay}
+                        oninput={handleSliderInput}
                         onchange={handleSliderChange}
-                    ></lightning-slider>
+                    />
                     <template lwc:if={hasEndLabels}>
                         <div class="scale-endlabels" aria-hidden="true">
                             <span>{cfg.leftLabel}</span>

@@ -850,14 +850,87 @@
     flex-direction: column;
     gap: 2px;
 }
+/* cqi middle term shrinks long readouts ($100,000 / year) inside narrow
+   containers before they wrap; the calc cap keeps wide contexts at 2.2× */
 .slider-val {
-    font-size: calc(var(--c-q-answer-size, 1rem) * 2.2);
+    font-size: clamp(1.25rem, 7cqi, calc(var(--c-q-answer-size, 1rem) * 2.2));
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: var(--c-accent);
     text-align: center;
     line-height: 1.2;
     margin-bottom: 4px;
+    overflow-wrap: anywhere;
+}
+/* untouched slider: the midpoint is a preview, not an answer — mute it so
+   the UI never claims a value that would submit empty */
+.slider-val.idle {
+    color: var(--c-text-weak);
+    font-weight: 600;
+}
+
+/* the native range control, painted in theme tokens (replaces
+   lightning-slider — see finalElementRenderer.html) */
+.slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 30px; /* touch target; track is drawn thinner */
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.slider-input:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+.slider-input:focus-visible {
+    outline: none; /* the ring rides the thumb instead */
+}
+.slider-input::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(
+        to right,
+        var(--c-accent) var(--sl-pct, 50%),
+        color-mix(in srgb, var(--c-text) 14%, transparent) var(--sl-pct, 50%)
+    );
+}
+.slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    margin-top: -7px; /* (thumb 22 − track 8) / 2 */
+    border-radius: 50%;
+    background: var(--c-accent);
+    border: 3px solid var(--c-field-bg, #fff);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+.slider-input:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    outline-offset: 2px;
+}
+.slider-input::-moz-range-track {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c-text) 14%, transparent);
+}
+.slider-input::-moz-range-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--c-accent);
+}
+.slider-input::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    border: 3px solid var(--c-field-bg, #fff);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+.slider-input:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    outline-offset: 2px;
 }
 
 /* centered conversational stage: rows follow the section's centering cue

@@ -77,6 +77,12 @@ export default class FinalElementRenderer extends LightningElement {
     _matrixPicks;
     _dragIndex;
 
+    /** Slider local state (same declared-field law): _sliderVal covers live
+     *  drag + hosts that don't round-trip answers; _sliderSent remembers our
+     *  own echo so an EXTERNAL el.value write (prefill, reset) wins over it. */
+    _sliderVal;
+    _sliderSent;
+
     get el() {
         return this.element || {};
     }
@@ -167,13 +173,27 @@ export default class FinalElementRenderer extends LightningElement {
         return this.isField && this.renderAs === 'Slider';
     }
 
+    /** Sanitized bounds: a half-typed or inverted authored config (min ≥ max,
+     *  step ≤ 0, blanks) must degrade to a working control, never a frozen
+     *  one. Guarantees max > min and step > 0. */
     get slider() {
         const s = this.cfg.slider || {};
-        return {
-            min: s.min != null ? s.min : 0,
-            max: s.max != null ? s.max : 100,
-            step: s.step != null ? s.step : 1
-        };
+        let min = Number(s.min);
+        let max = Number(s.max);
+        let step = Number(s.step);
+        if (!Number.isFinite(min)) {
+            min = 0;
+        }
+        if (!Number.isFinite(max)) {
+            max = 100;
+        }
+        if (!Number.isFinite(step) || step <= 0) {
+            step = 1;
+        }
+        if (max <= min) {
+            max = min + step * 10;
+        }
+        return { min, max, step };
     }
 
     get isTextarea() {
@@ -446,17 +466,46 @@ export default class FinalElementRenderer extends LightningElement {
         return items;
     }
 
-    /** Slider live readout (Card Deck treatment): local pick wins, else the
-     *  hydrated answer, else the midpoint as a neutral resting display. */
+    /** el.value as a number, or null. Prefill and REST payloads legally send
+     *  numerics as strings ("50") — coerce, don't typeof-gate. */
+    get _sliderHydrated() {
+        const raw = this.el.value;
+        if (raw == null || raw === '' || isNaN(Number(raw))) {
+            return null;
+        }
+        return Number(raw);
+    }
+
+    /** Slider live readout (Card Deck treatment). Resolution order: an
+     *  external write that isn't our own echo (prefill, reset, rule write)
+     *  wins; then the local drag value; then the hydrated answer; then the
+     *  STEP-ALIGNED midpoint as a neutral resting display (an off-step
+     *  midpoint would disagree with where the native thumb snaps). */
     get sliderValue() {
+        const hydrated = this._sliderHydrated;
+        if (hydrated != null && hydrated !== this._sliderSent) {
+            return hydrated;
+        }
         if (this._sliderVal != null) {
             return this._sliderVal;
         }
-        if (typeof this.el.value === 'number') {
-            return this.el.value;
+        if (hydrated != null) {
+            return hydrated;
         }
         const s = this.slider;
-        return Math.round((s.min + s.max) / 2);
+        const mid = s.min + Math.round((s.max - s.min) / 2 / s.step) * s.step;
+        return Math.min(s.max, mid);
+    }
+
+    /** Untouched + unanswered = the resting midpoint is a PREVIEW, not an
+     *  answer (nothing dispatches until the user interacts) — the readout
+     *  mutes itself so the UI never claims a value that would submit empty. */
+    get sliderAnswered() {
+        return this._sliderVal != null || this._sliderHydrated != null;
+    }
+
+    get sliderValClass() {
+        return this.sliderAnswered ? 'slider-val' : 'slider-val idle';
     }
 
     get sliderValueDisplay() {
@@ -465,9 +514,39 @@ export default class FinalElementRenderer extends LightningElement {
         return `${prefix}${this.sliderValue}${suffix}`;
     }
 
+    /** End labels are aria-hidden visually-adjacent text; screen readers get
+     *  their meaning through the control's accessible name instead
+     *  ("Budget, 50 = Tight budget to 400 = No limit"). */
+    get sliderAriaLabel() {
+        const left = this.cfg.leftLabel;
+        const right = this.cfg.rightLabel;
+        const s = this.slider;
+        if (!left && !right) {
+            return this.el.label;
+        }
+        const lo = left ? `${s.min} = ${left}` : s.min;
+        const hi = right ? `${s.max} = ${right}` : s.max;
+        return `${this.el.label}, ${lo} to ${hi}`;
+    }
+
+    /** Feeds the track's filled-portion gradient (--sl-pct). */
+    get sliderStyle() {
+        const s = this.slider;
+        const pct = ((this.sliderValue - s.min) / (s.max - s.min)) * 100;
+        return `--sl-pct: ${Math.max(0, Math.min(100, pct))}%`;
+    }
+
+    /** Live drag: repaint the readout locally without spamming the host. */
+    handleSliderInput(event) {
+        this._sliderVal = Number(event.target.value);
+    }
+
+    /** Commit on release / keyboard step / track click. */
     handleSliderChange(event) {
-        this._sliderVal = event.detail.value;
-        this.dispatchValue(event.detail.value);
+        const v = Number(event.target.value);
+        this._sliderVal = v;
+        this._sliderSent = v;
+        this.dispatchValue(v);
     }
 
     get hasEndLabels() {
@@ -1004,7 +1083,7 @@ export default class FinalElementRenderer extends LightningElement {
         this.dispatchValue(event.target.checked);
     }
 
-    /** lightning-slider / groups put the answer on detail.value. */
+    /** lightning radio/checkbox groups put the answer on detail.value. */
     handleDetailChange(event) {
         this.dispatchValue(event.detail.value);
     }
