@@ -42,7 +42,10 @@ function splitOnePerScreen(pages) {
     const out = [];
     const pageId = (page, suffix) => `${page.id || page.key || 'p'}~${suffix}`;
     for (const page of pages) {
-        for (const section of page.sections || []) {
+        (page.sections || []).forEach((section, si) => {
+            // Builder specs always carry ids; positional fallbacks guard
+            // hand-authored JSON from `p~undefined` LWC key collisions.
+            const secId = section.id || `s${si}`;
             // repeaters are atomic by nature; keepTogether is the AUTHORED
             // version of the same promise (Card Deck multi-input step,
             // owner 2026-08-01) — the whole section rides one screen
@@ -50,22 +53,23 @@ function splitOnePerScreen(pages) {
                 out.push({
                     ...page,
                     name: undefined,
-                    id: pageId(page, section.id),
-                    key: pageId(page, section.id),
+                    id: pageId(page, secId),
+                    key: pageId(page, secId),
                     sections: [section]
                 });
-                continue;
+                return;
             }
             (section.elements || []).forEach((el, i) => {
+                const elKey = el.id || `${secId}e${i}`;
                 out.push({
                     ...page,
                     name: undefined,
-                    id: pageId(page, el.id),
-                    key: pageId(page, el.id),
+                    id: pageId(page, elKey),
+                    key: pageId(page, elKey),
                     sections: [
                         {
                             ...section,
-                            id: `${section.id}~${el.id}`,
+                            id: `${secId}~${elKey}`,
                             showHeader: i === 0 ? section.showHeader : false,
                             // reviewer blocker B2 (2026-07-31): a one-question
                             // screen is never an accordion — inherited
@@ -82,7 +86,7 @@ function splitOnePerScreen(pages) {
                     ]
                 });
             });
-        }
+        });
     }
     return out;
 }
