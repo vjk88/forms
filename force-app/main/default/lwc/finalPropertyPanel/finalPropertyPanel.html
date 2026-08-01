@@ -30,24 +30,25 @@
                     value={n.description}
                     onchange={handleCaption}
                 ></lightning-input>
-                <template lwc:if={hasCaption}>
-                    <div class="pp-fld">
-                        <span class="pp-label">Show caption as</span>
-                        <div class="pp-seg">
-                            <template for:each={captionDisplaySeg} for:item="b">
-                                <button
-                                    key={b.value}
-                                    type="button"
-                                    class={b.cls}
-                                    data-value={b.value}
-                                    onclick={handleCaptionDisplay}
-                                >
-                                    {b.label}
-                                </button>
-                            </template>
-                        </div>
+                <!-- always visible (owner 2026-07-31: the hidden-until-typed
+                     toggle was undiscoverable); empty caption renders nothing
+                     either way, so an early pick is harmless -->
+                <div class="pp-fld">
+                    <span class="pp-label">Show caption as</span>
+                    <div class="pp-seg">
+                        <template for:each={captionDisplaySeg} for:item="b">
+                            <button
+                                key={b.value}
+                                type="button"
+                                class={b.cls}
+                                data-value={b.value}
+                                onclick={handleCaptionDisplay}
+                            >
+                                {b.label}
+                            </button>
+                        </template>
                     </div>
-                </template>
+                </div>
 
                 <template lwc:if={isRatingQuestion}>
                     <div class="pp-fld">
@@ -545,6 +546,31 @@
                     field-level-help="Shows as an info bubble beside the label"
                     onchange={handleHelp}
                 ></lightning-input>
+                <!-- round-4 ruling says EVERY question gets caption/help
+                     display — text questions had no writer until 2026-07-31
+                     (the renderer always supported it) -->
+                <lightning-input
+                    label="Caption"
+                    placeholder="Optional context under the label"
+                    value={n.description}
+                    onchange={handleCaption}
+                ></lightning-input>
+                <div class="pp-fld">
+                    <span class="pp-label">Show caption as</span>
+                    <div class="pp-seg">
+                        <template for:each={captionDisplaySeg} for:item="b">
+                            <button
+                                key={b.value}
+                                type="button"
+                                class={b.cls}
+                                data-value={b.value}
+                                onclick={handleCaptionDisplay}
+                            >
+                                {b.label}
+                            </button>
+                        </template>
+                    </div>
+                </div>
                 <lightning-input
                     label="Placeholder"
                     data-prop="placeholder"
