@@ -5,6 +5,7 @@ import {
     isLastScreen,
     progressFraction,
     shouldAdvanceOnKey,
+    fromElementRenderer,
     isMultilineTarget,
     isTouchOnly
 } from 'c/finalStepFlow';
@@ -157,20 +158,42 @@ export default class FinalNavOneAtATime extends LightningElement {
         if (!this.keyboardAdvanceOn || this.onLastScreen) {
             return;
         }
-        const origin = event.composedPath
-            ? event.composedPath()[0]
-            : event.target;
+        const path = event.composedPath ? event.composedPath() : [];
+        // keys born inside the element renderer arrive here retargeted to
+        // its host (LWS) — the renderer resolves them in-scope and re-emits
+        // `advancekey`; acting on the raw event too would double-fire where
+        // the boundary is transparent (native shadow, jsdom)
+        if (fromElementRenderer(path)) {
+            return;
+        }
+        const origin = path[0] || event.target;
         if (shouldAdvanceOnKey(event, origin)) {
             event.preventDefault();
             this._go(this.screenIndex + 1);
         }
     }
 
+    /** The element renderer's in-scope verdict: a single-line control took
+     *  Enter (or a multiline took Ctrl/Cmd+Enter) — advance. */
+    handleAdvanceKey(event) {
+        event.stopPropagation();
+        if (!this.keyboardAdvanceOn || this.onLastScreen) {
+            return;
+        }
+        this._go(this.screenIndex + 1);
+    }
+
     handleFocusIn(event) {
-        const origin = event.composedPath
-            ? event.composedPath()[0]
-            : event.target;
-        this.multilineFocus = isMultilineTarget(origin);
+        const path = event.composedPath ? event.composedPath() : [];
+        if (fromElementRenderer(path)) {
+            return; // advancefocus carries the renderer's multiline verdict
+        }
+        this.multilineFocus = isMultilineTarget(path[0] || event.target);
+    }
+
+    handleAdvanceFocus(event) {
+        event.stopPropagation();
+        this.multilineFocus = Boolean(event.detail && event.detail.multiline);
     }
 
     handlePrimary() {

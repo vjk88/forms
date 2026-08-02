@@ -47,7 +47,15 @@ export function progressFraction(index, screens) {
  * - buttons / links: NEVER auto-advance — Enter is their native activation
  *   (Back link, choice chips, rating dots); hijacking it made Enter-on-Back
  *   advance FORWARD and Enter-on-chip advance without selecting
- * `target` must be the composed-path origin, not the retargeted host.
+ * - custom-element hosts: only the lightning input trio is decidable
+ *   (single-line vs multiline); ANY other host is opaque — fail safe, never
+ *   hijack on a guess. LWS retargets cross-boundary origins to the child
+ *   HOST (org QA 2026-08-01: a chip Enter reached the nav as
+ *   <c-final-element-renderer> and advanced without selecting), which is
+ *   why the element renderer resolves its own keys and re-emits
+ *   `advancekey` instead.
+ * `target` must be the composed-path origin, not the retargeted event
+ * target.
  */
 export function shouldAdvanceOnKey(event, target) {
     if (event.key !== 'Enter') {
@@ -69,19 +77,42 @@ export function shouldAdvanceOnKey(event, target) {
     ) {
         return false;
     }
-    if (tag === 'textarea' || target.isContentEditable) {
+    if (isMultilineTarget(target)) {
         return event.ctrlKey || event.metaKey;
+    }
+    if (tag.includes('-') && tag !== 'lightning-input') {
+        return false;
     }
     return !event.ctrlKey && !event.metaKey;
 }
 
-/** True when the focused element wants the Ctrl/Cmd+Enter helper wording. */
+/**
+ * True when the composed path crosses c-final-element-renderer. The renderer
+ * resolves keyboard-advance inside its own shadow scope (where origins are
+ * still real elements) and re-emits `advancekey` / `advancefocus`; raw
+ * keydown/focusin from its subtree must be ignored by the navs — LWS
+ * retargets them to the host (undecidable), and a transparent boundary
+ * (native shadow, jsdom) would double-fire.
+ */
+export function fromElementRenderer(path) {
+    return (path || []).some(
+        (n) =>
+            n.tagName && n.tagName.toLowerCase() === 'c-final-element-renderer'
+    );
+}
+
+/** True when the focused element wants the Ctrl/Cmd+Enter helper wording.
+ *  Includes the lightning multiline hosts — LWS hands us the host, not the
+ *  native control inside it. */
 export function isMultilineTarget(target) {
     if (!target || !target.tagName) {
         return false;
     }
+    const tag = target.tagName.toLowerCase();
     return (
-        target.tagName.toLowerCase() === 'textarea' ||
+        tag === 'textarea' ||
+        tag === 'lightning-textarea' ||
+        tag === 'lightning-input-rich-text' ||
         Boolean(target.isContentEditable)
     );
 }

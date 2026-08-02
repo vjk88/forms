@@ -3,7 +3,8 @@ import {
     clampIndex,
     isLastScreen,
     shouldAdvanceOnKey,
-    isMultilineTarget
+    isMultilineTarget,
+    fromElementRenderer
 } from 'c/finalStepFlow';
 
 const enter = (mods = {}) => ({
@@ -75,6 +76,49 @@ describe('shouldAdvanceOnKey', () => {
         expect(shouldAdvanceOnKey(enter({ ctrlKey: true }), rich)).toBe(true);
     });
 
+    it('custom-element hosts: lightning-input advances, multiline hosts need Ctrl, anything else never hijacks', () => {
+        // LWS retargets cross-boundary origins to the child HOST — only the
+        // lightning input trio is decidable from a host tag
+        expect(
+            shouldAdvanceOnKey(enter(), {
+                tagName: 'LIGHTNING-INPUT',
+                type: 'text'
+            })
+        ).toBe(true);
+        expect(
+            shouldAdvanceOnKey(enter(), {
+                tagName: 'LIGHTNING-INPUT',
+                type: 'checkbox'
+            })
+        ).toBe(false);
+        expect(
+            shouldAdvanceOnKey(enter(), { tagName: 'LIGHTNING-TEXTAREA' })
+        ).toBe(false);
+        expect(
+            shouldAdvanceOnKey(enter({ ctrlKey: true }), {
+                tagName: 'LIGHTNING-TEXTAREA'
+            })
+        ).toBe(true);
+        expect(
+            shouldAdvanceOnKey(enter(), {
+                tagName: 'LIGHTNING-INPUT-RICH-TEXT'
+            })
+        ).toBe(false);
+        expect(
+            shouldAdvanceOnKey(enter({ metaKey: true }), {
+                tagName: 'LIGHTNING-INPUT-RICH-TEXT'
+            })
+        ).toBe(true);
+        // opaque hosts: the org QA bug — chip Enter arrived as the renderer
+        // host and advanced without selecting. Never hijack on a guess.
+        expect(
+            shouldAdvanceOnKey(enter(), { tagName: 'C-FINAL-ELEMENT-RENDERER' })
+        ).toBe(false);
+        expect(
+            shouldAdvanceOnKey(enter(), { tagName: 'LIGHTNING-COMBOBOX' })
+        ).toBe(false);
+    });
+
     it('plain Enter only for single-line inputs — modifiers do not advance', () => {
         const target = { tagName: 'INPUT', type: 'text' };
         expect(shouldAdvanceOnKey(enter({ ctrlKey: true }), target)).toBe(
@@ -87,15 +131,37 @@ describe('shouldAdvanceOnKey', () => {
 });
 
 describe('isMultilineTarget', () => {
-    it('detects textarea and contenteditable', () => {
+    it('detects textarea, contenteditable, and lightning multiline hosts', () => {
         expect(isMultilineTarget({ tagName: 'TEXTAREA' })).toBe(true);
         expect(
             isMultilineTarget({ tagName: 'DIV', isContentEditable: true })
         ).toBe(true);
+        expect(isMultilineTarget({ tagName: 'LIGHTNING-TEXTAREA' })).toBe(true);
+        expect(
+            isMultilineTarget({ tagName: 'LIGHTNING-INPUT-RICH-TEXT' })
+        ).toBe(true);
         expect(isMultilineTarget({ tagName: 'INPUT', type: 'text' })).toBe(
             false
         );
+        expect(isMultilineTarget({ tagName: 'LIGHTNING-INPUT' })).toBe(false);
         expect(isMultilineTarget(null)).toBe(false);
+    });
+});
+
+describe('fromElementRenderer', () => {
+    it('detects the renderer host anywhere on the composed path', () => {
+        expect(
+            fromElementRenderer([
+                { tagName: 'INPUT' },
+                { tagName: 'C-FINAL-ELEMENT-RENDERER' },
+                { tagName: 'DIV' }
+            ])
+        ).toBe(true);
+        expect(
+            fromElementRenderer([{ tagName: 'BUTTON' }, { tagName: 'DIV' }])
+        ).toBe(false);
+        expect(fromElementRenderer([])).toBe(false);
+        expect(fromElementRenderer(null)).toBe(false);
     });
 });
 

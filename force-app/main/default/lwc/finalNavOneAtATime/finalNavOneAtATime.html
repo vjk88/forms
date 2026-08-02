@@ -3,6 +3,8 @@
         class={layoutClass}
         onkeydown={handleKeydown}
         onfocusin={handleFocusIn}
+        onadvancekey={handleAdvanceKey}
+        onadvancefocus={handleAdvanceFocus}
     >
         <!-- BLEED: page chrome — full-width progress hairline + step counter. -->
         <template lwc:if={showTopChrome}>
@@ -31,7 +33,7 @@
             <template for:each={currentScreenList} for:item="screen">
                 <div class="screen-panel" key={screen.key} tabindex="-1">
                     <c-final-layout-zones
-                    onvaluechange={handleValueChange}
+                        onvaluechange={handleValueChange}
                         sections={currentSections}
                         zones={currentZones}
                     ></c-final-layout-zones>
