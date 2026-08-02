@@ -568,18 +568,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     /** The nav renders VISIBLE pages only — rules filter all three levels
-     *  live against the answers, and REVEALED pages carry their elements'
-     *  validation failures inline (`el.errors`, rendered by the element
-     *  renderer). No-rules no-reveal specs pass through untouched. */
+     *  live against the answers, REVEALED pages carry their elements'
+     *  validation failures inline (`el.errors`), and EVERY element is
+     *  hydrated with its live answer. Hydration must never be skipped: the
+     *  old no-rules fast path returned raw model pages, so native inputs
+     *  remounted BLANK after Back on plain forms (ext audit 2026-08-02,
+     *  org-repro'd) — only filtering and error work are gated now. */
     get visiblePages() {
         if (!this.model) {
             return [];
         }
         const needErrors =
             this._hasValidation && (this._revealed || []).length > 0;
-        if (!this._hasRules && !needErrors) {
-            return this.model.pages;
-        }
         const ctx = this._ruleCtx();
         let pages = this.model.pages;
         if (this._hasRules) {

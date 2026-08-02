@@ -275,6 +275,24 @@ export default class FinalElementRenderer extends LightningElement {
         return INPUT_TYPES[this.cfg.inputType] || 'text';
     }
 
+    /** Hydration for the general lightning-input (viewer answer round-trip,
+     *  prefill, back/forward remounts — ext audit 2026-08-02: natives never
+     *  displayed el.value). Checkbox variants answer in `checked`; everything
+     *  else in `value` — binding the wrong one is meaningless to the control. */
+    get nativeInputValue() {
+        return this.inputType === 'checkbox' ? undefined : this.el.value;
+    }
+
+    get nativeInputChecked() {
+        return this.inputType === 'checkbox'
+            ? Boolean(this.el.value)
+            : undefined;
+    }
+
+    get toggleChecked() {
+        return Boolean(this.el.value);
+    }
+
     // ---- content blocks (schema §4: binding null always) ----
 
     get isRichText() {
@@ -1123,8 +1141,8 @@ export default class FinalElementRenderer extends LightningElement {
 
     /**
      * The custom label can't reach the native input across shadow roots with
-     * `for` — forward the click instead (checkboxes toggle, everything else
-     * just focuses).
+     * `for` — forward the click instead (checkboxes AND toggles flip, like a
+     * native label pairing would; everything else just focuses).
      */
     handleLabelClick() {
         const target = this.template.querySelector(
@@ -1134,7 +1152,7 @@ export default class FinalElementRenderer extends LightningElement {
             return;
         }
         target.focus();
-        if (this.inputType === 'checkbox' && this.isInput) {
+        if (this.isToggle || (this.inputType === 'checkbox' && this.isInput)) {
             target.checked = !target.checked;
             this.dispatchValue(target.checked);
         }

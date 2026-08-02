@@ -70,6 +70,7 @@
             <template lwc:elseif={isTextarea}>
                 <lightning-textarea
                     label={el.label}
+                    value={el.value}
                     placeholder={el.placeholder}
                     required={el.required}
                     read-only={el.readOnly}
@@ -81,6 +82,7 @@
             <template lwc:elseif={isDropdown}>
                 <lightning-combobox
                     label={el.label}
+                    value={el.value}
                     placeholder={el.placeholder}
                     options={options}
                     required={el.required}
@@ -93,6 +95,7 @@
             <template lwc:elseif={isRadioGroup}>
                 <lightning-radio-group
                     label={el.label}
+                    value={el.value}
                     options={options}
                     required={el.required}
                     disabled={el.readOnly}
@@ -117,6 +120,7 @@
                 <lightning-input
                     type="toggle"
                     label={el.label}
+                    checked={toggleChecked}
                     required={el.required}
                     disabled={el.readOnly}
                     variant="label-hidden"
@@ -159,6 +163,8 @@
                 <lightning-input
                     type={inputType}
                     label={el.label}
+                    value={nativeInputValue}
+                    checked={nativeInputChecked}
                     placeholder={el.placeholder}
                     required={el.required}
                     read-only={el.readOnly}
