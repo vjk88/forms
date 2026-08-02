@@ -133,9 +133,17 @@ oracle — guests only ever get an opaque signed token.**
 - **Guest prefill is author opt-in per mapping** (`mapping.guestPrefill`, default OFF, shown
   as a "Prefill in guest links" toggle only when mapped): shipping a value into an input IS
   disclosure, so the author explicitly chooses which fields a link-holder may see.
-- **Guest writeback stays OFF in v2** — mapped writeback keeps requiring an authenticated
-  runner. (Token-scoped guest writeback is designable later: one record, spec-derived field
-  list, single-use tokens — parked until asked.)
+- **Guest writeback: IN SCOPE (owner 2026-08-02).** Forms guests only ever CREATE records
+  (Phase A1's "guests-never-update rule" — insert-only, nothing existing touched); update
+  is the riskier verb because it overwrites data that already exists on an identifiable
+  record. The token retires exactly those risks (unforgeable, one record, minted by someone
+  who can read it, expiring, revocable — the password-reset/DocuSign trust model), so:
+  - per-mapping **`guestWrite: true` opt-in** (default OFF, "Guests can write this" toggle
+    beside guest prefill) — the server writes only spec-declared, author-opted fields,
+    system-mode AFTER token verification, same savepoint as the answer rows;
+  - invitations to surveys with any guestWrite mapping default **Single_Use\_\_c = true**
+    (the link updates the record once, then dies; overridable per invitation);
+  - audit trail: invitation → response → record, all linked.
 - **Mint surfaces (internal only):** the minter must be able to READ the record (USER_MODE
   check at mint — you can't issue links for data you can't see). v2 mints: (a) studio share
   surface "Record link…" (record search → copy link), (b) invocable Apex "Create survey
@@ -153,7 +161,9 @@ oracle — guests only ever get an opaque signed token.**
    requests can never name fields.
 4. Guest record reads run only behind a verified signature (proof an internal user minted
    context for exactly this form + record); minting requires USER_MODE read of the record.
-5. Writeback remains authenticated-only; the guest Apex path never reads `meta.recordId`.
+5. Guest writeback exists ONLY behind a verified token + per-mapping author opt-in; the
+   guest path still never reads a client-supplied `meta.recordId` — the record comes from
+   the token, nowhere else. Forms keep the guests-never-update rule (insert-only) unchanged.
 
 ## Build order
 
