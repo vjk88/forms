@@ -31,6 +31,19 @@ const INPUT_TYPES = {
 
 const SPACER_HEIGHTS = { small: 12, medium: 28, large: 56 };
 
+/** el.value as a number, or null. Prefill and REST payloads legally send
+ *  numerics as strings ("4") — coerce, never typeof-gate. The slider
+ *  learned this in #187; scale and likert share the rule now. */
+function numericAnswer(raw) {
+    if (typeof raw !== 'number' && typeof raw !== 'string') {
+        return null;
+    }
+    if (raw === '' || isNaN(Number(raw))) {
+        return null;
+    }
+    return Number(raw);
+}
+
 const IMAGE_SIZE_WIDTHS = {
     small: '160px',
     medium: '320px',
@@ -463,7 +476,7 @@ export default class FinalElementRenderer extends LightningElement {
         if (this._scaleValue != null) {
             return this._scaleValue;
         }
-        return typeof this.el.value === 'number' ? this.el.value : null;
+        return numericAnswer(this.el.value);
     }
 
     get scaleBounds() {
@@ -537,14 +550,9 @@ export default class FinalElementRenderer extends LightningElement {
         return items;
     }
 
-    /** el.value as a number, or null. Prefill and REST payloads legally send
-     *  numerics as strings ("50") — coerce, don't typeof-gate. */
+    /** el.value as a number, or null (shared coercion — see numericAnswer). */
     get _sliderHydrated() {
-        const raw = this.el.value;
-        if (raw == null || raw === '' || isNaN(Number(raw))) {
-            return null;
-        }
-        return Number(raw);
+        return numericAnswer(this.el.value);
     }
 
     /** Slider live readout (Card Deck treatment). Resolution order: an
@@ -669,9 +677,7 @@ export default class FinalElementRenderer extends LightningElement {
         const sel =
             this._scaleValue != null
                 ? this._scaleValue
-                : typeof this.el.value === 'number'
-                  ? this.el.value
-                  : null;
+                : numericAnswer(this.el.value);
         return this.likertPoints.map((pt) => ({
             value: pt.value,
             display: pt.label,
