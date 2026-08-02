@@ -187,6 +187,18 @@
                         </div>
                     </template>
                     <template lwc:else>
+                        <template lwc:if={isSurvey}>
+                            <c-final-connected-object-card
+                                object-api={objectApi}
+                                mapped-count={mappedCount}
+                                pending={objectPending}
+                                error-text={objectError}
+                                onobjectpick={handleObjectPick}
+                                onobjectclear={handleObjectClear}
+                                onobjectconfirm={handleObjectConfirm}
+                                onobjectcancel={handleObjectCancel}
+                            ></c-final-connected-object-card>
+                        </template>
                         <c-final-field-palette
                             object-api={objectApi}
                             survey-mode={isSurvey}

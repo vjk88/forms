@@ -26,7 +26,8 @@ public with sharing class FinalFormCreateController {
                     d.isQueryable() &&
                     d.isAccessible() &&
                     !d.isDeprecatedAndHidden() &&
-                    !d.isCustomSetting()
+                    !d.isCustomSetting() &&
+                    !isSystemTable(d.getName())
                 ) {
                     out.add(
                         new Map<String, String>{
@@ -41,6 +42,33 @@ public with sharing class FinalFormCreateController {
         }
         out.sort(new LabelSorter());
         return out;
+    }
+
+    /**
+     * Sharing/history/feed/tag/change-event tables pass the describe gates
+     * (they ARE updateable + queryable) but are never form/survey subjects.
+     * Custom system tables carry double-underscore suffixes; standard ones
+     * bare suffixes — the bare check only applies to non-custom names so a
+     * custom object whose label ends in "History" (…History__c) survives.
+     */
+    private static Boolean isSystemTable(String name) {
+        if (
+            name.endsWith('__Share') ||
+            name.endsWith('__History') ||
+            name.endsWith('__Feed') ||
+            name.endsWith('__Tag') ||
+            name.endsWith('__ChangeEvent')
+        ) {
+            return true;
+        }
+        if (name.endsWith('__c') || name.endsWith('__mdt')) {
+            return false;
+        }
+        return name.endsWith('Share') ||
+            name.endsWith('History') ||
+            name.endsWith('Feed') ||
+            name.endsWith('Tag') ||
+            name.endsWith('ChangeEvent');
     }
 
     /**

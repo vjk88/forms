@@ -260,6 +260,53 @@ public with sharing class FinalStudioController {
     }
 
     /**
+     * SO-1 (SURVEY_OBJECT_SPEC V2): connect, change, or disconnect a survey's
+     * context object. Null/blank objectApi = disconnect. Surveys only — a
+     * form's target object is structural and never changes here. The spec's
+     * `form.targetObject` is the studio's job; this keeps the Form__c mirror
+     * (Primary_Context_Object__c) in step.
+     */
+    @AuraEnabled
+    public static Boolean setContextObject(Id formId, String objectApi) {
+        if (formId == null) {
+            throw new AuraHandledException('A form Id is required.');
+        }
+        String clean = String.isBlank(objectApi) ? null : objectApi.trim();
+        if (clean != null) {
+            Schema.SObjectType t = Schema.getGlobalDescribe()
+                .get(clean.toLowerCase());
+            if (t == null) {
+                throw new AuraHandledException('Unknown object.');
+            }
+            Schema.DescribeSObjectResult d = t.getDescribe();
+            if (!d.isAccessible() || !d.isQueryable() || !d.isUpdateable()) {
+                throw new AuraHandledException(
+                    'That object cannot be used with surveys.'
+                );
+            }
+            clean = d.getName(); // canonical casing
+        }
+        List<Form__c> forms = [
+            SELECT Id, Form_Type__c
+            FROM Form__c
+            WHERE Id = :formId
+            WITH USER_MODE
+            LIMIT 1
+        ];
+        if (forms.isEmpty()) {
+            throw new AuraHandledException('FORM_NOT_FOUND');
+        }
+        if (forms[0].Form_Type__c != 'Survey') {
+            throw new AuraHandledException(
+                'Only surveys can change their connected object.'
+            );
+        }
+        forms[0].Primary_Context_Object__c = clean;
+        update as user forms;
+        return true;
+    }
+
+    /**
      * Ensure every file linked to the form has a public ContentDistribution
      * (idempotent). Best-effort: a failure here must never block enabling
      * guest access — an un-minted image simply stays internal-only until it is
