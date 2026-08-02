@@ -359,3 +359,86 @@ describe('lintVisibility (build-time, same engine)', () => {
         ).toEqual([]);
     });
 });
+
+// ---- SO-3: record-sourced rows resolve to server-shipped verdicts ----
+import { factKey, isRecordRule } from 'c/finalExpressionEngine';
+
+describe('record rules (SO-3)', () => {
+    const factsCtx = (values, facts) => ({
+        getValue: (id) => values[id],
+        getType: () => 'field',
+        getRecordFacts: () => facts
+    });
+
+    it('substitutes the fact instead of evaluating a value', () => {
+        const rule = {
+            source: 'record:Status__c',
+            operator: 'equals',
+            value: 'Active'
+        };
+        const on = factsCtx({}, { [factKey(rule)]: true });
+        const off = factsCtx({}, { [factKey(rule)]: false });
+        expect(ruleMatches(rule, on)).toBe(true);
+        expect(ruleMatches(rule, off)).toBe(false);
+    });
+
+    it('no record context = no match (plain links degrade safely)', () => {
+        const rule = {
+            source: 'record:Status__c',
+            operator: 'equals',
+            value: 'Active'
+        };
+        expect(ruleMatches(rule, factsCtx({}, null))).toBe(false);
+        // a ctx built before SO-3 (no getRecordFacts) also degrades
+        expect(
+            ruleMatches(rule, {
+                getValue: () => undefined,
+                getType: () => 'field'
+            })
+        ).toBe(false);
+    });
+
+    it('mixed rules combine frozen facts with live answers', () => {
+        const recordRow = {
+            source: 'record:Plan__c',
+            operator: 'equals',
+            value: 'Enterprise'
+        };
+        const config = {
+            action: 'show',
+            logic: 'all',
+            rules: [
+                recordRow,
+                { source: 'nps', operator: 'lessThan', value: 7 }
+            ]
+        };
+        const facts = { [factKey(recordRow)]: true };
+        expect(evaluateVisibility(config, factsCtx({ nps: 5 }, facts))).toBe(
+            true
+        );
+        expect(evaluateVisibility(config, factsCtx({ nps: 9 }, facts))).toBe(
+            false
+        );
+    });
+
+    it('lint accepts record rows without an element index entry', () => {
+        const problems = lintVisibility(
+            {
+                action: 'show',
+                logic: 'all',
+                rules: [
+                    {
+                        source: 'record:Status__c',
+                        operator: 'equals',
+                        value: 'Active'
+                    }
+                ]
+            },
+            new Map(),
+            null
+        );
+        expect(problems).toEqual([]);
+        expect(isRecordRule({ source: 'record:X' })).toBe(true);
+        expect(isRecordRule({ source: 'el_x' })).toBe(false);
+    });
+});

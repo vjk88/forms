@@ -34,6 +34,9 @@ export default class FinalRuleEditor extends LightningElement {
     /** Pickable source elements: [{id, label}] — scoped by the studio
      *  (repeater elements never offered outside their section, §7). */
     @api sources = [];
+    /** SO-3 record-field sources ([{id: 'record:Api', label}]) — non-empty
+     *  only for surveys with a connected object; adds the second optgroup. */
+    @api recordSources = [];
     /** Map(id → {type, repeatSectionId}) for the engine's lint. */
     @api sourceIndex;
     /** The repeat section this node lives inside, or null (lint scoping). */
@@ -98,6 +101,10 @@ export default class FinalRuleEditor extends LightningElement {
         return (this.value && this.value.customLogic) || '';
     }
 
+    get hasRecordSources() {
+        return Boolean(this.recordSources && this.recordSources.length);
+    }
+
     get rows() {
         const rules = (this.value && this.value.rules) || [];
         return rules.map((rule, i) => ({
@@ -109,6 +116,11 @@ export default class FinalRuleEditor extends LightningElement {
             // ''-guard (0/false stay: they're real comparison values)
             value: rule.value == null ? '' : rule.value,
             sourceOptions: (this.sources || []).map((s) => ({
+                value: s.id,
+                label: s.label,
+                selected: s.id === rule.source ? true : undefined
+            })),
+            recordOptions: (this.recordSources || []).map((s) => ({
                 value: s.id,
                 label: s.label,
                 selected: s.id === rule.source ? true : undefined

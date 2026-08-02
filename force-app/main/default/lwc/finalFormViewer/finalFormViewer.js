@@ -3,7 +3,7 @@ import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
-import getPrefill from '@salesforce/apex/FinalSurveyObjectController.getPrefill';
+import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
@@ -31,6 +31,37 @@ function specHasMappings(spec) {
             for (const el of sec.elements || []) {
                 if (el.mapping && el.mapping.field) {
                     return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+/** SO-3: any record-sourced rule row anywhere a rules config can live —
+ *  page/section/element visibility plus validation `when` gates. */
+function specHasRecordRules(spec) {
+    const inConfig = (config) =>
+        (config && config.rules ? config.rules : []).some(
+            (r) =>
+                typeof r.source === 'string' && r.source.startsWith('record:')
+        );
+    for (const page of spec.pages || []) {
+        if (inConfig(page.visibility)) {
+            return true;
+        }
+        for (const sec of page.sections || []) {
+            if (inConfig(sec.visibility)) {
+                return true;
+            }
+            for (const el of sec.elements || []) {
+                if (inConfig(el.visibility)) {
+                    return true;
+                }
+                for (const v of el.validation || []) {
+                    if (inConfig(v.when)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -178,6 +209,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  re-emit chain; drives rule evaluation now, submission in the P3
      *  submit slice. Replaced wholesale so getters recompute. */
     answers = {};
+
+    /** SO-3 record-rule verdicts from getRecordContext ({factKey: boolean}).
+     *  DECLARED (reactive) — visibility getters recompute when facts land;
+     *  null = no record context, record rows read "no match". */
+    _ruleFacts = null;
 
     _inlineSpec;
     _urlFormId;
@@ -530,11 +566,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         };
         this.error = undefined;
 
-        // Survey-object prefill (SURVEY_OBJECT_SPEC): a record context +
-        // mapped questions seed initial answers. Authenticated renders only —
-        // authoring previews simulate, guests (delegateSubmit) wait for the
-        // signed-token program. _recordCtx doubles as the payload flag.
+        // Survey-object record context (SURVEY_OBJECT_SPEC + V2 SO-3): one
+        // round trip seeds mapped-question prefill AND freezes record-rule
+        // verdicts. Authenticated renders only — authoring previews simulate,
+        // guests (delegateSubmit) wait for SO-4 tokens. _recordCtx doubles as
+        // the payload flag.
         this._recordCtx = null;
+        this._ruleFacts = null;
         const rid = this.recordId || this._urlRecordId;
         if (
             rid &&
@@ -543,18 +581,21 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             spec.form &&
             spec.form.type === 'survey' &&
             spec.form.targetObject &&
-            specHasMappings(spec)
+            (specHasMappings(spec) || specHasRecordRules(spec))
         ) {
             this._recordCtx = rid;
-            getPrefill({
+            getRecordContext({
                 versionId: this.effectiveVersionId || null,
                 formId: this.effectiveFormId || null,
                 recordId: rid
             })
-                .then((values) => {
-                    if (seq !== this._applySeq || !values) {
+                .then((res) => {
+                    if (seq !== this._applySeq || !res) {
                         return;
                     }
+                    // REASSIGN, never mutate — facts feed render getters
+                    this._ruleFacts = res.ruleFacts || null;
+                    const values = res.prefill || {};
                     const merged = { ...this.answers };
                     let any = false;
                     for (const k of Object.keys(values)) {
@@ -569,7 +610,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 })
                 .catch(() => {
                     // best-effort: an unreadable record must never block the
-                    // survey itself from rendering
+                    // survey itself from rendering — record rules read "no
+                    // match" exactly like a plain no-context link
                 });
         }
     }
@@ -577,7 +619,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _ruleCtx() {
         return {
             getValue: (id) => this.answers[id],
-            getType: (id) => this._ruleTypeIndex.get(id)
+            getType: (id) => this._ruleTypeIndex.get(id),
+            // SO-3: server-frozen record-rule verdicts (null = no context)
+            getRecordFacts: () => this._ruleFacts
         };
     }
 

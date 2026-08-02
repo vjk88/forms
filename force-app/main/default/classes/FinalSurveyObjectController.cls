@@ -1,12 +1,20 @@
 /**
  * FinalSurveyObjectController — the survey-object program's READ side
- * (SURVEY_OBJECT_SPEC, owner 2026-07-31): prefill mapped questions from a
- * record of the survey's optional targetObject.
+ * (SURVEY_OBJECT_SPEC, owner 2026-07-31; V2 SO-3 2026-08-02): prefill mapped
+ * questions from a record of the survey's optional targetObject, and freeze
+ * record-sourced visibility rules into verdict booleans.
  *
  * AUTHENTICATED contexts only — the guest host never calls this (guest
- * prefill waits for the signed-token program, GUEST_PREFILL_LOOKUP_SPEC).
- * Everything runs in USER MODE + stripInaccessible: the runner only ever
- * sees fields they can already read.
+ * record context waits for SO-4 tokens).
+ *
+ * Postures inside (owner ruling 2026-08-02):
+ *  - ROW-level: the runner must be able to SEE the record (UserRecordAccess)
+ *    — otherwise survey links become an Id-probing oracle.
+ *  - PREFILL is display → USER MODE + stripInaccessible (values a runner
+ *    can't read stay out of their inputs).
+ *  - RULES are the AUTHOR's logic → SYSTEM MODE over spec-declared fields,
+ *    verdicts only (validation-rule/formula/Flow precedent). Field VALUES
+ *    never leave the server for rules.
  */
 public with sharing class FinalSurveyObjectController {
     /**
@@ -19,6 +27,38 @@ public with sharing class FinalSurveyObjectController {
         Id formId,
         Id recordId
     ) {
+        Ctx ctx = load(versionId, formId, recordId);
+        return prefillValues(ctx);
+    }
+
+    /**
+     * SO-3: one round trip per session — prefill values (FLS-stripped) plus
+     * rule-fact booleans keyed `source|operator|value` (the SAME factKey the
+     * client engine builds, finalExpressionEngine.factKey).
+     */
+    @AuraEnabled
+    public static Map<String, Object> getRecordContext(
+        Id versionId,
+        Id formId,
+        Id recordId
+    ) {
+        Ctx ctx = load(versionId, formId, recordId);
+        return new Map<String, Object>{
+            'prefill' => prefillValues(ctx),
+            'ruleFacts' => ruleFacts(ctx)
+        };
+    }
+
+    // ------------------------------------------------------------ shared core
+
+    private class Ctx {
+        Map<String, Object> spec;
+        String targetObject;
+        Id recordId;
+    }
+
+    /** Load + validate the survey, then the ROW-level record gate. */
+    private static Ctx load(Id versionId, Id formId, Id recordId) {
         if ((versionId == null && formId == null) || recordId == null) {
             throw new AuraHandledException('A survey and record are required.');
         }
@@ -41,18 +81,22 @@ public with sharing class FinalSurveyObjectController {
         if (versions.isEmpty()) {
             throw new AuraHandledException('Survey version not found.');
         }
-        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+        Ctx ctx = new Ctx();
+        ctx.spec = (Map<String, Object>) JSON.deserializeUntyped(
             versions[0].Spec_JSON__c
         );
-        Map<String, Object> formNode = (Map<String, Object>) spec.get('form');
+        ctx.recordId = recordId;
+        Map<String, Object> formNode = (Map<String, Object>) ctx.spec.get(
+            'form'
+        );
         Object formType = formNode == null ? null : formNode.get('type');
-        String targetObject = formNode == null
+        ctx.targetObject = formNode == null
             ? null
             : (String) formNode.get('targetObject');
         if (
             !(formType instanceof String) ||
             (String) formType != 'survey' ||
-            String.isBlank(targetObject)
+            String.isBlank(ctx.targetObject)
         ) {
             throw new AuraHandledException(
                 'This survey has no connected object.'
@@ -60,24 +104,37 @@ public with sharing class FinalSurveyObjectController {
         }
         if (
             recordId.getSObjectType() !=
-            Schema.getGlobalDescribe().get(targetObject.toLowerCase())
+            Schema.getGlobalDescribe().get(ctx.targetObject.toLowerCase())
         ) {
             throw new AuraHandledException(
                 'That record does not belong to this survey\'s object.'
             );
         }
+        // ROW-level gate: raw-recordId links must never let a runner probe
+        // records they can't see (rule facts run system-mode below). The
+        // refusal is indistinguishable from a nonexistent record.
+        List<UserRecordAccess> access = [
+            SELECT RecordId, HasReadAccess
+            FROM UserRecordAccess
+            WHERE UserId = :UserInfo.getUserId() AND RecordId = :recordId
+        ];
+        if (access.isEmpty() || !access[0].HasReadAccess) {
+            throw new AuraHandledException('Record not found.');
+        }
+        return ctx;
+    }
 
-        // elementId → field API name, straight from the spec (never client
-        // input); 'read' skips write-only mappings (SO-2 direction)
+    /** PREFILL (display): USER_MODE query + stripInaccessible(READABLE). */
+    private static Map<String, Object> prefillValues(Ctx ctx) {
+        // 'read' skips write-only mappings (SO-2 direction)
         Map<String, String> fieldByElement = mappedFields(
-            spec,
-            targetObject,
+            ctx.spec,
+            ctx.targetObject,
             'read'
         );
         if (fieldByElement.isEmpty()) {
             return new Map<String, Object>();
         }
-
         Set<String> fields = new Set<String>(fieldByElement.values());
         // access level rides the queryWithBinds argument — a WITH clause in
         // the string as well is a SecurityException (pick one, not both)
@@ -85,11 +142,11 @@ public with sharing class FinalSurveyObjectController {
             'SELECT ' +
             String.join(new List<String>(fields), ', ') +
             ' FROM ' +
-            targetObject +
+            ctx.targetObject +
             ' WHERE Id = :recordId LIMIT 1';
         List<SObject> found = Database.queryWithBinds(
             soql,
-            new Map<String, Object>{ 'recordId' => recordId },
+            new Map<String, Object>{ 'recordId' => ctx.recordId },
             AccessLevel.USER_MODE
         );
         if (found.isEmpty()) {
@@ -112,6 +169,256 @@ public with sharing class FinalSurveyObjectController {
         }
         return out;
     }
+
+    // ------------------------------------------------- SO-3 rule fact engine
+
+    /**
+     * Every record-sourced rule row in the spec, frozen to a boolean. Keyed
+     * `source|operator|value` — identical rows share one fact. SYSTEM MODE:
+     * the author's branching logic runs the same for every runner (the
+     * ROW-level gate in load() already proved the runner may see the record).
+     */
+    private static Map<String, Boolean> ruleFacts(Ctx ctx) {
+        List<Map<String, Object>> rows = recordRuleRows(ctx.spec);
+        if (rows.isEmpty()) {
+            return new Map<String, Boolean>();
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe()
+            .get(ctx.targetObject.toLowerCase());
+        Map<String, Schema.SObjectField> fieldMap = t.getDescribe()
+            .fields.getMap();
+        Set<String> fields = new Set<String>();
+        for (Map<String, Object> row : rows) {
+            String field = ((String) row.get('source')).substring(7);
+            if (fieldMap.containsKey(field.toLowerCase())) {
+                fields.add(field);
+            }
+        }
+        SObject rec = null;
+        if (!fields.isEmpty()) {
+            String soql =
+                'SELECT ' +
+                String.join(new List<String>(fields), ', ') +
+                ' FROM ' +
+                ctx.targetObject +
+                ' WHERE Id = :recordId LIMIT 1';
+            List<SObject> found = Database.queryWithBinds(
+                soql,
+                new Map<String, Object>{ 'recordId' => ctx.recordId },
+                AccessLevel.SYSTEM_MODE
+            );
+            rec = found.isEmpty() ? null : found[0];
+        }
+        Map<String, Boolean> out = new Map<String, Boolean>();
+        for (Map<String, Object> row : rows) {
+            String source = (String) row.get('source');
+            String field = source.substring(7);
+            String operator = (String) row.get('operator');
+            Object value = row.get('value');
+            String key =
+                source +
+                '|' +
+                operator +
+                '|' +
+                (value == null ? '' : String.valueOf(value));
+            Schema.SObjectField fTok = fieldMap.get(field.toLowerCase());
+            Object actual = (rec == null ||
+                fTok == null)
+                ? null
+                : rec.get(field);
+            out.put(
+                key,
+                rowMatches(
+                    operator,
+                    actual,
+                    value,
+                    fTok == null ? null : fTok.getDescribe()
+                )
+            );
+        }
+        return out;
+    }
+
+    /** Walk pages/sections/elements for visibility configs AND validation
+     *  `when` gates; collect rows whose source is `record:<Field>`. */
+    private static List<Map<String, Object>> recordRuleRows(
+        Map<String, Object> spec
+    ) {
+        List<Map<String, Object>> out = new List<Map<String, Object>>();
+        for (Object pageObj : toList(spec.get('pages'))) {
+            Map<String, Object> page = toMap(pageObj);
+            if (page == null) {
+                continue;
+            }
+            collectRows(toMap(page.get('visibility')), out);
+            for (Object secObj : toList(page.get('sections'))) {
+                Map<String, Object> sec = toMap(secObj);
+                if (sec == null) {
+                    continue;
+                }
+                collectRows(toMap(sec.get('visibility')), out);
+                for (Object elObj : toList(sec.get('elements'))) {
+                    Map<String, Object> el = toMap(elObj);
+                    if (el == null) {
+                        continue;
+                    }
+                    collectRows(toMap(el.get('visibility')), out);
+                    for (Object vObj : toList(el.get('validation'))) {
+                        Map<String, Object> v = toMap(vObj);
+                        if (v != null) {
+                            collectRows(toMap(v.get('when')), out);
+                        }
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    private static void collectRows(
+        Map<String, Object> config,
+        List<Map<String, Object>> out
+    ) {
+        if (config == null) {
+            return;
+        }
+        for (Object ruleObj : toList(config.get('rules'))) {
+            Map<String, Object> rule = toMap(ruleObj);
+            if (rule == null) {
+                continue;
+            }
+            String source = (String) rule.get('source');
+            if (source != null && source.startsWith('record:')) {
+                out.add(rule);
+            }
+        }
+    }
+
+    /**
+     * One record row → verdict. Coercion is describe-driven (the server
+     * KNOWS the field type — the client engine's stringly answer semantics
+     * apply only to answer rows): numeric fields compare as decimals, dates
+     * as dates, everything else as strings (contains = case-insensitive).
+     * Unknown field / unparseable comparison → false (fail safe, §7).
+     */
+    @TestVisible
+    private static Boolean rowMatches(
+        String operator,
+        Object actual,
+        Object value,
+        Schema.DescribeFieldResult fd
+    ) {
+        if (fd == null) {
+            return false; // field vanished since authoring
+        }
+        Boolean actualBlank =
+            actual == null ||
+            String.valueOf(actual).trim() == '';
+        if (operator == 'isBlank') {
+            return actualBlank;
+        }
+        if (operator == 'isNotBlank') {
+            return !actualBlank;
+        }
+        String want = value == null ? '' : String.valueOf(value).trim();
+        Schema.SoapType st = fd.getSoapType();
+        Boolean isNumeric =
+            st == Schema.SoapType.DOUBLE ||
+            st == Schema.SoapType.INTEGER;
+        Boolean isDate =
+            st == Schema.SoapType.DATE ||
+            st == Schema.SoapType.DATETIME;
+        if (operator == 'equals' || operator == 'notEquals') {
+            Boolean same;
+            if (isNumeric) {
+                Decimal a = toDecimal(actual);
+                Decimal b = toDecimal(want);
+                same = a != null && b != null ? a == b : eq(actual, want);
+            } else if (isDate) {
+                Long a = toTime(actual);
+                Long b = toTime(want);
+                same = a != null && b != null ? a == b : eq(actual, want);
+            } else {
+                same = eq(actual, want);
+            }
+            return operator == 'equals' ? same : !same;
+        }
+        if (operator == 'contains') {
+            if (actualBlank) {
+                return false;
+            }
+            return String.valueOf(actual)
+                .toLowerCase()
+                .contains(want.toLowerCase());
+        }
+        if (operator == 'greaterThan' || operator == 'lessThan') {
+            Long diffSign;
+            if (isDate) {
+                Long a = toTime(actual);
+                Long b = toTime(want);
+                if (a == null || b == null) {
+                    return false;
+                }
+                diffSign = a - b;
+            } else {
+                Decimal a = toDecimal(actual);
+                Decimal b = toDecimal(want);
+                if (a == null || b == null) {
+                    return false;
+                }
+                diffSign = a == b ? 0 : (a > b ? 1 : -1);
+            }
+            return operator == 'greaterThan' ? diffSign > 0 : diffSign < 0;
+        }
+        return false; // unknown operator — fail safe
+    }
+
+    private static Boolean eq(Object actual, String want) {
+        return (actual == null ? '' : String.valueOf(actual)) == want;
+    }
+
+    private static Decimal toDecimal(Object v) {
+        if (v == null) {
+            return null;
+        }
+        try {
+            return Decimal.valueOf(String.valueOf(v).trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Date/Datetime/ISO string → epoch millis; null when unparseable. */
+    private static Long toTime(Object v) {
+        if (v == null) {
+            return null;
+        }
+        if (v instanceof Datetime) {
+            return ((Datetime) v).getTime();
+        }
+        if (v instanceof Date) {
+            Date d = (Date) v;
+            return Datetime.newInstanceGmt(d, Time.newInstance(0, 0, 0, 0))
+                .getTime();
+        }
+        String s = String.valueOf(v).trim();
+        try {
+            if (s.length() == 10) {
+                // date-only ('2027-01-01') — the rule editor's common form
+                return Datetime.newInstanceGmt(
+                        Date.valueOf(s),
+                        Time.newInstance(0, 0, 0, 0)
+                    )
+                    .getTime();
+            }
+            return ((Datetime) JSON.deserialize('"' + s + '"', Datetime.class))
+                .getTime();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------- mapping walker
 
     /** All mappings regardless of direction (back-compat 2-arg form). */
     public static Map<String, String> mappedFields(
