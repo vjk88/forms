@@ -529,6 +529,108 @@ private class FinalSurveyObjectTest {
         );
     }
 
+    /**
+     * Schema drift: a mapped field deleted in Setup after authoring must
+     * cost only its own prefill — never throw, never take rule facts down.
+     */
+    @isTest
+    static void deadMappedFieldNeverBreaksTheRoundTrip() {
+        grantFls();
+        Map<String, Object> spec = new Map<String, Object>{
+            'form' => new Map<String, Object>{
+                'type' => 'survey',
+                'targetObject' => 'Job_Application__c'
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'p1',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec_main',
+                            'elements' => new List<Object>{
+                                mappedElement(
+                                    'el_salary',
+                                    'number',
+                                    'Desired_Salary__c'
+                                ),
+                                mappedElement(
+                                    'el_dead',
+                                    'text',
+                                    'Deleted_Since__c'
+                                ),
+                                new Map<String, Object>{
+                                    'id' => 'el_gated',
+                                    'type' => 'field',
+                                    'label' => 'Gated',
+                                    'binding' => null,
+                                    'config' => new Map<String, Object>{
+                                        'inputType' => 'text'
+                                    },
+                                    'visibility' => new Map<String, Object>{
+                                        'action' => 'show',
+                                        'logic' => 'all',
+                                        'rules' => new List<Object>{
+                                            new Map<String, Object>{
+                                                'source' => 'record:Desired_Salary__c',
+                                                'operator' => 'greaterThan',
+                                                'value' => '100'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Form__c form = new Form__c(
+            Name = 'Drift Pulse',
+            Form_Type__c = 'Survey',
+            Status__c = 'Published',
+            Primary_Context_Object__c = 'Job_Application__c'
+        );
+        insert form;
+        Form_Version__c version = new Form_Version__c(
+            Form__c = form.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Spec_JSON__c = JSON.serialize(spec)
+        );
+        insert version;
+
+        Map<String, Object> res;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = new Job_Application__c(
+                Desired_Salary__c = 250
+            );
+            insert ja;
+            Test.startTest();
+            res = FinalSurveyObjectController.getRecordContext(
+                version.Id,
+                null,
+                ja.Id
+            );
+            Test.stopTest();
+        }
+        Map<String, Object> prefill = (Map<String, Object>) res.get('prefill');
+        System.assertEquals(
+            250,
+            (Decimal) prefill.get('el_salary'),
+            'live mapped field still prefills'
+        );
+        System.assert(
+            !prefill.containsKey('el_dead'),
+            'dead mapped field silently costs only itself'
+        );
+        Map<String, Object> facts = (Map<String, Object>) res.get('ruleFacts');
+        System.assertEquals(
+            true,
+            facts.get('record:Desired_Salary__c|greaterThan|100'),
+            'rule facts survive a dead mapped field'
+        );
+    }
+
     @isTest
     static void unansweredMappedQuestionLeavesFieldAlone() {
         grantFls();

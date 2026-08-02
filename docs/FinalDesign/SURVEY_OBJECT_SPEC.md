@@ -100,10 +100,13 @@ value}`. Validates: active version, survey type, recordId's sobject type === tar
   answer-sourced row parses unchanged). Same operators; no new engine grammar.
 - **Server truth, verdicts not values:** the record half of rules is STATIC for a session, so
   the server evaluates it ONCE and ships booleans. `getRecordContext(versionId, formId,
-recordId|token)` returns `{ prefill: {...}, ruleFacts: { '<elementId|sectionId>#<rowIndex>':
-true|false } }`. The client rule engine substitutes facts for record rows and combines them
-  with live answer rows via the normal all/any/custom logic. **Record field VALUES never
-  reach the browser for rules — internal or guest.**
+recordId|token)` returns `{ prefill: {...}, ruleFacts: { '<source>|<operator>|<value>':
+true|false } }` — facts are keyed by ROW CONTENT (`factKey`, shipped PR #207), not by
+  position: identical rows share one fact, and reordering/inserting rows can never
+  misattach a verdict (an index-keyed scheme would be fragile exactly that way). The client
+  rule engine substitutes facts for record rows and combines them with live answer rows via
+  the normal all/any/custom logic. **Record field VALUES never reach the browser for rules
+  — internal or guest.**
 - **Mixed rules (record rows + answer rows) never re-fetch**: rows are independent — the
   server freezes each RECORD row to a boolean once at load; the client engine computes
   ANSWER rows live and combines both through the normal all/any/custom logic. Real-time
