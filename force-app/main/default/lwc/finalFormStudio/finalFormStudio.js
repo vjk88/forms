@@ -101,6 +101,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
     }
 
+    /** A pending autosave debounce at unmount is the draft's LAST keystrokes
+     *  — flush it, never just clear it (dropping would silently lose the
+     *  edit; a post-unmount timer would fire on a dead component). _save's
+     *  own catch owns failures. */
+    disconnectedCallback() {
+        clearTimeout(this._saveTimer);
+        if (this.saveState === 'dirty') {
+            this._save();
+        }
+    }
+
     _syncHistoryFlags() {
         this.canUndo = this._history.canUndo;
         this.canRedo = this._history.canRedo;
