@@ -131,14 +131,14 @@
                                 type="text"
                                 class="pp-input"
                                 placeholder="Yes"
-                                value={cfg.yesLabel}
+                                value={yesLabelText}
                                 onchange={handleYesLabel}
                             />
                             <input
                                 type="text"
                                 class="pp-input"
                                 placeholder="No"
-                                value={cfg.noLabel}
+                                value={noLabelText}
                                 onchange={handleNoLabel}
                             />
                         </div>
@@ -327,7 +327,7 @@
                                 type="text"
                                 class="pp-input"
                                 placeholder="Left (e.g. Poor)"
-                                value={cfg.leftLabel}
+                                value={endLeftText}
                                 data-side="left"
                                 onchange={handleEndLabel}
                             />
@@ -335,7 +335,7 @@
                                 type="text"
                                 class="pp-input"
                                 placeholder="Right (e.g. Excellent)"
-                                value={cfg.rightLabel}
+                                value={endRightText}
                                 data-side="right"
                                 onchange={handleEndLabel}
                             />
@@ -567,7 +567,7 @@
                                 class="pp-input"
                                 title="Prefix"
                                 placeholder="Prefix (e.g. $)"
-                                value={cfg.valuePrefix}
+                                value={sliderPrefixText}
                                 data-side="prefix"
                                 onchange={handleSliderAffix}
                             />
@@ -576,7 +576,7 @@
                                 class="pp-input"
                                 title="Suffix"
                                 placeholder="Suffix (e.g. /night)"
-                                value={cfg.valueSuffix}
+                                value={sliderSuffixText}
                                 data-side="suffix"
                                 onchange={handleSliderAffix}
                             />
@@ -593,7 +593,7 @@
                                 type="text"
                                 class="pp-input"
                                 placeholder="Left (e.g. Tight budget)"
-                                value={cfg.leftLabel}
+                                value={endLeftText}
                                 data-side="left"
                                 onchange={handleEndLabel}
                             />
@@ -601,7 +601,7 @@
                                 type="text"
                                 class="pp-input"
                                 placeholder="Right (e.g. No limit)"
-                                value={cfg.rightLabel}
+                                value={endRightText}
                                 data-side="right"
                                 onchange={handleEndLabel}
                             />

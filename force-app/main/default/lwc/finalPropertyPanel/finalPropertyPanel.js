@@ -414,6 +414,7 @@ export default class FinalPropertyPanel extends LightningElement {
     get matrixStatementRows() {
         return (this.cfg.rows || []).map((r, index) => ({
             ...r,
+            label: r.label || '',
             index,
             key: `${index}`
         }));
@@ -460,6 +461,7 @@ export default class FinalPropertyPanel extends LightningElement {
         return ((this.cfg.options || []).length ? this.cfg.options : []).map(
             (o, index) => ({
                 ...o,
+                label: o.label || '',
                 index,
                 key: `${index}`,
                 hasImage: Boolean(o.url)
@@ -901,6 +903,34 @@ export default class FinalPropertyPanel extends LightningElement {
             emoji: o.emoji || '',
             description: o.description || ''
         }));
+    }
+
+    /** Raw <input value={x}> writes the LITERAL string "undefined" into the
+     *  box when x is missing — plain inputs don't null-guard the way
+     *  lightning-input does. Every unset-able config that feeds a pp-input
+     *  goes through one of these ''-defaulted views. */
+    get yesLabelText() {
+        return this.cfg.yesLabel || '';
+    }
+
+    get noLabelText() {
+        return this.cfg.noLabel || '';
+    }
+
+    get endLeftText() {
+        return this.cfg.leftLabel || '';
+    }
+
+    get endRightText() {
+        return this.cfg.rightLabel || '';
+    }
+
+    get sliderPrefixText() {
+        return this.cfg.valuePrefix || '';
+    }
+
+    get sliderSuffixText() {
+        return this.cfg.valueSuffix || '';
     }
 
     get isSlider() {

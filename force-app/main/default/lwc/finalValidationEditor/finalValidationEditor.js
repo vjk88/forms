@@ -112,6 +112,13 @@ export default class FinalValidationEditor extends LightningElement {
                 key: `v_${i}`,
                 index: i,
                 entry,
+                // ''-guarded input views: raw <input> stamps the literal
+                // string "undefined" for a missing binding (0 must survive)
+                min: entry.min == null ? '' : entry.min,
+                max: entry.max == null ? '' : entry.max,
+                minLen: entry.minLen == null ? '' : entry.minLen,
+                maxLen: entry.maxLen == null ? '' : entry.maxLen,
+                message: entry.message || '',
                 isRange: preset === 'range',
                 isLength: preset === 'length',
                 isMatch: preset === 'match',

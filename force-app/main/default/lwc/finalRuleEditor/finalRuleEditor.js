@@ -105,7 +105,9 @@ export default class FinalRuleEditor extends LightningElement {
             index: i,
             number: i + 1,
             needsValue: !NO_VALUE.has(rule.operator),
-            value: rule.value,
+            // raw <input> stamps literal "undefined" for a missing value —
+            // ''-guard (0/false stay: they're real comparison values)
+            value: rule.value == null ? '' : rule.value,
             sourceOptions: (this.sources || []).map((s) => ({
                 value: s.id,
                 label: s.label,
