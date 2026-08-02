@@ -135,7 +135,22 @@ public with sharing class FinalSurveyObjectController {
         if (fieldByElement.isEmpty()) {
             return new Map<String, Object>();
         }
-        Set<String> fields = new Set<String>(fieldByElement.values());
+        // Schema drift: a mapped field deleted/renamed in Setup since
+        // authoring must degrade to "that one doesn't prefill" — an
+        // unfiltered SELECT would throw and take rule facts down with it.
+        Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe()
+            .get(ctx.targetObject.toLowerCase())
+            .getDescribe()
+            .fields.getMap();
+        Set<String> fields = new Set<String>();
+        for (String f : fieldByElement.values()) {
+            if (fieldMap.containsKey(f.toLowerCase())) {
+                fields.add(f);
+            }
+        }
+        if (fields.isEmpty()) {
+            return new Map<String, Object>();
+        }
         // access level rides the queryWithBinds argument — a WITH clause in
         // the string as well is a SecurityException (pick one, not both)
         String soql =
