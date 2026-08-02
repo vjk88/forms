@@ -172,6 +172,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     submittedRecordId = null;
     _submitting = false;
     _startedAt = null;
+    _redirectTimer = null;
 
     /** Live answers keyed by element id (schema §8) — fed by the valuechange
      *  re-emit chain; drives rule evaluation now, submission in the P3
@@ -205,6 +206,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._load();
     }
 
+    /** A scheduled post-submit redirect must die with the component — firing
+     *  _navigate() after unmount steers the host page from a dead instance.
+     *  (An LWR reconnect re-arms nothing: completion state survives, and the
+     *  respondent can still use the completion screen's own controls.) */
+    disconnectedCallback() {
+        clearTimeout(this._redirectTimer);
+    }
+
     /**
      * LWR page caching (Experience Cloud) can reconnect a SURVIVING viewer
      * instance into a freshly rebuilt Locker realm (tab-away/tab-back). The
@@ -223,8 +232,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return; // nothing applied yet — first _load/_apply owns it
         }
         this.navCtor = undefined; // unmount the stale element first
-        const module = await getLayout(this._appliedLayoutType).load();
-        this.navCtor = module.default;
+        try {
+            const module = await getLayout(this._appliedLayoutType).load();
+            this.navCtor = module.default;
+        } catch {
+            // chunk load failed at reconnect — say so instead of a blank page
+            this.error = 'This form could not be loaded.';
+        }
     }
 
     get effectiveFormId() {
@@ -891,13 +905,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (c.mode === 'toast') {
             // toast ALWAYS redirects (schema §3) — a beat to read the bar
             // eslint-disable-next-line @lwc/lwc/no-async-operation
-            setTimeout(() => this._navigate(c.redirectTo, c.redirectUrl), 1500);
+            this._redirectTimer = setTimeout(
+                () => this._navigate(c.redirectTo, c.redirectUrl),
+                1500
+            );
             return;
         }
         if (c.autoRedirect) {
             const delay = Number(c.redirectDelay);
             // eslint-disable-next-line @lwc/lwc/no-async-operation
-            setTimeout(
+            this._redirectTimer = setTimeout(
                 () => this._navigate(c.redirectTo, c.redirectUrl),
                 (Number.isFinite(delay) && delay >= 0 ? delay : 5) * 1000
             );

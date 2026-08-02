@@ -442,9 +442,13 @@ export default class FinalCreationGallery extends LightningElement {
     handleObjectBlur() {
         // Delay so a mousedown pick lands before the list closes.
         // eslint-disable-next-line @lwc/lwc/no-async-operation
-        setTimeout(() => {
+        this._blurTimer = setTimeout(() => {
             this.objectOpen = false;
         }, 150);
+    }
+
+    disconnectedCallback() {
+        clearTimeout(this._blurTimer);
     }
     handleObjectPick(e) {
         const value = e.currentTarget.dataset.value;
