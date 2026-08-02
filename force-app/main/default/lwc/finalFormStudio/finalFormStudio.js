@@ -563,6 +563,19 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return out;
     }
 
+    /** SO-3: record fields the rule editor may offer as sources (surveys
+     *  with a connected object only) — the same describe roster mapping
+     *  uses, so the two rosters can never disagree. */
+    get recordRuleSources() {
+        if (!this.isSurvey || !this.objectApi || !this.mappingFields) {
+            return [];
+        }
+        return this.mappingFields.map((f) => ({
+            id: `record:${f.apiName}`,
+            label: f.label || f.apiName
+        }));
+    }
+
     /** Map(id → {type, repeatSectionId}) — lintVisibility's element index.
      *  Date subtypes pass through so gt/lt lint matches runtime coercion. */
     get ruleIndexMap() {

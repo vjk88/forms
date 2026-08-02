@@ -79,9 +79,36 @@ function compare(rule, actual, ctx) {
     return a - b;
 }
 
+/** SO-3: is this row sourced from the connected record (not an answer)? */
+export function isRecordRule(rule) {
+    return Boolean(
+        rule &&
+        typeof rule.source === 'string' &&
+        rule.source.startsWith('record:')
+    );
+}
+
+/**
+ * SO-3 fact key: a record row's verdict depends only on (field, operator,
+ * value) — identical rows share one fact, wherever they live in the spec.
+ * The SERVER computes facts under the same key (FinalSurveyObjectController)
+ * — build-time and runtime can never disagree on identity.
+ */
+export function factKey(rule) {
+    return `${rule.source}|${rule.operator}|${rule.value ?? ''}`;
+}
+
 export function ruleMatches(rule, ctx) {
     if (!rule || !OPERATORS.has(rule.operator)) {
         return false;
+    }
+    // SO-3 record rows are SERVER-frozen verdicts: the browser never holds
+    // record field values (verdict booleans only, every posture — owner
+    // ruling 2026-08-02). No context (plain link, guest without a token) =
+    // no fact = no match: show-gated stays hidden, hide-gated stays shown.
+    if (isRecordRule(rule)) {
+        const facts = ctx.getRecordFacts ? ctx.getRecordFacts() : null;
+        return Boolean(facts && facts[factKey(rule)]);
     }
     const actual = ctx.getValue(rule.source);
     switch (rule.operator) {
@@ -332,6 +359,12 @@ export function lintVisibility(config, elementIndex, hostRepeatSectionId) {
         const label = `Rule ${i + 1}`;
         if (!OPERATORS.has(rule.operator)) {
             problems.push(`${label}: unknown operator "${rule.operator}".`);
+        }
+        // SO-3 record rows: no element to index, no repeater scoping, and
+        // type coercion is the SERVER's describe-driven job — operator
+        // validity (above) is the whole lint.
+        if (isRecordRule(rule)) {
+            return;
         }
         const meta = elementIndex && elementIndex.get(rule.source);
         if (!meta) {

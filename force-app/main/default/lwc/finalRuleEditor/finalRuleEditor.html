@@ -58,17 +58,49 @@
                                 data-prop="source"
                                 onchange={handleRuleField}
                             >
-                                <template
-                                    for:each={r.sourceOptions}
-                                    for:item="o"
-                                >
-                                    <option
-                                        key={o.value}
-                                        value={o.value}
-                                        selected={o.selected}
+                                <template lwc:if={hasRecordSources}>
+                                    <optgroup label="Answers">
+                                        <template
+                                            for:each={r.sourceOptions}
+                                            for:item="o"
+                                        >
+                                            <option
+                                                key={o.value}
+                                                value={o.value}
+                                                selected={o.selected}
+                                            >
+                                                {o.label}
+                                            </option>
+                                        </template>
+                                    </optgroup>
+                                    <optgroup label="Record fields">
+                                        <template
+                                            for:each={r.recordOptions}
+                                            for:item="o"
+                                        >
+                                            <option
+                                                key={o.value}
+                                                value={o.value}
+                                                selected={o.selected}
+                                            >
+                                                {o.label}
+                                            </option>
+                                        </template>
+                                    </optgroup>
+                                </template>
+                                <template lwc:else>
+                                    <template
+                                        for:each={r.sourceOptions}
+                                        for:item="o"
                                     >
-                                        {o.label}
-                                    </option>
+                                        <option
+                                            key={o.value}
+                                            value={o.value}
+                                            selected={o.selected}
+                                        >
+                                            {o.label}
+                                        </option>
+                                    </template>
                                 </template>
                             </select>
                             <select

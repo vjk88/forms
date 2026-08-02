@@ -392,6 +392,143 @@ private class FinalSurveyObjectTest {
         );
     }
 
+    /**
+     * SO-3: getRecordContext freezes record-sourced rule rows to verdicts.
+     * Available_Start_Date__c is deliberately NOT in the grantFls permset —
+     * its facts computing anyway proves SYSTEM-mode evaluation (author's
+     * logic, owner ruling 2026-08-02). Prefill rides the same round trip.
+     */
+    @isTest
+    static void recordContextFreezesRuleFacts() {
+        grantFls();
+        Map<String, Object> visibility = new Map<String, Object>{
+            'action' => 'show',
+            'logic' => 'all',
+            'rules' => new List<Object>{
+                new Map<String, Object>{
+                    'source' => 'record:Applicant_Name__c',
+                    'operator' => 'equals',
+                    'value' => 'Ada Lovelace'
+                },
+                new Map<String, Object>{
+                    'source' => 'record:Desired_Salary__c',
+                    'operator' => 'greaterThan',
+                    'value' => '100'
+                },
+                new Map<String, Object>{
+                    'source' => 'record:Desired_Salary__c',
+                    'operator' => 'lessThan',
+                    'value' => '100'
+                },
+                new Map<String, Object>{
+                    'source' => 'record:Available_Start_Date__c',
+                    'operator' => 'lessThan',
+                    'value' => '2027-01-01'
+                },
+                new Map<String, Object>{
+                    'source' => 'record:No_Such_Field__c',
+                    'operator' => 'equals',
+                    'value' => 'x'
+                }
+            }
+        };
+        Map<String, Object> gated = new Map<String, Object>{
+            'id' => 'el_gated',
+            'type' => 'field',
+            'label' => 'Gated',
+            'binding' => null,
+            'config' => new Map<String, Object>{ 'inputType' => 'text' },
+            'visibility' => visibility
+        };
+        Map<String, Object> spec = new Map<String, Object>{
+            'form' => new Map<String, Object>{
+                'type' => 'survey',
+                'targetObject' => 'Job_Application__c'
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'p1',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec_main',
+                            'elements' => new List<Object>{
+                                mappedElement(
+                                    'el_salary',
+                                    'number',
+                                    'Desired_Salary__c'
+                                ),
+                                gated
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Form__c form = new Form__c(
+            Name = 'Facts Pulse',
+            Form_Type__c = 'Survey',
+            Status__c = 'Published',
+            Primary_Context_Object__c = 'Job_Application__c'
+        );
+        insert form;
+        Form_Version__c version = new Form_Version__c(
+            Form__c = form.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Spec_JSON__c = JSON.serialize(spec)
+        );
+        insert version;
+
+        Map<String, Object> res;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = new Job_Application__c(
+                Applicant_Name__c = 'Ada Lovelace',
+                Desired_Salary__c = 250,
+                Available_Start_Date__c = Date.newInstance(2026, 9, 1)
+            );
+            insert ja;
+            Test.startTest();
+            res = FinalSurveyObjectController.getRecordContext(
+                version.Id,
+                null,
+                ja.Id
+            );
+            Test.stopTest();
+        }
+        Map<String, Object> facts = (Map<String, Object>) res.get('ruleFacts');
+        System.assertEquals(
+            true,
+            facts.get('record:Applicant_Name__c|equals|Ada Lovelace'),
+            'text equals'
+        );
+        System.assertEquals(
+            true,
+            facts.get('record:Desired_Salary__c|greaterThan|100'),
+            'numeric greaterThan'
+        );
+        System.assertEquals(
+            false,
+            facts.get('record:Desired_Salary__c|lessThan|100'),
+            'numeric lessThan is false'
+        );
+        System.assertEquals(
+            true,
+            facts.get('record:Available_Start_Date__c|lessThan|2027-01-01'),
+            'date compare on an UN-granted field = system mode proven'
+        );
+        System.assertEquals(
+            false,
+            facts.get('record:No_Such_Field__c|equals|x'),
+            'vanished field fails safe'
+        );
+        Map<String, Object> prefill = (Map<String, Object>) res.get('prefill');
+        System.assertEquals(
+            250,
+            (Decimal) prefill.get('el_salary'),
+            'prefill rides the same round trip'
+        );
+    }
+
     @isTest
     static void unansweredMappedQuestionLeavesFieldAlone() {
         grantFls();
