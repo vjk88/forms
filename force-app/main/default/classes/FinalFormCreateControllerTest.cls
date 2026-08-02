@@ -3,8 +3,7 @@ private class FinalFormCreateControllerTest {
     @isTest
     static void getUpdatableObjects_includesCommonObjects() {
         Test.startTest();
-        List<Map<String, String>> objs =
-            FinalFormCreateController.getUpdatableObjects();
+        List<Map<String, String>> objs = FinalFormCreateController.getUpdatableObjects();
         Test.stopTest();
 
         System.assert(!objs.isEmpty(), 'Expected some updatable objects');
@@ -16,11 +15,21 @@ private class FinalFormCreateControllerTest {
             values.contains('Contact'),
             'Contact should be an updatable object'
         );
+        for (String v : values) {
+            System.assert(
+                !v.endsWith('Share') &&
+                    !v.endsWith('History') &&
+                    !v.endsWith('__Feed') &&
+                    !v.endsWith('__Tag') &&
+                    !v.endsWith('ChangeEvent'),
+                'system tables never offered: ' + v
+            );
+        }
         // Sorted by label — first label <= second.
         if (objs.size() > 1) {
             System.assert(
                 objs[0].get('label').toLowerCase() <=
-                    objs[1].get('label').toLowerCase(),
+                objs[1].get('label').toLowerCase(),
                 'Objects should be label-sorted'
             );
         }
@@ -130,7 +139,9 @@ private class FinalFormCreateControllerTest {
         );
         Map<String, Object> layout = (Map<String, Object>) spec.get('layout');
         System.assertEquals('splitHero', layout.get('type'));
-        Map<String, Object> options = (Map<String, Object>) layout.get('options');
+        Map<String, Object> options = (Map<String, Object>) layout.get(
+            'options'
+        );
         System.assertEquals(
             'oneAtATime',
             options.get('paneFlow'),

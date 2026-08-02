@@ -4,6 +4,7 @@ import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyT
 import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurveyTopic';
 import uploadImage from '@salesforce/apex/FormAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FormAssetController.deleteImage';
+import { compatInputTypes } from 'c/finalSurveyMapping';
 
 /**
  * finalPropertyPanel — the selected node's editor, a direct port of the
@@ -296,24 +297,11 @@ export default class FinalPropertyPanel extends LightningElement {
     // object — its presence IS the survey-object signal; the panel stays dumb.
     @api mappingFields;
 
-    /** inputTypes a mapped field must have, per question kind. null = the
-     *  question cannot map (matrix/ranking/multi-select — multi-row answers). */
+    /** inputTypes a mapped field must have, per question kind — the shared
+     *  c/finalSurveyMapping ruling (the studio's change-object flow uses the
+     *  SAME rules, so survivors can never disagree). */
     get _mappingCompatTypes() {
-        if (this.isScaleFamilyQuestion || this.isLikertQuestion) {
-            return ['number'];
-        }
-        if (this.isYesNoQuestion) {
-            return ['checkbox'];
-        }
-        const textish = ['text', 'textarea', 'email', 'phone', 'url'];
-        if (this.isImageChoiceQuestion) {
-            return this.cfg.multiple ? null : textish;
-        }
-        if (this.isElement && this.n.type === 'field') {
-            const it = this.cfg.inputType || 'text';
-            return textish.includes(it) ? textish : null;
-        }
-        return null;
+        return this.isElement ? compatInputTypes(this.n) : null;
     }
 
     get showMapping() {

@@ -3,6 +3,7 @@ import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import LightningConfirm from 'lightning/confirm';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
+import setContextObject from '@salesforce/apex/FinalStudioController.setContextObject';
 import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
@@ -11,6 +12,7 @@ import describeFields from '@salesforce/apex/FinalStudioController.describeField
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
+import { compatInputTypes, mappedElements } from 'c/finalSurveyMapping';
 import { createHistory } from 'c/finalHistoryManager';
 
 /**
@@ -945,6 +947,125 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  Fetched once per survey WITH a connected object; forms and object-less
      *  surveys keep null and the panel never shows the control. */
     mappingFields = null;
+
+    // ---- SO-1: Connected object card (SURVEY_OBJECT_SPEC V2) ----
+
+    /** Card confirm state: {objectApi|null, casualties, survivors} | null. */
+    objectPending = null;
+    objectError = '';
+    _pendingCommit = null;
+
+    get mappedCount() {
+        return this.spec ? mappedElements(this.spec).length : 0;
+    }
+
+    /** New object picked in the card: no mappings → commit straight away;
+     *  otherwise partition survivors (field exists + type-compatible on the
+     *  new object, per the SHARED c/finalSurveyMapping rules) and ask. */
+    handleObjectPick(event) {
+        const objectApi = event.detail.objectApi;
+        this.objectError = '';
+        if (!objectApi || objectApi === this.objectApi) {
+            return;
+        }
+        const mapped = mappedElements(this.spec);
+        if (!mapped.length) {
+            this._commitObject(objectApi, null);
+            return;
+        }
+        describeFields({ objectApi })
+            .then((fields) => {
+                const byName = new Map(
+                    (fields || []).map((f) => [f.apiName, f])
+                );
+                const casualties = [];
+                const keep = new Set();
+                for (const { el } of mapped) {
+                    const compat = compatInputTypes(el);
+                    const f = byName.get(el.mapping.field);
+                    if (f && compat && compat.includes(f.inputType)) {
+                        keep.add(el.id);
+                    } else {
+                        casualties.push(
+                            `${el.label || el.id} → ${el.mapping.field}`
+                        );
+                    }
+                }
+                if (!casualties.length) {
+                    this._commitObject(objectApi, keep);
+                    return;
+                }
+                this._pendingCommit = { objectApi, keep };
+                this.objectPending = {
+                    objectApi,
+                    casualties,
+                    survivors: keep.size
+                };
+            })
+            .catch(() => {
+                this.objectError = "Couldn't inspect that object — try again.";
+            });
+    }
+
+    handleObjectClear() {
+        this.objectError = '';
+        const mapped = mappedElements(this.spec);
+        if (!mapped.length) {
+            this._commitObject(null, null);
+            return;
+        }
+        this._pendingCommit = { objectApi: null, keep: new Set() };
+        this.objectPending = {
+            objectApi: null,
+            casualties: mapped.map(
+                ({ el }) => `${el.label || el.id} → ${el.mapping.field}`
+            ),
+            survivors: 0
+        };
+    }
+
+    handleObjectConfirm() {
+        const p = this._pendingCommit;
+        this.objectPending = null;
+        this._pendingCommit = null;
+        if (p) {
+            this._commitObject(p.objectApi, p.keep);
+        }
+    }
+
+    handleObjectCancel() {
+        this.objectPending = null;
+        this._pendingCommit = null;
+    }
+
+    /** Server first (it owns validation + Form__c.Primary_Context_Object__c),
+     *  then the spec: retarget surviving mappings, drop the rest. */
+    async _commitObject(objectApi, keep) {
+        try {
+            await setContextObject({ formId: this.formId, objectApi });
+        } catch (e) {
+            this.objectError =
+                (e && e.body && e.body.message) ||
+                'The org refused that object — nothing was changed.';
+            return;
+        }
+        this._mutate((spec) => {
+            if (objectApi) {
+                spec.form.targetObject = objectApi;
+            } else {
+                delete spec.form.targetObject;
+            }
+            for (const { el } of mappedElements(spec)) {
+                if (objectApi && keep && keep.has(el.id)) {
+                    el.mapping = { ...el.mapping, object: objectApi };
+                } else {
+                    delete el.mapping;
+                }
+            }
+        });
+        this.objectApi = objectApi || null;
+        this._loadMappingFields();
+    }
 
     _loadMappingFields() {
         if (!this.isSurvey || !this.objectApi) {

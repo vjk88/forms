@@ -1,0 +1,101 @@
+<template>
+    <div class="oc-card">
+        <div class="oc-head">Connected object</div>
+
+        <template lwc:if={errorText}>
+            <p class="oc-warn">{errorText}</p>
+        </template>
+
+        <template lwc:if={isPending}>
+            <p class="oc-title">{pendingTitle}</p>
+            <template lwc:if={hasCasualties}>
+                <p class="oc-warn">These mappings will be cleared:</p>
+                <ul class="oc-list">
+                    <template for:each={pending.casualties} for:item="c">
+                        <li key={c}>{c}</li>
+                    </template>
+                </ul>
+            </template>
+            <template lwc:if={survivorNote}>
+                <p class="oc-sub">{survivorNote}</p>
+            </template>
+            <div class="oc-actions">
+                <button
+                    type="button"
+                    class="oc-btn oc-danger"
+                    onclick={handleConfirm}
+                >
+                    {pendingCta}
+                </button>
+                <button type="button" class="oc-btn" onclick={handleCancel}>
+                    Cancel
+                </button>
+            </div>
+        </template>
+
+        <template lwc:elseif={isPicking}>
+            <input
+                type="text"
+                class="oc-search"
+                placeholder="Search objects…"
+                oninput={handleSearch}
+            />
+            <template lwc:if={loadFailed}>
+                <p class="oc-warn">Couldn't load the object list.</p>
+            </template>
+            <ul class="oc-list oc-objects">
+                <template for:each={filteredObjects} for:item="o">
+                    <li key={o.value}>
+                        <button
+                            type="button"
+                            class="oc-obj"
+                            data-value={o.value}
+                            onclick={handlePick}
+                        >
+                            <span class="oc-obj-label">{o.label}</span>
+                            <span class="oc-obj-api">{o.value}</span>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+            <div class="oc-actions">
+                <button type="button" class="oc-btn" onclick={handleCancelPick}>
+                    Cancel
+                </button>
+            </div>
+        </template>
+
+        <template lwc:elseif={hasObject}>
+            <p class="oc-title">{displayLabel}</p>
+            <p class="oc-sub">{mappedSummary}</p>
+            <div class="oc-actions">
+                <button type="button" class="oc-btn" onclick={handleOpenPicker}>
+                    Change…
+                </button>
+                <button
+                    type="button"
+                    class="oc-btn oc-quiet"
+                    onclick={handleClear}
+                >
+                    Disconnect
+                </button>
+            </div>
+        </template>
+
+        <template lwc:else>
+            <p class="oc-sub">
+                No object connected — field mapping, prefill and record-based
+                rules unlock when you connect one.
+            </p>
+            <div class="oc-actions">
+                <button
+                    type="button"
+                    class="oc-btn oc-primary"
+                    onclick={handleOpenPicker}
+                >
+                    Connect object…
+                </button>
+            </div>
+        </template>
+    </div>
+</template>

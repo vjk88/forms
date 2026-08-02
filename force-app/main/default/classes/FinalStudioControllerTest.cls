@@ -375,4 +375,82 @@ private class FinalStudioControllerTest {
             Assert.isTrue(true);
         }
     }
+
+    // ---- SO-1: setContextObject (SURVEY_OBJECT_SPEC V2) ----
+
+    private static Form__c makeSurvey(String name) {
+        Form__c f = new Form__c(
+            Name = name,
+            Form_Type__c = 'Survey',
+            Primary_Context_Object__c = 'Contact'
+        );
+        insert f;
+        return f;
+    }
+
+    @IsTest
+    static void setContextObjectConnectsChangesAndDisconnects() {
+        Form__c s = makeSurvey('SO1 survey');
+
+        Test.startTest();
+        // change (canonical casing comes from the describe, not the caller)
+        FinalStudioController.setContextObject(s.Id, 'job_application__c');
+        String changed = [
+            SELECT Primary_Context_Object__c
+            FROM Form__c
+            WHERE Id = :s.Id
+        ]
+        .Primary_Context_Object__c;
+        // disconnect — legal for surveys (VR_Primary_Object_Required carves
+        // surveys out when Submission_Storage__c is blank)
+        FinalStudioController.setContextObject(s.Id, null);
+        Test.stopTest();
+
+        Assert.areEqual(
+            'Job_Application__c',
+            changed,
+            'canonical API name stored'
+        );
+        Assert.isNull(
+            [
+                SELECT Primary_Context_Object__c
+                FROM Form__c
+                WHERE Id = :s.Id
+            ]
+            .Primary_Context_Object__c,
+            'disconnect nulls the mirror field'
+        );
+    }
+
+    @IsTest
+    static void setContextObjectRejectsFormsAndBogusObjects() {
+        Form__c form = makeForm('SO1 plain form');
+        Form__c survey = makeSurvey('SO1 survey 2');
+
+        try {
+            FinalStudioController.setContextObject(form.Id, 'Contact');
+            Assert.fail('non-survey should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+        try {
+            FinalStudioController.setContextObject(
+                survey.Id,
+                'No_Such_Object__c'
+            );
+            Assert.fail('unknown object should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+        Assert.areEqual(
+            'Contact',
+            [
+                SELECT Primary_Context_Object__c
+                FROM Form__c
+                WHERE Id = :survey.Id
+            ]
+            .Primary_Context_Object__c,
+            'refusals leave the field untouched'
+        );
+    }
 }
