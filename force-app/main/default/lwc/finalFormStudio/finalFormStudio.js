@@ -740,6 +740,24 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         });
     }
 
+    /** SO-2: mapping direction — 'both' is the default and stays OFF the
+     *  spec so v1 specs and mode-less mappings read identically. */
+    handleMappingModeChange(event) {
+        const mode = event.detail.mode;
+        this._patchSelection((t) => {
+            if (!t.node.mapping) {
+                return;
+            }
+            if (mode && mode !== 'both') {
+                t.node.mapping = { ...t.node.mapping, mode };
+            } else {
+                const next = { ...t.node.mapping };
+                delete next.mode;
+                t.node.mapping = next;
+            }
+        });
+    }
+
     handleRepeatChange(event) {
         const patch = event.detail.patch || {};
         this._patchSelection((t) => {

@@ -73,6 +73,15 @@ private class FinalSurveyObjectTest {
         return el;
     }
 
+    /** SO-2: stamp a direction onto a mapped element's mapping. */
+    private static Map<String, Object> withMode(
+        Map<String, Object> el,
+        String mode
+    ) {
+        ((Map<String, Object>) el.get('mapping')).put('mode', mode);
+        return el;
+    }
+
     private static Form_Version__c makeMappedSurvey() {
         Map<String, Object> spec = new Map<String, Object>{
             'form' => new Map<String, Object>{
@@ -271,6 +280,115 @@ private class FinalSurveyObjectTest {
             1,
             after.Desired_Salary__c,
             'no record context = byte-identical to the plain survey path'
+        );
+    }
+
+    /**
+     * SO-2 direction: mode='write' never prefills; mode='prefill' never
+     * writes back. el_salary is write-only, el_name is prefill-only.
+     */
+    @isTest
+    static void mappingModeGovernsPrefillAndWriteback() {
+        grantFls();
+        Map<String, Object> spec = new Map<String, Object>{
+            'form' => new Map<String, Object>{
+                'type' => 'survey',
+                'targetObject' => 'Job_Application__c'
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'p1',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec_main',
+                            'elements' => new List<Object>{
+                                withMode(
+                                    mappedElement(
+                                        'el_salary',
+                                        'number',
+                                        'Desired_Salary__c'
+                                    ),
+                                    'write'
+                                ),
+                                withMode(
+                                    mappedElement(
+                                        'el_name',
+                                        'text',
+                                        'Applicant_Name__c'
+                                    ),
+                                    'prefill'
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Form__c form = new Form__c(
+            Name = 'Mode Pulse',
+            Form_Type__c = 'Survey',
+            Status__c = 'Published',
+            Primary_Context_Object__c = 'Job_Application__c'
+        );
+        insert form;
+        Form_Version__c version = new Form_Version__c(
+            Form__c = form.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Spec_JSON__c = JSON.serialize(spec)
+        );
+        insert version;
+
+        Job_Application__c ja;
+        Map<String, Object> prefill;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            ja = new Job_Application__c(
+                Desired_Salary__c = 55,
+                Applicant_Name__c = 'Original Name'
+            );
+            insert ja;
+            Test.startTest();
+            prefill = FinalSurveyObjectController.getPrefill(
+                version.Id,
+                null,
+                ja.Id
+            );
+            FinalSubmitController.submitForm(
+                null,
+                version.Id,
+                payload(
+                    new Map<String, Object>{
+                        'el_salary' => 90000,
+                        'el_name' => 'Should Not Land'
+                    },
+                    ja.Id
+                )
+            );
+            Test.stopTest();
+        }
+        System.assert(
+            !prefill.containsKey('el_salary'),
+            'write-only mapping never prefills'
+        );
+        System.assertEquals(
+            'Original Name',
+            prefill.get('el_name'),
+            'prefill-only mapping still prefills'
+        );
+        Job_Application__c after = [
+            SELECT Desired_Salary__c, Applicant_Name__c
+            FROM Job_Application__c
+            WHERE Id = :ja.Id
+        ];
+        System.assertEquals(
+            90000,
+            after.Desired_Salary__c,
+            'write-only mapping still writes back'
+        );
+        System.assertEquals(
+            'Original Name',
+            after.Applicant_Name__c,
+            'prefill-only mapping never writes back'
         );
     }
 

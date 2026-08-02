@@ -383,9 +383,11 @@ public inherited sharing class FinalSubmitService {
         ) {
             return;
         }
+        // 'write' skips prefill-only mappings (SO-2 direction)
         Map<String, String> fieldByElement = FinalSurveyObjectController.mappedFields(
             spec,
-            targetObject
+            targetObject,
+            'write'
         );
         if (fieldByElement.isEmpty()) {
             return;
