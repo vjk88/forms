@@ -163,6 +163,30 @@ describe('scale family', () => {
         ).not.toBeNull();
     });
 
+    it('string answers hydrate the selection — prefill sends numerics as strings', () => {
+        const el = mount({
+            id: 'e1',
+            type: 'scale',
+            label: 'Intensity',
+            value: '3'
+        });
+        const lit = chips(el).find(
+            (c) => c.getAttribute('aria-checked') === 'true'
+        );
+        expect(lit.getAttribute('data-value')).toBe('3');
+
+        const lk = mount({
+            id: 'e2',
+            type: 'likert',
+            label: 'Agree?',
+            value: '4'
+        });
+        const litLk = [
+            ...lk.shadowRoot.querySelectorAll('[role="radio"]')
+        ].find((c) => c.getAttribute('aria-checked') === 'true');
+        expect(litLk.getAttribute('data-value')).toBe('4');
+    });
+
     it('arrow keys move the selection (radiogroup contract)', () => {
         const el = mount({ id: 'e1', type: 'scale', label: 'Intensity' });
         const handler = jest.fn();
