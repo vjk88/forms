@@ -104,8 +104,23 @@ recordId|token)` returns `{ prefill: {...}, ruleFacts: { '<elementId|sectionId>#
 true|false } }`. The client rule engine substitutes facts for record rows and combines them
   with live answer rows via the normal all/any/custom logic. **Record field VALUES never
   reach the browser for rules — internal or guest.**
-- Internal evaluation: `Database.queryWithBinds` + `AccessLevel.USER_MODE` — a field the
-  runner can't read resolves as "no match" (fail-closed for `show`-action rules).
+- **Mixed rules (record rows + answer rows) never re-fetch**: rows are independent — the
+  server freezes each RECORD row to a boolean once at load; the client engine computes
+  ANSWER rows live and combines both through the normal all/any/custom logic. Real-time
+  reactivity is entirely answer-side; one server call per session (same snapshot semantics
+  as prefill).
+- **Rule evaluation runs SYSTEM MODE — every posture (owner ruling 2026-08-02).** Rules are
+  the AUTHOR's logic, not the runner's data view: an FLS gap must never silently rewire the
+  survey's flow per-runner. Platform precedent: validation rules, formula fields and
+  system-context Flows all evaluate over fields the runner can't read. Disclosure stays one
+  inferred bit — verdicts ship, values never do. Two guards remain (they are NOT FLS):
+  1. internal raw-`recordId` links require the runner to have ROW-level read access to the
+     record (`UserRecordAccess`) — otherwise any employee could probe arbitrary Ids through
+     survey links (the same oracle the guest token kills);
+  2. the system-mode query reads ONLY the spec-declared rule fields (server walks the
+     published spec; client input never names a field).
+- Prefill is DISPLAY, not logic — it keeps FLS internally (values a runner can't read stay
+  out of their inputs); guest prefill stays author-opt-in per SO-4.
 - **No record context** (plain link, guest without token): record rows read "no match" —
   show-gated elements stay hidden, hide-gated stay shown. Builder lint hints when a survey
   has record rules ("this survey behaves differently without a record link").
@@ -161,6 +176,9 @@ oracle — guests only ever get an opaque signed token.**
    requests can never name fields.
 4. Guest record reads run only behind a verified signature (proof an internal user minted
    context for exactly this form + record); minting requires USER_MODE read of the record.
+   Internal raw-`recordId` links require the runner's ROW-level read access — no Id probing
+   from either side of the firewall. Rule evaluation itself is system-mode over
+   spec-declared fields (author's logic, verdicts only — owner ruling 2026-08-02).
 5. Guest writeback exists ONLY behind a verified token + per-mapping author opt-in; the
    guest path still never reads a client-supplied `meta.recordId` — the record comes from
    the token, nowhere else. Forms keep the guests-never-update rule (insert-only) unchanged.
