@@ -132,19 +132,47 @@ true|false } }`. The client rule engine substitutes facts for record rows and co
 The Phase C law extends to surveys unchanged: **a raw record Id in a guest URL is a data
 oracle — guests only ever get an opaque signed token.**
 
-- **Token:** `Crypto.generateMac(HMAC-SHA256)` over `formId|recordId|expiry|nonce`, org-secret
-  key in a protected Custom Setting (minted once, post-install/first-use). URL-safe base64 →
-  `?c__rt=<token>`. The token is opaque: no PII, no readable Id in the link.
-- **Invitation bookkeeping (the nonce):** minting writes a `Survey_Invitation__c` row
-  (Form**c, Record_Id**c, Expires_On**c, Revoked**c, Single_Use**c, Responded_On**c); the row
-  Id is the token nonce. Buys: **revocation** (flip a checkbox), optional **single-use**,
-  expiry visible/editable, and response→record/contact linking for analytics. Stateless-HMAC
-  fallback (no row) deliberately NOT offered — revocability is the point.
-- **Resolve (guest family, fenced):** verify signature → load invitation → reject if revoked /
-  expired / used / form mismatch / record sobjectType ≠ targetObject. Only then load the
-  record **system-mode**, walk the PUBLISHED spec for (a) record-rule rows → return verdict
+**Two-tier tokens (owner-forwarded review, folded in 2026-08-02).** A row per minted link
+taxes customer data storage (~2 KB × campaign size — real money at org storage rates) for
+a capability most links never use. State is created when the author ASKS for control, not
+by default:
+
+- **Tier 1 — stateless token (the default):** payload `formId|recordId|expiry|issuedAt`,
+  **encrypt-then-MAC** — `Crypto.encryptWithManagedIV` (AES-256) THEN
+  `Crypto.generateMac(HMAC-SHA256)` over the ciphertext, org-secret keys in a protected
+  Custom Setting (minted once, post-install/first-use). Encryption is REQUIRED, not
+  optional: a signed-but-cleartext payload would expose the recordId to anyone who
+  base64-decodes the link — opacity is invariant 1. URL-safe base64 → `?c__rt=<token>`.
+  Resolve = decrypt + verify in memory: ZERO database rows per link.
+  - Stateless revocation = `Form__c.Links_Invalid_Before__c` (one datetime): "Invalidate
+    all links" in the studio stamps NOW; resolve rejects tokens with `issuedAt` older.
+    Kills every outstanding stateless link for that survey in one click — per-recipient
+    revocation is exactly what Tier 2 is for.
+  - Response→record linking survives statelessness: the token carries the recordId, the
+    response row stores it at submit — "who answered" needs no invitation row.
+- **Tier 2 — tracked invitation (author opt-in per mint: "Track & control invitations"):**
+  mints a `Survey_Invitation__c` row (Form**c, Record_Id**c, Expires_On**c, Revoked**c,
+  Single_Use**c, Responded_On**c); the row Id rides the token payload as the nonce. Buys:
+  **per-recipient revocation**, **single-use enforcement**, sent-vs-answered tracking,
+  editable expiry. (Packaging note: Tier 2 is the natural paid-tier/add-on boundary —
+  a business decision for packaging time, not plumbing built now.)
+- **Scanner-resilient state transitions (folded in, real bug avoided):** Outlook Safe
+  Links / Proofpoint prefetch every emailed URL — consuming a link on GET would burn it
+  before a human ever opens it. Law: **loads are idempotent reads; only explicit
+  interaction mutates state.** Single-use consumption + `Responded_On__c` stamp happen in
+  the SUBMIT transaction, never at render. Expiry/revocation/cutoff are checked on BOTH
+  load and submit (a link revoked mid-session still can't submit).
+- **Resolve (guest family, fenced):** decrypt + verify signature → Tier 2: load invitation,
+  reject revoked/expired/used; Tier 1: check expiry + `Links_Invalid_Before__c` → reject
+  form mismatch / record sobjectType ≠ targetObject. Only then load the record
+  **system-mode**, walk the PUBLISHED spec for (a) record-rule rows → return verdict
   booleans, (b) mappings flagged `guestPrefill: true` → return those values only. The client
   never names a field; unlisted fields are unreadable no matter what the request says.
+- **Telemetry (opens / drop-offs / scan pings): OUT of SO-4.** It belongs to the analytics
+  program (form-vs-survey model, phases 1–3). When built: native-first (Platform Event →
+  scheduled aggregate rows), and any EXTERNAL offload (Lambda/S3) is a customer-configured
+  option, never a package default — an AppExchange package silently phoning respondent
+  telemetry to third-party infra is a Security Review and privacy liability we do not ship.
 - **Guest prefill is author opt-in per mapping** (`mapping.guestPrefill`, default OFF, shown
   as a "Prefill in guest links" toggle only when mapped): shipping a value into an input IS
   disclosure, so the author explicitly chooses which fields a link-holder may see.
@@ -156,8 +184,11 @@ oracle — guests only ever get an opaque signed token.**
   - per-mapping **`guestWrite: true` opt-in** (default OFF, "Guests can write this" toggle
     beside guest prefill) — the server writes only spec-declared, author-opted fields,
     system-mode AFTER token verification, same savepoint as the answer rows;
-  - invitations to surveys with any guestWrite mapping default **Single_Use\_\_c = true**
-    (the link updates the record once, then dies; overridable per invitation);
+  - **writeback links are ALWAYS Tier 2** (a stateless link can update a record with no
+    per-recipient kill switch — overwrite capability earns the invitation row; the ~2 KB
+    is the cost of the audit trail, and writeback campaigns are the links that need one);
+  - writeback invitations default **Single_Use\_\_c = true**, consumed at SUBMIT (never at
+    load — scanner law above; overridable per invitation);
   - audit trail: invitation → response → record, all linked.
 - **Mint surfaces (internal only):** the minter must be able to READ the record (USER_MODE
   check at mint — you can't issue links for data you can't see). v2 mints: (a) studio share
@@ -170,7 +201,9 @@ oracle — guests only ever get an opaque signed token.**
 
 ## Security invariants (v2, all phases)
 
-1. Raw record Ids never appear in guest URLs; tokens are unguessable, expiring, revocable.
+1. Raw record Ids never appear in guest URLs — and never DECODE out of them either:
+   stateless payloads are encrypted (encrypt-then-MAC), not merely signed. Tokens are
+   unguessable, expiring, and revocable (per-survey cutoff stateless, per-recipient Tier 2).
 2. Record values never ship to the browser for RULES — verdict booleans only, every posture.
 3. Guests see only author-opted prefill values; the server walks the published spec — client
    requests can never name fields.
