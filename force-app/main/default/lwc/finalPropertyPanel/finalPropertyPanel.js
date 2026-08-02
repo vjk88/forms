@@ -350,6 +350,31 @@ export default class FinalPropertyPanel extends LightningElement {
         );
     }
 
+    // ---- SO-2: mapping direction (SURVEY_OBJECT_SPEC V2) ----
+
+    get isMapped() {
+        return Boolean(this.n.mapping && this.n.mapping.field);
+    }
+
+    get mappingModeSeg() {
+        return this._seg(
+            [
+                { label: 'Prefill + write', value: 'both' },
+                { label: 'Prefill only', value: 'prefill' },
+                { label: 'Write only', value: 'write' }
+            ],
+            (this.n.mapping && this.n.mapping.mode) || 'both'
+        );
+    }
+
+    handleMappingMode(event) {
+        this.dispatchEvent(
+            new CustomEvent('mappingmodechange', {
+                detail: { mode: event.currentTarget.dataset.value }
+            })
+        );
+    }
+
     get isScaleFamilyQuestion() {
         return (
             this.isNpsQuestion ||

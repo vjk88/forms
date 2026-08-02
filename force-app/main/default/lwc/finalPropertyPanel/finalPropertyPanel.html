@@ -327,6 +327,25 @@
                             field on submit, and prefills it when the survey
                             opens from a record.
                         </p>
+                        <template lwc:if={isMapped}>
+                            <span class="pp-label">Direction</span>
+                            <div class="pp-seg">
+                                <template
+                                    for:each={mappingModeSeg}
+                                    for:item="b"
+                                >
+                                    <button
+                                        key={b.value}
+                                        type="button"
+                                        class={b.cls}
+                                        data-value={b.value}
+                                        onclick={handleMappingMode}
+                                    >
+                                        {b.label}
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </template>
 

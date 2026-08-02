@@ -67,8 +67,13 @@ public with sharing class FinalSurveyObjectController {
             );
         }
 
-        // elementId → field API name, straight from the spec (never client input)
-        Map<String, String> fieldByElement = mappedFields(spec, targetObject);
+        // elementId → field API name, straight from the spec (never client
+        // input); 'read' skips write-only mappings (SO-2 direction)
+        Map<String, String> fieldByElement = mappedFields(
+            spec,
+            targetObject,
+            'read'
+        );
         if (fieldByElement.isEmpty()) {
             return new Map<String, Object>();
         }
@@ -108,10 +113,24 @@ public with sharing class FinalSurveyObjectController {
         return out;
     }
 
-    /** Walk the spec for el.mapping entries targeting the survey's object. */
+    /** All mappings regardless of direction (back-compat 2-arg form). */
     public static Map<String, String> mappedFields(
         Map<String, Object> spec,
         String targetObject
+    ) {
+        return mappedFields(spec, targetObject, null);
+    }
+
+    /**
+     * Walk the spec for el.mapping entries targeting the survey's object.
+     * SO-2 direction: `mapping.mode` 'prefill' = read-only, 'write' =
+     * write-only, absent/'both' = both ways. Pass direction 'read'|'write'
+     * to get only the mappings that participate in that flow; null = all.
+     */
+    public static Map<String, String> mappedFields(
+        Map<String, Object> spec,
+        String targetObject,
+        String direction
     ) {
         Map<String, String> out = new Map<String, String>();
         for (Object pageObj : toList(spec.get('pages'))) {
@@ -139,7 +158,8 @@ public with sharing class FinalSurveyObjectController {
                     if (
                         String.isNotBlank(field) &&
                         obj != null &&
-                        obj.equalsIgnoreCase(targetObject)
+                        obj.equalsIgnoreCase(targetObject) &&
+                        modeAllows((String) mapping.get('mode'), direction)
                     ) {
                         out.put(elId, field);
                     }
@@ -147,6 +167,15 @@ public with sharing class FinalSurveyObjectController {
             }
         }
         return out;
+    }
+
+    private static Boolean modeAllows(String mode, String direction) {
+        if (direction == null || String.isBlank(mode) || mode == 'both') {
+            return true;
+        }
+        return (direction == 'read' && mode == 'prefill') ||
+            (direction == 'write' &&
+            mode == 'write');
     }
 
     private static List<Object> toList(Object o) {
