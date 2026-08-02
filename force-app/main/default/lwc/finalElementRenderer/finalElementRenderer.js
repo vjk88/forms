@@ -68,9 +68,18 @@ export default class FinalElementRenderer extends LightningElement {
      *  real elements (or decidable lightning-* hosts); when one qualifies we
      *  re-emit the semantic `advancekey`, and `advancefocus` mirrors the
      *  multiline state for the helper wording. Navs ignore raw keydown /
-     *  focusin from this subtree (fromElementRenderer). */
-    constructor() {
-        super();
+     *  focusin from this subtree (fromElementRenderer).
+     *  Wired in connectedCallback, NOT the constructor — a constructor
+     *  template listener registers in jsdom but never fires under
+     *  production LWS (org probe 2026-08-01); the guard survives LWR
+     *  reconnects without double-adding. */
+    _advanceWired = false;
+
+    connectedCallback() {
+        if (this._advanceWired) {
+            return;
+        }
+        this._advanceWired = true;
         this.template.addEventListener('keydown', (event) => {
             const origin = event.composedPath
                 ? event.composedPath()[0]
