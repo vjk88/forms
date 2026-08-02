@@ -156,6 +156,9 @@
                     </template>
                 </ul>
             </template>
+            <template lwc:if={recordHint}>
+                <p class="re-record-hint">{recordHint}</p>
+            </template>
         </template>
         <template lwc:else>
             <p class="re-empty">{emptyHint}</p>
