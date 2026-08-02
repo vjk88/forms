@@ -24,6 +24,17 @@
                     onchange={handleSurveyRequired}
                 ></lightning-input>
 
+                <!-- parity with the field branch (owner 2026-08-02: fields in
+                     surveys had Help text but question widgets didn't — the
+                     element taxonomy was leaking into the authoring UX; the
+                     renderer supported help on every type all along) -->
+                <lightning-input
+                    label="Help text"
+                    data-prop="help"
+                    value={n.help}
+                    field-level-help="Shows as an info bubble beside the question"
+                    onchange={handleHelp}
+                ></lightning-input>
                 <lightning-input
                     label="Caption"
                     placeholder="Optional context under the question"
