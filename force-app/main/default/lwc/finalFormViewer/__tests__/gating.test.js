@@ -134,6 +134,30 @@ describe('c-final-form-viewer gating (F8)', () => {
         ).toBe('Notes');
     });
 
+    it('typed answers survive Back — remounted native inputs rehydrate from the store', async () => {
+        const el = await mount();
+        type(el, 'a@b.co');
+        await flush();
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('next')
+        );
+        await flush();
+        // page 2 mounted — page 1's input is GONE from the DOM
+        expect(
+            deepQuery(el.shadowRoot, 'c-final-element-renderer').element.label
+        ).toBe('Notes');
+
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('back')
+        );
+        await flush();
+        // pre-fix: the remounted lightning-input rendered BLANK while the
+        // answers store still held (and would submit) the typed value
+        expect(deepQuery(el.shadowRoot, 'lightning-input').value).toBe(
+            'a@b.co'
+        );
+    });
+
     it('Submit validates every page: jumps to the first invalid one instead of completing', async () => {
         const el = await mount();
         const bar = deepQuery(el.shadowRoot, 'c-final-submit-bar');
