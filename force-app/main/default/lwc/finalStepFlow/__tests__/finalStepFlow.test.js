@@ -4,7 +4,8 @@ import {
     isLastScreen,
     shouldAdvanceOnKey,
     isMultilineTarget,
-    fromElementRenderer
+    fromElementRenderer,
+    resolveAdvanceOrigin
 } from 'c/finalStepFlow';
 
 const enter = (mods = {}) => ({
@@ -145,6 +146,44 @@ describe('isMultilineTarget', () => {
         );
         expect(isMultilineTarget({ tagName: 'LIGHTNING-INPUT' })).toBe(false);
         expect(isMultilineTarget(null)).toBe(false);
+    });
+});
+
+describe('resolveAdvanceOrigin', () => {
+    it('walks past lightning primitive wrappers to the decidable host', () => {
+        // org shape: input Enter surfaces as the primitive host, with the
+        // real lightning-input one hop up the path
+        const path = [
+            { tagName: 'LIGHTNING-PRIMITIVE-INPUT-SIMPLE' },
+            {}, // shadow root — no tagName
+            { tagName: 'LIGHTNING-INPUT', type: 'text' },
+            { tagName: 'C-FINAL-ELEMENT-RENDERER' }
+        ];
+        expect(resolveAdvanceOrigin(path, null).tagName).toBe(
+            'LIGHTNING-INPUT'
+        );
+    });
+
+    it('native controls decide immediately — a chip button never walks past itself', () => {
+        const path = [
+            { tagName: 'BUTTON', type: 'submit' },
+            { tagName: 'DIV' },
+            { tagName: 'LIGHTNING-INPUT' }
+        ];
+        expect(resolveAdvanceOrigin(path, null).tagName).toBe('BUTTON');
+    });
+
+    it('skips wrapper noise (div/span) and falls back when nothing is decidable', () => {
+        const fallback = { tagName: 'C-HOST' };
+        expect(
+            resolveAdvanceOrigin(
+                [{ tagName: 'DIV' }, { tagName: 'SPAN' }],
+                fallback
+            )
+        ).toBe(fallback);
+        expect(resolveAdvanceOrigin(null, fallback)).toBe(fallback);
+        const rich = { tagName: 'DIV', isContentEditable: true };
+        expect(resolveAdvanceOrigin([rich], null)).toBe(rich);
     });
 });
 

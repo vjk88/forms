@@ -1,5 +1,9 @@
 import { LightningElement, api } from 'lwc';
-import { shouldAdvanceOnKey, isMultilineTarget } from 'c/finalStepFlow';
+import {
+    shouldAdvanceOnKey,
+    isMultilineTarget,
+    resolveAdvanceOrigin
+} from 'c/finalStepFlow';
 
 /**
  * finalElementRenderer — one spec element.
@@ -81,9 +85,10 @@ export default class FinalElementRenderer extends LightningElement {
         }
         this._advanceWired = true;
         this.template.addEventListener('keydown', (event) => {
-            const origin = event.composedPath
-                ? event.composedPath()[0]
-                : event.target;
+            const origin = resolveAdvanceOrigin(
+                event.composedPath ? event.composedPath() : [],
+                event.target
+            );
             if (shouldAdvanceOnKey(event, origin)) {
                 this.dispatchEvent(
                     new CustomEvent('advancekey', {
@@ -94,9 +99,10 @@ export default class FinalElementRenderer extends LightningElement {
             }
         });
         this.template.addEventListener('focusin', (event) => {
-            const origin = event.composedPath
-                ? event.composedPath()[0]
-                : event.target;
+            const origin = resolveAdvanceOrigin(
+                event.composedPath ? event.composedPath() : [],
+                event.target
+            );
             this.dispatchEvent(
                 new CustomEvent('advancefocus', {
                     bubbles: true,
