@@ -176,20 +176,18 @@ by default:
 - **Guest prefill is author opt-in per mapping** (`mapping.guestPrefill`, default OFF, shown
   as a "Prefill in guest links" toggle only when mapped): shipping a value into an input IS
   disclosure, so the author explicitly chooses which fields a link-holder may see.
-- **Guest writeback: IN SCOPE (owner 2026-08-02).** Forms guests only ever CREATE records
-  (Phase A1's "guests-never-update rule" — insert-only, nothing existing touched); update
-  is the riskier verb because it overwrites data that already exists on an identifiable
-  record. The token retires exactly those risks (unforgeable, one record, minted by someone
-  who can read it, expiring, revocable — the password-reset/DocuSign trust model), so:
-  - per-mapping **`guestWrite: true` opt-in** (default OFF, "Guests can write this" toggle
-    beside guest prefill) — the server writes only spec-declared, author-opted fields,
-    system-mode AFTER token verification, same savepoint as the answer rows;
-  - **writeback links are ALWAYS Tier 2** (a stateless link can update a record with no
-    per-recipient kill switch — overwrite capability earns the invitation row; the ~2 KB
-    is the cost of the audit trail, and writeback campaigns are the links that need one);
-  - writeback invitations default **Single_Use\_\_c = true**, consumed at SUBMIT (never at
-    load — scanner law above; overridable per invitation);
-  - audit trail: invitation → response → record, all linked.
+- **Guest writeback: REMOVED (owner ruling 2026-08-02 — supersedes the same-day in-scope
+  ruling).** Guest surveys NEVER update Salesforce records. Guests are strictly read-only
+  with respect to the record: rule verdicts + author-opted prefill values, nothing else.
+  Mapped writeback stays exactly what it is today — authenticated runners only.
+  - **The escape hatch is the customer's own automation:** guest submits with a verified
+    token stamp the record reference onto the `Form_Response__c` row SERVER-side (from the
+    TOKEN, never client payload) — so an org admin who wants guest-driven record updates
+    writes a Flow trigger on the Survey Response object, under their org's own governance,
+    permissions, and audit. Our package ships the linked data, not the write.
+  - Simplifications this buys: no `guestWrite` flag, no writeback-forces-Tier-2 rule, no
+    single-use-by-default coupling — and the guest posture stays a one-liner for Security
+    Review: "guests never perform DML against existing records, full stop."
 - **Mint surfaces (internal only):** the minter must be able to READ the record (USER_MODE
   check at mint — you can't issue links for data you can't see). v2 mints: (a) studio share
   surface "Record link…" (record search → copy link), (b) invocable Apex "Create survey
@@ -212,9 +210,12 @@ by default:
    Internal raw-`recordId` links require the runner's ROW-level read access — no Id probing
    from either side of the firewall. Rule evaluation itself is system-mode over
    spec-declared fields (author's logic, verdicts only — owner ruling 2026-08-02).
-5. Guest writeback exists ONLY behind a verified token + per-mapping author opt-in; the
-   guest path still never reads a client-supplied `meta.recordId` — the record comes from
-   the token, nowhere else. Forms keep the guests-never-update rule (insert-only) unchanged.
+5. Guests NEVER update Salesforce records — surveys or forms (Phase A1's
+   guests-never-update rule now covers both). Mapped writeback is authenticated-only. The
+   guest path never reads a client-supplied `meta.recordId`; the only record reference a
+   guest submit produces is the server-stamped link on its own `Form_Response__c` row,
+   sourced from the verified token. Customer-side Flow triggers on the response object are
+   the sanctioned route to guest-driven record automation.
 
 ## Build order
 
