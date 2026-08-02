@@ -119,6 +119,18 @@
     line-height: 1.5;
 }
 
+/* SO-3: no-record-context posture note (informational, not an error) */
+.re-record-hint {
+    margin: 6px 0 0;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
 .re-empty {
     margin: 0;
     color: #5c5c5c;

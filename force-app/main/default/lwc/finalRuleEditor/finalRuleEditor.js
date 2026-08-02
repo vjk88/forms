@@ -105,6 +105,29 @@ export default class FinalRuleEditor extends LightningElement {
         return Boolean(this.recordSources && this.recordSources.length);
     }
 
+    /** SO-3 no-context posture, spelled out where the author writes the
+     *  rule. The hide-action variant is the trap (SO review): without a
+     *  record link a hide-rule never matches — content it was supposed to
+     *  suppress stays VISIBLE. */
+    get recordHint() {
+        const rules = (this.value && this.value.rules) || [];
+        const hasRecord = rules.some(
+            (r) =>
+                typeof r.source === 'string' && r.source.startsWith('record:')
+        );
+        if (!hasRecord) {
+            return '';
+        }
+        const action = (this.value && this.value.action) || 'show';
+        return action === 'hide'
+            ? 'Record rules only work when the survey opens from a record ' +
+                  'link. Without one, this HIDE rule never matches — the ' +
+                  'content stays visible. If it must stay private, use a ' +
+                  'Show rule instead.'
+            : 'Record rules only work when the survey opens from a record ' +
+                  'link. Without one, this content stays hidden.';
+    }
+
     get rows() {
         const rules = (this.value && this.value.rules) || [];
         return rules.map((rule, i) => ({

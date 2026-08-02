@@ -12,7 +12,11 @@ import describeFields from '@salesforce/apex/FinalStudioController.describeField
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
-import { compatInputTypes, mappedElements } from 'c/finalSurveyMapping';
+import {
+    compatInputTypes,
+    mappedElements,
+    pruneRecordRules
+} from 'c/finalSurveyMapping';
 import { createHistory } from 'c/finalHistoryManager';
 
 /**
@@ -972,18 +976,23 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.spec ? mappedElements(this.spec).length : 0;
     }
 
-    /** New object picked in the card: no mappings → commit straight away;
-     *  otherwise partition survivors (field exists + type-compatible on the
-     *  new object, per the SHARED c/finalSurveyMapping rules) and ask. */
+    /** Rule casualties WITHOUT touching the live spec: prune runs on a
+     *  clone; the commit repeats the same walk for real. */
+    _previewRuleCasualties(liveFields) {
+        return pruneRecordRules(
+            JSON.parse(JSON.stringify(this.spec)),
+            liveFields
+        );
+    }
+
+    /** New object picked in the card: nothing depends on the object → commit
+     *  straight away; otherwise partition mapping survivors (field exists +
+     *  type-compatible on the new object, per the SHARED c/finalSurveyMapping
+     *  rules), preview record-rule casualties, and ask. */
     handleObjectPick(event) {
         const objectApi = event.detail.objectApi;
         this.objectError = '';
         if (!objectApi || objectApi === this.objectApi) {
-            return;
-        }
-        const mapped = mappedElements(this.spec);
-        if (!mapped.length) {
-            this._commitObject(objectApi, null);
             return;
         }
         describeFields({ objectApi })
@@ -991,9 +1000,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 const byName = new Map(
                     (fields || []).map((f) => [f.apiName, f])
                 );
+                const liveFields = new Set(byName.keys());
                 const casualties = [];
                 const keep = new Set();
-                for (const { el } of mapped) {
+                for (const { el } of mappedElements(this.spec)) {
                     const compat = compatInputTypes(el);
                     const f = byName.get(el.mapping.field);
                     if (f && compat && compat.includes(f.inputType)) {
@@ -1004,15 +1014,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                         );
                     }
                 }
+                casualties.push(...this._previewRuleCasualties(liveFields));
                 if (!casualties.length) {
-                    this._commitObject(objectApi, keep);
+                    this._commitObject(objectApi, keep, liveFields);
                     return;
                 }
-                this._pendingCommit = { objectApi, keep };
+                this._pendingCommit = { objectApi, keep, liveFields };
                 this.objectPending = {
                     objectApi,
                     casualties,
-                    survivors: keep.size
+                    survivors: keep.size,
+                    published: this.isPublished
                 };
             })
             .catch(() => {
@@ -1022,18 +1034,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     handleObjectClear() {
         this.objectError = '';
-        const mapped = mappedElements(this.spec);
-        if (!mapped.length) {
-            this._commitObject(null, null);
+        const casualties = mappedElements(this.spec).map(
+            ({ el }) => `${el.label || el.id} → ${el.mapping.field}`
+        );
+        casualties.push(...this._previewRuleCasualties(null));
+        if (!casualties.length) {
+            this._commitObject(null, null, null);
             return;
         }
         this._pendingCommit = { objectApi: null, keep: new Set() };
         this.objectPending = {
             objectApi: null,
-            casualties: mapped.map(
-                ({ el }) => `${el.label || el.id} → ${el.mapping.field}`
-            ),
-            survivors: 0
+            casualties,
+            survivors: 0,
+            published: this.isPublished
         };
     }
 
@@ -1042,7 +1056,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.objectPending = null;
         this._pendingCommit = null;
         if (p) {
-            this._commitObject(p.objectApi, p.keep);
+            this._commitObject(p.objectApi, p.keep, p.liveFields || null);
         }
     }
 
@@ -1052,8 +1066,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     /** Server first (it owns validation + Form__c.Primary_Context_Object__c),
-     *  then the spec: retarget surviving mappings, drop the rest. */
-    async _commitObject(objectApi, keep) {
+     *  then the spec: retarget surviving mappings, drop the rest, and prune
+     *  record rules that no longer resolve (SO-3 × SO-1). */
+    async _commitObject(objectApi, keep, liveFields) {
         try {
             await setContextObject({ formId: this.formId, objectApi });
         } catch (e) {
@@ -1068,6 +1083,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             } else {
                 delete spec.form.targetObject;
             }
+            pruneRecordRules(spec, objectApi ? liveFields : null);
             for (const { el } of mappedElements(spec)) {
                 if (objectApi && keep && keep.has(el.id)) {
                     el.mapping = { ...el.mapping, object: objectApi };
@@ -1733,6 +1749,21 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         const last = (this.spec.pages || []).length - 1;
         if (this.buildPageIndex > last) {
             this.buildPageIndex = Math.max(last, 0);
+        }
+        // undo/redo across a Connected-object commit: resync the derived
+        // state AND the Form__c mirror (the server write isn't in the
+        // snapshot — without this the mirror silently diverges, SO review)
+        const restored =
+            (this.spec.form && this.spec.form.targetObject) || null;
+        if (restored !== this.objectApi) {
+            this.objectApi = restored;
+            this._loadMappingFields();
+            setContextObject({
+                formId: this.formId,
+                objectApi: restored
+            }).catch(() => {
+                // best-effort: the next explicit card action re-syncs
+            });
         }
     }
 

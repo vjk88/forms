@@ -179,10 +179,11 @@ by default:
 - **Guest prefill is author opt-in per mapping** (`mapping.guestPrefill`, default OFF, shown
   as a "Prefill in guest links" toggle only when mapped): shipping a value into an input IS
   disclosure, so the author explicitly chooses which fields a link-holder may see.
-- **Guest writeback: REMOVED (owner ruling 2026-08-02 — supersedes the same-day in-scope
-  ruling).** Guest surveys NEVER update Salesforce records. Guests are strictly read-only
-  with respect to the record: rule verdicts + author-opted prefill values, nothing else.
-  Mapped writeback stays exactly what it is today — authenticated runners only.
+- **Guest writeback: TABLED (owner ruling 2026-08-02 — "we may need that later"; DEFERRED
+  #28 holds the design).** Not built in SO-4; nothing existing leaves the UI (the SO-2
+  direction control and mapped writeback for authenticated runners stay exactly as
+  shipped). Until un-tabled: guest surveys NEVER update Salesforce records — guests are
+  strictly read-only with respect to the record (rule verdicts + author-opted prefill).
   - **The escape hatch is the customer's own automation:** guest submits with a verified
     token stamp the record reference onto the `Form_Response__c` row SERVER-side (from the
     TOKEN, never client payload) — so an org admin who wants guest-driven record updates

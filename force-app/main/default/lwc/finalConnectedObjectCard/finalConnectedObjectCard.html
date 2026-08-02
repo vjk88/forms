@@ -19,6 +19,12 @@
             <template lwc:if={survivorNote}>
                 <p class="oc-sub">{survivorNote}</p>
             </template>
+            <template lwc:if={pending.published}>
+                <p class="oc-sub">
+                    Responses already collected keep their original object
+                    context — reporting across the change will span two objects.
+                </p>
+            </template>
             <div class="oc-actions">
                 <button
                     type="button"

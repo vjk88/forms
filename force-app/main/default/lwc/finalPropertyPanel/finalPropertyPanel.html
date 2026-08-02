@@ -325,7 +325,9 @@
                         <p class="pp-hint">
                             Also writes this answer to the connected object's
                             field on submit, and prefills it when the survey
-                            opens from a record.
+                            opens from a record. Writes apply only when the
+                            submitter can edit the field — otherwise the answer
+                            is kept but the record stays untouched.
                         </p>
                         <template lwc:if={isMapped}>
                             <span class="pp-label">Direction</span>
