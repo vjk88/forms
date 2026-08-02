@@ -86,6 +86,43 @@ export function shouldAdvanceOnKey(event, target) {
     return !event.ctrlKey && !event.metaKey;
 }
 
+/** Tags the advance decision can be made from directly. Everything else on
+ *  a composed path is wrapper noise — lightning internals nest the real
+ *  control inside primitive hosts (org probe 2026-08-01: an input Enter
+ *  reaches the renderer as lightning-primitive-input-simple, with the
+ *  decidable lightning-input one hop up the path). */
+const DECIDABLE_TAGS = new Set([
+    'input',
+    'textarea',
+    'select',
+    'button',
+    'a',
+    'lightning-input',
+    'lightning-textarea',
+    'lightning-input-rich-text',
+    'lightning-combobox'
+]);
+
+/**
+ * Walk the composed path to the first element the advance rules understand;
+ * fall back to the raw target when nothing on the path is decidable (the
+ * fail-safe in shouldAdvanceOnKey then refuses unknown hosts).
+ */
+export function resolveAdvanceOrigin(path, fallback) {
+    for (const n of path || []) {
+        if (!n || !n.tagName) {
+            continue; // shadow roots / document have no tagName
+        }
+        if (
+            DECIDABLE_TAGS.has(n.tagName.toLowerCase()) ||
+            n.isContentEditable
+        ) {
+            return n;
+        }
+    }
+    return fallback;
+}
+
 /**
  * True when the composed path crosses c-final-element-renderer. The renderer
  * resolves keyboard-advance inside its own shadow scope (where origins are
