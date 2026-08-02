@@ -95,6 +95,25 @@ describe('c-final-nav-one-at-a-time', () => {
         expect(progressText(cmp)).toBe('2 of 3');
     });
 
+    it('hiding an EARLIER screen keeps the user on the same screen (identity, not index)', async () => {
+        const cmp = await mount();
+        cmp.shadowRoot.querySelector('.primary-btn').click();
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('2 of 3'); // on s2
+
+        // a rule hides s1 — the list renumbers, the user must stay on s2
+        cmp.pages = [
+            {
+                id: 'p1',
+                sections: [{ id: 's2', elements: [] }]
+            },
+            { id: 'p2', sections: [{ id: 's3', elements: [] }] }
+        ];
+        await Promise.resolve();
+        // pre-fix: index 1 was kept, silently landing the user on s3
+        expect(progressText(cmp)).toBe('1 of 2');
+    });
+
     it('shrinking the screen list clamps the position (review F10)', async () => {
         const cmp = await mount();
         cmp.shadowRoot.querySelector('.primary-btn').click();

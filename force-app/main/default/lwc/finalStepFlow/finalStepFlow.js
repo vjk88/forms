@@ -31,6 +31,24 @@ export function clampIndex(index, screens) {
     return Math.max(0, Math.min(max, index));
 }
 
+/**
+ * Position stability across a pages re-pass (visibility rules re-filter the
+ * list live): the screen under the user is found again BY KEY — an earlier
+ * screen hiding or showing renumbers the list, and a raw index would land
+ * the user on a neighbor mid-typing. Falls back to the clamped index only
+ * when the current screen itself disappeared (the next one slides into its
+ * place).
+ */
+export function stableScreenIndex(currentScreen, oldIndex, screens) {
+    if (currentScreen) {
+        const at = screens.findIndex((s) => s.key === currentScreen.key);
+        if (at >= 0) {
+            return at;
+        }
+    }
+    return clampIndex(oldIndex, screens);
+}
+
 export function isLastScreen(index, screens) {
     return screens.length > 0 && index >= screens.length - 1;
 }
