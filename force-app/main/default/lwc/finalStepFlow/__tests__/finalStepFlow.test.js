@@ -1,6 +1,7 @@
 import {
     buildScreens,
     clampIndex,
+    stableScreenIndex,
     isLastScreen,
     shouldAdvanceOnKey,
     isMultilineTarget,
@@ -222,5 +223,20 @@ describe('buildScreens / clampIndex / isLastScreen', () => {
         expect(clampIndex(99, screens)).toBe(2);
         expect(isLastScreen(2, screens)).toBe(true);
         expect(isLastScreen(1, screens)).toBe(false);
+    });
+
+    it('stableScreenIndex re-locates the SAME screen by key when earlier screens hide', () => {
+        const screens = buildScreens(pages); // s1, s2, s3
+        // user on s2 (index 1); s1 hides → s2 is now index 0
+        const shrunk = buildScreens([
+            { id: 'p1', sections: [{ id: 's2' }] },
+            { id: 'p2', sections: [{ id: 's3' }] }
+        ]);
+        expect(stableScreenIndex(screens[1], 1, shrunk)).toBe(0);
+        // current screen itself vanished → clamped index (neighbor slides in)
+        const gone = buildScreens([{ id: 'p2', sections: [{ id: 's3' }] }]);
+        expect(stableScreenIndex(screens[1], 1, gone)).toBe(0);
+        // no current screen (first assignment) → plain clamp
+        expect(stableScreenIndex(undefined, 5, shrunk)).toBe(1);
     });
 });

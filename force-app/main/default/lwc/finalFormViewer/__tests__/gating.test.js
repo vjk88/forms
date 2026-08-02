@@ -298,18 +298,15 @@ describe('c-final-form-viewer gating (F8)', () => {
         );
 
         // typing 'hide' into the toggle hides page A — the visible list
-        // renumbers ([B, C]) and the view lands on C (index preserved)
+        // renumbers ([B, C]) but the view must STAY on B (identity, not
+        // index) with its revealed failure still showing. Pre-fix the view
+        // silently jumped to C (and, before #190, decorated it with a
+        // phantom "Last is required.").
         type(el, 'hide');
         await flush();
-        // pre-fix: reveal was stored as index 1 and now decorated C with a
-        // phantom "Last is required." the user never triggered
-        expect(deepQuery(el.shadowRoot, '.field-error')).toBeNull();
-
-        // B (now index 0) still owns its reveal — Back shows it, live
-        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
-            new CustomEvent('back')
-        );
-        await flush();
+        expect(
+            deepQuery(el.shadowRoot, 'c-final-element-renderer').element.label
+        ).toBe('Toggle');
         expect(deepQuery(el.shadowRoot, '.field-error').textContent).toBe(
             'Email is required.'
         );

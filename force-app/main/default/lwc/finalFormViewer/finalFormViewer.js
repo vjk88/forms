@@ -682,11 +682,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     handleValueChange(event) {
         const { elementId, value } = event.detail;
+        // The page under the user must stay THE SAME PAGE when this answer
+        // flips a visibility rule — hiding/showing an EARLIER page renumbers
+        // the filtered list, and a raw index would silently move the view
+        // (same identity law as _revealed). Re-locate by revealKey; fall
+        // back to the clamp only when the current page itself was hidden
+        // (the next page slides into its place).
+        const current = this.visiblePages[this.pageIndex];
+        const key = current ? current.revealKey : undefined;
         this.answers = { ...this.answers, [elementId]: value };
-        // a rule may have hidden the current page out from under us
-        const last = this.visiblePages.length - 1;
-        if (this.pageIndex > last) {
-            this.pageIndex = Math.max(last, 0);
+        const pages = this.visiblePages;
+        const at =
+            key !== undefined
+                ? pages.findIndex((p) => p.revealKey === key)
+                : -1;
+        if (at >= 0) {
+            this.pageIndex = at;
+        } else if (this.pageIndex > pages.length - 1) {
+            this.pageIndex = Math.max(pages.length - 1, 0);
         }
     }
 

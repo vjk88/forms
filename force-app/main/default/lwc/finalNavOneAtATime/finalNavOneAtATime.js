@@ -2,6 +2,7 @@ import { LightningElement, api, track } from 'lwc';
 import {
     buildScreens,
     clampIndex,
+    stableScreenIndex,
     isLastScreen,
     progressFraction,
     shouldAdvanceOnKey,
@@ -57,11 +58,17 @@ export default class FinalNavOneAtATime extends LightningElement {
         return this._pages;
     }
     set pages(value) {
+        const current = this._screens && this._screens[this.screenIndex];
         this._pages = value || [];
         this._screens = buildScreens(this._pages);
-        // Re-passing pages (P3 visibility rules will) must not teleport the
-        // user back to screen one — keep the position, clamped to the new list.
-        this.screenIndex = clampIndex(this.screenIndex, this._screens);
+        // Re-passing pages (visibility rules re-filter) must not move the
+        // user — the SAME screen is found again by key (an earlier screen
+        // hiding renumbers the list); clamp only if it vanished.
+        this.screenIndex = stableScreenIndex(
+            current,
+            this.screenIndex,
+            this._screens
+        );
     }
 
     get opts() {
