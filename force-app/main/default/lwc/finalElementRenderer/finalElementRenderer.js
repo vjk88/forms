@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { shouldAdvanceOnKey, isMultilineTarget } from 'c/finalStepFlow';
 
 /**
  * finalElementRenderer — one spec element.
@@ -59,6 +60,43 @@ const SCALE_SIZES = [5, 7, 10];
 
 export default class FinalElementRenderer extends LightningElement {
     @api element;
+
+    /** Keyboard-advance must be decided HERE: past this shadow boundary LWS
+     *  retargets keydown origins to this host, so a nav layout cannot tell
+     *  an input Enter from a chip Enter (org QA 2026-08-01 — chip Enter
+     *  advanced without selecting). Inside our own scope origins are still
+     *  real elements (or decidable lightning-* hosts); when one qualifies we
+     *  re-emit the semantic `advancekey`, and `advancefocus` mirrors the
+     *  multiline state for the helper wording. Navs ignore raw keydown /
+     *  focusin from this subtree (fromElementRenderer). */
+    constructor() {
+        super();
+        this.template.addEventListener('keydown', (event) => {
+            const origin = event.composedPath
+                ? event.composedPath()[0]
+                : event.target;
+            if (shouldAdvanceOnKey(event, origin)) {
+                this.dispatchEvent(
+                    new CustomEvent('advancekey', {
+                        bubbles: true,
+                        composed: true
+                    })
+                );
+            }
+        });
+        this.template.addEventListener('focusin', (event) => {
+            const origin = event.composedPath
+                ? event.composedPath()[0]
+                : event.target;
+            this.dispatchEvent(
+                new CustomEvent('advancefocus', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { multiline: isMultilineTarget(origin) }
+                })
+            );
+        });
+    }
 
     /** Scale-family local selection. MUST be a DECLARED field — LWC only
      *  tracks declared fields; an expando assignment never repaints (the

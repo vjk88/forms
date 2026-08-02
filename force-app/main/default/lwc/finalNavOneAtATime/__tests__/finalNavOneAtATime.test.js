@@ -37,6 +37,51 @@ describe('c-final-nav-one-at-a-time', () => {
         expect(progressText(cmp)).toBe('1 of 3');
     });
 
+    it('advancekey (element renderer verdict) advances only when keyboard mode is on', async () => {
+        const cmp = await mount();
+        cmp.options = { advanceTrigger: 'keyboard' };
+        await Promise.resolve();
+        const fire = () =>
+            cmp.shadowRoot.querySelector('.primary-btn').dispatchEvent(
+                new CustomEvent('advancekey', {
+                    bubbles: true,
+                    composed: true
+                })
+            );
+        fire();
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('2 of 3');
+
+        // keyboard mode off → the verdict is ignored
+        cmp.options = {};
+        await Promise.resolve();
+        fire();
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('2 of 3');
+    });
+
+    it('raw keydown retargeted to the renderer host is ignored (LWS: advancekey speaks instead)', async () => {
+        const cmp = await mount();
+        cmp.options = { advanceTrigger: 'keyboard' };
+        await Promise.resolve();
+        // simulate the org shape: Enter whose origin resolves to the host
+        const target = cmp.shadowRoot.querySelector('.primary-btn');
+        const evt = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true,
+            composed: true
+        });
+        Object.defineProperty(evt, 'composedPath', {
+            value: () => [
+                { tagName: 'C-FINAL-ELEMENT-RENDERER' },
+                { tagName: 'DIV' }
+            ]
+        });
+        target.dispatchEvent(evt);
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('1 of 3');
+    });
+
     it('re-assigning pages preserves the screen position (review F10)', async () => {
         const cmp = await mount();
         cmp.shadowRoot.querySelector('.primary-btn').click();
