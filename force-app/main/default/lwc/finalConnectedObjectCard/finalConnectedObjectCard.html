@@ -86,6 +86,79 @@
                     Disconnect
                 </button>
             </div>
+
+            <!-- SO-4: record links — a survey link tied to one record, with no
+                 record Id in the URL. -->
+            <div class="oc-links">
+                <p class="oc-links-head">Record links</p>
+                <p class="oc-sub">
+                    Send a link tied to one record — its visibility rules follow
+                    that record automatically, plus any answers you mark
+                    "Prefill in guest links" in a question's inspector. No
+                    record Id ever appears in the URL.
+                </p>
+                <div class="oc-linkrow">
+                    <input
+                        type="text"
+                        class="oc-search"
+                        aria-label="Record Id to link"
+                        placeholder="Record ID (15 or 18 characters)"
+                        value={linkRecordId}
+                        oninput={handleLinkRecordId}
+                    />
+                    <button
+                        type="button"
+                        class="oc-btn oc-primary"
+                        onclick={handleCreateLink}
+                        disabled={createLinkDisabled}
+                    >
+                        {createLabel}
+                    </button>
+                </div>
+                <template lwc:if={idHint}>
+                    <p class="oc-hint">{idHint}</p>
+                </template>
+                <template lwc:if={linkError}>
+                    <p class="oc-warn" role="alert">{linkError}</p>
+                </template>
+                <template lwc:if={mintedLink}>
+                    <div role="status" aria-live="polite">
+                        <p class="oc-links-head">
+                            Add this to the end of your published survey link
+                            (e.g. https://yoursite/s/survey then this):
+                        </p>
+                        <div class="oc-linkrow">
+                            <input
+                                type="text"
+                                class="oc-search oc-linkout"
+                                aria-label="Record link to copy"
+                                readonly
+                                value={mintedLink}
+                            />
+                            <button
+                                type="button"
+                                class="oc-btn"
+                                onclick={handleCopyLink}
+                            >
+                                {copyLabel}
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <template lwc:if={linkNotice}>
+                    <p class="oc-sub" role="status" aria-live="polite">
+                        {linkNotice}
+                    </p>
+                </template>
+                <button
+                    type="button"
+                    class="oc-btn oc-quiet"
+                    onclick={handleInvalidateLinks}
+                    disabled={linkBusy}
+                >
+                    Invalidate all links
+                </button>
+            </div>
         </template>
 
         <template lwc:else>

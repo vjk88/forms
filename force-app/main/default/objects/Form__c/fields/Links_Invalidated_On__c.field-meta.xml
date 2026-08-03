@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Links_Invalidated_On__c</fullName>
+    <description
+    >SO-4 mass kill-switch for guest record links. The "Invalidate all links" action stamps NOW; any survey link issued before this moment stops resolving its record context. Distinct from each link's own expiry (default 30 days, carried inside the token). Blank = no links have been invalidated.</description>
+    <externalId>false</externalId>
+    <label>Links Invalidated On</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

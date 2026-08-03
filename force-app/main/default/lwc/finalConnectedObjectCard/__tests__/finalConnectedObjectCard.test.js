@@ -47,9 +47,9 @@ describe('connected object card (SO-1)', () => {
         const el = mount({ objectApi: 'Contact', mappedCount: 3 });
         expect(text(el, '.oc-title')).toBe('Contact');
         expect(text(el, '.oc-sub')).toBe('3 questions mapped');
-        const btns = [...el.shadowRoot.querySelectorAll('.oc-btn')].map((b) =>
-            b.textContent.trim()
-        );
+        const btns = [
+            ...el.shadowRoot.querySelectorAll('.oc-actions .oc-btn')
+        ].map((b) => b.textContent.trim());
         expect(btns).toEqual(['Change…', 'Disconnect']);
     });
 
@@ -64,6 +64,48 @@ describe('connected object card (SO-1)', () => {
         expect(rows.length).toBe(2);
         rows[1].click();
         expect(seen).toEqual([{ objectApi: 'Job_Application__c' }]);
+    });
+
+    it('SO-4: Create link emits mintlink with the typed record Id', async () => {
+        const el = mount({ objectApi: 'Job_Application__c', mappedCount: 1 });
+        const seen = [];
+        el.addEventListener('mintlink', (e) => seen.push(e.detail));
+        const input = el.shadowRoot.querySelector('.oc-linkrow .oc-search');
+        input.value = 'a01000000000001AAA';
+        input.dispatchEvent(new CustomEvent('input'));
+        await flush(); // let the button un-disable before we click it
+        el.shadowRoot.querySelector('.oc-links .oc-primary').click();
+        expect(seen).toEqual([{ recordId: 'a01000000000001AAA' }]);
+    });
+
+    it('SO-4: Create link stays disabled until the Id looks valid', () => {
+        const el = mount({ objectApi: 'Job_Application__c' });
+        const btn = el.shadowRoot.querySelector('.oc-links .oc-primary');
+        expect(btn.disabled).toBe(true);
+        const input = el.shadowRoot.querySelector('.oc-linkrow .oc-search');
+        input.value = 'a01000000000001AAA';
+        input.dispatchEvent(new CustomEvent('input'));
+        return Promise.resolve().then(() => {
+            expect(
+                el.shadowRoot.querySelector('.oc-links .oc-primary').disabled
+            ).toBe(false);
+        });
+    });
+
+    it('SO-4: a minted link is shown read-only and Invalidate relays its event', () => {
+        const el = mount({
+            objectApi: 'Job_Application__c',
+            mintedLink: '?c__formId=a0X&c__rt=TOKEN'
+        });
+        const out = el.shadowRoot.querySelector('.oc-linkout');
+        expect(out).not.toBeNull();
+        expect(out.value).toBe('?c__formId=a0X&c__rt=TOKEN');
+        const seen = [];
+        el.addEventListener('invalidatelinks', () => seen.push('x'));
+        [...el.shadowRoot.querySelectorAll('.oc-links .oc-quiet')]
+            .find((b) => b.textContent.trim() === 'Invalidate all links')
+            .click();
+        expect(seen).toEqual(['x']);
     });
 
     it('pending state lists casualties and relays confirm/cancel', () => {

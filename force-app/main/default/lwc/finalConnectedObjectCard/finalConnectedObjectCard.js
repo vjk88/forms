@@ -17,11 +17,35 @@ export default class FinalConnectedObjectCard extends LightningElement {
     @api pending;
     /** Server-refusal message from the studio ('' = none). */
     @api errorText;
+    /** SO-4: the last minted record-link query string (studio sets it after a
+     *  successful mint) — shown read-only with a Copy button. Clearing the
+     *  typed Id on arrival stops a silent re-mint of the same record. */
+    @api
+    get mintedLink() {
+        return this._mintedLink;
+    }
+    set mintedLink(value) {
+        if (value && value !== this._mintedLink) {
+            this.linkRecordId = '';
+        }
+        this._mintedLink = value;
+    }
+    /** SO-4: true while a mint / invalidate Apex call is in flight. */
+    @api linkBusy;
+    /** SO-4: a mint failure, shown next to Create (not at the card top). */
+    @api linkError;
+    /** SO-4: a transient confirmation after Invalidate all links. */
+    @api linkNotice;
 
     picking = false;
     search = '';
     objects = null;
     loadFailed = false;
+    _mintedLink;
+    /** SO-4: the record Id the author typed to mint a link for. */
+    linkRecordId = '';
+    /** SO-4: brief "Copied!" state on the Copy button. */
+    copied = false;
 
     get isPending() {
         return Boolean(this.pending);
@@ -138,5 +162,69 @@ export default class FinalConnectedObjectCard extends LightningElement {
 
     handleCancel() {
         this.dispatchEvent(new CustomEvent('objectcancel'));
+    }
+
+    // ----- SO-4 record links -----
+
+    get createLinkDisabled() {
+        const id = (this.linkRecordId || '').trim();
+        return this.linkBusy || (id.length !== 15 && id.length !== 18);
+    }
+
+    get createLabel() {
+        return this.linkBusy ? 'Creating…' : 'Create link';
+    }
+
+    get copyLabel() {
+        return this.copied ? 'Copied!' : 'Copy';
+    }
+
+    /** A wrong-length, non-empty Id gets an inline nudge (Create also stays
+     *  disabled); an empty box stays quiet. */
+    get idHint() {
+        const id = (this.linkRecordId || '').trim();
+        if (!id || id.length === 15 || id.length === 18) {
+            return '';
+        }
+        return 'Enter a 15- or 18-character record Id.';
+    }
+
+    handleLinkRecordId(event) {
+        this.linkRecordId = event.target.value;
+    }
+
+    handleCreateLink() {
+        const recordId = (this.linkRecordId || '').trim();
+        if (recordId.length !== 15 && recordId.length !== 18) {
+            return;
+        }
+        this.dispatchEvent(
+            new CustomEvent('mintlink', { detail: { recordId } })
+        );
+    }
+
+    handleInvalidateLinks() {
+        this.dispatchEvent(new CustomEvent('invalidatelinks'));
+    }
+
+    handleCopyLink() {
+        if (!this.mintedLink) {
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(this.mintedLink);
+            this.copied = true;
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => {
+                this.copied = false;
+            }, 1500);
+            return;
+        }
+        // clipboard blocked (common inside the VF iframe): select the text so
+        // the author can Ctrl/Cmd-C it themselves
+        const out = this.template.querySelector('.oc-linkout');
+        if (out && out.select) {
+            out.select();
+        }
     }
 }

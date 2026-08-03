@@ -1,6 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import getGuestSpec from '@salesforce/apex/FinalGuestController.getGuestSpec';
+import getGuestRecordContext from '@salesforce/apex/FinalGuestController.getGuestRecordContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 
 /**
@@ -24,13 +25,19 @@ export default class FinalGuestHost extends LightningElement {
 
     spec;
     error;
+    /** SO-4: record-context verdicts + author-opted prefill (from the ?c__rt=
+     *  link token, resolved server-side) fed into the viewer. */
+    recordContext;
     _urlFormId;
+    _token;
     _loadedKey;
 
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
         if (ref && ref.state) {
             this._urlFormId = ref.state.formId || ref.state.c__formId;
+            // SO-4 record link token (opaque, encrypted; server resolves it).
+            this._token = ref.state.c__rt || ref.state.rt || null;
         }
         this._load();
     }
@@ -109,6 +116,19 @@ export default class FinalGuestHost extends LightningElement {
             }
             this.spec = parsed;
             this.error = undefined;
+            // SO-4: a record link (?c__rt=) resolves server-side to rule
+            // verdicts + author-opted prefill. Best-effort — a stale/forged
+            // token yields an empty context and the survey renders as a plain
+            // link (record rules read "no match").
+            if (this._token) {
+                getGuestRecordContext({ formId, token: this._token })
+                    .then((ctx) => {
+                        this.recordContext = ctx || undefined;
+                    })
+                    .catch(() => {
+                        this.recordContext = undefined;
+                    });
+            }
         } catch (e) {
             this.spec = undefined;
             this.error =
@@ -132,14 +152,21 @@ export default class FinalGuestHost extends LightningElement {
         // Merge the honeypot value into meta.hp — the viewer builds the payload
         // and knows nothing of the bait; the host owns it (server checks it).
         const hpField = this.refs.honeypot;
-        const withHp = {
+        const withMeta = {
             ...payload,
-            meta: { ...(payload.meta || {}), hp: hpField ? hpField.value : '' }
+            meta: {
+                ...(payload.meta || {}),
+                hp: hpField ? hpField.value : '',
+                // SO-4: the link token rides meta.rt (same channel as hp); the
+                // server re-validates it and stamps the record ref from the
+                // TOKEN, never a raw client recordId.
+                ...(this._token ? { rt: this._token } : {})
+            }
         };
         try {
             await submitGuest({
                 formId: this.effectiveFormId,
-                payloadJson: JSON.stringify(withHp)
+                payloadJson: JSON.stringify(withMeta)
             });
             if (viewer) {
                 viewer.completeSubmit();
