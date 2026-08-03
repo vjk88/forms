@@ -230,12 +230,7 @@ public with sharing class FinalSurveyObjectController {
             String field = source.substring(7);
             String operator = (String) row.get('operator');
             Object value = row.get('value');
-            String key =
-                source +
-                '|' +
-                operator +
-                '|' +
-                (value == null ? '' : String.valueOf(value));
+            String key = factKey(source, operator, value);
             Schema.SObjectField fTok = fieldMap.get(field.toLowerCase());
             Object actual = (rec == null ||
                 fTok == null)
@@ -254,9 +249,22 @@ public with sharing class FinalSurveyObjectController {
         return out;
     }
 
+    /** The SAME fact key the client engine builds (finalExpressionEngine
+     *  `factKey`): `source|operator|value` (null value → ''). Shared so the
+     *  guest path (FinalGuestContextService) and the internal path key
+     *  verdicts identically. */
+    public static String factKey(String source, String operator, Object value) {
+        return source +
+            '|' +
+            operator +
+            '|' +
+            (value == null ? '' : String.valueOf(value));
+    }
+
     /** Walk pages/sections/elements for visibility configs AND validation
-     *  `when` gates; collect rows whose source is `record:<Field>`. */
-    private static List<Map<String, Object>> recordRuleRows(
+     *  `when` gates; collect rows whose source is `record:<Field>`. Public so
+     *  the guest context service reuses ONE rule walker (no divergence). */
+    public static List<Map<String, Object>> recordRuleRows(
         Map<String, Object> spec
     ) {
         List<Map<String, Object>> out = new List<Map<String, Object>>();
@@ -315,9 +323,9 @@ public with sharing class FinalSurveyObjectController {
      * apply only to answer rows): numeric fields compare as decimals, dates
      * as dates, everything else as strings (contains = case-insensitive).
      * Unknown field / unparseable comparison → false (fail safe, §7).
+     * Public so the guest context service scores rows with the SAME coercion.
      */
-    @TestVisible
-    private static Boolean rowMatches(
+    public static Boolean rowMatches(
         String operator,
         Object actual,
         Object value,
@@ -482,6 +490,54 @@ public with sharing class FinalSurveyObjectController {
                         obj != null &&
                         obj.equalsIgnoreCase(targetObject) &&
                         modeAllows((String) mapping.get('mode'), direction)
+                    ) {
+                        out.put(elId, field);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * SO-4: the guest-prefill subset — mapped fields the author explicitly
+     * opted into a guest link (`mapping.guestPrefill === true`) AND that
+     * participate in the read (prefill) direction. Shipping a value into an
+     * input IS disclosure, so this is per-field opt-in, default OFF: a guest
+     * link never reveals a field the author didn't check.
+     */
+    public static Map<String, String> guestPrefillFields(
+        Map<String, Object> spec,
+        String targetObject
+    ) {
+        Map<String, String> out = new Map<String, String>();
+        for (Object pageObj : toList(spec.get('pages'))) {
+            Map<String, Object> page = toMap(pageObj);
+            if (page == null) {
+                continue;
+            }
+            for (Object secObj : toList(page.get('sections'))) {
+                Map<String, Object> sec = toMap(secObj);
+                if (sec == null || toMap(sec.get('repeat')) != null) {
+                    continue;
+                }
+                for (Object elObj : toList(sec.get('elements'))) {
+                    Map<String, Object> el = toMap(elObj);
+                    Map<String, Object> mapping = el == null
+                        ? null
+                        : toMap(el.get('mapping'));
+                    String elId = el == null ? null : (String) el.get('id');
+                    if (mapping == null || elId == null) {
+                        continue;
+                    }
+                    String obj = (String) mapping.get('object');
+                    String field = (String) mapping.get('field');
+                    if (
+                        mapping.get('guestPrefill') == true &&
+                        String.isNotBlank(field) &&
+                        obj != null &&
+                        obj.equalsIgnoreCase(targetObject) &&
+                        modeAllows((String) mapping.get('mode'), 'read')
                     ) {
                         out.put(elId, field);
                     }

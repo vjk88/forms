@@ -348,6 +348,17 @@
                                 </template>
                             </div>
                         </template>
+                        <template lwc:if={showGuestPrefill}>
+                            <lightning-input
+                                type="toggle"
+                                label="Prefill in guest links"
+                                checked={guestPrefillOn}
+                                message-toggle-active=""
+                                message-toggle-inactive=""
+                                field-level-help="When someone opens a record link (a survey link tied to a specific record), this field's current value is filled in for them. Off by default — only turn it on for values that are safe to show whoever holds the link."
+                                onchange={handleGuestPrefill}
+                            ></lightning-input>
+                        </template>
                     </div>
                 </template>
 

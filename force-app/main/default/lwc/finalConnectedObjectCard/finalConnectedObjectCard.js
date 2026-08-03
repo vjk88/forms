@@ -17,11 +17,18 @@ export default class FinalConnectedObjectCard extends LightningElement {
     @api pending;
     /** Server-refusal message from the studio ('' = none). */
     @api errorText;
+    /** SO-4: the last minted record-link query string (studio sets it after a
+     *  successful mint) — shown read-only with a Copy button. */
+    @api mintedLink;
+    /** SO-4: true while a mint / invalidate Apex call is in flight. */
+    @api linkBusy;
 
     picking = false;
     search = '';
     objects = null;
     loadFailed = false;
+    /** SO-4: the record Id the author typed to mint a link for. */
+    linkRecordId = '';
 
     get isPending() {
         return Boolean(this.pending);
@@ -138,5 +145,40 @@ export default class FinalConnectedObjectCard extends LightningElement {
 
     handleCancel() {
         this.dispatchEvent(new CustomEvent('objectcancel'));
+    }
+
+    // ----- SO-4 record links -----
+
+    get createLinkDisabled() {
+        const id = (this.linkRecordId || '').trim();
+        return this.linkBusy || (id.length !== 15 && id.length !== 18);
+    }
+
+    handleLinkRecordId(event) {
+        this.linkRecordId = event.target.value;
+    }
+
+    handleCreateLink() {
+        const recordId = (this.linkRecordId || '').trim();
+        if (recordId.length !== 15 && recordId.length !== 18) {
+            return;
+        }
+        this.dispatchEvent(
+            new CustomEvent('mintlink', { detail: { recordId } })
+        );
+    }
+
+    handleInvalidateLinks() {
+        this.dispatchEvent(new CustomEvent('invalidatelinks'));
+    }
+
+    handleCopyLink() {
+        if (
+            this.mintedLink &&
+            navigator.clipboard &&
+            navigator.clipboard.writeText
+        ) {
+            navigator.clipboard.writeText(this.mintedLink);
+        }
     }
 }

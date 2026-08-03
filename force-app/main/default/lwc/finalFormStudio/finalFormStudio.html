@@ -178,6 +178,7 @@
                                 mapping-fields={mappingFields}
                                 onmappingchange={handleMappingChange}
                                 onmappingmodechange={handleMappingModeChange}
+                                onguestprefillchange={handleGuestPrefillChange}
                                 onpropchange={handlePropChange}
                                 onconfigchange={handleConfigChange}
                                 onrepeatchange={handleRepeatChange}
@@ -194,10 +195,14 @@
                                 mapped-count={mappedCount}
                                 pending={objectPending}
                                 error-text={objectError}
+                                minted-link={mintedLink}
+                                link-busy={linkBusy}
                                 onobjectpick={handleObjectPick}
                                 onobjectclear={handleObjectClear}
                                 onobjectconfirm={handleObjectConfirm}
                                 onobjectcancel={handleObjectCancel}
+                                onmintlink={handleMintLink}
+                                oninvalidatelinks={handleInvalidateLinks}
                             ></c-final-connected-object-card>
                         </template>
                         <c-final-field-palette

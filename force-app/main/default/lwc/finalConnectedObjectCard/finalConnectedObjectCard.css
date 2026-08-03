@@ -149,3 +149,38 @@
     font-size: 0.6875rem;
     color: #64748b;
 }
+
+/* SO-4 record links */
+.oc-links {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.oc-links-head {
+    margin: 0 0 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.oc-linkrow {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.oc-linkrow .oc-search {
+    flex: 1;
+    min-width: 0;
+}
+
+.oc-linkrow .oc-btn {
+    flex: none;
+}
+
+.oc-linkout {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #0f766e;
+}

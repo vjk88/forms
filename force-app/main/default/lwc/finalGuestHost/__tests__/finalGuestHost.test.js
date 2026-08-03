@@ -1,6 +1,8 @@
 import { createElement } from 'lwc';
+import { CurrentPageReference } from 'lightning/navigation';
 import FinalGuestHost from 'c/finalGuestHost';
 import getGuestSpec from '@salesforce/apex/FinalGuestController.getGuestSpec';
+import getGuestRecordContext from '@salesforce/apex/FinalGuestController.getGuestRecordContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 
 jest.mock('c/finalThemeCatalog', () => ({
@@ -8,6 +10,11 @@ jest.mock('c/finalThemeCatalog', () => ({
 }));
 jest.mock(
     '@salesforce/apex/FinalGuestController.getGuestSpec',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalGuestController.getGuestRecordContext',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -57,6 +64,11 @@ function mount(formId) {
 }
 
 describe('c-final-guest-host (guest site host, A2)', () => {
+    beforeEach(() => {
+        // reset the page-ref wire so a token emitted by one test never bleeds
+        // into the next (the adapter retains its last value)
+        CurrentPageReference.emit(undefined);
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);
@@ -205,6 +217,65 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         await flush();
         await flush();
         expect(el.shadowRoot.querySelector('.hp-field')).toBeNull();
+    });
+
+    it('SO-4: a ?c__rt= token fetches the record context and injects it into the viewer', async () => {
+        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRecordContext.mockResolvedValue({
+            prefill: { el_ln: 'Ada' },
+            ruleFacts: { 'record:Plan__c|equals|Pro': true }
+        });
+        const el = createElement('c-final-guest-host', { is: FinalGuestHost });
+        document.body.appendChild(el);
+        CurrentPageReference.emit({
+            state: { c__formId: 'a0Xtok', c__rt: 'TOKEN123' }
+        });
+        await flush();
+        await flush();
+        await flush();
+
+        expect(getGuestRecordContext).toHaveBeenCalledWith({
+            formId: 'a0Xtok',
+            token: 'TOKEN123'
+        });
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        expect(viewer.recordContext).toEqual({
+            prefill: { el_ln: 'Ada' },
+            ruleFacts: { 'record:Plan__c|equals|Pro': true }
+        });
+    });
+
+    it('SO-4: a token-carrying submit sends it as meta.rt (server re-validates)', async () => {
+        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRecordContext.mockResolvedValue({ prefill: {}, ruleFacts: {} });
+        submitGuest.mockResolvedValue({ success: true, childCount: 0 });
+        const el = createElement('c-final-guest-host', { is: FinalGuestHost });
+        document.body.appendChild(el);
+        CurrentPageReference.emit({
+            state: { c__formId: 'a0Xtok', c__rt: 'TOKEN123' }
+        });
+        await flush();
+        await flush();
+        await flush();
+
+        const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+        viewer.dispatchEvent(
+            new CustomEvent('submitrequest', {
+                detail: { payload: { answers: { el_ln: 'X' }, meta: {} } }
+            })
+        );
+        await flush();
+
+        const sent = JSON.parse(submitGuest.mock.calls[0][0].payloadJson);
+        expect(sent.meta.rt).toBe('TOKEN123');
+    });
+
+    it('SO-4: no token → getGuestRecordContext is never called', async () => {
+        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        mount('a0Xplain');
+        await flush();
+        await flush();
+        expect(getGuestRecordContext).not.toHaveBeenCalled();
     });
 
     it('delegated submit failure: passes the message to the viewer', async () => {

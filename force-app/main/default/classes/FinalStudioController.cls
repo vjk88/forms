@@ -307,6 +307,99 @@ public with sharing class FinalStudioController {
     }
 
     /**
+     * SO-4: mint a guest record link for a specific record of the survey's
+     * connected object. The minter must be able to READ the record
+     * (USER_MODE) — you can't issue a link for data you can't see (spec
+     * invariant 4). Returns the token + a ready-to-append query string; the
+     * studio composes the full URL against the survey's public base.
+     */
+    @AuraEnabled
+    public static Map<String, Object> mintRecordLink(Id formId, Id recordId) {
+        if (formId == null || recordId == null) {
+            throw new AuraHandledException('A form and record are required.');
+        }
+        List<Form__c> forms = [
+            SELECT Id, Form_Type__c, Primary_Context_Object__c
+            FROM Form__c
+            WHERE Id = :formId
+            WITH USER_MODE
+            LIMIT 1
+        ];
+        if (forms.isEmpty()) {
+            throw new AuraHandledException('FORM_NOT_FOUND');
+        }
+        Form__c f = forms[0];
+        if (f.Form_Type__c != 'Survey') {
+            throw new AuraHandledException('Record links are for surveys.');
+        }
+        String targetObject = f.Primary_Context_Object__c;
+        if (String.isBlank(targetObject)) {
+            throw new AuraHandledException(
+                'Connect an object before creating record links.'
+            );
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe()
+            .get(targetObject.toLowerCase());
+        if (t == null || recordId.getSObjectType() != t) {
+            throw new AuraHandledException(
+                'That record does not belong to this survey\'s object.'
+            );
+        }
+        // USER_MODE read gate: the minter must actually be able to see it.
+        List<SObject> visible = Database.queryWithBinds(
+            'SELECT Id FROM ' + targetObject + ' WHERE Id = :rid LIMIT 1',
+            new Map<String, Object>{ 'rid' => recordId },
+            AccessLevel.USER_MODE
+        );
+        if (visible.isEmpty()) {
+            throw new AuraHandledException(
+                'You can\'t create a link for a record you don\'t have access to.'
+            );
+        }
+        String token = FinalSurveyTokenService.mint(
+            formId,
+            recordId,
+            t.getDescribe().getName()
+        );
+        return new Map<String, Object>{
+            'token' => token,
+            'query' => '?c__formId=' +
+            formId +
+            '&c__rt=' +
+            token
+        };
+    }
+
+    /**
+     * SO-4 mass kill switch: stamp Links_Invalidated_On__c = NOW so every
+     * record link ALREADY minted stops resolving its context. New links still
+     * work (their issuedAt is after the cutoff). Surveys only.
+     */
+    @AuraEnabled
+    public static Datetime invalidateLinks(Id formId) {
+        if (formId == null) {
+            throw new AuraHandledException('A form Id is required.');
+        }
+        List<Form__c> forms = [
+            SELECT Id, Form_Type__c
+            FROM Form__c
+            WHERE Id = :formId
+            WITH USER_MODE
+            LIMIT 1
+        ];
+        if (forms.isEmpty()) {
+            throw new AuraHandledException('FORM_NOT_FOUND');
+        }
+        if (forms[0].Form_Type__c != 'Survey') {
+            throw new AuraHandledException('Record links are for surveys.');
+        }
+        Datetime now = Datetime.now();
+        forms[0].Links_Invalidated_On__c = now;
+        update as user forms;
+        return now;
+    }
+
+    /**
      * Ensure every file linked to the form has a public ContentDistribution
      * (idempotent). Best-effort: a failure here must never block enabling
      * guest access — an un-minted image simply stays internal-only until it is

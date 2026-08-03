@@ -86,6 +86,62 @@
                     Disconnect
                 </button>
             </div>
+
+            <!-- SO-4: record links — a survey link tied to one record, with no
+                 record Id in the URL (rules + prefill follow the record). -->
+            <div class="oc-links">
+                <p class="oc-links-head">Record links</p>
+                <p class="oc-sub">
+                    Send a link tied to one record — its visibility rules and
+                    prefilled answers follow the record, with no record Id in
+                    the URL.
+                </p>
+                <div class="oc-linkrow">
+                    <input
+                        type="text"
+                        class="oc-search"
+                        placeholder="Record ID (15 or 18 characters)"
+                        value={linkRecordId}
+                        oninput={handleLinkRecordId}
+                    />
+                    <button
+                        type="button"
+                        class="oc-btn oc-primary"
+                        onclick={handleCreateLink}
+                        disabled={createLinkDisabled}
+                    >
+                        Create link
+                    </button>
+                </div>
+                <template lwc:if={mintedLink}>
+                    <p class="oc-links-head">
+                        Ready to send — append to your survey URL:
+                    </p>
+                    <div class="oc-linkrow">
+                        <input
+                            type="text"
+                            class="oc-search oc-linkout"
+                            readonly
+                            value={mintedLink}
+                        />
+                        <button
+                            type="button"
+                            class="oc-btn"
+                            onclick={handleCopyLink}
+                        >
+                            Copy
+                        </button>
+                    </div>
+                </template>
+                <button
+                    type="button"
+                    class="oc-btn oc-quiet"
+                    onclick={handleInvalidateLinks}
+                    disabled={linkBusy}
+                >
+                    Invalidate all links
+                </button>
+            </div>
         </template>
 
         <template lwc:else>

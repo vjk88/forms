@@ -115,10 +115,162 @@ public without sharing class FinalGuestController {
             FinalSubmitService.Posture.GUEST
         );
 
+        // SO-4: a token-carrying guest submit STAMPS the record reference onto
+        // the response — server-side, from the VERIFIED TOKEN, never a raw
+        // client recordId. The token rides `meta.rt` (same channel as the
+        // honeypot `meta.hp`); the server re-validates it cryptographically, so
+        // the ref is trustworthy no matter that the client carried the token.
+        // Guests still never touch the business record (invariant 5); this only
+        // links our own Form_Response__c so the customer's Flow can act on it.
+        // Best-effort: the response is already saved, so a failure only logs.
+        Map<String, Object> tokenMeta = asMap(payload.get('meta'));
+        String token = tokenMeta == null ? null : (String) tokenMeta.get('rt');
+        stampRecordRef(formId, token, spec, outcome.recordId);
+
         GuestSubmitResult res = new GuestSubmitResult();
         res.success = true;
         res.childCount = outcome.childCount;
         return res;
+    }
+
+    /**
+     * SO-4 guest record context: verdicts + author-opted prefill for a
+     * link-holder. Any failure (no token, forged/expired/revoked, wrong form,
+     * wrong object) degrades to an EMPTY context — the survey still renders and
+     * record rows read "no match", indistinguishable from a plain link. The
+     * survey must never break because a link went stale.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getGuestRecordContext(
+        Id formId,
+        String token
+    ) {
+        Map<String, Object> empty = new Map<String, Object>{
+            'prefill' => new Map<String, Object>(),
+            'ruleFacts' => new Map<String, Boolean>()
+        };
+        try {
+            gate(formId); // published + guest-enabled, same hard gate
+            Form_Version__c version = activeVersion(formId);
+            Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+            String targetObject = surveyTargetObject(spec);
+            if (String.isBlank(targetObject)) {
+                return empty;
+            }
+            FinalSurveyTokenService.Claims c = validClaims(
+                formId,
+                token,
+                targetObject
+            );
+            if (c == null) {
+                return empty;
+            }
+            return FinalGuestContextService.compute(
+                spec,
+                targetObject,
+                c.recordId
+            );
+        } catch (Exception e) {
+            return empty; // never leak why; never block the render
+        }
+    }
+
+    // ----- SO-4 token helpers -----
+
+    /** Resolve + fully validate a guest link token against this form and its
+     *  object: signature, form match, expiry, the per-form kill switch
+     *  (Links_Invalidated_On__c), and record sObjectType. null = not usable. */
+    private static FinalSurveyTokenService.Claims validClaims(
+        Id formId,
+        String token,
+        String targetObject
+    ) {
+        FinalSurveyTokenService.Claims c = FinalSurveyTokenService.resolve(
+            token
+        );
+        if (c == null || c.formId != formId) {
+            return null;
+        }
+        Long now = Datetime.now().getTime();
+        if (c.expiry != null && c.expiry < now) {
+            return null; // per-link expiry passed
+        }
+        // mass kill switch: any link issued before the cutoff is dead
+        List<Form__c> forms = [
+            SELECT Links_Invalidated_On__c
+            FROM Form__c
+            WHERE Id = :formId
+            LIMIT 1
+        ];
+        if (!forms.isEmpty() && forms[0].Links_Invalidated_On__c != null) {
+            Long cutoff = forms[0].Links_Invalidated_On__c.getTime();
+            // <= so a link issued AT the cutoff instant is dead too:
+            // revocation wins ties (safer boundary than letting it survive).
+            if (c.issuedAt == null || c.issuedAt <= cutoff) {
+                return null;
+            }
+        }
+        // the record must belong to THIS survey's object
+        Schema.SObjectType t = Schema.getGlobalDescribe()
+            .get(targetObject.toLowerCase());
+        if (t == null || c.recordId.getSObjectType() != t) {
+            return null;
+        }
+        return c;
+    }
+
+    /** Stamp the token-sourced record ref onto the just-created response. */
+    private static void stampRecordRef(
+        Id formId,
+        String token,
+        Map<String, Object> spec,
+        Id responseId
+    ) {
+        String targetObject = surveyTargetObject(spec);
+        if (
+            String.isBlank(token) ||
+            String.isBlank(targetObject) ||
+            responseId == null ||
+            responseId.getSObjectType() != Form_Response__c.SObjectType
+        ) {
+            return;
+        }
+        FinalSurveyTokenService.Claims c = validClaims(
+            formId,
+            token,
+            targetObject
+        );
+        if (c == null) {
+            return;
+        }
+        try {
+            Database.update(
+                new List<Form_Response__c>{
+                    new Form_Response__c(
+                        Id = responseId,
+                        Related_Record_Id__c = String.valueOf(c.recordId),
+                        Related_Record_Type__c = targetObject
+                    )
+                },
+                true,
+                AccessLevel.SYSTEM_MODE
+            );
+        } catch (Exception e) {
+            System.debug(
+                LoggingLevel.WARN,
+                'SO-4 record-ref stamp skipped: ' + e.getMessage()
+            );
+        }
+    }
+
+    /** targetObject for a survey spec, or null (forms/no object). */
+    private static String surveyTargetObject(Map<String, Object> spec) {
+        Map<String, Object> form = asMap(spec.get('form'));
+        if (form == null || form.get('type') != 'survey') {
+            return null;
+        }
+        String obj = (String) form.get('targetObject');
+        return String.isBlank(obj) ? null : obj;
     }
 
     // ----- spam (A3) — availability helpers moved to FinalSubmitService

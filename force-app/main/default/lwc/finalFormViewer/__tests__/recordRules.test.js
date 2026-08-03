@@ -117,4 +117,21 @@ describe('record-rule verdicts in the viewer (SO-3)', () => {
         const cmp = await mount(null);
         expect(visibleElementIds(cmp)).toEqual(['el_open']);
     });
+
+    it('SO-4: injected recordContext (guest path) un-hides the gated question without an Apex call', async () => {
+        const cmp = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        cmp.delegateSubmit = true; // guest host owns the fetch; viewer never calls Apex
+        cmp.recordContext = {
+            prefill: {},
+            ruleFacts: { 'record:Plan__c|equals|Enterprise': true }
+        };
+        cmp.spec = SPEC();
+        document.body.appendChild(cmp);
+        await flush();
+        await flush();
+        await flush();
+        expect(visibleElementIds(cmp)).toEqual(['el_open', 'el_gated']);
+    });
 });

@@ -7,6 +7,8 @@ import setContextObject from '@salesforce/apex/FinalStudioController.setContextO
 import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
+import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
+import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
@@ -777,6 +779,72 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         });
     }
 
+    /** SO-4: per-field guest-link prefill opt-in. Like `mode`, the OFF state
+     *  stays off the spec (default = not disclosed) so specs stay minimal. */
+    handleGuestPrefillChange(event) {
+        const on = event.detail.value;
+        this._patchSelection((t) => {
+            if (!t.node.mapping) {
+                return;
+            }
+            if (on) {
+                t.node.mapping = { ...t.node.mapping, guestPrefill: true };
+            } else {
+                const next = { ...t.node.mapping };
+                delete next.guestPrefill;
+                t.node.mapping = next;
+            }
+        });
+    }
+
+    // ---- SO-4: record link mint / invalidate (card actions) ----
+
+    async handleMintLink(event) {
+        const recordId = event.detail && event.detail.recordId;
+        if (!recordId || this.linkBusy) {
+            return;
+        }
+        this.linkBusy = true;
+        this.objectError = '';
+        this.mintedLink = null;
+        try {
+            const res = await mintRecordLink({ formId: this.formId, recordId });
+            this.mintedLink = res && res.query ? res.query : null;
+        } catch (e) {
+            this.objectError =
+                (e && e.body && e.body.message) || "Couldn't create that link.";
+        } finally {
+            this.linkBusy = false;
+        }
+    }
+
+    async handleInvalidateLinks() {
+        if (this.linkBusy) {
+            return;
+        }
+        const ok = await LightningConfirm.open({
+            message:
+                'Invalidate every record link already sent for this survey? ' +
+                'Links you create afterward will still work; ones already out ' +
+                'there will stop opening their record context.',
+            label: 'Invalidate all links'
+        });
+        if (!ok) {
+            return;
+        }
+        this.linkBusy = true;
+        this.objectError = '';
+        try {
+            await invalidateLinks({ formId: this.formId });
+            this.mintedLink = null;
+        } catch (e) {
+            this.objectError =
+                (e && e.body && e.body.message) || "Couldn't invalidate links.";
+        } finally {
+            this.linkBusy = false;
+        }
+    }
+
     handleRepeatChange(event) {
         const patch = event.detail.patch || {};
         this._patchSelection((t) => {
@@ -971,6 +1039,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     objectPending = null;
     objectError = '';
     _pendingCommit = null;
+
+    /** SO-4: last minted record-link query string (shown on the card). */
+    mintedLink = null;
+    /** SO-4: a mint / invalidate call is in flight. */
+    linkBusy = false;
 
     get mappedCount() {
         return this.spec ? mappedElements(this.spec).length : 0;

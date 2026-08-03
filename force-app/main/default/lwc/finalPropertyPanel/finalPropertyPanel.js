@@ -366,6 +366,27 @@ export default class FinalPropertyPanel extends LightningElement {
         );
     }
 
+    // ---- SO-4: guest-link prefill opt-in (SURVEY_OBJECT_SPEC V2) ----
+
+    /** Only offered when the field is prefilled at all (mode isn't write-only)
+     *  — a write-only mapping never shows a value, so guest prefill is moot. */
+    get showGuestPrefill() {
+        const mode = (this.n.mapping && this.n.mapping.mode) || 'both';
+        return this.isMapped && mode !== 'write';
+    }
+
+    get guestPrefillOn() {
+        return Boolean(this.n.mapping && this.n.mapping.guestPrefill);
+    }
+
+    handleGuestPrefill(event) {
+        this.dispatchEvent(
+            new CustomEvent('guestprefillchange', {
+                detail: { value: event.target.checked }
+            })
+        );
+    }
+
     get isScaleFamilyQuestion() {
         return (
             this.isNpsQuestion ||

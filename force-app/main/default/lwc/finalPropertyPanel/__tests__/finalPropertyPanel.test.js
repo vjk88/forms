@@ -368,4 +368,50 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         name.dispatchEvent(new CustomEvent('change'));
         expect(events).toEqual([{ patch: { name: 'About you' } }]);
     });
+
+    const guestToggle = (el) =>
+        [...el.shadowRoot.querySelectorAll('lightning-input')].find(
+            (i) => i.label === 'Prefill in guest links'
+        );
+
+    // a mapped survey widget (nps → number field); the mapping UI lives in the
+    // survey-question branch
+    const npsNode = (mode) => ({
+        id: 'el_1',
+        type: 'nps',
+        label: 'Q',
+        config: {},
+        mapping: mode
+            ? { object: 'X', field: 'Score__c', mode }
+            : { object: 'X', field: 'Score__c' }
+    });
+    const numberField = [
+        { apiName: 'Score__c', label: 'Score', inputType: 'number' }
+    ];
+
+    it('SO-4: a mapped question offers a guest-prefill toggle that emits guestprefillchange', async () => {
+        const el = mount({
+            kind: 'element',
+            mappingFields: numberField,
+            node: npsNode(null)
+        });
+        await flush();
+        const toggle = guestToggle(el);
+        expect(toggle).toBeTruthy();
+        const seen = [];
+        el.addEventListener('guestprefillchange', (e) => seen.push(e.detail));
+        toggle.checked = true;
+        toggle.dispatchEvent(new CustomEvent('change'));
+        expect(seen).toEqual([{ value: true }]);
+    });
+
+    it('SO-4: a write-only mapping hides the guest-prefill toggle (never prefilled)', async () => {
+        const el = mount({
+            kind: 'element',
+            mappingFields: numberField,
+            node: npsNode('write')
+        });
+        await flush();
+        expect(guestToggle(el)).toBeFalsy();
+    });
 });

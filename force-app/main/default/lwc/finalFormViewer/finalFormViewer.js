@@ -219,6 +219,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _urlFormId;
     _urlVersionId;
     _loadedKey;
+    /** SO-4: guest-host-injected {ruleFacts, prefill} (see recordContext). */
+    _injectedCtx;
 
     /** Record context for survey-object prefill/writeback (record-page and
      *  embedded hosts set the property; links use ?c__recordId=). */
@@ -613,6 +615,46 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     // survey itself from rendering — record rules read "no
                     // match" exactly like a plain no-context link
                 });
+        }
+        // SO-4 guest path: re-seed any injected record context. The guest host
+        // owns the Apex fetch (the viewer never calls survey-object Apex on a
+        // delegated submit); it feeds verdicts + opted prefill in via the
+        // `recordContext` property. Runs after the reset above so a spec
+        // re-apply can't wipe it.
+        this._applyInjectedContext();
+    }
+
+    /**
+     * SO-4: record context injected by the guest host ({ruleFacts, prefill}).
+     * Guests can't call FinalSurveyObjectController; the host resolves the URL
+     * token server-side and hands the verdicts + author-opted prefill here.
+     */
+    @api
+    get recordContext() {
+        return this._injectedCtx;
+    }
+    set recordContext(value) {
+        this._injectedCtx = value;
+        this._applyInjectedContext();
+    }
+
+    _applyInjectedContext() {
+        const ctx = this._injectedCtx;
+        if (!ctx || !this.model) {
+            return;
+        }
+        this._ruleFacts = ctx.ruleFacts || null;
+        const values = ctx.prefill || {};
+        const merged = { ...this.answers };
+        let any = false;
+        for (const k of Object.keys(values)) {
+            if (merged[k] === undefined) {
+                merged[k] = values[k];
+                any = true;
+            }
+        }
+        if (any) {
+            this.answers = merged;
         }
     }
 
