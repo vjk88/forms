@@ -805,13 +805,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.linkBusy = true;
-        this.objectError = '';
+        this.linkError = '';
+        this.linkNotice = '';
         this.mintedLink = null;
         try {
             const res = await mintRecordLink({ formId: this.formId, recordId });
             this.mintedLink = res && res.query ? res.query : null;
         } catch (e) {
-            this.objectError =
+            this.linkError =
                 (e && e.body && e.body.message) || "Couldn't create that link.";
         } finally {
             this.linkBusy = false;
@@ -833,12 +834,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.linkBusy = true;
-        this.objectError = '';
+        this.linkError = '';
         try {
             await invalidateLinks({ formId: this.formId });
             this.mintedLink = null;
+            this.linkNotice =
+                'All record links already sent are now invalid. New links you create will still work.';
         } catch (e) {
-            this.objectError =
+            this.linkError =
                 (e && e.body && e.body.message) || "Couldn't invalidate links.";
         } finally {
             this.linkBusy = false;
@@ -1044,6 +1047,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     mintedLink = null;
     /** SO-4: a mint / invalidate call is in flight. */
     linkBusy = false;
+    /** SO-4: a mint failure, shown IN the record-links block (not the card top). */
+    linkError = '';
+    /** SO-4: a transient confirmation after Invalidate all links. */
+    linkNotice = '';
 
     get mappedCount() {
         return this.spec ? mappedElements(this.spec).length : 0;

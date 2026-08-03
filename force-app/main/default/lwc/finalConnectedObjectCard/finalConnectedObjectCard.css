@@ -183,4 +183,11 @@
     font-family: monospace;
     font-size: 0.75rem;
     color: #0f766e;
+    background: #f8fafc;
+}
+
+.oc-hint {
+    margin: -2px 0 6px;
+    font-size: 0.75rem;
+    color: #64748b;
 }
