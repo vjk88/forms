@@ -95,6 +95,37 @@ private class FinalSurveyTokenServiceTest {
     }
 
     @isTest
+    static void trackedTokenCarriesInvitationNonce() {
+        Id formId = sampleFormId();
+        Id recordId = sampleRecordId();
+        Test.startTest();
+        // any valid Id round-trips as the nonce (real nonce = a Survey_Invitation__c Id)
+        String tracked = FinalSurveyTokenService.mint(
+            formId,
+            recordId,
+            'Job_Application__c',
+            30,
+            recordId
+        );
+        String untracked = FinalSurveyTokenService.mint(
+            formId,
+            recordId,
+            'Job_Application__c'
+        );
+        Test.stopTest();
+        System.assertEquals(
+            recordId,
+            FinalSurveyTokenService.resolve(tracked).invitationId,
+            'the nonce round-trips'
+        );
+        System.assertEquals(
+            null,
+            FinalSurveyTokenService.resolve(untracked).invitationId,
+            'an untracked link has no invitation nonce'
+        );
+    }
+
+    @isTest
     static void keysProvisionOnceAndAreReused() {
         Id formId = sampleFormId();
         Id recordId = sampleRecordId();

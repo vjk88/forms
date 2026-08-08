@@ -27,6 +27,21 @@ public with sharing class FinalSurveyLinkInvocable {
             description='Optional. Defaults to 30 days.'
         )
         public Integer ttlDays;
+        @InvocableVariable(
+            label='Track & control invitation'
+            description='Optional. When true, mints a revocable Survey Invitation row (Tier 2) instead of a stateless link.'
+        )
+        public Boolean tracked;
+        @InvocableVariable(
+            label='Recipient'
+            description='Optional label for who the tracked invitation is sent to.'
+        )
+        public String recipient;
+        @InvocableVariable(
+            label='Single use'
+            description='Optional. When true (tracked only), the invitation burns on its first submit.'
+        )
+        public Boolean singleUse;
     }
 
     public class Result {
@@ -106,11 +121,34 @@ public with sharing class FinalSurveyLinkInvocable {
                 res.error = 'No access to this record.';
                 continue;
             }
+            String canonical = t.getDescribe().getName();
+            Integer ttl = (r.ttlDays == null ||
+                r.ttlDays <= 0)
+                ? FinalSurveyTokenService.DEFAULT_TTL_DAYS
+                : r.ttlDays;
+            Id invitationId = null;
+            if (r.tracked == true) {
+                invitationId = FinalSurveyInvitationService.createInvitation(
+                    r.formId,
+                    r.recordId,
+                    canonical,
+                    Datetime.now().addDays(ttl),
+                    r.recipient,
+                    r.singleUse == true
+                );
+                FinalSurveyInvitationService.publishEvent(
+                    'minted',
+                    r.formId,
+                    invitationId,
+                    r.recordId
+                );
+            }
             res.token = FinalSurveyTokenService.mint(
                 r.formId,
                 r.recordId,
-                t.getDescribe().getName(),
-                r.ttlDays
+                canonical,
+                ttl,
+                invitationId
             );
             res.query = '?c__formId=' + r.formId + '&c__rt=' + res.token;
         }

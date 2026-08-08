@@ -175,3 +175,97 @@ seam, native and Security-Review-clean. No event-only/no-enforcement mode unless
 a real customer asks.
 
 Tier 1 does not depend on this — it ships first.
+
+---
+
+## Tier 2 — BUILD PLAN (owner picked "finish Tier 2" 2026-08-08)
+
+Turns the stateless Tier 1 link into a **tracked, per-recipient invitation**:
+revocable, optionally single-use, with sent/responded tracking — plus the
+optional Platform Event add-on seam. Tier 1 links keep working untouched
+(stateless is still the default; Tier 2 is opt-in per mint).
+
+### New metadata
+
+- **`Survey_Invitation__c`** (new object) — the authoritative, locally-queryable
+  enforcement store. Fields:
+  - `Form__c` (Lookup → Form\_\_c) — which survey.
+  - `Record_Id__c` (Text 18) + `Record_Type__c` (Text 80) — the bound record,
+    written SERVER-side at mint (never client).
+  - `Recipient__c` (Text 255, optional) — who it was sent to (author-supplied
+    label for tracking; free text, no PII obligation).
+  - `Expires_On__c` (DateTime) — per-invitation expiry (mirrors the token's).
+  - `Revoked__c` (Checkbox) — per-recipient kill switch.
+  - `Single_Use__c` (Checkbox) — burn on first submit.
+  - `Responded_On__c` (DateTime) — stamped at SUBMIT (single-use burn + tracking).
+  - `Sent_On__c` (DateTime, optional) — mint timestamp / tracking.
+  - Name = auto-number (`INV-{0000}`).
+  - List view "All invitations" ships so admins revoke via standard record UI
+    (edit `Revoked__c`) — no bespoke manager in v1 (see decision Q2).
+- **`Survey_Invitation_Event__e`** (new Platform Event, if Q1 = now) — fields:
+  `Form_Id__c`, `Invitation_Id__c`, `Record_Id__c`, `Event_Type__c`
+  ('minted' | 'responded'), `Occurred_On__c`. Published on mint + respond;
+  customers subscribe (Flow/trigger/Pub-Sub) and own the destination.
+
+### Token — carry the invitation nonce
+
+- Payload gains a 6th pipe field: `invitationId` (empty for Tier 1). `resolve`
+  accepts **5 OR 6 parts** (5 = legacy/stateless Tier 1, no invitation; 6 = has
+  the slot) so already-minted Tier 1 tokens keep resolving. `Claims` gains
+  `Id invitationId` (null when absent/empty). No change to the crypto.
+
+### Mint (Tier 2 opt-in)
+
+- `FinalStudioController.mintRecordLink` + `FinalSurveyLinkInvocable` gain a
+  `tracked` flag (+ optional `recipient`, `singleUse`, `ttlDays`). When tracked:
+  `insert as user` a `Survey_Invitation__c` (Record_Id/Type from the mint, not
+  the client; Expires_On from ttl; Sent_On = now), then mint a token carrying
+  its Id. Emit the `minted` event (best-effort). Untracked = today's stateless
+  Tier 1, byte-identical.
+
+### Guest resolve (Tier 2 enforcement — LOADS NEVER MUTATE)
+
+- `FinalGuestController.validClaims`: when `claims.invitationId` present, load the
+  invitation **system-mode/without-sharing** and reject if `Revoked__c`, past
+  `Expires_On__c`, or (`Single_Use__c` AND `Responded_On__c != null`). Defense:
+  the invitation's `Form__c` must == formId and `Record_Id__c` == the token's
+  recordId. Tier 1 (no invitationId) → the existing stateless checks. Loads are
+  idempotent reads — the scanner law holds (no burn on GET).
+
+### Guest submit (Tier 2 burn — the ONLY mutation)
+
+- On submit with a Tier 2 token: re-validate (a link revoked mid-session can't
+  submit), then after the response saves, if `Single_Use__c` stamp
+  `Responded_On__c` (burn) — inside/after the submit txn, never at load. Emit the
+  `responded` event (best-effort). The record-ref stamp already added in Tier 1
+  still applies.
+
+### LWC (studio card)
+
+- The "Create link" flow gains a **"Track & control invitations"** toggle
+  (opt-in) and, when on, an optional **Recipient** field + **Single-use** toggle.
+  Off = stateless Tier 1 (unchanged). Revocation in v1 = the standard
+  `Survey_Invitation__c` list view (Q2), so no bespoke list here yet.
+
+### Tests
+
+- Apex: invitation mint creates the row + token carries the nonce; revoked /
+  expired / used → empty context; single-use burns at SUBMIT not load (scanner
+  proof); mid-session revoke blocks submit; legacy 5-part Tier 1 token still
+  resolves; event published (Test.getEventBus().deliver()). Jest: card tracked
+  toggle + recipient/single-use fields emit the right mint intent.
+- Org QA: mint a tracked single-use invitation, open twice (both load — not
+  burned), submit once (burns), submit again → refused; revoke a live invitation
+  → next load empty.
+
+### Two decisions needed before building (see chat)
+
+- **Q1 — Platform Event in THIS build, or a follow-up?** (Recommend: now — it's
+  the point of option B and it's small; emission is best-effort so it can't
+  break a mint/submit.)
+- **Q2 — Invitation management UI: standard record list view (edit Revoked\_\_c),
+  or a bespoke studio invitations list with revoke buttons?** (Recommend:
+  standard list view for v1 — ships the capability at a fraction of the surface;
+  bespoke manager is a later polish.)
+- **Not a decision (deferred to packaging):** Tier 2 as the paid-tier boundary —
+  build the plumbing now, gate at packaging time per the spec.

@@ -12,7 +12,10 @@
  * decrypt-and-verify in memory, ZERO database rows per link. Keys live in the
  * protected FinalLinkSecret__c custom setting, minted once on first use.
  *
- * Payload (pipe-joined): formId | recordId | sObjectType | issuedAtMs | expiryMs
+ * Payload (pipe-joined): formId | recordId | sObjectType | issuedAtMs |
+ * expiryMs | invitationId. The 6th field is the Tier 2 nonce (the
+ * Survey_Invitation__c row Id) — empty for stateless Tier 1 links. `resolve`
+ * accepts 5- OR 6-part payloads so links minted before Tier 2 keep working.
  */
 public with sharing class FinalSurveyTokenService {
     /** Default link lifetime — the per-link "stops working after" control
@@ -34,12 +37,14 @@ public with sharing class FinalSurveyTokenService {
         public String sObjectType;
         public Long issuedAt;
         public Long expiry;
+        /** Tier 2 nonce: the Survey_Invitation__c row Id, or null (stateless). */
+        public Id invitationId;
     }
 
     // --------------------------------------------------------------- mint
 
     public static String mint(Id formId, Id recordId, String sObjectType) {
-        return mint(formId, recordId, sObjectType, DEFAULT_TTL_DAYS);
+        return mint(formId, recordId, sObjectType, DEFAULT_TTL_DAYS, null);
     }
 
     public static String mint(
@@ -47,6 +52,17 @@ public with sharing class FinalSurveyTokenService {
         Id recordId,
         String sObjectType,
         Integer ttlDays
+    ) {
+        return mint(formId, recordId, sObjectType, ttlDays, null);
+    }
+
+    /** Tier 2: mint a token carrying an invitation nonce (null = stateless). */
+    public static String mint(
+        Id formId,
+        Id recordId,
+        String sObjectType,
+        Integer ttlDays,
+        Id invitationId
     ) {
         if (formId == null || recordId == null) {
             throw new AuraHandledException('A form and record are required.');
@@ -57,7 +73,14 @@ public with sharing class FinalSurveyTokenService {
             ? DEFAULT_TTL_DAYS
             : ttlDays;
         Long expiry = now + (Long) days * 24L * 60L * 60L * 1000L;
-        return buildToken(formId, recordId, sObjectType, now, expiry);
+        return buildToken(
+            formId,
+            recordId,
+            sObjectType,
+            now,
+            expiry,
+            invitationId
+        );
     }
 
     /** Encrypt-then-MAC a token with explicit timestamps. Seam for tests that
@@ -70,13 +93,33 @@ public with sharing class FinalSurveyTokenService {
         Long issuedAt,
         Long expiry
     ) {
+        return buildToken(
+            formId,
+            recordId,
+            sObjectType,
+            issuedAt,
+            expiry,
+            null
+        );
+    }
+
+    @TestVisible
+    private static String buildToken(
+        Id formId,
+        Id recordId,
+        String sObjectType,
+        Long issuedAt,
+        Long expiry,
+        Id invitationId
+    ) {
         String payload = String.join(
             new List<String>{
                 String.valueOf(formId),
                 String.valueOf(recordId),
                 sObjectType,
                 String.valueOf(issuedAt),
-                String.valueOf(expiry)
+                String.valueOf(expiry),
+                invitationId == null ? '' : String.valueOf(invitationId)
             },
             '|'
         );
@@ -116,7 +159,9 @@ public with sharing class FinalSurveyTokenService {
             }
             Blob pt = Crypto.decryptWithManagedIV(AES, encKeyCache, ct);
             List<String> parts = pt.toString().split('\\|');
-            if (parts.size() != 5) {
+            // 5 = legacy/stateless (or an untracked Tier 2 token, whose empty
+            // trailing nonce String.split drops); 6 = a tracked invitation.
+            if (parts.size() != 5 && parts.size() != 6) {
                 return null;
             }
             Claims c = new Claims();
@@ -125,6 +170,9 @@ public with sharing class FinalSurveyTokenService {
             c.sObjectType = parts[2];
             c.issuedAt = Long.valueOf(parts[3]);
             c.expiry = Long.valueOf(parts[4]);
+            if (parts.size() == 6 && String.isNotBlank(parts[5])) {
+                c.invitationId = Id.valueOf(parts[5]);
+            }
             return c;
         } catch (Exception e) {
             return null;

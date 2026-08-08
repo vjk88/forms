@@ -115,6 +115,32 @@
                         {createLabel}
                     </button>
                 </div>
+                <label class="oc-check">
+                    <input
+                        type="checkbox"
+                        checked={tracked}
+                        onchange={handleTracked}
+                    />
+                    Track &amp; control this invitation (revoke it later)
+                </label>
+                <template lwc:if={tracked}>
+                    <input
+                        type="text"
+                        class="oc-search"
+                        aria-label="Recipient (optional)"
+                        placeholder="Recipient — e.g. a name or email (optional)"
+                        value={recipient}
+                        oninput={handleRecipient}
+                    />
+                    <label class="oc-check">
+                        <input
+                            type="checkbox"
+                            checked={singleUse}
+                            onchange={handleSingleUse}
+                        />
+                        Single use — stops working after one response
+                    </label>
+                </template>
                 <template lwc:if={idHint}>
                     <p class="oc-hint">{idHint}</p>
                 </template>

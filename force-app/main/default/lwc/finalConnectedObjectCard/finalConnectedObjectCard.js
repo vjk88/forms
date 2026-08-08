@@ -46,6 +46,10 @@ export default class FinalConnectedObjectCard extends LightningElement {
     linkRecordId = '';
     /** SO-4: brief "Copied!" state on the Copy button. */
     copied = false;
+    /** SO-4 Tier 2: tracked-invitation opt-in + its options. */
+    tracked = false;
+    recipient = '';
+    singleUse = false;
 
     get isPending() {
         return Boolean(this.pending);
@@ -193,13 +197,32 @@ export default class FinalConnectedObjectCard extends LightningElement {
         this.linkRecordId = event.target.value;
     }
 
+    handleTracked(event) {
+        this.tracked = event.target.checked;
+    }
+
+    handleRecipient(event) {
+        this.recipient = event.target.value;
+    }
+
+    handleSingleUse(event) {
+        this.singleUse = event.target.checked;
+    }
+
     handleCreateLink() {
         const recordId = (this.linkRecordId || '').trim();
         if (recordId.length !== 15 && recordId.length !== 18) {
             return;
         }
         this.dispatchEvent(
-            new CustomEvent('mintlink', { detail: { recordId } })
+            new CustomEvent('mintlink', {
+                detail: {
+                    recordId,
+                    tracked: this.tracked,
+                    recipient: this.tracked ? this.recipient : '',
+                    singleUse: this.tracked ? this.singleUse : false
+                }
+            })
         );
     }
 
