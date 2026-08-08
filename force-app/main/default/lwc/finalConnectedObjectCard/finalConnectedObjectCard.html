@@ -124,22 +124,31 @@
                     Track &amp; control this invitation (revoke it later)
                 </label>
                 <template lwc:if={tracked}>
-                    <input
-                        type="text"
-                        class="oc-search"
-                        aria-label="Recipient (optional)"
-                        placeholder="Recipient — e.g. a name or email (optional)"
-                        value={recipient}
-                        oninput={handleRecipient}
-                    />
-                    <label class="oc-check">
+                    <div
+                        class="oc-tracked"
+                        role="group"
+                        aria-label="Tracking options"
+                    >
                         <input
-                            type="checkbox"
-                            checked={singleUse}
-                            onchange={handleSingleUse}
+                            type="text"
+                            class="oc-search"
+                            aria-label="Invitation label (optional)"
+                            placeholder="Label this invitation — a name or email (optional)"
+                            value={recipient}
+                            oninput={handleRecipient}
                         />
-                        Single use — stops working after one response
-                    </label>
+                        <p class="oc-hint">
+                            For your own reference only — nothing is emailed.
+                        </p>
+                        <label class="oc-check">
+                            <input
+                                type="checkbox"
+                                checked={singleUse}
+                                onchange={handleSingleUse}
+                            />
+                            Single use — stops working after one response
+                        </label>
+                    </div>
                 </template>
                 <template lwc:if={idHint}>
                     <p class="oc-hint">{idHint}</p>

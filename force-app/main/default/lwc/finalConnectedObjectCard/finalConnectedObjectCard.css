@@ -206,3 +206,8 @@
     flex: none;
     margin: 0;
 }
+
+/* revealed tracking options read as children of the toggle */
+.oc-tracked {
+    margin: 0 0 6px 22px;
+}

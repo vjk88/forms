@@ -26,7 +26,12 @@ export default class FinalConnectedObjectCard extends LightningElement {
     }
     set mintedLink(value) {
         if (value && value !== this._mintedLink) {
+            // clear the record Id AND the recipient — both are per-invitation,
+            // so carrying them to the next mint would mislabel a different
+            // record's link. (single-use stays: a batch of one-shot links is a
+            // reasonable session preference.)
             this.linkRecordId = '';
+            this.recipient = '';
         }
         this._mintedLink = value;
     }

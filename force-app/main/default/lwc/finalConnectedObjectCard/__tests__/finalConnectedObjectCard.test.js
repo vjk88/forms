@@ -96,7 +96,7 @@ describe('connected object card (SO-1)', () => {
         await flush();
         // recipient + single-use now present
         const recipInput = el.shadowRoot.querySelector(
-            'input[aria-label="Recipient (optional)"]'
+            'input[aria-label="Invitation label (optional)"]'
         );
         expect(recipInput).not.toBeNull();
         recipInput.value = 'ada@example.com';
@@ -148,6 +148,27 @@ describe('connected object card (SO-1)', () => {
             .find((b) => b.textContent.trim() === 'Invalidate all links')
             .click();
         expect(seen).toEqual(['x']);
+    });
+
+    it('SO-4 Tier 2: a completed mint clears the recipient (no cross-record mislabel)', async () => {
+        const el = mount({ objectApi: 'Job_Application__c' });
+        const track = el.shadowRoot.querySelector('.oc-check input');
+        track.checked = true;
+        track.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        const recip = el.shadowRoot.querySelector(
+            'input[aria-label="Invitation label (optional)"]'
+        );
+        recip.value = 'jane@acme.com';
+        recip.dispatchEvent(new CustomEvent('input'));
+        // a minted link arrives from the studio
+        el.mintedLink = '?c__formId=a0X&c__rt=TOK';
+        await flush();
+        expect(
+            el.shadowRoot.querySelector(
+                'input[aria-label="Invitation label (optional)"]'
+            ).value
+        ).toBe('');
     });
 
     it('pending state lists casualties and relays confirm/cancel', () => {
