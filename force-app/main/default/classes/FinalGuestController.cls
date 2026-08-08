@@ -108,6 +108,28 @@ public without sharing class FinalGuestController {
             return fake;
         }
 
+        // The link token rides `meta.rt` (same channel as the honeypot); the
+        // server re-validates it cryptographically.
+        Map<String, Object> tokenMeta = asMap(payload.get('meta'));
+        String token = tokenMeta == null ? null : (String) tokenMeta.get('rt');
+        String targetObject = surveyTargetObject(spec);
+        FinalSurveyTokenService.Claims claims = (String.isBlank(token) ||
+            String.isBlank(targetObject))
+            ? null
+            : validClaims(formId, token, targetObject);
+
+        // SO-4 Tier 2 ENFORCEMENT: a tracked link that's revoked, expired, or
+        // already used (single-use) is refused BEFORE anything saves — the
+        // scanner law's "checked on submit too". A token carrying an invitation
+        // whose full validation failed can't submit; stateless Tier 1 tokens and
+        // tokenless submits are unaffected.
+        FinalSurveyTokenService.Claims raw = String.isBlank(token)
+            ? null
+            : FinalSurveyTokenService.resolve(token);
+        if (raw != null && raw.invitationId != null && claims == null) {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
+
         FinalSubmitService.SubmitOutcome outcome = FinalSubmitService.run(
             spec,
             payload,
@@ -115,17 +137,22 @@ public without sharing class FinalGuestController {
             FinalSubmitService.Posture.GUEST
         );
 
-        // SO-4: a token-carrying guest submit STAMPS the record reference onto
-        // the response — server-side, from the VERIFIED TOKEN, never a raw
-        // client recordId. The token rides `meta.rt` (same channel as the
-        // honeypot `meta.hp`); the server re-validates it cryptographically, so
-        // the ref is trustworthy no matter that the client carried the token.
-        // Guests still never touch the business record (invariant 5); this only
-        // links our own Form_Response__c so the customer's Flow can act on it.
-        // Best-effort: the response is already saved, so a failure only logs.
-        Map<String, Object> tokenMeta = asMap(payload.get('meta'));
-        String token = tokenMeta == null ? null : (String) tokenMeta.get('rt');
-        stampRecordRef(formId, token, spec, outcome.recordId);
+        // SO-4: STAMP the record reference onto the response — server-side, from
+        // the VERIFIED TOKEN, never a raw client recordId. Guests still never
+        // touch the business record (invariant 5); this only links our own
+        // Form_Response__c so the customer's Flow can act on it.
+        if (
+            claims != null &&
+            outcome.recordId != null &&
+            outcome.recordId.getSObjectType() == Form_Response__c.SObjectType
+        ) {
+            stampRecordRef(outcome.recordId, claims.recordId, targetObject);
+            // Tier 2: burn single-use + record responded time + emit the event.
+            // Post-run (the response is saved), best-effort.
+            if (claims.invitationId != null) {
+                burnInvitation(claims.invitationId, formId, claims.recordId);
+            }
+        }
 
         GuestSubmitResult res = new GuestSubmitResult();
         res.success = true;
@@ -216,39 +243,57 @@ public without sharing class FinalGuestController {
         if (t == null || c.recordId.getSObjectType() != t) {
             return null;
         }
+        // SO-4 Tier 2: a tracked link is only valid while its invitation is.
+        if (c.invitationId != null) {
+            Survey_Invitation__c inv = loadInvitation(c.invitationId);
+            if (
+                inv == null ||
+                inv.Revoked__c == true ||
+                inv.Form__c != formId ||
+                inv.Record_Id__c != String.valueOf(c.recordId) ||
+                (inv.Expires_On__c != null &&
+                inv.Expires_On__c < Datetime.now()) ||
+                (inv.Single_Use__c == true &&
+                inv.Responded_On__c != null)
+            ) {
+                return null; // revoked / expired / already used / mismatched
+            }
+        }
         return c;
     }
 
-    /** Stamp the token-sourced record ref onto the just-created response. */
+    /** Load a tracked invitation (guest, system context — the verified token is
+     *  the authorization; a guest has no sharing to the row). */
+    private static Survey_Invitation__c loadInvitation(Id invitationId) {
+        List<Survey_Invitation__c> rows = [
+            SELECT
+                Id,
+                Form__c,
+                Record_Id__c,
+                Revoked__c,
+                Single_Use__c,
+                Expires_On__c,
+                Responded_On__c
+            FROM Survey_Invitation__c
+            WHERE Id = :invitationId
+            LIMIT 1
+        ];
+        return rows.isEmpty() ? null : rows[0];
+    }
+
+    /** Stamp the token-sourced record ref onto the just-created response
+     *  (claims already validated by the caller). Best-effort. */
     private static void stampRecordRef(
-        Id formId,
-        String token,
-        Map<String, Object> spec,
-        Id responseId
+        Id responseId,
+        Id recordId,
+        String targetObject
     ) {
-        String targetObject = surveyTargetObject(spec);
-        if (
-            String.isBlank(token) ||
-            String.isBlank(targetObject) ||
-            responseId == null ||
-            responseId.getSObjectType() != Form_Response__c.SObjectType
-        ) {
-            return;
-        }
-        FinalSurveyTokenService.Claims c = validClaims(
-            formId,
-            token,
-            targetObject
-        );
-        if (c == null) {
-            return;
-        }
         try {
             Database.update(
                 new List<Form_Response__c>{
                     new Form_Response__c(
                         Id = responseId,
-                        Related_Record_Id__c = String.valueOf(c.recordId),
+                        Related_Record_Id__c = String.valueOf(recordId),
                         Related_Record_Type__c = targetObject
                     )
                 },
@@ -259,6 +304,39 @@ public without sharing class FinalGuestController {
             System.debug(
                 LoggingLevel.WARN,
                 'SO-4 record-ref stamp skipped: ' + e.getMessage()
+            );
+        }
+    }
+
+    /** SO-4 Tier 2: stamp Responded_On (the single-use burn + tracking marker)
+     *  the FIRST time this invitation submits, and emit the 'responded' event.
+     *  Post-run + best-effort — the response is already saved. */
+    private static void burnInvitation(
+        Id invitationId,
+        Id formId,
+        Id recordId
+    ) {
+        try {
+            List<Survey_Invitation__c> rows = [
+                SELECT Id, Responded_On__c
+                FROM Survey_Invitation__c
+                WHERE Id = :invitationId
+                LIMIT 1
+            ];
+            if (!rows.isEmpty() && rows[0].Responded_On__c == null) {
+                rows[0].Responded_On__c = Datetime.now();
+                Database.update(rows, true, AccessLevel.SYSTEM_MODE);
+            }
+            FinalSurveyInvitationService.publishEvent(
+                'responded',
+                formId,
+                invitationId,
+                recordId
+            );
+        } catch (Exception e) {
+            System.debug(
+                LoggingLevel.WARN,
+                'SO-4 invitation burn skipped: ' + e.getMessage()
             );
         }
     }

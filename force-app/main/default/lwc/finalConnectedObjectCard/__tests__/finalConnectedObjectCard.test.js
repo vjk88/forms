@@ -75,7 +75,49 @@ describe('connected object card (SO-1)', () => {
         input.dispatchEvent(new CustomEvent('input'));
         await flush(); // let the button un-disable before we click it
         el.shadowRoot.querySelector('.oc-links .oc-primary').click();
-        expect(seen).toEqual([{ recordId: 'a01000000000001AAA' }]);
+        expect(seen).toEqual([
+            {
+                recordId: 'a01000000000001AAA',
+                tracked: false,
+                recipient: '',
+                singleUse: false
+            }
+        ]);
+    });
+
+    it('SO-4 Tier 2: tracked toggle reveals recipient + single-use and mints tracked', async () => {
+        const el = mount({ objectApi: 'Job_Application__c', mappedCount: 1 });
+        const seen = [];
+        el.addEventListener('mintlink', (e) => seen.push(e.detail));
+        // turn on tracking
+        const trackToggle = el.shadowRoot.querySelector('.oc-check input');
+        trackToggle.checked = true;
+        trackToggle.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        // recipient + single-use now present
+        const recipInput = el.shadowRoot.querySelector(
+            'input[aria-label="Invitation label (optional)"]'
+        );
+        expect(recipInput).not.toBeNull();
+        recipInput.value = 'ada@example.com';
+        recipInput.dispatchEvent(new CustomEvent('input'));
+        const checks = el.shadowRoot.querySelectorAll('.oc-check input');
+        checks[1].checked = true; // single use
+        checks[1].dispatchEvent(new CustomEvent('change'));
+        // create
+        const idInput = el.shadowRoot.querySelector('.oc-linkrow .oc-search');
+        idInput.value = 'a01000000000001AAA';
+        idInput.dispatchEvent(new CustomEvent('input'));
+        await flush();
+        el.shadowRoot.querySelector('.oc-links .oc-primary').click();
+        expect(seen).toEqual([
+            {
+                recordId: 'a01000000000001AAA',
+                tracked: true,
+                recipient: 'ada@example.com',
+                singleUse: true
+            }
+        ]);
     });
 
     it('SO-4: Create link stays disabled until the Id looks valid', () => {
@@ -106,6 +148,27 @@ describe('connected object card (SO-1)', () => {
             .find((b) => b.textContent.trim() === 'Invalidate all links')
             .click();
         expect(seen).toEqual(['x']);
+    });
+
+    it('SO-4 Tier 2: a completed mint clears the recipient (no cross-record mislabel)', async () => {
+        const el = mount({ objectApi: 'Job_Application__c' });
+        const track = el.shadowRoot.querySelector('.oc-check input');
+        track.checked = true;
+        track.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        const recip = el.shadowRoot.querySelector(
+            'input[aria-label="Invitation label (optional)"]'
+        );
+        recip.value = 'jane@acme.com';
+        recip.dispatchEvent(new CustomEvent('input'));
+        // a minted link arrives from the studio
+        el.mintedLink = '?c__formId=a0X&c__rt=TOK';
+        await flush();
+        expect(
+            el.shadowRoot.querySelector(
+                'input[aria-label="Invitation label (optional)"]'
+            ).value
+        ).toBe('');
     });
 
     it('pending state lists casualties and relays confirm/cancel', () => {

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+    >SO-4 Tier 2: a tracked guest survey invitation — the authoritative, locally-queryable enforcement store for per-recipient revoke + single-use. One row per tracked link; the row Id rides the link token as a nonce.</description>
+    <enableActivities>false</enableActivities>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>Survey Invitation</label>
+    <nameField>
+        <displayFormat>INV-{0000}</displayFormat>
+        <label>Invitation #</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Survey Invitations</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

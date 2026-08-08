@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Responded_On__c</fullName>
+    <description
+    >Stamped at SUBMIT (never at load). For a single-use invitation this is the burn marker; otherwise it just records first-response time.</description>
+    <externalId>false</externalId>
+    <label>Responded On</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

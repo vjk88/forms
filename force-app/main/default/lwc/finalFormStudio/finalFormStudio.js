@@ -8,6 +8,7 @@ import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
+import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
@@ -800,7 +801,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     // ---- SO-4: record link mint / invalidate (card actions) ----
 
     async handleMintLink(event) {
-        const recordId = event.detail && event.detail.recordId;
+        const detail = event.detail || {};
+        const recordId = detail.recordId;
         if (!recordId || this.linkBusy) {
             return;
         }
@@ -809,7 +811,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.linkNotice = '';
         this.mintedLink = null;
         try {
-            const res = await mintRecordLink({ formId: this.formId, recordId });
+            const res = detail.tracked
+                ? await mintTrackedLink({
+                      formId: this.formId,
+                      recordId,
+                      recipient: detail.recipient || null,
+                      singleUse: Boolean(detail.singleUse)
+                  })
+                : await mintRecordLink({ formId: this.formId, recordId });
             this.mintedLink = res && res.query ? res.query : null;
         } catch (e) {
             this.linkError =

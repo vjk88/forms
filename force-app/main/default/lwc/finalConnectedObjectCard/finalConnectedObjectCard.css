@@ -191,3 +191,23 @@
     font-size: 0.75rem;
     color: #64748b;
 }
+
+.oc-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    cursor: pointer;
+}
+
+.oc-check input {
+    flex: none;
+    margin: 0;
+}
+
+/* revealed tracking options read as children of the toggle */
+.oc-tracked {
+    margin: 0 0 6px 22px;
+}

@@ -307,14 +307,45 @@ public with sharing class FinalStudioController {
     }
 
     /**
-     * SO-4: mint a guest record link for a specific record of the survey's
-     * connected object. The minter must be able to READ the record
+     * SO-4 Tier 1: mint a STATELESS guest record link for a specific record of
+     * the survey's connected object. The minter must be able to READ the record
      * (USER_MODE) — you can't issue a link for data you can't see (spec
      * invariant 4). Returns the token + a ready-to-append query string; the
      * studio composes the full URL against the survey's public base.
      */
     @AuraEnabled
     public static Map<String, Object> mintRecordLink(Id formId, Id recordId) {
+        return mintLinkInternal(formId, recordId, false, null, false);
+    }
+
+    /**
+     * SO-4 Tier 2: mint a TRACKED invitation link — a Survey_Invitation__c row
+     * (revocable, optionally single-use) whose Id rides the token as a nonce.
+     * Opt-in per mint; everything else matches the stateless path.
+     */
+    @AuraEnabled
+    public static Map<String, Object> mintTrackedLink(
+        Id formId,
+        Id recordId,
+        String recipient,
+        Boolean singleUse
+    ) {
+        return mintLinkInternal(
+            formId,
+            recordId,
+            true,
+            recipient,
+            singleUse == true
+        );
+    }
+
+    private static Map<String, Object> mintLinkInternal(
+        Id formId,
+        Id recordId,
+        Boolean tracked,
+        String recipient,
+        Boolean singleUse
+    ) {
         if (formId == null || recordId == null) {
             throw new AuraHandledException('A form and record are required.');
         }
@@ -356,10 +387,32 @@ public with sharing class FinalStudioController {
                 'You can\'t create a link for a record you don\'t have access to.'
             );
         }
+        String canonical = t.getDescribe().getName();
+        Id invitationId = null;
+        if (tracked) {
+            Datetime expiresOn = Datetime.now()
+                .addDays(FinalSurveyTokenService.DEFAULT_TTL_DAYS);
+            invitationId = FinalSurveyInvitationService.createInvitation(
+                formId,
+                recordId,
+                canonical,
+                expiresOn,
+                recipient,
+                singleUse
+            );
+            FinalSurveyInvitationService.publishEvent(
+                'minted',
+                formId,
+                invitationId,
+                recordId
+            );
+        }
         String token = FinalSurveyTokenService.mint(
             formId,
             recordId,
-            t.getDescribe().getName()
+            canonical,
+            FinalSurveyTokenService.DEFAULT_TTL_DAYS,
+            invitationId
         );
         return new Map<String, Object>{
             'token' => token,

@@ -126,6 +126,39 @@ private class FinalGuestLinkTest {
                 PermissionsRead = true,
                 PermissionsEdit = true
             );
+            // Tier 2: the tracked mint does `insert as user` on the invitation
+            insert new ObjectPermissions(
+                ParentId = ps.Id,
+                SobjectType = 'Survey_Invitation__c',
+                PermissionsRead = true,
+                PermissionsCreate = true,
+                PermissionsEdit = true
+            );
+            List<FieldPermissions> invFls = new List<FieldPermissions>();
+            for (
+                String f : new List<String>{
+                    'Form__c',
+                    'Record_Id__c',
+                    'Record_Type__c',
+                    'Recipient__c',
+                    'Expires_On__c',
+                    'Single_Use__c',
+                    'Revoked__c',
+                    'Responded_On__c',
+                    'Sent_On__c'
+                }
+            ) {
+                invFls.add(
+                    new FieldPermissions(
+                        ParentId = ps.Id,
+                        SobjectType = 'Survey_Invitation__c',
+                        Field = 'Survey_Invitation__c.' + f,
+                        PermissionsRead = true,
+                        PermissionsEdit = true
+                    )
+                );
+            }
+            insert invFls;
             insert new PermissionSetAssignment(
                 AssigneeId = UserInfo.getUserId(),
                 PermissionSetId = ps.Id
@@ -371,5 +404,171 @@ private class FinalGuestLinkTest {
             results[1].token,
             'no token for the bad request'
         );
+    }
+
+    // ---------------------------------------------------------- Tier 2
+
+    private static String subPayload(String token) {
+        return JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_name' => 'Ada' },
+                'repeats' => new Map<String, Object>(),
+                'meta' => new Map<String, Object>{ 'rt' => token }
+            }
+        );
+    }
+
+    @isTest
+    static void trackedMintCreatesInvitationAndNonce() {
+        grantJobAppAccess();
+        Form__c form = makeGuestSurvey('Tracked');
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            Test.startTest();
+            Map<String, Object> res = FinalStudioController.mintTrackedLink(
+                form.Id,
+                ja.Id,
+                'ada@example.com',
+                true
+            );
+            Test.stopTest();
+            token = (String) res.get('token');
+        }
+        Survey_Invitation__c inv = [
+            SELECT Id, Single_Use__c, Recipient__c, Revoked__c
+            FROM Survey_Invitation__c
+            WHERE Form__c = :form.Id
+            LIMIT 1
+        ];
+        System.assertEquals(true, inv.Single_Use__c, 'single-use stored');
+        System.assertEquals('ada@example.com', inv.Recipient__c, 'recipient');
+        System.assertEquals(
+            inv.Id,
+            FinalSurveyTokenService.resolve(token).invitationId,
+            'the token carries the invitation Id as its nonce'
+        );
+    }
+
+    @isTest
+    static void revokedInvitationYieldsNoContext() {
+        grantJobAppAccess();
+        Form__c form = makeGuestSurvey('Revoke');
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            Map<String, Object> res = FinalStudioController.mintTrackedLink(
+                form.Id,
+                ja.Id,
+                null,
+                false
+            );
+            token = (String) res.get('token');
+        }
+        Survey_Invitation__c inv = [
+            SELECT Id
+            FROM Survey_Invitation__c
+            WHERE Form__c = :form.Id
+            LIMIT 1
+        ];
+        inv.Revoked__c = true;
+        update inv;
+        Test.startTest();
+        Map<String, Object> ctx = FinalGuestController.getGuestRecordContext(
+            form.Id,
+            token
+        );
+        Test.stopTest();
+        System.assert(
+            ((Map<String, Object>) ctx.get('ruleFacts')).isEmpty(),
+            'a revoked invitation yields no context'
+        );
+    }
+
+    @isTest
+    static void singleUseBurnsAtSubmitNotLoad() {
+        grantJobAppAccess();
+        Form__c form = makeGuestSurvey('Burn');
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            Map<String, Object> res = FinalStudioController.mintTrackedLink(
+                form.Id,
+                ja.Id,
+                null,
+                true
+            );
+            token = (String) res.get('token');
+        }
+        Test.startTest();
+        // TWO loads must NOT burn it (email scanners prefetch)
+        FinalGuestController.getGuestRecordContext(form.Id, token);
+        FinalGuestController.getGuestRecordContext(form.Id, token);
+        Survey_Invitation__c beforeSubmit = [
+            SELECT Responded_On__c
+            FROM Survey_Invitation__c
+            LIMIT 1
+        ];
+        System.assertEquals(
+            null,
+            beforeSubmit.Responded_On__c,
+            'loads never burn the invitation'
+        );
+        // first submit burns it
+        FinalGuestController.submitGuest(form.Id, subPayload(token));
+        Survey_Invitation__c afterSubmit = [
+            SELECT Responded_On__c
+            FROM Survey_Invitation__c
+            LIMIT 1
+        ];
+        System.assertNotEquals(
+            null,
+            afterSubmit.Responded_On__c,
+            'submit stamps Responded_On (the single-use burn)'
+        );
+        // second submit is refused
+        Boolean refused = false;
+        try {
+            FinalGuestController.submitGuest(form.Id, subPayload(token));
+        } catch (Exception e) {
+            refused = true;
+        }
+        Test.stopTest();
+        System.assert(refused, 'a used single-use link cannot submit again');
+    }
+
+    @isTest
+    static void midSessionRevokeBlocksSubmit() {
+        grantJobAppAccess();
+        Form__c form = makeGuestSurvey('MidRevoke');
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            Map<String, Object> res = FinalStudioController.mintTrackedLink(
+                form.Id,
+                ja.Id,
+                null,
+                false
+            );
+            token = (String) res.get('token');
+        }
+        // revoked AFTER the link resolved once, BEFORE submit
+        Survey_Invitation__c inv = [
+            SELECT Id
+            FROM Survey_Invitation__c
+            WHERE Form__c = :form.Id
+            LIMIT 1
+        ];
+        inv.Revoked__c = true;
+        update inv;
+        Boolean refused = false;
+        Test.startTest();
+        try {
+            FinalGuestController.submitGuest(form.Id, subPayload(token));
+        } catch (Exception e) {
+            refused = true;
+        }
+        Test.stopTest();
+        System.assert(refused, 'a revoked link cannot submit even mid-session');
     }
 }
