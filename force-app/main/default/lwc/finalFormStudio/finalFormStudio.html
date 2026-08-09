@@ -151,6 +151,20 @@
                         </div>
                     </template>
                 </div>
+                <lightning-button-menu
+                    data-id="actions-trigger"
+                    class="st-actions"
+                    label="Actions"
+                    alternative-text="Form actions"
+                    menu-alignment="right"
+                    disabled={cloneBusy}
+                    onselect={handleActionSelect}
+                >
+                    <lightning-menu-item
+                        value="clone"
+                        label="Clone form"
+                    ></lightning-menu-item>
+                </lightning-button-menu>
             </template>
             <button
                 type="button"
@@ -189,6 +203,7 @@
                 <aside class="st-left">
                     <c-final-design-panel
                         spec={spec}
+                        form-id={formId}
                         onspecchange={handleSpecChange}
                         onthemeedit={handleThemeEdit}
                     ></c-final-design-panel>
@@ -376,6 +391,16 @@
                     ></span>
                 </aside>
             </div>
+        </template>
+
+        <template lwc:if={cloneDialogOpen}>
+            <c-final-studio-action-dialog
+                source-name={formName}
+                busy={cloneBusy}
+                error={cloneError}
+                onconfirm={handleCloneConfirm}
+                oncancel={handleCloneCancel}
+            ></c-final-studio-action-dialog>
         </template>
 
         <template lwc:if={editorOpen}>

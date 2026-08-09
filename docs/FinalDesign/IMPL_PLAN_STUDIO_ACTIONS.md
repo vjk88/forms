@@ -1,7 +1,7 @@
 # Studio Actions — implementation plan
 
-**Status:** proposed for owner review. No implementation or deployment is part
-of this document.
+**Status:** approved; implementation in progress. Deployment remains a separate,
+explicit step after the slice gates pass.
 
 **Review pass (2026-08-09):** tightenings layered in from a code-verified
 review — per-slice PRs, clone-spec treated as untrusted, export-download and
@@ -12,6 +12,18 @@ against the repo: `Form_Response__c.Form_Version__c` is a **required lookup with
 `deleteConstraint=Restrict`** (the delete-block is real, not assumed), and **no
 permission set currently grants `Survey_Invitation__c`** (only the Admin
 profile does).
+
+**Implementation progress (2026-08-08):** Slices 1 and 2 are complete on
+`codex/studio-actions-slice-1`: the transfer/clone server core, editable-only
+Clone action, focused dialog, live-spec handoff, shared Studio navigation, and
+shared-file-safe image removal. The final targeted deployment dry-run compiled
+all 16 included metadata components and passed all 28 focused Apex tests with
+no coverage warnings. Four focused Jest suites pass all 49 tests, targeted
+ESLint is clean, and the UI/UX review findings are resolved. Code Analyzer
+reports 0 critical/high findings (49 moderate, 33 low across the combined
+Slice 1+2 Apex set). No metadata has been deployed to the org.
+The remaining Slice 2 rollout gate is the post-deploy Form/Survey smoke test in
+both Lightning Experience and the Visualforce host.
 
 **Scope:** the Studio top-bar Actions menu:
 
@@ -97,8 +109,10 @@ The clone:
   for the first release; it does not duplicate their bytes. **Known v1
   limitation:** because the clone points at the source's `ContentVersion` bytes,
   editing or deleting the source's config image can alter or break the clone's
-  reference. Byte-level asset independence is part of the separate ZIP
-  follow-up.
+  reference. Slice 2 must therefore make image removal shared-file safe: remove
+  only the calling form's `ContentDocumentLink` while other links exist, and
+  delete the `ContentDocument` only when that form is its sole remaining link.
+  Byte-level asset independence is part of the separate ZIP follow-up.
 
 After success, navigate directly to the new Studio URL. The source stays open
 and unchanged if any part of the clone transaction fails.
@@ -226,10 +240,14 @@ Recommended retention behavior:
 Response purge is deliberately not a Studio action. If regulations require it,
 build a separate admin-only retention workflow with audit logging.
 
-Archived records need a matching library posture: hide them from the default
-Forms list, add an Archived filter, and provide Restore. Restore returns the
-record to Draft or Published based on whether it still has an active published
-version; it does not automatically re-enable public access.
+Archived records need a matching library and Studio posture: hide them from the
+default Forms list, add an Archived filter, and provide Restore. A stale or
+bookmarked Studio URL must not reopen an archived record for editing; the load
+returns an archived/read-only result and directs the user to Restore. Restore
+always returns the record to **Draft** in v1 and does not automatically
+re-enable public access. Republishing is an explicit owner action; an active
+version alone cannot recover the former status because newly created Drafts
+also start with an active v1 version.
 
 ## 3. Shared transfer rules
 
@@ -283,12 +301,14 @@ sharing`, sanitized `AuraHandledException` messages.
 - `FinalFormActionsSelector` — bounded USER_MODE queries for roots, versions,
   response counts, invitations, legacy rows, and linked files.
 - `FinalSpecTransferService` — pure package validation, dependency
-  normalization, fresh-ID remapping, and authoring-spec cleanup. This is the
-  program's **security-sensitive surface**: it parses untrusted JSON and
-  resolves field/object API names. Keep it describe-driven (never build SOQL
-  from package strings), enforce the `Spec_JSON__c` size bound before work, and
-  give it the most adversarial Apex test coverage in the program (malformed,
-  oversized, injection-shaped field names, dangling references).
+  normalization, fresh-ID remapping, and authoring-spec cleanup.
+- `FinalSpecTransferValidator` and `FinalSpecDescribeValidator` — the split
+  **security-sensitive surface** behind the transfer service. The first owns
+  schema vocabulary and reference integrity; the second owns object/field/
+  relationship describes and never constructs dynamic SOQL. Enforce the
+  `Spec_JSON__c` size bound before work and give these paths the most
+  adversarial Apex coverage in the program (malformed, oversized,
+  injection-shaped field names, dangling references).
 
 Recommended controller methods:
 
@@ -312,8 +332,9 @@ mutation, no SOQL or DML in loops, and bounded package sizes. Do not add
 ### LWC
 
 Update `finalFormStudio` to render the Actions button between Settings and
-Publish only in editable mode. The menu contains the four real actions only
-after their backend paths are complete.
+Publish only in editable mode. The menu rolls out incrementally: each merged
+slice adds only the actions whose backend and host verification are complete.
+Never render disabled, placeholder, or dead menu items.
 
 Add `finalStudioActionDialog` as a focused child component for:
 
@@ -344,6 +365,12 @@ status, archived filtering, and Restore.
 - `force-app/main/default/classes/FinalFormActionsSelector.cls-meta.xml`
 - `force-app/main/default/classes/FinalSpecTransferService.cls`
 - `force-app/main/default/classes/FinalSpecTransferService.cls-meta.xml`
+- `force-app/main/default/classes/FinalSpecTransferValidator.cls`
+- `force-app/main/default/classes/FinalSpecTransferValidator.cls-meta.xml`
+- `force-app/main/default/classes/FinalSpecDescribeValidator.cls`
+- `force-app/main/default/classes/FinalSpecDescribeValidator.cls-meta.xml`
+- `force-app/main/default/classes/FinalSpecTransferServiceTest.cls`
+- `force-app/main/default/classes/FinalSpecTransferServiceTest.cls-meta.xml`
 - `force-app/main/default/lwc/finalStudioActionDialog/*`
 
 ### Existing
@@ -410,10 +437,11 @@ gap in this program rather than assuming profile permissions.
 ## 7. Implementation slices
 
 Each slice ships as its own branch → PR → merge, **not** one program-sized PR.
-The blast radius here (5 new Apex classes, a new LWC, the studio, the library, a
-permission set) is too large to review as a single change; the slice gates below
-are the PR boundaries. Slice 1 is server-core-only and must be green in Apex
-tests before any Actions button exists.
+The blast radius here (six production Apex classes, two Apex test classes, a
+new LWC, the studio, the library, and a permission set) is too large to review
+as a single change; the slice gates below are the PR boundaries. Slice 1 is
+server-core-only and must be green in Apex tests before any Actions button
+exists.
 
 ### Slice 1 — transfer contract and server core
 
@@ -425,9 +453,12 @@ tests before any Actions button exists.
 
 ### Slice 2 — Clone
 
-- Add the Actions menu shell and Clone dialog.
+- Add the Actions menu shell with Clone as its only item, plus the Clone dialog.
 - Wire current in-memory spec to `cloneForm`.
 - Navigate to the clone.
+- Make config-image removal safe for files shared by a source and clone: unlink
+  this form when other `ContentDocumentLink` rows exist; delete bytes only for
+  an exclusively linked document.
 
 **Gate:** Form and Survey clone end-to-end in both Studio hosts.
 
@@ -437,6 +468,8 @@ tests before any Actions button exists.
 - Add import inspection and creation flow.
 - Embed/resolve custom-theme and topic dependencies.
 - Ship explicit v1 asset-reference warnings.
+- Add Export and Import to the existing Actions menu only after their paths are
+  complete; Clone remains the only earlier item.
 
 **Gate:** same-org round trip preserves behavior; cross-org missing dependencies
 produce warnings or blocking errors, never a silently broken form.
@@ -446,6 +479,9 @@ produce warnings or blocking errors, never a silently broken form.
 - Add preflight counts and typed-name confirmation.
 - Add zero-response delete and response-preserving archive.
 - Add Archived library filter and Restore.
+- Block archived records from reopening as editable through a stale Studio URL;
+  v1 Restore always returns them to Draft.
+- Add Delete form to the Actions menu only when this slice is complete.
 
 **Gate:** no response, answer, topic, invitation, file, or business-record data
 is removed outside the approved branch.

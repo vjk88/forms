@@ -118,8 +118,7 @@ public with sharing class FinalAssetController {
                 ];
                 res.url = cd.ContentDownloadUrl;
             } else {
-                res.url =
-                    '/sfc/servlet.shepherd/version/download/' + cv.Id;
+                res.url = '/sfc/servlet.shepherd/version/download/' + cv.Id;
             }
             return res;
         } catch (Exception e) {
@@ -131,13 +130,17 @@ public with sharing class FinalAssetController {
     }
 
     /**
-     * Deletes a replaced/removed image. Deleting the ContentDocument cascades
-     * the version and any ContentDistribution. Non-fatal by design — orphan
-     * cleanup must never block the user's edit.
+     * Removes an image from one form without breaking clones that share the
+     * same Salesforce File. Deletes the document only when no other business
+     * record or library consumes it; otherwise removes only this form's link.
+     * The automatic owner-user link is not a business consumer. Cleanup is
+     * non-fatal so it never blocks an authoring edit.
+     * @param contentVersionId Version stored in the authoring specification.
+     * @param formId Form removing its reference to the image.
      */
     @AuraEnabled
-    public static void deleteImage(Id contentVersionId) {
-        if (contentVersionId == null) {
+    public static void deleteImage(Id contentVersionId, Id formId) {
+        if (contentVersionId == null || formId == null) {
             return;
         }
         try {
@@ -151,14 +154,37 @@ public with sharing class FinalAssetController {
             if (versions.isEmpty()) {
                 return;
             }
-            delete as user new ContentDocument(
-                Id = versions[0].ContentDocumentId
-            );
-        } catch (Exception e) {
-            System.debug(
-                LoggingLevel.WARN,
-                'FinalAssetController.deleteImage failed: ' + e.getMessage()
-            );
+            Id contentDocumentId = versions[0].ContentDocumentId;
+            List<ContentDocumentLink> links = [
+                SELECT Id, LinkedEntityId
+                FROM ContentDocumentLink
+                WHERE ContentDocumentId = :contentDocumentId
+                WITH USER_MODE
+                LIMIT 501
+            ];
+            List<ContentDocumentLink> formLinks = new List<ContentDocumentLink>();
+            Boolean hasExternalLink = false;
+            for (ContentDocumentLink link : links) {
+                if (link.LinkedEntityId == formId) {
+                    formLinks.add(link);
+                } else if (
+                    link.LinkedEntityId.getSObjectType() != User.SObjectType
+                ) {
+                    // Salesforce creates an owner-user link for every file.
+                    // It is storage scaffolding, not another form consumer.
+                    hasExternalLink = true;
+                }
+            }
+            if (formLinks.isEmpty()) {
+                return;
+            }
+            if (!hasExternalLink) {
+                delete as user new ContentDocument(Id = contentDocumentId);
+                return;
+            }
+            delete as user formLinks;
+        } catch (Exception ignored) {
+            // Best-effort cleanup: a failed unlink must not block the spec edit.
         }
     }
 
@@ -185,8 +211,10 @@ public with sharing class FinalAssetController {
         if (String.isBlank(base)) {
             base = 'form-image';
         }
-        if (!base.toLowerCase().endsWith('.' + ext) &&
-            !(ext == 'jpg' && base.toLowerCase().endsWith('.jpeg'))) {
+        if (
+            !base.toLowerCase().endsWith('.' + ext) &&
+            !(ext == 'jpg' && base.toLowerCase().endsWith('.jpeg'))
+        ) {
             base += '.' + ext;
         }
         return base;

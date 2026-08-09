@@ -6,6 +6,7 @@ import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
+import cloneForm from '@salesforce/apex/FinalFormActionsController.cloneForm';
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
@@ -68,6 +69,11 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalThemeController.getCustomTheme',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.cloneForm',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -968,6 +974,9 @@ describe('c-final-form-studio', () => {
         ).toBe('Viewing v1 (published) — read-only.');
         expect(el.shadowRoot.querySelector('.st-saved')).toBeNull();
         expect(
+            el.shadowRoot.querySelector('[data-id="actions-trigger"]')
+        ).toBeNull();
+        expect(
             el.shadowRoot.querySelector('.st-bar .st-primary').disabled
         ).toBe(true);
         // read-only viewing keeps `resolved` — the frozen tokens ARE what
@@ -1189,5 +1198,149 @@ describe('c-final-form-studio', () => {
             enabled: false
         });
         expect(panel.publicSaveText).toBe('✓ Access saved immediately');
+    });
+
+    it('shows Clone as the only editable action and sends the live spec to Apex', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        cloneForm.mockResolvedValue({ formId: 'a0FCLONE' });
+        const originalLocation = window.location;
+        const assign = jest.fn();
+        delete window.location;
+        window.location = {
+            assign,
+            hostname: 'example.my.salesforce.com'
+        };
+
+        try {
+            const element = mount();
+            CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+            await micro(4);
+
+            const liveSpec = JSON.parse(JSON.stringify(SPEC));
+            liveSpec.submit.label = 'Send feedback now';
+            element.shadowRoot
+                .querySelector('c-final-design-panel')
+                .dispatchEvent(
+                    new CustomEvent('specchange', {
+                        detail: { spec: liveSpec }
+                    })
+                );
+
+            const actions = element.shadowRoot.querySelector(
+                '[data-id="actions-trigger"]'
+            );
+            expect(actions).not.toBeNull();
+            expect(
+                actions.querySelectorAll('lightning-menu-item')
+            ).toHaveLength(1);
+            actions.dispatchEvent(
+                new CustomEvent('select', {
+                    detail: { value: 'clone' }
+                })
+            );
+            await flush();
+
+            const dialog = element.shadowRoot.querySelector(
+                'c-final-studio-action-dialog'
+            );
+            dialog.dispatchEvent(
+                new CustomEvent('confirm', {
+                    detail: { name: 'Event feedback — Copy' }
+                })
+            );
+            await micro(3);
+
+            expect(cloneForm).toHaveBeenCalledWith({
+                formId: 'a0F1',
+                currentSpecJson: JSON.stringify(liveSpec),
+                requestedName: 'Event feedback — Copy'
+            });
+            expect(assign).toHaveBeenCalledWith(
+                '/apex/FinalStudio?c__formId=a0FCLONE'
+            );
+        } finally {
+            window.location = originalLocation;
+        }
+    });
+
+    it('keeps the clone dialog open and shows the sanitized Apex error', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        cloneForm.mockRejectedValue({
+            body: { message: 'Restore the archived form before cloning it.' }
+        });
+        const element = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        element.shadowRoot
+            .querySelector('[data-id="actions-trigger"]')
+            .dispatchEvent(
+                new CustomEvent('select', {
+                    detail: { value: 'clone' }
+                })
+            );
+        await flush();
+        element.shadowRoot
+            .querySelector('c-final-studio-action-dialog')
+            .dispatchEvent(
+                new CustomEvent('confirm', {
+                    detail: { name: 'Event feedback — Copy' }
+                })
+            );
+        await micro(3);
+
+        const dialog = element.shadowRoot.querySelector(
+            'c-final-studio-action-dialog'
+        );
+        expect(dialog).not.toBeNull();
+        expect(dialog.error).toBe(
+            'Restore the archived form before cloning it.'
+        );
+        expect(dialog.busy).toBe(false);
+    });
+
+    it('restores focus to Actions when the clone dialog is cancelled', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        const element = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        const actions = element.shadowRoot.querySelector(
+            '[data-id="actions-trigger"]'
+        );
+        actions.focus = jest.fn();
+        actions.dispatchEvent(
+            new CustomEvent('select', {
+                detail: { value: 'clone' }
+            })
+        );
+        await flush();
+
+        element.shadowRoot
+            .querySelector('c-final-studio-action-dialog')
+            .dispatchEvent(new CustomEvent('cancel'));
+        await flush();
+
+        expect(
+            element.shadowRoot.querySelector('c-final-studio-action-dialog')
+        ).toBeNull();
+        expect(actions.focus).toHaveBeenCalledTimes(1);
     });
 });

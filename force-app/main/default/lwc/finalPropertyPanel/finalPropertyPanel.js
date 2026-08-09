@@ -2,8 +2,8 @@ import { LightningElement, api, wire } from 'lwc';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyTopics';
 import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurveyTopic';
-import uploadImage from '@salesforce/apex/FormAssetController.uploadImage';
-import deleteImage from '@salesforce/apex/FormAssetController.deleteImage';
+import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
+import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { compatInputTypes } from 'c/finalSurveyMapping';
 
 /**
@@ -22,8 +22,8 @@ import { compatInputTypes } from 'c/finalSurveyMapping';
  * `required` is authoring sugar the STUDIO compiles into the validation
  * entry (schema §4); Behavior + the Consent acceptance toggle both ride it.
  *
- * Images upload as Salesforce Files (FormAssetController — the proven
- * legacy path); only URL + versionId land in the spec, never base64.
+ * Images upload as Salesforce Files (FinalAssetController); only URL +
+ * versionId land in the spec, never base64.
  *
  * pp- prefixed classes (LEX leak rule).
  */
@@ -1354,7 +1354,10 @@ export default class FinalPropertyPanel extends LightningElement {
                 });
                 this._config({ src: res.url, versionId: res.contentVersionId });
                 if (previousVersionId) {
-                    deleteImage({ contentVersionId: previousVersionId });
+                    deleteImage({
+                        contentVersionId: previousVersionId,
+                        formId: this.formId || null
+                    });
                 }
             } catch (e) {
                 this.uploadError =
@@ -1371,7 +1374,10 @@ export default class FinalPropertyPanel extends LightningElement {
         const previousVersionId = this.cfg.versionId;
         this._config({ src: null, versionId: null });
         if (previousVersionId) {
-            deleteImage({ contentVersionId: previousVersionId });
+            deleteImage({
+                contentVersionId: previousVersionId,
+                formId: this.formId || null
+            });
         }
     }
 

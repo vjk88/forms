@@ -108,12 +108,14 @@ describe('c-final-image-uploader', () => {
         const el = mount({
             label: 'Logo',
             url: '/sfc/old',
-            contentVersionId: '068OLD'
+            contentVersionId: '068OLD',
+            formId: 'a04SOURCE'
         });
         pickFile(el, { name: 'n.png', type: 'image/png', size: 100 });
         await flush();
         expect(deleteImage).toHaveBeenCalledWith({
-            contentVersionId: '068OLD'
+            contentVersionId: '068OLD',
+            formId: 'a04SOURCE'
         });
     });
 
@@ -122,7 +124,8 @@ describe('c-final-image-uploader', () => {
         const el = mount({
             label: 'Logo',
             url: '/sfc/old',
-            contentVersionId: '068OLD'
+            contentVersionId: '068OLD',
+            formId: 'a04SOURCE'
         });
         pickFile(el, { name: 'n.png', type: 'image/png', size: 100 });
         await flush();
@@ -160,14 +163,16 @@ describe('c-final-image-uploader', () => {
         const el = mount({
             label: 'Logo',
             url: '/sfc/old',
-            contentVersionId: '068OLD'
+            contentVersionId: '068OLD',
+            formId: 'a04SOURCE'
         });
         const handler = jest.fn();
         el.addEventListener('change', handler);
         el.shadowRoot.querySelector('.linkbtn').click();
         await flush();
         expect(deleteImage).toHaveBeenCalledWith({
-            contentVersionId: '068OLD'
+            contentVersionId: '068OLD',
+            formId: 'a04SOURCE'
         });
         expect(handler.mock.calls[0][0].detail).toEqual({
             url: null,

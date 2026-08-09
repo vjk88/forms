@@ -14,7 +14,9 @@ import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
+import cloneForm from '@salesforce/apex/FinalFormActionsController.cloneForm';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
+import { studioUrl } from 'c/finalStudioLink';
 import {
     compatInputTypes,
     mappedElements,
@@ -95,6 +97,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     settingsSection = 'availability';
     objectSaving = false;
 
+    /** Incremental Studio Actions rollout: Slice 2 exposes Clone only. */
+    cloneDialogOpen = false;
+    cloneBusy = false;
+    cloneError = '';
+
     _saveTimer;
     _redirected = false;
 
@@ -166,6 +173,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     async _load() {
         this.closeSettings();
+        this.closeCloneDialog(false);
         this.loading = true;
         this.notFound = false;
         try {
@@ -459,6 +467,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     handleSettingsToggle() {
+        this.closeCloneDialog(false);
         this.settingsMenuOpen = !this.settingsMenuOpen;
         if (this.settingsMenuOpen) {
             Promise.resolve().then(() => {
@@ -555,6 +564,58 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             },
             state: { filterName: 'Recent' }
         });
+    }
+
+    // ----- Studio actions: Clone (incremental rollout) -----
+
+    handleActionSelect(event) {
+        if (event.detail.value !== 'clone' || this.isReadOnly) {
+            return;
+        }
+        this.closeSettings();
+        this.cloneError = '';
+        this.cloneDialogOpen = true;
+    }
+
+    handleCloneCancel() {
+        if (!this.cloneBusy) {
+            this.closeCloneDialog(true);
+        }
+    }
+
+    closeCloneDialog(restoreFocus = true) {
+        const wasOpen = this.cloneDialogOpen;
+        this.cloneDialogOpen = false;
+        this.cloneError = '';
+        if (wasOpen && restoreFocus) {
+            Promise.resolve().then(() => {
+                this.template
+                    .querySelector('[data-id="actions-trigger"]')
+                    ?.focus();
+            });
+        }
+    }
+
+    async handleCloneConfirm(event) {
+        if (this.cloneBusy || this.isReadOnly) {
+            return;
+        }
+        this.cloneBusy = true;
+        this.cloneError = '';
+        try {
+            const result = await cloneForm({
+                formId: this.formId,
+                currentSpecJson: JSON.stringify(this.spec),
+                requestedName: event.detail.name
+            });
+            window.location.assign(studioUrl(result.formId));
+        } catch (error) {
+            this.cloneError =
+                error?.body?.message ||
+                'The form could not be cloned. Try again.';
+        } finally {
+            this.cloneBusy = false;
+        }
     }
 
     handleExit() {
