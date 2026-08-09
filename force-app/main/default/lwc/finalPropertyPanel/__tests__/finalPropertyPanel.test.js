@@ -13,12 +13,12 @@ jest.mock(
     { virtual: true }
 );
 jest.mock(
-    '@salesforce/apex/FormAssetController.uploadImage',
+    '@salesforce/apex/FinalAssetController.uploadImage',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
 jest.mock(
-    '@salesforce/apex/FormAssetController.deleteImage',
+    '@salesforce/apex/FinalAssetController.deleteImage',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );

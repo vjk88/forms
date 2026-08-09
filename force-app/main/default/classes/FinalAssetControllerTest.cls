@@ -2,21 +2,21 @@
 private class FinalAssetControllerTest {
     // 1x1 transparent PNG
     private static final String PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-    private static final String PNG_DATA_URL = 'data:image/png;base64,' + PNG_B64;
+    private static final String PNG_DATA_URL =
+        'data:image/png;base64,' + PNG_B64;
 
     @TestSetup
     static void setup() {
-        insert new List<Form__c>{
-            new Form__c(
-                Name = 'Private Form',
-                Primary_Context_Object__c = 'Contact'
-            ),
-            new Form__c(
-                Name = 'Public Form',
-                Primary_Context_Object__c = 'Contact',
-                Allowed_Adapters__c = 'Public_Guest'
-            )
-        };
+        List<Form__c> forms = TestDataFactory.createForms(
+            2,
+            'Form',
+            'Contact',
+            false
+        );
+        forms[0].Name = 'Private Form';
+        forms[1].Name = 'Public Form';
+        forms[1].Allowed_Adapters__c = 'Public_Guest';
+        insert as user forms;
     }
 
     private static Id formId(String name) {
@@ -136,40 +136,119 @@ private class FinalAssetControllerTest {
     }
 
     @IsTest
-    static void deleteImageCascadesDocument() {
-        FinalAssetController.ImageResult res = FinalAssetController.uploadImage(
-            PNG_DATA_URL,
-            'gone.png',
-            formId('Private Form')
+    static void deleteImageCascadesDocumentWhenFormIsExclusiveOwner() {
+        Id sourceFormId = formId('Private Form');
+        ContentVersion version = new ContentVersion(
+            Title = 'gone.png',
+            PathOnClient = 'gone.png',
+            VersionData = EncodingUtil.base64Decode(PNG_B64),
+            FirstPublishLocationId = sourceFormId
         );
+        insert as user version;
 
         Test.startTest();
-        FinalAssetController.deleteImage(res.contentVersionId);
+        FinalAssetController.deleteImage(version.Id, sourceFormId);
         Test.stopTest();
 
-        System.assertEquals(
+        Assert.areEqual(
             0,
             [
                 SELECT COUNT()
                 FROM ContentVersion
-                WHERE Id = :res.contentVersionId
+                WHERE Id = :version.Id
             ],
             'Version deleted via document cascade'
         );
     }
 
     @IsTest
-    static void deleteImageNullAndMissingAreNoOps() {
-        FinalAssetController.deleteImage(null);
-        // a made-up (deleted) version id — must not throw
+    static void deleteImageNullInputsAreNoOps() {
+        Test.startTest();
+        FinalAssetController.deleteImage(null, null);
+        Test.stopTest();
+
+        Assert.isTrue(true, 'Null cleanup input should not throw');
+    }
+
+    @IsTest
+    static void deleteImageMissingFormLinkIsNoOp() {
+        Id sourceFormId = formId('Private Form');
         FinalAssetController.ImageResult res = FinalAssetController.uploadImage(
             PNG_DATA_URL,
             'temp.png',
             null
         );
-        FinalAssetController.deleteImage(res.contentVersionId);
-        FinalAssetController.deleteImage(res.contentVersionId);
-        System.assert(true, 'No exception on null/already-deleted');
+        Test.startTest();
+        FinalAssetController.deleteImage(res.contentVersionId, sourceFormId);
+        Test.stopTest();
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM ContentVersion
+                WHERE Id = :res.contentVersionId
+            ],
+            'A form cannot delete a document it does not link to'
+        );
+    }
+
+    @IsTest
+    static void deleteImageUnlinksSourceWhenDocumentIsShared() {
+        Id sourceFormId = formId('Private Form');
+        Id otherFormId = formId('Public Form');
+        FinalAssetController.ImageResult res = FinalAssetController.uploadImage(
+            PNG_DATA_URL,
+            'shared.png',
+            sourceFormId
+        );
+        Id contentDocumentId = [
+            SELECT ContentDocumentId
+            FROM ContentVersion
+            WHERE Id = :res.contentVersionId
+        ]
+        .ContentDocumentId;
+        insert as user new ContentDocumentLink(
+            ContentDocumentId = contentDocumentId,
+            LinkedEntityId = otherFormId,
+            ShareType = 'V',
+            Visibility = 'AllUsers'
+        );
+
+        Test.startTest();
+        FinalAssetController.deleteImage(res.contentVersionId, sourceFormId);
+        Test.stopTest();
+
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM ContentVersion
+                WHERE Id = :res.contentVersionId
+            ],
+            'Shared bytes must remain available to the other form'
+        );
+        Assert.areEqual(
+            0,
+            [
+                SELECT COUNT()
+                FROM ContentDocumentLink
+                WHERE
+                    ContentDocumentId = :contentDocumentId
+                    AND LinkedEntityId = :sourceFormId
+            ],
+            'The source form link should be removed'
+        );
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM ContentDocumentLink
+                WHERE
+                    ContentDocumentId = :contentDocumentId
+                    AND LinkedEntityId = :otherFormId
+            ],
+            'The clone or other form link should remain'
+        );
     }
 
     @IsTest

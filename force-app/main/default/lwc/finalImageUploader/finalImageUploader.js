@@ -89,9 +89,10 @@ export default class FinalImageUploader extends LightningElement {
             });
             if (replacedVersionId) {
                 // fire-and-forget: orphan cleanup never blocks the edit
-                deleteImage({ contentVersionId: replacedVersionId }).catch(
-                    () => {}
-                );
+                deleteImage({
+                    contentVersionId: replacedVersionId,
+                    formId: this.formId || null
+                }).catch(() => {});
             }
             this.dispatchEvent(
                 new CustomEvent('change', {
@@ -112,9 +113,10 @@ export default class FinalImageUploader extends LightningElement {
     handleRemove() {
         this.error = '';
         if (this.contentVersionId) {
-            deleteImage({ contentVersionId: this.contentVersionId }).catch(
-                () => {}
-            );
+            deleteImage({
+                contentVersionId: this.contentVersionId,
+                formId: this.formId || null
+            }).catch(() => {});
         }
         this.dispatchEvent(
             new CustomEvent('change', {

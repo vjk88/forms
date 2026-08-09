@@ -1,0 +1,79 @@
+<template>
+    <div class="action-shell" onkeydown={handleKeydown}>
+        <button
+            class="action-backdrop"
+            type="button"
+            tabindex="-1"
+            aria-label="Cancel clone form"
+            onclick={handleBackdrop}
+        ></button>
+        <section
+            class="action-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-busy={busy}
+            aria-labelledby="clone-title"
+            aria-describedby="clone-description"
+        >
+            <span
+                class="focus-sentinel"
+                tabindex="0"
+                onfocus={handleFocusStart}
+            ></span>
+            <header class="action-header">
+                <h2 id="clone-title">Clone form</h2>
+                <lightning-button-icon
+                    data-id="clone-close"
+                    icon-name="utility:close"
+                    alternative-text="Cancel clone form"
+                    title="Cancel"
+                    disabled={busy}
+                    onclick={handleCancel}
+                ></lightning-button-icon>
+            </header>
+            <div class="action-body">
+                <p id="clone-description" class="action-description">
+                    Create a private draft from the form's current Studio state,
+                    including unsaved changes.
+                </p>
+                <lightning-input
+                    data-id="clone-name"
+                    type="text"
+                    label="New form name"
+                    value={cloneName}
+                    required
+                    max-length="80"
+                    disabled={busy}
+                    onchange={handleNameChange}
+                ></lightning-input>
+                <template lwc:if={error}>
+                    <p class="action-error" role="alert">{error}</p>
+                </template>
+                <template lwc:if={busy}>
+                    <p class="action-progress" role="status">
+                        Creating the private draft…
+                    </p>
+                </template>
+            </div>
+            <footer class="action-footer">
+                <lightning-button
+                    label="Cancel"
+                    disabled={busy}
+                    onclick={handleCancel}
+                ></lightning-button>
+                <lightning-button
+                    data-id="clone-confirm"
+                    variant="brand"
+                    label={confirmLabel}
+                    disabled={confirmDisabled}
+                    onclick={handleConfirm}
+                ></lightning-button>
+            </footer>
+            <span
+                class="focus-sentinel"
+                tabindex="0"
+                onfocus={handleFocusEnd}
+            ></span>
+        </section>
+    </div>
+</template>

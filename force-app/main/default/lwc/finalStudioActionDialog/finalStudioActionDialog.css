@@ -1,0 +1,88 @@
+:host {
+    color: var(--c-studio-text, #181818);
+}
+
+.action-shell {
+    position: fixed;
+    z-index: 1100;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: var(--c-studio-space-lg, 24px);
+}
+
+.action-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    background: var(--c-studio-overlay, rgb(8 15 26 / 52%));
+}
+
+.action-dialog {
+    position: relative;
+    width: min(480px, calc(100vw - 32px));
+    overflow: hidden;
+    border-radius: var(--c-studio-radius-lg, 12px);
+    background: var(--c-studio-surface, #fff);
+    box-shadow: var(--c-studio-dialog-shadow, 0 20px 48px rgb(0 0 0 / 28%));
+}
+
+.action-header {
+    display: flex;
+    min-height: 68px;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--c-studio-border, #e5e5e5);
+}
+
+.action-header h2 {
+    margin: 1px 0 0;
+    font-size: 18px;
+}
+
+.action-body {
+    padding: 20px 18px 22px;
+}
+
+.action-description {
+    margin: 0 0 16px;
+    color: var(--c-studio-text-weak, #444);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.action-error {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-left: 3px solid var(--c-studio-error, #ba0517);
+    border-radius: 4px;
+    background: var(--c-studio-error-surface, #fef1ee);
+    color: var(--c-studio-error-text, #8e030f);
+    font-size: 12.5px;
+}
+
+.action-progress {
+    margin: 12px 0 0;
+    color: var(--c-studio-text-weak, #444);
+    font-size: 12.5px;
+}
+
+.action-footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px 18px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--c-studio-border, #e5e5e5);
+    background: var(--c-studio-surface-subtle, #f8f8f8);
+}
+
+.focus-sentinel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
