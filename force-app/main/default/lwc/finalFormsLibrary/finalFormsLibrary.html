@@ -1,8 +1,23 @@
 <template>
     <div class="lib">
         <header class="lib-head">
-            <h2>Forms</h2>
+            <div>
+                <h2>Forms &amp; Surveys</h2>
+                <p class="lib-subtitle">
+                    Build, restore, and open configurations
+                </p>
+            </div>
             <div class="lib-actions">
+                <label class="lib-filter-label" for="status-filter">Show</label>
+                <select
+                    id="status-filter"
+                    class="lib-filter"
+                    aria-label="Form lifecycle filter"
+                    onchange={handleStatusFilter}
+                >
+                    <option value="current">Current</option>
+                    <option value="archived">Archived</option>
+                </select>
                 <button
                     type="button"
                     class="lib-refresh"
@@ -15,59 +30,91 @@
                 </button>
             </div>
         </header>
+        <template lwc:if={restoreNotice}>
+            <p class="lib-notice" role="status" aria-live="polite">
+                {restoreNotice}
+            </p>
+        </template>
         <template lwc:if={error}>
             <p class="lib-error" role="alert">{error}</p>
         </template>
         <template lwc:elseif={empty}>
             <div class="lib-empty">
-                <h3>No forms yet</h3>
-                <p>
-                    Click <b>+ New form</b> to start from a survey template or a
-                    blank layout.
-                </p>
+                <h3>{emptyTitle}</h3>
+                <p>{emptyText}</p>
             </div>
         </template>
         <template lwc:elseif={rows}>
-            <table class="lib-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Object</th>
-                        <th>Version</th>
-                        <th>Last modified</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template for:each={rows} for:item="r">
-                        <tr key={r.id}>
-                            <td class="lib-name">{r.name}</td>
-                            <td>{r.objectLabel}</td>
-                            <td>{r.versionLabel}</td>
-                            <td>
-                                <lightning-formatted-date-time
-                                    value={r.modified}
-                                    year="numeric"
-                                    month="short"
-                                    day="numeric"
-                                    hour="2-digit"
-                                    minute="2-digit"
-                                ></lightning-formatted-date-time>
-                            </td>
-                            <td>
-                                <button
-                                    type="button"
-                                    class="lib-open"
-                                    data-id={r.id}
-                                    onclick={handleOpen}
-                                >
-                                    Open in Studio
-                                </button>
-                            </td>
+            <div class="lib-table-wrap">
+                <table class="lib-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Object</th>
+                            <th>Version</th>
+                            <th>Last modified</th>
+                            <th><span class="assistive-text">Actions</span></th>
                         </tr>
-                    </template>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <template for:each={decoratedRows} for:item="row">
+                            <tr key={row.id}>
+                                <td class="lib-name">{row.name}</td>
+                                <td>
+                                    <span class="lib-type"
+                                        >{row.typeLabel}</span
+                                    >
+                                </td>
+                                <td>{row.objectLabel}</td>
+                                <td>{row.versionLabel}</td>
+                                <td>
+                                    <lightning-formatted-date-time
+                                        value={row.modified}
+                                        year="numeric"
+                                        month="short"
+                                        day="numeric"
+                                        hour="2-digit"
+                                        minute="2-digit"
+                                    ></lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    <template lwc:if={row.isArchived}>
+                                        <button
+                                            type="button"
+                                            class="lib-view"
+                                            data-id={row.id}
+                                            onclick={handleOpen}
+                                        >
+                                            View
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="lib-restore"
+                                            data-id={row.id}
+                                            disabled={row.restoring}
+                                            title="Restore as a private draft"
+                                            onclick={handleRestore}
+                                        >
+                                            {row.restoreLabel}
+                                        </button>
+                                    </template>
+                                    <template lwc:else>
+                                        <button
+                                            type="button"
+                                            class="lib-open"
+                                            data-id={row.id}
+                                            onclick={handleOpen}
+                                        >
+                                            Open in Studio
+                                        </button>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
         </template>
         <template lwc:else>
             <lightning-spinner

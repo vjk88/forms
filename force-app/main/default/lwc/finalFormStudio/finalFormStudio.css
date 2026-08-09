@@ -17,6 +17,10 @@
     --c-studio-dialog-shadow: 0 20px 48px rgb(0 0 0 / 28%);
     --c-studio-radius-lg: 12px;
     --c-studio-space-lg: 24px;
+    --c-studio-border-strong: #c9c9c9;
+    --c-studio-warning-surface: #fef5e7;
+    --c-studio-warning-border: #e0b34d;
+    --c-studio-warning-text: #6b4e00;
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -37,6 +41,17 @@
     margin: 0 0 16px;
     color: #5c5c5c;
     max-width: 44ch;
+}
+
+.st-archive-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.st-archive-error {
+    color: var(--c-studio-error, #ba0517) !important;
 }
 
 /* ----- top bar (IA §3: App Builder grammar) ----- */

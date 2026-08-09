@@ -1,7 +1,7 @@
 # Studio Actions — implementation plan
 
-**Status:** approved; implementation in progress. Deployment remains a separate,
-explicit step after the slice gates pass.
+**Status:** implementation complete in source; deployment and host smoke testing
+remain separate, explicit rollout steps.
 
 **Review pass (2026-08-09):** tightenings layered in from a code-verified
 review — per-slice PRs, clone-spec treated as untrusted, export-download and
@@ -13,17 +13,18 @@ against the repo: `Form_Response__c.Form_Version__c` is a **required lookup with
 permission set currently grants `Survey_Invitation__c`** (only the Admin
 profile does).
 
-**Implementation progress (2026-08-08):** Slices 1 and 2 are complete on
-`codex/studio-actions-slice-1`: the transfer/clone server core, editable-only
-Clone action, focused dialog, live-spec handoff, shared Studio navigation, and
-shared-file-safe image removal. The final targeted deployment dry-run compiled
-all 16 included metadata components and passed all 28 focused Apex tests with
-no coverage warnings. Four focused Jest suites pass all 49 tests, targeted
-ESLint is clean, and the UI/UX review findings are resolved. Code Analyzer
-reports 0 critical/high findings (49 moderate, 33 low across the combined
-Slice 1+2 Apex set). No metadata has been deployed to the org.
-The remaining Slice 2 rollout gate is the post-deploy Form/Survey smoke test in
-both Lightning Experience and the Visualforce host.
+**Implementation progress (2026-08-09):** Slices 1–5 are complete in source.
+The Actions menu now provides Clone, Export, Import, and Delete; JSON packages
+carry inspected theme/topic/asset dependencies; deletion is response-aware and
+branches to Archive; and the library provides Current/Archived filtering plus
+private-Draft Restore. Archived stale Studio URLs are read-only. The final
+targeted deployment dry-run compiled all 18 included metadata components and
+passed all 69 specified Apex tests with no coverage warnings. Five focused Jest
+suites pass all 63 tests, targeted ESLint is clean, the severity 1–2 Code
+Analyzer verification reports zero findings, and the final UI/UX review has no
+open rollout blockers. No metadata has been deployed to the org. Remaining
+rollout work is the explicit deployment followed by Form and Survey smoke tests
+in Lightning Experience and the Visualforce host.
 
 **Scope:** the Studio top-bar Actions menu:
 
@@ -443,7 +444,7 @@ as a single change; the slice gates below are the PR boundaries. Slice 1 is
 server-core-only and must be green in Apex tests before any Actions button
 exists.
 
-### Slice 1 — transfer contract and server core
+### Slice 1 — transfer contract and server core (complete)
 
 - Build package DTO/validation and fresh-ID remapper.
 - Build selector/service/controller skeletons.
@@ -451,7 +452,7 @@ exists.
 
 **Gate:** no UI; Apex tests prove IDs/references, security, and rollback.
 
-### Slice 2 — Clone
+### Slice 2 — Clone (complete)
 
 - Add the Actions menu shell with Clone as its only item, plus the Clone dialog.
 - Wire current in-memory spec to `cloneForm`.
@@ -462,7 +463,7 @@ exists.
 
 **Gate:** Form and Survey clone end-to-end in both Studio hosts.
 
-### Slice 3 — Export and Import
+### Slice 3 — Export and Import (complete)
 
 - Add v1 JSON envelope generation/download.
 - Add import inspection and creation flow.
@@ -474,7 +475,7 @@ exists.
 **Gate:** same-org round trip preserves behavior; cross-org missing dependencies
 produce warnings or blocking errors, never a silently broken form.
 
-### Slice 4 — Delete, Archive, Restore
+### Slice 4 — Delete, Archive, Restore (complete)
 
 - Add preflight counts and typed-name confirmation.
 - Add zero-response delete and response-preserving archive.
@@ -486,7 +487,7 @@ produce warnings or blocking errors, never a silently broken form.
 **Gate:** no response, answer, topic, invitation, file, or business-record data
 is removed outside the approved branch.
 
-### Slice 5 — quality and rollout
+### Slice 5 — quality complete; rollout pending
 
 - Jest, Apex tests, Code Analyzer, formatting, permission-set verification.
 - Targeted sandbox deployment only.

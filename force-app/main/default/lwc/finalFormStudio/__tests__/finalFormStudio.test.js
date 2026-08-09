@@ -7,6 +7,13 @@ import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
 import cloneForm from '@salesforce/apex/FinalFormActionsController.cloneForm';
+import exportForm from '@salesforce/apex/FinalFormActionsController.exportForm';
+import inspectImport from '@salesforce/apex/FinalFormActionsController.inspectImport';
+import importForm from '@salesforce/apex/FinalFormActionsController.importForm';
+import getActionSummary from '@salesforce/apex/FinalFormActionsController.getActionSummary';
+import archiveForm from '@salesforce/apex/FinalFormActionsController.archiveForm';
+import deleteForm from '@salesforce/apex/FinalFormActionsController.deleteForm';
+import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm';
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
@@ -74,6 +81,41 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalFormActionsController.cloneForm',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.exportForm',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.inspectImport',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.importForm',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.getActionSummary',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.archiveForm',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.deleteForm',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.restoreForm',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -1200,7 +1242,7 @@ describe('c-final-form-studio', () => {
         expect(panel.publicSaveText).toBe('✓ Access saved immediately');
     });
 
-    it('shows Clone as the only editable action and sends the live spec to Apex', async () => {
+    it('shows all wired actions and sends the live spec to Clone Apex', async () => {
         loadStudio.mockResolvedValue({
             name: 'Event feedback',
             specJson: JSON.stringify(SPEC),
@@ -1239,7 +1281,7 @@ describe('c-final-form-studio', () => {
             expect(actions).not.toBeNull();
             expect(
                 actions.querySelectorAll('lightning-menu-item')
-            ).toHaveLength(1);
+            ).toHaveLength(4);
             actions.dispatchEvent(
                 new CustomEvent('select', {
                     detail: { value: 'clone' }
@@ -1342,5 +1384,234 @@ describe('c-final-form-studio', () => {
             element.shadowRoot.querySelector('c-final-studio-action-dialog')
         ).toBeNull();
         expect(actions.focus).toHaveBeenCalledTimes(1);
+    });
+
+    it('prepares Export from the current in-memory spec', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        exportForm.mockResolvedValue({
+            fileName: 'event-feedback.finalform.json',
+            packageJson: '{"kind":"final-form-package"}',
+            warnings: []
+        });
+        const element = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+
+        element.shadowRoot
+            .querySelector('[data-id="actions-trigger"]')
+            .dispatchEvent(
+                new CustomEvent('select', { detail: { value: 'export' } })
+            );
+        await micro(4);
+
+        expect(exportForm).toHaveBeenCalledWith({
+            formId: 'a0F1',
+            currentSpecJson: JSON.stringify(SPEC)
+        });
+        const dialog = element.shadowRoot.querySelector(
+            'c-final-studio-action-dialog'
+        );
+        expect(dialog.action).toBe('export');
+        expect(dialog.exportResult.fileName).toBe(
+            'event-feedback.finalform.json'
+        );
+
+        dialog.dispatchEvent(new CustomEvent('confirm'));
+        await flush();
+        const retainedDialog = element.shadowRoot.querySelector(
+            'c-final-studio-action-dialog'
+        );
+        expect(retainedDialog).not.toBeNull();
+        expect(retainedDialog.exportFallbackText).toBe(
+            '{"kind":"final-form-package"}'
+        );
+    });
+
+    it('inspects and imports a package as a new form', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        inspectImport.mockResolvedValue({
+            valid: true,
+            name: 'Imported survey',
+            type: 'survey',
+            warnings: []
+        });
+        importForm.mockResolvedValue({ formId: 'a0FIMPORT' });
+        const originalLocation = window.location;
+        const assign = jest.fn();
+        delete window.location;
+        window.location = {
+            assign,
+            hostname: 'example.my.salesforce.com'
+        };
+        try {
+            const element = mount();
+            CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+            await micro(4);
+            element.shadowRoot
+                .querySelector('[data-id="actions-trigger"]')
+                .dispatchEvent(
+                    new CustomEvent('select', {
+                        detail: { value: 'import' }
+                    })
+                );
+            await flush();
+            const dialog = element.shadowRoot.querySelector(
+                'c-final-studio-action-dialog'
+            );
+            dialog.dispatchEvent(
+                new CustomEvent('inspect', {
+                    detail: { packageJson: '{"packageVersion":1}' }
+                })
+            );
+            await micro(4);
+            expect(inspectImport).toHaveBeenCalledWith({
+                packageJson: '{"packageVersion":1}'
+            });
+            dialog.dispatchEvent(
+                new CustomEvent('confirm', {
+                    detail: {
+                        name: 'Imported survey',
+                        acceptedWarningCodes: []
+                    }
+                })
+            );
+            await micro(4);
+            expect(importForm).toHaveBeenCalledWith({
+                packageJson: '{"packageVersion":1}',
+                requestedName: 'Imported survey',
+                acceptedWarningCodes: []
+            });
+            expect(assign).toHaveBeenCalledWith(
+                '/apex/FinalStudio?c__formId=a0FIMPORT'
+            );
+        } finally {
+            window.location = originalLocation;
+        }
+    });
+
+    it('uses response-aware preflight and archives when deletion is blocked', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        getActionSummary.mockResolvedValue({
+            formName: 'Event feedback',
+            responseCount: 4,
+            hardDeleteAllowed: false
+        });
+        archiveForm.mockResolvedValue();
+        const element = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        element.shadowRoot
+            .querySelector('[data-id="actions-trigger"]')
+            .dispatchEvent(
+                new CustomEvent('select', { detail: { value: 'delete' } })
+            );
+        await micro(4);
+        const dialog = element.shadowRoot.querySelector(
+            'c-final-studio-action-dialog'
+        );
+        expect(dialog.actionSummary.hardDeleteAllowed).toBe(false);
+        dialog.dispatchEvent(
+            new CustomEvent('confirm', {
+                detail: { operation: 'archive' }
+            })
+        );
+        await micro(4);
+        expect(archiveForm).toHaveBeenCalledWith({ formId: 'a0F1' });
+        expect(deleteForm).not.toHaveBeenCalled();
+    });
+
+    it('hard deletes only after the dialog supplies the exact name', async () => {
+        loadStudio.mockResolvedValue({
+            name: 'Disposable form',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 1,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        getActionSummary.mockResolvedValue({
+            formName: 'Disposable form',
+            responseCount: 0,
+            hardDeleteAllowed: true
+        });
+        deleteForm.mockResolvedValue();
+        const element = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        element.shadowRoot
+            .querySelector('[data-id="actions-trigger"]')
+            .dispatchEvent(
+                new CustomEvent('select', { detail: { value: 'delete' } })
+            );
+        await micro(4);
+        element.shadowRoot
+            .querySelector('c-final-studio-action-dialog')
+            .dispatchEvent(
+                new CustomEvent('confirm', {
+                    detail: {
+                        operation: 'delete',
+                        confirmationName: 'Disposable form'
+                    }
+                })
+            );
+        await micro(4);
+        expect(deleteForm).toHaveBeenCalledWith({
+            formId: 'a0F1',
+            confirmationName: 'Disposable form'
+        });
+    });
+
+    it('blocks archived Studio editing and restores as a draft', async () => {
+        loadStudio
+            .mockResolvedValueOnce({
+                name: 'Archived survey',
+                isArchived: true
+            })
+            .mockResolvedValueOnce({
+                name: 'Archived survey',
+                isArchived: false,
+                specJson: JSON.stringify(SPEC),
+                draftVersionId: 'a0V1',
+                versionNumber: 1,
+                activeVersionNumber: 1
+            });
+        listVersions.mockResolvedValue([]);
+        restoreForm.mockResolvedValue();
+        const element = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+        expect(
+            element.shadowRoot.querySelector('.st-notfound h2').textContent
+        ).toContain('archived');
+        expect(
+            element.shadowRoot.querySelector('[data-id="actions-trigger"]')
+        ).toBeNull();
+        element.shadowRoot.querySelector('.st-primary').click();
+        await micro(6);
+        expect(restoreForm).toHaveBeenCalledWith({ formId: 'a0F1' });
+        expect(
+            element.shadowRoot.querySelector('[data-id="actions-trigger"]')
+        ).not.toBeNull();
     });
 });

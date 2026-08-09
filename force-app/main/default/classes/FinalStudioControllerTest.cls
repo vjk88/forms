@@ -190,7 +190,7 @@ private class FinalStudioControllerTest {
         makeVersion(f.Id, 1, true, '{"specVersion":1}');
         makeVersion(f.Id, 2, false, '{"specVersion":1}');
 
-        List<Map<String, Object>> rows = FinalStudioController.listForms();
+        List<Map<String, Object>> rows = FinalStudioController.listForms(false);
         Map<String, Object> row;
         for (Map<String, Object> r : rows) {
             if (r.get('id') == f.Id) {
@@ -200,6 +200,73 @@ private class FinalStudioControllerTest {
         Assert.isNotNull(row, 'form listed');
         Assert.areEqual(1, row.get('activeVersion'));
         Assert.areEqual(true, row.get('hasDraft'));
+    }
+
+    @IsTest
+    static void listFormsSeparatesArchivedFromCurrent() {
+        Form__c current = makeForm('Current form');
+        makeVersion(current.Id, 1, true, '{"specVersion":1}');
+        Form__c archived = makeForm('Archived form');
+        makeVersion(archived.Id, 1, true, '{"specVersion":1}');
+        archived.Status__c = 'Archived';
+        update archived;
+
+        Set<Id> currentIds = new Set<Id>();
+        Map<String, Object> currentRow;
+        for (Map<String, Object> r : FinalStudioController.listForms(false)) {
+            currentIds.add((Id) r.get('id'));
+            if (r.get('id') == current.Id) {
+                currentRow = r;
+            }
+        }
+        Assert.isTrue(currentIds.contains(current.Id), 'current form listed');
+        Assert.isFalse(
+            currentIds.contains(archived.Id),
+            'archived is excluded from the current list'
+        );
+        Assert.isNotNull(currentRow, 'current row present');
+        Assert.areEqual('Form', currentRow.get('formType'), 'type surfaced');
+
+        Set<Id> archivedIds = new Set<Id>();
+        Map<String, Object> archivedRow;
+        for (Map<String, Object> r : FinalStudioController.listForms(true)) {
+            archivedIds.add((Id) r.get('id'));
+            if (r.get('id') == archived.Id) {
+                archivedRow = r;
+            }
+        }
+        Assert.isTrue(archivedIds.contains(archived.Id), 'archived listed');
+        Assert.isFalse(
+            archivedIds.contains(current.Id),
+            'current is excluded from the archived list'
+        );
+        Assert.isNotNull(archivedRow, 'archived row present');
+        Assert.areEqual(
+            'Archived',
+            archivedRow.get('status'),
+            'archived status surfaced'
+        );
+    }
+
+    @IsTest
+    static void loadArchivedFormReturnsReadOnlyFlag() {
+        Form__c f = makeForm('Archived load');
+        makeVersion(f.Id, 1, true, '{"specVersion":1}');
+        f.Status__c = 'Archived';
+        update f;
+
+        Map<String, Object> out = FinalStudioController.loadStudio(f.Id);
+        Assert.areEqual(true, out.get('isArchived'), 'archived flag set');
+        Assert.areEqual(false, out.get('isPublic'), 'archived is not public');
+        Assert.areEqual(
+            false,
+            out.get('isPublished'),
+            'archived is not published'
+        );
+        Assert.isNull(
+            out.get('specJson'),
+            'no spec is returned for an archived form'
+        );
     }
 
     @IsTest
@@ -258,8 +325,8 @@ private class FinalStudioControllerTest {
     static void loadMissingFormThrowsFriendly() {
         try {
             FinalStudioController.loadStudio(
-                Form__c.SObjectType.getDescribe().getKeyPrefix() +
-                '000000000000'
+                Form__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED)
+                    .getKeyPrefix() + '000000000000'
             );
             Assert.fail('should throw');
         } catch (AuraHandledException e) {

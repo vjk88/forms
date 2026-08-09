@@ -4,16 +4,18 @@
             class="action-backdrop"
             type="button"
             tabindex="-1"
-            aria-label="Cancel clone form"
+            aria-label={cancelLabel}
             onclick={handleBackdrop}
         ></button>
         <section
+            data-id="action-dialog"
             class="action-dialog"
             role="dialog"
+            tabindex="-1"
             aria-modal="true"
             aria-busy={busy}
-            aria-labelledby="clone-title"
-            aria-describedby="clone-description"
+            aria-labelledby="action-title"
+            aria-describedby="action-description"
         >
             <span
                 class="focus-sentinel"
@@ -21,53 +23,254 @@
                 onfocus={handleFocusStart}
             ></span>
             <header class="action-header">
-                <h2 id="clone-title">Clone form</h2>
+                <h2 id="action-title">{title}</h2>
                 <lightning-button-icon
-                    data-id="clone-close"
+                    data-id="action-close"
                     icon-name="utility:close"
-                    alternative-text="Cancel clone form"
+                    alternative-text={cancelLabel}
                     title="Cancel"
                     disabled={busy}
                     onclick={handleCancel}
                 ></lightning-button-icon>
             </header>
             <div class="action-body">
-                <p id="clone-description" class="action-description">
-                    Create a private draft from the form's current Studio state,
-                    including unsaved changes.
+                <p id="action-description" class="action-description">
+                    {description}
                 </p>
-                <lightning-input
-                    data-id="clone-name"
-                    type="text"
-                    label="New form name"
-                    value={cloneName}
-                    required
-                    max-length="80"
-                    disabled={busy}
-                    onchange={handleNameChange}
-                ></lightning-input>
+
+                <template lwc:if={isClone}>
+                    <lightning-input
+                        data-id="clone-name"
+                        type="text"
+                        label="New form name"
+                        value={cloneName}
+                        required
+                        max-length="80"
+                        disabled={busy}
+                        onchange={handleNameChange}
+                    ></lightning-input>
+                </template>
+
+                <template lwc:elseif={isExport}>
+                    <template lwc:if={exportWarnings.length}>
+                        <ul class="action-warning-list">
+                            <template for:each={exportWarnings} for:item="item">
+                                <li key={item.key}>{item.message}</li>
+                            </template>
+                        </ul>
+                    </template>
+                    <template lwc:if={exportFileName}>
+                        <p class="action-file-name">
+                            File: <strong>{exportFileName}</strong>
+                        </p>
+                    </template>
+                    <template lwc:if={exportFallbackAvailable}>
+                        <template lwc:if={showExportFallback}>
+                            <p class="action-fallback-help">
+                                Copy the package below and save it with the file
+                                name shown above.
+                            </p>
+                            <lightning-textarea
+                                data-id="export-fallback"
+                                label="Export package"
+                                value={exportFallbackText}
+                                read-only
+                            ></lightning-textarea>
+                            <lightning-button
+                                data-id="export-copy"
+                                label={copyLabel}
+                                onclick={handleCopyExport}
+                            ></lightning-button>
+                        </template>
+                        <template lwc:else>
+                            <button
+                                type="button"
+                                class="action-linkish"
+                                onclick={handleShowFallback}
+                            >
+                                Download didn't start? Copy the package instead.
+                            </button>
+                        </template>
+                    </template>
+                </template>
+
+                <template lwc:elseif={isImport}>
+                    <label class="action-file-label" for="import-file">
+                        Final Form package
+                    </label>
+                    <input
+                        id="import-file"
+                        data-id="import-file"
+                        class="action-file-input"
+                        type="file"
+                        accept=".finalform.json,application/json"
+                        disabled={busy}
+                        onchange={handleFileChange}
+                    />
+                    <template lwc:if={selectedFileName}>
+                        <p class="action-file-name">{selectedFileName}</p>
+                    </template>
+                    <template lwc:if={fileError}>
+                        <p class="action-error" role="alert">{fileError}</p>
+                    </template>
+                    <template lwc:if={hasInspection}>
+                        <template lwc:if={inspectionValid}>
+                            <dl class="action-summary">
+                                <div>
+                                    <dt>Type</dt>
+                                    <dd>{importTypeLabel}</dd>
+                                </div>
+                                <div>
+                                    <dt>Pages</dt>
+                                    <dd>{inspection.pageCount}</dd>
+                                </div>
+                                <div>
+                                    <dt>Questions</dt>
+                                    <dd>{inspection.questionCount}</dd>
+                                </div>
+                                <div>
+                                    <dt>Object</dt>
+                                    <dd>{connectedObjectLabel}</dd>
+                                </div>
+                                <div>
+                                    <dt>Theme</dt>
+                                    <dd>{themeLabel}</dd>
+                                </div>
+                            </dl>
+                            <lightning-input
+                                data-id="import-name"
+                                type="text"
+                                label="New form name"
+                                value={importName}
+                                required
+                                max-length="80"
+                                disabled={busy}
+                                onchange={handleNameChange}
+                            ></lightning-input>
+                            <template lwc:if={hasImportWarnings}>
+                                <ul class="action-warning-list">
+                                    <template
+                                        for:each={inspectionWarnings}
+                                        for:item="item"
+                                    >
+                                        <li key={item.key}>{item.message}</li>
+                                    </template>
+                                </ul>
+                            </template>
+                            <template lwc:if={requiresWarningAcceptance}>
+                                <lightning-input
+                                    data-id="warning-accept"
+                                    type="checkbox"
+                                    label="I understand and accept these import changes"
+                                    checked={warningsAccepted}
+                                    disabled={busy}
+                                    onchange={handleWarningAcceptance}
+                                ></lightning-input>
+                            </template>
+                        </template>
+                        <template lwc:else>
+                            <ul class="action-error-list" role="alert">
+                                <template
+                                    for:each={inspectionErrors}
+                                    for:item="item"
+                                >
+                                    <li key={item.key}>{item.message}</li>
+                                </template>
+                            </ul>
+                        </template>
+                    </template>
+                </template>
+
+                <template lwc:elseif={isDelete}>
+                    <template lwc:if={hasSummary}>
+                        <dl class="action-summary">
+                            <div>
+                                <dt>Versions</dt>
+                                <dd>{actionSummary.versionCount}</dd>
+                            </div>
+                            <div>
+                                <dt>Stored survey responses</dt>
+                                <dd>{actionSummary.responseCount}</dd>
+                            </div>
+                            <div>
+                                <dt>Invitations</dt>
+                                <dd>{actionSummary.invitationCount}</dd>
+                            </div>
+                            <div>
+                                <dt>Config files</dt>
+                                <dd>{actionSummary.configFileCount}</dd>
+                            </div>
+                        </dl>
+                        <template lwc:if={canHardDelete}>
+                            <p class="action-danger-copy" aria-live="polite">
+                                This cannot be undone. Type
+                                <strong>{actionSummary.formName}</strong> to
+                                confirm.
+                            </p>
+                            <lightning-input
+                                data-id="delete-name"
+                                type="text"
+                                label="Form name"
+                                value={deleteName}
+                                disabled={busy}
+                                onchange={handleNameChange}
+                            ></lightning-input>
+                        </template>
+                        <template lwc:else>
+                            <p class="action-warning-panel">
+                                Archive turns off public access and permanently
+                                invalidates the current guest links. Responses,
+                                answers, topics, and files stay available for
+                                reporting. Restoring later brings the form back
+                                as a private draft — it does not re-open public
+                                access or revive these links, so you would
+                                publish and re-share.
+                            </p>
+                            <template lwc:if={archiveNeedsAck}>
+                                <lightning-input
+                                    data-id="archive-ack"
+                                    type="checkbox"
+                                    label="I understand this form is live — archiving turns off public access and its current guest links will stop working."
+                                    checked={archiveAck}
+                                    disabled={busy}
+                                    onchange={handleArchiveAck}
+                                ></lightning-input>
+                            </template>
+                        </template>
+                    </template>
+                </template>
+
                 <template lwc:if={error}>
                     <p class="action-error" role="alert">{error}</p>
                 </template>
                 <template lwc:if={busy}>
-                    <p class="action-progress" role="status">
-                        Creating the private draft…
-                    </p>
+                    <p class="action-progress" role="status">{progressText}</p>
                 </template>
             </div>
             <footer class="action-footer">
                 <lightning-button
+                    data-id="action-cancel"
                     label="Cancel"
                     disabled={busy}
                     onclick={handleCancel}
                 ></lightning-button>
-                <lightning-button
-                    data-id="clone-confirm"
-                    variant="brand"
-                    label={confirmLabel}
-                    disabled={confirmDisabled}
-                    onclick={handleConfirm}
-                ></lightning-button>
+                <template lwc:if={needsRetry}>
+                    <lightning-button
+                        data-id="action-retry"
+                        variant="brand"
+                        label="Retry"
+                        onclick={handleRetry}
+                    ></lightning-button>
+                </template>
+                <template lwc:else>
+                    <lightning-button
+                        data-id="action-confirm"
+                        variant={confirmVariant}
+                        label={confirmLabel}
+                        disabled={confirmDisabled}
+                        onclick={handleConfirm}
+                    ></lightning-button>
+                </template>
             </footer>
             <span
                 class="focus-sentinel"

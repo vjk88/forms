@@ -23,6 +23,29 @@ public with sharing class FinalSpecTransferService {
         String specJson,
         String expectedType
     ) {
+        return prepareSpec(specJson, expectedType, true);
+    }
+
+    /**
+     * Validates and cleans an authoring spec for a portable export while
+     * retaining structural ids so rule references remain intact.
+     * @param specJson Current in-memory authoring JSON.
+     * @param expectedType Type from the source Form__c, lowercase.
+     * @return Cleaned export specification and referenced asset ids.
+     * @throws TransferException when the untrusted specification is invalid.
+     */
+    public static PreparedSpec prepareExport(
+        String specJson,
+        String expectedType
+    ) {
+        return prepareSpec(specJson, expectedType, false);
+    }
+
+    private static PreparedSpec prepareSpec(
+        String specJson,
+        String expectedType,
+        Boolean remapStructure
+    ) {
         if (String.isBlank(specJson)) {
             throw new TransferException('The current form design is empty.');
         }
@@ -54,7 +77,9 @@ public with sharing class FinalSpecTransferService {
             throw new TransferException(e.getMessage());
         }
 
-        rewriteStructure(spec, validation);
+        if (remapStructure) {
+            rewriteStructure(spec, validation);
+        }
         cleanTransferredState(spec);
 
         PreparedSpec prepared = new PreparedSpec();
@@ -83,7 +108,7 @@ public with sharing class FinalSpecTransferService {
             newFormId == null ||
             String.isBlank(requestedName)
         ) {
-            throw new TransferException('The clone identity is incomplete.');
+            throw new TransferException('The new form identity is incomplete.');
         }
         Map<String, Object> formBlock = requireMap(
             prepared.spec.get('form'),
@@ -95,7 +120,7 @@ public with sharing class FinalSpecTransferService {
         String specJson = JSON.serialize(prepared.spec);
         if (specJson.length() > MAX_SPEC_CHARS) {
             throw new TransferException(
-                'The cloned form design exceeds 131,072 characters.'
+                'The new form design exceeds 131,072 characters.'
             );
         }
         return specJson;

@@ -122,6 +122,15 @@
         <object>Spec_History__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Survey_Invitation__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <readable>true</readable>
@@ -131,6 +140,11 @@
         <editable>true</editable>
         <readable>true</readable>
         <field>Form__c.Allowed_Adapters__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Form__c.Links_Invalidated_On__c</field>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -616,6 +630,51 @@
         <editable>true</editable>
         <readable>true</readable>
         <field>Theme_Definition__c.Base_Theme__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Expires_On__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Form__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Recipient__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Record_Id__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Record_Type__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Responded_On__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Revoked__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Sent_On__c</field>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <readable>true</readable>
+        <field>Survey_Invitation__c.Single_Use__c</field>
     </fieldPermissions>
     <classAccesses>
         <apexClass>FinalSpecController</apexClass>

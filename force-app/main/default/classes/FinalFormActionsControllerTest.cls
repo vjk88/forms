@@ -344,6 +344,53 @@ private class FinalFormActionsControllerTest {
         Test.stopTest();
     }
 
+    @IsTest
+    static void shouldSurfaceDomainErrors_FromEveryActionBoundary() {
+        Form__c active = createForm('Form', 'Contact', 'Active form');
+        List<Boolean> handled = new List<Boolean>();
+
+        Test.startTest();
+        handled.add(catchesAura('export', active.Id));
+        handled.add(catchesAura('import', active.Id));
+        handled.add(catchesAura('summary', null));
+        handled.add(catchesAura('archive', null));
+        handled.add(catchesAura('delete', active.Id));
+        handled.add(catchesAura('restore', active.Id));
+        Test.stopTest();
+
+        for (Boolean wasHandled : handled) {
+            Assert.isTrue(
+                wasHandled,
+                'Every action boundary should return an Aura-safe domain error.'
+            );
+        }
+    }
+
+    private static Boolean catchesAura(String action, Id formId) {
+        try {
+            if (action == 'export') {
+                FinalFormActionsController.exportForm(formId, '{bad');
+            } else if (action == 'import') {
+                FinalFormActionsController.importForm(
+                    '{bad',
+                    'Import',
+                    new List<String>()
+                );
+            } else if (action == 'summary') {
+                FinalFormActionsController.getActionSummary(formId);
+            } else if (action == 'archive') {
+                FinalFormActionsController.archiveForm(formId);
+            } else if (action == 'delete') {
+                FinalFormActionsController.deleteForm(formId, 'Wrong name');
+            } else {
+                FinalFormActionsController.restoreForm(formId);
+            }
+            return false;
+        } catch (AuraHandledException e) {
+            return true;
+        }
+    }
+
     private static Form__c createForm(
         String formType,
         String primaryObject,

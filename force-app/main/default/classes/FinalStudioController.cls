@@ -34,6 +34,15 @@ public with sharing class FinalStudioController {
             if (forms.isEmpty()) {
                 throw new AuraHandledException('FORM_NOT_FOUND');
             }
+            if (forms[0].Status__c == 'Archived') {
+                return new Map<String, Object>{
+                    'formId' => forms[0].Id,
+                    'name' => forms[0].Name,
+                    'isArchived' => true,
+                    'isPublic' => false,
+                    'isPublished' => false
+                };
+            }
             List<Form_Version__c> versions = [
                 SELECT Id, Version_Number__c, Is_Active__c, Spec_JSON__c
                 FROM Form_Version__c
@@ -72,7 +81,8 @@ public with sharing class FinalStudioController {
                     : null,
                 // guest-access state for the studio's Public-link toggle (A1.5b)
                 'isPublic' => isPublic,
-                'isPublished' => forms[0].Status__c == 'Published'
+                'isPublished' => forms[0].Status__c == 'Published',
+                'isArchived' => false
             };
         } catch (AuraHandledException e) {
             throw e;
@@ -542,8 +552,12 @@ public with sharing class FinalStudioController {
                 delete as user rows;
             }
         } catch (Exception e) {
-            // cleanup only — an orphaned inactive row below the active
-            // version is inert by the draft convention
+            // Cleanup only: an orphaned inactive row below the active version
+            // is inert by the draft convention, but the failure stays visible.
+            System.debug(
+                LoggingLevel.WARN,
+                'Draft cleanup skipped: ' + e.getMessage()
+            );
         }
     }
 
@@ -706,25 +720,49 @@ public with sharing class FinalStudioController {
 
     /** The Forms library listing. */
     @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> listForms() {
+    public static List<Map<String, Object>> listForms(Boolean includeArchived) {
         try {
             List<Map<String, Object>> out = new List<Map<String, Object>>();
-            for (Form__c f : [
-                SELECT
-                    Id,
-                    Name,
-                    Primary_Context_Object__c,
-                    LastModifiedDate,
-                    (
-                        SELECT Version_Number__c, Is_Active__c
-                        FROM Form_Versions__r
-                        ORDER BY Version_Number__c DESC
-                    )
-                FROM Form__c
-                WITH USER_MODE
-                ORDER BY LastModifiedDate DESC
-                LIMIT 200
-            ]) {
+            List<Form__c> forms = includeArchived == true
+                ? [
+                      SELECT
+                          Id,
+                          Name,
+                          Form_Type__c,
+                          Status__c,
+                          Primary_Context_Object__c,
+                          LastModifiedDate,
+                          (
+                              SELECT Version_Number__c, Is_Active__c
+                              FROM Form_Versions__r
+                              ORDER BY Version_Number__c DESC
+                          )
+                      FROM Form__c
+                      WHERE Status__c = 'Archived'
+                      WITH USER_MODE
+                      ORDER BY LastModifiedDate DESC
+                      LIMIT 200
+                  ]
+                : [
+                      SELECT
+                          Id,
+                          Name,
+                          Form_Type__c,
+                          Status__c,
+                          Primary_Context_Object__c,
+                          LastModifiedDate,
+                          (
+                              SELECT Version_Number__c, Is_Active__c
+                              FROM Form_Versions__r
+                              ORDER BY Version_Number__c DESC
+                          )
+                      FROM Form__c
+                      WHERE Status__c != 'Archived'
+                      WITH USER_MODE
+                      ORDER BY LastModifiedDate DESC
+                      LIMIT 200
+                  ];
+            for (Form__c f : forms) {
                 Decimal activeNumber;
                 Boolean hasDraft = false;
                 Decimal maxNumber = 0;
@@ -744,6 +782,8 @@ public with sharing class FinalStudioController {
                     new Map<String, Object>{
                         'id' => f.Id,
                         'name' => f.Name,
+                        'formType' => f.Form_Type__c,
+                        'status' => f.Status__c,
                         'objectApi' => f.Primary_Context_Object__c,
                         'modified' => f.LastModifiedDate,
                         'activeVersion' => activeNumber,

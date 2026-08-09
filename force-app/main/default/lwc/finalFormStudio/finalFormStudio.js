@@ -15,6 +15,13 @@ import describeFields from '@salesforce/apex/FinalStudioController.describeField
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import cloneForm from '@salesforce/apex/FinalFormActionsController.cloneForm';
+import exportForm from '@salesforce/apex/FinalFormActionsController.exportForm';
+import inspectImport from '@salesforce/apex/FinalFormActionsController.inspectImport';
+import importForm from '@salesforce/apex/FinalFormActionsController.importForm';
+import getActionSummary from '@salesforce/apex/FinalFormActionsController.getActionSummary';
+import archiveForm from '@salesforce/apex/FinalFormActionsController.archiveForm';
+import deleteForm from '@salesforce/apex/FinalFormActionsController.deleteForm';
+import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm';
 import { resolveSpecForPublish } from 'c/finalThemeCatalog';
 import { studioUrl } from 'c/finalStudioLink';
 import {
@@ -79,6 +86,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     objectApi = null;
     saveState = 'saved'; // saved | dirty | saving | error
     notFound = false;
+    archived = false;
     loading = true;
     publishing = false;
 
@@ -97,10 +105,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     settingsSection = 'availability';
     objectSaving = false;
 
-    /** Incremental Studio Actions rollout: Slice 2 exposes Clone only. */
-    cloneDialogOpen = false;
-    cloneBusy = false;
-    cloneError = '';
+    /** One focused modal hosts the fully wired Studio Actions program. */
+    actionDialogOpen = false;
+    studioAction = 'clone';
+    actionBusy = false;
+    actionError = '';
+    actionStatus = '';
+    exportResult;
+    exportFallbackText = '';
+    importInspection;
+    importPackageJson = '';
+    actionSummary;
+    actionLoadFailed = false;
+    restoreBusy = false;
+    restoreError = '';
 
     _saveTimer;
     _redirected = false;
@@ -173,12 +191,19 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     async _load() {
         this.closeSettings();
-        this.closeCloneDialog(false);
+        this.closeActionDialog(false);
         this.loading = true;
         this.notFound = false;
+        this.archived = false;
+        this.restoreError = '';
+        this.spec = undefined;
         try {
             const out = await loadStudio({ formId: this.formId });
             this.formName = out.name;
+            if (out.isArchived) {
+                this.archived = true;
+                return;
+            }
             this.draftVersionId = out.draftVersionId;
             this.versionNumber = out.versionNumber;
             this.activeVersionNumber = out.activeVersionNumber;
@@ -467,7 +492,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     handleSettingsToggle() {
-        this.closeCloneDialog(false);
+        this.closeActionDialog(false);
         this.settingsMenuOpen = !this.settingsMenuOpen;
         if (this.settingsMenuOpen) {
             Promise.resolve().then(() => {
@@ -566,27 +591,42 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         });
     }
 
-    // ----- Studio actions: Clone (incremental rollout) -----
+    // ----- Studio actions -----
 
-    handleActionSelect(event) {
-        if (event.detail.value !== 'clone' || this.isReadOnly) {
-            return;
-        }
+    async handleActionSelect(event) {
+        if (this.isReadOnly || this.actionBusy) return;
+        const action = event.detail.value;
+        if (!['clone', 'export', 'import', 'delete'].includes(action)) return;
         this.closeSettings();
-        this.cloneError = '';
-        this.cloneDialogOpen = true;
+        this.openActionDialog(action);
+        if (action === 'export') await this.prepareExport();
+        if (action === 'delete') await this.prepareDelete();
     }
 
-    handleCloneCancel() {
-        if (!this.cloneBusy) {
-            this.closeCloneDialog(true);
-        }
+    openActionDialog(action) {
+        this.studioAction = action;
+        this.actionDialogOpen = true;
+        this.actionBusy = false;
+        this.actionError = '';
+        this.actionStatus = '';
+        this.exportResult = undefined;
+        this.exportFallbackText = '';
+        this.importInspection = undefined;
+        this.importPackageJson = '';
+        this.actionSummary = undefined;
+        this.actionLoadFailed = false;
     }
 
-    closeCloneDialog(restoreFocus = true) {
-        const wasOpen = this.cloneDialogOpen;
-        this.cloneDialogOpen = false;
-        this.cloneError = '';
+    handleActionCancel() {
+        if (!this.actionBusy) this.closeActionDialog(true);
+    }
+
+    closeActionDialog(restoreFocus = true) {
+        const wasOpen = this.actionDialogOpen;
+        this.actionDialogOpen = false;
+        this.actionBusy = false;
+        this.actionError = '';
+        this.actionStatus = '';
         if (wasOpen && restoreFocus) {
             Promise.resolve().then(() => {
                 this.template
@@ -596,12 +636,82 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
     }
 
-    async handleCloneConfirm(event) {
-        if (this.cloneBusy || this.isReadOnly) {
-            return;
+    async prepareExport() {
+        this.actionBusy = true;
+        this.actionLoadFailed = false;
+        this.actionError = '';
+        this.actionStatus = 'Preparing the package…';
+        try {
+            this.exportResult = await exportForm({
+                formId: this.formId,
+                currentSpecJson: JSON.stringify(this.spec)
+            });
+        } catch (error) {
+            this.actionLoadFailed = true;
+            this.actionError =
+                error?.body?.message || 'The form could not be exported.';
+        } finally {
+            this.actionBusy = false;
+            this.actionStatus = '';
         }
-        this.cloneBusy = true;
-        this.cloneError = '';
+    }
+
+    async prepareDelete() {
+        this.actionBusy = true;
+        this.actionLoadFailed = false;
+        this.actionError = '';
+        this.actionStatus = 'Checking responses and related data…';
+        try {
+            this.actionSummary = await getActionSummary({
+                formId: this.formId
+            });
+        } catch (error) {
+            this.actionLoadFailed = true;
+            this.actionError =
+                error?.body?.message || 'Form details could not be loaded.';
+        } finally {
+            this.actionBusy = false;
+            this.actionStatus = '';
+        }
+    }
+
+    async handleActionRetry() {
+        this.actionError = '';
+        if (this.studioAction === 'export') await this.prepareExport();
+        if (this.studioAction === 'delete') await this.prepareDelete();
+    }
+
+    async handleImportInspect(event) {
+        if (this.actionBusy) return;
+        this.importPackageJson = event.detail.packageJson;
+        this.importInspection = undefined;
+        this.actionError = '';
+        this.actionBusy = true;
+        this.actionStatus = 'Inspecting package…';
+        try {
+            this.importInspection = await inspectImport({
+                packageJson: this.importPackageJson
+            });
+        } catch (error) {
+            this.actionError =
+                error?.body?.message || 'The package could not be inspected.';
+        } finally {
+            this.actionBusy = false;
+            this.actionStatus = '';
+        }
+    }
+
+    handleActionConfirm(event) {
+        if (this.studioAction === 'clone') this.handleCloneConfirm(event);
+        if (this.studioAction === 'export') this.handleExportConfirm();
+        if (this.studioAction === 'import') this.handleImportConfirm(event);
+        if (this.studioAction === 'delete') this.handleDeleteConfirm(event);
+    }
+
+    async handleCloneConfirm(event) {
+        if (this.actionBusy || this.isReadOnly) return;
+        this.actionBusy = true;
+        this.actionError = '';
         try {
             const result = await cloneForm({
                 formId: this.formId,
@@ -610,11 +720,100 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             });
             window.location.assign(studioUrl(result.formId));
         } catch (error) {
-            this.cloneError =
+            this.actionError =
                 error?.body?.message ||
                 'The form could not be cloned. Try again.';
         } finally {
-            this.cloneBusy = false;
+            this.actionBusy = false;
+        }
+    }
+
+    handleExportConfirm() {
+        if (!this.exportResult?.packageJson) return;
+        this.actionError = '';
+        // Always keep the raw package available to copy — some hosts (the VF
+        // iframe) block the download silently, with no error to catch.
+        this.exportFallbackText = this.exportResult.packageJson;
+        try {
+            const blob = new Blob([this.exportResult.packageJson], {
+                type: 'application/json;charset=utf-8'
+            });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = this.exportResult.fileName;
+            anchor.style.display = 'none';
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            // revoke only after the click has had time to start the download
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } catch {
+            this.actionError =
+                'This host blocked the download. Use "Copy the package" below.';
+        }
+    }
+
+    async handleImportConfirm(event) {
+        if (this.actionBusy) return;
+        this.actionBusy = true;
+        this.actionError = '';
+        try {
+            const result = await importForm({
+                packageJson: this.importPackageJson,
+                requestedName: event.detail.name,
+                acceptedWarningCodes: event.detail.acceptedWarningCodes
+            });
+            window.location.assign(studioUrl(result.formId));
+        } catch (error) {
+            this.actionError =
+                error?.body?.message || 'The form could not be imported.';
+        } finally {
+            this.actionBusy = false;
+        }
+    }
+
+    async handleDeleteConfirm(event) {
+        if (this.actionBusy) return;
+        this.actionBusy = true;
+        this.actionError = '';
+        try {
+            if (event.detail.operation === 'archive') {
+                await archiveForm({ formId: this.formId });
+            } else {
+                await deleteForm({
+                    formId: this.formId,
+                    confirmationName: event.detail.confirmationName
+                });
+            }
+            this.exitAfterLifecycleAction();
+        } catch (error) {
+            this.actionError =
+                error?.body?.message ||
+                'The form action could not be completed.';
+        } finally {
+            this.actionBusy = false;
+        }
+    }
+
+    exitAfterLifecycleAction() {
+        this.closeActionDialog(false);
+        this.handleExit();
+    }
+
+    async handleRestoreArchived() {
+        if (this.restoreBusy) return;
+        this.restoreBusy = true;
+        this.restoreError = '';
+        try {
+            await restoreForm({ formId: this.formId });
+            await this._load();
+        } catch (error) {
+            this.restoreError =
+                error?.body?.message || 'The form could not be restored.';
+        } finally {
+            this.restoreBusy = false;
         }
     }
 

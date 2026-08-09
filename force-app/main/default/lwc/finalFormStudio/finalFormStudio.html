@@ -19,6 +19,35 @@
             </button>
         </div>
     </template>
+    <template lwc:elseif={archived}>
+        <div class="st-center st-notfound">
+            <h2>{formName} is archived</h2>
+            <p>
+                Archived forms are read-only. Restore brings it back as a
+                private draft — it does not re-open public access or revive the
+                old guest links, so you would publish and re-share.
+            </p>
+            <template lwc:if={restoreError}>
+                <p class="st-archive-error" role="alert">{restoreError}</p>
+            </template>
+            <div class="st-archive-actions">
+                <button type="button" class="st-exit" onclick={handleExit}>
+                    Go to Forms
+                </button>
+                <button
+                    type="button"
+                    class="st-primary"
+                    disabled={restoreBusy}
+                    onclick={handleRestoreArchived}
+                >
+                    Restore form
+                </button>
+            </div>
+            <template lwc:if={restoreBusy}>
+                <p role="status">Restoring as a private draft…</p>
+            </template>
+        </div>
+    </template>
     <template lwc:elseif={spec}>
         <header class="st-bar">
             <button type="button" class="st-exit" onclick={handleExit}>
@@ -157,12 +186,25 @@
                     label="Actions"
                     alternative-text="Form actions"
                     menu-alignment="right"
-                    disabled={cloneBusy}
+                    disabled={actionBusy}
                     onselect={handleActionSelect}
                 >
                     <lightning-menu-item
                         value="clone"
                         label="Clone form"
+                    ></lightning-menu-item>
+                    <lightning-menu-item
+                        value="export"
+                        label="Export form"
+                    ></lightning-menu-item>
+                    <lightning-menu-item
+                        value="import"
+                        label="Import form"
+                    ></lightning-menu-item>
+                    <lightning-menu-divider></lightning-menu-divider>
+                    <lightning-menu-item
+                        value="delete"
+                        label="Delete form"
                     ></lightning-menu-item>
                 </lightning-button-menu>
             </template>
@@ -393,13 +435,23 @@
             </div>
         </template>
 
-        <template lwc:if={cloneDialogOpen}>
+        <template lwc:if={actionDialogOpen}>
             <c-final-studio-action-dialog
+                action={studioAction}
                 source-name={formName}
-                busy={cloneBusy}
-                error={cloneError}
-                onconfirm={handleCloneConfirm}
-                oncancel={handleCloneCancel}
+                busy={actionBusy}
+                error={actionError}
+                busy-label={actionStatus}
+                export-result={exportResult}
+                export-fallback-text={exportFallbackText}
+                inspection={importInspection}
+                action-summary={actionSummary}
+                load-failed={actionLoadFailed}
+                source-public={isPublic}
+                oninspect={handleImportInspect}
+                onconfirm={handleActionConfirm}
+                oncancel={handleActionCancel}
+                onretry={handleActionRetry}
             ></c-final-studio-action-dialog>
         </template>
 

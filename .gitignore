@@ -49,3 +49,6 @@ $RECYCLE.BIN/
 
 # Agent internal directories
 brain/
+
+# Code Analyzer run artifacts
+code-analyzer-results-*.json
