@@ -1,6 +1,7 @@
 import { createElement } from 'lwc';
 import FinalFormsLibrary, { studioUrl } from 'c/finalFormsLibrary';
 import listForms from '@salesforce/apex/FinalStudioController.listForms';
+import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm';
 
 jest.mock(
     '@salesforce/apex/FinalStudioController.listForms',
@@ -10,6 +11,12 @@ jest.mock(
         } = require('@salesforce/sfdx-lwc-jest');
         return { default: createApexTestWireAdapter(jest.fn()) };
     },
+    { virtual: true }
+);
+
+jest.mock(
+    '@salesforce/apex/FinalFormActionsController.restoreForm',
+    () => ({ default: jest.fn() }),
     { virtual: true }
 );
 
@@ -42,7 +49,7 @@ describe('c-final-forms-library', () => {
         await flush();
         const cells = el.shadowRoot.querySelectorAll('td');
         expect(cells[0].textContent).toBe('Contact us');
-        expect(cells[2].textContent).toBe('v3 + draft');
+        expect(cells[3].textContent).toBe('v3 + draft');
 
         el.shadowRoot.querySelector('.lib-open').click();
         expect(open).toHaveBeenCalledWith(
@@ -88,5 +95,34 @@ describe('c-final-forms-library', () => {
         expect(el.shadowRoot.querySelector('.lib-empty h3').textContent).toBe(
             'No forms yet'
         );
+    });
+
+    it('filters to Archived and restores instead of opening Studio', async () => {
+        restoreForm.mockResolvedValue();
+        const el = createElement('c-final-forms-library', {
+            is: FinalFormsLibrary
+        });
+        document.body.appendChild(el);
+        const filter = el.shadowRoot.querySelector('.lib-filter');
+        filter.value = 'archived';
+        filter.dispatchEvent(new Event('change'));
+        listForms.emit([
+            {
+                id: 'a0FARCHIVE',
+                name: 'Archived survey',
+                formType: 'Survey',
+                status: 'Archived',
+                modified: '2026-08-08T00:00:00.000Z',
+                activeVersion: 2,
+                hasDraft: false
+            }
+        ]);
+        await flush();
+
+        expect(el.shadowRoot.querySelector('.lib-open')).toBeNull();
+        el.shadowRoot.querySelector('.lib-restore').click();
+        await flush();
+
+        expect(restoreForm).toHaveBeenCalledWith({ formId: 'a0FARCHIVE' });
     });
 });

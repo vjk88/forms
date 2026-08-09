@@ -21,7 +21,8 @@
 
 .action-dialog {
     position: relative;
-    width: min(480px, calc(100vw - 32px));
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
     overflow: hidden;
     border-radius: var(--c-studio-radius-lg, 12px);
     background: var(--c-studio-surface, #fff);
@@ -45,6 +46,8 @@
 
 .action-body {
     padding: 20px 18px 22px;
+    overflow: auto;
+    max-height: calc(100vh - 190px);
 }
 
 .action-description {
@@ -70,6 +73,88 @@
     font-size: 12.5px;
 }
 
+.action-warning-list,
+.action-error-list {
+    margin: 12px 0 16px;
+    padding: 10px 12px 10px 30px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.action-warning-list,
+.action-warning-panel {
+    border: 1px solid var(--c-studio-warning-border, #f0c36d);
+    background: var(--c-studio-warning-surface, #fff8e6);
+    color: var(--c-studio-warning-text, #5f4100);
+}
+
+.action-error-list {
+    border: 1px solid var(--c-studio-error, #ba0517);
+    background: var(--c-studio-error-surface, #fef1ee);
+    color: var(--c-studio-error-text, #8e030f);
+}
+
+.action-warning-panel,
+.action-danger-copy,
+.action-fallback-help,
+.action-file-name {
+    margin: 12px 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.action-warning-panel {
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.action-danger-copy {
+    color: var(--c-studio-error-text, #8e030f);
+}
+
+.action-file-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.action-file-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid var(--c-studio-border-strong, #b5b5b5);
+    border-radius: 6px;
+    background: var(--c-studio-surface, #fff);
+}
+
+.action-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 14px 0 18px;
+}
+
+.action-summary div {
+    padding: 9px 10px;
+    border: 1px solid var(--c-studio-border, #e5e5e5);
+    border-radius: 6px;
+    background: var(--c-studio-surface-subtle, #f8f8f8);
+}
+
+.action-summary dt {
+    color: var(--c-studio-text-weak, #555);
+    font-size: 11px;
+}
+
+.action-summary dd {
+    margin: 2px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
 .action-footer {
     display: flex;
     gap: 8px;
@@ -85,4 +170,25 @@
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
+}
+
+.action-linkish {
+    border: 0;
+    background: none;
+    padding: 4px 0;
+    font: inherit;
+    font-size: 12px;
+    color: #0b6e65;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+@media (max-width: 520px) {
+    .action-shell {
+        padding: 12px;
+    }
+
+    .action-summary {
+        grid-template-columns: 1fr;
+    }
 }

@@ -63,7 +63,13 @@ in the mockup). One IA, two chromes, zero duplication.
 ## 3. Studio top bar (App Builder grammar)
 
 `← Exit` far left (back to Forms tab) · form name + version chip (`v2 · Draft`) · saved-state text
-(`✓ All changes saved` / `Unsaved changes`) · **Build | Design** mode toggle · undo/redo · **Publish**.
+(`✓ All changes saved` / `Unsaved changes`) · **Build | Design** mode toggle · undo/redo ·
+**Actions** (Clone form · Export form · Import form · Delete form) · **Publish**.
+
+Delete opens a response-aware preflight: zero-response configurations may be
+permanently deleted after exact-name confirmation; response-bearing Forms and
+Surveys offer Archive instead. Archived records remain available from the
+Forms library's Archived filter and Restore returns them as private Drafts.
 
 The Build|Design toggle is persistent and always legible — mode is never hidden behind a back button.
 
@@ -170,10 +176,9 @@ wears the data color.
 
 ## 9. Open items (owner decisions pending)
 
-1. Archived forms: greyed-in-place vs filter-only. (Mockup ships filter-chip behavior.)
-2. Card sparklines vs count-only on Forms-tab cards. (Mockup ships sparklines.)
-3. Gallery Theme/Skin roster coherence pass (tracked separately).
-4. Lightning Out Beta re-verify at packaging (§2).
+1. Card sparklines vs count-only on Forms-tab cards. (Mockup ships sparklines.)
+2. Gallery Theme/Skin roster coherence pass (tracked separately).
+3. Lightning Out Beta re-verify at packaging (§2).
 
 ## 10. Build order hooks
 

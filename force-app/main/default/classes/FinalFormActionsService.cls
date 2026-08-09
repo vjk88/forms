@@ -13,6 +13,123 @@ public with sharing class FinalFormActionsService {
         public Id versionId;
     }
 
+    /** Builds a validated portable package from the current authoring state. */
+    public static FinalFormPackageService.ExportResult exportForm(
+        Id sourceFormId,
+        String currentSpecJson
+    ) {
+        Form__c source = requireEditableSource(sourceFormId);
+        String expectedType = source.Form_Type__c == 'Survey'
+            ? 'survey'
+            : 'form';
+        try {
+            FinalSpecTransferService.PreparedSpec prepared = FinalSpecTransferService.prepareExport(
+                currentSpecJson,
+                expectedType
+            );
+            return FinalFormPackageService.buildExport(source, prepared);
+        } catch (FinalSpecTransferService.TransferException e) {
+            throw new ActionException(e.getMessage());
+        } catch (FinalFormPackageService.PackageException e) {
+            throw new ActionException(e.getMessage());
+        }
+    }
+
+    /** Inspects a package without DML. */
+    public static FinalFormPackageService.ImportPlan inspectImport(
+        String packageJson
+    ) {
+        try {
+            return FinalFormPackageService.inspect(packageJson);
+        } catch (FinalFormPackageService.PackageException e) {
+            throw new ActionException(e.getMessage());
+        }
+    }
+
+    /** Creates a new private Draft from a revalidated package. */
+    public static CloneResult importForm(
+        String packageJson,
+        String requestedName,
+        List<String> acceptedWarningCodes
+    ) {
+        String importName = validateNewName(requestedName, 'imported');
+        FinalFormPackageService.ImportPlan plan = inspectImport(packageJson);
+        Set<String> accepted = new Set<String>();
+        if (acceptedWarningCodes != null) {
+            accepted.addAll(acceptedWarningCodes);
+        }
+        if (
+            !accepted.containsAll(
+                FinalFormPackageService.requiredWarningCodes(plan)
+            )
+        ) {
+            throw new ActionException(
+                'Review and accept the import warnings before creating the form.'
+            );
+        }
+        if (
+            plan.description != null &&
+            plan.description.length() >
+            Form__c.Description__c.getDescribe().getLength()
+        ) {
+            throw new ActionException('The imported description is too long.');
+        }
+
+        Savepoint savepoint = Database.setSavepoint();
+        try {
+            FinalFormPackageService.materializeDependencies(plan);
+            Form__c imported = new Form__c(
+                Name = importName,
+                Description__c = plan.description,
+                Form_Type__c = plan.formType == 'survey' ? 'Survey' : 'Form',
+                Status__c = 'Draft',
+                Primary_Context_Object__c = plan.prepared.targetObject,
+                Allowed_Adapters__c = 'Internal_Record_Page'
+            );
+            insert as user imported;
+
+            String specJson = FinalSpecTransferService.bindIdentityAndSerialize(
+                plan.prepared,
+                imported.Id,
+                importName
+            );
+            Form_Version__c version = new Form_Version__c(
+                Form__c = imported.Id,
+                Version_Number__c = 1,
+                Is_Active__c = true,
+                Spec_JSON__c = specJson,
+                Engine_Version__c = 1
+            );
+            insert as user version;
+
+            List<ContentDocumentLink> links = new List<ContentDocumentLink>();
+            for (Id documentId : plan.assetDocumentIds) {
+                links.add(
+                    new ContentDocumentLink(
+                        ContentDocumentId = documentId,
+                        LinkedEntityId = imported.Id,
+                        ShareType = 'V',
+                        Visibility = 'AllUsers'
+                    )
+                );
+            }
+            if (!links.isEmpty()) {
+                insert as user links;
+            }
+
+            CloneResult result = new CloneResult();
+            result.formId = imported.Id;
+            result.versionId = version.Id;
+            return result;
+        } catch (DmlException e) {
+            Database.rollback(savepoint);
+            throw new ActionException('The imported form could not be saved.');
+        } catch (Exception e) {
+            Database.rollback(savepoint);
+            throw new ActionException('The form could not be imported.');
+        }
+    }
+
     /**
      * Clones the current authoring state into a private Draft root and v1.
      * @param sourceFormId Existing form being authored.
@@ -29,23 +146,8 @@ public with sharing class FinalFormActionsService {
         if (sourceFormId == null) {
             throw new ActionException('A source form is required.');
         }
-        String cloneName = requestedName == null ? null : requestedName.trim();
-        if (String.isBlank(cloneName)) {
-            throw new ActionException('Enter a name for the cloned form.');
-        }
-        if (cloneName.length() > Form__c.Name.getDescribe().getLength()) {
-            throw new ActionException('The cloned form name is too long.');
-        }
-
-        Form__c source = FinalFormActionsSelector.selectFormById(sourceFormId);
-        if (source == null) {
-            throw new ActionException('The source form is unavailable.');
-        }
-        if (source.Status__c == 'Archived') {
-            throw new ActionException(
-                'Restore the archived form before cloning it.'
-            );
-        }
+        String cloneName = validateNewName(requestedName, 'cloned');
+        Form__c source = requireEditableSource(sourceFormId);
 
         String expectedType = source.Form_Type__c == 'Survey'
             ? 'survey'
@@ -139,6 +241,75 @@ public with sharing class FinalFormActionsService {
             }
         }
         return retained.isEmpty() ? null : String.join(retained, ';');
+    }
+
+    /** Returns the response-aware Delete form preflight. */
+    public static FinalFormLifecycleService.ActionSummary getActionSummary(
+        Id formId
+    ) {
+        try {
+            return FinalFormLifecycleService.getActionSummary(formId);
+        } catch (FinalFormLifecycleService.LifecycleException e) {
+            throw new ActionException(e.getMessage());
+        }
+    }
+
+    /** Archives one root while retaining all response history. */
+    public static void archiveForm(Id formId) {
+        try {
+            FinalFormLifecycleService.archiveForm(formId);
+        } catch (FinalFormLifecycleService.LifecycleException e) {
+            throw new ActionException(e.getMessage());
+        }
+    }
+
+    /** Deletes one zero-response root after exact-name confirmation. */
+    public static void deleteForm(Id formId, String confirmationName) {
+        try {
+            FinalFormLifecycleService.deleteForm(formId, confirmationName);
+        } catch (FinalFormLifecycleService.LifecycleException e) {
+            throw new ActionException(e.getMessage());
+        }
+    }
+
+    /** Restores one archived root as a private Draft. */
+    public static void restoreForm(Id formId) {
+        try {
+            FinalFormLifecycleService.restoreForm(formId);
+        } catch (FinalFormLifecycleService.LifecycleException e) {
+            throw new ActionException(e.getMessage());
+        }
+    }
+
+    private static Form__c requireEditableSource(Id sourceFormId) {
+        if (sourceFormId == null) {
+            throw new ActionException('A source form is required.');
+        }
+        Form__c source = FinalFormActionsSelector.selectFormById(sourceFormId);
+        if (source == null) {
+            throw new ActionException('The source form is unavailable.');
+        }
+        if (source.Status__c == 'Archived') {
+            throw new ActionException(
+                'Restore the archived form before using Studio Actions.'
+            );
+        }
+        return source;
+    }
+
+    private static String validateNewName(String requestedName, String action) {
+        String name = requestedName == null ? null : requestedName.trim();
+        if (String.isBlank(name)) {
+            throw new ActionException(
+                'Enter a name for the ' + action + ' form.'
+            );
+        }
+        if (name.length() > Form__c.Name.getDescribe().getLength()) {
+            throw new ActionException(
+                'The ' + action + ' form name is too long.'
+            );
+        }
+        return name;
     }
 
     /** Domain error surfaced through the thin Aura controller. */
