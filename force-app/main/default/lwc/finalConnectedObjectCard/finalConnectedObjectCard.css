@@ -1,213 +1,128 @@
-/* oc-* prefix: builder-chrome class names never collide with LEX globals */
-.oc-card {
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 12px;
-    background: #fff;
+:host {
+    display: block;
 }
 
-.oc-head {
-    font-size: 0.6875rem;
+.oc-editor {
+    color: var(--lwc-colorTextDefault, #181818);
+}
+
+.oc-heading {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #64748b;
-    margin-bottom: 8px;
+}
+
+.oc-title,
+.oc-help {
+    display: block;
 }
 
 .oc-title {
-    margin: 0 0 2px;
+    margin: 0;
     font-size: 0.875rem;
-    font-weight: 600;
-    color: #0f172a;
+    font-weight: 700;
     overflow-wrap: anywhere;
 }
 
-.oc-sub {
-    margin: 0 0 8px;
-    font-size: 0.8125rem;
-    color: #64748b;
+.oc-help {
+    margin: 0.125rem 0 0;
+    color: var(--lwc-colorTextWeak, #5c5c5c);
+    font-size: 0.75rem;
     line-height: 1.45;
 }
 
-.oc-warn {
-    margin: 0 0 4px;
-    font-size: 0.8125rem;
-    color: #b42318;
-    font-weight: 600;
+.oc-current {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.875rem;
+    border: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    border-radius: 0.5rem;
+    background: var(--lwc-colorBackgroundAlt, #fff);
 }
 
-.oc-list {
-    margin: 0 0 8px;
-    padding-left: 18px;
-    font-size: 0.8125rem;
-    color: #0f172a;
+.oc-current-icon {
+    display: grid;
+    flex: 0 0 2rem;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 0.375rem;
+    background: #0176d3;
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 800;
 }
 
-.oc-list li {
-    margin-bottom: 2px;
-    overflow-wrap: anywhere;
+.oc-empty,
+.oc-confirm {
+    padding: 1rem;
+    border: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    border-radius: 0.5rem;
+    background: var(--lwc-colorBackgroundAlt, #fff);
 }
 
 .oc-actions {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
 }
 
-.oc-btn {
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    background: #fff;
-    color: #0f172a;
-    font: inherit;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    padding: 6px 12px;
-    cursor: pointer;
+.oc-message {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
 }
 
-.oc-btn:hover {
-    border-color: #0f766e;
-    color: #0f766e;
+.oc-message--error {
+    color: var(--lwc-colorTextError, #ba0517);
 }
 
-.oc-primary {
-    background: #0f766e;
-    border-color: #0f766e;
-    color: #fff;
+.oc-list {
+    margin: 0 0 0.75rem;
+    padding-left: 1.25rem;
+    font-size: 0.75rem;
 }
 
-.oc-primary:hover {
-    color: #fff;
-    filter: brightness(1.05);
-}
-
-.oc-danger {
-    border-color: #b42318;
-    color: #b42318;
-}
-
-.oc-danger:hover {
-    background: #b42318;
-    border-color: #b42318;
-    color: #fff;
-}
-
-.oc-quiet {
-    border-color: transparent;
-    color: #64748b;
-}
-
-.oc-search {
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font: inherit;
-    font-size: 0.8125rem;
-    margin-bottom: 8px;
-}
-
-.oc-objects {
-    list-style: none;
+.oc-object-list {
+    max-height: 15rem;
+    margin: 0.75rem 0 0;
     padding: 0;
-    max-height: 240px;
     overflow-y: auto;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    border-radius: 0.5rem;
+    list-style: none;
 }
 
-.oc-obj {
+.oc-object {
     display: flex;
+    width: 100%;
+    padding: 0.625rem 0.75rem;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1px;
-    width: 100%;
     border: 0;
-    border-bottom: 1px solid #f1f5f9;
-    background: none;
+    border-bottom: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    background: transparent;
+    color: inherit;
     font: inherit;
     text-align: left;
-    padding: 6px 10px;
     cursor: pointer;
 }
 
-.oc-obj:hover {
-    background: #f0fdfa;
+.oc-object:hover,
+.oc-object:focus-visible {
+    background: var(--lwc-colorBackgroundRowHover, #f3f3f3);
+    outline: 0;
+    box-shadow: inset 0 0 0 2px #0176d3;
 }
 
-.oc-obj-label {
+.oc-object-label {
     font-size: 0.8125rem;
-    font-weight: 600;
-    color: #0f172a;
-}
-
-.oc-obj-api {
-    font-size: 0.6875rem;
-    color: #64748b;
-}
-
-/* SO-4 record links */
-.oc-links {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e2e8f0;
-}
-
-.oc-links-head {
-    margin: 0 0 4px;
-    font-size: 0.75rem;
     font-weight: 700;
-    color: #0f172a;
 }
 
-.oc-linkrow {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-}
-
-.oc-linkrow .oc-search {
-    flex: 1;
-    min-width: 0;
-}
-
-.oc-linkrow .oc-btn {
-    flex: none;
-}
-
-.oc-linkout {
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: #0f766e;
-    background: #f8fafc;
-}
-
-.oc-hint {
-    margin: -2px 0 6px;
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
-.oc-check {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 6px 0;
-    font-size: 0.8125rem;
-    color: #0f172a;
-    cursor: pointer;
-}
-
-.oc-check input {
-    flex: none;
-    margin: 0;
-}
-
-/* revealed tracking options read as children of the toggle */
-.oc-tracked {
-    margin: 0 0 6px 22px;
+.oc-object-api {
+    color: var(--lwc-colorTextWeak, #5c5c5c);
+    font-size: 0.6875rem;
 }

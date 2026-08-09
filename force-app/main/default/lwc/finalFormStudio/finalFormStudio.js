@@ -86,6 +86,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     @track isPublic = false;
     isPublished = false;
     togglingPublic = false;
+    publicError = '';
+    publicSaved = false;
+
+    /** Global settings entry point. A menu chooses one focused drawer. */
+    settingsMenuOpen = false;
+    settingsDrawerOpen = false;
+    settingsSection = 'availability';
+    objectSaving = false;
 
     _saveTimer;
     _redirected = false;
@@ -157,6 +165,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async _load() {
+        this.closeSettings();
         this.loading = true;
         this.notFound = false;
         try {
@@ -291,6 +300,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async handleVersionChange(event) {
+        this.closeSettings();
         const id = event.target.value;
         if (!id || id === this.editableVersionId) {
             this.handleBackToEditable();
@@ -341,6 +351,75 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.mode === 'design';
     }
 
+    get availability() {
+        return this.spec?.settings?.availability || {};
+    }
+
+    get availabilityStatus() {
+        const availability = this.availability;
+        if (availability.status === 'closed') {
+            return 'Closed';
+        }
+        if (availability.opensAt || availability.closesAt) {
+            return 'Scheduled';
+        }
+        return 'Accepting responses';
+    }
+
+    get accessStatus() {
+        return this.isPublic ? 'Public access on' : 'Public access off';
+    }
+
+    get connectionStatus() {
+        if (!this.objectApi) {
+            return 'Not connected';
+        }
+        return `${this.objectApi} · ${this.mappedCount} mapped`;
+    }
+
+    get settingsTitle() {
+        return {
+            connection: 'Connected object',
+            availability: 'Availability',
+            access: 'Access & invitations'
+        }[this.settingsSection];
+    }
+
+    get surveyContextTitle() {
+        return this.objectApi || 'No object connected';
+    }
+
+    get surveyContextDetail() {
+        if (!this.objectApi) {
+            return 'Connect an object to unlock mapping and invitations.';
+        }
+        return this.mappedCount === 1
+            ? '1 question mapped'
+            : `${this.mappedCount} questions mapped`;
+    }
+
+    get objectSaveText() {
+        if (this.objectSaving) {
+            return 'Saving connection…';
+        }
+        if (this.objectError) {
+            return 'Connection not saved.';
+        }
+        return this.savedText;
+    }
+
+    get publicSaveText() {
+        if (this.togglingPublic) {
+            return 'Saving access…';
+        }
+        if (this.publicError) {
+            return `Access not saved — ${this.publicError}`;
+        }
+        return this.publicSaved
+            ? '✓ Access saved immediately'
+            : 'Changes here save immediately';
+    }
+
     get buildClass() {
         return this.mode === 'build' ? 'st-mode on' : 'st-mode';
     }
@@ -368,6 +447,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.mode = 'build';
+        this.settingsMenuOpen = false;
     }
 
     handleModeDesign() {
@@ -375,6 +455,106 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.mode = 'design';
+        this.settingsMenuOpen = false;
+    }
+
+    handleSettingsToggle() {
+        this.settingsMenuOpen = !this.settingsMenuOpen;
+        if (this.settingsMenuOpen) {
+            Promise.resolve().then(() => {
+                this.template.querySelector('.st-settings-item')?.focus();
+            });
+        }
+    }
+
+    handleSettingsKeydown(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closeSettings();
+            return;
+        }
+        if (!this.settingsMenuOpen) {
+            return;
+        }
+        const items = [...this.template.querySelectorAll('.st-settings-item')];
+        if (!items.length) {
+            return;
+        }
+        const current = event.target.closest?.('.st-settings-item');
+        const currentIndex = Math.max(0, items.indexOf(current));
+        let nextIndex;
+        if (event.key === 'ArrowDown') {
+            nextIndex = (currentIndex + 1) % items.length;
+        } else if (event.key === 'ArrowUp') {
+            nextIndex = (currentIndex - 1 + items.length) % items.length;
+        } else if (event.key === 'Home') {
+            nextIndex = 0;
+        } else if (event.key === 'End') {
+            nextIndex = items.length - 1;
+        } else {
+            return;
+        }
+        event.preventDefault();
+        items[nextIndex].focus();
+    }
+
+    handleOpenSettings(event) {
+        this.settingsSection = event.currentTarget.dataset.section;
+        this.settingsMenuOpen = false;
+        this.settingsDrawerOpen = true;
+        Promise.resolve().then(() => {
+            this.template.querySelector('[data-id="settings-close"]')?.focus();
+        });
+    }
+
+    closeSettings() {
+        const wasOpen = this.settingsDrawerOpen;
+        this.settingsMenuOpen = false;
+        this.settingsDrawerOpen = false;
+        if (wasOpen) {
+            Promise.resolve().then(() => {
+                this.template
+                    .querySelector('[data-id="settings-trigger"]')
+                    ?.focus();
+            });
+        }
+    }
+
+    handleCloseSettings() {
+        this.closeSettings();
+    }
+
+    handleDrawerFocusTrap() {
+        this.template.querySelector('[data-id="settings-close"]')?.focus();
+    }
+
+    handleSettingsChange(event) {
+        const changedSettings = event.detail || {};
+        this._mutate((spec) => {
+            spec.settings = {
+                ...(spec.settings || {}),
+                ...changedSettings
+            };
+        });
+    }
+
+    handleOpenConnectionFromContext() {
+        this.settingsSection = 'connection';
+        this.settingsDrawerOpen = true;
+        Promise.resolve().then(() => {
+            this.template.querySelector('[data-id="settings-close"]')?.focus();
+        });
+    }
+
+    handleManageInvitations() {
+        this[NavigationMixin.Navigate]({
+            type: 'standard__objectPage',
+            attributes: {
+                objectApiName: 'Survey_Invitation__c',
+                actionName: 'list'
+            },
+            state: { filterName: 'Recent' }
+        });
     }
 
     handleExit() {
@@ -1158,12 +1338,15 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  then the spec: retarget surviving mappings, drop the rest, and prune
      *  record rules that no longer resolve (SO-3 × SO-1). */
     async _commitObject(objectApi, keep, liveFields) {
+        this.objectSaving = true;
+        this.objectError = '';
         try {
             await setContextObject({ formId: this.formId, objectApi });
         } catch (e) {
             this.objectError =
                 (e && e.body && e.body.message) ||
                 'The org refused that object — nothing was changed.';
+            this.objectSaving = false;
             return;
         }
         this._mutate((spec) => {
@@ -1183,6 +1366,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         });
         this.objectApi = objectApi || null;
         this._loadMappingFields();
+        this.objectSaving = false;
     }
 
     _loadMappingFields() {
@@ -1880,10 +2064,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     // ----- public link / guest access (A1.5b) -----
 
-    get publicDisabled() {
-        return this.togglingPublic || this.isReadOnly;
-    }
-
     get publicHelp() {
         // pair the term with plain meaning (owner: explain fancy terms)
         return this.isPublished
@@ -1892,7 +2072,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async handleTogglePublic(event) {
-        const next = event.target.checked;
+        const next = event.detail?.checked ?? event.target.checked;
+        this.publicError = '';
+        this.publicSaved = false;
         // exposing a form publicly is outward-facing — confirm turning it ON;
         // turning it OFF is safe and immediate.
         if (next) {
@@ -1913,9 +2095,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 enabled: next
             });
             this.isPublic = Boolean(result);
-        } catch {
+            this.publicSaved = true;
+        } catch (error) {
             this.isPublic = !next; // revert on failure
-            this.saveState = 'error';
+            this.publicError =
+                error?.body?.message || "Couldn't save public access.";
         } finally {
             this.togglingPublic = false;
         }

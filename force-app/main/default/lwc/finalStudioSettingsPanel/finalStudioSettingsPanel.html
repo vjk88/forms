@@ -1,0 +1,135 @@
+<template>
+    <template lwc:if={isConnection}>
+        <div class="sp-section-intro">
+            <h2 class="sp-title">Connected object</h2>
+            <p class="sp-description">
+                Choose the Salesforce object used by field mapping, prefill, and
+                record-based rules.
+            </p>
+        </div>
+        <c-final-connected-object-card
+            object-api={objectApi}
+            mapped-count={mappedCount}
+            pending={pendingObjectChange}
+            error-text={objectError}
+            onobjectpick={relayObjectPick}
+            onobjectclear={relaySimpleEvent}
+            onobjectconfirm={relaySimpleEvent}
+            onobjectcancel={relaySimpleEvent}
+        ></c-final-connected-object-card>
+        <p class="sp-save-cue" role="status" aria-live="polite">
+            {objectSaveText}
+        </p>
+    </template>
+
+    <template lwc:elseif={isAvailability}>
+        <div class="sp-section-intro">
+            <h2 class="sp-title">Availability</h2>
+            <p class="sp-description">
+                Control when this form accepts responses. These rules are
+                enforced by the submission service.
+            </p>
+        </div>
+        <div class="sp-form">
+            <lightning-input
+                type="toggle"
+                label="Accept responses"
+                message-toggle-active="Open"
+                message-toggle-inactive="Closed"
+                checked={acceptingResponses}
+                onchange={handleAcceptingChange}
+            ></lightning-input>
+            <div class="sp-date-grid">
+                <lightning-input
+                    type="datetime"
+                    label="Open at"
+                    value={opensAtValue}
+                    onchange={handleOpensAtChange}
+                ></lightning-input>
+                <lightning-input
+                    type="datetime"
+                    label="Close at"
+                    value={closesAtValue}
+                    onchange={handleClosesAtChange}
+                ></lightning-input>
+            </div>
+            <template lwc:if={dateError}>
+                <p class="sp-error" role="alert">{dateError}</p>
+            </template>
+            <template lwc:if={isSurvey}>
+                <lightning-input
+                    type="number"
+                    label="Response limit"
+                    min="1"
+                    step="1"
+                    value={responseCapValue}
+                    placeholder="No limit"
+                    field-level-help="The survey closes after this many submitted responses across all versions."
+                    onchange={handleResponseCapChange}
+                ></lightning-input>
+            </template>
+            <lightning-textarea
+                label="Closed message"
+                value={closedMessageValue}
+                maxlength="255"
+                onchange={handleClosedMessageChange}
+            ></lightning-textarea>
+        </div>
+        <p class="sp-save-cue" role="status" aria-live="polite">
+            {specSaveText}
+        </p>
+    </template>
+
+    <template lwc:elseif={isAccess}>
+        <div class="sp-section-intro">
+            <h2 class="sp-title">Access &amp; invitations</h2>
+            <p class="sp-description">
+                Control public guest access and create record-scoped links from
+                one place.
+            </p>
+        </div>
+        <div class="sp-access-row">
+            <div>
+                <p class="sp-label">Public guest access</p>
+                <p class="sp-description">{publicHelp}</p>
+            </div>
+            <lightning-input
+                type="toggle"
+                variant="label-hidden"
+                label="Public guest access"
+                message-toggle-active="On"
+                message-toggle-inactive="Off"
+                checked={isPublic}
+                disabled={publicBusy}
+                onchange={handlePublicChange}
+            ></lightning-input>
+        </div>
+        <p class="sp-save-cue" role="status" aria-live="polite">
+            {publicSaveText}
+        </p>
+
+        <template lwc:if={isSurvey}>
+            <template lwc:if={objectApi}>
+                <c-final-record-link-panel
+                    object-api={objectApi}
+                    minted-link={mintedLink}
+                    link-busy={linkBusy}
+                    link-error={linkError}
+                    link-notice={linkNotice}
+                    onmintlink={relayMintLink}
+                    oninvalidatelinks={relaySimpleEvent}
+                    onmanageinvitations={relaySimpleEvent}
+                ></c-final-record-link-panel>
+            </template>
+            <template lwc:else>
+                <div class="sp-empty">
+                    <p class="sp-label">Record invitations are unavailable</p>
+                    <p class="sp-description">
+                        Connect a Salesforce object first, then return here to
+                        create record-scoped invitation links.
+                    </p>
+                </div>
+            </template>
+        </template>
+    </template>
+</template>
