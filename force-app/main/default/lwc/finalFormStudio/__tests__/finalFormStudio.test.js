@@ -5,6 +5,7 @@ import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
@@ -57,6 +58,11 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalSpecController.getSpec',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalStudioController.setGuestAccess',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -1092,5 +1098,96 @@ describe('c-final-form-studio', () => {
             el.shadowRoot.querySelector('.st-notfound h2').textContent
         ).toContain("isn't available");
         expect(el.shadowRoot.querySelector('lightning-spinner')).toBeNull();
+    });
+
+    it('opens a focused settings drawer and autosaves availability through the spec path', async () => {
+        jest.useFakeTimers();
+        const surveySpec = JSON.parse(JSON.stringify(SPEC));
+        surveySpec.form.type = 'survey';
+        surveySpec.settings = {};
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(surveySpec),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1,
+            isPublic: false
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+
+        expect(el.shadowRoot.querySelector('.st-public')).toBeNull();
+        el.shadowRoot.querySelector('[data-id="settings-trigger"]').click();
+        await Promise.resolve();
+        const availabilityItem = [
+            ...el.shadowRoot.querySelectorAll('.st-settings-item')
+        ].find((item) => item.dataset.section === 'availability');
+        availabilityItem.click();
+        await Promise.resolve();
+
+        const panel = el.shadowRoot.querySelector(
+            'c-final-studio-settings-panel'
+        );
+        expect(panel.section).toBe('availability');
+        expect(el.shadowRoot.querySelector('.st-drawer')).not.toBeNull();
+        panel.dispatchEvent(
+            new CustomEvent('settingschange', {
+                detail: {
+                    availability: {
+                        status: 'closed',
+                        opensAt: null,
+                        closesAt: null,
+                        responseCap: 100,
+                        closedMessage: 'Registration is closed.'
+                    }
+                }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        expect(saved.settings.availability.status).toBe('closed');
+        expect(saved.settings.availability.responseCap).toBe(100);
+        jest.useRealTimers();
+    });
+
+    it('saves public access immediately from Access & invitations', async () => {
+        const surveySpec = JSON.parse(JSON.stringify(SPEC));
+        surveySpec.form.type = 'survey';
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(surveySpec),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1,
+            isPublic: true
+        });
+        setGuestAccess.mockResolvedValue(false);
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+
+        el.shadowRoot.querySelector('[data-id="settings-trigger"]').click();
+        await Promise.resolve();
+        [...el.shadowRoot.querySelectorAll('.st-settings-item')]
+            .find((item) => item.dataset.section === 'access')
+            .click();
+        await Promise.resolve();
+        const panel = el.shadowRoot.querySelector(
+            'c-final-studio-settings-panel'
+        );
+        panel.dispatchEvent(
+            new CustomEvent('publicchange', {
+                detail: { checked: false }
+            })
+        );
+        await micro(3);
+
+        expect(setGuestAccess).toHaveBeenCalledWith({
+            formId: 'a0F1',
+            enabled: false
+        });
+        expect(panel.publicSaveText).toBe('✓ Access saved immediately');
     });
 });

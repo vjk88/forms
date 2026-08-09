@@ -1,0 +1,111 @@
+<template>
+    <section class="rl-panel" aria-labelledby="invitation-heading">
+        <div class="rl-heading-row">
+            <div>
+                <h3 id="invitation-heading" class="rl-heading">
+                    Record invitations
+                </h3>
+                <p class="rl-help">
+                    Create a guest link tied to one {objectApi} record. The
+                    record ID is never exposed in the URL.
+                </p>
+            </div>
+            <lightning-button
+                variant="base"
+                label="Manage in Salesforce"
+                onclick={handleManage}
+            ></lightning-button>
+        </div>
+
+        <div class="rl-form">
+            <lightning-input
+                type="text"
+                label="Salesforce record ID"
+                value={recordId}
+                maxlength="18"
+                placeholder="15 or 18 characters"
+                field-level-help="Paste the 15- or 18-character ID from the Salesforce record URL."
+                onchange={handleRecordId}
+            ></lightning-input>
+            <template lwc:if={recordIdHelp}>
+                <p class="rl-validation">{recordIdHelp}</p>
+            </template>
+
+            <lightning-input
+                type="toggle"
+                label="Track this invitation"
+                message-toggle-active="Tracked"
+                message-toggle-inactive="Not tracked"
+                checked={tracked}
+                onchange={handleTracked}
+            ></lightning-input>
+
+            <template lwc:if={tracked}>
+                <div class="rl-nested">
+                    <lightning-input
+                        type="text"
+                        label="Invitation label"
+                        value={recipient}
+                        placeholder="Name or email (optional)"
+                        field-level-help="For your reference only; no email is sent."
+                        onchange={handleRecipient}
+                    ></lightning-input>
+                    <lightning-input
+                        type="checkbox"
+                        label="Stop working after one response"
+                        checked={singleUse}
+                        onchange={handleSingleUse}
+                    ></lightning-input>
+                </div>
+            </template>
+
+            <lightning-button
+                variant="brand"
+                label={createLabel}
+                disabled={createDisabled}
+                onclick={handleCreate}
+            ></lightning-button>
+        </div>
+
+        <template lwc:if={linkError}>
+            <p class="rl-message rl-message--error" role="alert">{linkError}</p>
+        </template>
+
+        <template lwc:if={mintedLink}>
+            <div class="rl-result" role="status" aria-live="polite">
+                <p class="rl-result-title">Invitation created</p>
+                <p class="rl-help">
+                    Append this query string to the published survey URL.
+                </p>
+                <div class="rl-copy-row">
+                    <input
+                        class="rl-link-output"
+                        type="text"
+                        aria-label="Invitation link query string"
+                        readonly
+                        value={mintedLink}
+                    />
+                    <lightning-button
+                        label={copyLabel}
+                        onclick={handleCopy}
+                    ></lightning-button>
+                </div>
+            </div>
+        </template>
+
+        <template lwc:if={linkNotice}>
+            <p class="rl-message" role="status" aria-live="polite">
+                {linkNotice}
+            </p>
+        </template>
+
+        <div class="rl-danger-row">
+            <lightning-button
+                variant="destructive-text"
+                label="Invalidate all invitation links"
+                disabled={linkBusy}
+                onclick={handleInvalidate}
+            ></lightning-button>
+        </div>
+    </section>
+</template>

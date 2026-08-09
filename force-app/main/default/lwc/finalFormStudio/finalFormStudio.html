@@ -93,17 +93,65 @@
             >
                 ↷
             </button>
-            <lightning-input
-                type="toggle"
-                class="st-public"
-                label="Public link"
-                message-toggle-active="Public"
-                message-toggle-inactive="Private"
-                checked={isPublic}
-                disabled={publicDisabled}
-                field-level-help={publicHelp}
-                onchange={handleTogglePublic}
-            ></lightning-input>
+            <template lwc:if={isEditable}>
+                <div class="st-settings" onkeydown={handleSettingsKeydown}>
+                    <lightning-button-icon
+                        data-id="settings-trigger"
+                        icon-name="utility:settings"
+                        alternative-text="Form settings"
+                        title="Form settings"
+                        aria-haspopup="menu"
+                        aria-expanded={settingsMenuOpen}
+                        onclick={handleSettingsToggle}
+                    ></lightning-button-icon>
+                    <template lwc:if={settingsMenuOpen}>
+                        <div
+                            class="st-settings-menu"
+                            role="menu"
+                            aria-label="Form settings"
+                        >
+                            <template lwc:if={isSurvey}>
+                                <button
+                                    type="button"
+                                    class="st-settings-item"
+                                    role="menuitem"
+                                    data-section="connection"
+                                    onclick={handleOpenSettings}
+                                >
+                                    <span>Connected object</span>
+                                    <span class="st-settings-status">
+                                        {connectionStatus}
+                                    </span>
+                                </button>
+                            </template>
+                            <button
+                                type="button"
+                                class="st-settings-item"
+                                role="menuitem"
+                                data-section="availability"
+                                onclick={handleOpenSettings}
+                            >
+                                <span>Availability</span>
+                                <span class="st-settings-status">
+                                    {availabilityStatus}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                class="st-settings-item"
+                                role="menuitem"
+                                data-section="access"
+                                onclick={handleOpenSettings}
+                            >
+                                <span>Access &amp; invitations</span>
+                                <span class="st-settings-status">
+                                    {accessStatus}
+                                </span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </template>
             <button
                 type="button"
                 class="st-primary"
@@ -190,22 +238,28 @@
                     </template>
                     <template lwc:else>
                         <template lwc:if={isSurvey}>
-                            <c-final-connected-object-card
-                                object-api={objectApi}
-                                mapped-count={mappedCount}
-                                pending={objectPending}
-                                error-text={objectError}
-                                minted-link={mintedLink}
-                                link-busy={linkBusy}
-                                link-error={linkError}
-                                link-notice={linkNotice}
-                                onobjectpick={handleObjectPick}
-                                onobjectclear={handleObjectClear}
-                                onobjectconfirm={handleObjectConfirm}
-                                onobjectcancel={handleObjectCancel}
-                                onmintlink={handleMintLink}
-                                oninvalidatelinks={handleInvalidateLinks}
-                            ></c-final-connected-object-card>
+                            <div class="st-survey-context">
+                                <span class="st-context-icon" aria-hidden="true"
+                                    >SF</span
+                                >
+                                <span class="st-context-copy">
+                                    <span class="st-context-label"
+                                        >Connected object</span
+                                    >
+                                    <span class="st-context-title"
+                                        >{surveyContextTitle}</span
+                                    >
+                                    <span class="st-context-detail"
+                                        >{surveyContextDetail}</span
+                                    >
+                                </span>
+                                <lightning-button-icon
+                                    icon-name="utility:edit"
+                                    alternative-text="Edit connected object"
+                                    title="Edit connected object"
+                                    onclick={handleOpenConnectionFromContext}
+                                ></lightning-button-icon>
+                            </div>
                         </template>
                         <c-final-field-palette
                             object-api={objectApi}
@@ -252,6 +306,77 @@
                 </aside>
             </template>
         </div>
+
+        <template lwc:if={settingsDrawerOpen}>
+            <div class="st-drawer-shell" onkeydown={handleSettingsKeydown}>
+                <button
+                    type="button"
+                    class="st-drawer-backdrop"
+                    aria-label="Close settings"
+                    onclick={handleCloseSettings}
+                ></button>
+                <aside
+                    class="st-drawer"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="settings-drawer-title"
+                >
+                    <span
+                        class="st-focus-sentinel"
+                        tabindex="0"
+                        onfocus={handleDrawerFocusTrap}
+                    ></span>
+                    <header class="st-drawer-header">
+                        <div>
+                            <p class="st-drawer-eyebrow">Form settings</p>
+                            <h2 id="settings-drawer-title">{settingsTitle}</h2>
+                        </div>
+                        <lightning-button-icon
+                            data-id="settings-close"
+                            icon-name="utility:close"
+                            alternative-text="Close settings"
+                            title="Close settings"
+                            onclick={handleCloseSettings}
+                        ></lightning-button-icon>
+                    </header>
+                    <div class="st-drawer-body">
+                        <c-final-studio-settings-panel
+                            section={settingsSection}
+                            is-survey={isSurvey}
+                            object-api={objectApi}
+                            mapped-count={mappedCount}
+                            pending-object-change={objectPending}
+                            object-error={objectError}
+                            object-save-text={objectSaveText}
+                            availability={availability}
+                            spec-save-text={savedText}
+                            is-public={isPublic}
+                            public-busy={togglingPublic}
+                            public-save-text={publicSaveText}
+                            public-help={publicHelp}
+                            minted-link={mintedLink}
+                            link-busy={linkBusy}
+                            link-error={linkError}
+                            link-notice={linkNotice}
+                            onsettingschange={handleSettingsChange}
+                            onobjectpick={handleObjectPick}
+                            onobjectclear={handleObjectClear}
+                            onobjectconfirm={handleObjectConfirm}
+                            onobjectcancel={handleObjectCancel}
+                            onpublicchange={handleTogglePublic}
+                            onmintlink={handleMintLink}
+                            oninvalidatelinks={handleInvalidateLinks}
+                            onmanageinvitations={handleManageInvitations}
+                        ></c-final-studio-settings-panel>
+                    </div>
+                    <span
+                        class="st-focus-sentinel"
+                        tabindex="0"
+                        onfocus={handleDrawerFocusTrap}
+                    ></span>
+                </aside>
+            </div>
+        </template>
 
         <template lwc:if={editorOpen}>
             <c-final-theme-editor
