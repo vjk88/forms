@@ -83,6 +83,29 @@ describe('c-final-validation-editor (presets — no regex for humans)', () => {
         });
     });
 
+    it("a preset's DEFAULT message does not follow a switch — Phone keeps its own default", async () => {
+        const el = mount({
+            entries: [
+                {
+                    type: 'pattern',
+                    preset: 'email',
+                    pattern: 'x',
+                    message: 'Enter a valid email address.'
+                }
+            ]
+        });
+        await flush();
+        const changes = [];
+        el.addEventListener('validationchange', (e) => changes.push(e.detail));
+        const type = el.shadowRoot.querySelector('.ve-type');
+        type.value = 'phone';
+        type.dispatchEvent(new CustomEvent('change'));
+        const entry = changes[0].entries[0];
+        expect(entry.preset).toBe('phone');
+        // the email default must NOT carry over (the reported bug)
+        expect(entry.message).toBe('Enter a valid phone number.');
+    });
+
     it('Text length edits recompile the engine pattern; Number range coerces numbers', async () => {
         const el = mount({
             entries: [
