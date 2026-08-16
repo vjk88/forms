@@ -163,7 +163,9 @@ export default class FinalValidationEditor extends LightningElement {
     }
 
     /** Switching preset resets the entry to that preset's shape — stale
-     *  params never linger; a custom message survives. */
+     *  params never linger. A message the AUTHOR customized survives, but a
+     *  preset's own default message must NOT follow the author to a new preset
+     *  (that bug left "Phone format" showing the email default message). */
     handlePreset(event) {
         const i = Number(event.currentTarget.dataset.index);
         const preset = PRESETS.find((p) => p.key === event.target.value);
@@ -171,10 +173,18 @@ export default class FinalValidationEditor extends LightningElement {
             return;
         }
         const next = this._next();
-        const message = next[i] && next[i].message;
+        const current = next[i];
+        // the message is "custom" only if it differs from the OUTGOING
+        // preset's default; otherwise let the new preset supply its own
+        const outgoing = PRESETS.find((p) => p.key === presetOf(current || {}));
+        const outgoingDefault = outgoing ? outgoing.make().message : '';
+        const customMessage =
+            current && current.message && current.message !== outgoingDefault
+                ? current.message
+                : '';
         next[i] = preset.make();
-        if (message) {
-            next[i].message = message;
+        if (customMessage) {
+            next[i].message = customMessage;
         }
         this._emit(next);
     }
