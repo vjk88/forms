@@ -1,4 +1,4 @@
-# Pending Work — everything between here and ship
+3# Pending Work — everything between here and ship
 
 **Compiled:** 2026-09-03 · **Last commit at time of writing:** `47fc433` (2026-08-16, PR #218)
 **Ship definition:** a managed 2GP AppExchange package **with Surveys** ([[project-ship-definition]]).
@@ -34,16 +34,43 @@ all still untouched per the parallel-build rule — P7 exists to delete them.
 
 ---
 
-## 2 · Blockers — fix before Security Review
+## 2 · Ship blockers — gated on packaging, not on today
+
+**Read the gating before you read the list.** None of these are live defects in the running app.
+Every one of them blocks the **package** — and Security Review sits behind packaging, which hasn't
+started. So "blocker" here means _this cannot ship for review in its current state_, not _this is
+on fire_. Sequence them against the packaging track (§7), not against the calendar.
 
 ### 2.1 No server-side answer validation (DEFERRED #24)
 
 Required / pattern / range checks run **client-only** for both forms and surveys. A crafted POST
 skips them. Verified 2026-09-03: `FinalSubmitService.cls` contains no required/pattern/range walk.
 
-Not a data-exfiltration hole — the published spec's allow-list still bounds which fields can be
-written, so the worst case is a sparse record. But it is a documented pre-Security-Review
-requirement, and a reviewer will find it. Needs one shared §7 validation walk covering both paths.
+**What the server already enforces — the important half is covered.** The **published spec is the
+allow-list**: the field walk only ever maps fields the spec binds, so a submitter can never name an
+object or a field that isn't already in the form. Availability windows, survey response caps, and
+the honeypot are all enforced server-side, and `FinalSpecDescribeValidator` checks object/field
+existence plus CRUD and FLS. Nobody reaches your other objects through this endpoint. The
+allow-list architecture did the heavy lifting.
+
+**So this is a data-integrity gap, not a security hole.** Two things actually bite:
+
+1. **"Required" is a promise a caller can decline.** A field marked required in the builder but
+   _optional in the schema_ lands as null on a hand-crafted POST. The database only catches fields
+   that are genuinely required at the schema level or Master-Detail — in a form builder, the
+   minority. Downstream Flows, reports, and automation written on the assumption "the form requires
+   it, so it's always populated" then meet nulls they never handled. For surveys, required
+   questions come back unanswered and the analysis silently assumes that can't happen.
+2. **Pattern and range checks have no schema equivalent at all.** "Email matches this shape",
+   "rating 1–5", "age 18–65" live _only_ in the form spec. Nothing downstream enforces them unless
+   the admin hand-writes a Salesforce validation rule — which defeats the point of the form builder.
+
+**Why it's on this list anyway:** client-side-only enforcement is a known AppExchange Security
+Review checklist item that reviewers test with crafted payloads. It's not a judgement about
+exploitability in this app; it's a pattern they fail packages for.
+
+**Scope when it comes up:** one shared walk over the spec's §7 rules, reused by both submit paths.
+Realistic minimum is `required` plus type/range coercion; patterns and cross-field rules can follow.
 
 ### 2.2 No rate limiting (DEFERRED #20)
 
@@ -190,11 +217,21 @@ work in progress. Worth a deliberate pass:
 
 ## 7 · Recommended order
 
-1. **Server-side validation (§2.1)** — the security item with a reviewer waiting at the end of it.
-2. **File upload (§3.1)** — the only unfinished promise a user can read in shipped UI, and the
+Ordered by what the product is missing **today**, with the packaging-gated items sequenced against
+the packaging track instead of ahead of it.
+
+1. **File upload (§3.1)** — the only unfinished promise a user can read in shipped UI, and the
    approach is already proven.
-3. **Accessibility pass (§4.1)** — small, bounded, and currently contradicts a stated product promise.
-4. **Open the packaging track (§2.3 + §2.4)** — namespace, 2GP, legacy purge. Longest pole; start early.
+2. **Accessibility pass (§4.1)** — small, bounded, and currently contradicts a stated product promise.
+3. **Open the packaging track (§2.3 + §2.4)** — namespace, 2GP, legacy purge. Longest pole, and the
+   namespace decision constrains everything downstream, so start it before it's urgent.
+4. **Server-side validation (§2.1)** — pull forward the moment the packaging track starts moving;
+   it must land before the package goes for review.
+
+**Why validation isn't first** (owner call, 2026-09-03): it's frequently mistaken for a live
+security hole, and it isn't — see §2.1 for what the allow-list already enforces. Its real trigger
+is Security Review, which is gated behind packaging that hasn't started. Sequenced on timing rather
+than on how alarming the title sounds. It stays a hard gate on shipping, just not a standing risk.
 
 Rate limiting (§2.2) can ride the broader guest-hardening pass. The polish backlogs (§4) are real
 work but block nothing.
