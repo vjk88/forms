@@ -29,6 +29,47 @@ const INPUT_TYPES = {
     checkbox: 'checkbox'
 };
 
+/** Mirrors `FinalSubmitService.MAX_FILE_B64_CHARS` in raw-byte terms — base64
+ *  inflates by 4/3, and the SERVER is the enforcement point. This copy exists
+ *  only so a doomed file is refused before the user waits for an upload.
+ *  The value is MEASURED against Apex's 6 MB synchronous heap (the submit path
+ *  holds the base64 three times over) — see the constant's comment there
+ *  before changing it. ~880 KB of real file. */
+const MAX_FILE_B64_CHARS = 1200000;
+const MAX_FILE_BYTES = Math.floor((MAX_FILE_B64_CHARS * 3) / 4);
+
+/** Decoded byte count of a base64 payload, padding accounted for. */
+function b64Bytes(b64) {
+    if (!b64) {
+        return 0;
+    }
+    const pad = b64.endsWith('==') ? 2 : b64.endsWith('=') ? 1 : 0;
+    return Math.max(0, Math.floor((b64.length * 3) / 4) - pad);
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) {
+        return `${bytes} B`;
+    }
+    const kb = bytes / 1024;
+    return kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`;
+}
+
+/** FileReader gives a data URL; the wire carries bare base64 (schema §8), so
+ *  the `data:…;base64,` prefix is stripped here rather than server-side. */
+function readAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(reader.error);
+        reader.onload = () => {
+            const result = String(reader.result || '');
+            const comma = result.indexOf(',');
+            resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 const SPACER_HEIGHTS = { small: 12, medium: 28, large: 56 };
 
 /** el.value as a number, or null. Prefill and REST payloads legally send
@@ -148,6 +189,12 @@ export default class FinalElementRenderer extends LightningElement {
      *  own echo so an EXTERNAL el.value write (prefill, reset) wins over it. */
     _sliderVal;
     _sliderSent;
+
+    /** File upload: local picks (win over the hydrated answer), the drag-over
+     *  flag, and the client-side rejection message. */
+    _localFiles;
+    _fileDragging = false;
+    fileError;
 
     get el() {
         return this.element || {};
@@ -338,6 +385,152 @@ export default class FinalElementRenderer extends LightningElement {
 
     get isFile() {
         return this.el.type === 'file';
+    }
+
+    // ---- file upload (schema §8 `files`) --------------------------------
+    //
+    // Everything here is UX. The submit Apex re-checks size, type and the
+    // element allow-list, because the client is not an enforcement point
+    // (PENDING_WORK §2.1). Answers ride the normal `valuechange` channel as
+    // [{name, base64}]; the viewer lifts them into the payload's `files`.
+
+    /** Local edits win over the viewer's hydrated answer, matching the
+     *  other multi-value widgets. */
+    get fileValues() {
+        if (this._localFiles) {
+            return this._localFiles;
+        }
+        return Array.isArray(this.el.value) ? this.el.value : [];
+    }
+
+    get hasFiles() {
+        return this.fileValues.length > 0;
+    }
+
+    get fileRows() {
+        return this.fileValues.map((f, i) => ({
+            key: `${i}:${f.name}`,
+            name: f.name,
+            size: formatBytes(b64Bytes(f.base64)),
+            removeLabel: `Remove ${f.name}`
+        }));
+    }
+
+    get fileInputId() {
+        return `file-${this.el.id}`;
+    }
+
+    get fileHintId() {
+        return `filehint-${this.el.id}`;
+    }
+
+    get fileAccept() {
+        return this.cfg.accept || undefined;
+    }
+
+    get fileMultiple() {
+        return Boolean(this.cfg.multiple);
+    }
+
+    get filePrompt() {
+        return this.fileMultiple ? 'Add files' : 'Add a file';
+    }
+
+    get fileHint() {
+        const cap = `up to ${formatBytes(MAX_FILE_BYTES)}`;
+        return this.cfg.accept
+            ? `${this.cfg.accept} · ${cap}`
+            : `Any file type · ${cap}`;
+    }
+
+    get fileDropClass() {
+        return this._fileDragging
+            ? 'block-file-frame is-dragover'
+            : 'block-file-frame';
+    }
+
+    handleFileBrowse() {
+        const input = this.template.querySelector('.block-file-input');
+        if (input) {
+            input.click();
+        }
+    }
+
+    handleFileDragOver(event) {
+        event.preventDefault();
+        this._fileDragging = true;
+    }
+
+    handleFileDragLeave() {
+        this._fileDragging = false;
+    }
+
+    handleFileDrop(event) {
+        event.preventDefault();
+        this._fileDragging = false;
+        const dt = event.dataTransfer;
+        this._ingestFiles(dt && dt.files ? Array.from(dt.files) : []);
+    }
+
+    /** Reads the input by query rather than `event.target`: once this
+     *  renderer is nested inside the section/nav chain, synthetic shadow (and
+     *  LWS in the org) retargets `target` to a host element, which carries no
+     *  `.files` — see [[reference-lws-keyboard-events]] for the same trap. */
+    handleFilePick() {
+        const input = this.template.querySelector('.block-file-input');
+        if (!input) {
+            return;
+        }
+        this._ingestFiles(Array.from(input.files || []));
+        input.value = ''; // re-picking the same file must re-fire
+    }
+
+    handleFileRemove(event) {
+        const key = event.currentTarget.dataset.key;
+        const kept = this.fileRows
+            .map((r, i) => (r.key === key ? -1 : i))
+            .filter((i) => i >= 0)
+            .map((i) => this.fileValues[i]);
+        this.fileError = undefined;
+        this._commitFiles(kept);
+    }
+
+    /** Read each pick to base64, rejecting oversize before it reaches the
+     *  answer store so a doomed payload is never assembled. */
+    async _ingestFiles(picked) {
+        if (!picked.length) {
+            return;
+        }
+        const oversize = picked.filter((f) => f.size > MAX_FILE_BYTES);
+        const usable = picked.filter((f) => f.size <= MAX_FILE_BYTES);
+        const chosen = this.fileMultiple ? usable : usable.slice(0, 1);
+
+        let read;
+        try {
+            read = await Promise.all(
+                chosen.map((file) =>
+                    readAsBase64(file).then((base64) => ({
+                        name: file.name,
+                        base64
+                    }))
+                )
+            );
+        } catch {
+            this.fileError = 'That file could not be read.';
+            return;
+        }
+
+        this.fileError = oversize.length
+            ? `${oversize[0].name} is larger than ${formatBytes(MAX_FILE_BYTES)}.`
+            : undefined;
+        this._commitFiles(
+            this.fileMultiple ? [...this.fileValues, ...read] : read
+        );
+    }
+
+    _commitFiles(files) {
+        this._localFiles = files;
+        this.dispatchValue(files);
     }
 
     get hasRichText() {

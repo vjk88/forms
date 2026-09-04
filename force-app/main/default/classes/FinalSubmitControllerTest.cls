@@ -207,4 +207,260 @@ private class FinalSubmitControllerTest {
             Assert.isTrue(true);
         }
     }
+
+    // ---- File upload (schema §8 `files`) -------------------------------
+
+    /** One bound LastName + one `file` element, with optional accept config
+     *  and an optional repeatable section holding a second file element (the
+     *  §4.1 backstop case). */
+    private static Id makeFileVersion(String accept, Boolean withRepeatFile) {
+        String cfg = accept == null
+            ? ''
+            : ',"config":{"accept":"' + accept + '"}';
+        String repeatSection = withRepeatFile
+            ? ',{"id":"sec_rep","repeat":{"childObject":"Case","relationshipField":"ContactId"},' +
+              '"elements":[{"id":"el_repfile","type":"file"}]}'
+            : '';
+        return makeActiveVersion(
+            'Contact',
+            '[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
+                '{"id":"el_ln","type":"field","binding":{"object":"Contact","field":"LastName"}},' +
+                '{"id":"el_file","type":"file"' +
+                cfg +
+                '}' +
+                ']}' +
+                repeatSection +
+                ']}]'
+        );
+    }
+
+    private static String payloadWithFile(
+        String elementId,
+        String name,
+        String b64
+    ) {
+        return JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_ln' => 'Filer' },
+                'files' => new List<Object>{
+                    new Map<String, Object>{
+                        'elementId' => elementId,
+                        'name' => name,
+                        'base64' => b64
+                    }
+                }
+            }
+        );
+    }
+
+    private static String b64Of(String content) {
+        return EncodingUtil.base64Encode(Blob.valueOf(content));
+    }
+
+    @IsTest
+    static void attachesContentVersionToTheNewRecord() {
+        Id versionId = makeFileVersion(null, false);
+
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            versionId,
+            payloadWithFile('el_file', 'notes.txt', b64Of('hello world'))
+        );
+        Test.stopTest();
+
+        List<ContentDocumentLink> links = [
+            SELECT ContentDocument.LatestPublishedVersion.Title
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId = :res.recordId
+        ];
+        Assert.areEqual(1, links.size(), 'file links to the new record');
+        Assert.areEqual(
+            'notes.txt',
+            links[0].ContentDocument.LatestPublishedVersion.Title
+        );
+    }
+
+    /** The security boundary: an elementId that isn't an authored `file`
+     *  element is refused, and the record rolls back with it. */
+    @IsTest
+    static void rejectsFilesForNonFileElements() {
+        Id versionId = makeFileVersion(null, false);
+        Integer before = [SELECT COUNT() FROM Contact];
+
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                payloadWithFile('el_ln', 'sneaky.txt', b64Of('nope'))
+            );
+            Assert.fail('should reject a non-file elementId');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+        Test.stopTest();
+
+        Assert.areEqual(before, [SELECT COUNT() FROM Contact], 'rolled back');
+    }
+
+    /** Schema §4.1 backstop: even if a spec somehow carries a file element
+     *  inside a repeatable section, the server refuses it. */
+    @IsTest
+    static void rejectsFileElementInsideARepeatableSection() {
+        Id versionId = makeFileVersion(null, true);
+
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                payloadWithFile('el_repfile', 'child.txt', b64Of('x'))
+            );
+            Assert.fail('§4.1: repeat-section file must be refused');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void rejectsDisallowedExtensions() {
+        // denied outright, whatever the author configured
+        Id anyType = makeFileVersion(null, false);
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                anyType,
+                payloadWithFile('el_file', 'payload.exe', b64Of('MZ'))
+            );
+            Assert.fail('executables are always refused');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+
+        // outside the author's accept list
+        Id pdfOnly = makeFileVersion('.pdf', false);
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                pdfOnly,
+                payloadWithFile('el_file', 'sheet.csv', b64Of('a,b'))
+            );
+            Assert.fail('accept list must be enforced server-side');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+
+        // and the allowed one still lands
+        FinalSubmitController.SubmitResult ok = FinalSubmitController.submitForm(
+            null,
+            pdfOnly,
+            payloadWithFile('el_file', 'report.pdf', b64Of('%PDF-1.4'))
+        );
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :ok.recordId
+            ]
+        );
+    }
+
+    /** A forged contentType must not buy anything — the server derives the
+     *  type from the name and never reads that field. */
+    @IsTest
+    static void ignoresClientSuppliedContentType() {
+        Id pdfOnly = makeFileVersion('.pdf', false);
+        String payload = JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_ln' => 'Filer' },
+                'files' => new List<Object>{
+                    new Map<String, Object>{
+                        'elementId' => 'el_file',
+                        'name' => 'payload.exe',
+                        'contentType' => 'application/pdf', // forged
+                        'base64' => b64Of('MZ')
+                    }
+                }
+            }
+        );
+        try {
+            FinalSubmitController.submitForm(null, pdfOnly, payload);
+            Assert.fail('contentType must not override the real extension');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+    }
+
+    @IsTest
+    static void rejectsOversizeFileAndRollsBack() {
+        Id versionId = makeFileVersion(null, false);
+        Integer before = [SELECT COUNT() FROM Contact];
+        // one char over the per-file cap, cheap to build (no real payload)
+        String tooBig = 'A'.repeat(FinalSubmitService.MAX_FILE_B64_CHARS + 1);
+
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                payloadWithFile('el_file', 'big.txt', tooBig)
+            );
+            Assert.fail('oversize file must be refused');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+        Test.stopTest();
+
+        Assert.areEqual(before, [SELECT COUNT() FROM Contact], 'rolled back');
+    }
+
+    /**
+     * The measurement IMPL_PLAN_FILE_UPLOAD §4.4 demands, walking the REAL
+     * path — payloadJson → deserialize → decode — because that is where the
+     * base64 is held three times at once. A decode-only check passes at sizes
+     * the actual submit cannot survive, which is how the first draft of this
+     * feature ended up with a 4.3 MB cap that blew heap on contact.
+     *
+     * If this fails, LOWER the constants; never raise the assertion.
+     */
+    @IsTest
+    static void heapHeadroomHoldsAtTheCap() {
+        Integer cap = FinalSubmitService.MAX_PAYLOAD_B64_CHARS;
+        String b64 = 'A'.repeat(cap);
+        String payloadJson = JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_ln' => 'Filer' },
+                'files' => new List<Object>{
+                    new Map<String, Object>{
+                        'elementId' => 'el_file',
+                        'name' => 'f.pdf',
+                        'base64' => b64
+                    }
+                }
+            }
+        );
+        Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(
+            payloadJson
+        );
+        List<Object> files = (List<Object>) parsed.get('files');
+        Map<String, Object> first = (Map<String, Object>) files[0];
+        Blob decoded = EncodingUtil.base64Decode((String) first.get('base64'));
+
+        Assert.isTrue(decoded.size() > 0, 'decoded');
+        // Headroom, not merely "did not throw": the real transaction still has
+        // the spec, describe maps and the records to allocate after this.
+        Integer used = Limits.getHeapSize();
+        Integer ceiling = Limits.getLimitHeapSize();
+        Assert.isTrue(
+            used < (ceiling * 3) / 4,
+            'a payload at the aggregate cap must leave a quarter of the heap ' +
+                'for the rest of the submit — used ' +
+                used +
+                ' of ' +
+                ceiling
+        );
+    }
 }

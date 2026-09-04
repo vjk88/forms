@@ -1,5 +1,9 @@
 import { createElement } from 'lwc';
-import FinalBuilderCanvas, { PALETTE_FIELD_MIME } from 'c/finalBuilderCanvas';
+import FinalBuilderCanvas, {
+    PALETTE_FIELD_MIME,
+    PALETTE_EL_MIME,
+    PALETTE_FILE_MIME
+} from 'c/finalBuilderCanvas';
 
 /** Minimal DataTransfer stand-in (jsdom has no DragEvent/DataTransfer). */
 function makeDataTransfer() {
@@ -364,5 +368,78 @@ describe('c-final-builder-canvas', () => {
         repeater.dispatchEvent(over);
         expect(pd).not.toHaveBeenCalled(); // native no-drop, no highlight
         expect(repeater.classList.contains('bc-drop-on')).toBe(false);
+    });
+
+    // ---- schema §4.1: no file elements inside repeatable sections ----
+    //
+    // A flat `files` array keyed by elementId can't tell entry 1's file from
+    // entry 2's, so it could never be attached to the right child record — and
+    // N × the base64 cap is a heap bomb. `file` is a BLOCK, and blocks
+    // otherwise land anywhere, so this needs its own guard.
+
+    /** SPEC + a repeatable section, mounted. */
+    function mountWithRepeater() {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages[0].sections.push({
+            id: 'sec_rep',
+            title: 'Line items',
+            repeat: { childObject: 'OrderItem__c' },
+            elements: []
+        });
+        return mount({ spec });
+    }
+
+    /** Mid-drag, only dataTransfer TYPES are readable — a file block stamps
+     *  the generic block marker plus its own narrower one. */
+    function blockDrag(isFile) {
+        const dt = makeDataTransfer();
+        dt.types.push(PALETTE_EL_MIME);
+        if (isFile) {
+            dt.types.push(PALETTE_FILE_MIME);
+        }
+        return dt;
+    }
+
+    function dragOver(node, dt) {
+        const over = dragEvent('dragover', dt);
+        const pd = jest.spyOn(over, 'preventDefault');
+        node.dispatchEvent(over);
+        return pd;
+    }
+
+    it('§4.1: a File Upload block is refused over a repeatable section', () => {
+        const el = mountWithRepeater();
+        const repeater = el.shadowRoot.querySelectorAll('.bc-section')[1];
+        const dt = blockDrag(true);
+
+        expect(dragOver(repeater, dt)).not.toHaveBeenCalled(); // native no-drop
+        expect(dt.dropEffect).toBe('none');
+    });
+
+    it('§4.1: the same File Upload block IS accepted over a plain section', () => {
+        const el = mountWithRepeater();
+        const plain = el.shadowRoot.querySelectorAll('.bc-section')[0];
+        const dt = blockDrag(true);
+
+        expect(dragOver(plain, dt)).toHaveBeenCalled();
+        expect(dt.dropEffect).toBe('copy');
+    });
+
+    it('§4.1: a File Upload block still drops in a gap (outside every section)', () => {
+        const el = mountWithRepeater();
+        const gap = el.shadowRoot.querySelector('.bc-gap');
+        const dt = blockDrag(true);
+
+        expect(dragOver(gap, dt)).toHaveBeenCalled();
+        expect(dt.dropEffect).toBe('copy');
+    });
+
+    it('§4.1 is scoped to file: other blocks still enter a repeatable section', () => {
+        const el = mountWithRepeater();
+        const repeater = el.shadowRoot.querySelectorAll('.bc-section')[1];
+        const dt = blockDrag(false); // e.g. Rich text / Divider
+
+        expect(dragOver(repeater, dt)).toHaveBeenCalled();
+        expect(dt.dropEffect).toBe('copy');
     });
 });
