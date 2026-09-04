@@ -4,7 +4,8 @@ import {
     PALETTE_FIELD_MIME,
     PALETTE_EL_MIME,
     PALETTE_REP_MIME,
-    PALETTE_CELL_MIME
+    PALETTE_CELL_MIME,
+    PALETTE_FILE_MIME
 } from 'c/finalBuilderCanvas';
 
 /** Survey question roster (SURVEY_PLAN §2.1 — S2 slice ships the scale
@@ -323,14 +324,18 @@ export default class FinalFieldPalette extends LightningElement {
     }
 
     handleBlockDragStart(event) {
+        const elType = event.currentTarget.dataset.type;
         event.dataTransfer.setData(
             'text/plain',
-            JSON.stringify({
-                t: 'palette-el',
-                elType: event.currentTarget.dataset.type
-            })
+            JSON.stringify({ t: 'palette-el', elType })
         );
         event.dataTransfer.setData(PALETTE_EL_MIME, '1');
+        // File Upload drops like any block except inside a repeatable section
+        // (schema §4.1). The payload naming the type can't be read mid-drag,
+        // so the canvas needs a typed marker to refuse that one target.
+        if (elType === 'file') {
+            event.dataTransfer.setData(PALETTE_FILE_MIME, '1');
+        }
         event.dataTransfer.effectAllowed = 'copy';
     }
 

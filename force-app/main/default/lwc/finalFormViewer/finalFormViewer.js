@@ -973,13 +973,27 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     /** Schema §8: answers keyed by element id; repeat sections answer as
-     *  ONE consolidated `repeat:{sectionId}` entry → the repeats map. */
+     *  ONE consolidated `repeat:{sectionId}` entry → the repeats map; file
+     *  answers lift OUT of `answers` into the top-level `files` array, since
+     *  they become ContentVersion records rather than a field on the target
+     *  object. `files` is omitted entirely when nothing was attached. */
     _payload() {
         const answers = {};
         const repeats = {};
+        const files = [];
         for (const key of Object.keys(this.answers)) {
             if (key.indexOf('repeat:') === 0) {
                 repeats[key.slice(7)] = this.answers[key];
+            } else if (this._ruleTypeIndex.get(key) === 'file') {
+                for (const f of this.answers[key] || []) {
+                    if (f && f.base64) {
+                        files.push({
+                            elementId: key,
+                            name: f.name,
+                            base64: f.base64
+                        });
+                    }
+                }
             } else {
                 answers[key] = this.answers[key];
             }
@@ -993,7 +1007,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // and walks the SPEC for mappings; never guest (guard in _apply)
             meta.recordId = this._recordCtx;
         }
-        return { answers, repeats, meta };
+        const payload = { answers, repeats, meta };
+        if (files.length) {
+            payload.files = files;
+        }
+        return payload;
     }
 
     // ----- After Submit EXECUTION (settings.completion — display is

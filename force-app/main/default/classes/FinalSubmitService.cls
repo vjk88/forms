@@ -135,6 +135,9 @@ public inherited sharing class FinalSubmitService {
                 childCount += insertEntries(plan, repeats, parentId, mode);
             }
 
+            // Inside the savepoint: a rejected file rolls the record back too.
+            attachFiles(parentId, spec, payload, mode);
+
             SubmitOutcome res = new SubmitOutcome();
             res.recordId = parentId;
             res.childCount = childCount;
@@ -336,6 +339,10 @@ public inherited sharing class FinalSubmitService {
             if (mode == Posture.INTERNAL) {
                 applyMappedWriteback(spec, flat, answers, meta);
             }
+
+            // Survey attachments hang off the response record itself — the
+            // only record this transaction owns. Inside the savepoint.
+            attachFiles(response.Id, spec, payload, mode);
 
             SubmitOutcome res = new SubmitOutcome();
             res.recordId = response.Id;
@@ -965,6 +972,230 @@ public inherited sharing class FinalSubmitService {
         }
         return Security.stripInaccessible(AccessType.CREATABLE, records)
             .getRecords();
+    }
+
+    // ---- File attachments (schema §8 `files`) ---------------------------
+
+    /**
+     * Caps are on the BASE64 STRING, and they are MEASURED, not estimated.
+     *
+     * The submit path holds the base64 three times over at peak: once inside
+     * `payloadJson`, once in the deserialized map, and once as the decoded
+     * Blob. Measured against this org (2026-09-03), heap grows at almost
+     * exactly 3 bytes per base64 char on the real round trip:
+     *
+     *   raw 1.00 MB → 1,333,336 b64 chars → heap 4,001,288 of 6,000,000
+     *   raw 1.30 MB → 1,733,336 b64 chars → heap 5,201,288 of 6,000,000
+     *   raw 1.45 MB → 1,933,336 b64 chars → heap 5,801,288 of 6,000,000
+     *   raw 1.60 MB → 2,133,336 b64 chars → LimitException at 6,401,137
+     *
+     * 1,200,000 chars ≈ 3.6 MB of heap, leaving ~2.4 MB for the spec JSON,
+     * the parsed payload, describe maps and the records themselves. That is
+     * ~880 KB of actual file — well under the old build's remembered "~4.3 MB",
+     * which does not survive contact with a JSON-wrapped payload.
+     *
+     * `heapHeadroomHoldsAtTheCap` walks the real path at the aggregate cap.
+     * If it ever fails, LOWER these — never raise the assertion.
+     */
+    @TestVisible
+    private static final Integer MAX_FILE_B64_CHARS = 1200000;
+    @TestVisible
+    private static final Integer MAX_PAYLOAD_B64_CHARS = 1200000;
+
+    /** Extensions refused no matter what the author configured — an upload
+     *  endpoint is not a place to host executables. */
+    private static final Set<String> DENIED_EXTENSIONS = new Set<String>{
+        'exe',
+        'dll',
+        'bat',
+        'cmd',
+        'com',
+        'scr',
+        'msi',
+        'jar',
+        'js',
+        'vbs',
+        'ps1',
+        'sh',
+        'app',
+        'apk',
+        'hta',
+        'jse',
+        'wsf'
+    };
+
+    /**
+     * Attaches `payload.files` to the record this transaction just created.
+     *
+     * Called INSIDE the caller's savepoint, so a rejected file rolls the whole
+     * submission back — a respondent never gets a half-saved record. Every
+     * check fails closed, and rejection messages stay generic (naming the
+     * offending extension would make this a gate oracle).
+     *
+     * `parentId` is always the record we just inserted; a client-supplied Id
+     * is never accepted (RUNTIME_NOTES guest guardrail).
+     */
+    private static void attachFiles(
+        Id parentId,
+        Map<String, Object> spec,
+        Map<String, Object> payload,
+        Posture mode
+    ) {
+        List<Object> entries = asList(payload.get('files'));
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+        // Guest upload is its own slice (IMPL_PLAN_FILE_UPLOAD §3): reject
+        // rather than silently drop, so the boundary is observable.
+        if (mode == Posture.GUEST) {
+            throw new AuraHandledException(
+                'This form cannot accept file uploads.'
+            );
+        }
+
+        // Aggregate cap BEFORE decoding anything — the whole-payload check
+        // RUNTIME_NOTES requires alongside the per-file one.
+        Integer totalChars = 0;
+        for (Object entryObj : entries) {
+            Map<String, Object> entry = asMap(entryObj);
+            String b64 = entry == null ? null : (String) entry.get('base64');
+            totalChars += (b64 == null ? 0 : b64.length());
+        }
+        if (totalChars > MAX_PAYLOAD_B64_CHARS) {
+            throw new AuraHandledException(
+                'Your attachments are too large. Nothing was recorded.'
+            );
+        }
+
+        Map<String, Set<String>> allowedByElement = fileElementAllowLists(spec);
+        List<ContentVersion> versions = new List<ContentVersion>();
+        for (Object entryObj : entries) {
+            Map<String, Object> entry = asMap(entryObj);
+            if (entry == null) {
+                continue;
+            }
+            String elementId = (String) entry.get('elementId');
+            String name = (String) entry.get('name');
+            String b64 = (String) entry.get('base64');
+            if (
+                String.isBlank(elementId) ||
+                String.isBlank(name) ||
+                String.isBlank(b64)
+            ) {
+                throw new AuraHandledException(
+                    'That file could not be attached. Nothing was recorded.'
+                );
+            }
+            // The PUBLISHED SPEC is the allow-list — same law as the field
+            // walk. An elementId that isn't an authored `file` element (or
+            // sits inside a repeatable section, schema §4.1) is refused.
+            if (!allowedByElement.containsKey(elementId)) {
+                throw new AuraHandledException(
+                    'That file could not be attached. Nothing was recorded.'
+                );
+            }
+            if (b64.length() > MAX_FILE_B64_CHARS) {
+                throw new AuraHandledException(
+                    'That file is too large. Nothing was recorded.'
+                );
+            }
+            // Type is derived SERVER-SIDE from the name; the client's
+            // contentType is never read, because it is trivially forged.
+            if (!extensionAllowed(name, allowedByElement.get(elementId))) {
+                throw new AuraHandledException(
+                    'That file type cannot be attached. Nothing was recorded.'
+                );
+            }
+            ContentVersion cv = new ContentVersion();
+            cv.Title = name;
+            cv.PathOnClient = name;
+            cv.IsMajorVersion = true;
+            cv.FirstPublishLocationId = parentId; // auto-links, one step
+            try {
+                cv.VersionData = EncodingUtil.base64Decode(b64);
+            } catch (Exception e) {
+                throw new AuraHandledException(
+                    'That file could not be attached. Nothing was recorded.'
+                );
+            }
+            versions.add(cv);
+        }
+        if (!versions.isEmpty()) {
+            doInsert(versions, mode);
+        }
+    }
+
+    /**
+     * Every authored `file` element id → the extension allow-list resolved
+     * from its `accept` config (empty = any, subject to DENIED_EXTENSIONS).
+     * Elements inside a repeatable section are OMITTED: schema §4.1 forbids
+     * them, the builder blocks the drop, and this is the server-side backstop
+     * for a spec that predates the block or was hand-edited.
+     */
+    private static Map<String, Set<String>> fileElementAllowLists(
+        Map<String, Object> spec
+    ) {
+        Map<String, Set<String>> out = new Map<String, Set<String>>();
+        for (Object pageObj : asList(spec.get('pages'))) {
+            Map<String, Object> page = asMap(pageObj);
+            if (page == null) {
+                continue;
+            }
+            for (Object secObj : asList(page.get('sections'))) {
+                Map<String, Object> sec = asMap(secObj);
+                if (sec == null || sec.get('repeat') != null) {
+                    continue; // §4.1 backstop
+                }
+                for (Object elObj : asList(sec.get('elements'))) {
+                    Map<String, Object> el = asMap(elObj);
+                    if (el == null) {
+                        continue;
+                    }
+                    Object elType = el.get('type');
+                    if (
+                        !(elType instanceof String) || (String) elType != 'file'
+                    ) {
+                        continue;
+                    }
+                    String elId = (String) el.get('id');
+                    if (String.isBlank(elId)) {
+                        continue;
+                    }
+                    Map<String, Object> config = asMap(el.get('config'));
+                    Object accept = config == null
+                        ? null
+                        : config.get('accept');
+                    out.put(elId, parseAccept((String) accept));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** `accept` (".pdf,.png" or "application/pdf") → a lower-case extension
+     *  set. MIME entries can't gate an extension, so they widen to "any" and
+     *  leave DENIED_EXTENSIONS as the floor. */
+    private static Set<String> parseAccept(String accept) {
+        Set<String> exts = new Set<String>();
+        if (String.isBlank(accept)) {
+            return exts;
+        }
+        for (String part : accept.split(',')) {
+            String token = part.trim().toLowerCase();
+            if (token.startsWith('.') && token.length() > 1) {
+                exts.add(token.substring(1));
+            }
+        }
+        return exts;
+    }
+
+    private static Boolean extensionAllowed(String name, Set<String> allowed) {
+        Integer dot = name.lastIndexOf('.');
+        String ext = dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
+        if (String.isBlank(ext) || DENIED_EXTENSIONS.contains(ext)) {
+            return false;
+        }
+        return allowed == null || allowed.isEmpty() || allowed.contains(ext);
     }
 
     /** Posture-appropriate insert: INTERNAL as the running user (CRUD/FLS via

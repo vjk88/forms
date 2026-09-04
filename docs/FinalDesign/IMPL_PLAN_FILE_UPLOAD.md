@@ -1,6 +1,12 @@
 # Implementation Plan — File Upload (PENDING_WORK §3.1)
 
-> **Status:** PROPOSED FOR OWNER REVIEW — no implementation authorized yet.
+> **Status:** **SLICE 1 BUILT** (2026-09-03) — internal audience, deployed and org-verified.
+> Slice 2 (guest upload) still needs the explicit owner "go" described in §3.
+>
+> Built: builder drop-block (§4.1), renderer UI (§4.2), viewer payload (§4.3 client half),
+> `attachFiles` with allow-list / repeat backstop / size + type caps (§4.3), constants **measured**
+> rather than guessed (§4.4). Jest 70 suites · 651 tests green; `FinalSubmitControllerTest`
+> 12/12 green in `revclouddev`.
 >
 > **Scope:** replace the `file` element stub with a working upload path: renderer UI → viewer
 > payload → atomic `ContentVersion` inside the submit savepoint. Plus the builder drop-block that
@@ -55,8 +61,8 @@ silently ignored, so the boundary is observable rather than mysterious.
 
 ### Slice 2 — guest upload (needs an explicit owner "go")
 
-> **DECISION REQUIRED.** BUILD_PHASES defers guest upload to P5 _"when guest-safe server-side
-> handlers are built."_ Phase A has since shipped that family (`FinalGuestController` as the single
+> **DECISION REQUIRED.** BUILD*PHASES defers guest upload to P5 *"when guest-safe server-side
+> handlers are built."\_ Phase A has since shipped that family (`FinalGuestController` as the single
 > hard-gated surface), so the precondition is now **met** — this is no longer blocked, it's
 > unscheduled. But guest upload means anonymous visitors writing `ContentVersion` records into the
 > org: storage exhaustion, malware parking, and free file hosting are all real, and none are
@@ -136,24 +142,43 @@ Order of operations, each failing closed:
 Rejections throw `AuraHandledException` with a **generic** message. Do not name the offending
 extension or echo the filename — no gate oracle, consistent with the existing guest posture.
 
-### 4.4 Constants — and the measurement that pins them
-
-One block of constants, one place:
+### 4.4 Constants — MEASURED (2026-09-03), not estimated
 
 ```apex
-// Caps are on the BASE64 STRING, matching schema §8's "~4.3 MB base64".
-// A base64 char count of N decodes to ~0.75N bytes, and a transaction holds
-// BOTH the string and the decoded Blob at peak -- hence the measurement gate.
-private static final Integer MAX_FILE_B64_CHARS    = …;
-private static final Integer MAX_PAYLOAD_B64_CHARS = …;
+private static final Integer MAX_FILE_B64_CHARS    = 1200000;
+private static final Integer MAX_PAYLOAD_B64_CHARS = 1200000;
 ```
 
-> **Do not merge with guessed numbers.** Synchronous Apex heap is 6 MB, and at peak the transaction
-> holds the base64 String _plus_ the decoded Blob _plus_ the spec JSON _plus_ the payload map. The
-> old build's proven ~4.3 MB figure is the starting hypothesis, **not** an established fact for
-> this code path. Slice 1 lands with an Apex test asserting `Limits.getHeapSize()` headroom at the
-> cap, and the constants are set to whatever that test proves — the draft plan's `4,500,000`
-> applied to a _raw file_ would decode to ~6 MB of base64 and breach heap on its own.
+**≈ 880 KB of actual file per submission** — and the measurement is the headline finding of this
+slice, because the number everyone expected was wrong by a factor of five.
+
+The submit path holds the base64 **three times** at peak: once inside `payloadJson`, once in the
+deserialized map, once as the decoded Blob. Measured on the real round trip against this org:
+
+| Raw file | base64 chars | Heap used (of 6,000,000)        |
+| -------- | ------------ | ------------------------------- |
+| 1.00 MB  | 1,333,336    | 4,001,288                       |
+| 1.30 MB  | 1,733,336    | 5,201,288                       |
+| 1.45 MB  | 1,933,336    | 5,801,288                       |
+| 1.60 MB  | 2,133,336    | **LimitException at 6,401,137** |
+
+Heap grows at almost exactly **3 bytes per base64 char**. 1,200,000 chars costs ~3.6 MB, leaving
+~2.4 MB for the spec JSON, the parsed payload, describe maps and the records themselves.
+
+**The old build's remembered "~4.3 MB" does not survive contact with a JSON-wrapped payload.** The
+first version of this slice shipped that number and `rejectsOversizeFileAndRollsBack` failed with
+`Apex heap size too large: 8,602,605` — while merely _constructing_ the test payload, before the
+code under test ran at all. A decode-only heap check had passed at the same size, which is exactly
+how an unshippable constant survives review: it measures the cheap half of the work.
+
+`heapHeadroomHoldsAtTheCap` therefore walks the **full** path (serialize → deserialize → decode) and
+demands a quarter of the heap still be free at the aggregate cap. If it fails, LOWER these; never
+raise the assertion.
+
+> **Product consequence worth an owner decision:** ~880 KB accepts documents and web-sized images,
+> but **not** a typical phone photo (3–5 MB) or a high-resolution scan. Raising it means leaving the
+> synchronous path — chunked upload to `ContentVersion` before submit, or an async finaliser — which
+> is a different design, not a bigger constant.
 
 ### 4.5 Tests
 

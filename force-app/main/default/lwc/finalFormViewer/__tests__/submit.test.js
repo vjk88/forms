@@ -136,6 +136,69 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
         expect(deepQuery(el.shadowRoot, 'c-final-after-submit')).not.toBeNull();
     });
 
+    it('file answers lift OUT of answers into the top-level files array (schema §8)', async () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages[0].sections[0].elements.push({
+            id: 'el_cv',
+            type: 'file',
+            label: 'CV'
+        });
+        getSpec.mockResolvedValue(JSON.stringify(spec));
+        submitForm.mockResolvedValue({ recordId: '003X', childCount: 0 });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+
+        // drive the REAL control, so the whole relay chain is exercised:
+        // element renderer → section → layout zones → nav → viewer
+        const fileInput = deepQuery(el.shadowRoot, 'input[type="file"]');
+        Object.defineProperty(fileInput, 'files', {
+            value: [new File(['hello'], 'cv.pdf', { type: 'application/pdf' })],
+            configurable: true
+        });
+        fileInput.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        await flush(); // FileReader resolves on a macrotask
+
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('submit')
+        );
+        await flush();
+        await flush();
+
+        const payload = JSON.parse(submitForm.mock.calls[0][0].payloadJson);
+        expect(payload.files).toEqual([
+            { elementId: 'el_cv', name: 'cv.pdf', base64: 'aGVsbG8=' }
+        ]);
+        // and it must NOT also ride answers — it is not a field on the object
+        expect(payload.answers.el_cv).toBeUndefined();
+    });
+
+    it('omits `files` entirely when nothing was attached', async () => {
+        getSpec.mockResolvedValue(JSON.stringify(SPEC));
+        submitForm.mockResolvedValue({ recordId: '003X', childCount: 1 });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+
+        deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(
+            new CustomEvent('submit')
+        );
+        await flush();
+        await flush();
+
+        const payload = JSON.parse(submitForm.mock.calls[0][0].payloadJson);
+        expect('files' in payload).toBe(false);
+    });
+
     it('a failed submit shows the banner, keeps the form, and allows retry', async () => {
         getSpec.mockResolvedValue(JSON.stringify(SPEC));
         submitForm.mockRejectedValue({

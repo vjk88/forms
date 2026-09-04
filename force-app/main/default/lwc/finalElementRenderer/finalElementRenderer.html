@@ -295,15 +295,91 @@
     <template lwc:elseif={isFile}>
         <div class="block-file">
             <template lwc:if={el.label}>
-                <span class="field-label">{el.label}</span>
+                <div class="field-label-row">
+                    <label class="field-label" for={fileInputId}>
+                        <template lwc:if={el.required}>
+                            <abbr class="field-req" title="required">*</abbr>
+                        </template>
+                        {el.label}
+                    </label>
+                    <template lwc:if={helpContent}>
+                        <lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext>
+                    </template>
+                </div>
+                <template lwc:if={captionText}>
+                    <p class="field-caption">{captionText}</p>
+                </template>
             </template>
-            <div class="block-file-frame">
+
+            <!-- The button IS the control: click, Enter and Space all reach
+                 the hidden input, so drag-and-drop is never the only route. -->
+            <button
+                type="button"
+                class={fileDropClass}
+                aria-describedby={fileHintId}
+                ondragover={handleFileDragOver}
+                ondragleave={handleFileDragLeave}
+                ondrop={handleFileDrop}
+                onclick={handleFileBrowse}
+            >
                 <lightning-icon
                     icon-name="utility:upload"
                     size="small"
                 ></lightning-icon>
-                <span>File upload arrives with a later step.</span>
-            </div>
+                <span class="block-file-prompt">{filePrompt}</span>
+                <span id={fileHintId} class="block-file-hint">{fileHint}</span>
+            </button>
+            <input
+                id={fileInputId}
+                class="block-file-input"
+                type="file"
+                tabindex="-1"
+                aria-hidden="true"
+                accept={fileAccept}
+                multiple={fileMultiple}
+                onchange={handleFilePick}
+            />
+
+            <template lwc:if={hasFiles}>
+                <ul class="file-list">
+                    <template for:each={fileRows} for:item="f">
+                        <li key={f.key} class="file-item">
+                            <lightning-icon
+                                icon-name="doctype:attachment"
+                                size="x-small"
+                            ></lightning-icon>
+                            <span class="file-item-name" title={f.name}
+                                >{f.name}</span
+                            >
+                            <span class="file-item-size">{f.size}</span>
+                            <button
+                                type="button"
+                                class="file-item-x"
+                                data-key={f.key}
+                                aria-label={f.removeLabel}
+                                onclick={handleFileRemove}
+                            >
+                                ×
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+
+            <template lwc:if={fileError}>
+                <div class="field-errors" role="alert">
+                    <p class="field-error">{fileError}</p>
+                </div>
+            </template>
+            <template lwc:if={hasErrors}>
+                <div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg">
+                        <p key={msg} class="field-error">{msg}</p>
+                    </template>
+                </div>
+            </template>
         </div>
     </template>
     <template lwc:elseif={isLikert}>

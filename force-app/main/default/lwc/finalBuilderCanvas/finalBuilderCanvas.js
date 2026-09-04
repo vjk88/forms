@@ -35,6 +35,11 @@ export const PALETTE_REP_MIME = 'final/palette-rep';
 /** Inside-only content (Empty space — a grid-cell filler, BUILDER_SURFACES
  *  §1): lands in sections like a field, never in gaps or block wrappers. */
 export const PALETTE_CELL_MIME = 'final/palette-cell';
+/** File Upload is a block like any other EXCEPT that schema §4.1 forbids it
+ *  inside a repeatable section. The payload naming the block type isn't
+ *  readable mid-drag, so — exactly like Empty space above — it carries its own
+ *  typed marker to stay distinguishable at dragover. */
+export const PALETTE_FILE_MIME = 'final/palette-el-file';
 
 /** Blueprint labels for content types (schema §4 / BUILDER_SURFACES §1). */
 const BLOCK_LABELS = {
@@ -148,6 +153,11 @@ export default class FinalBuilderCanvas extends LightningElement {
         const types = (e.dataTransfer && e.dataTransfer.types) || [];
         if (Array.prototype.includes.call(types, PALETTE_FIELD_MIME)) {
             return 'palette-field';
+        }
+        // before PALETTE_EL_MIME: a file block stamps BOTH markers, and the
+        // narrower one wins (it carries the §4.1 repeater restriction).
+        if (Array.prototype.includes.call(types, PALETTE_FILE_MIME)) {
+            return 'palette-file';
         }
         if (Array.prototype.includes.call(types, PALETTE_EL_MIME)) {
             return 'palette-el';
@@ -302,6 +312,14 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (kind === 'palette-el' || kind === 'palette-rep') {
             return true;
         }
+        // Schema §4.1 v1 law: a file element may NEVER sit inside a repeatable
+        // section. A flat `files` array keyed by elementId can't tell entry 1's
+        // file from entry 2's, so it couldn't be attached to the right child
+        // record — and N × the base64 cap is a heap bomb. Otherwise it lands
+        // like any other block.
+        if (kind === 'palette-file') {
+            return !sec.repeat;
+        }
         // §3: content blocks hold nothing — fields/elements never enter.
         if (sec.block) {
             return false;
@@ -360,6 +378,12 @@ export default class FinalBuilderCanvas extends LightningElement {
         const sec = this._sectionAt(target);
         if (kind === 'element' && !sec) {
             return true; // bare canvas → move lands in a real section
+        }
+        // A file block keeps the blanket gap-drop of its siblings (a gap is
+        // outside every section, so §4.1 can't be violated there) but must be
+        // asked about any section it hovers.
+        if (kind === 'palette-file' && !sec) {
+            return true;
         }
         return this._sectionAcceptsDrag(sec, kind);
     }
@@ -498,6 +522,7 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (
             kind !== 'section' &&
             kind !== 'palette-el' &&
+            kind !== 'palette-file' &&
             kind !== 'palette-rep'
         ) {
             this._clearHighlight();

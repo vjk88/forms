@@ -130,16 +130,28 @@ and retired objects (DATA_MODEL_DELTA §4).
 
 ## 3 · Unfinished features
 
-### 3.1 File upload is a visible stub — highest-visibility gap
+### 3.1 File upload — **Slice 1 BUILT 2026-09-03** (internal); guest still open
 
-[finalElementRenderer.html:295](../../force-app/main/default/lwc/finalElementRenderer/finalElementRenderer.html#L295)
-renders an upload icon and the literal text **"File upload arrives with a later step."** There is
-no `ContentVersion` write anywhere in the submit path (verified: `ContentVersion` appears only in
-the asset/design-mode and package-dependency classes, never in `FinalSubmitService`).
+The stub is gone. Internal file upload works end to end: drop zone + keyboard-reachable picker,
+answers on the normal `valuechange` channel, and an atomic `ContentVersion` insert via
+`FirstPublishLocationId` inside the submit savepoint, with a server-side allow-list, size caps and
+extension checks. Plan and full detail: [IMPL_PLAN_FILE_UPLOAD.md](./IMPL_PLAN_FILE_UPLOAD.md).
 
-This is the only place a user can read an unfinished promise in shipped UI. The old build solved
-it and the approach is preserved: base64-on-submit, atomic insert via `FirstPublishLocationId`
-inside the submit savepoint, ~4.3 MB cap ([[project-file-upload]]).
+Two things came out of it that are still live:
+
+- **Guest upload is NOT built** (Slice 2). A guest submit carrying `files` is rejected outright,
+  deliberately, so the boundary is observable. It needs the mandatory guardrail set — count caps,
+  abuse limits (which is where §2.2's rate limiting actually bites), and a cleanup story — and an
+  explicit owner "go".
+- **The size cap is ~880 KB per submission, measured** — not the ~4.3 MB everyone remembered. The
+  submit path holds the base64 three times over against a 6 MB heap. That accepts documents and
+  web-sized images but **not** a typical phone photo. Raising it means leaving the synchronous path
+  entirely (chunked pre-submit upload or an async finaliser), which is a design, not a constant.
+  See IMPL_PLAN_FILE_UPLOAD §4.4 for the measured table.
+
+**Also fixed in passing:** schema §4.1's "the builder blocks the drop" for file elements in
+repeatable sections was never implemented — `file` is a palette _block_, and the canvas waved blocks
+through. It is enforced now, in the builder and again server-side.
 
 ### 3.2 Widgets never built
 
@@ -255,8 +267,7 @@ work in progress. Worth a deliberate pass:
 Ordered by what the product is missing **today**, with the packaging-gated items sequenced against
 the packaging track instead of ahead of it.
 
-1. **File upload (§3.1)** — the only unfinished promise a user can read in shipped UI, and the
-   approach is already proven.
+1. ~~**File upload (§3.1)**~~ — **Slice 1 DONE 2026-09-03** (internal). Slice 2 (guest) awaits a go.
 2. **Accessibility pass (§4.1)** — small, bounded, and currently contradicts a stated product promise.
 3. **Open the packaging track (§2.3 + §2.4)** — namespace, 2GP, legacy purge. Longest pole, and the
    namespace decision constrains everything downstream, so start it before it's urgent.
