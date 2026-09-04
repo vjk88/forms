@@ -1,4 +1,4 @@
-3# Pending Work — everything between here and ship
+# Pending Work — everything between here and ship
 
 **Compiled:** 2026-09-03 · **Last commit at time of writing:** `47fc433` (2026-08-16, PR #218)
 **Ship definition:** a managed 2GP AppExchange package **with Surveys** ([[project-ship-definition]]).
