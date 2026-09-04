@@ -72,6 +72,41 @@ exploitability in this app; it's a pattern they fail packages for.
 **Scope when it comes up:** one shared walk over the spec's §7 rules, reused by both submit paths.
 Realistic minimum is `required` plus type/range coercion; patterns and cross-field rules can follow.
 
+#### Evaluate first: can the platform enforce any of this for us? (UI API angle)
+
+**Parked for the build, not decided.** Raised by the owner 2026-09-03 — _look at this when §2.1
+comes up_, don't pre-build against it.
+
+**Where it came from.** Standard Lightning record pages enforce required fields **server-side**
+because their saves go through the **UI API** (a Salesforce-hosted REST API — the enforcement runs
+on their servers, not in the browser). The red asterisk in the DOM is a _mirror_ of a rule the
+server re-checks on its own. Our spec's `required` is the **only** copy of its rule, which is the
+entire difference. Salesforce has the same gap one tier down: **page-layout required is not
+enforced by raw Apex DML either** — mark a field required on a layout, insert it from Apex, and it
+sails through. We are structurally in that tier.
+
+**What already holds today** (verified 2026-09-03): our submit does real Apex DML —
+`Database.insert(records, true, AccessLevel.SYSTEM_MODE)` for guests, `insert as user` internally —
+so **schema-level required fields, validation rules, triggers, and flows all still fire**. The
+unenforced layer is only the one we invented: spec-level `required`, `pattern`, `min`/`max`.
+
+**Tensions to check before betting on UI API** (recorded so the evaluation starts informed, not so
+it starts biased):
+
+- UI API is a REST/wire API for LWC; it is **not callable from Apex**, and our submit is Apex.
+- Guest-user support for UI API is limited — and guest is our primary published surface.
+- Submit is an **atomic parent + repeat-children DML inside a savepoint**; that transaction shape
+  is awkward to express through record-at-a-time UI API calls.
+- Most decisively: our `required`/`pattern`/`min`/`max` live in `Spec_JSON__c`, **not** in layout
+  metadata — so there is nothing for the platform to enforce _from_. UI API can only enforce rules
+  Salesforce already knows about.
+
+**The escape hatch that exists right now, regardless:** for any field that genuinely must never be
+null, an admin can mark it **required at the schema level** or write a **validation rule** — then
+it is enforced through every channel (UI, Apex, REST, Bulk) no matter what our code does. Arguably
+the correct home for a hard business rule anyway: the builder's `required` means _"prompt the user
+for this"_, while the schema means _"this may not be null"_.
+
 ### 2.2 No rate limiting (DEFERRED #20)
 
 Honeypot, availability windows (`closed`/`opensAt`/`closesAt`), and survey response caps are all
