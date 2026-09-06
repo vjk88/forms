@@ -1,4 +1,5 @@
 import { LightningElement, api, track, wire } from 'lwc';
+import { canMoveElement } from 'c/finalBuilderCanvas';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import LightningConfirm from 'lightning/confirm';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
@@ -1432,7 +1433,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     /** Mutate via a deep copy, then reuse the ONE autosave path. */
     _mutate(fn) {
-        if (this.isReadOnly) {
+        if (this.isReadOnly || this.editorLocked) {
             return;
         }
         const next = JSON.parse(JSON.stringify(this.spec));
@@ -2137,9 +2138,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 if (!page) {
                     return false;
                 }
-                target = this._lastSectionOf(page);
+                target = [...(page.sections || [])]
+                    .reverse()
+                    .find((section) =>
+                        canMoveElement(src.element, src.section, section)
+                    );
+                if (!target && !src.section.repeat) {
+                    target = this._mintSection('Section');
+                    page.sections = [...(page.sections || []), target];
+                }
             }
-            if (!target) {
+            if (!canMoveElement(src.element, src.section, target)) {
                 return false;
             }
             src.section.elements.splice(src.index, 1);
@@ -2153,6 +2162,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 target.elements.push(src.element);
             }
             this.selection = { kind: 'element', id };
+            this.buildPageIndex = spec.pages.findIndex((page) =>
+                (page.sections || []).includes(target)
+            );
             return undefined;
         });
     }
@@ -2188,6 +2200,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 target.sections.push(section);
             }
             this.selection = { kind: 'section', id };
+            this.buildPageIndex = spec.pages.indexOf(target);
             return undefined;
         });
     }
@@ -2282,7 +2295,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     );
                     if (i >= 0) {
                         section.elements.splice(i, 1);
-                        this.selection = null;
+                        const next =
+                            section.elements[i] || section.elements[i - 1];
+                        this.selection = next
+                            ? { kind: 'element', id: next.id }
+                            : { kind: 'section', id: section.id };
+                        this.buildPageIndex = spec.pages.indexOf(page);
                         return undefined;
                     }
                 }
@@ -2298,7 +2316,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 const i = (page.sections || []).findIndex((s) => s.id === id);
                 if (i >= 0) {
                     page.sections.splice(i, 1);
-                    this.selection = null;
+                    const next = page.sections[i] || page.sections[i - 1];
+                    this.selection = next
+                        ? { kind: 'section', id: next.id }
+                        : { kind: 'page', id: page.id };
+                    this.buildPageIndex = spec.pages.indexOf(page);
                     return undefined;
                 }
             }
@@ -2314,11 +2336,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 return false; // never delete the only page
             }
             spec.pages.splice(i, 1);
-            this.buildPageIndex = Math.min(
-                this.buildPageIndex,
-                spec.pages.length - 1
-            );
-            this.selection = null;
+            this.buildPageIndex = Math.min(i, spec.pages.length - 1);
+            this.selection = {
+                kind: 'page',
+                id: spec.pages[this.buildPageIndex].id
+            };
             return undefined;
         });
     }

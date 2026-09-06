@@ -68,6 +68,170 @@ function mount(props = {}) {
 }
 
 describe('c-final-builder-canvas', () => {
+    it('switches from ordinary sections to a page mixing repeaters and standalone blocks', async () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages[1].sections = [
+            {
+                id: 'r2',
+                repeat: { childObject: 'Contact' },
+                elements: [{ id: 'child', type: 'field' }]
+            },
+            { id: 'r3', repeat: { childObject: 'Case' }, elements: [] },
+            {
+                id: 'block',
+                block: true,
+                elements: [{ id: 'text', type: 'richText' }]
+            }
+        ];
+        const el = mount({ spec });
+        el.currentPageIndex = 1;
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelectorAll('.bc-section')).toHaveLength(2);
+        expect(el.shadowRoot.querySelectorAll('.bc-block')).toHaveLength(1);
+        el.currentPageIndex = 0;
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelectorAll('.bc-section')).toHaveLength(1);
+    });
+    it('uses native selection buttons with named delete actions and keyboard focus navigation', () => {
+        const el = mount();
+        const root = el.shadowRoot;
+        const buttons = [...root.querySelectorAll('[data-nav]')];
+        expect(buttons.every((button) => button.tagName === 'BUTTON')).toBe(
+            true
+        );
+        expect(
+            root.querySelector('.bc-row .bc-x').getAttribute('aria-label')
+        ).toBe('Remove Email');
+        const first = buttons.find((button) => button.dataset.id === 'el_1');
+        first.focus();
+        first.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        expect(root.activeElement.dataset.id).toBe('el_2');
+        root.activeElement.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Home',
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        expect(root.activeElement.dataset.id).toBe('pg_1');
+        const selected = jest.fn();
+        el.addEventListener('select', selected);
+        first.click(); // native button activation used by Enter/Space
+        expect(selected.mock.calls[0][0].detail).toEqual({
+            kind: 'element',
+            id: 'el_1'
+        });
+    });
+
+    it('opens selected actions with F2, supports Alt+Down and restores focus after a confirmed move', async () => {
+        const el = mount();
+        el.addEventListener('select', (event) => {
+            el.selection = event.detail;
+        });
+        const root = el.shadowRoot;
+        const first = root.querySelector('[data-nav][data-id="el_1"]');
+        first.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'F2',
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        await Promise.resolve();
+        expect(root.activeElement.textContent.trim()).toBe('Move down');
+        expect(root.querySelector('.bc-actions button').disabled).toBe(true);
+        const moves = [];
+        el.addEventListener('moveelement', (event) => {
+            moves.push(event.detail);
+            const next = JSON.parse(JSON.stringify(SPEC));
+            next.pages[0].sections[0].elements.reverse();
+            el.spec = next;
+        });
+        first.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                altKey: true,
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(moves).toEqual([
+            { id: 'el_1', sectionId: 'sec_1', beforeId: null }
+        ]);
+        expect(root.activeElement.dataset.id).toBe('el_1');
+        expect(root.querySelector('[role="status"]').textContent).toContain(
+            'position 2 of 2'
+        );
+    });
+
+    it('offers compatible destinations and a new section on an empty page; Escape cancels', async () => {
+        const structured = JSON.parse(JSON.stringify(SPEC));
+        structured.pages[0].sections.push(
+            { id: 'parent', title: 'Other section', elements: [] },
+            {
+                id: 'child',
+                title: 'Contacts',
+                repeat: { childObject: 'Contact' },
+                elements: []
+            },
+            { id: 'block', block: true, elements: [{ type: 'richText' }] }
+        );
+        const el = mount({
+            spec: structured,
+            selection: { kind: 'element', id: 'el_1' }
+        });
+        const root = el.shadowRoot;
+        root.querySelector('.bc-move-to').click();
+        await Promise.resolve();
+        const select = root.querySelector('select');
+        expect(root.activeElement).toBe(select);
+        expect([...select.options].map((option) => option.value)).toEqual([
+            '',
+            'parent',
+            'page:pg_2'
+        ]);
+        select.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        await Promise.resolve();
+        expect(root.querySelector('select')).toBeNull();
+        expect(root.activeElement).toBe(root.querySelector('.bc-move-to'));
+        root.querySelector('.bc-move-to').click();
+        await Promise.resolve();
+        expect(root.querySelector('select').options).toHaveLength(3);
+    });
+
+    it('focuses the next question after delete, and never announces a rejected mutation as success', async () => {
+        const el = mount();
+        const root = el.shadowRoot;
+        root.querySelector('.bc-row .bc-x').click();
+        // Host declines the deletion and later sends an unrelated edit.
+        el.spec = JSON.parse(JSON.stringify(SPEC));
+        await Promise.resolve();
+        expect(root.querySelector('[role="status"]').textContent).toBe('');
+        root.querySelector('.bc-row .bc-x').click();
+        const next = JSON.parse(JSON.stringify(SPEC));
+        next.pages[0].sections[0].elements.shift();
+        el.spec = next;
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.activeElement.dataset.id).toBe('el_2');
+        expect(root.querySelector('[role="status"]').textContent).toBe(
+            'Email removed.'
+        );
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

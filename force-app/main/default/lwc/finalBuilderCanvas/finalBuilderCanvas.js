@@ -1,4 +1,6 @@
 import { LightningElement, api } from 'lwc';
+import { canMoveElement, findItem } from './movement';
+export { canMoveElement } from './movement';
 
 /**
  * finalBuilderCanvas — the blueprint (FORM_STUDIO_IA §4).
@@ -86,12 +88,290 @@ export default class FinalBuilderCanvas extends LightningElement {
     /** The page being edited (studio-owned, like the viewer's pageIndex). */
     @api currentPageIndex = 0;
 
+    moveOpen = false;
+    destination = '';
+    announcement = '';
+    _pendingAction;
+    _focusActions = false;
+    _focusDestination = false;
+
+    get selectedItem() {
+        const hit = findItem(
+            this.pages,
+            this.selection?.kind,
+            this.selection?.id
+        );
+        // Standalone blocks move as whole sections, never as their hidden
+        // inner element (which can be selected from the live preview).
+        return this.selection?.kind === 'element' && hit?.section.block
+            ? null
+            : hit;
+    }
+
+    _label(kind, item) {
+        if (kind === 'page') return item.name || 'Untitled page';
+        if (kind === 'section')
+            return item.block
+                ? BLOCK_LABELS[item.elements?.[0]?.type] || 'Block'
+                : item.title || 'Untitled section';
+        return item.label || BLOCK_LABELS[item.type] || item.type;
+    }
+
+    get selectedLabel() {
+        return this.selectedItem
+            ? this._label(this.selection.kind, this.selectedItem.item)
+            : '';
+    }
+
+    get actionsLabel() {
+        return `Actions for ${this.selectedLabel}`;
+    }
+    get moveUpDisabled() {
+        const hit = this.selectedItem;
+        return !hit || hit.siblings.indexOf(hit.item) === 0;
+    }
+    get moveDownDisabled() {
+        const hit = this.selectedItem;
+        return (
+            !hit || hit.siblings.indexOf(hit.item) === hit.siblings.length - 1
+        );
+    }
+    get moveDestinations() {
+        const hit = this.selectedItem;
+        if (!hit || this.selection.kind === 'page') return [];
+        return this.pages.flatMap((page, index) => {
+            const label = `Page ${index + 1} · ${page.name || 'Untitled'}`;
+            if (this.selection.kind === 'section') {
+                return page.id === hit.page.id
+                    ? []
+                    : [{ value: page.id, label }];
+            }
+            const destinations = (page.sections || [])
+                .filter(
+                    (section) =>
+                        section.id !== hit.section.id &&
+                        canMoveElement(hit.item, hit.section, section)
+                )
+                .map((section) => ({
+                    value: section.id,
+                    label: `${label} / ${section.title || 'Untitled section'}`
+                }));
+            if (
+                !destinations.length &&
+                page.id !== hit.page.id &&
+                !hit.section.repeat
+            ) {
+                destinations.push({
+                    value: `page:${page.id}`,
+                    pageId: page.id,
+                    label: `${label} / New section`
+                });
+            }
+            return destinations;
+        });
+    }
+    get moveToDisabled() {
+        return !this.moveDestinations.length;
+    }
+    get moveConfirmDisabled() {
+        return !this.moveDestinations.some(
+            (option) => option.value === this.destination
+        );
+    }
+    get moveExpanded() {
+        return String(this.moveOpen);
+    }
+    get moveHelp() {
+        return this.selection?.kind === 'element'
+            ? 'Choose a compatible section. The question will move to its end.'
+            : 'Choose a page. The section or block will move to its end.';
+    }
+
+    _focusItem(kind, id) {
+        const button = [...this.template.querySelectorAll('[data-nav]')].find(
+            (node) => node.dataset.kind === kind && node.dataset.id === id
+        );
+        if (button) {
+            button.focus();
+            button.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        }
+    }
+
+    handleNavigationKey(event) {
+        const { key, altKey, ctrlKey, metaKey } = event;
+        const { kind, id } = event.currentTarget.dataset;
+        if (ctrlKey || metaKey) return;
+        if (altKey && (key === 'ArrowUp' || key === 'ArrowDown')) {
+            event.preventDefault();
+            this._moveSibling(kind, id, key === 'ArrowUp' ? -1 : 1);
+        } else if (key === 'F2') {
+            event.preventDefault();
+            this._focusActions = true;
+            if (kind === 'page') this.handleChip(event);
+            else this._select(kind, id);
+        } else if (
+            !altKey &&
+            ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(key)
+        ) {
+            event.preventDefault();
+            const nodes = [...this.template.querySelectorAll('[data-nav]')];
+            const at = nodes.indexOf(event.currentTarget);
+            const index =
+                key === 'Home'
+                    ? 0
+                    : key === 'End'
+                      ? nodes.length - 1
+                      : Math.max(
+                            0,
+                            Math.min(
+                                nodes.length - 1,
+                                at + (key === 'ArrowUp' ? -1 : 1)
+                            )
+                        );
+            nodes[index]?.focus();
+        }
+    }
+
+    _queueAction(kind, id, message, verify) {
+        this.announcement = '';
+        this._pendingAction = { kind, id, message, verify, spec: this.spec };
+    }
+
+    _moveSibling(kind, id, delta) {
+        const hit = findItem(this.pages, kind, id);
+        if (!hit) return;
+        const at = hit.siblings.indexOf(hit.item);
+        if (at + delta < 0 || at + delta >= hit.siblings.length) return;
+        // Existing intents insert BEFORE a sibling; moving down skips over
+        // the following sibling, or appends at the end.
+        const before = hit.siblings[delta < 0 ? at - 1 : at + 2]?.id || null;
+        this._queueAction(
+            kind,
+            id,
+            `${this._label(kind, hit.item)} moved to position ${at + delta + 1} of ${hit.siblings.length}.`,
+            (pages) => {
+                const moved = findItem(pages, kind, id);
+                return (
+                    moved && moved.siblings.indexOf(moved.item) === at + delta
+                );
+            }
+        );
+        this.moveOpen = false;
+        if (kind === 'page') {
+            this._emit('pagechange', { index: this.pages.indexOf(hit.page) });
+            this._emit('movepage', { id, beforeId: before });
+        } else if (kind === 'section')
+            this._emit('movesection', {
+                id,
+                pageId: hit.page.id,
+                beforeSectionId: before
+            });
+        else
+            this._emit('moveelement', {
+                id,
+                sectionId: hit.section.id,
+                beforeId: before
+            });
+    }
+
+    handleMoveUp() {
+        this._moveSibling(this.selection.kind, this.selection.id, -1);
+    }
+    handleMoveDown() {
+        this._moveSibling(this.selection.kind, this.selection.id, 1);
+    }
+    handleMoveTo() {
+        this.moveOpen = !this.moveOpen;
+        this.destination = '';
+        this._focusDestination = this.moveOpen;
+    }
+    handleDestination(event) {
+        this.destination = event.target.value;
+    }
+    handleMoveCancel() {
+        this.moveOpen = false;
+        this.template.querySelector('.bc-move-to')?.focus();
+    }
+    handleMovePanelKey(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            this.handleMoveCancel();
+        }
+    }
+    handleActionsKey(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this._focusItem(this.selection.kind, this.selection.id);
+        }
+    }
+    handleMoveConfirm() {
+        const target = this.moveDestinations.find(
+            (option) => option.value === this.destination
+        );
+        if (!target || !this.selectedItem) return;
+        const { kind, id } = this.selection;
+        this._queueAction(
+            kind,
+            id,
+            `${this.selectedLabel} moved to ${target.label}.`,
+            (pages) => {
+                const moved = findItem(pages, kind, id);
+                return (
+                    moved &&
+                    (kind === 'section'
+                        ? moved.page.id === target.value
+                        : target.pageId
+                          ? moved.page.id === target.pageId
+                          : moved.section.id === target.value)
+                );
+            }
+        );
+        this.moveOpen = false;
+        if (kind === 'section')
+            this._emit('movesection', {
+                id,
+                pageId: target.value,
+                beforeSectionId: null
+            });
+        else if (target.pageId)
+            this._emit('moveelement', { id, pageId: target.pageId });
+        else
+            this._emit('moveelement', {
+                id,
+                sectionId: target.value,
+                beforeId: null
+            });
+    }
+
+    _prepareRemoval(kind, id) {
+        const hit = findItem(this.pages, kind, id);
+        if (!hit || (kind === 'page' && this.pages.length < 2)) return;
+        const at = hit.siblings.indexOf(hit.item);
+        const neighbor = hit.siblings[at + 1] || hit.siblings[at - 1];
+        const fallbackKind = neighbor
+            ? kind
+            : kind === 'element'
+              ? 'section'
+              : 'page';
+        const fallback =
+            neighbor || (kind === 'element' ? hit.section : hit.page);
+        this.moveOpen = false;
+        this._queueAction(
+            fallbackKind,
+            fallback.id,
+            `${this._label(kind, hit.item)} removed.`,
+            (pages) => !findItem(pages, kind, id)
+        );
+    }
+
     // ---- DnD state (deliberately non-reactive — mid-drag re-renders are
     // the flicker bug the imperative model exists to prevent) ----
     _hlNode = null; // the single currently-highlighted node
     _hlCls = '';
     _dragKind = null; // section | element | page (canvas-internal drags)
     _dragElSig = 'parent'; // data-context sig of a dragged element's source
+    _dragElementId;
     _boundRootEl = null; // canvas root the capture gatekeeper is bound to
 
     /**
@@ -135,6 +415,24 @@ export default class FinalBuilderCanvas extends LightningElement {
     };
 
     renderedCallback() {
+        if (this._pendingAction && this.spec !== this._pendingAction.spec) {
+            const pending = this._pendingAction;
+            this._pendingAction = null;
+            if (pending.verify(this.pages)) {
+                this._focusItem(pending.kind, pending.id);
+                this.announcement = pending.message;
+            }
+        }
+        if (this._focusActions && this.selectedItem) {
+            this._focusActions = false;
+            this.template
+                .querySelector('.bc-actions button:not(:disabled)')
+                ?.focus();
+        }
+        if (this._focusDestination && this.moveOpen) {
+            this._focusDestination = false;
+            this.template.querySelector('.bc-destination')?.focus();
+        }
         const root = this.template.querySelector('.bc');
         if (root && root !== this._boundRootEl) {
             root.addEventListener('dragover', this._gatekeeper, true);
@@ -184,6 +482,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         return this.pages.map((p, i) => ({
             id: p.id,
             label: `Page ${i + 1} · ${p.name || 'Untitled'}`,
+            removeLabel: `Remove page ${i + 1}: ${p.name || 'Untitled'}`,
+            pressed: String(sel.kind === 'page' && sel.id === p.id),
+            current: i === Number(this.currentPageIndex) ? 'page' : null,
             // the ACTIVE chip carries the remove affordance (never the only page)
             removable:
                 i === Number(this.currentPageIndex) && this.pages.length > 1,
@@ -217,6 +518,8 @@ export default class FinalBuilderCanvas extends LightningElement {
                 id: s.id,
                 gapKey: `gap_${s.id}`,
                 isBlock,
+                pressed: String(selected),
+                removeLabel: `Remove ${s.block ? 'block' : 'section'}: ${this._label('section', s)}`,
                 blockLabel: isBlock
                     ? BLOCK_LABELS[first && first.type] || 'Block'
                     : null,
@@ -260,6 +563,10 @@ export default class FinalBuilderCanvas extends LightningElement {
                           return {
                               id: el.id,
                               sectionId: s.id,
+                              pressed: String(
+                                  sel.kind === 'element' && sel.id === el.id
+                              ),
+                              removeLabel: `Remove ${this._label('element', el)}`,
                               isField,
                               label: el.label || el.type,
                               typeLabel: BLOCK_LABELS[el.type] || el.type,
@@ -336,7 +643,8 @@ export default class FinalBuilderCanvas extends LightningElement {
             return this._sig(sec) === 'parent';
         }
         if (kind === 'element') {
-            return this._sig(sec) === this._dragElSig;
+            const source = findItem(this.pages, 'element', this._dragElementId);
+            return source && canMoveElement(source.item, source.section, sec);
         }
         return false;
     }
@@ -448,6 +756,7 @@ export default class FinalBuilderCanvas extends LightningElement {
         e.stopPropagation(); // the section root is draggable too
         this._dragKind = 'element';
         const ds = e.currentTarget.dataset;
+        this._dragElementId = ds.id;
         this._dragElSig = this._sig(this._sectionById(ds.sectionId));
         this._setDrag(e, {
             t: 'element',
@@ -729,6 +1038,8 @@ export default class FinalBuilderCanvas extends LightningElement {
     // ----- click intents -----
 
     _select(kind, id) {
+        this.moveOpen = false;
+        this._pendingAction = null;
         this.dispatchEvent(new CustomEvent('select', { detail: { kind, id } }));
     }
 
@@ -768,6 +1079,7 @@ export default class FinalBuilderCanvas extends LightningElement {
 
     handleRemoveElement(event) {
         event.stopPropagation();
+        this._prepareRemoval('element', event.currentTarget.dataset.id);
         this.dispatchEvent(
             new CustomEvent('removeelement', {
                 detail: { id: event.currentTarget.dataset.id }
@@ -777,6 +1089,7 @@ export default class FinalBuilderCanvas extends LightningElement {
 
     handleRemoveSection(event) {
         event.stopPropagation();
+        this._prepareRemoval('section', event.currentTarget.dataset.id);
         this.dispatchEvent(
             new CustomEvent('removesection', {
                 detail: { id: event.currentTarget.dataset.id }
@@ -786,6 +1099,7 @@ export default class FinalBuilderCanvas extends LightningElement {
 
     handleRemovePage(event) {
         event.stopPropagation();
+        this._prepareRemoval('page', event.currentTarget.dataset.id);
         this.dispatchEvent(
             new CustomEvent('removepage', {
                 detail: { id: event.currentTarget.dataset.id }

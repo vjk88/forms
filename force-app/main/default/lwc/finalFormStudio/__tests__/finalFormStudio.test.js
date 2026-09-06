@@ -161,6 +161,231 @@ const micro = (n) => {
 };
 
 describe('c-final-form-studio', () => {
+    describe('builder keyboard and move actions', () => {
+        afterEach(async () => {
+            // Let the real preview's lazy layout render finish before teardown.
+            jest.useRealTimers();
+            await flush();
+            await flush();
+        });
+        async function setup() {
+            jest.useFakeTimers();
+            const spec = {
+                ...SPEC,
+                pages: [
+                    {
+                        id: 'p1',
+                        name: 'Details',
+                        sections: [
+                            {
+                                id: 's1',
+                                title: 'Contact',
+                                elements: [
+                                    { id: 'q1', type: 'field', label: 'Email' },
+                                    { id: 'q2', type: 'field', label: 'Phone' }
+                                ]
+                            },
+                            { id: 's2', title: 'Other', elements: [] },
+                            {
+                                id: 'r1',
+                                title: 'Contacts',
+                                repeat: { childObject: 'Contact' },
+                                elements: [
+                                    {
+                                        id: 'child',
+                                        type: 'field',
+                                        label: 'Child name'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    { id: 'p2', name: 'Empty page', sections: [] },
+                    {
+                        id: 'p3',
+                        name: 'Related',
+                        sections: [
+                            {
+                                id: 'r2',
+                                title: 'More contacts',
+                                repeat: { childObject: 'Contact' },
+                                elements: []
+                            },
+                            {
+                                id: 'r3',
+                                title: 'Cases',
+                                repeat: { childObject: 'Case' },
+                                elements: []
+                            },
+                            {
+                                id: 'block',
+                                block: true,
+                                elements: [{ id: 'text', type: 'richText' }]
+                            }
+                        ]
+                    }
+                ]
+            };
+            loadStudio.mockResolvedValue({
+                name: 'Keyboard',
+                specJson: JSON.stringify(spec),
+                draftVersionId: 'a0V2',
+                versionNumber: 2
+            });
+            listVersions.mockResolvedValue([]);
+            saveDraft.mockResolvedValue('a0V2');
+            const el = mount();
+            CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+            await micro(25);
+            el.shadowRoot.querySelector('.st-mode').click();
+            await micro(20);
+            return {
+                el,
+                canvas: el.shadowRoot.querySelector('c-final-builder-canvas')
+            };
+        }
+        const selectItem = (canvas, id) =>
+            canvas.shadowRoot
+                .querySelector(`[data-nav][data-id="${id}"]`)
+                .click();
+        async function moveTo(canvas, value) {
+            canvas.shadowRoot.querySelector('.bc-move-to').click();
+            await micro(10);
+            const destination = canvas.shadowRoot.querySelector('select');
+            destination.value = value;
+            destination.dispatchEvent(new CustomEvent('change'));
+            await micro(10);
+            canvas.shadowRoot.querySelector('.bc-move-panel button').click();
+            await micro(20);
+        }
+
+        it('moves questions with controls, preserves selection/focus, and uses undo and autosave', async () => {
+            const { el, canvas } = await setup();
+            selectItem(canvas, 'q1');
+            await micro(10);
+            canvas.shadowRoot.querySelectorAll('.bc-actions button')[1].click();
+            await micro(20);
+            expect(
+                canvas.spec.pages[0].sections[0].elements.map((q) => q.id)
+            ).toEqual(['q2', 'q1']);
+            expect(canvas.selection).toEqual({ kind: 'element', id: 'q1' });
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('q1');
+            el.shadowRoot.querySelector('.st-undo').click();
+            await micro(20);
+            expect(
+                canvas.spec.pages[0].sections[0].elements.map((q) => q.id)
+            ).toEqual(['q1', 'q2']);
+            selectItem(canvas, 'q1');
+            await micro(10);
+            await moveTo(canvas, 'page:p2');
+            expect(canvas.currentPageIndex).toBe(1);
+            expect(canvas.spec.pages[1].sections[0].elements[0].id).toBe('q1');
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('q1');
+            expect(
+                canvas.shadowRoot.querySelector('[role="status"]').textContent
+            ).toContain('Empty page');
+            jest.advanceTimersByTime(1000);
+            await micro(20);
+            const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+            expect(saved.pages[1].sections[0].elements[0].id).toBe('q1');
+            expect(JSON.stringify(saved)).not.toContain('announcement');
+        });
+
+        it('enforces object context and standalone-block rules at the mutation boundary', async () => {
+            const { canvas } = await setup();
+            const before = canvas.spec;
+            for (const detail of [
+                { id: 'q1', sectionId: 'r1' },
+                { id: 'child', sectionId: 's1' },
+                { id: 'child', sectionId: 'r3' },
+                { id: 'child', pageId: 'p2' },
+                { id: 'q1', sectionId: 'block' }
+            ])
+                canvas.dispatchEvent(
+                    new CustomEvent('moveelement', { detail })
+                );
+            await micro(20);
+            expect(canvas.spec).toBe(before);
+            selectItem(canvas, 'child');
+            await micro(10);
+            canvas.shadowRoot.querySelector('.bc-move-to').click();
+            await micro(10);
+            expect(
+                [...canvas.shadowRoot.querySelector('select').options].map(
+                    (option) => option.value
+                )
+            ).toEqual(['', 'r2']);
+            canvas.shadowRoot
+                .querySelectorAll('.bc-move-panel button')[1]
+                .click();
+            await micro(10);
+            await moveTo(canvas, 'r2');
+            expect(canvas.currentPageIndex).toBe(2);
+            expect(canvas.spec.pages[2].sections[0].elements[0].id).toBe(
+                'child'
+            );
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('child');
+        });
+
+        it('moves sections across pages and reorders pages with keyboard shortcuts', async () => {
+            const { canvas } = await setup();
+            selectItem(canvas, 's2');
+            await micro(10);
+            canvas.shadowRoot.querySelector('.bc-actions button').click();
+            await micro(20);
+            expect(canvas.spec.pages[0].sections[0].id).toBe('s2');
+            await moveTo(canvas, 'p2');
+            expect(canvas.spec.pages[1].sections[0].id).toBe('s2');
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('s2');
+            const page = canvas.shadowRoot.querySelector(
+                '[data-nav][data-id="p2"]'
+            );
+            page.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'ArrowUp',
+                    altKey: true,
+                    bubbles: true,
+                    cancelable: true
+                })
+            );
+            await micro(20);
+            expect(canvas.spec.pages.map((p) => p.id)).toEqual([
+                'p2',
+                'p1',
+                'p3'
+            ]);
+            expect(canvas.currentPageIndex).toBe(0);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('p2');
+        });
+
+        it('restores focus to next, previous and parent items after deleting', async () => {
+            const { canvas } = await setup();
+            const remove = (id) =>
+                canvas.shadowRoot
+                    .querySelector(`.bc-x[data-id="${id}"]`)
+                    .click();
+            remove('q1');
+            await micro(20);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('q2');
+            remove('q2');
+            await micro(20);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('s1');
+            expect(canvas.selection).toEqual({ kind: 'section', id: 's1' });
+            remove('s1');
+            await micro(20);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('s2');
+            remove('r1');
+            await micro(20);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('s2');
+            remove('s2');
+            await micro(20);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('p1');
+            remove('p1');
+            await micro(20);
+            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('p2');
+            expect(canvas.selection).toEqual({ kind: 'page', id: 'p2' });
+        });
+    });
     it('shares editable preview answers and device across Build/Design, isolates history, and resets on form load', async () => {
         const spec = {
             ...SPEC,
