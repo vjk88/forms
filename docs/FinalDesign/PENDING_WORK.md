@@ -440,22 +440,67 @@ section rather than the top of the inspector.
 
 Library **search + sort + version-vs-lifecycle** (`finalFormsLibrary.html` has **zero** search
 today) · preview **fit / 100% / expand** controls · **pane splitters** with remembered widths ·
-**typed rule operators and value editors** (every source currently gets the same operator list —
-`finalRuleEditor.js:151` — and a bare text input at `finalRuleEditor.html:128`) · creation step
-reorder with progress and focus/scroll restoration · **record picker for invitations** — but this
-should share **Phase D's custom lookup**, not duplicate it.
+**typed rule operators and value editors** (scoped below) · creation step reorder with progress and
+focus/scroll restoration · **record picker for invitations** — but this should share **Phase D's
+custom lookup**, not duplicate it.
+
+#### Typed rule operators and value editors — scoped 2026-09-06 (owner)
+
+Today every source gets the same operator list (`finalRuleEditor.js:151`) and a bare text input
+(`finalRuleEditor.html:128`), regardless of what the source actually is.
+
+**In scope (~1 day + tests/verification).** Filter operators by source type, and give the value
+control a type: **Yes/No selector** for checkbox, **numeric input** for number/rating, **date
+picker** for date, **text input** otherwise. This needs only `inputType` — no option lists — so it
+carries no data-model risk.
+
+- **`contains` stays (owner ruling 2026-09-06).** Do not drop it when filtering operators by type:
+  multipicklist and multi-select choice questions depend on it, and removing it would silently
+  break saved rules.
+- **`record:` sources (SO-3) stay untyped.** `lintVisibility` deliberately exempts them — _"type
+  coercion is the SERVER's describe-driven job"_ — so leave them on the text input rather than
+  crossing a boundary that was drawn on purpose.
+
+**Already built, don't re-scope it:** the value input is _already_ omitted for `isBlank` /
+`isNotBlank` (`finalRuleEditor.js:137` `needsValue`, with `handleRuleField` nulling the stored
+value on operator switch). And `lintVisibility` already warns _"greater/less-than needs a numeric
+value or a date source"_ — this work makes that check preventive instead of after-the-fact.
+
+**Out of scope — picklist/choice dropdown is DEFERRED** (owner 2026-09-06: authors keep typing the
+value as text for now). See [DEFERRED.md](./DEFERRED.md) #29 for what it would take and the
+data-loss trap that makes it more than "add a dropdown".
+
+Enabling facts for whoever picks either up, so they aren't re-derived: option lists are **already
+in the spec** — `finalFormStudio.js:1481` copies describe options onto `element.config.options`
+when a field is added, and survey questions carry their own in the same `{value,label}` shape. The
+gap is that `ruleIndexMap` (`finalFormStudio.js:1134`) flattens every source to `type: 'field'`
+except date/datetime, so the editor can't see the granular type. Widening it feeds `lintVisibility`,
+whose 444-line suite needs a regression pass.
 
 **Keyboard operability in the builder canvas — BUILT AND ORG-VERIFIED 2026-09-06.** It ranked
 highest here because `finalBuilderCanvas` had **zero** keyboard handlers and zero `tabindex`, in the
 template _and_ imperatively: there was no infrastructure to extend, so selection, focus management
 and Move up/down/to-section were built from nothing.
 
-**Subsequent owner-requested revision — LOCAL, awaiting separate deployment/verification.**
-The permanent action bar has been removed: drag-and-drop stays primary. Custom right-click and
-Shift+F10 actions now provide the optional keyboard destination flow. This supersedes the F2
-behavior in the original verification table below; that table records the earlier deployed build.
-The heading is now “Structure”. A stable keyed wrapper fixes a rendering failure on mixed
-section/block pages. [Current behavior, changed files and smoke test](./BUILDER_KEYBOARD_SPEC.md).
+**Subsequent owner-requested revisions — BOTH SHIPPED AND ORG-VERIFIED (PR #232, then #233).**
+Two designs were tried and rejected in sequence, and this paragraph previously described the second
+one as if it were current — it is not.
+
+1. The permanent action bar was removed (#232): drag-and-drop stays primary.
+2. The custom right-click / Shift+F10 menu that briefly replaced it was **also removed** (#233,
+   owner: _"remove those right click thing from code"_). Right-click is back to the browser's own
+   menu (`contextmenu.defaultPrevented === false`, org-verified).
+
+What survives is keyboard navigation plus **Alt + ↑/↓ to reorder among siblings**. The heading is
+now "Structure". A stable keyed wrapper fixes a rendering failure on mixed section/block pages.
+[Current behavior, changed files and smoke test](./BUILDER_KEYBOARD_SPEC.md), which records both
+rejected designs so neither is re-proposed as a fresh idea.
+
+> **Known gap, deliberately accepted:** "Move to…" was the only keyboard route for moving an item
+> **between** sections or pages. Alt+Arrow reorders siblings only, so cross-container moves are
+> **drag-only**, and §7.1 criterion #1's "move between sections/pages" clause is knowingly unmet by
+> keyboard. The F2 behavior in the original verification table below is superseded; that table
+> records the earliest deployed build.
 
 Pages, sections, content blocks and questions now all carry `data-nav` and are reachable by
 keyboard, with a real `:focus-visible` outline. Shared `movement.js` gates destinations — and
