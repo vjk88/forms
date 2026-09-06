@@ -1,8 +1,10 @@
+@import 'c/finalStudioStyles';
+
 :host {
     display: block;
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #1f2937;
+    color: var(--c-studio-text);
 }
 
 .gal {
@@ -19,7 +21,7 @@
     justify-content: space-between;
     gap: 1rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #eceef2;
+    border-bottom: 1px solid var(--c-studio-border-subtle);
 }
 
 .gal-filters,
@@ -34,16 +36,16 @@
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
+    color: var(--c-studio-text-weak);
     font-weight: 600;
     margin-right: 0.25rem;
 }
 
 .pill,
 .lchip {
-    border: 1px solid #e2e5ea;
-    background: #f7f8fa;
-    color: #4b5563;
+    border: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface-subtle);
+    color: var(--c-studio-text-weak);
     border-radius: 9999px;
     padding: 0.35rem 0.8rem;
     font-size: 0.78rem;
@@ -58,13 +60,13 @@
 
 .pill:hover,
 .lchip:hover {
-    border-color: #c7c9ff;
+    border-color: var(--c-studio-accent);
 }
 
 .pill.is-on {
-    background: #eef0ff;
-    border-color: #6366f1;
-    color: #4338ca;
+    background: var(--c-studio-accent-surface);
+    border-color: var(--c-studio-accent);
+    color: var(--c-studio-accent);
 }
 
 .lchip {
@@ -74,9 +76,9 @@
 }
 
 .lchip.is-on {
-    background: #6366f1;
-    border-color: #6366f1;
-    color: #ffffff;
+    background: var(--c-studio-accent);
+    border-color: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
 }
 
 .gal-grid {

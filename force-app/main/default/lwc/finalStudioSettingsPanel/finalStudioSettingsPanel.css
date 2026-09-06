@@ -1,3 +1,5 @@
+@import 'c/finalStudioStyles';
+
 :host {
     display: block;
 }
@@ -8,7 +10,7 @@
 
 .sp-title {
     margin: 0;
-    color: var(--lwc-colorTextDefault, #181818);
+    color: var(--c-studio-text);
     font-size: 1.125rem;
     font-weight: 700;
 }
@@ -23,11 +25,11 @@
 }
 
 .sp-description {
-    color: var(--lwc-colorTextWeak, #5c5c5c);
+    color: var(--c-studio-text-weak);
 }
 
 .sp-label {
-    color: var(--lwc-colorTextDefault, #181818);
+    color: var(--c-studio-text);
     font-size: 0.875rem;
     font-weight: 700;
 }
@@ -49,26 +51,26 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.875rem;
-    border: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    border: 1px solid var(--c-studio-border);
     border-radius: 0.5rem;
 }
 
 .sp-save-cue {
     min-height: 1.125rem;
     margin-top: 0.75rem;
-    color: var(--lwc-colorTextWeak, #5c5c5c);
+    color: var(--c-studio-text-weak);
 }
 
 .sp-error {
-    color: var(--lwc-colorTextError, #ba0517);
+    color: var(--c-studio-error);
 }
 
 .sp-empty {
     margin-top: 1.25rem;
     padding: 1rem;
-    border: 1px dashed var(--lwc-colorBorder, #c9c9c9);
+    border: 1px dashed var(--c-studio-border);
     border-radius: 0.5rem;
-    background: var(--lwc-colorBackgroundAlt, #fff);
+    background: var(--c-studio-surface);
 }
 
 @media (max-width: 36rem) {

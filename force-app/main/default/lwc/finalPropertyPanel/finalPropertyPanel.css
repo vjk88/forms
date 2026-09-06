@@ -1,10 +1,12 @@
+@import 'c/finalStudioStyles';
+
 .pp {
     display: flex;
     flex-direction: column;
     gap: 14px;
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #181818;
+    color: var(--c-studio-text);
     font-size: 12.5px;
 }
 
@@ -22,7 +24,7 @@
 .pp-sub {
     margin: 2px 0 0;
     font-size: 11px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }
 
 .pp-group {
@@ -30,7 +32,7 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 10px;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--c-studio-border-subtle);
 }
 
 .pp-grouptitle {
@@ -42,41 +44,41 @@
 .pp-label {
     font-size: 12px;
     font-weight: 400;
-    color: #444;
+    color: var(--c-studio-text-weak);
     margin-bottom: -6px;
 }
 
 .pp-select {
     width: 100%;
     padding: 7px 10px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12.5px;
     cursor: pointer;
 }
 
 .pp-select:focus-visible {
-    outline: 2px solid #0d9488;
+    outline: 2px solid var(--c-studio-accent);
     outline-offset: 1px;
 }
 
 .pp-hint {
     margin: 0;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 11.5px;
     line-height: 1.5;
 }
 
 .pp-only {
     padding-top: 10px;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--c-studio-border-subtle);
 }
 
 .pp-error {
     margin: 0;
-    color: #b42318;
+    color: var(--c-studio-error);
     font-size: 11.5px;
 }
 
@@ -104,9 +106,9 @@
     width: 100%;
     margin-top: 6px;
     padding: 7px 10px;
-    border: 1px solid #e3e3e3;
+    border: 1px solid var(--c-studio-border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12px;
     text-align: left;
@@ -114,11 +116,11 @@
 }
 
 .pp-childfield:hover:not(.added) {
-    border-color: #0d9488;
+    border-color: var(--c-studio-accent);
 }
 
 .pp-childfield.added {
-    opacity: 0.55;
+    background: var(--c-studio-surface-subtle);
     cursor: default;
 }
 
@@ -134,8 +136,8 @@
 .pp-childtype {
     flex: none;
     font-size: 10px;
-    color: #5c5c5c;
-    border: 1px solid #e3e3e3;
+    color: var(--c-studio-text-weak);
+    border: 1px solid var(--c-studio-border);
     border-radius: 999px;
     padding: 1px 7px;
 }
@@ -145,11 +147,11 @@
     font-size: 9.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
 }
 
 .pp-req {
-    color: #b42318;
+    color: var(--c-studio-error);
     text-decoration: none;
     margin-right: 2px;
 }
@@ -166,7 +168,7 @@
 .pp-ro {
     font-size: 12.5px;
     font-weight: 600;
-    color: #444;
+    color: var(--c-studio-text-weak);
 }
 
 /* Segmented button row — the owner's "2 clicks" rule: options on one row. */
@@ -180,59 +182,59 @@
     flex: 1 1 0;
     min-width: 0;
     padding: 6px 8px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 11.5px;
     font-weight: 600;
-    color: #444;
+    color: var(--c-studio-text-weak);
     cursor: pointer;
     white-space: nowrap;
 }
 
 .pp-seg-btn:hover:not(.on) {
-    border-color: #b8b8b8;
+    border-color: var(--c-studio-border-strong);
 }
 
 .pp-seg-btn.on {
-    border-color: #0d9488;
-    background: #e6f5f2;
-    color: #0b6e65;
+    border-color: var(--c-studio-accent);
+    background: var(--c-studio-accent-surface);
+    color: var(--c-studio-accent-text);
 }
 
 /* Wide two-state toggle button (Header shown / Not collapsible …). */
 .pp-toggle {
     width: 100%;
     padding: 7px 10px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
-    color: #444;
+    color: var(--c-studio-text-weak);
     cursor: pointer;
 }
 
 .pp-toggle.on {
-    border-color: #0d9488;
-    background: #e6f5f2;
-    color: #0b6e65;
+    border-color: var(--c-studio-accent);
+    background: var(--c-studio-accent-surface);
+    color: var(--c-studio-accent-text);
 }
 
 .pp-input {
     width: 100%;
     min-width: 0;
     padding: 6px 9px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
     font: inherit;
     font-size: 12px;
 }
 
 .pp-input:focus-visible {
-    outline: 2px solid #0d9488;
+    outline: 2px solid var(--c-studio-accent);
     outline-offset: 1px;
 }
 
@@ -247,7 +249,7 @@
     flex: none;
     border: 0;
     background: none;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font: inherit;
     font-size: 14px;
     line-height: 1;
@@ -256,25 +258,25 @@
 }
 
 .pp-x:hover {
-    color: #b42318;
+    color: var(--c-studio-error);
 }
 
 .pp-add {
     align-self: flex-start;
-    border: 1px dashed #b8b8b8;
+    border: 1px dashed var(--c-studio-border-strong);
     border-radius: 8px;
     background: none;
     font: inherit;
     font-size: 12px;
     font-weight: 600;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
     padding: 5px 10px;
     cursor: pointer;
 }
 
 .pp-add:hover {
-    border-color: #0d9488;
-    background: #f4fbfa;
+    border-color: var(--c-studio-accent);
+    background: var(--c-studio-accent-surface);
 }
 
 /* media upload (images are Salesforce Files — legacy path) */
@@ -283,7 +285,7 @@
     max-width: 100%;
     max-height: 120px;
     border-radius: 8px;
-    border: 1px solid #e3e3e3;
+    border: 1px solid var(--c-studio-border);
 }
 
 .pp-mediarow {
@@ -295,10 +297,10 @@
 .pp-upload {
     display: inline-block;
     padding: 7px 12px;
-    border: 1px solid #0d9488;
+    border: 1px solid var(--c-studio-accent);
     border-radius: 8px;
-    background: #e6f5f2;
-    color: #0b6e65;
+    background: var(--c-studio-accent-surface);
+    color: var(--c-studio-accent-text);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -309,19 +311,19 @@
 }
 
 .pp-remove {
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12px;
-    color: #444;
+    color: var(--c-studio-text-weak);
     padding: 6px 10px;
     cursor: pointer;
 }
 
 .pp-remove:hover {
-    color: #b42318;
-    border-color: #b42318;
+    color: var(--c-studio-error);
+    border-color: var(--c-studio-error);
 }
 
 /* section header icon picker (legacy ic-picker) */
@@ -338,9 +340,9 @@
     max-height: 132px;
     overflow: auto;
     padding: 4px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--c-studio-border-subtle);
     border-radius: 8px;
-    background: #fafafa;
+    background: var(--c-studio-surface-subtle);
 }
 
 .pp-ic {
@@ -354,12 +356,12 @@
 }
 
 .pp-ic:hover {
-    background: #efefef;
+    background: var(--c-studio-border-subtle);
 }
 
 .pp-ic.on {
-    border-color: #0d9488;
-    background: #e6f5f2;
+    border-color: var(--c-studio-accent);
+    background: var(--c-studio-accent-surface);
 }
 
 /* ---- topic chips (S2c — vocabulary tags on survey questions) ---- */
@@ -375,8 +377,8 @@
     gap: 4px;
     padding: 2px 4px 2px 10px;
     border-radius: 999px;
-    background: #eef4ff;
-    color: #0b5cab;
+    background: var(--c-studio-info-surface);
+    color: var(--c-studio-accent-text);
     font-size: 0.78rem;
     font-weight: 600;
 }
@@ -391,7 +393,7 @@
     border-radius: 50%;
 }
 .pp-topic-x:hover {
-    background: rgba(11, 92, 171, 0.15);
+    background: var(--c-studio-hover);
 }
 
 /* ---- imageChoice per-option upload (2026-07-31 fixes) ---- */
@@ -406,10 +408,10 @@
     flex: none;
     font-size: 0.75rem;
     font-weight: 700;
-    color: #0b5cab;
+    color: var(--c-studio-accent-text);
     cursor: pointer;
     padding: 6px 8px;
-    border: 1px dashed #0b5cab;
+    border: 1px dashed var(--c-studio-accent-text);
     border-radius: 6px;
 }
 .pp-file-hidden {
@@ -428,9 +430,9 @@
     display: inline-flex;
     align-items: center;
     padding: 6px 10px;
-    border: 1.5px dashed #0d9488;
+    border: 1.5px dashed var(--c-studio-accent);
     border-radius: 8px;
-    color: #0d9488;
+    color: var(--c-studio-accent);
     font-size: 0.78rem;
     font-weight: 700;
     cursor: pointer;

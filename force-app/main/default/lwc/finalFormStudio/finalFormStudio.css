@@ -1,26 +1,12 @@
+@import 'c/finalStudioStyles';
+
 /* st- prefix on ALL chrome classes — LEX one.app leaks global styles for
    generic names like .stage into embedded LWCs (reference-lex-css-class-collision). */
 :host {
     display: block;
     height: 100%;
-    background: #fff;
-    color: #181818;
-    --c-studio-surface: #fff;
-    --c-studio-surface-subtle: #f8f8f8;
-    --c-studio-text: #181818;
-    --c-studio-text-weak: #444;
-    --c-studio-border: #e5e5e5;
-    --c-studio-error: #ba0517;
-    --c-studio-error-text: #8e030f;
-    --c-studio-error-surface: #fef1ee;
-    --c-studio-overlay: rgb(8 15 26 / 52%);
-    --c-studio-dialog-shadow: 0 20px 48px rgb(0 0 0 / 28%);
-    --c-studio-radius-lg: 12px;
-    --c-studio-space-lg: 24px;
-    --c-studio-border-strong: #c9c9c9;
-    --c-studio-warning-surface: #fef5e7;
-    --c-studio-warning-border: #e0b34d;
-    --c-studio-warning-text: #6b4e00;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -39,7 +25,7 @@
 
 .st-notfound p {
     margin: 0 0 16px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     max-width: 44ch;
 }
 
@@ -51,7 +37,7 @@
 }
 
 .st-archive-error {
-    color: var(--c-studio-error, #ba0517) !important;
+    color: var(--c-studio-error) !important;
 }
 
 /* ----- top bar (IA §3: App Builder grammar) ----- */
@@ -61,14 +47,14 @@
     align-items: center;
     gap: 12px;
     padding: 8px 14px;
-    border-bottom: 1px solid #e3e3e3;
-    background: #fff;
+    border-bottom: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface);
 }
 
 .st-exit {
     border: 0;
     background: none;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
@@ -86,22 +72,22 @@
 
 .st-chip {
     padding: 2px 10px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 999px;
     font-size: 11.5px;
-    color: #5c5c5c;
-    background: #f7f7f7;
+    color: var(--c-studio-text-weak);
+    background: var(--c-studio-surface-subtle);
 }
 
 /* the versions dropdown wears the chip's clothes — same quiet pill */
 .st-verselect {
     padding: 3px 10px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 999px;
     font: inherit;
     font-size: 11.5px;
-    color: #5c5c5c;
-    background: #f7f7f7;
+    color: var(--c-studio-text-weak);
+    background: var(--c-studio-surface-subtle);
     cursor: pointer;
 }
 
@@ -163,10 +149,10 @@
 /* read-only must be legible from the BAR, not just the left notice */
 .st-robadge {
     padding: 4px 12px;
-    border: 1px solid #e7c96a;
+    border: 1px solid var(--c-studio-warning-border);
     border-radius: 999px;
-    background: #fdf6e0;
-    color: #6b5310;
+    background: var(--c-studio-warning-surface);
+    color: var(--c-studio-warning-text);
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
@@ -175,7 +161,7 @@
 .st-rolink {
     border: 0;
     background: none;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
     font: inherit;
     font-size: 12.5px;
     font-weight: 600;
@@ -190,25 +176,25 @@
 
 .st-modes {
     display: flex;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
     overflow: hidden;
 }
 
 .st-mode {
     border: 0;
-    background: #fff;
+    background: var(--c-studio-surface);
     padding: 6px 16px;
     font: inherit;
     font-size: 12.5px;
     font-weight: 600;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     cursor: pointer;
 }
 
 .st-mode.on {
-    background: #0d9488;
-    color: #fff;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
 }
 
 /* read-only view: the switch would change nothing — say so visually */
@@ -218,9 +204,9 @@
 }
 
 .st-icon {
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
-    background: #fff;
+    background: var(--c-studio-surface);
     width: 30px;
     height: 30px;
     font-size: 14px;
@@ -235,8 +221,8 @@
 .st-primary {
     border: 0;
     border-radius: 8px;
-    background: #0d9488;
-    color: #fff;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
     font: inherit;
     font-size: 13px;
     font-weight: 700;
@@ -279,9 +265,9 @@
     right: 0;
     width: 260px;
     overflow: hidden;
-    border: 1px solid #c9c9c9;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
 }
 
@@ -293,9 +279,9 @@
     align-items: flex-start;
     gap: 2px;
     border: 0;
-    border-bottom: 1px solid #e5e5e5;
-    background: #fff;
-    color: #181818;
+    border-bottom: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
     font: inherit;
     font-size: 12.5px;
     font-weight: 700;
@@ -309,13 +295,13 @@
 
 .st-settings-item:hover,
 .st-settings-item:focus-visible {
-    background: #f3f3f3;
+    background: var(--c-studio-hover);
     outline: 0;
-    box-shadow: inset 3px 0 #0d9488;
+    box-shadow: inset 3px 0 var(--c-studio-accent);
 }
 
 .st-settings-status {
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 11.5px;
     font-weight: 400;
 }
@@ -333,13 +319,13 @@
     width: 430px;
     min-width: 0;
     overflow: hidden auto;
-    border-right: 1px solid #e3e3e3;
+    border-right: 1px solid var(--c-studio-border);
 }
 
 .st-stagearea {
     flex: 1;
     min-width: 0;
-    background: #eef1f6;
+    background: var(--c-studio-workspace);
 }
 
 .st-scroll {
@@ -359,9 +345,9 @@
     align-items: center;
     margin: 12px 12px 8px;
     padding: 10px;
-    border: 1px solid #d8dde6;
+    border: 1px solid var(--c-studio-border);
     border-radius: 8px;
-    background: #f8fafc;
+    background: var(--c-studio-surface-subtle);
 }
 
 .st-context-icon {
@@ -371,8 +357,8 @@
     height: 30px;
     place-items: center;
     border-radius: 6px;
-    background: #0176d3;
-    color: #fff;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
     font-size: 9px;
     font-weight: 800;
 }
@@ -386,7 +372,7 @@
 
 .st-context-label,
 .st-context-detail {
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 10.5px;
 }
 
@@ -398,7 +384,7 @@
 
 .st-context-title {
     overflow: hidden;
-    color: #181818;
+    color: var(--c-studio-text);
     font-size: 12.5px;
     font-weight: 700;
     text-overflow: ellipsis;
@@ -416,7 +402,7 @@
     inset: 0;
     width: 100%;
     border: 0;
-    background: rgb(8 15 26 / 44%);
+    background: var(--c-studio-overlay);
     cursor: default;
 }
 
@@ -427,7 +413,7 @@
     width: min(440px, 100vw);
     height: 100%;
     overflow: hidden;
-    background: #fff;
+    background: var(--c-studio-surface);
     box-shadow: -8px 0 24px rgb(0 0 0 / 18%);
 }
 
@@ -446,7 +432,7 @@
     padding: 12px 16px;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--c-studio-border);
 }
 
 .st-drawer-header h2 {
@@ -456,7 +442,7 @@
 
 .st-drawer-eyebrow {
     margin: 0;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -482,8 +468,8 @@
     flex: none;
     width: 50%;
     min-width: 340px;
-    background: #eef1f6;
-    border-left: 1px solid #e3e3e3;
+    background: var(--c-studio-workspace);
+    border-left: 1px solid var(--c-studio-border);
 }
 
 /* Read-only version viewing: the editing column collapses to a slim notice —
@@ -503,7 +489,7 @@
 
 .st-notice-text {
     margin: 0 0 14px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 12.5px;
     line-height: 1.5;
 }
@@ -515,7 +501,7 @@
 .st-back {
     border: 0;
     background: none;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
     font: inherit;
     font-size: 12.5px;
     font-weight: 600;
@@ -529,7 +515,20 @@
 }
 
 .st-props-hint {
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 12.5px;
     line-height: 1.5;
+}
+
+/* Inset focus stays visible inside the clipped mode selector and settings menu. */
+button.st-mode:focus-visible,
+button.st-settings-item:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: -4px;
+}
+button.st-mode.on:focus-visible {
+    outline-color: var(--c-studio-on-accent);
+}
+.st-primary:hover:not(:disabled) {
+    background: var(--c-studio-accent-hover);
 }

@@ -1,12 +1,14 @@
+@import 'c/finalStudioStyles';
+
 /* Vertical icon rail (owner 2026-07-08): the same grammar as the Design
    panel's area rail — icons + tiny labels stacked on the left edge. */
 .fp {
     display: flex;
     height: 100%;
-    background: #fff;
+    background: var(--c-studio-surface);
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #181818;
+    color: var(--c-studio-text);
 }
 
 .fp-rail {
@@ -14,7 +16,7 @@
     flex-direction: column;
     gap: 4px;
     padding: 10px 6px;
-    border-right: 1px solid #e3e3e3;
+    border-right: 1px solid var(--c-studio-border);
     flex: none;
 }
 
@@ -38,22 +40,22 @@
     font: inherit;
     font-size: 9.5px;
     font-weight: 600;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     padding: 8px 2px;
     cursor: pointer;
 }
 
 .fp-tab.on {
-    color: #0b6e65;
-    background: #e6f5f2;
+    color: var(--c-studio-accent-text);
+    background: var(--c-studio-accent-surface);
 }
 
 .fp-tab.on lightning-icon {
-    --sds-c-icon-color-foreground-default: #0b6e65;
+    --sds-c-icon-color-foreground-default: var(--c-studio-accent-text);
 }
 
 .fp-tab:hover:not(.on) {
-    background: #f3f3f3;
+    background: var(--c-studio-hover);
 }
 
 .fp-head {
@@ -68,13 +70,13 @@
 
 .fp-head-sub {
     font-size: 10.5px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }
 
 .fp-search {
     margin: 10px;
     padding: 6px 10px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
     font: inherit;
     font-size: 12.5px;
@@ -82,13 +84,13 @@
 
 .fp-error {
     margin: 10px;
-    color: #b42318;
+    color: var(--c-studio-error);
     font-size: 12.5px;
 }
 
 .fp-note {
     margin: 14px 12px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 12.5px;
     line-height: 1.5;
 }
@@ -107,9 +109,9 @@
     width: 100%;
     margin-top: 6px;
     padding: 8px 10px;
-    border: 1px solid #e3e3e3;
+    border: 1px solid var(--c-studio-border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12.5px;
     text-align: left;
@@ -117,11 +119,11 @@
 }
 
 .fp-item:hover:not(.added) {
-    border-color: #0d9488;
+    border-color: var(--c-studio-accent);
 }
 
 .fp-item.added {
-    opacity: 0.55;
+    background: var(--c-studio-surface-subtle);
     cursor: default;
 }
 
@@ -135,7 +137,7 @@
 }
 
 .fp-req {
-    color: #b42318;
+    color: var(--c-studio-error);
     text-decoration: none;
     margin-right: 2px;
 }
@@ -143,8 +145,8 @@
 .fp-type {
     flex: none;
     font-size: 10.5px;
-    color: #5c5c5c;
-    border: 1px solid #e3e3e3;
+    color: var(--c-studio-text-weak);
+    border: 1px solid var(--c-studio-border);
     border-radius: 999px;
     padding: 1px 7px;
 }
@@ -154,7 +156,7 @@
     font-size: 9.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
 }
 
 /* Logic index rows: owner label + what the rule does */
@@ -166,5 +168,5 @@
 .fp-logic-summary {
     flex: 1 0 100%;
     font-size: 11px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }

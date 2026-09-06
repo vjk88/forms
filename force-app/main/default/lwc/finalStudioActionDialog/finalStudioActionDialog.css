@@ -1,5 +1,7 @@
+@import 'c/finalStudioStyles';
+
 :host {
-    color: var(--c-studio-text, #181818);
+    color: var(--c-studio-text);
 }
 
 .action-shell {
@@ -8,7 +10,7 @@
     inset: 0;
     display: grid;
     place-items: center;
-    padding: var(--c-studio-space-lg, 24px);
+    padding: var(--c-studio-space-lg);
 }
 
 .action-backdrop {
@@ -16,7 +18,7 @@
     inset: 0;
     width: 100%;
     border: 0;
-    background: var(--c-studio-overlay, rgb(8 15 26 / 52%));
+    background: var(--c-studio-overlay);
 }
 
 .action-dialog {
@@ -24,9 +26,9 @@
     width: min(560px, calc(100vw - 32px));
     max-height: calc(100vh - 48px);
     overflow: hidden;
-    border-radius: var(--c-studio-radius-lg, 12px);
-    background: var(--c-studio-surface, #fff);
-    box-shadow: var(--c-studio-dialog-shadow, 0 20px 48px rgb(0 0 0 / 28%));
+    border-radius: var(--c-studio-radius-lg);
+    background: var(--c-studio-surface);
+    box-shadow: var(--c-studio-dialog-shadow);
 }
 
 .action-header {
@@ -36,7 +38,7 @@
     padding: 14px 18px;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid var(--c-studio-border, #e5e5e5);
+    border-bottom: 1px solid var(--c-studio-border);
 }
 
 .action-header h2 {
@@ -52,7 +54,7 @@
 
 .action-description {
     margin: 0 0 16px;
-    color: var(--c-studio-text-weak, #444);
+    color: var(--c-studio-text-weak);
     font-size: 13px;
     line-height: 1.45;
 }
@@ -60,16 +62,16 @@
 .action-error {
     margin: 12px 0 0;
     padding: 10px 12px;
-    border-left: 3px solid var(--c-studio-error, #ba0517);
+    border-left: 3px solid var(--c-studio-error);
     border-radius: 4px;
-    background: var(--c-studio-error-surface, #fef1ee);
-    color: var(--c-studio-error-text, #8e030f);
+    background: var(--c-studio-error-surface);
+    color: var(--c-studio-error-text);
     font-size: 12.5px;
 }
 
 .action-progress {
     margin: 12px 0 0;
-    color: var(--c-studio-text-weak, #444);
+    color: var(--c-studio-text-weak);
     font-size: 12.5px;
 }
 
@@ -84,15 +86,15 @@
 
 .action-warning-list,
 .action-warning-panel {
-    border: 1px solid var(--c-studio-warning-border, #f0c36d);
-    background: var(--c-studio-warning-surface, #fff8e6);
-    color: var(--c-studio-warning-text, #5f4100);
+    border: 1px solid var(--c-studio-warning-border);
+    background: var(--c-studio-warning-surface);
+    color: var(--c-studio-warning-text);
 }
 
 .action-error-list {
-    border: 1px solid var(--c-studio-error, #ba0517);
-    background: var(--c-studio-error-surface, #fef1ee);
-    color: var(--c-studio-error-text, #8e030f);
+    border: 1px solid var(--c-studio-error);
+    background: var(--c-studio-error-surface);
+    color: var(--c-studio-error-text);
 }
 
 .action-warning-panel,
@@ -110,7 +112,7 @@
 }
 
 .action-danger-copy {
-    color: var(--c-studio-error-text, #8e030f);
+    color: var(--c-studio-error-text);
 }
 
 .action-file-label {
@@ -124,9 +126,9 @@
     width: 100%;
     box-sizing: border-box;
     padding: 8px;
-    border: 1px solid var(--c-studio-border-strong, #b5b5b5);
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
-    background: var(--c-studio-surface, #fff);
+    background: var(--c-studio-surface);
 }
 
 .action-summary {
@@ -138,13 +140,13 @@
 
 .action-summary div {
     padding: 9px 10px;
-    border: 1px solid var(--c-studio-border, #e5e5e5);
+    border: 1px solid var(--c-studio-border);
     border-radius: 6px;
-    background: var(--c-studio-surface-subtle, #f8f8f8);
+    background: var(--c-studio-surface-subtle);
 }
 
 .action-summary dt {
-    color: var(--c-studio-text-weak, #555);
+    color: var(--c-studio-text-weak);
     font-size: 11px;
 }
 
@@ -160,8 +162,8 @@
     gap: 8px;
     padding: 12px 18px;
     justify-content: flex-end;
-    border-top: 1px solid var(--c-studio-border, #e5e5e5);
-    background: var(--c-studio-surface-subtle, #f8f8f8);
+    border-top: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface-subtle);
 }
 
 .focus-sentinel {
@@ -178,7 +180,7 @@
     padding: 4px 0;
     font: inherit;
     font-size: 12px;
-    color: #0b6e65;
+    color: var(--c-studio-accent-text);
     text-decoration: underline;
     cursor: pointer;
 }
