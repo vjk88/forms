@@ -88,15 +88,8 @@ export default class FinalBuilderCanvas extends LightningElement {
     /** The page being edited (studio-owned, like the viewer's pageIndex). */
     @api currentPageIndex = 0;
 
-    moveOpen = false;
-    actionsOpen = false;
-    _actionsTop = 0;
-    _actionsLeft = 0;
-    destination = '';
     announcement = '';
     _pendingAction;
-    _focusActions = false;
-    _focusDestination = false;
 
     get selectedItem() {
         const hit = findItem(
@@ -126,126 +119,6 @@ export default class FinalBuilderCanvas extends LightningElement {
             : '';
     }
 
-    get actionsLabel() {
-        return `Actions for ${this.selectedLabel}`;
-    }
-    get actionsStyle() {
-        return `top:${this._actionsTop}px;left:${this._actionsLeft}px;max-height:calc(100% - ${this._actionsTop + 8}px)`;
-    }
-    get showActions() {
-        return this.actionsOpen && Boolean(this.selectedItem);
-    }
-
-    _openActions(event) {
-        const { kind, id } = event.currentTarget.dataset;
-        if (kind === 'page') this.handleChip(event);
-        else this._select(kind, id);
-        const root = this.template.querySelector('.bc').getBoundingClientRect();
-        const item = event.currentTarget.getBoundingClientRect();
-        this._actionsTop = Math.max(
-            8,
-            Math.min(item.bottom - root.top + 4, root.height - 240)
-        );
-        this._actionsLeft = Math.max(
-            8,
-            Math.min(item.left - root.left, root.width - 320)
-        );
-        this.actionsOpen = true;
-        this._focusActions = true;
-    }
-    handleContextMenu(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        this._openActions(event);
-    }
-    handleCanvasPointer(event) {
-        if (this.actionsOpen && !event.target.closest('.bc-popup')) {
-            this.actionsOpen = false;
-            this.moveOpen = false;
-        }
-    }
-    handlePopupFocusOut() {
-        Promise.resolve().then(() => {
-            const popup = this.template.querySelector('.bc-popup');
-            if (popup && !popup.contains(this.template.activeElement)) {
-                this.actionsOpen = false;
-                this.moveOpen = false;
-            }
-        });
-    }
-    _outsidePointer = (event) => {
-        if (!event.composedPath().includes(this.template.host)) {
-            this.actionsOpen = false;
-            this.moveOpen = false;
-        }
-    };
-    connectedCallback() {
-        document.addEventListener('pointerdown', this._outsidePointer);
-    }
-    disconnectedCallback() {
-        document.removeEventListener('pointerdown', this._outsidePointer);
-    }
-    get moveUpDisabled() {
-        const hit = this.selectedItem;
-        return !hit || hit.siblings.indexOf(hit.item) === 0;
-    }
-    get moveDownDisabled() {
-        const hit = this.selectedItem;
-        return (
-            !hit || hit.siblings.indexOf(hit.item) === hit.siblings.length - 1
-        );
-    }
-    get moveDestinations() {
-        const hit = this.selectedItem;
-        if (!hit || this.selection.kind === 'page') return [];
-        return this.pages.flatMap((page, index) => {
-            const label = `Page ${index + 1} · ${page.name || 'Untitled'}`;
-            if (this.selection.kind === 'section') {
-                return page.id === hit.page.id
-                    ? []
-                    : [{ value: page.id, label }];
-            }
-            const destinations = (page.sections || [])
-                .filter(
-                    (section) =>
-                        section.id !== hit.section.id &&
-                        canMoveElement(hit.item, hit.section, section)
-                )
-                .map((section) => ({
-                    value: section.id,
-                    label: `${label} / ${section.title || 'Untitled section'}`
-                }));
-            if (
-                !destinations.length &&
-                page.id !== hit.page.id &&
-                !hit.section.repeat
-            ) {
-                destinations.push({
-                    value: `page:${page.id}`,
-                    pageId: page.id,
-                    label: `${label} / New section`
-                });
-            }
-            return destinations;
-        });
-    }
-    get moveToDisabled() {
-        return !this.moveDestinations.length;
-    }
-    get moveConfirmDisabled() {
-        return !this.moveDestinations.some(
-            (option) => option.value === this.destination
-        );
-    }
-    get moveExpanded() {
-        return String(this.moveOpen);
-    }
-    get moveHelp() {
-        return this.selection?.kind === 'element'
-            ? 'Choose a compatible section. The question will move to its end.'
-            : 'Choose a page. The section or block will move to its end.';
-    }
-
     _focusItem(kind, id) {
         const button = [...this.template.querySelectorAll('[data-nav]')].find(
             (node) => node.dataset.kind === kind && node.dataset.id === id
@@ -263,9 +136,6 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (altKey && (key === 'ArrowUp' || key === 'ArrowDown')) {
             event.preventDefault();
             this._moveSibling(kind, id, key === 'ArrowUp' ? -1 : 1);
-        } else if ((key === 'F10' && event.shiftKey) || key === 'ContextMenu') {
-            event.preventDefault();
-            this._openActions(event);
         } else if (
             !altKey &&
             ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(key)
@@ -313,8 +183,6 @@ export default class FinalBuilderCanvas extends LightningElement {
                 );
             }
         );
-        this.moveOpen = false;
-        this.actionsOpen = false;
         if (kind === 'page') {
             this._emit('pagechange', { index: this.pages.indexOf(hit.page) });
             this._emit('movepage', { id, beforeId: before });
@@ -332,99 +200,6 @@ export default class FinalBuilderCanvas extends LightningElement {
             });
     }
 
-    handleMoveUp() {
-        this._moveSibling(this.selection.kind, this.selection.id, -1);
-    }
-    handleMoveDown() {
-        this._moveSibling(this.selection.kind, this.selection.id, 1);
-    }
-    handleMoveTo() {
-        this.moveOpen = !this.moveOpen;
-        this.destination = '';
-        this._focusDestination = this.moveOpen;
-    }
-    handleDestination(event) {
-        this.destination = event.target.value;
-    }
-    handleMoveCancel() {
-        this.moveOpen = false;
-        this.template.querySelector('.bc-move-to')?.focus();
-    }
-    handleMovePanelKey(event) {
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            event.stopPropagation();
-            this.handleMoveCancel();
-        }
-    }
-    handleActionsKey(event) {
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            this.actionsOpen = false;
-            this.moveOpen = false;
-            this._focusItem(this.selection.kind, this.selection.id);
-        } else if (
-            ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)
-        ) {
-            event.preventDefault();
-            const buttons = [
-                ...this.template.querySelectorAll(
-                    '[role="menuitem"]:not(:disabled)'
-                )
-            ];
-            const at = buttons.indexOf(this.template.activeElement);
-            const index =
-                event.key === 'Home'
-                    ? 0
-                    : event.key === 'End'
-                      ? buttons.length - 1
-                      : (at +
-                            (event.key === 'ArrowUp' ? -1 : 1) +
-                            buttons.length) %
-                        buttons.length;
-            buttons[index]?.focus();
-        }
-    }
-    handleMoveConfirm() {
-        const target = this.moveDestinations.find(
-            (option) => option.value === this.destination
-        );
-        if (!target || !this.selectedItem) return;
-        const { kind, id } = this.selection;
-        this._queueAction(
-            kind,
-            id,
-            `${this.selectedLabel} moved to ${target.label}.`,
-            (pages) => {
-                const moved = findItem(pages, kind, id);
-                return (
-                    moved &&
-                    (kind === 'section'
-                        ? moved.page.id === target.value
-                        : target.pageId
-                          ? moved.page.id === target.pageId
-                          : moved.section.id === target.value)
-                );
-            }
-        );
-        this.moveOpen = false;
-        this.actionsOpen = false;
-        if (kind === 'section')
-            this._emit('movesection', {
-                id,
-                pageId: target.value,
-                beforeSectionId: null
-            });
-        else if (target.pageId)
-            this._emit('moveelement', { id, pageId: target.pageId });
-        else
-            this._emit('moveelement', {
-                id,
-                sectionId: target.value,
-                beforeId: null
-            });
-    }
-
     _prepareRemoval(kind, id) {
         const hit = findItem(this.pages, kind, id);
         if (!hit || (kind === 'page' && this.pages.length < 2)) return;
@@ -437,8 +212,6 @@ export default class FinalBuilderCanvas extends LightningElement {
               : 'page';
         const fallback =
             neighbor || (kind === 'element' ? hit.section : hit.page);
-        this.moveOpen = false;
-        this.actionsOpen = false;
         this._queueAction(
             fallbackKind,
             fallback.id,
@@ -503,16 +276,6 @@ export default class FinalBuilderCanvas extends LightningElement {
                 this._focusItem(pending.kind, pending.id);
                 this.announcement = pending.message;
             }
-        }
-        if (this._focusActions && this.selectedItem) {
-            this._focusActions = false;
-            this.template
-                .querySelector('.bc-actions button:not(:disabled)')
-                ?.focus();
-        }
-        if (this._focusDestination && this.moveOpen) {
-            this._focusDestination = false;
-            this.template.querySelector('.bc-destination')?.focus();
         }
         const root = this.template.querySelector('.bc');
         if (root && root !== this._boundRootEl) {
@@ -1117,8 +880,6 @@ export default class FinalBuilderCanvas extends LightningElement {
     // ----- click intents -----
 
     _select(kind, id) {
-        this.moveOpen = false;
-        this.actionsOpen = false;
         this._pendingAction = null;
         this.dispatchEvent(new CustomEvent('select', { detail: { kind, id } }));
     }

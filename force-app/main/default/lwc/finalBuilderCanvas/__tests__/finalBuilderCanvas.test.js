@@ -68,45 +68,6 @@ function mount(props = {}) {
 }
 
 describe('c-final-builder-canvas', () => {
-    it('dismisses the optional context menu with Escape or an outside pointer', async () => {
-        const el = mount();
-        el.addEventListener('select', (event) => {
-            el.selection = event.detail;
-        });
-        const root = el.shadowRoot;
-        const item = root.querySelector('[data-nav][data-id="el_1"]');
-        item.dispatchEvent(
-            new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-        );
-        await Promise.resolve();
-        root.activeElement.dispatchEvent(
-            new KeyboardEvent('keydown', {
-                key: 'End',
-                bubbles: true,
-                cancelable: true
-            })
-        );
-        expect(root.activeElement).toBe(root.querySelector('.bc-move-to'));
-        root.activeElement.dispatchEvent(
-            new KeyboardEvent('keydown', {
-                key: 'Escape',
-                bubbles: true,
-                cancelable: true
-            })
-        );
-        await Promise.resolve();
-        expect(root.querySelector('.bc-popup')).toBeNull();
-        expect(root.activeElement).toBe(item);
-        item.dispatchEvent(
-            new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-        );
-        await Promise.resolve();
-        document.body.dispatchEvent(
-            new MouseEvent('pointerdown', { bubbles: true, composed: true })
-        );
-        await Promise.resolve();
-        expect(root.querySelector('.bc-popup')).toBeNull();
-    });
     it('switches from ordinary sections to a page mixing repeaters and standalone blocks', async () => {
         const spec = JSON.parse(JSON.stringify(SPEC));
         spec.pages[1].sections = [
@@ -168,7 +129,7 @@ describe('c-final-builder-canvas', () => {
         });
     });
 
-    it('keeps actions hidden until Shift+F10, supports Alt+Down and restores focus after a confirmed move', async () => {
+    it('Alt+Down reorders, restores focus to the moved item, and announces it', async () => {
         const el = mount();
         el.addEventListener('select', (event) => {
             el.selection = event.detail;
@@ -177,18 +138,10 @@ describe('c-final-builder-canvas', () => {
         const first = root.querySelector('[data-nav][data-id="el_1"]');
         first.click();
         await Promise.resolve();
+        // the context menu was removed (owner 2026-09-06) — selection adds no chrome
+        expect(root.querySelector('.bc-popup')).toBeNull();
         expect(root.querySelector('.bc-actions')).toBeNull();
-        first.dispatchEvent(
-            new KeyboardEvent('keydown', {
-                key: 'F10',
-                shiftKey: true,
-                bubbles: true,
-                cancelable: true
-            })
-        );
-        await Promise.resolve();
-        expect(root.activeElement.textContent.trim()).toBe('Move down');
-        expect(root.querySelector('.bc-actions button').disabled).toBe(true);
+
         const moves = [];
         el.addEventListener('moveelement', (event) => {
             moves.push(event.detail);
@@ -214,55 +167,6 @@ describe('c-final-builder-canvas', () => {
             'position 2 of 2'
         );
     });
-
-    it('offers compatible destinations and a new section on an empty page; Escape cancels', async () => {
-        const structured = JSON.parse(JSON.stringify(SPEC));
-        structured.pages[0].sections.push(
-            { id: 'parent', title: 'Other section', elements: [] },
-            {
-                id: 'child',
-                title: 'Contacts',
-                repeat: { childObject: 'Contact' },
-                elements: []
-            },
-            { id: 'block', block: true, elements: [{ type: 'richText' }] }
-        );
-        const el = mount({
-            spec: structured,
-            selection: { kind: 'element', id: 'el_1' }
-        });
-        const root = el.shadowRoot;
-        el.addEventListener('select', (event) => {
-            el.selection = event.detail;
-        });
-        root.querySelector('[data-nav][data-id="el_1"]').dispatchEvent(
-            new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-        );
-        await Promise.resolve();
-        root.querySelector('.bc-move-to').click();
-        await Promise.resolve();
-        const select = root.querySelector('select');
-        expect(root.activeElement).toBe(select);
-        expect([...select.options].map((option) => option.value)).toEqual([
-            '',
-            'parent',
-            'page:pg_2'
-        ]);
-        select.dispatchEvent(
-            new KeyboardEvent('keydown', {
-                key: 'Escape',
-                bubbles: true,
-                cancelable: true
-            })
-        );
-        await Promise.resolve();
-        expect(root.querySelector('select')).toBeNull();
-        expect(root.activeElement).toBe(root.querySelector('.bc-move-to'));
-        root.querySelector('.bc-move-to').click();
-        await Promise.resolve();
-        expect(root.querySelector('select').options).toHaveLength(3);
-    });
-
     it('focuses the next question after delete, and never announces a rejected mutation as success', async () => {
         const el = mount();
         const root = el.shadowRoot;
