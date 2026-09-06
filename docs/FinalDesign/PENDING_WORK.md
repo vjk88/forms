@@ -531,37 +531,53 @@ mouse, which is a harder failure than any single widget defect in §4.1.
   `USER_MODE`/FLS discipline or it becomes a second, weaker path to record data alongside SO-3/SO-4.
 - **"Explain visibility"** author debugging — must never leak into the respondent form.
 
-### 9.5 The one that looks easy and isn't
+### 9.5 Studio color consistency and contrast
 
-**"Correct contrast on small teal buttons" is listed Priority 1 / "Studio styling", which reads
-like a find-and-replace. It is not.** `#0d9488` is hardcoded **54 times across 21 files**, and
-there is **no studio chrome token layer** — `--st-*` and `--studio-*` both return nothing.
+**DONE — deployed to `revclouddev` and org-verified 2026-09-06.**
+The shared CSS-only `finalStudioStyles` bundle consolidates the existing partial `--c-studio-*`
+recovery-dialog palette and supplies semantic authoring colors to **23 component stylesheets**.
+This includes §4.3's gallery/Studio accent unification, surrounding authoring controls and the
+dark Build canvas. The final scope exceeds the 12 stylesheets found by searching only `#0d9488`.
 
-> **Correction 2026-09-06:** an earlier version of this section said "11 component stylesheets".
-> That number came from a `grep | head -12` — my own truncation, read back as a result. The real
-> spread is 21 files, and more importantly it is not homogeneous:
->
-> | Group                                                                  | Files  | Migrate?                                                                 |
-> | ---------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------ |
-> | `final*` studio chrome CSS                                             | **12** | **yes — this is the actual job**                                         |
-> | Theme catalog + engine (`finalThemeCatalog.js`, `finalThemeEngine.js`) | 2      | **NO — respondent theme values; changing them alters customers' themes** |
-> | Tests asserting the current value                                      | 2      | update alongside                                                         |
-> | Legacy (`form*`, `shell*`, `z*`)                                       | 5      | no — P7 deletes them                                                     |
->
-> So the job is **smaller than 21 files and more dangerous than a replace**: the theme-data hits sit
-> in the same grep and must be left alone. Worth knowing that `#0F766E`, the accessible teal the
-> review recommends, is **already** a value in `finalThemeCatalog.js` — the theme system knows it.
+White on primary teal improves from **3.74:1 to 5.47:1**. Muted labels, control boundaries,
+dark-canvas guidance and focus indicators now use explicit light/dark tokens. Clipped segmented
+controls retain visible inset keyboard focus. Added field rows stay readable without fading their
+entire contents. Error/warning/success meanings remain distinct.
 
-A blind replace across all 21 files is how you get a half-migrated palette _and_ silently restyle
-customer forms.
+**Respondent themes remain independent:** theme catalog/engine, runtime and legacy stylesheets,
+theme-thumbnail declarations and existing color expectations in tests are unchanged. No app
+JavaScript, templates, drag-and-drop or Alt+arrow behavior changed; no movement menus were added.
 
-Done properly — the review's own recommendation — it means introducing semantic studio tokens and
-then migrating. That is a **days** item, not an afternoon.
+**Why the separation actually holds** (two independent mechanisms, both verified):
 
-**Do it once, with §4.3's chrome-accent unification** (gallery indigo `#6366f1` vs studio teal). Both
-touch the same eleven files; running them separately pays the migration cost twice.
+1. **Disjoint namespaces.** The bundle defines only `--c-studio-*`; the runtime reads only the
+   unprefixed `--c-*`. Set intersection of the two name sets is **empty**, so the studio tokens
+   inherit harmlessly through the shadow boundary and are simply never read.
+2. **A hard boundary.** `finalPageFrame`'s outermost wrapper re-declares both inheritable
+   properties the Studio sets on its host — `color: var(--c-text)` and
+   `font-family: var(--c-font-body)` — so even those stop at the respondent tree.
 
-The measured facts, for whoever picks this up: white on the current `#0D9488` is **3.74:1** — below
-the 4.5:1 WCAG floor for small text, and used on top-bar buttons, the preview device selector and
-the Design mode selector. `#0F766E` measures **5.47:1**. The Design panel already warns respondents
-about this exact colour while the Studio uses it on its own chrome.
+No runtime component file appears in the diff, and no component in the runtime tree
+(`finalFormViewer`, `finalPageFrame`, `finalElementRenderer`, `finalSectionRenderer`,
+`finalThemeEngine`, `finalNav*`, `finalSubmitBar`, `finalFormHeader`, `finalLayoutZones`,
+`finalAfterSubmit`) imports `finalStudioStyles`. `finalGuestHost` renders only
+`c-final-form-viewer`, so the published/guest surface is untouched by construction.
+
+Validation: **60 contrast pairs**, **24 LWC stylesheets compiled**, **full suite 71 Jest suites /
+685 tests green** (an earlier draft of this section said "19 suites / 190 tests" — that was the
+changed-components subset, not the suite).
+
+**Org verification (`revclouddev`, headless Chromium):** the decisive test is a live theme switch —
+`--c-accent` moved `#0f766e → #9355af` and `--c-page-bg` `#f6f4ee → #01130b` while
+`--c-studio-accent` held at `#0f766e`. Respondent text, background, inputs and Submit all painted
+from their `--c-*` theme tokens. Also confirmed in-org: contrast sweeps over Build, Design,
+property panel, settings drawer, library and creation gallery; the dark canvas; a visible teal
+focus ring; drag handles, Alt+↑/↓ reorder and the still-absent context menu (PR #233); console
+clean.
+
+> Note: the Studio accent `#0f766e` coincidentally equals theme #1's accent in
+> `finalThemeCatalog.js`. That is a **coincidence, not a leak** — the catalog is not in the diff,
+> and the theme-switch test above falsifies the leak reading.
+
+[Exact changed files, contrast results and org checklist](./STUDIO_COLOR_CONSISTENCY.md).
+The new `finalStudioStyles` bundle must ship with the authoring components.

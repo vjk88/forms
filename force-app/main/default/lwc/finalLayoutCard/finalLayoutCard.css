@@ -1,10 +1,12 @@
+@import 'c/finalStudioStyles';
+
 /* --- Admin chrome (the card frame) — the app's own design, NOT themed. --- */
 .lc {
     cursor: pointer;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--c-studio-border);
     border-radius: 14px;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--c-studio-surface);
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     transition:
         transform 0.15s ease,
@@ -14,19 +16,20 @@
 
 .lc:hover {
     transform: translateY(-2px);
-    border-color: #c7c9ff;
+    border-color: var(--c-studio-accent);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
 .lc:focus-visible {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 4px;
+    border-color: var(--c-studio-accent);
+    box-shadow: 0 0 0 3px var(--c-studio-focus-halo);
 }
 
 .lc.is-on {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px #6366f1;
+    border-color: var(--c-studio-accent);
+    box-shadow: 0 0 0 2px var(--c-studio-accent);
 }
 
 /* --- Theme-tinted mockup (layoutThumb treatment; everything below rides
@@ -260,20 +263,20 @@
     gap: 0.5rem;
 }
 .lc-icon {
-    --slds-c-icon-color-foreground-default: #18181b;
+    --slds-c-icon-color-foreground-default: var(--c-studio-text);
     flex: none;
 }
 .lc-name {
     font-weight: 650;
     font-size: 0.98rem;
-    color: #18181b;
+    color: var(--c-studio-text);
     flex: 1;
 }
 .lc-check {
-    --slds-c-icon-color-foreground-default: #6366f1;
+    --slds-c-icon-color-foreground-default: var(--c-studio-accent);
 }
 .lc-hint {
     margin: 3px 0 0;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--c-studio-text-weak);
 }

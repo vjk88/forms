@@ -1,10 +1,12 @@
+@import 'c/finalStudioStyles';
+
 :host {
     display: block;
 }
 
 .rl-panel {
     padding-top: 1.25rem;
-    border-top: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    border-top: 1px solid var(--c-studio-border);
 }
 
 .rl-heading-row {
@@ -17,7 +19,7 @@
 .rl-heading,
 .rl-result-title {
     margin: 0;
-    color: var(--lwc-colorTextDefault, #181818);
+    color: var(--c-studio-text);
     font-size: 0.875rem;
     font-weight: 700;
 }
@@ -26,7 +28,7 @@
 .rl-message,
 .rl-validation {
     margin: 0.25rem 0 0;
-    color: var(--lwc-colorTextWeak, #5c5c5c);
+    color: var(--c-studio-text-weak);
     font-size: 0.75rem;
     line-height: 1.45;
 }
@@ -42,19 +44,19 @@
     gap: 0.5rem;
     margin-left: 1rem;
     padding-left: 1rem;
-    border-left: 2px solid var(--lwc-colorBorder, #c9c9c9);
+    border-left: 2px solid var(--c-studio-border);
 }
 
 .rl-validation,
 .rl-message--error {
-    color: var(--lwc-colorTextError, #ba0517);
+    color: var(--c-studio-error);
 }
 
 .rl-result {
     margin-top: 1rem;
     padding: 0.875rem;
     border-radius: 0.5rem;
-    background: var(--lwc-colorBackgroundHighlight, #eef4ff);
+    background: var(--c-studio-info-surface);
 }
 
 .rl-copy-row {
@@ -67,17 +69,17 @@
     min-width: 0;
     flex: 1;
     padding: 0.5rem;
-    border: 1px solid var(--lwc-colorBorderInput, #747474);
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 0.25rem;
-    background: var(--lwc-colorBackgroundInputDisabled, #f3f3f3);
-    color: var(--lwc-colorTextDefault, #181818);
+    background: var(--c-studio-hover);
+    color: var(--c-studio-text);
     font: 0.75rem monospace;
 }
 
 .rl-danger-row {
     margin-top: 1rem;
     padding-top: 0.75rem;
-    border-top: 1px solid var(--lwc-colorBorder, #c9c9c9);
+    border-top: 1px solid var(--c-studio-border);
 }
 
 @media (max-width: 36rem) {

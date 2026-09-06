@@ -1,6 +1,9 @@
+@import 'c/finalStudioStyles';
+
 /* The blueprint is deliberately dark + schematic (IA §4): it must read as
    "structure", never compete with the live preview for "looks". */
 :host {
+    --c-studio-focus: var(--c-studio-canvas-accent);
     display: block;
     height: 100%;
 }
@@ -10,8 +13,8 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #1c1f26;
-    color: #cbd2dc;
+    background: var(--c-studio-canvas);
+    color: var(--c-studio-canvas-text);
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -20,8 +23,8 @@
     padding: 6px 14px;
     font-size: 10.5px;
     letter-spacing: 0.05em;
-    color: #8b93a1;
-    border-bottom: 1px solid #2a2e37;
+    color: var(--c-studio-canvas-text-weak);
+    border-bottom: 1px solid var(--c-studio-canvas-divider);
 }
 
 .bc-chips {
@@ -32,10 +35,10 @@
 }
 
 .bc-chip {
-    border: 1px solid #3a3f4b;
+    border: 1px solid var(--c-studio-canvas-border);
     border-radius: 999px;
-    background: #232730;
-    color: #aab2bf;
+    background: var(--c-studio-canvas-surface);
+    color: var(--c-studio-canvas-text-weak);
     font: inherit;
     font-size: 11.5px;
     padding: 4px 12px;
@@ -43,12 +46,12 @@
 }
 
 .bc-chip.on {
-    border-color: #14b8a6;
-    color: #d7f5f0;
+    border-color: var(--c-studio-canvas-accent);
+    color: var(--c-studio-canvas-accent-text);
 }
 
 .bc-chip.selected {
-    box-shadow: 0 0 0 1px #14b8a6;
+    box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
 .bc-chip.add {
@@ -74,30 +77,30 @@
 .bc-section {
     position: relative;
     margin-top: 16px;
-    border: 1px solid #2f3440;
+    border: 1px solid var(--c-studio-canvas-divider);
     border-radius: 10px;
-    background: #232730;
+    background: var(--c-studio-canvas-surface);
     padding: 10px 10px 12px;
     cursor: pointer;
 }
 
 .bc-section.selected {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 1px #14b8a6;
+    border-color: var(--c-studio-canvas-accent);
+    box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
 /* ---- DnD highlights (applied IMPERATIVELY — never via re-render) ---- */
 /* "drops in here" — a field/element landing inside this section */
 .bc-drop-on {
-    border-color: #14b8a6 !important;
+    border-color: var(--c-studio-canvas-accent) !important;
     box-shadow:
-        0 0 0 1px #14b8a6,
-        inset 0 0 0 100vmax rgba(20, 184, 166, 0.08);
+        0 0 0 1px var(--c-studio-canvas-accent),
+        inset 0 0 0 100vmax var(--c-studio-canvas-drop);
 }
 
 /* insertion line ABOVE the node — section reorder / element placement */
 .bc-drop-before {
-    box-shadow: 0 -3px 0 0 #14b8a6;
+    box-shadow: 0 -3px 0 0 var(--c-studio-canvas-accent);
 }
 
 /* inter-section gap: invisible until a section drag is over it */
@@ -112,8 +115,8 @@
 }
 
 .bc-gap.bc-gap-over {
-    background: rgba(20, 184, 166, 0.35);
-    outline: 1px dashed #14b8a6;
+    background: var(--c-studio-canvas-drop-gap);
+    outline: 1px dashed var(--c-studio-canvas-accent);
 }
 
 .bc-section-head {
@@ -137,9 +140,9 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #2dd4bf;
-    background: #1c1f26;
-    border: 1px solid rgb(45 212 191 / 45%);
+    color: var(--c-studio-canvas-accent);
+    background: var(--c-studio-canvas);
+    border: 1px solid var(--c-studio-canvas-accent);
     border-radius: 999px;
     padding: 2px 10px;
     overflow: hidden;
@@ -150,7 +153,7 @@
 .bc-sec-desc {
     margin: 2px 2px 8px;
     font-size: 11px;
-    color: #8b93a1;
+    color: var(--c-studio-canvas-text-weak);
 }
 
 /* The REAL column grid — the blueprint shows the layout being built. */
@@ -166,15 +169,15 @@
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    color: #2dd4bf;
-    border: 1px solid rgb(45 212 191 / 35%);
+    color: var(--c-studio-canvas-accent);
+    border: 1px solid var(--c-studio-canvas-accent);
     border-radius: 999px;
     padding: 1px 8px;
     white-space: nowrap;
 }
 
 .bc-grip {
-    color: #565d6b;
+    color: var(--c-studio-canvas-text-weak);
     font-size: 11px;
     letter-spacing: -2px;
     cursor: grab;
@@ -187,20 +190,20 @@
     gap: 7px;
     min-width: 0;
     padding: 9px 10px;
-    border: 1px dashed #3a4150;
+    border: 1px dashed var(--c-studio-canvas-border);
     border-radius: 8px;
-    background: #1d212a;
+    background: var(--c-studio-canvas-card);
     cursor: pointer;
 }
 
 .bc-row:hover {
-    border-color: #4a5364;
+    border-color: var(--c-studio-canvas-text-weak);
 }
 
 .bc-row.selected {
     border-style: solid;
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 1px #14b8a6;
+    border-color: var(--c-studio-canvas-accent);
+    box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
 .bc-row-top {
@@ -214,7 +217,7 @@
     flex: 1;
     min-width: 0;
     font-size: 12px;
-    color: #cbd2dc;
+    color: var(--c-studio-canvas-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -226,11 +229,11 @@
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: #8b93a1;
+    color: var(--c-studio-canvas-text-weak);
 }
 
 .bc-req {
-    color: #f87171;
+    color: var(--c-studio-canvas-error);
     text-decoration: none;
     margin-right: 2px;
 }
@@ -239,7 +242,7 @@
     display: block;
     height: 8px;
     border-radius: 4px;
-    background: #313743;
+    background: var(--c-studio-canvas-divider);
 }
 
 .bc-drop-empty {
@@ -247,9 +250,9 @@
     display: grid;
     place-items: center;
     min-height: 56px;
-    border: 1px dashed #3a4150;
+    border: 1px dashed var(--c-studio-canvas-border);
     border-radius: 8px;
-    color: #6b7280;
+    color: var(--c-studio-canvas-text-weak);
     font-size: 11.5px;
 }
 
@@ -257,7 +260,7 @@
     flex: none;
     border: 0;
     background: none;
-    color: #565d6b;
+    color: var(--c-studio-canvas-text-weak);
     font-size: 14px;
     line-height: 1;
     cursor: pointer;
@@ -266,8 +269,8 @@
 }
 
 .bc-x:hover {
-    color: #f87171;
-    background: #2a2e37;
+    color: var(--c-studio-canvas-error);
+    background: var(--c-studio-canvas-divider);
 }
 
 .bc-add-section {
@@ -275,24 +278,24 @@
     width: 100%;
     margin-top: 12px;
     padding: 9px;
-    border: 1px dashed #3a3f4b;
+    border: 1px dashed var(--c-studio-canvas-border);
     border-radius: 10px;
     background: none;
-    color: #8b93a1;
+    color: var(--c-studio-canvas-text-weak);
     font: inherit;
     font-size: 12px;
     cursor: pointer;
 }
 
 .bc-add-section:hover {
-    border-color: #14b8a6;
-    color: #d7f5f0;
+    border-color: var(--c-studio-canvas-accent);
+    color: var(--c-studio-canvas-accent-text);
 }
 
 .bc-empty {
     margin: 26px auto 0;
     max-width: 300px;
-    color: #8b93a1;
+    color: var(--c-studio-canvas-text-weak);
     font-size: 12.5px;
 }
 
@@ -309,22 +312,22 @@
     gap: 8px;
     margin-top: 10px;
     padding: 8px 10px;
-    border: 1px dashed #3a3f4b;
+    border: 1px dashed var(--c-studio-canvas-border);
     border-radius: 8px;
-    background: #1d212a;
+    background: var(--c-studio-canvas-card);
     cursor: pointer;
 }
 
 .bc-block.selected {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 1px #14b8a6;
+    border-color: var(--c-studio-canvas-accent);
+    box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
 .bc-block-label {
     flex: 1;
     font-size: 12px;
     font-style: italic;
-    color: #8b93a1;
+    color: var(--c-studio-canvas-text-weak);
 }
 
 /* Native selection buttons retain the existing schematic layout. */
@@ -341,7 +344,7 @@
 }
 .bc button:focus-visible,
 .bc select:focus-visible {
-    outline: 2px solid var(--slds-g-color-brand-base-80, #a8caff);
+    outline: 2px solid var(--c-studio-canvas-accent);
     outline-offset: 3px;
 }
 .bc-row:focus-within,
@@ -358,7 +361,7 @@
     white-space: nowrap;
 }
 .bc-x {
-    color: var(--slds-g-color-neutral-base-80, #c9c9c9);
+    color: var(--c-studio-canvas-text-weak);
     min-width: 24px;
     min-height: 24px;
 }

@@ -1,3 +1,5 @@
+@import 'c/finalStudioStyles';
+
 /* ps- prefix on all chrome classes (reference-lex-css-class-collision). */
 :host {
     display: block;
@@ -12,52 +14,52 @@
     justify-content: space-between;
     gap: 8px;
     padding: 6px 10px;
-    background: #fff;
-    border-bottom: 1px solid #ececec;
+    background: var(--c-studio-surface);
+    border-bottom: 1px solid var(--c-studio-border-subtle);
 }
 
 .ps-devices {
     display: inline-flex;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
     overflow: hidden;
 }
 
 .ps-device {
     border: 0;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12px;
-    color: #444;
+    color: var(--c-studio-text-weak);
     padding: 4px 12px;
     cursor: pointer;
 }
 
 .ps-device + .ps-device {
-    border-left: 1px solid #d8d8d8;
+    border-left: 1px solid var(--c-studio-border-strong);
 }
 
 .ps-device.on {
-    background: #0d9488;
-    color: #fff;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
     font-weight: 600;
 }
 
 .ps-refresh {
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 14px;
     line-height: 1;
-    color: #444;
+    color: var(--c-studio-text-weak);
     padding: 4px 9px;
     cursor: pointer;
 }
 
 .ps-refresh:hover,
 .ps-device:hover:not(.on) {
-    background: #f4f4f4;
+    background: var(--c-studio-hover);
 }
 
 /* The scaled canvas still occupies its unscaled layout box — clip the ghost
@@ -68,4 +70,11 @@
 
 .ps-canvas {
     transform-origin: top left;
+}
+
+button.ps-device:focus-visible {
+    outline-offset: -4px;
+}
+button.ps-device.on:focus-visible {
+    outline-color: var(--c-studio-on-accent);
 }

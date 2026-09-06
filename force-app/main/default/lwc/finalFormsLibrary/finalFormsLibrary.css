@@ -1,9 +1,11 @@
+@import 'c/finalStudioStyles';
+
 .lib {
     padding: 16px 20px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #181818;
+    color: var(--c-studio-text);
 }
 
 .lib-head {
@@ -20,29 +22,29 @@
 
 .lib-subtitle {
     margin: 3px 0 0;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 12px;
 }
 
 .lib-filter-label {
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
     font-size: 12px;
 }
 
 .lib-filter {
     min-height: 30px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
-    background: #fff;
+    background: var(--c-studio-surface);
     padding: 4px 28px 4px 9px;
     font: inherit;
     font-size: 12px;
 }
 
 .lib-refresh {
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12px;
     padding: 5px 12px;
@@ -50,18 +52,18 @@
 }
 
 .lib-error {
-    color: #b42318;
+    color: var(--c-studio-error);
 }
 
 .lib-empty {
     padding: 40px 0;
     text-align: center;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }
 
 .lib-empty h3 {
     margin: 0 0 6px;
-    color: #181818;
+    color: var(--c-studio-text);
 }
 
 .lib-table {
@@ -77,8 +79,8 @@
 .lib-table th {
     text-align: left;
     padding: 8px 10px;
-    border-bottom: 2px solid #e3e3e3;
-    color: #5c5c5c;
+    border-bottom: 2px solid var(--c-studio-border);
+    color: var(--c-studio-text-weak);
     font-size: 11.5px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -86,7 +88,7 @@
 
 .lib-table td {
     padding: 10px;
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid var(--c-studio-border-subtle);
 }
 
 .lib-name {
@@ -97,17 +99,17 @@
     display: inline-block;
     padding: 2px 7px;
     border-radius: 999px;
-    background: #f1f5f9;
-    color: #334155;
+    background: var(--c-studio-workspace);
+    color: var(--c-studio-text-weak);
     font-size: 11px;
     font-weight: 600;
 }
 
 .lib-open {
-    border: 1px solid #0d9488;
+    border: 1px solid var(--c-studio-accent);
     border-radius: 6px;
-    background: #fff;
-    color: #0b6e65;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-accent-text);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
@@ -118,8 +120,8 @@
 .lib-restore {
     border: 0;
     border-radius: 6px;
-    background: #0d9488;
-    color: #fff;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
@@ -134,10 +136,10 @@
 
 .lib-view {
     margin-right: 8px;
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
-    background: #fff;
-    color: #444;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text-weak);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
@@ -149,8 +151,8 @@
     margin: 0 0 12px;
     padding: 8px 12px;
     border-radius: 6px;
-    background: #edf7f0;
-    color: #1a6b3f;
+    background: var(--c-studio-success-surface);
+    color: var(--c-studio-success-text);
     font-size: 13px;
 }
 
@@ -163,7 +165,7 @@
 }
 
 .lib-open:hover {
-    background: #f0faf8;
+    background: var(--c-studio-accent-surface);
 }
 
 /* ---- creation overlay (S5 wiring: the gallery's host) ---- */
@@ -175,27 +177,27 @@
 .lib-new {
     border: none;
     border-radius: 8px;
-    background: #0d9488;
-    color: #fff;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
     font-weight: 700;
     padding: 7px 16px;
     cursor: pointer;
     font: inherit;
 }
 .lib-new:hover {
-    background: #0b7c72;
+    background: var(--c-studio-accent-hover);
 }
 .lib-overlay {
     position: fixed;
     inset: 0;
     z-index: 9000;
-    background: rgba(22, 50, 92, 0.45);
+    background: var(--c-studio-overlay);
     display: grid;
     place-items: center;
     padding: 24px;
 }
 .lib-overlay-panel {
-    background: #fff;
+    background: var(--c-studio-surface);
     border-radius: 14px;
     width: min(1180px, 96vw);
     max-height: 92vh;
@@ -215,4 +217,9 @@
         width: 100%;
         flex-wrap: wrap;
     }
+}
+
+.lib-restore:hover:not(:disabled) {
+    background: var(--c-studio-accent-hover);
+    border-color: var(--c-studio-accent-hover);
 }

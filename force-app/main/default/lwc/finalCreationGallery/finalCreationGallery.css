@@ -1,3 +1,5 @@
+@import 'c/finalStudioStyles';
+
 :host {
     display: block;
     background: var(--g-bg);
@@ -5,20 +7,17 @@
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-    /* Gallery chrome palette (ported from the old formCreationGallery). This
-       is the neutral admin surface around the previews — deliberately its own
-       system, NOT the form's --c-* tokens (those belong to the themed preview
-       engine inside each card). */
-    --g-bg: #f3f4f6;
-    --g-surface: #ffffff;
-    --g-ink: #18181b;
-    --g-muted: #6b7280;
-    --g-faint: #71717a;
-    --g-line: #e4e4e7;
-    --g-line-soft: #f0f0f2;
-    --g-accent: #4338ca;
-    --g-accent-ink: #3730a3;
-    --g-danger: #b91c1c;
+    /* Gallery aliases share Studio chrome; form previews keep their own tokens. */
+    --g-bg: var(--c-studio-workspace);
+    --g-surface: var(--c-studio-surface);
+    --g-ink: var(--c-studio-text);
+    --g-muted: var(--c-studio-text-weak);
+    --g-faint: var(--c-studio-text-weak);
+    --g-line: var(--c-studio-border);
+    --g-line-soft: var(--c-studio-border-subtle);
+    --g-accent: var(--c-studio-accent);
+    --g-accent-ink: var(--c-studio-accent-text);
+    --g-danger: var(--c-studio-error);
 
     /* Minimum comfortable tap target for chrome controls. */
     --g-tap: 36px;
@@ -65,7 +64,7 @@
     color: var(--g-muted);
 }
 .g-close:hover {
-    background: #e5e7eb;
+    background: var(--c-studio-hover);
 }
 
 /* ------------------------------------------------------------ entry toggle */
@@ -74,7 +73,7 @@
     gap: 0.25rem;
     margin-bottom: 1.5rem;
     padding: 0.25rem;
-    background: #e9eaee;
+    background: var(--c-studio-workspace);
     border-radius: 12px;
 }
 .entry-tab {
@@ -117,7 +116,7 @@
     padding: 3.5rem 1rem;
 }
 .tpl-empty-icon {
-    --slds-c-icon-color-foreground-default: #a1a1aa;
+    --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
 }
 .tpl-empty-title {
     font-size: 1.05rem;
@@ -183,14 +182,14 @@
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #3f3f46;
+    color: var(--c-studio-text-weak);
     font-size: 0.85rem;
     font-family: inherit;
     padding: 0.35rem 0.4rem;
     border-radius: 0.5rem;
 }
 .d-back:hover {
-    background: #e5e7eb;
+    background: var(--c-studio-hover);
 }
 .d-body {
     display: grid;
@@ -214,7 +213,7 @@
 }
 .d-input {
     min-height: var(--g-tap);
-    border: 1px solid #d4d4d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 0.5rem;
     padding: 0 0.75rem;
     font-size: 0.9rem;
@@ -227,7 +226,7 @@
 }
 .d-input:focus {
     border-color: var(--g-accent);
-    box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.18);
+    box-shadow: 0 0 0 3px var(--c-studio-focus-halo);
 }
 .d-select {
     appearance: auto;
@@ -246,8 +245,8 @@
     align-items: flex-start;
     gap: 0.4rem;
     color: var(--g-danger);
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: var(--c-studio-error-surface);
+    border: 1px solid var(--c-studio-error-border);
     border-radius: 0.5rem;
     padding: 0.5rem 0.65rem;
     font-size: 0.82rem;
@@ -273,7 +272,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     min-height: var(--g-tap);
-    border: 1px solid #d4d4d8;
+    border: 1px solid var(--c-studio-border-strong);
     background: var(--g-surface);
     border-radius: 0.5rem;
     padding: 0.5rem 0.75rem;
@@ -283,7 +282,7 @@
     font-family: inherit;
 }
 .d-theme-chip:hover {
-    border-color: #a1a1aa;
+    border-color: var(--c-studio-text-weak);
 }
 .d-theme-name {
     font-weight: 600;
@@ -326,7 +325,7 @@
 }
 .obj-item:hover,
 .obj-item.is-on {
-    background: #eef2ff;
+    background: var(--c-studio-accent-surface);
 }
 .obj-label {
     font-size: 0.88rem;
@@ -334,13 +333,13 @@
 }
 .obj-api {
     font-size: 0.72rem;
-    color: #a1a1aa;
+    color: var(--c-studio-text-weak);
     font-family: 'SFMono-Regular', Consolas, monospace;
 }
 .obj-empty {
     padding: 0.6rem;
     font-size: 0.85rem;
-    color: #a1a1aa;
+    color: var(--c-studio-text-weak);
     text-align: center;
 }
 
@@ -374,26 +373,26 @@
     justify-content: center;
     min-width: var(--g-tap-icon);
     min-height: var(--g-tap-icon);
-    border: 1px solid #d4d4d8;
+    border: 1px solid var(--c-studio-border-strong);
     background: var(--g-surface);
     border-radius: 0.4rem;
     padding: 0.25rem 0.4rem;
     cursor: pointer;
-    color: #52525b;
+    color: var(--c-studio-text-weak);
 }
 .dev-btn.is-on {
-    background: var(--g-ink);
-    border-color: var(--g-ink);
-    color: #ffffff;
+    background: var(--g-accent);
+    border-color: var(--g-accent);
+    color: var(--c-studio-on-accent);
 }
 .dev-btn.is-on lightning-icon {
-    --slds-c-icon-color-foreground-default: #ffffff;
+    --slds-c-icon-color-foreground-default: var(--c-studio-on-accent);
 }
 .d-stage {
     padding: 1rem;
     max-height: 560px;
     overflow: auto; /* desktop 1024px frame scrolls horizontally inside the pane */
-    background: #fafafa;
+    background: var(--c-studio-surface-subtle);
 }
 /* The frame renders at a REAL device width (set inline); the form inside
    reflows via its own container queries — no scale transform. */
@@ -440,24 +439,27 @@
     border: none;
     border-radius: 0.5rem;
     background: var(--g-accent);
-    color: #ffffff;
+    color: var(--c-studio-on-accent);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
 }
 .cg-create:disabled {
-    background: #d4d4d8;
-    color: #71717a;
+    background: var(--c-studio-hover);
+    color: var(--c-studio-text-weak);
     cursor: default;
+}
+.cg-create:hover:not(:disabled) {
+    background: var(--c-studio-accent-hover);
 }
 .cg-secondary {
     min-height: var(--g-tap);
     padding: 0 1.1rem;
-    border: 1px solid #d4d4d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 0.5rem;
     background: var(--g-surface);
-    color: #3f3f46;
+    color: var(--c-studio-text-weak);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -495,16 +497,16 @@
     align-items: flex-start;
     gap: 8px;
     padding: 18px;
-    border: 1.5px solid #dddbda;
+    border: 1.5px solid var(--c-studio-border);
     border-radius: 12px;
-    background: #fff;
+    background: var(--c-studio-surface);
     cursor: pointer;
     text-align: left;
     font: inherit;
     transition: border-color 120ms;
 }
 .tpl-card:hover:not(:disabled) {
-    border-color: #0d9488;
+    border-color: var(--c-studio-accent);
 }
 .tpl-card:disabled {
     opacity: 0.6;
@@ -516,12 +518,12 @@
 }
 .tpl-blurb {
     font-size: 0.8rem;
-    color: #54698d;
+    color: var(--c-studio-text-weak);
 }
 
 .tpl-name-input {
     width: min(420px, 100%);
-    border: 1.5px solid #dddbda;
+    border: 1.5px solid var(--c-studio-border);
     border-radius: 8px;
     padding: 9px 12px;
     font: inherit;
@@ -547,9 +549,9 @@
     align-items: flex-start;
     gap: 10px;
     padding: 28px 26px;
-    border: 1.5px solid #dddbda;
+    border: 1.5px solid var(--c-studio-border);
     border-radius: 16px;
-    background: #fff;
+    background: var(--c-studio-surface);
     cursor: pointer;
     text-align: left;
     font: inherit;
@@ -559,12 +561,12 @@
         box-shadow 120ms ease;
 }
 .kind-card:hover {
-    border-color: #0d9488;
+    border-color: var(--c-studio-accent);
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(13, 148, 136, 0.12);
+    box-shadow: 0 10px 24px var(--c-studio-focus-halo);
 }
 .kind-icon {
-    color: #0d9488;
+    color: var(--c-studio-accent);
 }
 .kind-name {
     font-weight: 800;
@@ -572,31 +574,31 @@
 }
 .kind-blurb {
     font-size: 0.875rem;
-    color: #54698d;
+    color: var(--c-studio-text-weak);
     line-height: 1.45;
 }
 .kind-foot {
     margin-top: 6px;
     font-size: 0.8rem;
     font-weight: 700;
-    color: #0d9488;
+    color: var(--c-studio-accent);
 }
 
 /* selected template card (survey path keeps the pick visible on back) */
 .tpl-card.is-selected {
-    border-color: #0d9488;
-    box-shadow: 0 0 0 1px #0d9488 inset;
+    border-color: var(--c-studio-accent);
+    box-shadow: 0 0 0 1px var(--c-studio-accent) inset;
 }
 
 /* survey details furniture */
 .d-optional {
     font-weight: 400;
-    color: #54698d;
+    color: var(--c-studio-text-weak);
     text-transform: none;
 }
 .d-help {
     margin: 6px 0 14px;
     font-size: 0.8rem;
-    color: #54698d;
+    color: var(--c-studio-text-weak);
     line-height: 1.45;
 }

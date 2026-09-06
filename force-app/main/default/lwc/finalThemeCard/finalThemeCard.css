@@ -1,29 +1,35 @@
+@import 'c/finalStudioStyles';
+
 /* --- Admin chrome (the card frame) — the app's own design, NOT themed. --- */
 .tc {
     cursor: pointer;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--c-studio-border);
     border-radius: 14px;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--c-studio-surface);
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .tc:hover {
     transform: translateY(-2px);
-    border-color: #c7c9ff;
+    border-color: var(--c-studio-accent);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
 .tc:focus-visible {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 4px;
+    border-color: var(--c-studio-accent);
+    box-shadow: 0 0 0 3px var(--c-studio-focus-halo);
 }
 
 .tc.is-on {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px #6366f1;
+    border-color: var(--c-studio-accent);
+    box-shadow: 0 0 0 2px var(--c-studio-accent);
 }
 
 /* --- Themed preview stage (everything below rides --c-* tokens) --- */
@@ -286,18 +292,18 @@
 .tc-name {
     font-weight: 600;
     font-size: 0.85rem;
-    color: #1f2937;
+    color: var(--c-studio-text);
 }
 
 .tc-check {
-    --slds-c-icon-color-foreground-default: #6366f1;
+    --slds-c-icon-color-foreground-default: var(--c-studio-accent);
 }
 
 .tc-desc {
     margin: 2px 0 8px;
     font-size: 0.72rem;
     line-height: 1.35;
-    color: #6b7280;
+    color: var(--c-studio-text-weak);
 }
 
 .tc-swatches {

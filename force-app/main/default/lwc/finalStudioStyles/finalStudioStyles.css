@@ -1,0 +1,86 @@
+/* Authoring chrome only. Keep respondent --c-* theme values independent. */
+:host {
+    --c-studio-surface: #ffffff;
+    --c-studio-surface-subtle: #f8fafc;
+    --c-studio-workspace: #f1f5f9;
+    --c-studio-hover: #eef2f6;
+    --c-studio-text: #1f2937;
+    --c-studio-text-weak: #526071;
+    --c-studio-border: #dce2e9;
+    --c-studio-border-subtle: #e8edf2;
+    --c-studio-border-strong: #7c8999;
+    --c-studio-accent: #0f766e;
+    --c-studio-accent-hover: #115e59;
+    --c-studio-accent-text: #115e59;
+    --c-studio-accent-surface: #e8f5f2;
+    --c-studio-on-accent: #ffffff;
+    --c-studio-focus: #0f766e;
+    --c-studio-focus-halo: rgb(15 118 110 / 20%);
+    --c-studio-error: #b42318;
+    --c-studio-error-text: #8e2018;
+    --c-studio-error-surface: #fef1ee;
+    --c-studio-error-border: #e6b3ac;
+    --c-studio-warning-text: #73510d;
+    --c-studio-warning-surface: #fff5df;
+    --c-studio-warning-border: #caa24c;
+    --c-studio-success-text: #21613f;
+    --c-studio-success-surface: #eaf6ee;
+    --c-studio-info-text: #364d6b;
+    --c-studio-info-surface: #eef3fa;
+    --c-studio-overlay: rgb(8 15 26 / 52%);
+    --c-studio-dialog-shadow: 0 20px 48px rgb(0 0 0 / 28%);
+    --c-studio-radius-lg: 12px;
+    --c-studio-space-lg: 24px;
+    --c-studio-canvas: #1c1f26;
+    --c-studio-canvas-surface: #232730;
+    --c-studio-canvas-card: #1d212a;
+    --c-studio-canvas-text: #d7dfe9;
+    --c-studio-canvas-text-weak: #aab6c6;
+    --c-studio-canvas-border: #748297;
+    --c-studio-canvas-divider: #3a4150;
+    --c-studio-canvas-accent: #2dd4bf;
+    --c-studio-canvas-accent-text: #d7f5f0;
+    --c-studio-canvas-error: #fca5a5;
+    --c-studio-canvas-drop: rgb(45 212 191 / 8%);
+    --c-studio-canvas-drop-gap: rgb(45 212 191 / 35%);
+}
+
+/* Scoped to native authoring controls in each importing component's template.
+   Theme-card sample buttons (tabindex=-1) and child respondent trees are excluded. */
+button:not([tabindex='-1']):focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--c-studio-text-weak);
+    opacity: 1;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+    accent-color: var(--c-studio-accent);
+}
+
+/* Component hooks stay on authoring buttons, never on a respondent ancestor. */
+lightning-button {
+    --slds-c-button-brand-color-background: var(--c-studio-accent);
+    --slds-c-button-brand-color-background-hover: var(--c-studio-accent-hover);
+    --slds-c-button-brand-color-background-active: var(--c-studio-accent-hover);
+    --slds-c-button-brand-color-border: var(--c-studio-accent);
+    --slds-c-button-brand-color-border-hover: var(--c-studio-accent-hover);
+    --slds-c-button-brand-color-border-active: var(--c-studio-accent-hover);
+    --slds-c-button-brand-text-color: var(--c-studio-on-accent);
+    --slds-c-button-brand-text-color-hover: var(--c-studio-on-accent);
+    --slds-c-button-brand-text-color-active: var(--c-studio-on-accent);
+    --slds-c-button-text-color: var(--c-studio-accent-text);
+    --slds-c-button-text-color-hover: var(--c-studio-accent-hover);
+    --slds-c-button-shadow-focus:
+        0 0 0 2px var(--c-studio-surface), 0 0 0 4px var(--c-studio-focus);
+}

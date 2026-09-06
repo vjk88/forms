@@ -1,7 +1,9 @@
+@import 'c/finalStudioStyles';
+
 .rp-overlay {
     position: fixed;
     inset: 0;
-    background: rgb(24 24 24 / 45%);
+    background: var(--c-studio-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -13,12 +15,12 @@
     max-height: min(560px, calc(100vh - 48px));
     display: flex;
     flex-direction: column;
-    background: #fff;
+    background: var(--c-studio-surface);
     border-radius: 14px;
     box-shadow: 0 24px 64px rgb(0 0 0 / 28%);
     font-family:
         -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #181818;
+    color: var(--c-studio-text);
     overflow: hidden;
 }
 
@@ -35,7 +37,7 @@
 .rp-sub {
     margin: 4px 0 0;
     font-size: 12.5px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }
 
 .rp-list {
@@ -52,9 +54,9 @@
     width: 100%;
     margin-top: 6px;
     padding: 10px 12px;
-    border: 1px solid #e3e3e3;
+    border: 1px solid var(--c-studio-border);
     border-radius: 10px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 13px;
     text-align: left;
@@ -62,8 +64,8 @@
 }
 
 .rp-item:hover {
-    border-color: #0d9488;
-    background: #f4fbfa;
+    border-color: var(--c-studio-accent);
+    background: var(--c-studio-accent-surface);
 }
 
 .rp-item-label {
@@ -78,7 +80,7 @@
 .rp-item-via {
     flex: none;
     font-size: 11px;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }
 
 .rp-note,
@@ -86,24 +88,24 @@
     margin: 8px 20px 12px;
     font-size: 12.5px;
     line-height: 1.5;
-    color: #5c5c5c;
+    color: var(--c-studio-text-weak);
 }
 
 .rp-error {
-    color: #b42318;
+    color: var(--c-studio-error);
 }
 
 .rp-foot {
     display: flex;
     justify-content: flex-end;
     padding: 10px 16px 14px;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--c-studio-border-subtle);
 }
 
 .rp-cancel {
-    border: 1px solid #d8d8d8;
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    background: #fff;
+    background: var(--c-studio-surface);
     font: inherit;
     font-size: 12.5px;
     font-weight: 600;
@@ -112,5 +114,5 @@
 }
 
 .rp-cancel:hover {
-    background: #f3f3f3;
+    background: var(--c-studio-hover);
 }
