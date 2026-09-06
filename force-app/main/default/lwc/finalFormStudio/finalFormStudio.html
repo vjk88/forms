@@ -50,7 +50,12 @@
     </template>
     <template lwc:elseif={spec}>
         <header class="st-bar">
-            <button type="button" class="st-exit" onclick={handleExit}>
+            <button
+                type="button"
+                class="st-exit"
+                disabled={publishing}
+                onclick={handleExit}
+            >
                 ← Exit
             </button>
             <span class="st-name">{formName}</span>
@@ -58,6 +63,7 @@
                 <select
                     class="st-verselect"
                     aria-label="Form version"
+                    disabled={editorLocked}
                     onchange={handleVersionChange}
                 >
                     <template for:each={versionOptions} for:item="o">
@@ -75,7 +81,7 @@
                     type="button"
                     class={buildClass}
                     aria-pressed={isBuildPressed}
-                    disabled={isReadOnly}
+                    disabled={modeDisabled}
                     onclick={handleModeBuild}
                 >
                     Build
@@ -84,14 +90,32 @@
                     type="button"
                     class={designClass}
                     aria-pressed={isDesignPressed}
-                    disabled={isReadOnly}
+                    disabled={modeDisabled}
                     onclick={handleModeDesign}
                 >
                     Design
                 </button>
             </div>
             <template lwc:if={isEditable}>
-                <span class="st-saved">{savedText}</span>
+                <div class={saveStatusClass}>
+                    <span
+                        class="st-saved"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        >{savedText}</span
+                    >
+                    <template lwc:if={saveFailed}>
+                        <button
+                            type="button"
+                            class="st-retry"
+                            onclick={handleRetrySave}
+                            disabled={editorLocked}
+                        >
+                            Retry save
+                        </button>
+                    </template>
+                </div>
             </template>
             <template lwc:else>
                 <span class="st-robadge">🔒 {readOnlyBadge}</span>
@@ -131,6 +155,7 @@
                         title="Form settings"
                         aria-haspopup="menu"
                         aria-expanded={settingsMenuOpen}
+                        disabled={editorLocked}
                         onclick={handleSettingsToggle}
                     ></lightning-button-icon>
                     <template lwc:if={settingsMenuOpen}>
@@ -186,7 +211,7 @@
                     label="Actions"
                     alternative-text="Form actions"
                     menu-alignment="right"
-                    disabled={actionBusy}
+                    disabled={actionsDisabled}
                     onselect={handleActionSelect}
                 >
                     <lightning-menu-item
@@ -214,11 +239,30 @@
                 onclick={handlePublish}
                 disabled={publishDisabled}
             >
-                Publish
+                {publishLabel}
             </button>
         </header>
 
-        <div class="st-body">
+        <template lwc:if={publishError}>
+            <div class="st-publish-error">
+                <span role="alert">{publishError}</span>
+                <button
+                    type="button"
+                    class="st-retry"
+                    onclick={handlePublish}
+                    disabled={publishDisabled}
+                >
+                    {publishRetryLabel}
+                </button>
+            </div>
+        </template>
+        <template lwc:if={publishing}>
+            <p class="st-publish-progress" role="status">
+                Publishing… Editing will resume when this finishes.
+            </p>
+        </template>
+
+        <div class="st-body" aria-busy={publishing}>
             <template lwc:if={isReadOnly}>
                 <aside class="st-left st-left--notice">
                     <div class="st-notice">
@@ -425,6 +469,15 @@
                             oninvalidatelinks={handleInvalidateLinks}
                             onmanageinvitations={handleManageInvitations}
                         ></c-final-studio-settings-panel>
+                        <template lwc:if={saveFailed}>
+                            <button
+                                type="button"
+                                class="st-retry"
+                                onclick={handleRetrySave}
+                            >
+                                Retry save
+                            </button>
+                        </template>
                     </div>
                     <span
                         class="st-focus-sentinel"

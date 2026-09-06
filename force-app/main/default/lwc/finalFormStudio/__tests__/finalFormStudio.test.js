@@ -3,6 +3,9 @@ import FinalFormStudio from 'c/finalFormStudio';
 import { CurrentPageReference } from 'lightning/navigation';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
+import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
+import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
+import LightningConfirm from 'lightning/confirm';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
@@ -17,6 +20,10 @@ import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
+jest.mock('lightning/confirm', () => ({
+    __esModule: true,
+    default: { open: jest.fn() }
+}));
 jest.mock(
     'lightning/navigation',
     () => {
@@ -1579,6 +1586,309 @@ describe('c-final-form-studio', () => {
         expect(deleteForm).toHaveBeenCalledWith({
             formId: 'a0F1',
             confirmationName: 'Disposable form'
+        });
+    });
+
+    describe('draft and publish recovery', () => {
+        function deferred() {
+            let resolve;
+            let reject;
+            const promise = new Promise((res, rej) => {
+                resolve = res;
+                reject = rej;
+            });
+            return { promise, resolve, reject };
+        }
+
+        async function ready() {
+            const element = mount();
+            CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+            await micro(12);
+            return element;
+        }
+
+        function edit(element, label) {
+            const spec = JSON.parse(JSON.stringify(SPEC));
+            spec.submit.label = label;
+            element.shadowRoot
+                .querySelector('c-final-design-panel')
+                .dispatchEvent(
+                    new CustomEvent('specchange', { detail: { spec } })
+                );
+        }
+
+        const status = (element) =>
+            element.shadowRoot.querySelector('.st-saved').textContent;
+        const publish = (element) =>
+            element.shadowRoot.querySelector('.st-bar > .st-primary').click();
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            loadStudio.mockReset().mockResolvedValue({
+                name: 'Recovery test',
+                specJson: JSON.stringify(SPEC),
+                draftVersionId: 'a0V2',
+                versionNumber: 2,
+                activeVersionNumber: 1
+            });
+            listVersions.mockReset().mockResolvedValue(VERSIONS);
+            saveDraft.mockReset().mockResolvedValue('a0V2');
+            publishSpec.mockReset().mockResolvedValue('a0V3');
+            discardDraft.mockReset().mockResolvedValue();
+            LightningConfirm.open.mockReset().mockResolvedValue(true);
+        });
+
+        it('serializes saves and never acknowledges newer edits with an older response', async () => {
+            const first = deferred();
+            const second = deferred();
+            saveDraft
+                .mockReturnValueOnce(first.promise)
+                .mockReturnValueOnce(second.promise);
+            const element = await ready();
+            edit(element, 'First');
+            jest.advanceTimersByTime(900);
+            edit(element, 'Latest');
+            jest.advanceTimersByTime(900);
+            expect(saveDraft).toHaveBeenCalledTimes(1);
+            first.resolve('a0V2');
+            await micro(12);
+            expect(saveDraft).toHaveBeenCalledTimes(2);
+            expect(
+                JSON.parse(saveDraft.mock.calls[1][0].specJson).submit.label
+            ).toBe('Latest');
+            expect(status(element)).not.toContain('All changes saved');
+            second.resolve('a0V2');
+            await micro(12);
+            expect(status(element)).toBe('✓ All changes saved');
+            jest.advanceTimersByTime(2000);
+            expect(saveDraft).toHaveBeenCalledTimes(2);
+        });
+
+        it('retains edits after failure and retries the latest version exactly once', async () => {
+            saveDraft.mockRejectedValueOnce(new Error('offline'));
+            const retry = deferred();
+            saveDraft.mockReturnValueOnce(retry.promise);
+            const element = await ready();
+            edit(element, 'Before failure');
+            jest.advanceTimersByTime(900);
+            await micro(12);
+            expect(status(element)).toContain('Draft couldn’t be saved');
+            expect(
+                element.shadowRoot
+                    .querySelector('.st-saved')
+                    .getAttribute('role')
+            ).toBe('status');
+            edit(element, 'Latest after failure');
+            await micro(6);
+            const retryButton = element.shadowRoot.querySelector(
+                '.st-save-status .st-retry'
+            );
+            retryButton.click();
+            retryButton.click();
+            await micro(6);
+            expect(saveDraft).toHaveBeenCalledTimes(2);
+            expect(
+                JSON.parse(saveDraft.mock.calls[1][0].specJson).submit.label
+            ).toBe('Latest after failure');
+            expect(
+                element.shadowRoot.querySelector('c-final-design-panel').spec
+                    .submit.label
+            ).toBe('Latest after failure');
+            retry.resolve('a0V2');
+            await micro(12);
+            expect(status(element)).toBe('✓ All changes saved');
+            jest.advanceTimersByTime(2000);
+            expect(saveDraft).toHaveBeenCalledTimes(2);
+        });
+
+        it('stops after a failed in-flight save and keeps its queued edits for Retry', async () => {
+            const first = deferred();
+            saveDraft.mockReturnValueOnce(first.promise);
+            const element = await ready();
+            edit(element, 'First');
+            jest.advanceTimersByTime(900);
+            edit(element, 'Queued');
+            first.reject(new Error('offline'));
+            await micro(12);
+            jest.advanceTimersByTime(2000);
+            expect(saveDraft).toHaveBeenCalledTimes(1);
+            element.shadowRoot
+                .querySelector('.st-save-status .st-retry')
+                .click();
+            await micro(12);
+            expect(
+                JSON.parse(saveDraft.mock.calls[1][0].specJson).submit.label
+            ).toBe('Queued');
+            expect(status(element)).toBe('✓ All changes saved');
+        });
+
+        it('waits for the current and queued saves before publishing, then clears the draft', async () => {
+            const first = deferred();
+            const second = deferred();
+            saveDraft
+                .mockReturnValueOnce(first.promise)
+                .mockReturnValueOnce(second.promise);
+            const element = await ready();
+            edit(element, 'First');
+            jest.advanceTimersByTime(900);
+            edit(element, 'Latest');
+            publish(element);
+            await micro(12);
+            expect(publishSpec).not.toHaveBeenCalled();
+            expect(
+                element.shadowRoot
+                    .querySelector('.st-body')
+                    .hasAttribute('inert')
+            ).toBe(true);
+            expect(element.shadowRoot.querySelector('.st-undo').disabled).toBe(
+                true
+            );
+            first.resolve('a0V2');
+            await micro(12);
+            expect(publishSpec).not.toHaveBeenCalled();
+            second.resolve('a0V2');
+            await micro(24);
+            expect(publishSpec).toHaveBeenCalledTimes(1);
+            expect(
+                JSON.parse(publishSpec.mock.calls[0][0].specJson).submit.label
+            ).toBe('Latest');
+            expect(discardDraft).toHaveBeenCalledWith({
+                draftVersionId: 'a0V2'
+            });
+            expect(discardDraft.mock.invocationCallOrder[0]).toBeGreaterThan(
+                publishSpec.mock.invocationCallOrder[0]
+            );
+            expect(
+                element.shadowRoot
+                    .querySelector('.st-body')
+                    .hasAttribute('inert')
+            ).toBe(false);
+        });
+
+        it('keeps publish failure separate from saved status and retries with confirmation', async () => {
+            publishSpec.mockRejectedValueOnce(new Error('publish refused'));
+            const element = await ready();
+            publish(element);
+            await micro(24);
+            expect(status(element)).toBe('✓ All changes saved');
+            expect(
+                element.shadowRoot.querySelector('.st-publish-error')
+                    .textContent
+            ).toContain('Publishing failed');
+            expect(discardDraft).not.toHaveBeenCalled();
+            edit(element, 'Changed after publish failure');
+            expect(
+                element.shadowRoot
+                    .querySelector('.st-body')
+                    .hasAttribute('inert')
+            ).toBe(false);
+            element.shadowRoot
+                .querySelector('.st-publish-error .st-retry')
+                .click();
+            await micro(24);
+            expect(LightningConfirm.open).toHaveBeenCalledTimes(2);
+            expect(publishSpec).toHaveBeenCalledTimes(2);
+            expect(
+                JSON.parse(publishSpec.mock.calls[1][0].specJson).submit.label
+            ).toBe('Changed after publish failure');
+            expect(
+                element.shadowRoot.querySelector('.st-publish-error')
+            ).toBeNull();
+        });
+
+        it('does not publish or discard anything when the draft save fails', async () => {
+            saveDraft.mockRejectedValueOnce(new Error('offline'));
+            const element = await ready();
+            edit(element, 'Keep this');
+            publish(element);
+            await micro(24);
+            expect(status(element)).toContain('Draft couldn’t be saved');
+            expect(
+                element.shadowRoot.querySelector('.st-publish-error')
+                    .textContent
+            ).toContain('Publishing didn’t start');
+            expect(publishSpec).not.toHaveBeenCalled();
+            expect(discardDraft).not.toHaveBeenCalled();
+            element.shadowRoot
+                .querySelector('.st-save-status .st-retry')
+                .click();
+            await micro(12);
+            expect(status(element)).toBe('✓ All changes saved');
+            expect(publishSpec).not.toHaveBeenCalled();
+        });
+
+        it('retries draft cleanup without publishing a second version', async () => {
+            discardDraft.mockRejectedValueOnce(new Error('cleanup refused'));
+            const element = await ready();
+            publish(element);
+            await micro(24);
+            expect(
+                element.shadowRoot.querySelector('.st-publish-error')
+                    .textContent
+            ).toContain('The form was published');
+            expect(
+                element.shadowRoot
+                    .querySelector('.st-body')
+                    .hasAttribute('inert')
+            ).toBe(true);
+            element.shadowRoot
+                .querySelector('.st-publish-error .st-retry')
+                .click();
+            await micro(24);
+            expect(publishSpec).toHaveBeenCalledTimes(1);
+            expect(discardDraft).toHaveBeenCalledTimes(2);
+            expect(
+                element.shadowRoot.querySelector('.st-publish-error')
+            ).toBeNull();
+        });
+
+        it('does not publish when confirmation is cancelled', async () => {
+            LightningConfirm.open.mockResolvedValue(false);
+            const element = await ready();
+            publish(element);
+            await micro(12);
+            expect(publishSpec).not.toHaveBeenCalled();
+            expect(
+                element.shadowRoot.querySelector('.st-bar > .st-primary')
+                    .disabled
+            ).toBe(false);
+        });
+
+        it.each(['resolve', 'reject'])(
+            'ignores an old form save that settles with %s',
+            async (outcome) => {
+                const oldSave = deferred();
+                saveDraft.mockReturnValueOnce(oldSave.promise);
+                const element = await ready();
+                edit(element, 'Old form');
+                jest.advanceTimersByTime(900);
+                CurrentPageReference.emit({ state: { c__formId: 'a0F2' } });
+                await micro(12);
+                edit(element, 'New form');
+                if (outcome === 'resolve') oldSave.resolve('oldDraftId');
+                else oldSave.reject(new Error('Old form failed'));
+                await micro(12);
+                expect(status(element)).toBe('Unsaved changes');
+                jest.advanceTimersByTime(900);
+                await micro(12);
+                expect(saveDraft.mock.calls[1][0].formId).toBe('a0F2');
+                expect(status(element)).toBe('✓ All changes saved');
+            }
+        );
+
+        it('keeps the editable draft visible when saving before a history switch fails', async () => {
+            saveDraft.mockRejectedValueOnce(new Error('offline'));
+            const element = await ready();
+            edit(element, 'Keep this draft');
+            const picker = element.shadowRoot.querySelector('.st-verselect');
+            picker.value = 'a0V1';
+            picker.dispatchEvent(new Event('change'));
+            await micro(24);
+            expect(getSpec).not.toHaveBeenCalled();
+            expect(
+                element.shadowRoot.querySelector('c-final-design-panel')
+            ).not.toBeNull();
+            expect(status(element)).toContain('Draft couldn’t be saved');
         });
     });
 

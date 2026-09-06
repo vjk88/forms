@@ -89,6 +89,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     archived = false;
     loading = true;
     publishing = false;
+    publishError = '';
+    publishNeedsCleanup = false;
+    _publishBlockedBySave = false;
+    _confirmingPublish = false;
 
     /** Public-link (guest access) state, A1.5b — a Form-record field, NOT part
      *  of the versioned spec, so it lives in the chrome next to Publish rather
@@ -121,6 +125,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     restoreError = '';
 
     _saveTimer;
+    _saveSession;
     _redirected = false;
 
     /** Undo/redo (slice 6): in-memory snapshot history per loaded form.
@@ -190,6 +195,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async _load() {
+        clearTimeout(this._saveTimer);
+        const session = {
+            formId: this.formId,
+            revision: 0,
+            savedRevision: 0,
+            inFlight: null
+        };
+        this._saveSession = session;
+        this.publishError = '';
+        this.publishNeedsCleanup = false;
+        this._publishBlockedBySave = false;
         this.closeSettings();
         this.closeActionDialog(false);
         this.loading = true;
@@ -198,7 +214,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.restoreError = '';
         this.spec = undefined;
         try {
-            const out = await loadStudio({ formId: this.formId });
+            const out = await loadStudio({ formId: session.formId });
+            if (session !== this._saveSession) {
+                return;
+            }
             this.formName = out.name;
             if (out.isArchived) {
                 this.archived = true;
@@ -233,17 +252,29 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // not awaited — the picker is chrome, never a gate on first paint
             this._refreshVersions();
         } catch {
-            this.notFound = true;
+            if (session === this._saveSession) {
+                this.notFound = true;
+            }
         } finally {
-            this.loading = false;
+            if (session === this._saveSession) {
+                this.loading = false;
+            }
         }
     }
 
     /** The picker is optional chrome — on failure fall back to the chip. */
     async _refreshVersions() {
+        const session = this._saveSession;
         try {
-            this.versions = (await listVersions({ formId: this.formId })) || [];
+            const versions = await listVersions({ formId: this.formId });
+            if (session !== this._saveSession) {
+                return;
+            }
+            this.versions = versions || [];
         } catch {
+            if (session !== this._saveSession) {
+                return;
+            }
             this.versions = [];
         }
         const active = this.versions.find((v) => v.isActive);
@@ -254,6 +285,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  user touches the select, the live value must be forced back in sync
      *  (e.g. "Back to draft" from the notice). */
     renderedCallback() {
+        // The current LWC template compiler does not recognize inert yet.
+        // Apply it to our own DOM so publishing blocks both pointer and keyboard edits.
+        this.template
+            .querySelector('.st-body')
+            ?.toggleAttribute('inert', this.editorLocked);
         const sel = this.template.querySelector('.st-verselect');
         const current = this.viewVersionId || this.editableVersionId;
         if (sel && current && sel.value !== current) {
@@ -309,7 +345,31 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     get publishDisabled() {
-        return this.publishing || this.isReadOnly;
+        return (
+            this.publishing ||
+            this._confirmingPublish ||
+            this.isReadOnly ||
+            this.actionBusy ||
+            this.objectSaving
+        );
+    }
+
+    get editorLocked() {
+        return this.publishing || this.publishNeedsCleanup;
+    }
+
+    get modeDisabled() {
+        return this.isReadOnly || this.editorLocked;
+    }
+
+    get actionsDisabled() {
+        return this.actionBusy || this.editorLocked;
+    }
+
+    get publishLabel() {
+        if (this.publishNeedsCleanup)
+            return this.publishing ? 'Finishing…' : 'Finish publishing';
+        return this.publishing ? 'Publishing…' : 'Publish';
     }
 
     get readOnlyTitle() {
@@ -333,8 +393,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async handleVersionChange(event) {
+        if (this.editorLocked) {
+            return;
+        }
         this.closeSettings();
-        const id = event.target.value;
+        const picker = event.target;
+        const id = picker.value;
         if (!id || id === this.editableVersionId) {
             this.handleBackToEditable();
             return;
@@ -345,9 +409,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         // flush a pending edit BEFORE the read-only guards arm — switching
         // to view history must never eat the draft's last keystrokes
-        if (this.saveState === 'dirty') {
-            clearTimeout(this._saveTimer);
-            await this._save();
+        if (this.saveState !== 'saved') {
+            const saved = await this._save();
+            if (!saved) {
+                picker.value = this.editableVersionId;
+                return;
+            }
         }
         try {
             const json = await getSpec({ versionId: id });
@@ -376,8 +443,28 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             saved: '✓ All changes saved',
             dirty: 'Unsaved changes',
             saving: 'Saving…',
-            error: '⚠ Save failed — retrying on next change'
+            error: 'Draft couldn’t be saved. Your edits are still here.'
         }[this.saveState];
+    }
+
+    get saveFailed() {
+        return this.saveState === 'error';
+    }
+
+    get saveStatusClass() {
+        return this.saveFailed
+            ? 'st-save-status st-save-status--error'
+            : 'st-save-status';
+    }
+
+    get publishRetryLabel() {
+        return this.publishNeedsCleanup ? 'Retry cleanup' : 'Retry publishing';
+    }
+
+    handleRetrySave() {
+        if (!this.editorLocked) {
+            this._save();
+        }
     }
 
     get isDesign() {
@@ -2234,47 +2321,43 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     // ----- edit → autosave -----
 
     handleSpecChange(event) {
-        if (this.isReadOnly) {
+        if (this.isReadOnly || this.editorLocked) {
             return; // viewing history is inert — autosave must never arm
         }
         this.spec = event.detail.spec;
         this._history.record(JSON.stringify(this.spec));
         this._syncHistoryFlags();
-        this.saveState = 'dirty';
-        clearTimeout(this._saveTimer);
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this._saveTimer = setTimeout(() => this._save(), SAVE_DEBOUNCE_MS);
+        this._queueSave();
     }
 
     // ----- undo / redo (slice 6: restored states persist like edits,
     // WITHOUT re-recording — the manager already holds them) -----
 
     get undoDisabled() {
-        return !this.canUndo || this.isReadOnly;
+        return !this.canUndo || this.modeDisabled;
     }
 
     get redoDisabled() {
-        return !this.canRedo || this.isReadOnly;
+        return !this.canRedo || this.modeDisabled;
     }
 
     handleUndo() {
+        if (this.undoDisabled) return;
         this._applyHistory(this._history.undo());
     }
 
     handleRedo() {
+        if (this.redoDisabled) return;
         this._applyHistory(this._history.redo());
     }
 
     _applyHistory(snapshot) {
         this._syncHistoryFlags();
-        if (!snapshot || this.isReadOnly) {
+        if (!snapshot || this.modeDisabled) {
             return;
         }
         this.spec = JSON.parse(snapshot);
-        this.saveState = 'dirty';
-        clearTimeout(this._saveTimer);
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this._saveTimer = setTimeout(() => this._save(), SAVE_DEBOUNCE_MS);
+        this._queueSave();
         // a restored state may not contain the selection or the shown page
         if (this.selection && !this._selectionTarget(this.spec)) {
             this.selection = null;
@@ -2300,26 +2383,65 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
     }
 
-    async _save() {
-        if (this.isReadOnly) {
-            return; // belt over the cleared timer — history view never writes
+    _queueSave() {
+        this._saveSession.revision += 1;
+        // Keep a failure actionable until an actual retry begins.
+        if (!this.saveFailed) this.saveState = 'dirty';
+        clearTimeout(this._saveTimer);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._saveTimer = setTimeout(() => this._save(), SAVE_DEBOUNCE_MS);
+    }
+
+    _save() {
+        clearTimeout(this._saveTimer);
+        const session = this._saveSession;
+        if (!session || this.isReadOnly || !this.spec) {
+            return Promise.resolve(false);
         }
-        this.saveState = 'saving';
-        try {
-            const hadDraft = Boolean(this.draftVersionId);
-            this.draftVersionId = await saveDraft({
-                formId: this.formId,
-                specJson: JSON.stringify(this.spec)
+        if (!session.inFlight) {
+            session.inFlight = this._drainSaves(session).finally(() => {
+                session.inFlight = null;
             });
-            if (!hadDraft) {
-                // first edit created the draft row — chip AND picker must say so
-                this.versionNumber = (this.activeVersionNumber || 0) + 1;
-                this._refreshVersions();
-            }
-            this.saveState = 'saved';
-        } catch {
-            this.saveState = 'error';
         }
+        return session.inFlight;
+    }
+
+    /** One request at a time; edits arriving during a save are coalesced into
+     *  the next request. Only the latest acknowledged revision may say saved. */
+    async _drainSaves(session) {
+        while (session.revision > session.savedRevision) {
+            const revision = session.revision;
+            const hadDraft = Boolean(this.draftVersionId);
+            this.saveState = 'saving';
+            try {
+                // Serialization is deliberate: concurrent requests can overwrite newer edits.
+                // eslint-disable-next-line no-await-in-loop
+                const id = await saveDraft({
+                    formId: session.formId,
+                    specJson: JSON.stringify(this.spec)
+                });
+                if (session !== this._saveSession) return false;
+                this.draftVersionId = id;
+                session.savedRevision = revision;
+                if (!hadDraft) {
+                    this.versionNumber = (this.activeVersionNumber || 0) + 1;
+                    this._refreshVersions();
+                }
+            } catch {
+                if (session === this._saveSession) {
+                    clearTimeout(this._saveTimer);
+                    this.saveState = 'error';
+                }
+                return false;
+            }
+            clearTimeout(this._saveTimer);
+        }
+        this.saveState = 'saved';
+        if (this._publishBlockedBySave) {
+            this.publishError = '';
+            this._publishBlockedBySave = false;
+        }
+        return true;
     }
 
     // ----- public link / guest access (A1.5b) -----
@@ -2368,36 +2490,68 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     // ----- publish (resolve-at-publish, P2 contract) -----
 
     async handlePublish() {
-        if (this.isReadOnly) {
+        if (this.publishDisabled) {
             return; // publish belongs to the editable state only
         }
-        const ok = await LightningConfirm.open({
-            message: `Publish "${this.formName}"? The live form updates immediately.`,
-            label: 'Publish form'
-        });
-        if (!ok) {
-            return;
+        const session = this._saveSession;
+        if (!this.publishNeedsCleanup) {
+            this._confirmingPublish = true;
+            try {
+                const ok = await LightningConfirm.open({
+                    message: `Publish "${this.formName}"? The live form updates immediately.`,
+                    label: 'Publish form'
+                });
+                if (!ok) return;
+            } catch {
+                this.publishError = 'Publishing couldn’t start. Try again.';
+                return;
+            } finally {
+                this._confirmingPublish = false;
+            }
         }
+        if (session !== this._saveSession) return;
         this.publishing = true;
+        this.publishError = '';
+        this._publishBlockedBySave = false;
+        this.closeSettings();
         try {
             clearTimeout(this._saveTimer);
-            let customProps = null;
-            const theme = this.spec.theme || {};
-            if (theme.source === 'custom' && theme.name) {
-                const json = await getCustomTheme({ themeId: theme.name });
-                customProps = json ? JSON.parse(json) : null;
+            if (!this.publishNeedsCleanup) {
+                // A save must not finish after publish and recreate its draft.
+                const saved = await this._save();
+                if (session !== this._saveSession) return;
+                if (!saved) {
+                    this._publishBlockedBySave = true;
+                    this.publishError =
+                        'Publishing didn’t start because the draft couldn’t be saved. Retry saving your draft first.';
+                    return;
+                }
+                let customProps = null;
+                const theme = this.spec.theme || {};
+                if (theme.source === 'custom' && theme.name) {
+                    const json = await getCustomTheme({ themeId: theme.name });
+                    customProps = json ? JSON.parse(json) : null;
+                }
+                if (session !== this._saveSession) return;
+                const resolved = resolveSpecForPublish(this.spec, customProps);
+                await publishSpec({
+                    formId: session.formId,
+                    specJson: JSON.stringify(resolved)
+                });
+                if (session !== this._saveSession) return;
+                this.publishNeedsCleanup = true;
             }
-            const resolved = resolveSpecForPublish(this.spec, customProps);
-            await publishSpec({
-                formId: this.formId,
-                specJson: JSON.stringify(resolved)
-            });
             if (this.draftVersionId) {
                 await discardDraft({ draftVersionId: this.draftVersionId });
             }
+            if (session !== this._saveSession) return;
             await this._load();
         } catch {
-            this.saveState = 'error';
+            if (session === this._saveSession) {
+                this.publishError = this.publishNeedsCleanup
+                    ? 'The form was published, but its draft couldn’t be cleared. Retry cleanup to finish.'
+                    : 'Publishing failed. Your form is still open for editing.';
+            }
         } finally {
             this.publishing = false;
         }
