@@ -320,7 +320,7 @@ worth charging for:
    between sections/pages (§9.3). Currently impossible.
 2. **No failure message names the wrong operation, and none is invisible at any width** — a failed
    publish must not say "Save failed", and the status must survive below 1100px with a real Retry
-   (§9.1, §9.2).
+   (§9.1, §9.2). **Implemented + deployed 2026-09-06; the failure path is not yet org-reproduced** (see §9.2).
 3. **Testing a rule does not require re-entering its inputs** — preview state survives an ordinary
    edit and a mode switch (§9.4).
 4. **No shipped surface advertises unbuilt functionality** — the template shelf and the Autofill
@@ -361,14 +361,14 @@ review ranked them.
 
 ### 9.1 Trivial — an hour or less each
 
-| Finding                                                              | Why it's small                                                                                                                                                                              |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BLUEPRINT — structure only; the preview is the truth` → "Structure" | One string, `finalBuilderCanvas.html:4`                                                                                                                                                     |
-| Autofill "prefill mapping arrives with a later slice"                | One string, `finalFieldPalette.js:222`                                                                                                                                                      |
-| **A failed PUBLISH reports "Save failed"**                           | Wrong noun on a real failure — `handlePublish` sets `saveState = 'error'`, whose copy is `⚠ Save failed — retrying on next change` (`finalFormStudio.js:379`). Needs its own state + string |
-| Duplicate Availability heading + the submission-service sentence     | Copy deletion                                                                                                                                                                               |
-| Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                                                                     |
-| Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                                                                |
+| Finding                                                              | Why it's small                                                                                                                                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BLUEPRINT — structure only; the preview is the truth` → "Structure" | One string, `finalBuilderCanvas.html:4`                                                                                                              |
+| Autofill "prefill mapping arrives with a later slice"                | One string, `finalFieldPalette.js:222`                                                                                                               |
+| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**       | Publish failures now carry their own message and retry; draft-save state stays independent. Deployed; failure path not yet org-reproduced. See §9.2. |
+| Duplicate Availability heading + the submission-service sentence     | Copy deletion                                                                                                                                        |
+| Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                              |
+| Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                         |
 
 ### 9.2 Small and contained — about half a day each _(provisional)_
 
@@ -382,8 +382,24 @@ review ranked them.
 >   correctly without stealing it is the hard half). Treat these as planning categories, not commitments.
 >   The §9.1 string changes genuinely are an hour.
 
-Save status kept visible under 1100px **plus a real Retry** (delete one `display:none` at
-`finalFormStudio.css:218`, add a button onto the existing save path) · Corners/Spacing as
+**Save/publish recovery — built and DEPLOYED 2026-09-06.**
+`finalFormStudio` keeps draft status and Retry visible at narrow widths and in the settings drawer.
+Draft saves are serialized and coalesce newer edits; an older response cannot acknowledge a newer
+revision. A failed request retains the current specification for retry. Publishing waits for draft
+saving, temporarily prevents edits, and reports its own errors. A cleanup failure after successful
+publication can retry cleanup without publishing another version. A failed save before history
+navigation leaves the editable draft available. Jest regression coverage includes concurrent edits,
+failure/retry, publish sequencing, cleanup recovery, and stale responses after changing forms.
+This is per-instance request ordering; cross-tab/multi-user conflict detection is not added.
+
+> **Verification status, precisely.** Jest: **70 suites / 662 tests** green (11 new, baseline was
+> 28 in this component and is now 39). ESLint clean. Deployed to `revclouddev` successfully.
+> **What has NOT happened:** nobody has induced a real save or publish failure in the org and
+> watched the Retry recover it. Under PRODUCT.md design principle 5 — _"a change isn't done until
+> render-verified in the org; jest-green is not done"_ — this item is **not closed**. The failure
+> path is the whole point of the change, and it is the one path only simulated so far.
+
+**Still pending:** Corners/Spacing as
 current-value segmented controls instead of Rounder/Sharper + Airy/Dense nudges (the values already
 exist in `finalDesignPanel`) · Availability date/time stacked, with timezone and a plain schedule
 summary · Simple-mode rich-text toolbars collapsed until focused · consolidate the duplicated

@@ -57,6 +57,7 @@
 /* ----- top bar (IA §3: App Builder grammar) ----- */
 .st-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
     padding: 8px 14px;
@@ -106,7 +107,57 @@
 
 .st-saved {
     font-size: 12px;
-    color: #5c5c5c;
+    color: inherit;
+}
+
+.st-save-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--c-studio-text-weak);
+}
+
+.st-save-status--error {
+    color: var(--c-studio-error-text);
+}
+
+.st-retry {
+    padding: 5px 10px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-error-text);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.st-retry:focus-visible {
+    outline: 2px solid var(--c-studio-text);
+    outline-offset: 2px;
+}
+
+.st-retry:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.st-publish-error {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 10px 14px;
+    color: var(--c-studio-error-text);
+    background: var(--c-studio-error-surface);
+}
+
+.st-publish-progress {
+    margin: 0;
+    padding: 10px 14px;
+    color: var(--c-studio-text);
+    background: var(--c-studio-surface-subtle);
 }
 
 /* read-only must be legible from the BAR, not just the left notice */
@@ -215,8 +266,9 @@
         max-width: 140px;
     }
 
-    .st-saved {
-        display: none;
+    .st-save-status {
+        order: 1;
+        flex-basis: 100%;
     }
 }
 
