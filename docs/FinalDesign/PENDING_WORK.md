@@ -444,10 +444,54 @@ today) · preview **fit / 100% / expand** controls · **pane splitters** with re
 focus/scroll restoration · **record picker for invitations** — but this should share **Phase D's
 custom lookup**, not duplicate it.
 
-#### Typed rule operators and value editors — scoped 2026-09-06 (owner)
+#### Typed rule operators and value editors — BUILT AND ORG-VERIFIED 2026-09-06
 
-Today every source gets the same operator list (`finalRuleEditor.js:151`) and a bare text input
-(`finalRuleEditor.html:128`), regardless of what the source actually is.
+Every source used to get the same operator list and a bare text input regardless of what it was.
+Now the editor types both halves off the source's subtype.
+
+**Shipped.** `finalStudio.ruleIndexMap` gained an **additive** `inputType` key — `type` stays
+collapsed so it keeps matching `finalFormViewer`'s own `_ruleTypeIndex` and `lintVisibility` is
+untouched (the engine's build-time/runtime agreement is the whole point of that module). The editor
+reads `inputType` to pick operators and the value control.
+
+| Source subtype                              | Operators offered                                        | Value control          |
+| ------------------------------------------- | -------------------------------------------------------- | ---------------------- |
+| number                                      | equals · notEquals · **greaterThan · lessThan** · blanks | `input[type=number]`   |
+| date / datetime                             | equals · notEquals · **greaterThan · lessThan** · blanks | date / datetime picker |
+| checkbox                                    | equals · notEquals only                                  | **Yes/No selector**    |
+| picklist, text, textarea, email, phone, url | equals · notEquals · **contains** · blanks               | `input[type=text]`     |
+| file, unknown, every `record:` row          | all seven (untyped)                                      | `input[type=text]`     |
+
+`contains` is kept everywhere a source can hold multiple values (owner ruling). The blank operators
+are dropped for checkbox because a Salesforce checkbox is never null. `record:` rows stay untyped
+because `lintVisibility` exempts them on purpose.
+
+**Two safety behaviours, both org-verified**, because the same silent-divergence trap that deferred
+the picklist dropdown applies to operators too:
+
+- A saved rule holding an operator the subtype no longer offers keeps that operator **visible**,
+  labelled "(not valid here)", instead of letting the select resolve to its first option and rewrite
+  the rule on the next unrelated edit.
+- Repointing a rule's **source** repairs both halves: an operator the new subtype drops resets to
+  `equals`, and a value the new control physically cannot display is cleared. A value the new
+  control _can_ display is kept.
+
+**Verification.** Full suite 71 Jest suites / **694 tests** (9 new). In the org, the real editor was
+driven across **8 subtypes** — text, textarea, email, phone, picklist, number, date, datetime — each
+asserted on its exact operator list and rendered control, plus both repair paths
+(`greaterThan → equals` on repoint; `"Bob"` cleared into a number input, `"42"` kept) and `isBlank`
+still hiding the value control.
+
+> **`checkbox` is jest-verified only — not org-verified.** No object in `revclouddev` exposes an
+> accessible Boolean to the running user: Contact's only three (`IsDeleted`, `IsEmailBounced`,
+> `IsPriorityRecord`) are non-updateable system fields, and `describeFields` returns **0 fields**
+> for `Event_Feedback__c` / `Hardware_Request__c` / `Work_History__c` / `Property_Inspection__c`
+> (no FLS granted) and 0 checkboxes for `Job_Application__c`. Granting FLS on one of those test
+> objects would close this; the residual risk is small (the Yes/No control is a `<select>`, the
+> same element as the source and operator selects that are org-verified in the same component) but
+> it is **not** the same as having seen it render.
+
+Original scope note, kept for context:
 
 **In scope (~1 day + tests/verification).** Filter operators by source type, and give the value
 control a type: **Yes/No selector** for checkbox, **numeric input** for number/rating, **date

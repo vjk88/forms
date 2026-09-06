@@ -1129,8 +1129,16 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }));
     }
 
-    /** Map(id → {type, repeatSectionId}) — lintVisibility's element index.
-     *  Date subtypes pass through so gt/lt lint matches runtime coercion. */
+    /** Map(id → {type, inputType, repeatSectionId}) — lintVisibility's element
+     *  index. Date subtypes pass through on `type` so gt/lt lint matches
+     *  runtime coercion.
+     *
+     *  `type` stays COLLAPSED ('date'/'datetime' else el.type) on purpose: the
+     *  runtime builds the same collapse in finalFormViewer's _ruleTypeIndex,
+     *  and the engine's whole promise is that build-time lint and runtime
+     *  evaluation can never disagree. `inputType` is an ADDITIVE, editor-only
+     *  key for typed operators and value controls — lintVisibility ignores it,
+     *  so widening it here can't drift the two apart. */
     get ruleIndexMap() {
         const map = new Map();
         for (const page of (this.spec && this.spec.pages) || []) {
@@ -1142,6 +1150,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                             input === 'date' || input === 'datetime'
                                 ? input
                                 : el.type,
+                        inputType: input || null,
                         repeatSectionId: section.repeat ? section.id : null
                     });
                 }
