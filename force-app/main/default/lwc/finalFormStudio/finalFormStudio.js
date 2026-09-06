@@ -195,6 +195,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async _load() {
+        this.previewSession = undefined;
         clearTimeout(this._saveTimer);
         const session = {
             formId: this.formId,
@@ -418,6 +419,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         try {
             const json = await getSpec({ versionId: id });
+            this.capturePreviewSession();
             // read-only viewing KEEPS `resolved` — the frozen tokens ARE the
             // published render; stripping is only for specs re-entering the
             // editor (see _load)
@@ -562,10 +564,25 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return v ? `Read-only · viewing v${v.versionNumber}` : 'Read-only';
     }
 
+    previewSession;
+
+    handlePreviewSessionConsumed() {
+        this.previewSession = undefined;
+    }
+
+    capturePreviewSession() {
+        if (!this.isReadOnly) {
+            this.previewSession = this.template
+                .querySelector('c-final-preview-stage')
+                ?.getSession();
+        }
+    }
+
     handleModeBuild() {
         if (this.isReadOnly) {
             return;
         }
+        if (this.mode !== 'build') this.capturePreviewSession();
         this.mode = 'build';
         this.settingsMenuOpen = false;
     }
@@ -574,6 +591,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (this.isReadOnly) {
             return;
         }
+        if (this.mode !== 'design') this.capturePreviewSession();
         this.mode = 'design';
         this.settingsMenuOpen = false;
     }

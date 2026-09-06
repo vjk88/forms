@@ -33,7 +33,28 @@ export default class FinalSectionRenderer extends LightningElement {
     _collapsed = false;
     _collapseInitFor = null;
 
-    @api section;
+    _section;
+    @api
+    get section() {
+        return this._section;
+    }
+    set section(value) {
+        if (
+            value?.previewRevision !== undefined &&
+            (value.previewRevision !== this._section?.previewRevision ||
+                value.id !== this._section?.id)
+        ) {
+            const rows = [...(value.previewEntries || [])];
+            const min = Math.max(Number(value.repeat?.min) || 1, 1);
+            while (rows.length < min) rows.push({});
+            this.entryKeys = rows.map((row, i) => `en_${i}`);
+            this._entryValues = Object.fromEntries(
+                rows.map((row, i) => [`en_${i}`, { ...row }])
+            );
+            this._entrySeq = rows.length;
+        }
+        this._section = value;
+    }
 
     get sec() {
         return this.section || {};
@@ -137,7 +158,15 @@ export default class FinalSectionRenderer extends LightningElement {
             key,
             label: template.replace('{index}', String(i + 1)),
             canRemove,
-            elements: this._gridFor(this.sec.elements, key)
+            elements: this._gridFor(
+                this.sec.previewRevision !== undefined
+                    ? (this.sec.elements || []).map((el) => ({
+                          ...el,
+                          value: this._entryValues[key]?.[el.id]
+                      }))
+                    : this.sec.elements,
+                key
+            )
         }));
     }
 
@@ -167,9 +196,9 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     _dispatchRepeat() {
-        const entries = this._currentKeys().map(
-            (key) => this._entryValues[key] || {}
-        );
+        const entries = this._currentKeys().map((key) => ({
+            ...this._entryValues[key]
+        }));
         this.dispatchEvent(
             new CustomEvent('valuechange', {
                 detail: { elementId: `repeat:${this.sec.id}`, value: entries }

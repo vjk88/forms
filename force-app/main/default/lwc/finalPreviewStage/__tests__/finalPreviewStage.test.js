@@ -57,6 +57,53 @@ async function mount(props = {}) {
 }
 
 describe('c-final-preview-stage', () => {
+    it('restores a handed-off session and Restart clears it without changing device', async () => {
+        const spec = {
+            ...SPEC,
+            pages: [
+                {
+                    id: 'p',
+                    sections: [
+                        {
+                            id: 's',
+                            elements: [
+                                {
+                                    id: 'q',
+                                    type: 'field',
+                                    config: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        const el = await mount({ spec, preserveSession: true });
+        el.shadowRoot.querySelector('[data-device="mobile"]').click();
+        el.shadowRoot
+            .querySelector('c-final-form-viewer')
+            .shadowRoot.querySelector('x-test')
+            .dispatchEvent(
+                new CustomEvent('valuechange', {
+                    detail: { elementId: 'q', value: 'Hello' }
+                })
+            );
+        const session = el.getSession();
+        el.remove();
+        const restored = await mount({ spec, preserveSession: true, session });
+        expect(restored.getSession().device).toBe('mobile');
+        expect(restored.getSession().viewer.answers.q).toBe('Hello');
+        expect(
+            restored.shadowRoot
+                .querySelector('c-final-form-viewer')
+                .shadowRoot.querySelector('x-test').pages[0].sections[0]
+                .elements[0].value
+        ).toBe('Hello');
+        restored.shadowRoot.querySelector('.ps-refresh').click();
+        await flush();
+        expect(restored.getSession().device).toBe('mobile');
+        expect(restored.getSession().viewer.answers).toEqual({});
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

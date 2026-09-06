@@ -117,7 +117,42 @@ const RATING_GLYPHS = { star: '★', heart: '♥', thumb: '👍' };
 const SCALE_SIZES = [5, 7, 10];
 
 export default class FinalElementRenderer extends LightningElement {
-    @api element;
+    _element;
+    @api
+    get element() {
+        return this._element;
+    }
+    set element(value) {
+        // Preview reconciliation is authoritative over widget-local caches.
+        // Ordinary answer echoes do not reset focus or partially typed Other text.
+        if (
+            value?.previewRevision !== undefined &&
+            (value.previewRevision !== this._element?.previewRevision ||
+                value.id !== this._element?.id)
+        ) {
+            this._scaleValue = undefined;
+            this._choiceValue = undefined;
+            this._choiceValues = undefined;
+            this._rankOrder = undefined;
+            this._matrixPicks = undefined;
+            this._sliderVal = undefined;
+            this._sliderSent = undefined;
+            this._localFiles = undefined;
+            this.fileError = undefined;
+            const options = (value.config?.options || []).map((o) => o.value);
+            const answers = Array.isArray(value.value)
+                ? value.value
+                : [value.value];
+            const other =
+                value.config?.allowOther &&
+                answers.find(
+                    (v) => typeof v === 'string' && v && !options.includes(v)
+                );
+            this._otherOn = Boolean(other);
+            this._otherText = other || '';
+        }
+        this._element = value;
+    }
 
     /** Keyboard-advance must be decided HERE: past this shadow boundary LWS
      *  retargets keydown origins to this host, so a nav layout cannot tell

@@ -27,6 +27,77 @@ afterEach(() => {
 });
 
 describe('native control value hydration', () => {
+    it('clears a widget-local choice after preview pruning and restores Other text after remount', async () => {
+        const element = {
+            id: 'choice',
+            type: 'field',
+            config: {
+                options: OPTS,
+                inputType: 'picklist',
+                optionStyle: 'chips',
+                allowOther: true
+            },
+            previewRevision: 1
+        };
+        const el = mount(element);
+        el.shadowRoot.querySelector('[data-value="a"]').click();
+        await Promise.resolve();
+        expect(
+            el.shadowRoot
+                .querySelector('[data-value="a"]')
+                .classList.contains('selected')
+        ).toBe(true);
+        el.element = { ...element, previewRevision: 2, value: undefined };
+        await Promise.resolve();
+        expect(
+            el.shadowRoot
+                .querySelector('[data-value="a"]')
+                .classList.contains('selected')
+        ).toBe(false);
+        const restored = mount({ ...element, value: 'My own answer' });
+        expect(restored.shadowRoot.querySelector('.choice-other').value).toBe(
+            'My own answer'
+        );
+    });
+
+    it('reconciles locally selected Likert and matrix answers on a new preview revision', async () => {
+        const likert = mount({ id: 'l', type: 'likert', previewRevision: 1 });
+        likert.shadowRoot.querySelector('[data-value="5"]').click();
+        await Promise.resolve();
+        likert.element = {
+            id: 'l',
+            type: 'likert',
+            value: 1,
+            previewRevision: 2
+        };
+        await Promise.resolve();
+        expect(
+            likert.shadowRoot
+                .querySelector('[data-value="1"]')
+                .getAttribute('aria-checked')
+        ).toBe('true');
+        expect(
+            likert.shadowRoot
+                .querySelector('[data-value="5"]')
+                .getAttribute('aria-checked')
+        ).toBe('false');
+        const matrix = {
+            id: 'm',
+            type: 'matrix',
+            previewRevision: 1,
+            config: { rows: [{ value: 'r', label: 'Row' }] }
+        };
+        const el = mount(matrix);
+        el.shadowRoot.querySelector('[data-row="r"][data-value="3"]').click();
+        await Promise.resolve();
+        el.element = { ...matrix, value: {}, previewRevision: 2 };
+        await Promise.resolve();
+        expect(
+            el.shadowRoot
+                .querySelector('[data-row="r"][data-value="3"]')
+                .getAttribute('aria-checked')
+        ).toBe('false');
+    });
     it('text input displays the hydrated answer', () => {
         const el = mount({
             id: 'e1',

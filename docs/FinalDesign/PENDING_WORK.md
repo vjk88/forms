@@ -338,7 +338,7 @@ worth charging for:
    publish must not say "Save failed", and the status must survive below 1100px with a real Retry
    (§9.1, §9.2). **DONE — org-verified 2026-09-06**, failure path induced and recovered (see §9.2).
 3. **Testing a rule does not require re-entering its inputs** — preview state survives an ordinary
-   edit and a mode switch (§9.4).
+   edit and a mode switch (§9.4). **DONE — org-verified 2026-09-06** (see §9.4).
 4. **No shipped surface advertises unbuilt functionality** — the template shelf and the Autofill
    "later slice" line (§3.4, §9.1).
 5. **Studio chrome meets 4.5:1 for small text** (§9.5) — not because a written promise covers it
@@ -468,13 +468,32 @@ mouse, which is a harder failure than any single widget defect in §4.1.
 
 ### 9.4 Needs a spec before it can be estimated
 
-- **Preview session preservation** (review §1) — the real finding: `finalFormViewer.js:180`
-  re-applies on every spec edit and `_apply` clears `answers` at line 485, so testing a rule means
-  re-entering every input that feeds it. **Blocked on the pruning problem** the review compresses
-  into one clause: what happens to an answer when its question changes type, when a choice's options
-  are edited underneath it, or when a repeat section's child object changes. Also note it now
-  discards **uploaded files** too, and a session holding base64 has a memory dimension the proposed
-  model doesn't address.
+- **Preview session preservation — implemented locally 2026-09-06.**
+  [Session contract and org smoke test](./PREVIEW_SESSION_SPEC.md) define pruning and memory ownership.
+  Editable Build/Design retain answers, page identity and device; deleted questions, removed choices
+  and incompatible bindings prune only affected values. Repeater rows hydrate from the session;
+  changing the child object resets that repeater. Files retain existing in-memory objects without
+  copying base64 into form data or undo history. Restart clears the session and retains the device.
+  History previews remain separate. Guest/published viewers keep their existing behavior.
+  Jest covers reconciliation, visible widget hydration, rule changes, mode/history hand-off and
+  restart — 71 suites / 677 tests green (was 70/662), ESLint clean.
+
+  **ORG-VERIFIED 2026-09-06 — closed.** Deployed, then driven in the real Studio on a form with a
+  text question and a file question. This is the bug the UX review actually reported, so it is the
+  one that had to be reproduced rather than simulated:
+
+  | Step                                          | Text answer   | Attached file  |
+  | --------------------------------------------- | ------------- | -------------- |
+  | Entered in preview                            | `PRESERVE ME` | `preserve.txt` |
+  | After **Build → Design**                      | retained      | retained       |
+  | After **Design → Build** (the reported repro) | **retained**  | **retained**   |
+  | After an ordinary spec edit (`+ Page`)        | **retained**  | **retained**   |
+  | After **Restart preview**                     | cleared       | cleared        |
+
+  The file row matters most: uploads shipped one day after the review was written, so preview reset
+  had quietly started discarding them too. Both halves of criterion #3 — _survives an edit_ and
+  _survives a mode switch_ — now hold in the org.
+
 - **Record-context preview** ("Preview as: Test record", review §3) — must inherit the runtime's
   `USER_MODE`/FLS discipline or it becomes a second, weaker path to record data alongside SO-3/SO-4.
 - **"Explain visibility"** author debugging — must never leak into the respondent form.
