@@ -161,6 +161,73 @@ const micro = (n) => {
 };
 
 describe('c-final-form-studio', () => {
+    it('shares editable preview answers and device across Build/Design, isolates history, and resets on form load', async () => {
+        const spec = {
+            ...SPEC,
+            pages: [
+                {
+                    id: 'p',
+                    sections: [
+                        {
+                            id: 's',
+                            elements: [
+                                {
+                                    id: 'q',
+                                    type: 'field',
+                                    config: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        loadStudio.mockResolvedValue({
+            name: 'Session',
+            specJson: JSON.stringify(spec),
+            draftVersionId: 'a0V2',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue(VERSIONS);
+        getSpec.mockResolvedValue(JSON.stringify(spec));
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await flush();
+        await flush();
+        const stage = () =>
+            el.shadowRoot.querySelector('c-final-preview-stage');
+        stage().shadowRoot.querySelector('[data-device="tablet"]').click();
+        previewViewer(el)
+            .shadowRoot.querySelector('x-test')
+            .dispatchEvent(
+                new CustomEvent('valuechange', {
+                    detail: { elementId: 'q', value: 'Draft answer' }
+                })
+            );
+        for (const mode of [0, 1, 0]) {
+            el.shadowRoot.querySelectorAll('.st-mode')[mode].click();
+            // Each mode must finish mounting before the next user interaction.
+            // eslint-disable-next-line no-await-in-loop
+            await flush();
+            expect(stage().getSession().viewer.answers.q).toBe('Draft answer');
+            expect(stage().getSession().device).toBe('tablet');
+            expect(stage().session).toBeUndefined(); // consumed snapshots do not retain files
+        }
+        const picker = el.shadowRoot.querySelector('.st-verselect');
+        picker.value = 'a0V1';
+        picker.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(previewViewer(el).preservePreview).toBe(false);
+        picker.value = 'a0V2';
+        picker.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(stage().getSession().viewer.answers.q).toBe('Draft answer');
+        CurrentPageReference.emit({ state: { c__formId: 'a0F2' } });
+        await flush();
+        await flush();
+        expect(stage().getSession().viewer.answers).toEqual({});
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

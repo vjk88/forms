@@ -35,6 +35,32 @@ const flush = () =>
     );
 
 describe('finalElementRenderer — file upload', () => {
+    it('shows retained preview files after hydration and clears a pruned local upload', async () => {
+        const el = mount(FILE_EL({ previewRevision: 1 }));
+        let files;
+        el.addEventListener('valuechange', (event) => {
+            files = event.detail.value;
+        });
+        const input = el.shadowRoot.querySelector('input[type="file"]');
+        Object.defineProperty(input, 'files', {
+            value: [makeFile('retained.txt')],
+            configurable: true
+        });
+        input.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        el.element = FILE_EL({ previewRevision: 2, value: files });
+        await flush();
+        expect(el.shadowRoot.querySelector('.file-item-name').textContent).toBe(
+            'retained.txt'
+        );
+        const restored = mount(FILE_EL({ previewRevision: 1, value: files }));
+        expect(
+            restored.shadowRoot.querySelector('.file-item-name').textContent
+        ).toBe('retained.txt');
+        el.element = FILE_EL({ previewRevision: 3, value: [] });
+        await flush();
+        expect(el.shadowRoot.querySelector('.file-item')).toBeNull();
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

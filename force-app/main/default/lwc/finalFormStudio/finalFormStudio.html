@@ -298,6 +298,9 @@
                     <div class="st-scroll">
                         <c-final-preview-stage
                             spec={spec}
+                            session={previewSession}
+                            preserve-session
+                            onsessionconsumed={handlePreviewSessionConsumed}
                         ></c-final-preview-stage>
                     </div>
                 </main>
@@ -400,6 +403,9 @@
                     <div class="st-scroll">
                         <c-final-preview-stage
                             spec={spec}
+                            session={previewSession}
+                            preserve-session
+                            onsessionconsumed={handlePreviewSessionConsumed}
                             authoring
                             onelementselect={handlePreviewSelect}
                         ></c-final-preview-stage>

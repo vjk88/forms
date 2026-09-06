@@ -39,6 +39,34 @@ async function mount(section = SECTION()) {
 }
 
 describe('c-final-section-renderer repeats', () => {
+    it('hydrates preview rows and pruned cells without mutating a previous snapshot', async () => {
+        const rows = Object.freeze([
+            Object.freeze({ el_name: 'Kim' }),
+            Object.freeze({ el_name: 'Lee' })
+        ]);
+        const el = await mount({
+            ...SECTION(),
+            previewRevision: 1,
+            previewEntries: rows
+        });
+        const renderers = () =>
+            el.shadowRoot.querySelectorAll('c-final-element-renderer');
+        expect(renderers()).toHaveLength(2);
+        expect(renderers()[1].element.value).toBe('Lee');
+        renderers()[0].dispatchEvent(
+            new CustomEvent('valuechange', {
+                detail: {
+                    elementId: renderers()[0].element.id,
+                    value: 'Changed'
+                }
+            })
+        );
+        expect(rows[0].el_name).toBe('Kim');
+        el.section = { ...SECTION(), previewRevision: 2, previewEntries: [{}] };
+        await flush();
+        expect(renderers()).toHaveLength(1);
+        expect(renderers()[0].element.value).toBeUndefined();
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

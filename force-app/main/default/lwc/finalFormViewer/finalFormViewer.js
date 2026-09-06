@@ -8,6 +8,7 @@ import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
+import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 
 /**
  * One-question-per-screen auto-split (SURVEY_PLAN §10 Q4, ruled 2026-07-27,
@@ -144,6 +145,25 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      * no nav primitive knows. Never set on published/guest renders.
      */
     @api authoring = false;
+
+    /** Opt-in only from the Studio stage; guest inline-spec semantics stay unchanged. */
+    @api preservePreview = false;
+    @api previewState;
+    _previewSpec;
+    _previewRevision = 0;
+
+    @api
+    getPreviewState() {
+        if (!this.preservePreview) return undefined;
+        if (!this._previewSpec) return this.previewState;
+        return {
+            spec: this._previewSpec,
+            answers: { ...this.answers },
+            anchor: pageAnchor(this.visiblePages[this.pageIndex]),
+            pageIndex: this.pageIndex,
+            startedAt: this._startedAt
+        };
+    }
 
     /**
      * Embedded-surface override forwarded to the page frame (tri-state:
@@ -389,6 +409,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return; // a newer spec landed while the primitive loaded
         }
         this.navCtor = module.default;
+        // Capture after async theme/layout work: answers entered while it was
+        // loading belong to this session too. Stale applies exit above.
+        const preview = this.preservePreview ? this.getPreviewState() : null;
         // One question per screen (Design → Paging, surveys only): the split
         // rides paginating layouts — scroll has no paging machinery to ride.
         const onePerScreen = Boolean(
@@ -482,11 +505,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Any spec change resets the post-submit state — the Design preview
         // returns to the form the moment a control is touched.
         this.completed = false;
-        this.answers = {};
+        this.answers = preview
+            ? reconcileAnswers(preview.answers, preview.spec, spec)
+            : {};
         this._revealed = [];
         this.submitError = undefined;
         this.submittedRecordId = null;
-        this._startedAt = new Date().toISOString();
+        this._startedAt = preview?.startedAt || new Date().toISOString();
+        if (this.preservePreview) {
+            this._previewSpec = spec;
+            this._previewRevision += 1;
+        }
         // Rule support (schema §7): one walk indexes element types for the
         // engine's date coercion and flags whether ANY rule exists — the
         // no-rules fast path skips per-keystroke filtering entirely.
@@ -568,6 +597,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         };
         this.error = undefined;
 
+        if (preview) {
+            this.pageIndex = restorePage(
+                this.visiblePages,
+                preview.anchor,
+                preview.pageIndex
+            );
+        }
+        if (this.preservePreview) {
+            this.dispatchEvent(new CustomEvent('previewready'));
+        }
+
         // Survey-object record context (SURVEY_OBJECT_SPEC + V2 SO-3): one
         // round trip seeds mapped-question prefill AND freezes record-rule
         // verdicts. Authenticated renders only — authoring previews simulate,
@@ -579,6 +619,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (
             rid &&
             !this.authoring &&
+            !this.preservePreview &&
             !this.delegateSubmit &&
             spec.form &&
             spec.form.type === 'survey' &&
@@ -718,6 +759,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     )
                     .map((s) => ({
                         ...s,
+                        ...(this.preservePreview
+                            ? {
+                                  previewEntries:
+                                      this.answers[`repeat:${s.id}`] || [],
+                                  previewRevision: this._previewRevision
+                              }
+                            : {}),
                         elements: (s.elements || [])
                             .filter(
                                 (el) =>
@@ -730,10 +778,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                 // their selection from el.value after any
                                 // model rebuild; native inputs ignore it
                                 const answered = this.answers[el.id];
-                                const base =
+                                let base =
                                     answered !== undefined && !s.repeat
                                         ? { ...el, value: answered }
                                         : el;
+                                if (this.preservePreview) {
+                                    base = {
+                                        ...base,
+                                        value: s.repeat ? undefined : answered,
+                                        previewRevision: this._previewRevision
+                                    };
+                                }
                                 // repeat entries answer as ONE consolidated
                                 // value — per-entry failure display is
                                 // DEFERRED, so never annotate inside

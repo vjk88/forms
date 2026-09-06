@@ -32,6 +32,33 @@ const BY_KEY = Object.fromEntries(DEVICES.map((d) => [d.key, d]));
 export default class FinalPreviewStage extends LightningElement {
     @api spec;
     @api authoring = false;
+    @api preserveSession = false;
+    @api session;
+    previewState;
+
+    connectedCallback() {
+        this.device = BY_KEY[this.session?.device]
+            ? this.session.device
+            : 'desktop';
+        this.previewState = this.session?.viewer;
+    }
+
+    @api
+    getSession() {
+        return {
+            device: this.device,
+            viewer: this.template
+                .querySelector('c-final-form-viewer')
+                ?.getPreviewState()
+        };
+    }
+
+    handlePreviewReady() {
+        // Drop the hand-off snapshot after the viewer adopts it. Deleted
+        // files must not linger in an obsolete seed held by either host.
+        this.previewState = undefined;
+        this.dispatchEvent(new CustomEvent('sessionconsumed'));
+    }
 
     device = 'desktop';
     scale = 1;
@@ -67,6 +94,7 @@ export default class FinalPreviewStage extends LightningElement {
     }
 
     handleRefresh() {
+        this.previewState = undefined;
         this._seq += 1;
         this.frames = [{ key: `f${this._seq}` }];
     }
