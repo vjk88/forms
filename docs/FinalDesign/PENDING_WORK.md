@@ -333,7 +333,7 @@ Two gates from here:
 worth charging for:
 
 1. **Every primary authoring action is reachable without a mouse** — select, reorder, delete, move
-   between sections/pages (§9.3). Currently impossible.
+   between sections/pages (§9.3). **DONE — org-verified 2026-09-06.**
 2. **No failure message names the wrong operation, and none is invisible at any width** — a failed
    publish must not say "Save failed", and the status must survive below 1100px with a real Retry
    (§9.1, §9.2). **DONE — org-verified 2026-09-06**, failure path induced and recovered (see §9.2).
@@ -442,10 +442,33 @@ today) · preview **fit / 100% / expand** controls · **pane splitters** with re
 reorder with progress and focus/scroll restoration · **record picker for invitations** — but this
 should share **Phase D's custom lookup**, not duplicate it.
 
-**Keyboard operability in the builder canvas ranks highest here.** Verified: `finalBuilderCanvas`
-has **zero** keyboard handlers and zero `tabindex`, in the template _and_ imperatively. There is no
-infrastructure to extend — selection, focus management and Move up/down/to-section are built from
-nothing.
+**Keyboard operability in the builder canvas — BUILT AND ORG-VERIFIED 2026-09-06.** It ranked
+highest here because `finalBuilderCanvas` had **zero** keyboard handlers and zero `tabindex`, in the
+template _and_ imperatively: there was no infrastructure to extend, so selection, focus management
+and Move up/down/to-section were built from nothing.
+
+Pages, sections, content blocks and questions now all carry `data-nav` and are reachable by
+keyboard, with a real `:focus-visible` outline. Shared `movement.js` gates destinations — and
+notably re-enforces schema §4.1 there too (`element.type === 'file' && target.repeat` is refused),
+so the new move path cannot route around the drop-block.
+
+**Verified with real keystrokes in the org** — not synthetic dispatches, because keyboard handling
+is precisely where LWS has burned this project before (retargeted `composedPath`, constructor
+listeners that never fire, [[reference-lws-keyboard-events]]):
+
+| Check                                   | Result                                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Arrow keys move focus between questions | `el_ln` → `el_file` → back                                                                             |
+| `Alt+ArrowDown` reorders                | order genuinely changed: `["Last name","File upload"]` → `["File upload","Last name"]`                 |
+| Focus after a move                      | follows the moved item                                                                                 |
+| Live announcement                       | "Last name moved to position 2 of 2."                                                                  |
+| `F2` on a focused item                  | opens Move up / Move down / Move to…                                                                   |
+| Move to… → `Escape`                     | closes, and focus returns to the Move to… button                                                       |
+| Delete control names                    | contextual across every kind — "Remove page 1: One", "Remove section: Upload test", "Remove Last name" |
+
+**Still open in this area:** drag remains the only way to move an item to an arbitrary position
+_within_ a section (Move up/down step one place at a time); Move to… targets sections and pages, not
+indexes.
 
 **On what grounds it ranks high — corrected 2026-09-06.** An earlier draft of this section justified
 it "against PRODUCT.md's WCAG 2.1 AA commitment." That was an overreach, and worth recording so it

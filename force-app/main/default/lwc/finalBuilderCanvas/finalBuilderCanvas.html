@@ -1,8 +1,17 @@
 <template>
     <div class="bc">
-        <div class="bc-bar">
-            BLUEPRINT — structure only; the preview is the truth.
-        </div>
+        <div class="bc-bar">Structure</div>
+        <p id="keyboard-help" class="bc-keyboard-help">
+            Use Tab to reach items and Enter to select. Alt + ↑ / ↓ moves an
+            item. F2 opens its actions.
+        </p>
+        <span
+            class="bc-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            >{announcement}</span
+        >
 
         <div class="bc-chips">
             <template for:each={pageChips} for:item="p">
@@ -11,6 +20,12 @@
                         type="button"
                         class={p.cls}
                         data-id={p.id}
+                        data-nav
+                        data-kind="page"
+                        aria-pressed={p.pressed}
+                        aria-current={p.current}
+                        aria-describedby="keyboard-help"
+                        onkeydown={handleNavigationKey}
                         draggable="true"
                         onclick={handleChip}
                         ondragstart={handleChipDragStart}
@@ -26,6 +41,7 @@
                             type="button"
                             class="bc-x bc-chip-x"
                             title="Remove this page"
+                            aria-label={p.removeLabel}
                             data-id={p.id}
                             onclick={handleRemovePage}
                         >
@@ -39,131 +55,243 @@
             </button>
         </div>
 
+        <template lwc:if={selectedItem}>
+            <div
+                class="bc-actions"
+                role="group"
+                aria-label={actionsLabel}
+                onkeydown={handleActionsKey}
+            >
+                <span class="bc-action-label">{selectedLabel}</span>
+                <button
+                    class="bc-action"
+                    type="button"
+                    disabled={moveUpDisabled}
+                    onclick={handleMoveUp}
+                >
+                    Move up
+                </button>
+                <button
+                    class="bc-action"
+                    type="button"
+                    disabled={moveDownDisabled}
+                    onclick={handleMoveDown}
+                >
+                    Move down
+                </button>
+                <button
+                    class="bc-action bc-move-to"
+                    type="button"
+                    disabled={moveToDisabled}
+                    aria-expanded={moveExpanded}
+                    onclick={handleMoveTo}
+                >
+                    Move to…
+                </button>
+            </div>
+            <template lwc:if={moveOpen}>
+                <div class="bc-move-panel" onkeydown={handleMovePanelKey}>
+                    <label for="move-destination">Destination</label>
+                    <select
+                        id="move-destination"
+                        class="bc-destination"
+                        onchange={handleDestination}
+                        aria-describedby="move-help"
+                    >
+                        <option value="">Choose a destination</option>
+                        <template for:each={moveDestinations} for:item="option">
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        </template>
+                    </select>
+                    <p id="move-help">{moveHelp}</p>
+                    <button
+                        class="bc-action"
+                        type="button"
+                        disabled={moveConfirmDisabled}
+                        onclick={handleMoveConfirm}
+                    >
+                        Move
+                    </button>
+                    <button
+                        class="bc-action"
+                        type="button"
+                        onclick={handleMoveCancel}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </template>
+        </template>
+
         <div class="bc-scroll">
             <template for:each={sections} for:item="s">
-                <div
-                    key={s.gapKey}
-                    class="bc-gap"
-                    data-before={s.id}
-                    ondragover={handleGapDragOver}
-                    ondragleave={handleGapLeave}
-                    ondrop={handleGapDrop}
-                ></div>
-                <template lwc:if={s.isBlock}>
+                <div key={s.id} class="bc-item">
                     <div
-                        key={s.id}
-                        class={s.cls}
-                        data-id={s.id}
-                        draggable="true"
-                        onclick={handleSectionClick}
-                        ondragstart={handleSectionDragStart}
-                        ondragend={handleDragEndClear}
-                        ondragover={handleSecDragOver}
-                        ondragleave={handleDragLeave}
-                        ondrop={handleSectionDrop}
-                    >
-                        <span class="bc-grip" aria-hidden="true">⋮⋮</span>
-                        <span class="bc-block-label">{s.blockLabel}</span>
-                        <button
-                            type="button"
-                            class="bc-x"
-                            title="Remove block"
+                        class="bc-gap"
+                        data-before={s.id}
+                        ondragover={handleGapDragOver}
+                        ondragleave={handleGapLeave}
+                        ondrop={handleGapDrop}
+                    ></div>
+                    <template lwc:if={s.isBlock}>
+                        <div
+                            class={s.cls}
                             data-id={s.id}
-                            onclick={handleRemoveSection}
+                            draggable="true"
+                            onclick={handleSectionClick}
+                            ondragstart={handleSectionDragStart}
+                            ondragend={handleDragEndClear}
+                            ondragover={handleSecDragOver}
+                            ondragleave={handleDragLeave}
+                            ondrop={handleSectionDrop}
                         >
-                            ×
-                        </button>
-                    </div>
-                </template>
-                <template lwc:else>
-                    <div
-                        key={s.id}
-                        class={s.cls}
-                        data-id={s.id}
-                        draggable="true"
-                        onclick={handleSectionClick}
-                        ondragstart={handleSectionDragStart}
-                        ondragend={handleDragEndClear}
-                        ondragover={handleSecDragOver}
-                        ondragleave={handleDragLeave}
-                        ondrop={handleSectionDrop}
-                    >
-                        <header class="bc-section-head">
                             <span class="bc-grip" aria-hidden="true">⋮⋮</span>
-                            <span class="bc-tag">{s.title}</span>
-                            <template lwc:if={s.repeatChip}>
-                                <span class="bc-repeat">{s.repeatChip}</span>
-                            </template>
-                            <span class="bc-flex"></span>
+                            <button
+                                type="button"
+                                class="bc-select bc-block-label"
+                                data-id={s.id}
+                                data-kind="section"
+                                data-nav
+                                aria-pressed={s.pressed}
+                                aria-describedby="keyboard-help"
+                                onclick={handleSectionClick}
+                                onkeydown={handleNavigationKey}
+                            >
+                                {s.blockLabel}
+                            </button>
                             <button
                                 type="button"
                                 class="bc-x"
-                                title="Remove section"
+                                title="Remove block"
+                                aria-label={s.removeLabel}
                                 data-id={s.id}
                                 onclick={handleRemoveSection}
                             >
                                 ×
                             </button>
-                        </header>
-                        <template lwc:if={s.desc}>
-                            <p class="bc-sec-desc">{s.desc}</p>
-                        </template>
-                        <div class="bc-grid" style={s.gridStyle}>
-                            <template for:each={s.elements} for:item="el">
-                                <div
-                                    key={el.id}
-                                    class={el.cls}
-                                    style={el.spanStyle}
-                                    data-id={el.id}
-                                    data-section-id={el.sectionId}
-                                    draggable="true"
-                                    onclick={handleElementClick}
-                                    ondragstart={handleElementDragStart}
-                                    ondragend={handleDragEndClear}
-                                    ondragover={handleElDragOver}
-                                    ondragleave={handleDragLeave}
-                                    ondrop={handleElementDrop}
-                                >
-                                    <div class="bc-row-top">
-                                        <span class="bc-row-label">
-                                            <template lwc:if={el.required}>
-                                                <abbr
-                                                    class="bc-req"
-                                                    title="required"
-                                                    >*</abbr
-                                                >
-                                            </template>
-                                            <template lwc:if={el.isField}>
-                                                {el.label}
-                                            </template>
-                                            <template lwc:else>
-                                                <span class="bc-ctype"
-                                                    >{el.typeLabel}</span
-                                                >
-                                            </template>
-                                        </span>
-                                        <button
-                                            type="button"
-                                            class="bc-x"
-                                            title="Remove"
-                                            data-id={el.id}
-                                            onclick={handleRemoveElement}
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                    <span
-                                        class="bc-skeleton"
-                                        aria-hidden="true"
-                                    ></span>
-                                </div>
-                            </template>
-                            <template lwc:if={s.empty}>
-                                <div class="bc-drop-empty">{s.emptyText}</div>
-                            </template>
                         </div>
-                    </div>
-                </template>
+                    </template>
+                    <template lwc:else>
+                        <div
+                            class={s.cls}
+                            data-id={s.id}
+                            draggable="true"
+                            onclick={handleSectionClick}
+                            ondragstart={handleSectionDragStart}
+                            ondragend={handleDragEndClear}
+                            ondragover={handleSecDragOver}
+                            ondragleave={handleDragLeave}
+                            ondrop={handleSectionDrop}
+                        >
+                            <header class="bc-section-head">
+                                <span class="bc-grip" aria-hidden="true"
+                                    >⋮⋮</span
+                                >
+                                <button
+                                    type="button"
+                                    class="bc-select bc-tag"
+                                    data-id={s.id}
+                                    data-kind="section"
+                                    data-nav
+                                    aria-pressed={s.pressed}
+                                    aria-describedby="keyboard-help"
+                                    onclick={handleSectionClick}
+                                    onkeydown={handleNavigationKey}
+                                >
+                                    {s.title}
+                                </button>
+                                <template lwc:if={s.repeatChip}>
+                                    <span class="bc-repeat"
+                                        >{s.repeatChip}</span
+                                    >
+                                </template>
+                                <span class="bc-flex"></span>
+                                <button
+                                    type="button"
+                                    class="bc-x"
+                                    title="Remove section"
+                                    aria-label={s.removeLabel}
+                                    data-id={s.id}
+                                    onclick={handleRemoveSection}
+                                >
+                                    ×
+                                </button>
+                            </header>
+                            <template lwc:if={s.desc}>
+                                <p class="bc-sec-desc">{s.desc}</p>
+                            </template>
+                            <div class="bc-grid" style={s.gridStyle}>
+                                <template for:each={s.elements} for:item="el">
+                                    <div
+                                        key={el.id}
+                                        class={el.cls}
+                                        style={el.spanStyle}
+                                        data-id={el.id}
+                                        data-section-id={el.sectionId}
+                                        draggable="true"
+                                        onclick={handleElementClick}
+                                        ondragstart={handleElementDragStart}
+                                        ondragend={handleDragEndClear}
+                                        ondragover={handleElDragOver}
+                                        ondragleave={handleDragLeave}
+                                        ondrop={handleElementDrop}
+                                    >
+                                        <div class="bc-row-top">
+                                            <button
+                                                type="button"
+                                                class="bc-select bc-row-label"
+                                                data-id={el.id}
+                                                data-kind="element"
+                                                data-nav
+                                                aria-pressed={el.pressed}
+                                                aria-describedby="keyboard-help"
+                                                onclick={handleElementClick}
+                                                onkeydown={handleNavigationKey}
+                                            >
+                                                <template lwc:if={el.required}>
+                                                    <abbr
+                                                        class="bc-req"
+                                                        title="required"
+                                                        >*</abbr
+                                                    >
+                                                </template>
+                                                <template lwc:if={el.isField}>
+                                                    {el.label}
+                                                </template>
+                                                <template lwc:else>
+                                                    <span class="bc-ctype"
+                                                        >{el.typeLabel}</span
+                                                    >
+                                                </template>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="bc-x"
+                                                title="Remove"
+                                                aria-label={el.removeLabel}
+                                                data-id={el.id}
+                                                onclick={handleRemoveElement}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <span
+                                            class="bc-skeleton"
+                                            aria-hidden="true"
+                                        ></span>
+                                    </div>
+                                </template>
+                                <template lwc:if={s.empty}>
+                                    <div class="bc-drop-empty">
+                                        {s.emptyText}
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </template>
             <div
                 class="bc-gap bc-gap-end"
