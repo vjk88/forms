@@ -161,6 +161,22 @@ Two things came out of it that are still live:
   entirely (chunked pre-submit upload or an async finaliser), which is a design, not a constant.
   See IMPL_PLAN_FILE_UPLOAD §4.4 for the measured table.
 
+**ORG-VERIFIED 2026-09-06.** The renderer was driven in a real browser on a real respondent render
+(guest site, production LWS — not jsdom): the drop zone renders, a file attaches, the row shows
+`qa-proof.txt · 27 B` (correct for a 27-byte file, so the size maths holds outside tests), and the
+hint reads **"Any file type · up to 879 KB"** — the measured cap surfacing honestly to respondents.
+Submitting as a guest returned **"This form cannot accept file uploads."** — the Slice-1 boundary
+firing server-side, previously only asserted in Apex tests — and the savepoint held: **0 Contacts
+and 0 ContentVersions** were created by the rejected submit. QA form: `a05hk000001KptpAAC`.
+
+> **Gotcha that nearly produced a false result — worth knowing before any guest QA.**
+> The first guest run showed the OLD stub, _"File upload arrives with a later step"_, while the
+> internal Studio showed the new control. Same org, same deployed component. **An Experience Cloud
+> site serves its own published bundle: deploying an LWC does not update the site until the site is
+> republished** (`sf community publish --name TestSite`). Anyone verifying guest behaviour against a
+> site that has not been republished since the deploy will draw confident, wrong conclusions — the
+> first reading here was "file upload is broken for guests", and it was simply stale.
+
 **Also fixed in passing:** schema §4.1's "the builder blocks the drop" for file elements in
 repeatable sections was never implemented — `file` is a palette _block_, and the canvas waved blocks
 through. It is enforced now, in the builder and again server-side.
@@ -320,7 +336,7 @@ worth charging for:
    between sections/pages (§9.3). Currently impossible.
 2. **No failure message names the wrong operation, and none is invisible at any width** — a failed
    publish must not say "Save failed", and the status must survive below 1100px with a real Retry
-   (§9.1, §9.2). **Implemented + deployed 2026-09-06; the failure path is not yet org-reproduced** (see §9.2).
+   (§9.1, §9.2). **DONE — org-verified 2026-09-06**, failure path induced and recovered (see §9.2).
 3. **Testing a rule does not require re-entering its inputs** — preview state survives an ordinary
    edit and a mode switch (§9.4).
 4. **No shipped surface advertises unbuilt functionality** — the template shelf and the Autofill
@@ -361,14 +377,14 @@ review ranked them.
 
 ### 9.1 Trivial — an hour or less each
 
-| Finding                                                              | Why it's small                                                                                                                                       |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BLUEPRINT — structure only; the preview is the truth` → "Structure" | One string, `finalBuilderCanvas.html:4`                                                                                                              |
-| Autofill "prefill mapping arrives with a later slice"                | One string, `finalFieldPalette.js:222`                                                                                                               |
-| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**       | Publish failures now carry their own message and retry; draft-save state stays independent. Deployed; failure path not yet org-reproduced. See §9.2. |
-| Duplicate Availability heading + the submission-service sentence     | Copy deletion                                                                                                                                        |
-| Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                              |
-| Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                         |
+| Finding                                                              | Why it's small                                                                                                                                                                                             |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BLUEPRINT — structure only; the preview is the truth` → "Structure" | One string, `finalBuilderCanvas.html:4`                                                                                                                                                                    |
+| Autofill "prefill mapping arrives with a later slice"                | One string, `finalFieldPalette.js:222`                                                                                                                                                                     |
+| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**       | Publish failures now carry their own message and retry; draft-save state stays independent. Org-verified 2026-09-06: real failure induced, correct copy, Retry recovered AND persisted the edit. See §9.2. |
+| Duplicate Availability heading + the submission-service sentence     | Copy deletion                                                                                                                                                                                              |
+| Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                                                                                    |
+| Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                                                                               |
 
 ### 9.2 Small and contained — about half a day each _(provisional)_
 
@@ -392,12 +408,22 @@ navigation leaves the editable draft available. Jest regression coverage include
 failure/retry, publish sequencing, cleanup recovery, and stale responses after changing forms.
 This is per-instance request ordering; cross-tab/multi-user conflict detection is not added.
 
-> **Verification status, precisely.** Jest: **70 suites / 662 tests** green (11 new, baseline was
-> 28 in this component and is now 39). ESLint clean. Deployed to `revclouddev` successfully.
-> **What has NOT happened:** nobody has induced a real save or publish failure in the org and
-> watched the Retry recover it. Under PRODUCT.md design principle 5 — _"a change isn't done until
-> render-verified in the org; jest-green is not done"_ — this item is **not closed**. The failure
-> path is the whole point of the change, and it is the one path only simulated so far.
+> **ORG-VERIFIED 2026-09-06 — closed.** Jest 70 suites / 662 tests green (11 new; baseline 28 in
+> this component, now 39), ESLint clean, deployed to `revclouddev`. The failure path — the whole
+> point of the change, and the one thing previously only simulated — was then induced for real by
+> aborting the `saveDraft` Apex call at the network layer, in the Studio, at a **1000px** viewport:
+>
+> | Check                                      | Result                                                                              |
+> | ------------------------------------------ | ----------------------------------------------------------------------------------- |
+> | Status visible below the old 1100px cutoff | **yes** — it was previously `display:none`                                          |
+> | Message                                    | "Draft couldn't be saved. Your edits are still here."                               |
+> | Old misleading "Save failed" copy          | **gone**                                                                            |
+> | Retry control                              | present — **"Retry save"**                                                          |
+> | Clicking Retry once the outage cleared     | → "✓ All changes saved"                                                             |
+> | Did the edit actually persist?             | **yes** — draft v2 written with **2 pages**, i.e. the "+ Page" edit that had failed |
+>
+> The last row is the one that matters: Retry sent the LATEST spec and the data genuinely landed,
+> rather than the label merely flipping to green.
 
 **Still pending:** Corners/Spacing as
 current-value segmented controls instead of Rounder/Sharper + Airy/Dense nudges (the values already
