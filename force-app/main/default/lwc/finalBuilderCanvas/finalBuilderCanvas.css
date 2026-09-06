@@ -6,6 +6,7 @@
 }
 
 .bc {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -347,13 +348,6 @@
 .bc-block:focus-within {
     border-style: solid;
 }
-.bc-keyboard-help {
-    margin: 0;
-    padding: 8px 14px 0;
-    font-size: 11px;
-    line-height: 1.5;
-    color: var(--slds-g-color-neutral-base-80, #c9c9c9);
-}
 .bc-status {
     position: absolute;
     width: 1px;
@@ -365,14 +359,26 @@
 }
 .bc-actions {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-block: 1px solid var(--slds-g-color-neutral-base-40, #5c5c5c);
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+}
+.bc-popup {
+    position: absolute;
+    z-index: 10;
+    width: 300px;
+    max-width: calc(100% - 16px);
+    overflow: auto;
+    border: 1px solid var(--slds-g-color-neutral-base-60, #939393);
+    border-radius: 6px;
+    background: var(--slds-g-color-neutral-base-20, #2e2e2e);
+    box-shadow: var(--slds-g-shadow-2, 0 4px 12px rgb(0 0 0 / 30%));
+}
+.bc-actions .bc-action {
+    text-align: left;
 }
 .bc-action-label {
-    flex: 1 0 100%;
+    padding: 4px 8px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
