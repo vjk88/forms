@@ -28,6 +28,83 @@ const OPERATOR_OPTIONS = [
 
 const NO_VALUE = new Set(['isBlank', 'isNotBlank']);
 
+const OPERATOR_LABELS = new Map(
+    OPERATOR_OPTIONS.map((o) => [o.value, o.label])
+);
+
+/**
+ * Which operators make sense per source subtype (PENDING_WORK §9.3).
+ *
+ * `contains` is KEPT wherever a source can hold multiple values (owner ruling
+ * 2026-09-06): multipicklist and multi-select choice answers arrive as arrays
+ * and the engine's `contains` is what matches a single option inside them —
+ * dropping it would silently break saved rules.
+ *
+ * greater/lessThan appear only where a comparison can actually coerce, which
+ * is the preventive twin of lintVisibility's existing "greater/less-than needs
+ * a numeric value or a date source" warning.
+ *
+ * A subtype absent from this map (file, unknown, and every `record:` source)
+ * keeps the full list — untyped is the safe default, never a narrowed guess.
+ */
+const TEXTUAL = ['equals', 'notEquals', 'contains', 'isBlank', 'isNotBlank'];
+const ORDERED = [
+    'equals',
+    'notEquals',
+    'greaterThan',
+    'lessThan',
+    'isBlank',
+    'isNotBlank'
+];
+const OPERATORS_BY_TYPE = {
+    // A Salesforce checkbox is never null — it is true or false — so the blank
+    // operators would read as choices that can never match.
+    checkbox: ['equals', 'notEquals'],
+    number: ORDERED,
+    date: ORDERED,
+    datetime: ORDERED,
+    picklist: TEXTUAL,
+    text: TEXTUAL,
+    textarea: TEXTUAL,
+    email: TEXTUAL,
+    phone: TEXTUAL,
+    url: TEXTUAL
+};
+
+/** Value control per subtype. Picklist deliberately stays 'text' — the option
+ *  dropdown is DEFERRED (ledger #29) because a native select cannot represent
+ *  a stored value that is missing from its options. */
+const VALUE_KIND = {
+    checkbox: 'bool',
+    number: 'number',
+    date: 'date',
+    datetime: 'datetime'
+};
+
+const BOOL_VALUES = new Set(['true', 'false']);
+
+/** Can the typed control for `kind` actually DISPLAY `value`? A native
+ *  number/date input and a two-option select all render blank for anything
+ *  outside their domain, which would leave the visible control disagreeing
+ *  with the stored rule — the same silent-divergence trap that deferred the
+ *  picklist dropdown. Where we cannot show it, we clear it deliberately. */
+function canDisplay(kind, value) {
+    if (value === '' || value === null || value === undefined) {
+        return true;
+    }
+    const s = String(value);
+    if (kind === 'bool') {
+        return BOOL_VALUES.has(s);
+    }
+    if (kind === 'number') {
+        return s.trim() !== '' && Number.isFinite(Number(s));
+    }
+    if (kind === 'date' || kind === 'datetime') {
+        return Number.isFinite(Date.parse(s));
+    }
+    return true;
+}
+
 export default class FinalRuleEditor extends LightningElement {
     /** The visibility config (§7) or null/undefined = always visible. */
     @api value;
@@ -37,7 +114,10 @@ export default class FinalRuleEditor extends LightningElement {
     /** SO-3 record-field sources ([{id: 'record:Api', label}]) — non-empty
      *  only for surveys with a connected object; adds the second optgroup. */
     @api recordSources = [];
-    /** Map(id → {type, repeatSectionId}) for the engine's lint. */
+    /** Map(id → {type, inputType, repeatSectionId}). `type` is the engine's
+     *  lint key (collapsed, matching the runtime's own index); `inputType` is
+     *  the granular subtype this editor types operators and value controls
+     *  on. Absent or unknown `inputType` = stay fully untyped. */
     @api sourceIndex;
     /** The repeat section this node lives inside, or null (lint scoping). */
     @api hostRepeatSectionId;
@@ -128,31 +208,80 @@ export default class FinalRuleEditor extends LightningElement {
                   'link. Without one, this content stays hidden.';
     }
 
+    /** The source's granular subtype, or null when it has none we can type on
+     *  (a `record:` row, or an element the index doesn't carry). */
+    _subtype(source) {
+        const meta =
+            this.sourceIndex && this.sourceIndex.get
+                ? this.sourceIndex.get(source)
+                : null;
+        return (meta && meta.inputType) || null;
+    }
+
+    _valueKind(source) {
+        return VALUE_KIND[this._subtype(source)] || 'text';
+    }
+
     get rows() {
         const rules = (this.value && this.value.rules) || [];
-        return rules.map((rule, i) => ({
-            key: `rule_${i}`,
-            index: i,
-            number: i + 1,
-            needsValue: !NO_VALUE.has(rule.operator),
-            // raw <input> stamps literal "undefined" for a missing value —
-            // ''-guard (0/false stay: they're real comparison values)
-            value: rule.value == null ? '' : rule.value,
-            sourceOptions: (this.sources || []).map((s) => ({
-                value: s.id,
-                label: s.label,
-                selected: s.id === rule.source ? true : undefined
-            })),
-            recordOptions: (this.recordSources || []).map((s) => ({
-                value: s.id,
-                label: s.label,
-                selected: s.id === rule.source ? true : undefined
-            })),
-            operatorOptions: OPERATOR_OPTIONS.map((o) => ({
-                ...o,
-                selected: o.value === rule.operator ? true : undefined
-            }))
-        }));
+        return rules.map((rule, i) => {
+            const allowed = OPERATORS_BY_TYPE[this._subtype(rule.source)];
+            let operatorOptions = (
+                allowed || OPERATOR_OPTIONS.map((o) => o.value)
+            ).map((v) => ({
+                value: v,
+                label: OPERATOR_LABELS.get(v),
+                selected: v === rule.operator ? true : undefined
+            }));
+            // A saved rule may hold an operator this subtype no longer offers
+            // (authored before typing, or the source was repointed). Show it
+            // rather than let the select silently resolve to its first option
+            // and rewrite the rule on the next unrelated edit.
+            if (rule.operator && !operatorOptions.some((o) => o.selected)) {
+                operatorOptions = [
+                    ...operatorOptions,
+                    {
+                        value: rule.operator,
+                        label: `${
+                            OPERATOR_LABELS.get(rule.operator) || rule.operator
+                        } (not valid here)`,
+                        selected: true
+                    }
+                ];
+            }
+            const kind = this._valueKind(rule.source);
+            return {
+                key: `rule_${i}`,
+                index: i,
+                number: i + 1,
+                needsValue: !NO_VALUE.has(rule.operator),
+                // raw <input> stamps literal "undefined" for a missing value —
+                // ''-guard (0/false stay: they're real comparison values)
+                value: rule.value == null ? '' : rule.value,
+                isBool: kind === 'bool',
+                isNumber: kind === 'number',
+                isDate: kind === 'date',
+                isDateTime: kind === 'datetime',
+                boolOptions: [
+                    { value: 'true', label: 'Yes' },
+                    { value: 'false', label: 'No' }
+                ].map((o) => ({
+                    ...o,
+                    selected: o.value === String(rule.value) ? true : undefined
+                })),
+                sourceOptions: (this.sources || []).map((s) => ({
+                    value: s.id,
+                    label: s.label,
+                    selected: s.id === rule.source ? true : undefined
+                })),
+                recordOptions: (this.recordSources || []).map((s) => ({
+                    value: s.id,
+                    label: s.label,
+                    selected: s.id === rule.source ? true : undefined
+                })),
+                operatorOptions
+            };
+        });
     }
 
     get problems() {
@@ -233,6 +362,21 @@ export default class FinalRuleEditor extends LightningElement {
         rule[prop] = event.target.value;
         if (prop === 'operator' && NO_VALUE.has(rule.operator)) {
             rule.value = null;
+        }
+        if (prop === 'source') {
+            // Repointing a rule can strand both halves against the new
+            // subtype. Fix them HERE, where the author can see it happen,
+            // rather than leaving a control that displays blank while the
+            // stored rule still says something else.
+            const allowed = OPERATORS_BY_TYPE[this._subtype(rule.source)];
+            if (allowed && !allowed.includes(rule.operator)) {
+                rule.operator = 'equals';
+            }
+            if (NO_VALUE.has(rule.operator)) {
+                rule.value = null;
+            } else if (!canDisplay(this._valueKind(rule.source), rule.value)) {
+                rule.value = '';
+            }
         }
         this._emit(next);
     }

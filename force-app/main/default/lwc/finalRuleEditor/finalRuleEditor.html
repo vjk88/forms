@@ -124,16 +124,74 @@
                                 </template>
                             </select>
                             <template lwc:if={r.needsValue}>
-                                <input
-                                    type="text"
-                                    class="re-value"
-                                    placeholder="Value"
-                                    aria-label="Comparison value"
-                                    data-index={r.index}
-                                    data-prop="value"
-                                    value={r.value}
-                                    onchange={handleRuleField}
-                                />
+                                <template lwc:if={r.isBool}>
+                                    <select
+                                        class="re-select re-value"
+                                        aria-label="Comparison value"
+                                        data-index={r.index}
+                                        data-prop="value"
+                                        onchange={handleRuleField}
+                                    >
+                                        <template
+                                            for:each={r.boolOptions}
+                                            for:item="b"
+                                        >
+                                            <option
+                                                key={b.value}
+                                                value={b.value}
+                                                selected={b.selected}
+                                            >
+                                                {b.label}
+                                            </option>
+                                        </template>
+                                    </select>
+                                </template>
+                                <template lwc:elseif={r.isNumber}>
+                                    <input
+                                        type="number"
+                                        class="re-value"
+                                        placeholder="Value"
+                                        aria-label="Comparison value"
+                                        data-index={r.index}
+                                        data-prop="value"
+                                        value={r.value}
+                                        onchange={handleRuleField}
+                                    />
+                                </template>
+                                <template lwc:elseif={r.isDate}>
+                                    <input
+                                        type="date"
+                                        class="re-value"
+                                        aria-label="Comparison value"
+                                        data-index={r.index}
+                                        data-prop="value"
+                                        value={r.value}
+                                        onchange={handleRuleField}
+                                    />
+                                </template>
+                                <template lwc:elseif={r.isDateTime}>
+                                    <input
+                                        type="datetime-local"
+                                        class="re-value"
+                                        aria-label="Comparison value"
+                                        data-index={r.index}
+                                        data-prop="value"
+                                        value={r.value}
+                                        onchange={handleRuleField}
+                                    />
+                                </template>
+                                <template lwc:else>
+                                    <input
+                                        type="text"
+                                        class="re-value"
+                                        placeholder="Value"
+                                        aria-label="Comparison value"
+                                        data-index={r.index}
+                                        data-prop="value"
+                                        value={r.value}
+                                        onchange={handleRuleField}
+                                    />
+                                </template>
                             </template>
                         </div>
                         <button
