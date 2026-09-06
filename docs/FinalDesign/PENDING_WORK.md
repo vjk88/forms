@@ -296,9 +296,38 @@ security hole, and it isn't — see §2.1 for what the allow-list already enforc
 is Security Review, which is gated behind packaging that hasn't started. Sequenced on timing rather
 than on how alarming the title sounds. It stays a hard gate on shipping, just not a standing risk.
 
-Rate limiting (§2.2) can ride the broader guest-hardening pass. The polish backlogs (§4 and §9) are
-real work but block nothing — except **§9.1, which is an hour of copy fixes for a genuinely
-misleading failure message**, and is worth doing on the next pass through the Studio regardless.
+Rate limiting (§2.2) can ride the broader guest-hardening pass.
+
+### 7.1 Two gates, not one — "blocks nothing" was measured against the wrong bar
+
+Until 2026-09-06 this document had a single axis: **does it block cutting the package.** Everything
+else inherited "blocks nothing" by default. That is accurate against the packaging gate and
+misleading against the one a buyer actually applies, so §9 items kept reading as optional polish
+while describing an authoring surface you cannot drive from a keyboard, a publish failure that
+names the wrong operation, and a preview that forgets the inputs you are testing with.
+
+Two gates from here:
+
+| Gate                | Meaning                                   | Contents                    |
+| ------------------- | ----------------------------------------- | --------------------------- |
+| **Packaging-ready** | Can be submitted for Security Review      | §2                          |
+| **Customer-ready**  | A release a paying admin would not resent | §2 **plus** the items below |
+
+**Customer-ready acceptance criteria** — none of these block a package; all of them block a release
+worth charging for:
+
+1. **Every primary authoring action is reachable without a mouse** — select, reorder, delete, move
+   between sections/pages (§9.3). Currently impossible.
+2. **No failure message names the wrong operation, and none is invisible at any width** — a failed
+   publish must not say "Save failed", and the status must survive below 1100px with a real Retry
+   (§9.1, §9.2).
+3. **Testing a rule does not require re-entering its inputs** — preview state survives an ordinary
+   edit and a mode switch (§9.4).
+4. **No shipped surface advertises unbuilt functionality** — the template shelf and the Autofill
+   "later slice" line (§3.4, §9.1).
+5. **Studio chrome meets 4.5:1 for small text** (§9.5) — not because a written promise covers it
+   today, but because shipping a form builder whose own buttons fail the bar its theme editor
+   enforces on customers is indefensible.
 
 The **F13 asset-URL decision (§1)** is a decision, not a build, and should be made before anything
 guest-facing ships with a built-in theme image.
@@ -341,7 +370,17 @@ review ranked them.
 | Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                                                                     |
 | Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                                                                |
 
-### 9.2 Small and contained — about half a day each
+### 9.2 Small and contained — about half a day each _(provisional)_
+
+> **These tiers measure blast radius, not total cost.** Each was grounded in how localized the
+> change is — which is why §9.5 caught a "Priority 1 styling" item that is really days of work. But
+> a small diff can carry a large testing surface, and three below almost certainly do: \*\*save status
+>
+> - Retry** (the button is trivial; retry semantics, queued-change handling and conflict recovery
+>   are not), **collapsing the rich-text toolbars** (selection preservation and focus management in a
+>   rich-text control is reliably worse than it looks), and **the Logic-index scroll\*\* (landing focus
+>   correctly without stealing it is the hard half). Treat these as planning categories, not commitments.
+>   The §9.1 string changes genuinely are an hour.
 
 Save status kept visible under 1100px **plus a real Retry** (delete one `display:none` at
 `finalFormStudio.css:218`, add a button onto the existing save path) · Corners/Spacing as
@@ -364,8 +403,26 @@ should share **Phase D's custom lookup**, not duplicate it.
 **Keyboard operability in the builder canvas ranks highest here.** Verified: `finalBuilderCanvas`
 has **zero** keyboard handlers and zero `tabindex`, in the template _and_ imperatively. There is no
 infrastructure to extend — selection, focus management and Move up/down/to-section are built from
-nothing. Against PRODUCT.md's WCAG 2.1 AA commitment this outranks the matrix-ring contrast in §4.1:
-one is a widget flaw, the other means an entire authoring surface is unreachable without a mouse.
+nothing.
+
+**On what grounds it ranks high — corrected 2026-09-06.** An earlier draft of this section justified
+it "against PRODUCT.md's WCAG 2.1 AA commitment." That was an overreach, and worth recording so it
+is not repeated. [PRODUCT.md](../../PRODUCT.md) §Accessibility scopes that posture explicitly to
+_"the published runtime (guest-facing surface)"_, and even its keyboard clause reads "keyboard path
+per **nav primitive**" — the respondent's scroll/stepper/tabs, not the builder canvas. The written
+promise does not reach the Studio. §4.1's framing is fine (the matrix ring is a runtime widget);
+this section's was not.
+
+The finding is not weaker for it, it is more interesting. PRODUCT.md names **"Form designers"** as a
+first-class user class alongside form fillers, then extends an accessibility commitment to only one
+of them. So the real state of affairs is: **the product has never made an accessibility promise
+about authoring, and arrived at that by omission rather than decision.** Authors are typically
+employees using this as a workplace tool, and enterprise buyers increasingly ask for conformance
+covering a whole product rather than its public surface.
+
+**That scope question is itself an owner decision** — does the WCAG posture extend to authoring?
+Until it is answered, this ranks on plain merit: an entire authoring surface is unusable without a
+mouse, which is a harder failure than any single widget defect in §4.1.
 
 ### 9.4 Needs a spec before it can be estimated
 
