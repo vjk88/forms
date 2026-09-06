@@ -484,12 +484,42 @@ still hiding the value control.
 
 > **`checkbox` is jest-verified only — not org-verified.** No object in `revclouddev` exposes an
 > accessible Boolean to the running user: Contact's only three (`IsDeleted`, `IsEmailBounced`,
-> `IsPriorityRecord`) are non-updateable system fields, and `describeFields` returns **0 fields**
-> for `Event_Feedback__c` / `Hardware_Request__c` / `Work_History__c` / `Property_Inspection__c`
-> (no FLS granted) and 0 checkboxes for `Job_Application__c`. Granting FLS on one of those test
-> objects would close this; the residual risk is small (the Yes/No control is a `<select>`, the
-> same element as the source and operator selects that are org-verified in the same component) but
-> it is **not** the same as having seen it render.
+> `IsPriorityRecord`) are non-updateable system fields, and `Job_Application__c` has none.
+>
+> **Corrected 2026-09-06:** an earlier version of this note blamed missing FLS on the generated test
+> objects. The real reason is that **their fields were never deployed** — `Property_Inspection__c`
+> describes **0 custom fields** in the org, and the field metadata exists only as untracked local
+> files under `force-app/main/default/objects/`. Deploying `Property_Inspection__c` (which defines
+> `Needs_Urgent_Repair__c`) or `Event_Feedback__c` (`Would_Recommend__c`) would close this
+> permanently. Residual risk is small — the Yes/No control is a `<select>`, the same element as the
+> source and operator selects that ARE org-verified in this component — but it is **not** the same
+> as having seen it render.
+
+#### Two follow-up fixes — 2026-09-06 (owner-supplied, org-verified)
+
+**1. An empty checkbox comparison rendered as "Yes".** A new rule starts with `value: ''`, which
+matched neither `true` nor `false`, so the native select fell back to displaying its first option
+while the stored rule held `''`. That is exactly the silent-divergence trap this section warns
+about, shipped inside the guard against it. The bool control now leads with a **"Choose Yes or No"**
+placeholder that owns the empty value, and a saved-but-invalid value is preserved visibly as
+`<value> (not valid here)` — the same treatment already given to stale operators.
+
+**2. `canDisplay` trusted `Number()` and `Date.parse()`, which are laxer than the controls.** Both
+accept values a native input then blanks, so the check kept them and re-created the divergence it
+existed to prevent. It now builds a detached `<input>` of the target type and asks the browser
+directly. Three cases the old check got wrong:
+
+| Value                  | Target control   | `Number()` / `Date.parse()` | Native control |
+| ---------------------- | ---------------- | --------------------------- | -------------- |
+| `0x2a`                 | `number`         | parses as 42 → kept         | blanks it      |
+| `2026-09-06T12:30:00Z` | `date`           | parses → kept               | blanks it      |
+| `2026-09-06`           | `datetime-local` | parses → kept               | blanks it      |
+
+**Org-verified** (`revclouddev`): a direct probe confirms `document.createElement` sanitization is
+**not blocked by LWS** in the Studio's realm, and all seven repoint cases behave — `0x2a`,
+`2026-09-06T12:30` → date, `2026-09-06` → datetime, `2026-02-30` and `" 42 "` all cleared, while
+`-2.5` and the leap day `2024-02-29` are kept. Suite: 71 suites / **717 tests**. The checkbox
+placeholder itself remains jest-only for the reason above.
 
 Original scope note, kept for context:
 

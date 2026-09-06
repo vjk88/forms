@@ -84,7 +84,7 @@ const VALUE_KIND = {
 const BOOL_VALUES = new Set(['true', 'false']);
 
 /** Can the typed control for `kind` actually DISPLAY `value`? A native
- *  number/date input and a two-option select all render blank for anything
+ *  number/date input and a Yes/No select cannot represent values
  *  outside their domain, which would leave the visible control disagreeing
  *  with the stored rule — the same silent-divergence trap that deferred the
  *  picklist dropdown. Where we cannot show it, we clear it deliberately. */
@@ -96,11 +96,15 @@ function canDisplay(kind, value) {
     if (kind === 'bool') {
         return BOOL_VALUES.has(s);
     }
-    if (kind === 'number') {
-        return s.trim() !== '' && Number.isFinite(Number(s));
-    }
-    if (kind === 'date' || kind === 'datetime') {
-        return Number.isFinite(Date.parse(s));
+    if (['number', 'date', 'datetime'].includes(kind)) {
+        // Use the browser's input-value sanitizer, not Number/Date.parse:
+        // those accept values such as hex numbers, date-only datetimes and
+        // zoned timestamps that the corresponding native control blanks out.
+        // This detached input is used only when the author changes a source.
+        const input = document.createElement('input');
+        input.type = kind === 'datetime' ? 'datetime-local' : kind;
+        input.value = s;
+        return input.value !== '';
     }
     return true;
 }
@@ -263,11 +267,26 @@ export default class FinalRuleEditor extends LightningElement {
                 isDate: kind === 'date',
                 isDateTime: kind === 'datetime',
                 boolOptions: [
+                    {
+                        value: '',
+                        label: 'Choose Yes or No'
+                    },
+                    // Preserve an invalid saved value visibly, just as we do
+                    // for saved operators; opening the editor must not alter it.
+                    ...(!canDisplay('bool', rule.value)
+                        ? [
+                              {
+                                  value: String(rule.value),
+                                  label: `${rule.value} (not valid here)`
+                              }
+                          ]
+                        : []),
                     { value: 'true', label: 'Yes' },
                     { value: 'false', label: 'No' }
                 ].map((o) => ({
                     ...o,
-                    selected: o.value === String(rule.value) ? true : undefined
+                    selected:
+                        o.value === String(rule.value ?? '') ? true : undefined
                 })),
                 sourceOptions: (this.sources || []).map((s) => ({
                     value: s.id,

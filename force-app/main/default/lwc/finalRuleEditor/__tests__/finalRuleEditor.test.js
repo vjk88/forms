@@ -222,10 +222,14 @@ describe('typed rule operators and value editors', () => {
         const select = el.shadowRoot.querySelector('select.re-value');
         expect(select).not.toBeNull();
         const opts = [...select.querySelectorAll('option')];
-        expect(opts.map((o) => o.value)).toEqual(['true', 'false']);
-        expect(opts.map((o) => o.textContent.trim())).toEqual(['Yes', 'No']);
+        expect(opts.map((o) => o.value)).toEqual(['', 'true', 'false']);
+        expect(opts.map((o) => o.textContent.trim())).toEqual([
+            'Choose Yes or No',
+            'Yes',
+            'No'
+        ]);
         // "true" matches the engine's String(actual) === String(rule.value)
-        expect(opts[0].selected).toBe(true);
+        expect(select.value).toBe('true');
     });
 
     it('renders date and datetime pickers', async () => {
@@ -290,7 +294,78 @@ describe('typed rule operators and value editors', () => {
             operator: 'equals',
             value: ''
         });
+        el.value = changes[0];
+        await flush();
+        const value = el.shadowRoot.querySelector('.re-value');
+        expect(value.value).toBe('');
+        expect(value.selectedOptions[0].textContent).toContain(
+            'Choose Yes or No'
+        );
     });
+
+    it.each(['', null, undefined, false, 'false', true, 'true', 'legacy'])(
+        'shows the stored checkbox value honestly: %s',
+        async (stored) => {
+            const el = typedMount([
+                { source: 'f_check', operator: 'equals', value: stored }
+            ]);
+            const changes = [];
+            el.addEventListener('rulechange', (e) =>
+                changes.push(e.detail.value)
+            );
+            await flush();
+            const select = el.shadowRoot.querySelector('.re-value');
+            expect(select.value).toBe(String(stored ?? ''));
+            expect(changes).toEqual([]);
+            select.value = 'false';
+            select.dispatchEvent(new CustomEvent('change'));
+            expect(changes[0].rules[0].value).toBe('false');
+            el.value = changes[0];
+            await flush();
+            expect(el.shadowRoot.querySelector('.re-value').value).toBe(
+                'false'
+            );
+        }
+    );
+
+    it.each([
+        ['f_date', '2026-09-06T12:30', ''],
+        ['f_dt', '2026-09-06', ''],
+        ['f_dt', '2026-09-06T12:30:00Z', ''],
+        ['f_date', '2026-02-30', ''],
+        ['f_date', 'September 6, 2026', ''],
+        ['f_num', '0x2a', ''],
+        ['f_num', ' 42 ', ''],
+        ['f_num', '+42', ''],
+        ['f_num', '1.', ''],
+        ['f_num', '1e309', ''],
+        ['f_num', '-2.5', '-2.5'],
+        ['f_num', '0', '0'],
+        ['f_num', '1e2', '1e2'],
+        ['f_date', '2024-02-29', '2024-02-29'],
+        ['f_dt', '2026-09-06T12:30', '2026-09-06T12:30']
+    ])(
+        'repointing to %s with %s stores and displays %s',
+        async (source, stored, expected) => {
+            const el = typedMount([
+                { source: 'f_text', operator: 'equals', value: stored }
+            ]);
+            await flush();
+            const changes = [];
+            el.addEventListener('rulechange', (e) =>
+                changes.push(e.detail.value)
+            );
+            const select = el.shadowRoot.querySelector('.re-source');
+            select.value = source;
+            select.dispatchEvent(new CustomEvent('change'));
+            expect(changes[0].rules[0].value).toBe(expected);
+            el.value = changes[0];
+            await flush();
+            expect(el.shadowRoot.querySelector('.re-value').value).toBe(
+                expected
+            );
+        }
+    );
 
     it('repointing to a compatible subtype keeps the value', async () => {
         const el = typedMount([
