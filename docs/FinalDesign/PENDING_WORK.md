@@ -15,18 +15,30 @@ Companions: [BUILD_PHASES.md](./BUILD_PHASES.md) (what's in scope) · [DEFERRED.
 
 ---
 
-## 1 · Snapshot
+## 1 · Snapshot — what each phase is still missing
 
-| Phase                                               | State                                                   |
-| --------------------------------------------------- | ------------------------------------------------------- |
-| P0–P3 — skeleton, 7 layouts, theme system, builder  | **Done**, gate-passed                                   |
-| P4 — element widgets                                | **Partial** (§3)                                        |
-| P5 — guest runtime & hardening                      | **Partial** — Phase A shipped; hardening has holes (§2) |
-| Surveys — S1–S6, SO-1…SO-4, R1 feedback             | **Done**, org-verified                                  |
-| Studio Settings drawer + Studio Actions (#214–#218) | **Done**                                                |
-| P6 — creation & templates                           | **Partial** (§3)                                        |
-| P7 — cutover & legacy deletion                      | **Not started**                                         |
-| 2GP packaging + Security Review                     | **Not started**                                         |
+Phases are [BUILD_PHASES.md](./BUILD_PHASES.md)'s. "Missing" here means **verified absent on
+2026-09-05**, not "unmentioned in a doc" — each row was checked against the components, objects and
+org rather than against a status header.
+
+| Phase                            | State           | Exactly what is missing                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0** Walking skeleton          | **Done**        | —                                                                                                                                                                                                                                                                                                                                             |
+| **P1** All seven layouts         | **Done**        | — all seven nav primitives ship                                                                                                                                                                                                                                                                                                               |
+| **P2** Full theme system         | **Done**        | —                                                                                                                                                                                                                                                                                                                                             |
+| **P3** The builder               | **Done**        | Nothing functional. _Naming note:_ `pageManager` and `bindingPicker` were never built as standalone components — page chips live in `finalBuilderCanvas`, binding lives in `finalPropertyPanel`. **Absorbed, not skipped.** The F8 checklist is closed: `pageValidity` is read by all seven navs.                                             |
+| **P4** Element widgets           | **Partial**     | `formLookup` (= Phase D), `formSignature`, `formVideo` — **never built**. `fileUpload` is **internal only** (Slice 1); guest is Slice 2. `formRepeater` renders **stacked-only**.                                                                                                                                                             |
+| **P5** Guest runtime & hardening | **Partial**     | **Rate limiting** (#20) · **guest file upload** · **classic-form prefill** · the **F13 asset-URL decision** (below). Already built: the guest controller family, honeypot, availability windows, `finalAfterSubmit`, and the answer store with `Label_Snapshot__c` + `Entry_Index__c`. **The security-review gate has never been attempted.** |
+| **P6** Creation & templates      | **Partial**     | The **form template gallery** is a placeholder; `Form_Template__c` exists but holds **1 record**, so seeding is effectively undone. **Theme-coherence prune** not done. Already built: creation gallery, Form/Survey fork, and working survey templates (CSAT/NPS/Event).                                                                     |
+| **P7** Cutover & deletion        | **Not started** | All of it: re-publish surviving forms, flip app/Experience consumers, delete 63 legacy LWCs + ~25 legacy Apex classes, drop deprecated fields and retired objects, docs sweep.                                                                                                                                                                |
+
+**Surfaced 2026-09-05 — P5 F13, asset URLs, no decision on record.** Built-in theme images snapshot
+`/resource/formThemeAssets/…` paths into published `resolved.tokens`, but Experience Cloud serves
+static resources under a **site base path**, and `FinalGuestController` does no URL rewriting
+(verified). A published form using a built-in theme image can therefore show **broken images to
+guests**. BUILD_PHASES §P5 and [CODE_REVIEW_FINDINGS.md](./CODE_REVIEW_FINDINGS.md) §191 both say
+"decide at P2/P5"; neither records a decision. Either rewrite per-audience at publish, or serve
+theme assets from a guest-safe channel. Cheap to decide, annoying to discover in Security Review.
 
 **Codebase shape today:** 53 `final*` LWCs and ~45 `Final*` Apex classes are live. Beside them
 sit **63 legacy LWCs** (`formPlayer`, every `shell*`, all `z*`) and **~25 legacy Apex classes**,
@@ -188,6 +200,11 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 
 **#25 and #27 overlap heavily on the matrix widget and should be worked as one pass.**
 
+**The 2026-09-05 Studio UX review adds a second, larger polish backlog — see §9.** Two of its
+findings outrank items here: builder-canvas keyboard operability (an authoring surface with **zero**
+keyboard support) belongs above the matrix ring in §4.1, and its Studio contrast fix is the same
+refactor as §4.3's chrome-accent unification.
+
 ### 4.1 Accessibility — the sharpest items
 
 PRODUCT.md commits to **WCAG 2.1 AA** on the guest-facing runtime, so these are promise-breaking,
@@ -279,8 +296,12 @@ security hole, and it isn't — see §2.1 for what the allow-list already enforc
 is Security Review, which is gated behind packaging that hasn't started. Sequenced on timing rather
 than on how alarming the title sounds. It stays a hard gate on shipping, just not a standing risk.
 
-Rate limiting (§2.2) can ride the broader guest-hardening pass. The polish backlogs (§4) are real
-work but block nothing.
+Rate limiting (§2.2) can ride the broader guest-hardening pass. The polish backlogs (§4 and §9) are
+real work but block nothing — except **§9.1, which is an hour of copy fixes for a genuinely
+misleading failure message**, and is worth doing on the next pass through the Studio regardless.
+
+The **F13 asset-URL decision (§1)** is a decision, not a build, and should be made before anything
+guest-facing ships with a built-in theme image.
 
 ---
 
@@ -295,3 +316,84 @@ work but block nothing.
 - **Guest access for `finalFormViewer`** — built and shipped in Phase A (`FinalGuestController` +
   `c/finalGuestHost`). Any doc still saying guest access is unbuilt, or recommending the legacy
   `c/formViewer` for guest testing, is stale.
+
+---
+
+## 9 · Studio UX review (2026-09-05) — findings not covered above
+
+Source: [FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md](./FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md).
+**11 of its specific `file:line` and contrast claims were independently verified; all 11 held**,
+including both contrast ratios recomputed from the hex values (3.743:1 and 5.472:1). Treat its
+findings as load-bearing.
+
+Only §4.3's four studio fast-follows overlapped what this document already tracked, so nearly all
+of it is new. Effort tiers below are grounded in what the code actually looks like, not in how the
+review ranked them.
+
+### 9.1 Trivial — an hour or less each
+
+| Finding                                                              | Why it's small                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BLUEPRINT — structure only; the preview is the truth` → "Structure" | One string, `finalBuilderCanvas.html:4`                                                                                                                                                     |
+| Autofill "prefill mapping arrives with a later slice"                | One string, `finalFieldPalette.js:222`                                                                                                                                                      |
+| **A failed PUBLISH reports "Save failed"**                           | Wrong noun on a real failure — `handlePublish` sets `saveState = 'error'`, whose copy is `⚠ Save failed — retrying on next change` (`finalFormStudio.js:379`). Needs its own state + string |
+| Duplicate Availability heading + the submission-service sentence     | Copy deletion                                                                                                                                                                               |
+| Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                                                                     |
+| Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                                                                |
+
+### 9.2 Small and contained — about half a day each
+
+Save status kept visible under 1100px **plus a real Retry** (delete one `display:none` at
+`finalFormStudio.css:218`, add a button onto the existing save path) · Corners/Spacing as
+current-value segmented controls instead of Rounder/Sharper + Airy/Dense nudges (the values already
+exist in `finalDesignPanel`) · Availability date/time stacked, with timezone and a plain schedule
+summary · Simple-mode rich-text toolbars collapsed until focused · consolidate the duplicated
+customization chrome · Advanced Palette helper text neutralised behind a "More" disclosure · library
+name as a link with fewer competing row buttons · Logic-index jump scrolling to the **Visibility**
+section rather than the top of the inspector.
+
+### 9.3 Real features — days each
+
+Library **search + sort + version-vs-lifecycle** (`finalFormsLibrary.html` has **zero** search
+today) · preview **fit / 100% / expand** controls · **pane splitters** with remembered widths ·
+**typed rule operators and value editors** (every source currently gets the same operator list —
+`finalRuleEditor.js:151` — and a bare text input at `finalRuleEditor.html:128`) · creation step
+reorder with progress and focus/scroll restoration · **record picker for invitations** — but this
+should share **Phase D's custom lookup**, not duplicate it.
+
+**Keyboard operability in the builder canvas ranks highest here.** Verified: `finalBuilderCanvas`
+has **zero** keyboard handlers and zero `tabindex`, in the template _and_ imperatively. There is no
+infrastructure to extend — selection, focus management and Move up/down/to-section are built from
+nothing. Against PRODUCT.md's WCAG 2.1 AA commitment this outranks the matrix-ring contrast in §4.1:
+one is a widget flaw, the other means an entire authoring surface is unreachable without a mouse.
+
+### 9.4 Needs a spec before it can be estimated
+
+- **Preview session preservation** (review §1) — the real finding: `finalFormViewer.js:180`
+  re-applies on every spec edit and `_apply` clears `answers` at line 485, so testing a rule means
+  re-entering every input that feeds it. **Blocked on the pruning problem** the review compresses
+  into one clause: what happens to an answer when its question changes type, when a choice's options
+  are edited underneath it, or when a repeat section's child object changes. Also note it now
+  discards **uploaded files** too, and a session holding base64 has a memory dimension the proposed
+  model doesn't address.
+- **Record-context preview** ("Preview as: Test record", review §3) — must inherit the runtime's
+  `USER_MODE`/FLS discipline or it becomes a second, weaker path to record data alongside SO-3/SO-4.
+- **"Explain visibility"** author debugging — must never leak into the respondent form.
+
+### 9.5 The one that looks easy and isn't
+
+**"Correct contrast on small teal buttons" is listed Priority 1 / "Studio styling", which reads
+like a find-and-replace. It is not.** `#0d9488` is hardcoded **54 times across 11 component
+stylesheets**, and there is **no studio chrome token layer** — `--st-*` and `--studio-*` both return
+nothing. A blind replace across 11 files is how you get a half-migrated palette.
+
+Done properly — the review's own recommendation — it means introducing semantic studio tokens and
+then migrating. That is a **days** item, not an afternoon.
+
+**Do it once, with §4.3's chrome-accent unification** (gallery indigo `#6366f1` vs studio teal). Both
+touch the same eleven files; running them separately pays the migration cost twice.
+
+The measured facts, for whoever picks this up: white on the current `#0D9488` is **3.74:1** — below
+the 4.5:1 WCAG floor for small text, and used on top-bar buttons, the preview device selector and
+the Design mode selector. `#0F766E` measures **5.47:1**. The Design panel already warns respondents
+about this exact colour while the Studio uses it on its own chrome.
