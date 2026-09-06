@@ -217,8 +217,8 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 **#25 and #27 overlap heavily on the matrix widget and should be worked as one pass.**
 
 **The 2026-09-05 Studio UX review adds a second, larger polish backlog — see §9.** Two of its
-findings outrank items here: builder-canvas keyboard operability (an authoring surface with **zero**
-keyboard support) belongs above the matrix ring in §4.1, and its Studio contrast fix is the same
+findings outrank items here: builder-canvas keyboard operability (now built; see §9.3)
+belongs above the matrix ring in §4.1, and its Studio contrast fix is the same
 refactor as §4.3's chrome-accent unification.
 
 ### 4.1 Accessibility — the sharpest items
@@ -333,7 +333,10 @@ Two gates from here:
 worth charging for:
 
 1. **Every primary authoring action is reachable without a mouse** — select, reorder, delete, move
-   between sections/pages (§9.3). **DONE — org-verified 2026-09-06.**
+   between sections/pages (§9.3). **Reorder + select + delete: DONE, org-verified 2026-09-06.**
+   **Move BETWEEN sections/pages by keyboard: knowingly NOT met** — the owner rejected both the
+   action bar and the context menu that carried it, so cross-container moves are drag-only. Alt+↑/↓
+   covers reordering among siblings. See [BUILDER_KEYBOARD_SPEC.md](./BUILDER_KEYBOARD_SPEC.md).
 2. **No failure message names the wrong operation, and none is invisible at any width** — a failed
    publish must not say "Save failed", and the status must survive below 1100px with a real Retry
    (§9.1, §9.2). **DONE — org-verified 2026-09-06**, failure path induced and recovered (see §9.2).
@@ -446,6 +449,13 @@ should share **Phase D's custom lookup**, not duplicate it.
 highest here because `finalBuilderCanvas` had **zero** keyboard handlers and zero `tabindex`, in the
 template _and_ imperatively: there was no infrastructure to extend, so selection, focus management
 and Move up/down/to-section were built from nothing.
+
+**Subsequent owner-requested revision — LOCAL, awaiting separate deployment/verification.**
+The permanent action bar has been removed: drag-and-drop stays primary. Custom right-click and
+Shift+F10 actions now provide the optional keyboard destination flow. This supersedes the F2
+behavior in the original verification table below; that table records the earlier deployed build.
+The heading is now “Structure”. A stable keyed wrapper fixes a rendering failure on mixed
+section/block pages. [Current behavior, changed files and smoke test](./BUILDER_KEYBOARD_SPEC.md).
 
 Pages, sections, content blocks and questions now all carry `data-nav` and are reachable by
 keyboard, with a real `:focus-visible` outline. Shared `movement.js` gates destinations — and

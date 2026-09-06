@@ -1,20 +1,31 @@
 # Builder navigation and reordering
 
-2026-09-06: the initial keyboard implementation shipped in PR #230 — and was wrong. It rendered a
-Move up / Move down / Move to… bar on **every selection**, so clicking any question put an action bar
-on screen competing with the drag it was supposed to supplement. The owner called it out; the bar is
-gone. The context menu below replaces it and is **deployed and org-verified**:
+**2026-09-06 — the optional actions menu is REMOVED. Alt + ↑ / ↓ is the whole reorder story.**
 
-| Check (real interactions, production LWS) | Result                                                     |
-| ----------------------------------------- | ---------------------------------------------------------- |
-| Plain click on a question                 | **no popup, zero move buttons** — selection adds no chrome |
-| Real right-click                          | opens Move up / Move down / Move to…                       |
-| `Escape`                                  | dismisses, focus returns to the item                       |
-| `Shift+F10` on a focused item             | opens the same menu                                        |
-| `Alt+↓`                                   | reorders directly — **and opens no menu**                  |
+Two rejected iterations, kept on the record so neither gets re-proposed:
 
-The last two rows are the ones that needed the org: `contextmenu` and `Shift+F10` both had to survive
-LWS inside a Lightning Out VF host, and jsdom cannot answer that.
+1. **An always-on action bar** (PR #230) — `lwc:if={selectedItem}`, so Move up / Move down /
+   Move to… appeared on every selection, competing with the drag it was meant to supplement.
+   Rejected by the owner.
+2. **A right-click / Shift+F10 context menu** (PR #232) — no chrome, but still "so many clicks
+   compared to drag and drop". Also rejected. Removed here.
+
+**What remains:** drag-and-drop is primary and untouched. Questions, sections, blocks and page chips
+are native selection buttons reached with Tab, activated with Enter/Space; Up/Down and Home/End move
+focus; **Alt + ↑ / ↓ reorders the focused item among its siblings.** Selection adds nothing to the
+screen, and right-click gives the browser's own menu back.
+
+**Org-verified 2026-09-06** after removal: right-click opens no custom menu and
+`contextmenu.defaultPrevented` is `false` (native menu restored) · plain click renders no popup and
+no action bar · Alt+↓ then Alt+↑ move an item down and back · the on-screen hint reads "Use Tab to
+reach items and Enter to select. Alt + ↑ / ↓ moves an item up or down."
+
+> **Known consequence, accepted deliberately.** Move to… was the only keyboard route for moving an
+> item **between** sections or pages; Alt+Arrow only reorders among siblings. Cross-container moves
+> are now **drag-only**. Customer-ready criterion #1 (§7.1 of PENDING_WORK) lists "move between
+> sections/pages", so that clause is knowingly unmet by keyboard. If it needs closing later, the
+> cheapest honest option is a destination picker reached from somewhere other than a per-item menu —
+> not a revival of either rejected design above.
 
 ## Current interaction
 

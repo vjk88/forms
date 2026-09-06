@@ -244,63 +244,62 @@ describe('c-final-form-studio', () => {
                 canvas: el.shadowRoot.querySelector('c-final-builder-canvas')
             };
         }
+        /** Selection is a plain click now — the context menu was removed
+         *  (owner 2026-09-06); Alt+Arrow is the only reorder shortcut. */
         const selectItem = (canvas, id) =>
             canvas.shadowRoot
                 .querySelector(`[data-nav][data-id="${id}"]`)
-                .dispatchEvent(
-                    new MouseEvent('contextmenu', {
-                        bubbles: true,
-                        cancelable: true
-                    })
-                );
-        async function moveTo(canvas, value) {
-            if (!canvas.shadowRoot.querySelector('.bc-popup')) {
-                selectItem(canvas, canvas.selection.id);
-                await micro(10);
-            }
-            canvas.shadowRoot.querySelector('.bc-move-to').click();
-            await micro(10);
-            const destination = canvas.shadowRoot.querySelector('select');
-            destination.value = value;
-            destination.dispatchEvent(new CustomEvent('change'));
-            await micro(10);
-            canvas.shadowRoot.querySelector('.bc-move-panel button').click();
-            await micro(20);
-        }
+                .click();
+        const altMove = (canvas, id, key) => {
+            const node = canvas.shadowRoot.querySelector(
+                `[data-nav][data-id="${id}"]`
+            );
+            node.focus();
+            node.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key,
+                    altKey: true,
+                    bubbles: true,
+                    cancelable: true
+                })
+            );
+        };
 
-        it('moves questions with controls, preserves selection/focus, and uses undo and autosave', async () => {
+        it('Alt+Arrow reorders a question, preserving selection/focus, with undo and autosave', async () => {
             const { el, canvas } = await setup();
             selectItem(canvas, 'q1');
             await micro(10);
-            canvas.shadowRoot.querySelectorAll('.bc-actions button')[1].click();
+            altMove(canvas, 'q1', 'ArrowDown');
             await micro(20);
             expect(
                 canvas.spec.pages[0].sections[0].elements.map((q) => q.id)
             ).toEqual(['q2', 'q1']);
             expect(canvas.selection).toEqual({ kind: 'element', id: 'q1' });
             expect(canvas.shadowRoot.activeElement.dataset.id).toBe('q1');
+            expect(
+                canvas.shadowRoot.querySelector('[role="status"]').textContent
+            ).toContain('position 2 of 2');
+
             el.shadowRoot.querySelector('.st-undo').click();
             await micro(20);
             expect(
                 canvas.spec.pages[0].sections[0].elements.map((q) => q.id)
             ).toEqual(['q1', 'q2']);
-            selectItem(canvas, 'q1');
-            await micro(10);
-            await moveTo(canvas, 'page:p2');
-            expect(canvas.currentPageIndex).toBe(1);
-            expect(canvas.spec.pages[1].sections[0].elements[0].id).toBe('q1');
-            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('q1');
-            expect(
-                canvas.shadowRoot.querySelector('[role="status"]').textContent
-            ).toContain('Empty page');
+
             jest.advanceTimersByTime(1000);
             await micro(20);
             const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
-            expect(saved.pages[1].sections[0].elements[0].id).toBe('q1');
+            expect(
+                saved.pages[0].sections[0].elements.map((q) => q.id)
+            ).toEqual(['q1', 'q2']);
+            // the live-region string is chrome, never persisted
             expect(JSON.stringify(saved)).not.toContain('announcement');
         });
 
         it('enforces object context and standalone-block rules at the mutation boundary', async () => {
+            // These are the DRAG intents — the canvas emits the same events on
+            // drop, so the Studio-side guards still need to hold with the
+            // context menu gone.
             const { canvas } = await setup();
             const before = canvas.spec;
             for (const detail of [
@@ -315,50 +314,20 @@ describe('c-final-form-studio', () => {
                 );
             await micro(20);
             expect(canvas.spec).toBe(before);
-            selectItem(canvas, 'child');
-            await micro(10);
-            canvas.shadowRoot.querySelector('.bc-move-to').click();
-            await micro(10);
-            expect(
-                [...canvas.shadowRoot.querySelector('select').options].map(
-                    (option) => option.value
-                )
-            ).toEqual(['', 'r2']);
-            canvas.shadowRoot
-                .querySelectorAll('.bc-move-panel button')[1]
-                .click();
-            await micro(10);
-            await moveTo(canvas, 'r2');
-            expect(canvas.currentPageIndex).toBe(2);
-            expect(canvas.spec.pages[2].sections[0].elements[0].id).toBe(
-                'child'
-            );
-            expect(canvas.shadowRoot.activeElement.dataset.id).toBe('child');
         });
 
-        it('moves sections across pages and reorders pages with keyboard shortcuts', async () => {
+        it('Alt+Arrow reorders sections within a page and pages within the form', async () => {
             const { canvas } = await setup();
             selectItem(canvas, 's2');
             await micro(10);
-            canvas.shadowRoot.querySelector('.bc-actions button').click();
+            altMove(canvas, 's2', 'ArrowUp');
             await micro(20);
             expect(canvas.spec.pages[0].sections[0].id).toBe('s2');
-            await moveTo(canvas, 'p2');
-            expect(canvas.spec.pages[1].sections[0].id).toBe('s2');
             expect(canvas.shadowRoot.activeElement.dataset.id).toBe('s2');
-            const page = canvas.shadowRoot.querySelector(
-                '[data-nav][data-id="p2"]'
-            );
-            page.dispatchEvent(
-                new KeyboardEvent('keydown', {
-                    key: 'ArrowUp',
-                    altKey: true,
-                    bubbles: true,
-                    cancelable: true
-                })
-            );
+
+            altMove(canvas, 'p2', 'ArrowUp');
             await micro(20);
-            expect(canvas.spec.pages.map((p) => p.id)).toEqual([
+            expect(canvas.spec.pages.map((page) => page.id)).toEqual([
                 'p2',
                 'p1',
                 'p3'

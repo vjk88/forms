@@ -1,9 +1,9 @@
 <template>
-    <div class="bc" onpointerdown={handleCanvasPointer}>
+    <div class="bc">
         <div class="bc-bar">Structure</div>
         <p id="keyboard-help" class="bc-status">
             Use Tab to reach items and Enter to select. Alt + ↑ / ↓ moves an
-            item. Shift + F10 opens its actions.
+            item up or down.
         </p>
         <span
             class="bc-status"
@@ -26,7 +26,6 @@
                         aria-current={p.current}
                         aria-describedby="keyboard-help"
                         onkeydown={handleNavigationKey}
-                        oncontextmenu={handleContextMenu}
                         draggable="true"
                         onclick={handleChip}
                         ondragstart={handleChipDragStart}
@@ -56,91 +55,6 @@
             </button>
         </div>
 
-        <template lwc:if={showActions}>
-            <div
-                class="bc-popup"
-                style={actionsStyle}
-                onfocusout={handlePopupFocusOut}
-            >
-                <div
-                    class="bc-actions"
-                    role="menu"
-                    aria-label={actionsLabel}
-                    onkeydown={handleActionsKey}
-                >
-                    <span class="bc-action-label">{selectedLabel}</span>
-                    <button
-                        class="bc-action"
-                        type="button"
-                        role="menuitem"
-                        tabindex="-1"
-                        disabled={moveUpDisabled}
-                        onclick={handleMoveUp}
-                    >
-                        Move up
-                    </button>
-                    <button
-                        class="bc-action"
-                        type="button"
-                        role="menuitem"
-                        tabindex="-1"
-                        disabled={moveDownDisabled}
-                        onclick={handleMoveDown}
-                    >
-                        Move down
-                    </button>
-                    <button
-                        class="bc-action bc-move-to"
-                        type="button"
-                        role="menuitem"
-                        tabindex="-1"
-                        disabled={moveToDisabled}
-                        aria-expanded={moveExpanded}
-                        onclick={handleMoveTo}
-                    >
-                        Move to…
-                    </button>
-                </div>
-                <template lwc:if={moveOpen}>
-                    <div class="bc-move-panel" onkeydown={handleMovePanelKey}>
-                        <label for="move-destination">Destination</label>
-                        <select
-                            id="move-destination"
-                            class="bc-destination"
-                            onchange={handleDestination}
-                            aria-describedby="move-help"
-                        >
-                            <option value="">Choose a destination</option>
-                            <template
-                                for:each={moveDestinations}
-                                for:item="option"
-                            >
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            </template>
-                        </select>
-                        <p id="move-help">{moveHelp}</p>
-                        <button
-                            class="bc-action"
-                            type="button"
-                            disabled={moveConfirmDisabled}
-                            onclick={handleMoveConfirm}
-                        >
-                            Move
-                        </button>
-                        <button
-                            class="bc-action"
-                            type="button"
-                            onclick={handleMoveCancel}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </template>
-            </div>
-        </template>
-
         <div class="bc-scroll">
             <template for:each={sections} for:item="s">
                 <div key={s.id} class="bc-item">
@@ -156,7 +70,6 @@
                             class={s.cls}
                             data-id={s.id}
                             data-kind="section"
-                            oncontextmenu={handleContextMenu}
                             draggable="true"
                             onclick={handleSectionClick}
                             ondragstart={handleSectionDragStart}
@@ -196,7 +109,6 @@
                             class={s.cls}
                             data-id={s.id}
                             data-kind="section"
-                            oncontextmenu={handleContextMenu}
                             draggable="true"
                             onclick={handleSectionClick}
                             ondragstart={handleSectionDragStart}
@@ -250,7 +162,6 @@
                                         style={el.spanStyle}
                                         data-id={el.id}
                                         data-kind="element"
-                                        oncontextmenu={handleContextMenu}
                                         data-section-id={el.sectionId}
                                         draggable="true"
                                         onclick={handleElementClick}
