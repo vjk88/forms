@@ -524,9 +524,26 @@ mouse, which is a harder failure than any single widget defect in §4.1.
 ### 9.5 The one that looks easy and isn't
 
 **"Correct contrast on small teal buttons" is listed Priority 1 / "Studio styling", which reads
-like a find-and-replace. It is not.** `#0d9488` is hardcoded **54 times across 11 component
-stylesheets**, and there is **no studio chrome token layer** — `--st-*` and `--studio-*` both return
-nothing. A blind replace across 11 files is how you get a half-migrated palette.
+like a find-and-replace. It is not.** `#0d9488` is hardcoded **54 times across 21 files**, and
+there is **no studio chrome token layer** — `--st-*` and `--studio-*` both return nothing.
+
+> **Correction 2026-09-06:** an earlier version of this section said "11 component stylesheets".
+> That number came from a `grep | head -12` — my own truncation, read back as a result. The real
+> spread is 21 files, and more importantly it is not homogeneous:
+>
+> | Group                                                                  | Files  | Migrate?                                                                 |
+> | ---------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------ |
+> | `final*` studio chrome CSS                                             | **12** | **yes — this is the actual job**                                         |
+> | Theme catalog + engine (`finalThemeCatalog.js`, `finalThemeEngine.js`) | 2      | **NO — respondent theme values; changing them alters customers' themes** |
+> | Tests asserting the current value                                      | 2      | update alongside                                                         |
+> | Legacy (`form*`, `shell*`, `z*`)                                       | 5      | no — P7 deletes them                                                     |
+>
+> So the job is **smaller than 21 files and more dangerous than a replace**: the theme-data hits sit
+> in the same grep and must be left alone. Worth knowing that `#0F766E`, the accessible teal the
+> review recommends, is **already** a value in `finalThemeCatalog.js` — the theme system knows it.
+
+A blind replace across all 21 files is how you get a half-migrated palette _and_ silently restyle
+customer forms.
 
 Done properly — the review's own recommendation — it means introducing semantic studio tokens and
 then migrating. That is a **days** item, not an afternoon.
