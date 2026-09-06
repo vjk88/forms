@@ -89,6 +89,9 @@ export default class FinalBuilderCanvas extends LightningElement {
     @api currentPageIndex = 0;
 
     moveOpen = false;
+    actionsOpen = false;
+    _actionsTop = 0;
+    _actionsLeft = 0;
     destination = '';
     announcement = '';
     _pendingAction;
@@ -125,6 +128,62 @@ export default class FinalBuilderCanvas extends LightningElement {
 
     get actionsLabel() {
         return `Actions for ${this.selectedLabel}`;
+    }
+    get actionsStyle() {
+        return `top:${this._actionsTop}px;left:${this._actionsLeft}px;max-height:calc(100% - ${this._actionsTop + 8}px)`;
+    }
+    get showActions() {
+        return this.actionsOpen && Boolean(this.selectedItem);
+    }
+
+    _openActions(event) {
+        const { kind, id } = event.currentTarget.dataset;
+        if (kind === 'page') this.handleChip(event);
+        else this._select(kind, id);
+        const root = this.template.querySelector('.bc').getBoundingClientRect();
+        const item = event.currentTarget.getBoundingClientRect();
+        this._actionsTop = Math.max(
+            8,
+            Math.min(item.bottom - root.top + 4, root.height - 240)
+        );
+        this._actionsLeft = Math.max(
+            8,
+            Math.min(item.left - root.left, root.width - 320)
+        );
+        this.actionsOpen = true;
+        this._focusActions = true;
+    }
+    handleContextMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this._openActions(event);
+    }
+    handleCanvasPointer(event) {
+        if (this.actionsOpen && !event.target.closest('.bc-popup')) {
+            this.actionsOpen = false;
+            this.moveOpen = false;
+        }
+    }
+    handlePopupFocusOut() {
+        Promise.resolve().then(() => {
+            const popup = this.template.querySelector('.bc-popup');
+            if (popup && !popup.contains(this.template.activeElement)) {
+                this.actionsOpen = false;
+                this.moveOpen = false;
+            }
+        });
+    }
+    _outsidePointer = (event) => {
+        if (!event.composedPath().includes(this.template.host)) {
+            this.actionsOpen = false;
+            this.moveOpen = false;
+        }
+    };
+    connectedCallback() {
+        document.addEventListener('pointerdown', this._outsidePointer);
+    }
+    disconnectedCallback() {
+        document.removeEventListener('pointerdown', this._outsidePointer);
     }
     get moveUpDisabled() {
         const hit = this.selectedItem;
@@ -204,11 +263,9 @@ export default class FinalBuilderCanvas extends LightningElement {
         if (altKey && (key === 'ArrowUp' || key === 'ArrowDown')) {
             event.preventDefault();
             this._moveSibling(kind, id, key === 'ArrowUp' ? -1 : 1);
-        } else if (key === 'F2') {
+        } else if ((key === 'F10' && event.shiftKey) || key === 'ContextMenu') {
             event.preventDefault();
-            this._focusActions = true;
-            if (kind === 'page') this.handleChip(event);
-            else this._select(kind, id);
+            this._openActions(event);
         } else if (
             !altKey &&
             ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(key)
@@ -257,6 +314,7 @@ export default class FinalBuilderCanvas extends LightningElement {
             }
         );
         this.moveOpen = false;
+        this.actionsOpen = false;
         if (kind === 'page') {
             this._emit('pagechange', { index: this.pages.indexOf(hit.page) });
             this._emit('movepage', { id, beforeId: before });
@@ -302,7 +360,29 @@ export default class FinalBuilderCanvas extends LightningElement {
     handleActionsKey(event) {
         if (event.key === 'Escape') {
             event.preventDefault();
+            this.actionsOpen = false;
+            this.moveOpen = false;
             this._focusItem(this.selection.kind, this.selection.id);
+        } else if (
+            ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)
+        ) {
+            event.preventDefault();
+            const buttons = [
+                ...this.template.querySelectorAll(
+                    '[role="menuitem"]:not(:disabled)'
+                )
+            ];
+            const at = buttons.indexOf(this.template.activeElement);
+            const index =
+                event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? buttons.length - 1
+                      : (at +
+                            (event.key === 'ArrowUp' ? -1 : 1) +
+                            buttons.length) %
+                        buttons.length;
+            buttons[index]?.focus();
         }
     }
     handleMoveConfirm() {
@@ -328,6 +408,7 @@ export default class FinalBuilderCanvas extends LightningElement {
             }
         );
         this.moveOpen = false;
+        this.actionsOpen = false;
         if (kind === 'section')
             this._emit('movesection', {
                 id,
@@ -357,6 +438,7 @@ export default class FinalBuilderCanvas extends LightningElement {
         const fallback =
             neighbor || (kind === 'element' ? hit.section : hit.page);
         this.moveOpen = false;
+        this.actionsOpen = false;
         this._queueAction(
             fallbackKind,
             fallback.id,
@@ -370,7 +452,6 @@ export default class FinalBuilderCanvas extends LightningElement {
     _hlNode = null; // the single currently-highlighted node
     _hlCls = '';
     _dragKind = null; // section | element | page (canvas-internal drags)
-    _dragElSig = 'parent'; // data-context sig of a dragged element's source
     _dragElementId;
     _boundRootEl = null; // canvas root the capture gatekeeper is bound to
 
@@ -516,7 +597,6 @@ export default class FinalBuilderCanvas extends LightningElement {
             const cols = [1, 2, 3, 4].includes(s.columns) ? s.columns : 1;
             return {
                 id: s.id,
-                gapKey: `gap_${s.id}`,
                 isBlock,
                 pressed: String(selected),
                 removeLabel: `Remove ${s.block ? 'block' : 'section'}: ${this._label('section', s)}`,
@@ -757,7 +837,6 @@ export default class FinalBuilderCanvas extends LightningElement {
         this._dragKind = 'element';
         const ds = e.currentTarget.dataset;
         this._dragElementId = ds.id;
-        this._dragElSig = this._sig(this._sectionById(ds.sectionId));
         this._setDrag(e, {
             t: 'element',
             id: ds.id,
@@ -1039,6 +1118,7 @@ export default class FinalBuilderCanvas extends LightningElement {
 
     _select(kind, id) {
         this.moveOpen = false;
+        this.actionsOpen = false;
         this._pendingAction = null;
         this.dispatchEvent(new CustomEvent('select', { detail: { kind, id } }));
     }

@@ -68,6 +68,45 @@ function mount(props = {}) {
 }
 
 describe('c-final-builder-canvas', () => {
+    it('dismisses the optional context menu with Escape or an outside pointer', async () => {
+        const el = mount();
+        el.addEventListener('select', (event) => {
+            el.selection = event.detail;
+        });
+        const root = el.shadowRoot;
+        const item = root.querySelector('[data-nav][data-id="el_1"]');
+        item.dispatchEvent(
+            new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
+        root.activeElement.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'End',
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        expect(root.activeElement).toBe(root.querySelector('.bc-move-to'));
+        root.activeElement.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+                cancelable: true
+            })
+        );
+        await Promise.resolve();
+        expect(root.querySelector('.bc-popup')).toBeNull();
+        expect(root.activeElement).toBe(item);
+        item.dispatchEvent(
+            new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
+        document.body.dispatchEvent(
+            new MouseEvent('pointerdown', { bubbles: true, composed: true })
+        );
+        await Promise.resolve();
+        expect(root.querySelector('.bc-popup')).toBeNull();
+    });
     it('switches from ordinary sections to a page mixing repeaters and standalone blocks', async () => {
         const spec = JSON.parse(JSON.stringify(SPEC));
         spec.pages[1].sections = [
@@ -129,16 +168,20 @@ describe('c-final-builder-canvas', () => {
         });
     });
 
-    it('opens selected actions with F2, supports Alt+Down and restores focus after a confirmed move', async () => {
+    it('keeps actions hidden until Shift+F10, supports Alt+Down and restores focus after a confirmed move', async () => {
         const el = mount();
         el.addEventListener('select', (event) => {
             el.selection = event.detail;
         });
         const root = el.shadowRoot;
         const first = root.querySelector('[data-nav][data-id="el_1"]');
+        first.click();
+        await Promise.resolve();
+        expect(root.querySelector('.bc-actions')).toBeNull();
         first.dispatchEvent(
             new KeyboardEvent('keydown', {
-                key: 'F2',
+                key: 'F10',
+                shiftKey: true,
                 bubbles: true,
                 cancelable: true
             })
@@ -189,6 +232,13 @@ describe('c-final-builder-canvas', () => {
             selection: { kind: 'element', id: 'el_1' }
         });
         const root = el.shadowRoot;
+        el.addEventListener('select', (event) => {
+            el.selection = event.detail;
+        });
+        root.querySelector('[data-nav][data-id="el_1"]').dispatchEvent(
+            new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
         root.querySelector('.bc-move-to').click();
         await Promise.resolve();
         const select = root.querySelector('select');

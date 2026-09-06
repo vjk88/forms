@@ -247,8 +247,17 @@ describe('c-final-form-studio', () => {
         const selectItem = (canvas, id) =>
             canvas.shadowRoot
                 .querySelector(`[data-nav][data-id="${id}"]`)
-                .click();
+                .dispatchEvent(
+                    new MouseEvent('contextmenu', {
+                        bubbles: true,
+                        cancelable: true
+                    })
+                );
         async function moveTo(canvas, value) {
+            if (!canvas.shadowRoot.querySelector('.bc-popup')) {
+                selectItem(canvas, canvas.selection.id);
+                await micro(10);
+            }
             canvas.shadowRoot.querySelector('.bc-move-to').click();
             await micro(10);
             const destination = canvas.shadowRoot.querySelector('select');
