@@ -1,6 +1,7 @@
 # Pending Work — everything between here and ship
 
 **Compiled:** 2026-09-03 · **Last commit at time of writing:** `47fc433` (2026-08-16, PR #218)
+**Last updated:** 2026-09-07, current through **PR #239** (Design panel reorganization + its org render QA)
 **Ship definition:** a managed 2GP AppExchange package **with Surveys** ([[project-ship-definition]]).
 Companions: [BUILD_PHASES.md](./BUILD_PHASES.md) (what's in scope) · [DEFERRED.md](./DEFERRED.md)
 (consciously parked) · [PRODUCT.md](../../PRODUCT.md) (the promises).
@@ -199,6 +200,10 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
   repeat elements cannot drive visibility rules.
 - **Prefill Phases B + C** — surveys have record-aware prefill via SO-4 tokens, but **classic forms
   have no prefill at all**.
+  **Design added 2026-09-07:** [Autofill rules implementation plan](./IMPL_PLAN_AUTOFILL_RULES.md)
+  specifies personalized-link and authenticated lookup-driven Autofill, including a basic
+  lookup selector, authoring, runtime behavior, permissions, and tests. Design only; this
+  does not close the implementation or verification work above.
 
 ### 3.4 Creation & templates (P6)
 
@@ -380,14 +385,15 @@ review ranked them.
 
 ### 9.1 Trivial — an hour or less each
 
-| Finding                                                              | Why it's small                                                                                                                                                                                             |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BLUEPRINT — structure only; the preview is the truth` → "Structure" | One string, `finalBuilderCanvas.html:4`                                                                                                                                                                    |
-| Autofill "prefill mapping arrives with a later slice"                | One string, `finalFieldPalette.js:222`                                                                                                                                                                     |
-| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**       | Publish failures now carry their own message and retry; draft-save state stays independent. Org-verified 2026-09-06: real failure induced, correct copy, Retry recovered AND persisted the edit. See §9.2. |
-| Duplicate Availability heading + the submission-service sentence     | Copy deletion                                                                                                                                                                                              |
-| Delete-control accessible names                                      | Contextual `aria-label`                                                                                                                                                                                    |
-| Copy: "answer store", "every answer becomes a field"                 | Wording only                                                                                                                                                                                               |
+| Finding                                                                          | Why it's small                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BLUEPRINT — structure only; the preview is the truth` → "Structure"             | One string, `finalBuilderCanvas.html:4`                                                                                                                                                                                                                                                                                                                                             |
+| Autofill "prefill mapping arrives with a later slice"                            | One string, `finalFieldPalette.js:222`                                                                                                                                                                                                                                                                                                                                              |
+| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**                   | Publish failures now carry their own message and retry; draft-save state stays independent. Org-verified 2026-09-06: real failure induced, correct copy, Retry recovered AND persisted the edit. See §9.2.                                                                                                                                                                          |
+| Duplicate Availability heading + the submission-service sentence                 | Copy deletion                                                                                                                                                                                                                                                                                                                                                                       |
+| **Arrangement hint names a control that layout doesn't have** (found 2026-09-07) | `buttonArrangement`'s hint is the static string "How Back / **Next** / Submit line up" (`finalDesignRegistry.js`), but on one-at-a-time and Split Hero · Conversational there is no Next — the control directly above it reads "Continue button label". PR #239's Next/Continue split is what made it wrong. One string; needs to vary with `ownsAdvance`, or drop the button names |
+| Delete-control accessible names                                                  | Contextual `aria-label`                                                                                                                                                                                                                                                                                                                                                             |
+| Copy: "answer store", "every answer becomes a field"                             | Wording only                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### 9.2 Small and contained — about half a day each _(provisional)_
 
@@ -428,13 +434,21 @@ This is per-instance request ordering; cross-tab/multi-user conflict detection i
 > The last row is the one that matters: Retry sent the LATEST spec and the data genuinely landed,
 > rather than the label merely flipping to green.
 
-**Still pending:** Corners/Spacing as
-current-value segmented controls instead of Rounder/Sharper + Airy/Dense nudges (the values already
-exist in `finalDesignPanel`) · Availability date/time stacked, with timezone and a plain schedule
-summary · Simple-mode rich-text toolbars collapsed until focused · consolidate the duplicated
-customization chrome · Advanced Palette helper text neutralised behind a "More" disclosure · library
-name as a link with fewer competing row buttons · Logic-index jump scrolling to the **Visibility**
-section rather than the top of the inspector.
+**Still pending:** Corners/Spacing —
+**this one changed shape on 2026-09-06, read before acting.** The review asked for current-value
+segmented controls _replacing_ the Rounder/Sharper + Airy/Dense nudges. PR #239 **deleted the
+nudges without replacing them**, so Simple now has no radius or density control at all; both live
+in Advanced (radius under _Page & form › Form appearance_, density under _Size & spacing_). The
+review's complaint — nudge buttons that never showed the current value — is gone. The open question
+is narrower: does Simple deserve segmented Corners/Spacing back, or is Advanced the right home?
+**Owner decision, not a build task.** · Availability date/time stacked, with timezone and a plain
+schedule summary · rich-text toolbars collapsed until focused — **now Advanced too, not just
+Simple**: Advanced's default-open Brand & header stacks three permanent toolbars (Title,
+Description, Brand name) and pushes the rest of the section below the fold (org-observed
+2026-09-07) · consolidate the duplicated customization chrome (confirmed on screen 2026-09-07) ·
+Advanced Palette helper text neutralised behind a "More" disclosure · library name as a link with
+fewer competing row buttons · Logic-index jump scrolling to the **Visibility** section rather than
+the top of the inspector.
 
 ### 9.3 Real features — days each
 

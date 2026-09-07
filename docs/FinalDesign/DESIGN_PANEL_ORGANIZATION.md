@@ -49,17 +49,54 @@ Both modes write the same spec paths. Merely switching modes emits no specchange
 - New regression coverage includes all-control coverage/uniqueness, all layout variants' button labels, Simple section defaults, state preservation, confirmation content, toast-mode preservation, hidden-override theme confirmation, reset scope, and the viewer-to-navigation label contract.
 - ESLint and Prettier checks are run on changed files.
 - The existing dynamic-component slot compiler warning and jsdom CSS-parser limitations were observed during local tests; they did not fail the suites. No new warning suppression was added to the test files.
-- No Salesforce deployment or production-browser verification was performed. No Git commands were run against this Salesforce repository.
+- **Shipped 2026-09-06.** All six bundles deployed to `revclouddev`, then merged to `main` as PR #239. The pre-commit prettier pass changed nothing, so the deployed source and `main` are identical.
+- **Org render QA run 2026-09-07** (Playwright, headless, `/apex/FinalStudio`): **60 assertions passed, zero product failures, no console errors.** Results per step below.
 
 ## Manual verification after targeted deployment
 
-1. Open an existing customized form in Design. Confirm three Simple sections and no Look shortcuts; expand each section and check the live preview while editing.
-2. Switch Simple → Advanced Design → Simple. Check custom colors, rich text, images and layout settings remain intact.
-3. Open all five Advanced sections. Check conditional controls for stepper, rail, tabs, accordion, one-at-a-time and both Split Hero variants; also check a survey.
-4. Edit Back / Next / Continue / Submit labels and check the appropriate buttons in preview, including conversational Back after advancing.
-5. Add/edit/clear the confirmation title and message, submit in preview, and verify older forms with no title retain their previous appearance.
-6. Open a form using Toast & go. Simple must preserve that mode and retained screen content; its settings link should open After submit.
-7. Change themes on a customized form and exercise Keep / Use theme as-is / Cancel. Test a group reset and confirm header content and other groups survive.
-8. Check keyboard focus, native disclosure controls, color pickers and rich-text menus at the normal Studio pane width.
+Steps 1–4, 6 and 8 are **verified in the org** (2026-09-07). Steps 5 and 7 are partly verified —
+what remains is called out inline, and both remainders are blocked on the same thing: they write
+real data (a submitted response; a destructive override clear).
 
-Deploy only these six bundles: finalDesignPanel, finalDesignRegistry, finalAfterSubmit, finalFormViewer, finalNavOneAtATime, finalNavSplitHero. Commit and deployment remain with the owner.
+1. **PASS** — Open an existing customized form in Design. Confirm three Simple sections and no Look shortcuts; expand each section and check the live preview while editing. _Exactly `Appearance / Content & branding / Buttons & confirmation`, only the first open, zero `[data-look]` nodes._
+2. **PASS** — Switch Simple → Advanced Design → Simple. Check custom colors, rich text, images and layout settings remain intact. _Theme, layout, rich text and every input identical across the round trip._
+3. **PASS** — Open all five Advanced sections. Check conditional controls for stepper, rail, tabs, accordion, one-at-a-time and both Split Hero variants; also check a survey. _All seven layouts exercised (rail and accordion by switching layout on a scratch form, then restoring). Surveys included._
+4. **PASS** — Edit Back / Next / Continue / Submit labels and check the appropriate buttons in preview, including conversational Back after advancing. _See "Label gates" below — the strongest result in the run._
+5. **PARTIAL** — Add/edit/clear the confirmation title and message, submit in preview, and verify older forms with no title retain their previous appearance. _Verified: the title renders only in screen mode, is hidden in toast, **survives a screen → toast → screen round trip with its value intact** (IA §6), and clears. **Not verified:** submitting in preview to see the rendered confirmation — it writes a real response record. Jest covers the render, including that the title is emitted as text, not rich text._
+6. **PASS** — Open a form using Toast & go. Simple must preserve that mode and retained screen content; its settings link should open After submit. _Simple summarises "Save · Toast & go"; the link switches to Advanced **and** expands After submit._
+7. **PARTIAL** — Change themes on a customized form and exercise Keep / Use theme as-is / Cancel. Test a group reset and confirm header content and other groups survive. _Verified: the gallery opens, Cancel is non-destructive, and the customization count includes overrides hidden from the current lens. **Not verified:** Keep / Use-theme-as-is and group reset — all three destroy overrides on a real form._
+8. **PASS** — Check keyboard focus, native disclosure controls, color pickers and rich-text menus at the normal Studio pane width. _Enter toggles a section, `aria-expanded` flips, focus is retained; pickers and rich-text menus render._
+
+### Label gates — org-proven, not just jest-proven
+
+Per layout the panel renders exactly the labels that layout actually uses: stepper / tabs / rail /
+Split Hero show Back + **Next** + Submit; one-at-a-time and **Split Hero · Conversational** show
+Back + **Continue** + Submit; scroll and accordion show Submit alone.
+
+Flipping `paneFlow` on Split Hero live made `advanceLabel` appear and `nextLabel` vanish, and both
+reverted — so `ownsAdvance = ownsHeader && paneFlow === 'oneAtATime'`, the subtlest branch here,
+holds against a real org. Setting Back = "QA Back" and Continue = "QA Continue" then advancing a
+screen rendered both on the real buttons, which closes the open question about whether the new
+`backLabel` API actually reaches them.
+
+### Findings — cosmetic, none blocking
+
+- **The Arrangement hint is now wrong on conversational layouts.** It reads "How Back / **Next** /
+  Submit line up" (static, unconditional) but those layouts have no Next — the control directly
+  above it says "Continue button label". This reorganization's Next/Continue split is what made the
+  hint inaccurate. Logged in [PENDING_WORK.md](./PENDING_WORK.md) §9.1.
+- **Brand & header opens onto three stacked rich-text editors** (Title, Description, Brand name),
+  each with a permanent toolbar, pushing Colors / Typography / Header appearance below the fold. It
+  is the default-open section, so it is the first thing seen in Advanced. Same fix as the existing
+  §9.2 "collapse rich-text toolbars until focused" item, which now applies to Advanced too.
+- **Duplicated customization chrome** — the "N customization(s) · Reset all" chip sits directly
+  above "N advanced customization(s) are active." Pre-existing; already tracked in §9.2.
+
+### QA method and cleanup
+
+Playwright headless against `/apex/FinalStudio` with per-run frontdoor auth. Four forms were
+mutated during testing (paneFlow, button labels, completion title, and layout switches on the
+scratch `rerere` form); each was reverted in-script and the specs were **re-queried afterwards to
+confirm** every one is back to its original state. No residue.
+
+Deploy only these six bundles: finalDesignPanel, finalDesignRegistry, finalAfterSubmit, finalFormViewer, finalNavOneAtATime, finalNavSplitHero.
