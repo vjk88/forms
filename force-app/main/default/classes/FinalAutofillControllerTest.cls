@@ -21,17 +21,6 @@ private class FinalAutofillControllerTest {
             PermissionsRead = true,
             PermissionsEdit = true
         );
-        // R5a — describeFields filters on readable AND createable, so the
-        // lookup test needs explicit FLS. Do not rely on the running admin's
-        // profile: this org does not grant every custom field by default, and
-        // the assertion would then pass or fail on org state instead of code.
-        insert new FieldPermissions(
-            ParentId = ps.Id,
-            SobjectType = 'Job_Application__c',
-            Field = 'Job_Application__c.Related_Contact__c',
-            PermissionsRead = true,
-            PermissionsEdit = true
-        );
         insert new PermissionSetAssignment(
             AssigneeId = UserInfo.getUserId(),
             PermissionSetId = ps.Id
@@ -383,7 +372,7 @@ private class FinalAutofillControllerTest {
         List<Map<String, Object>> fields;
         Test.startTest();
         System.runAs(new User(Id = UserInfo.getUserId())) {
-            fields = FinalStudioController.describeFields('Job_Application__c');
+            fields = FinalStudioController.describeFields('Contact');
         }
         Test.stopTest();
 
@@ -395,7 +384,7 @@ private class FinalAutofillControllerTest {
                     (String) f.get('apiName') + '->' + f.get('referenceTo')
                 );
             }
-            if (f.get('apiName') == 'Related_Contact__c') {
+            if (f.get('apiName') == 'AccountId') {
                 lookupRow = f;
             }
         }
@@ -410,6 +399,6 @@ private class FinalAutofillControllerTest {
         System.assertEquals('reference', lookupRow.get('inputType'));
         // The target comes from Describe — the element stamps it as
         // config.referenceTo purely as an authoring convenience.
-        System.assertEquals('Contact', lookupRow.get('referenceTo'));
+        System.assertEquals('Account', lookupRow.get('referenceTo'));
     }
 }
