@@ -1,5 +1,12 @@
 # Guest Delivery · Prefill · Custom Lookup — Program Spec
 
+**Implementation design added 2026-09-07:**
+[Autofill rules implementation plan](./IMPL_PLAN_AUTOFILL_RULES.md) covers personalized-link
+and authenticated lookup-driven Autofill, reusing the existing SO-4 token infrastructure.
+It proposes Build > Autofill authoring and a basic authenticated lookup dependency;
+the broader Phase D lookup scope remains separate. This is a design, not an implementation
+or org-verification status update.
+
 **Status:** ACTIVE — owner started Phase A on 2026-07-19 ("lets start phase A -
 guest render"); each phase still gets its own IMPL_PLAN before code (Phase A's:
 [IMPL_PLAN_PHASE_A_GUEST_RENDER.md](./IMPL_PLAN_PHASE_A_GUEST_RENDER.md)).

@@ -160,6 +160,19 @@
                     </template>
                 </div>
             </template>
+            <template lwc:elseif={isLookup}>
+                <c-final-lookup
+                    element-id={el.id}
+                    label={el.label}
+                    value={el.value}
+                    target-object={lookupTargetObject}
+                    placeholder={el.placeholder}
+                    required={el.required}
+                    disabled={el.disabled}
+                    read-only={el.readOnly}
+                    onvaluechange={handleLookupChange}
+                ></c-final-lookup>
+            </template>
             <template lwc:else>
                 <lightning-input
                     type={inputType}

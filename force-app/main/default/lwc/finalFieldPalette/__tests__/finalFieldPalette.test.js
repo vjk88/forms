@@ -295,4 +295,33 @@ describe('c-final-field-palette', () => {
         dead.dispatchEvent(blocked);
         expect(blocked.defaultPrevented).toBe(true);
     });
+
+    it('Autofill tab renders c-final-autofill-panel and navigatetab switches tab back to fields', async () => {
+        const el = mount({ spec: { pages: [] }, formId: 'f001' });
+        await flush();
+
+        const autofillTabBtn = el.shadowRoot.querySelector(
+            '[data-tab="autofill"]'
+        );
+        autofillTabBtn.click();
+        await flush();
+
+        const panel = el.shadowRoot.querySelector('c-final-autofill-panel');
+        expect(panel).not.toBeNull();
+
+        // Relay navigatetab
+        panel.dispatchEvent(
+            new CustomEvent('navigatetab', {
+                detail: { tab: 'fields' }
+            })
+        );
+        await flush();
+
+        expect(
+            el.shadowRoot.querySelector('c-final-autofill-panel')
+        ).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.fp-tab[data-tab="fields"]').classList
+        ).toContain('on');
+    });
 });

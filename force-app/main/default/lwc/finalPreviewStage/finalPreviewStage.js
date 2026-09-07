@@ -34,6 +34,7 @@ export default class FinalPreviewStage extends LightningElement {
     @api authoring = false;
     @api preserveSession = false;
     @api session;
+    @api recordContext;
     previewState;
 
     connectedCallback() {

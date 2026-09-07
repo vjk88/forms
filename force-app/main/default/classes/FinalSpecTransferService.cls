@@ -209,6 +209,74 @@ public with sharing class FinalSpecTransferService {
                 }
             }
         }
+        rewriteAutofill(spec, validation);
+    }
+
+    private static void rewriteAutofill(
+        Map<String, Object> spec,
+        FinalSpecTransferValidator.Result validation
+    ) {
+        Object settingsObj = spec.get('settings');
+        if (!(settingsObj instanceof Map<String, Object>)) {
+            return;
+        }
+        Map<String, Object> settings = (Map<String, Object>) settingsObj;
+        Object prefillObj = settings.get('prefill');
+        if (!(prefillObj instanceof Map<String, Object>)) {
+            return;
+        }
+        Map<String, Object> prefill = (Map<String, Object>) prefillObj;
+        Object rulesObj = prefill.get('autofillRules');
+        if (!(rulesObj instanceof List<Object>)) {
+            return;
+        }
+        for (Object rObj : (List<Object>) rulesObj) {
+            if (!(rObj instanceof Map<String, Object>)) {
+                continue;
+            }
+            Map<String, Object> rule = (Map<String, Object>) rObj;
+            String oldRuleId = (String) rule.get('id');
+            if (
+                String.isNotBlank(oldRuleId) &&
+                validation.freshIdByOld.containsKey(oldRuleId)
+            ) {
+                rule.put('id', validation.freshIdByOld.get(oldRuleId));
+            }
+            Object srcObj = rule.get('source');
+            if (srcObj instanceof Map<String, Object>) {
+                Map<String, Object> src = (Map<String, Object>) srcObj;
+                String oldEl = (String) src.get('elementId');
+                if (
+                    String.isNotBlank(oldEl) &&
+                    validation.freshIdByOld.containsKey(oldEl)
+                ) {
+                    src.put('elementId', validation.freshIdByOld.get(oldEl));
+                }
+            }
+            Object mapObj = rule.get('mappings');
+            if (mapObj instanceof List<Object>) {
+                for (Object mObj : (List<Object>) mapObj) {
+                    if (!(mObj instanceof Map<String, Object>)) {
+                        continue;
+                    }
+                    Map<String, Object> m = (Map<String, Object>) mObj;
+                    String oldMapId = (String) m.get('id');
+                    if (
+                        String.isNotBlank(oldMapId) &&
+                        validation.freshIdByOld.containsKey(oldMapId)
+                    ) {
+                        m.put('id', validation.freshIdByOld.get(oldMapId));
+                    }
+                    String oldTo = (String) m.get('to');
+                    if (
+                        String.isNotBlank(oldTo) &&
+                        validation.freshIdByOld.containsKey(oldTo)
+                    ) {
+                        m.put('to', validation.freshIdByOld.get(oldTo));
+                    }
+                }
+            }
+        }
     }
 
     private static void rewriteRule(

@@ -39,7 +39,7 @@
                         lockup={model.paneLockup}
                         arrangement={model.buttonArrangement}
                         bleed={model.bleed}
-                        submit-label={model.submit.label}
+                        submit-label={effectiveSubmitLabel}
                         back-label={model.submit.backLabel}
                         onpagechange={handlePageChange}
                         onsubmit={handleSubmit}
@@ -50,16 +50,31 @@
                              never cross the primitive's shadow boundary. -->
                         <c-final-submit-bar
                             slot="actions"
-                            config={model.submit}
+                            config={effectiveSubmitConfig}
                             show-back={showBack}
                             show-next={showNext}
                             show-submit={showSubmit}
+                            submitting={_submitting}
+                            disabled={isAutofillPending}
                             arrangement={model.buttonArrangement}
                             onback={handleBack}
                             onnext={handleNext}
                             onsubmit={handleSubmit}
                         ></c-final-submit-bar>
                     </lwc:component>
+                    <template for:each={activeAutofillRequests} for:item="req">
+                        <c-final-autofill-record-source
+                            key={req.key}
+                            rule-id={req.ruleId}
+                            record-id={req.recordId}
+                            object-api-name={req.objectApiName}
+                            fields={req.fields}
+                            generation={req.generation}
+                            session-id={req.sessionId}
+                            onrecordsuccess={handleAutofillRecordSuccess}
+                            onrecorderror={handleAutofillRecordError}
+                        ></c-final-autofill-record-source>
+                    </template>
                 </template>
             </div>
         </c-final-page-frame>

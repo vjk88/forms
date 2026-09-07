@@ -298,6 +298,7 @@
                     <div class="st-scroll">
                         <c-final-preview-stage
                             spec={spec}
+                            record-context={testRecordContext}
                             session={previewSession}
                             preserve-session
                             onsessionconsumed={handlePreviewSessionConsumed}
@@ -371,11 +372,18 @@
                             used-fields={usedFields}
                             used-labels={usedLabels}
                             logic-index={logicIndex}
+                            spec={spec}
+                            form-id={formId}
+                            is-public={isPublic}
+                            active-version-id={activeVersionId}
                             onaddfield={handleAddField}
                             onaddquestion={handleAddQuestion}
                             onaddblock={handleAddBlock}
                             onaddrepeater={handleAddRepeater}
                             onlogicjump={handleLogicJump}
+                            onspecchange={handleSpecChange}
+                            ontestpreview={handleTestPreview}
+                            oncleartestpreview={handleClearTestPreview}
                         ></c-final-field-palette>
                     </template>
                 </aside>
@@ -403,6 +411,7 @@
                     <div class="st-scroll">
                         <c-final-preview-stage
                             spec={spec}
+                            record-context={testRecordContext}
                             session={previewSession}
                             preserve-session
                             onsessionconsumed={handlePreviewSessionConsumed}

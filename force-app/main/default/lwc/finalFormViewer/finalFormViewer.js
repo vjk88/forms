@@ -8,7 +8,21 @@ import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
-import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
+import {
+    reconcileAnswers,
+    reconcileAutofillSession,
+    pageAnchor,
+    restorePage
+} from './previewSession';
+import {
+    createAutofillSession,
+    extractAutofillRules,
+    seedStaticDefaults,
+    onManualEdit,
+    onSourceChanged,
+    onResult,
+    onRequestFailure
+} from './autofillEngine';
 
 /**
  * One-question-per-screen auto-split (SURVEY_PLAN §10 Q4, ruled 2026-07-27,
@@ -218,8 +232,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  MUST be a declared field — undeclared assignments aren't reactive. */
     completed = false;
 
-    /** Submit-engine state (slice 7). */
-    submitError;
+    /** Submit-engine state (slice 7).
+     *
+     *  Exposed READ-ONLY. This was briefly `@api submitError`, which made every
+     *  one of the component's own assignments an `@lwc/lwc/no-api-reassignments`
+     *  violation — a component may not reassign its own public property, and
+     *  LWC's one-way data flow says the owner writes it. Nothing outside ever
+     *  set it (only Studio/tests READ it), so a getter over private state gives
+     *  the same access without breaking the contract. */
+    _submitError;
+
+    @api
+    get submitError() {
+        return this._submitError;
+    }
     submittedRecordId = null;
     _submitting = false;
     _startedAt = null;
@@ -227,8 +253,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     /** Live answers keyed by element id (schema §8) — fed by the valuechange
      *  re-emit chain; drives rule evaluation now, submission in the P3
-     *  submit slice. Replaced wholesale so getters recompute. */
-    answers = {};
+     *  submit slice. Replaced wholesale so getters recompute.
+     *
+     *  Exposed READ-ONLY for the same reason as submitError above: this is the
+     *  component's own state, reassigned constantly, so `@api answers` made
+     *  every assignment an LWC violation. Reassigning the private field is
+     *  still reactive, and external callers (Studio, tests) only read. */
+    _answers = {};
+
+    @api
+    get answers() {
+        return this._answers;
+    }
 
     /** SO-3 record-rule verdicts from getRecordContext ({factKey: boolean}).
      *  DECLARED (reactive) — visibility getters recompute when facts land;
@@ -245,6 +281,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** Record context for survey-object prefill/writeback (record-page and
      *  embedded hosts set the property; links use ?c__recordId=). */
     @api recordId;
+
+    /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
+    _autofillSession = null;
+    activeAutofillRequests = [];
+    _autofillTimers = new Map();
 
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
@@ -270,6 +311,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  respondent can still use the completion screen's own controls.) */
     disconnectedCallback() {
         clearTimeout(this._redirectTimer);
+        for (const timerId of this._autofillTimers.values()) {
+            clearTimeout(timerId);
+        }
+        this._autofillTimers.clear();
     }
 
     /**
@@ -505,11 +550,46 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Any spec change resets the post-submit state — the Design preview
         // returns to the form the moment a control is touched.
         this.completed = false;
-        this.answers = preview
+        this._answers = preview
             ? reconcileAnswers(preview.answers, preview.spec, spec)
             : {};
+        // R6 — preservation mode must still CREATE a session when there is not
+        // one yet. Studio sets preserve-session, so on the first mount this took
+        // the reconcile branch with a null session, reconcile returned null
+        // immediately, and the preview never got an Autofill session at all.
+        // (The old call also passed `preview?.spec` — the OLD spec — as the
+        // reconcile target; the engine takes exactly two arguments, so the new
+        // spec in the third was silently dropped.)
+        if (this.preservePreview && this._autofillSession) {
+            this._autofillSession = reconcileAutofillSession(
+                this._autofillSession,
+                spec
+            );
+            this._dropCancelledAutofillRequests();
+        } else {
+            this._autofillSession = createAutofillSession({
+                specVersionId: this.effectiveVersionId || null,
+                rules: extractAutofillRules(spec),
+                initialAnswers: this.answers
+            });
+        }
+        const defaults = seedStaticDefaults(spec, this.answers);
+        if (this._autofillSession) {
+            this._autofillSession.staticDefaults = defaults;
+        }
+        let defaultsApplied = false;
+        const seededAnswers = { ...this.answers };
+        for (const [elId, defVal] of Object.entries(defaults)) {
+            if (seededAnswers[elId] === undefined) {
+                seededAnswers[elId] = defVal;
+                defaultsApplied = true;
+            }
+        }
+        if (defaultsApplied) {
+            this._answers = seededAnswers;
+        }
         this._revealed = [];
-        this.submitError = undefined;
+        this._submitError = undefined;
         this.submittedRecordId = null;
         this._startedAt = preview?.startedAt || new Date().toISOString();
         if (this.preservePreview) {
@@ -596,6 +676,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             paneLockup
         };
         this.error = undefined;
+        this._executeLookupRulesFromAnswers();
 
         if (preview) {
             this.pageIndex = restorePage(
@@ -648,7 +729,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                         }
                     }
                     if (any) {
-                        this.answers = merged;
+                        this._answers = merged;
                     }
                 })
                 .catch(() => {
@@ -681,7 +762,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     _applyInjectedContext() {
         const ctx = this._injectedCtx;
-        if (!ctx || !this.model) {
+        if (!this.model) {
+            return;
+        }
+        // R6 — a null context must actually REMOVE what Autofill applied.
+        // "Clear test data" sets recordContext to null, and this returned early,
+        // leaving the test values sitting in the preview.
+        if (!ctx) {
+            this._ruleFacts = null;
+            this._clearInjectedAutofill();
             return;
         }
         this._ruleFacts = ctx.ruleFacts || null;
@@ -695,7 +784,92 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         }
         if (any) {
-            this.answers = merged;
+            this._answers = merged;
+        }
+
+        // Autofill rules from guest context or injected link context
+        if (Array.isArray(ctx.autofill) && this._autofillSession) {
+            for (const item of ctx.autofill) {
+                if (!item || !item.ruleId || !item.values) {
+                    continue;
+                }
+                const { requestIdentity } = onSourceChanged(
+                    this._autofillSession,
+                    item.ruleId,
+                    'injected_link'
+                );
+                if (requestIdentity) {
+                    const res = onResult(
+                        this._autofillSession,
+                        requestIdentity,
+                        this._toSourceKeyed(item.ruleId, item.values),
+                        this.answers,
+                        true // isInitialLinkLoad
+                    );
+                    if (
+                        res.applied &&
+                        res.patch &&
+                        Object.keys(res.patch).length > 0
+                    ) {
+                        this._applyAutofillPatch(res.patch);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * R6 — injected contexts speak DESTINATION ids; the engine speaks SOURCE
+     * field names.
+     *
+     * Both injection paths (the guest server's `autofill[].values` and the
+     * Studio panel's test values) are keyed by element id, but `onResult` looks
+     * each mapping up by `mapping.from`. For `{ from:'Email', to:'el_email' }`
+     * a payload of `{ el_email: '…' }` therefore matched nothing and produced an
+     * empty patch. LDS results arrive already source-keyed on a different path
+     * (handleAutofillRecordSuccess) and must NOT be run through this.
+     *
+     * Only keys actually present are copied, which keeps "omitted" (unreadable)
+     * distinct from an explicit null.
+     */
+    _toSourceKeyed(ruleId, values) {
+        const rule = (this._autofillSession?.rules || []).find(
+            (r) => r.id === ruleId
+        );
+        if (!rule || !values) {
+            return {};
+        }
+        const out = {};
+        for (const m of rule.mappings || []) {
+            if (
+                m &&
+                m.to &&
+                Object.prototype.hasOwnProperty.call(values, m.to)
+            ) {
+                out[m.from] = values[m.to];
+            }
+        }
+        return out;
+    }
+
+    /** Clears values still owned by an injected (link or test) source. Manual
+     *  edits are preserved — onSourceChanged only releases what Autofill owns. */
+    _clearInjectedAutofill() {
+        const session = this._autofillSession;
+        if (!session) {
+            return;
+        }
+        const patch = {};
+        for (const rule of session.rules || []) {
+            const req = session.requests?.[rule.id];
+            if (!req || req.sourceKey !== 'injected_link') {
+                continue;
+            }
+            const { clearedPatch } = onSourceChanged(session, rule.id, null);
+            Object.assign(patch, clearedPatch);
+        }
+        if (Object.keys(patch).length > 0) {
+            this._applyAutofillPatch(patch);
         }
     }
 
@@ -823,6 +997,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     handleValueChange(event) {
         const { elementId, value } = event.detail;
+        if (this._autofillSession) {
+            onManualEdit(this._autofillSession, elementId, value);
+        }
         // The page under the user must stay THE SAME PAGE when this answer
         // flips a visibility rule — hiding/showing an EARLIER page renumbers
         // the filtered list, and a raw index would silently move the view
@@ -831,7 +1008,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // (the next page slides into its place).
         const current = this.visiblePages[this.pageIndex];
         const key = current ? current.revealKey : undefined;
-        this.answers = { ...this.answers, [elementId]: value };
+        this._answers = { ...this.answers, [elementId]: value };
         const pages = this.visiblePages;
         const at =
             key !== undefined
@@ -842,6 +1019,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         } else if (this.pageIndex > pages.length - 1) {
             this.pageIndex = Math.max(pages.length - 1, 0);
         }
+        this._handleSourceLookupChange(elementId, value);
     }
 
     get lastPageIndex() {
@@ -961,8 +1139,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._reveal(firstInvalid);
             return;
         }
-        if (this._submitting) {
-            return; // one click, one record
+        if (this._submitting || this.isAutofillPending) {
+            return; // one click, one record / wait for autofill to finish
         }
         // Delegated submit (guest host): validation passed — hand the payload
         // to the host, which owns the guest Apex call. MUST precede the
@@ -970,7 +1148,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // inline spec.
         if (this.delegateSubmit) {
             this._submitting = true;
-            this.submitError = undefined;
+            this._submitError = undefined;
             this.dispatchEvent(
                 new CustomEvent('submitrequest', {
                     detail: { payload: this._payload() }
@@ -985,7 +1163,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return;
         }
         this._submitting = true;
-        this.submitError = undefined;
+        this._submitError = undefined;
         try {
             const res = await submitForm({
                 formId: this.effectiveFormId || null,
@@ -996,7 +1174,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.completed = true;
             this._scheduleCompletion();
         } catch (e) {
-            this.submitError =
+            this._submitError =
                 (e && e.body && e.body.message) ||
                 'Your response could not be saved. Please try again.';
         } finally {
@@ -1023,7 +1201,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api
     failSubmit(message) {
         this._submitting = false;
-        this.submitError =
+        this._submitError =
             message || 'Your response could not be saved. Please try again.';
     }
 
@@ -1111,6 +1289,246 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     actionName: 'view'
                 }
             });
+        }
+    }
+
+    // ----- Autofill Runtime (IMPL_PLAN_AUTOFILL_RULES §6) -----
+
+    get isAutofillPending() {
+        return (this.activeAutofillRequests || []).length > 0;
+    }
+
+    get effectiveSubmitConfig() {
+        const base = (this.model && this.model.submit) || {};
+        if (this.isAutofillPending) {
+            return {
+                ...base,
+                label: 'Finishing Autofill…'
+            };
+        }
+        return base;
+    }
+
+    get effectiveSubmitLabel() {
+        if (this.isAutofillPending) {
+            return 'Finishing Autofill…';
+        }
+        return (
+            (this.model && this.model.submit && this.model.submit.label) ||
+            'Submit'
+        );
+    }
+
+    _executeLookupRulesFromAnswers() {
+        if (!this._autofillSession || !this._autofillSession.rules) {
+            return;
+        }
+        for (const rule of this._autofillSession.rules) {
+            if (rule.source?.type === 'lookup' && rule.source?.elementId) {
+                const val = this.answers[rule.source.elementId];
+                if (val) {
+                    this._handleSourceLookupChange(rule.source.elementId, val);
+                }
+            }
+        }
+    }
+
+    _handleSourceLookupChange(elementId, value) {
+        if (!this._autofillSession || !this._autofillSession.rules) {
+            return;
+        }
+        const lookupRules = this._autofillSession.rules.filter(
+            (r) =>
+                r.source?.type === 'lookup' && r.source?.elementId === elementId
+        );
+        for (const rule of lookupRules) {
+            const sourceRecordId = value || null;
+            const { clearedPatch, requestIdentity } = onSourceChanged(
+                this._autofillSession,
+                rule.id,
+                sourceRecordId
+            );
+            if (clearedPatch && Object.keys(clearedPatch).length > 0) {
+                this._applyAutofillPatch(clearedPatch);
+            }
+            if (requestIdentity && sourceRecordId) {
+                const objectApiName = this._getLookupObjectApiName(
+                    rule,
+                    elementId
+                );
+                const fields = (rule.mappings || [])
+                    .map((m) => m.from)
+                    .filter(Boolean);
+                if (objectApiName && fields.length > 0) {
+                    this._startAutofillRequest(
+                        requestIdentity,
+                        objectApiName,
+                        fields
+                    );
+                }
+            }
+        }
+    }
+
+    _getLookupObjectApiName(rule, elementId) {
+        if (rule.source?.objectApiName) {
+            return rule.source.objectApiName;
+        }
+        if (!this.model || !this.model.pages) {
+            return null;
+        }
+        for (const page of this.model.pages) {
+            for (const sec of page.sections || []) {
+                for (const el of sec.elements || []) {
+                    if (el.id === elementId) {
+                        return (
+                            el.config?.referenceTo ||
+                            el.config?.targetObject ||
+                            el.lookupTargetObject ||
+                            (el.binding && el.binding.object) ||
+                            null
+                        );
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    _startAutofillRequest(requestIdentity, objectApiName, fields) {
+        const reqKey = `${requestIdentity.ruleId}_${requestIdentity.generation}`;
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        const timerId = setTimeout(() => {
+            this._handleAutofillTimeout(requestIdentity);
+        }, 10000);
+        this._autofillTimers.set(reqKey, timerId);
+
+        const requestItem = {
+            key: reqKey,
+            ruleId: requestIdentity.ruleId,
+            recordId: requestIdentity.sourceKey,
+            objectApiName,
+            fields,
+            generation: requestIdentity.generation,
+            sessionId: requestIdentity.sessionId
+        };
+
+        this.activeAutofillRequests = [
+            ...this.activeAutofillRequests.filter(
+                (r) => r.ruleId !== requestIdentity.ruleId
+            ),
+            requestItem
+        ];
+    }
+
+    _clearAutofillTimeout(ruleId, generation) {
+        const reqKey = `${ruleId}_${generation}`;
+        if (this._autofillTimers.has(reqKey)) {
+            clearTimeout(this._autofillTimers.get(reqKey));
+            this._autofillTimers.delete(reqKey);
+        }
+    }
+
+    /**
+     * R10 — after a builder edit, drop the viewer-side bookkeeping for requests
+     * the engine just cancelled. Their results were already going to be
+     * discarded (the fingerprint moved), but the pending entry kept Submit
+     * showing "Finishing Autofill…" until the 10s timer fired, and that timer
+     * then raised a fetch error for a rule the author may have just deleted.
+     */
+    _dropCancelledAutofillRequests() {
+        const cancelled = this._autofillSession?.lastCancelledRuleIds || [];
+        if (!cancelled.length) {
+            return;
+        }
+        const gone = new Set(cancelled);
+        for (const req of this.activeAutofillRequests) {
+            if (gone.has(req.ruleId)) {
+                this._clearAutofillTimeout(req.ruleId, req.generation);
+            }
+        }
+        this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !gone.has(r.ruleId)
+        );
+    }
+
+    _handleAutofillTimeout(identity) {
+        this._clearAutofillTimeout(identity.ruleId, identity.generation);
+        this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) =>
+                !(
+                    r.ruleId === identity.ruleId &&
+                    r.generation === identity.generation
+                )
+        );
+        if (this._autofillSession) {
+            onRequestFailure(this._autofillSession, identity, 'timeout');
+        }
+        this._submitError =
+            'Could not fill these details. Enter them yourself or retry.';
+    }
+
+    handleAutofillRecordSuccess(event) {
+        const { ruleId, recordId, generation, sessionId, values } =
+            event.detail;
+        this._clearAutofillTimeout(ruleId, generation);
+        this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !(r.ruleId === ruleId && r.generation === generation)
+        );
+        const identity = {
+            sessionId,
+            specVersionId: this._autofillSession?.specVersionId,
+            rulesFingerprint: this._autofillSession?.rulesFingerprint,
+            ruleId,
+            generation,
+            sourceKey: recordId
+        };
+        const res = onResult(
+            this._autofillSession,
+            identity,
+            values,
+            this.answers,
+            false
+        );
+        if (res.applied && res.patch && Object.keys(res.patch).length > 0) {
+            this._applyAutofillPatch(res.patch);
+        }
+    }
+
+    handleAutofillRecordError(event) {
+        const { ruleId, recordId, generation, sessionId } = event.detail;
+        this._clearAutofillTimeout(ruleId, generation);
+        this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !(r.ruleId === ruleId && r.generation === generation)
+        );
+        const identity = {
+            sessionId,
+            specVersionId: this._autofillSession?.specVersionId,
+            rulesFingerprint: this._autofillSession?.rulesFingerprint,
+            ruleId,
+            generation,
+            sourceKey: recordId
+        };
+        if (this._autofillSession) {
+            onRequestFailure(this._autofillSession, identity, 'failed');
+        }
+        this._submitError =
+            'Could not fill these details. Enter them yourself or retry.';
+    }
+
+    _applyAutofillPatch(patch) {
+        const current = this.visiblePages[this.pageIndex];
+        const key = current ? current.revealKey : undefined;
+        this._answers = { ...this.answers, ...patch };
+        const pages = this.visiblePages;
+        const at =
+            key !== undefined
+                ? pages.findIndex((p) => p.revealKey === key)
+                : -1;
+        if (at >= 0) {
+            this.pageIndex = at;
+        } else if (this.pageIndex > pages.length - 1) {
+            this.pageIndex = Math.max(pages.length - 1, 0);
         }
     }
 }

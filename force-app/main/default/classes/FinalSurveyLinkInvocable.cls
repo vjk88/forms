@@ -75,7 +75,15 @@ public with sharing class FinalSurveyLinkInvocable {
                 recordIds.add(r.recordId);
             }
         }
-        Map<Id, Form__c> forms = new Map<Id, Form__c>(
+        Map<Id, FinalAutofillService.LinkSourceContract> contractCache = new Map<Id, FinalAutofillService.LinkSourceContract>();
+        Map<Id, String> contractErrors = new Map<Id, String>();
+
+        // R12 — resolve every distinct form's contract within a BOUNDED query
+        // budget. This used to call resolveLinkSource(fid) once per form, and
+        // each of those ran two SOQL statements, so a batch of ~50 distinct
+        // forms exhausted the synchronous query limit before any other work in
+        // the transaction. These two set-based reads serve any batch size.
+        Map<Id, Form__c> formsById = new Map<Id, Form__c>(
             [
                 SELECT Id, Form_Type__c, Primary_Context_Object__c
                 FROM Form__c
@@ -83,6 +91,72 @@ public with sharing class FinalSurveyLinkInvocable {
                 WITH USER_MODE
             ]
         );
+        Map<Id, Map<String, Object>> specByFormId = new Map<Id, Map<String, Object>>();
+        for (Form_Version__c v : [
+            SELECT Form__c, Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Form__c IN :formIds AND Is_Active__c = TRUE
+            WITH USER_MODE
+            ORDER BY Version_Number__c ASC
+        ]) {
+            if (String.isNotBlank(v.Spec_JSON__c)) {
+                try {
+                    specByFormId.put(
+                        v.Form__c,
+                        (Map<String, Object>) JSON.deserializeUntyped(
+                            v.Spec_JSON__c
+                        )
+                    );
+                } catch (Exception ignored) {
+                    // Leave absent — the form reports a contract error below.
+                }
+            }
+        }
+
+        for (Id fid : formIds) {
+            Form__c f = formsById.get(fid);
+            if (f == null) {
+                contractErrors.put(fid, 'FORM_NOT_FOUND');
+                continue;
+            }
+            if (
+                f.Form_Type__c == 'Survey' &&
+                String.isBlank(f.Primary_Context_Object__c)
+            ) {
+                contractErrors.put(
+                    fid,
+                    'Connect an object before creating record links.'
+                );
+                continue;
+            }
+            Map<String, Object> spec = specByFormId.get(fid);
+            if (spec == null && f.Form_Type__c != 'Survey') {
+                contractErrors.put(
+                    fid,
+                    'Publish the form before creating personalized links.'
+                );
+                continue;
+            }
+            FinalAutofillService.LinkSourceContract c = FinalAutofillService.resolveLinkSourceFromSpec(
+                spec,
+                f.Form_Type__c,
+                f.Primary_Context_Object__c
+            );
+            if (c == null) {
+                contractErrors.put(
+                    fid,
+                    'This form does not have an enabled personalized link autofill rule.'
+                );
+                continue;
+            }
+            // R8 — Flow mints through the same disclosure gate as Studio, so
+            // the two entry points cannot disagree about who may issue a link.
+            if (!FinalAutofillService.canDiscloseFields(c)) {
+                contractErrors.put(fid, FinalAutofillService.DISCLOSURE_DENIED);
+                continue;
+            }
+            contractCache.put(fid, c);
+        }
         Set<Id> readable = new Set<Id>();
         for (UserRecordAccess a : [
             SELECT RecordId, HasReadAccess
@@ -97,14 +171,25 @@ public with sharing class FinalSurveyLinkInvocable {
         for (Request r : requests) {
             Result res = new Result();
             out.add(res);
-            Form__c f = r.formId == null ? null : forms.get(r.formId);
-            if (f == null || f.Form_Type__c != 'Survey') {
-                res.error = 'Not a survey, or survey not found.';
+            if (r.formId == null) {
+                res.error = 'Form Id is required.';
                 continue;
             }
-            String targetObject = f.Primary_Context_Object__c;
+            FinalAutofillService.LinkSourceContract contract = contractCache.get(
+                r.formId
+            );
+            if (contract == null) {
+                res.error = contractErrors.containsKey(r.formId)
+                    ? contractErrors.get(r.formId)
+                    : 'Not a survey or form not found.';
+                continue;
+            }
+            String targetObject = contract.objectApiName;
             if (String.isBlank(targetObject)) {
-                res.error = 'This survey has no connected object.';
+                res.error =
+                    'This ' +
+                    (contract.isSurvey ? 'survey' : 'form') +
+                    ' has no connected object.';
                 continue;
             }
             Schema.SObjectType t = Schema.getGlobalDescribe()
@@ -114,7 +199,10 @@ public with sharing class FinalSurveyLinkInvocable {
                 t == null ||
                 r.recordId.getSObjectType() != t
             ) {
-                res.error = 'Record does not match the survey\'s object.';
+                res.error =
+                    'Record does not match the ' +
+                    (contract.isSurvey ? 'survey' : 'form') +
+                    '\'s object.';
                 continue;
             }
             if (!readable.contains(r.recordId)) {

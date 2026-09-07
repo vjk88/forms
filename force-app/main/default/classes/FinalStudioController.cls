@@ -349,6 +349,63 @@ public with sharing class FinalStudioController {
         );
     }
 
+    /**
+     * Describe readable source fields for Autofill mapping (IMPL_PLAN_AUTOFILL_RULES §2, §5).
+     * Unlike describeFields, this requires isAccessible() only, not isCreateable().
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> describeSourceFields(
+        Id formId,
+        String objectApiName
+    ) {
+        if (String.isBlank(objectApiName)) {
+            throw new AuraHandledException('An object API name is required.');
+        }
+        if (formId != null) {
+            List<Form__c> forms = [
+                SELECT Id
+                FROM Form__c
+                WHERE Id = :formId
+                WITH USER_MODE
+                LIMIT 1
+            ];
+            if (forms.isEmpty()) {
+                throw new AuraHandledException('FORM_NOT_FOUND');
+            }
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe()
+            .get(objectApiName.toLowerCase());
+        if (t == null || !t.getDescribe().isAccessible()) {
+            throw new AuraHandledException(
+                'You do not have access to ' + objectApiName + '.'
+            );
+        }
+        List<Map<String, Object>> fields = new List<Map<String, Object>>();
+        for (Schema.SObjectField f : t.getDescribe().fields.getMap().values()) {
+            Schema.DescribeFieldResult fd = f.getDescribe();
+            if (!fd.isAccessible()) {
+                continue;
+            }
+            Schema.DisplayType dt = fd.getType();
+            if (
+                dt == Schema.DisplayType.STRING ||
+                dt == Schema.DisplayType.TEXTAREA ||
+                dt == Schema.DisplayType.EMAIL ||
+                dt == Schema.DisplayType.PHONE ||
+                dt == Schema.DisplayType.URL
+            ) {
+                fields.add(
+                    new Map<String, Object>{
+                        'apiName' => fd.getName(),
+                        'label' => fd.getLabel(),
+                        'type' => String.valueOf(dt).toLowerCase()
+                    }
+                );
+            }
+        }
+        return fields;
+    }
+
     private static Map<String, Object> mintLinkInternal(
         Id formId,
         Id recordId,
@@ -359,33 +416,25 @@ public with sharing class FinalStudioController {
         if (formId == null || recordId == null) {
             throw new AuraHandledException('A form and record are required.');
         }
-        List<Form__c> forms = [
-            SELECT Id, Form_Type__c, Primary_Context_Object__c
-            FROM Form__c
-            WHERE Id = :formId
-            WITH USER_MODE
-            LIMIT 1
-        ];
-        if (forms.isEmpty()) {
-            throw new AuraHandledException('FORM_NOT_FOUND');
-        }
-        Form__c f = forms[0];
-        if (f.Form_Type__c != 'Survey') {
-            throw new AuraHandledException('Record links are for surveys.');
-        }
-        String targetObject = f.Primary_Context_Object__c;
-        if (String.isBlank(targetObject)) {
-            throw new AuraHandledException(
-                'Connect an object before creating record links.'
-            );
-        }
+
+        FinalAutofillService.LinkSourceContract contract = FinalAutofillService.resolveLinkSource(
+            formId
+        );
+        // R8 — record access alone is not enough: the guest read runs in system
+        // context once the token authorizes it, so the minter must be able to
+        // read every field this link would disclose.
+        FinalAutofillService.assertCanDiscloseFields(contract);
+        String targetObject = contract.objectApiName;
         Schema.SObjectType t = Schema.getGlobalDescribe()
             .get(targetObject.toLowerCase());
         if (t == null || recordId.getSObjectType() != t) {
             throw new AuraHandledException(
-                'That record does not belong to this survey\'s object.'
+                'That record does not belong to this form\'s link object (' +
+                    targetObject +
+                    ').'
             );
         }
+
         // USER_MODE read gate: the minter must actually be able to see it.
         List<SObject> visible = Database.queryWithBinds(
             'SELECT Id FROM ' + targetObject + ' WHERE Id = :rid LIMIT 1',
@@ -453,8 +502,14 @@ public with sharing class FinalStudioController {
         if (forms.isEmpty()) {
             throw new AuraHandledException('FORM_NOT_FOUND');
         }
+        // R11 — invalidation must accept exactly what minting accepts. Minting
+        // gates on an eligible published link contract (mintRecordLink above),
+        // so a classic form that CAN issue links could not revoke them: the
+        // panel offered the action and the server answered "Record links are
+        // for surveys." resolveLinkSource throws its own specific message when
+        // the form has no eligible rule, which is the same gate minting uses.
         if (forms[0].Form_Type__c != 'Survey') {
-            throw new AuraHandledException('Record links are for surveys.');
+            FinalAutofillService.resolveLinkSource(formId);
         }
         Datetime now = Datetime.now();
         forms[0].Links_Invalidated_On__c = now;

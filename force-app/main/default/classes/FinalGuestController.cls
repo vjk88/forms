@@ -51,6 +51,33 @@ public without sharing class FinalGuestController {
         return JSON.serialize(spec);
     }
 
+    /**
+     * Imperative, non-cacheable runtime spec endpoint.
+     * Returns { versionId, spec, closed, closedMessage }.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getGuestRuntimeSpec(Id formId) {
+        Form__c f = gate(formId);
+        Form_Version__c version = activeVersion(f.Id);
+        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        if (
+            FinalSubmitService.isClosed(spec) ||
+            FinalSubmitService.responseCapReached(spec, version.Id)
+        ) {
+            return new Map<String, Object>{
+                'versionId' => version.Id,
+                'closed' => true,
+                'closedMessage' => FinalSubmitService.closedMessage(spec)
+            };
+        }
+        projectForGuest(spec);
+        rewriteImageUrls(spec);
+        return new Map<String, Object>{
+            'versionId' => version.Id,
+            'spec' => spec
+        };
+    }
+
     public class GuestSubmitResult {
         @AuraEnabled
         public Boolean success;
@@ -100,6 +127,39 @@ public without sharing class FinalGuestController {
 
         // Honeypot (A3): a filled hidden field means a bot. Return a FAKE
         // success (no record) so it learns nothing — the classic honeypot
+        // When the server-loaded active spec enables new Autofill rules, require meta.specVersionId
+        // and compare it to the authorized active version.
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        Map<String, Object> prefill = settings != null
+            ? asMap(settings.get('prefill'))
+            : null;
+        List<Object> rules = prefill != null
+            ? asList(prefill.get('autofillRules'))
+            : null;
+        Boolean hasEnabledAutofillRules = false;
+        if (rules != null) {
+            for (Object rObj : rules) {
+                Map<String, Object> r = asMap(rObj);
+                if (r != null && r.get('enabled') == true) {
+                    hasEnabledAutofillRules = true;
+                    break;
+                }
+            }
+        }
+        if (hasEnabledAutofillRules) {
+            Map<String, Object> meta = asMap(payload.get('meta'));
+            String specVersionId = meta == null
+                ? null
+                : (String) meta.get('specVersionId');
+            if (String.isBlank(specVersionId) || specVersionId != version.Id) {
+                throw new AuraHandledException(
+                    'This form changed. Reload it before submitting.'
+                );
+            }
+        }
+
+        // Honeypot (A3): a filled hidden field means a bot. Return a FAKE
+        // success (no record) so it learns nothing — the classic honeypot
         // posture (RUNTIME_NOTES spam layers). The host injects meta.hp.
         if (isHoneypotTripped(spec, payload)) {
             GuestSubmitResult fake = new GuestSubmitResult();
@@ -113,6 +173,21 @@ public without sharing class FinalGuestController {
         Map<String, Object> tokenMeta = asMap(payload.get('meta'));
         String token = tokenMeta == null ? null : (String) tokenMeta.get('rt');
         String targetObject = surveyTargetObject(spec);
+        if (String.isBlank(targetObject)) {
+            // R2 — same guest-boundary rule as getGuestAutofillContext: resolve
+            // from the already-gated spec, never through the user-mode helper.
+            // As the Guest User that helper always threw, leaving targetObject
+            // blank, which made claims null and got every valid TRACKED classic
+            // link refused below.
+            FinalAutofillService.LinkSourceContract contract = FinalAutofillService.resolveLinkSourceFromSpec(
+                spec,
+                f.Form_Type__c,
+                f.Primary_Context_Object__c
+            );
+            if (contract != null) {
+                targetObject = contract.objectApiName;
+            }
+        }
         FinalSurveyTokenService.Claims claims = (String.isBlank(token) ||
             String.isBlank(targetObject))
             ? null
@@ -130,12 +205,85 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException(UNAVAILABLE);
         }
 
-        FinalSubmitService.SubmitOutcome outcome = FinalSubmitService.run(
-            spec,
-            payload,
-            version.Id, // the SERVER-loaded version identity (never client-claimed)
-            FinalSubmitService.Posture.GUEST
-        );
+        // Transactional single-use lock & rollback (IMPL_PLAN_AUTOFILL_RULES §8)
+        Savepoint sp = null;
+        Survey_Invitation__c lockedInv = null;
+        if (claims != null && claims.invitationId != null) {
+            List<Survey_Invitation__c> invRows = [
+                SELECT
+                    Id,
+                    Form__c,
+                    Record_Id__c,
+                    Revoked__c,
+                    Single_Use__c,
+                    Expires_On__c,
+                    Responded_On__c
+                FROM Survey_Invitation__c
+                WHERE Id = :claims.invitationId
+                LIMIT 1
+                FOR UPDATE
+            ];
+            if (
+                invRows.isEmpty() ||
+                invRows[0].Revoked__c == true ||
+                invRows[0].Form__c != formId
+            ) {
+                throw new AuraHandledException(UNAVAILABLE);
+            }
+            lockedInv = invRows[0];
+            if (
+                lockedInv.Single_Use__c == true &&
+                lockedInv.Responded_On__c != null
+            ) {
+                throw new AuraHandledException(UNAVAILABLE);
+            }
+            if (
+                lockedInv.Expires_On__c != null &&
+                lockedInv.Expires_On__c < Datetime.now()
+            ) {
+                throw new AuraHandledException(UNAVAILABLE);
+            }
+            sp = Database.setSavepoint();
+        }
+
+        FinalSubmitService.SubmitOutcome outcome;
+        try {
+            outcome = FinalSubmitService.run(
+                spec,
+                payload,
+                version.Id, // the SERVER-loaded version identity (never client-claimed)
+                FinalSubmitService.Posture.GUEST
+            );
+        } catch (Exception e) {
+            if (sp != null) {
+                Database.rollback(sp);
+            }
+            throw e;
+        }
+
+        if (lockedInv != null) {
+            try {
+                if (lockedInv.Responded_On__c == null) {
+                    lockedInv.Responded_On__c = Datetime.now();
+                    Database.update(
+                        new List<Survey_Invitation__c>{ lockedInv },
+                        true,
+                        AccessLevel.SYSTEM_MODE
+                    );
+                }
+            } catch (Exception e) {
+                if (sp != null) {
+                    Database.rollback(sp);
+                }
+                throw new AuraHandledException(UNAVAILABLE);
+            }
+            FinalSurveyInvitationService.publishEvent(
+                'responded',
+                formId,
+                lockedInv.Id,
+                claims.recordId
+            );
+        }
 
         // SO-4: STAMP the record reference onto the response — server-side, from
         // the VERIFIED TOKEN, never a raw client recordId. Guests still never
@@ -147,11 +295,6 @@ public without sharing class FinalGuestController {
             outcome.recordId.getSObjectType() == Form_Response__c.SObjectType
         ) {
             stampRecordRef(outcome.recordId, claims.recordId, targetObject);
-            // Tier 2: burn single-use + record responded time + emit the event.
-            // Post-run (the response is saved), best-effort.
-            if (claims.invitationId != null) {
-                burnInvitation(claims.invitationId, formId, claims.recordId);
-            }
         }
 
         GuestSubmitResult res = new GuestSubmitResult();
@@ -199,6 +342,136 @@ public without sharing class FinalGuestController {
             );
         } catch (Exception e) {
             return empty; // never leak why; never block the render
+        }
+    }
+
+    /**
+     * Version-aware guest autofill context endpoint (IMPL_PLAN_AUTOFILL_RULES §7).
+     * Non-cacheable. Returns { versionId, status, prefill, ruleFacts, autofill }.
+     * Statuses: 'applied', 'empty', 'unavailable', 'versionChanged'.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getGuestAutofillContext(
+        Id formId,
+        Id versionId,
+        String token
+    ) {
+        Map<String, Object> emptyResp = new Map<String, Object>{
+            'versionId' => versionId,
+            'status' => 'empty',
+            'prefill' => new Map<String, Object>(),
+            'ruleFacts' => new Map<String, Boolean>(),
+            'autofill' => new List<Object>()
+        };
+        try {
+            Form__c f = gate(formId);
+            Form_Version__c version = activeVersion(f.Id);
+            if (versionId == null || versionId != version.Id) {
+                return new Map<String, Object>{
+                    'versionId' => version.Id,
+                    'status' => 'versionChanged',
+                    'prefill' => new Map<String, Object>(),
+                    'ruleFacts' => new Map<String, Boolean>(),
+                    'autofill' => new List<Object>()
+                };
+            }
+
+            if (String.isBlank(token)) {
+                return emptyResp;
+            }
+
+            // R9 — availability is re-checked HERE, independently. `gate` only
+            // proves Published + Public_Guest; it says nothing about opening or
+            // closing windows or the response cap. A prior getGuestRuntimeSpec
+            // call is not an authorization guarantee, and this endpoint is
+            // directly callable, so a closed/capped form must disclose nothing
+            // even though its token is otherwise valid.
+            Map<String, Object> unavailableResp = new Map<String, Object>{
+                'versionId' => version.Id,
+                'status' => 'unavailable',
+                'prefill' => new Map<String, Object>(),
+                'ruleFacts' => new Map<String, Boolean>(),
+                'autofill' => new List<Object>()
+            };
+            // R2 — resolve the contract from the spec `activeVersion` ALREADY
+            // loaded behind the gate above. Calling the user-mode
+            // resolveLinkSource(formId) here made every valid guest link return
+            // `unavailable`, because the Guest User cannot read Form__c /
+            // Form_Version__c by design. Parse before any projection:
+            // projectForGuest strips settings.prefill in place.
+            Map<String, Object> activeSpec = parseSpec(version.Spec_JSON__c);
+
+            if (
+                FinalSubmitService.isClosed(activeSpec) ||
+                FinalSubmitService.responseCapReached(activeSpec, version.Id)
+            ) {
+                return unavailableResp;
+            }
+
+            FinalAutofillService.LinkSourceContract contract = FinalAutofillService.resolveLinkSourceFromSpec(
+                activeSpec,
+                f.Form_Type__c,
+                f.Primary_Context_Object__c
+            );
+            if (contract == null || String.isBlank(contract.objectApiName)) {
+                return unavailableResp;
+            }
+
+            String targetObject = contract.objectApiName;
+
+            FinalSurveyTokenService.Claims c = validClaims(
+                formId,
+                token,
+                targetObject
+            );
+            if (c == null) {
+                return new Map<String, Object>{
+                    'versionId' => version.Id,
+                    'status' => 'unavailable',
+                    'prefill' => new Map<String, Object>(),
+                    'ruleFacts' => new Map<String, Boolean>(),
+                    'autofill' => new List<Object>()
+                };
+            }
+
+            Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+            Map<String, Object> computed = FinalGuestContextService.compute(
+                spec,
+                targetObject,
+                c.recordId
+            );
+
+            if (computed.get('recordFound') == false) {
+                return new Map<String, Object>{
+                    'versionId' => version.Id,
+                    'status' => 'unavailable',
+                    'prefill' => new Map<String, Object>(),
+                    'ruleFacts' => new Map<String, Boolean>(),
+                    'autofill' => new List<Object>()
+                };
+            }
+
+            return new Map<String, Object>{
+                'versionId' => version.Id,
+                'status' => 'applied',
+                'prefill' => computed.get('prefill') != null
+                    ? computed.get('prefill')
+                    : new Map<String, Object>(),
+                'ruleFacts' => computed.get('ruleFacts') != null
+                    ? computed.get('ruleFacts')
+                    : new Map<String, Boolean>(),
+                'autofill' => computed.get('autofill') != null
+                    ? computed.get('autofill')
+                    : new List<Object>()
+            };
+        } catch (Exception e) {
+            return new Map<String, Object>{
+                'versionId' => versionId,
+                'status' => 'unavailable',
+                'prefill' => new Map<String, Object>(),
+                'ruleFacts' => new Map<String, Boolean>(),
+                'autofill' => new List<Object>()
+            };
         }
     }
 
@@ -378,7 +651,15 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException(UNAVAILABLE);
         }
         List<Form__c> forms = [
-            SELECT Id, Status__c, Allowed_Adapters__c
+            // Form_Type__c + Primary_Context_Object__c feed the Autofill link
+            // contract, which the guest path must resolve from THIS gated read
+            // rather than re-querying in user mode (review R2).
+            SELECT
+                Id,
+                Status__c,
+                Allowed_Adapters__c,
+                Form_Type__c,
+                Primary_Context_Object__c
             FROM Form__c
             WHERE Id = :formId
             LIMIT 1
@@ -437,6 +718,58 @@ public without sharing class FinalGuestController {
         }
         Map<String, Object> settings = asMap(spec.get('settings'));
         if (settings != null) {
+            Map<String, Object> prefill = asMap(settings.get('prefill'));
+            List<Object> rules = prefill != null
+                ? asList(prefill.get('autofillRules'))
+                : null;
+            if (rules != null && !rules.isEmpty()) {
+                List<Map<String, Object>> sanitizedRules = new List<Map<String, Object>>();
+                for (Object rObj : rules) {
+                    Map<String, Object> rule = asMap(rObj);
+                    if (rule == null || rule.get('enabled') != true)
+                        continue;
+                    Map<String, Object> source = asMap(rule.get('source'));
+                    String sType = source != null
+                        ? (String) source.get('type')
+                        : null;
+                    List<String> dests = new List<String>();
+                    for (Object mObj : asList(rule.get('mappings'))) {
+                        Map<String, Object> m = asMap(mObj);
+                        if (m == null)
+                            continue;
+                        if (sType == 'link') {
+                            if (
+                                m.get('guestAllowed') == true &&
+                                m.get('to') != null
+                            ) {
+                                dests.add((String) m.get('to'));
+                            }
+                        } else {
+                            if (m.get('to') != null) {
+                                dests.add((String) m.get('to'));
+                            }
+                        }
+                    }
+                    sanitizedRules.add(
+                        new Map<String, Object>{
+                            'ruleId' => (String) rule.get('id'),
+                            'sourceType' => sType,
+                            'policy' => rule.get('policy') != null
+                                ? (String) rule.get('policy')
+                                : 'preserveEdits',
+                            'destinationElementIds' => dests
+                        }
+                    );
+                }
+                if (!sanitizedRules.isEmpty()) {
+                    Map<String, Object> runtime = asMap(spec.get('runtime'));
+                    if (runtime == null) {
+                        runtime = new Map<String, Object>();
+                        spec.put('runtime', runtime);
+                    }
+                    runtime.put('autofill', sanitizedRules);
+                }
+            }
             settings.remove('prefill');
             // availability is SERVER-enforced (getGuestSpec/submitGuest); the
             // client never needs the window/cap. spamProtection STAYS — the

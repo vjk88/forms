@@ -566,9 +566,28 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     previewSession;
+    testRecordContext = null;
 
     handlePreviewSessionConsumed() {
         this.previewSession = undefined;
+    }
+
+    handleTestPreview(event) {
+        const detail = event.detail || {};
+        if (detail.ruleId && detail.values) {
+            this.testRecordContext = {
+                autofill: [
+                    {
+                        ruleId: detail.ruleId,
+                        values: detail.values
+                    }
+                ]
+            };
+        }
+    }
+
+    handleClearTestPreview() {
+        this.testRecordContext = null;
     }
 
     capturePreviewSession() {

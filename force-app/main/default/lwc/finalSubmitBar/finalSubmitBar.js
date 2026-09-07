@@ -36,6 +36,8 @@ export default class FinalSubmitBar extends LightningElement {
     @api submitting = false;
     /** Engine-set while Next/Submit is blocked by invalid fields; '' when clear. */
     @api blockedMessage = '';
+    /** Disables the submit button without entering the submitting spinner state. */
+    @api disabled = false;
     /** Resolved by the viewer: submit.buttonArrangement ?? layout default. */
     @api arrangement = 'split';
 
@@ -62,6 +64,10 @@ export default class FinalSubmitBar extends LightningElement {
 
     get primaryClass() {
         return this.submitting ? 'btn primary busy' : 'btn primary';
+    }
+
+    get isSubmitDisabled() {
+        return this.submitting || this.disabled;
     }
 
     handleBack() {

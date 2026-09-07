@@ -232,6 +232,16 @@
                     </template>
                 </ul>
             </template>
+            <template lwc:elseif={isAutofill}>
+                <c-final-autofill-panel
+                    spec={spec}
+                    form-id={formId}
+                    is-public={isPublic}
+                    is-survey={surveyMode}
+                    active-version-id={activeVersionId}
+                    onnavigatetab={handleNavigateTab}
+                ></c-final-autofill-panel>
+            </template>
             <template lwc:elseif={isStub}>
                 <p class="fp-note">{stubLabel}</p>
             </template>

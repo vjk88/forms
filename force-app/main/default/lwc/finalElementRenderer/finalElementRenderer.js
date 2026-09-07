@@ -354,9 +354,27 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
+    get isLookup() {
+        return (
+            this.isField &&
+            (this.cfg.inputType === 'reference' ||
+                this.cfg.inputType === 'lookup')
+        );
+    }
+
+    get lookupTargetObject() {
+        return (
+            this.cfg.referenceTo ||
+            this.cfg.targetObject ||
+            (this.el && this.el.lookupTargetObject) ||
+            null
+        );
+    }
+
     get isInput() {
         return (
             this.isField &&
+            !this.isLookup &&
             !this.isTextarea &&
             !this.isRadioGroup &&
             !this.isCheckboxGroup &&
@@ -1380,7 +1398,7 @@ export default class FinalElementRenderer extends LightningElement {
      */
     handleLabelClick() {
         const target = this.template.querySelector(
-            'lightning-input, lightning-textarea, lightning-combobox, lightning-radio-group, lightning-checkbox-group, lightning-slider'
+            'lightning-input, lightning-textarea, lightning-combobox, lightning-radio-group, lightning-checkbox-group, lightning-slider, c-final-lookup'
         );
         if (!target) {
             return;
@@ -1389,6 +1407,12 @@ export default class FinalElementRenderer extends LightningElement {
         if (this.isToggle || (this.inputType === 'checkbox' && this.isInput)) {
             target.checked = !target.checked;
             this.dispatchValue(target.checked);
+        }
+    }
+
+    handleLookupChange(event) {
+        if (event && event.detail) {
+            this.dispatchValue(event.detail.value);
         }
     }
 

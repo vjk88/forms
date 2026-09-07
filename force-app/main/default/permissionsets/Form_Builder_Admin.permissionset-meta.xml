@@ -736,6 +736,10 @@
         <apexClass>FinalStudioPageController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>FinalAutofillController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <pageAccesses>
         <apexPage>FinalStudio</apexPage>
         <enabled>true</enabled>
