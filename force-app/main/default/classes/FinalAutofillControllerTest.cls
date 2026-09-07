@@ -21,6 +21,17 @@ private class FinalAutofillControllerTest {
             PermissionsRead = true,
             PermissionsEdit = true
         );
+        // R5a — describeFields filters on readable AND createable, so the
+        // lookup test needs explicit FLS. Do not rely on the running admin's
+        // profile: this org does not grant every custom field by default, and
+        // the assertion would then pass or fail on org state instead of code.
+        insert new FieldPermissions(
+            ParentId = ps.Id,
+            SobjectType = 'Job_Application__c',
+            Field = 'Job_Application__c.Related_Contact__c',
+            PermissionsRead = true,
+            PermissionsEdit = true
+        );
         insert new PermissionSetAssignment(
             AssigneeId = UserInfo.getUserId(),
             PermissionSetId = ps.Id
@@ -359,5 +370,46 @@ private class FinalAutofillControllerTest {
                 used +
                 ' queries)'
         );
+    }
+    @isTest
+    static void describeFieldsOffersSingleTargetLookupsWithTheirTarget() {
+        // R5a — inputTypeOf had no REFERENCE branch, so describeFields dropped
+        // every lookup field. The palette could not create the lookup element
+        // that lookup Autofill needs as its source, which is why the authoring
+        // path dead-ended at 'Add a lookup field first'.
+        // A permission set assigned inside a test only takes effect for a FRESH
+        // runAs context — without this the FLS granted in @TestSetup is invisible
+        // here and describeFields silently omits the lookup.
+        List<Map<String, Object>> fields;
+        Test.startTest();
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            fields = FinalStudioController.describeFields('Job_Application__c');
+        }
+        Test.stopTest();
+
+        Map<String, Object> lookupRow = null;
+        List<String> refRows = new List<String>();
+        for (Map<String, Object> f : fields) {
+            if (f.get('inputType') == 'reference') {
+                refRows.add(
+                    (String) f.get('apiName') + '->' + f.get('referenceTo')
+                );
+            }
+            if (f.get('apiName') == 'Related_Contact__c') {
+                lookupRow = f;
+            }
+        }
+        System.assertNotEquals(
+            null,
+            lookupRow,
+            'a single-target lookup must be offerable as a destination; reference rows returned=' +
+                refRows +
+                '; total fields=' +
+                fields.size()
+        );
+        System.assertEquals('reference', lookupRow.get('inputType'));
+        // The target comes from Describe — the element stamps it as
+        // config.referenceTo purely as an authoring convenience.
+        System.assertEquals('Contact', lookupRow.get('referenceTo'));
     }
 }
