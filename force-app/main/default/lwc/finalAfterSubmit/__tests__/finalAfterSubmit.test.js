@@ -29,6 +29,24 @@ describe('c-final-after-submit', () => {
         ).toBe('Continue');
         expect(el.shadowRoot.querySelector('.pill')).toBeNull();
         expect(el.shadowRoot.querySelector('.toast')).toBeNull();
+        expect(el.shadowRoot.querySelector('.confirmation-title')).toBeNull();
+    });
+
+    it('renders an optional title as text without changing the message or toast mode', () => {
+        const el = mount({
+            title: '<b>All done</b>',
+            message: '<p>Saved.</p>'
+        });
+        const heading = el.shadowRoot.querySelector('.confirmation-title');
+        expect(heading.textContent).toBe('<b>All done</b>');
+        expect(heading.querySelector('b')).toBeNull();
+        expect(el.shadowRoot.querySelector('.message').value).toBe(
+            '<p>Saved.</p>'
+        );
+        const toast = mount({ mode: 'toast', title: 'Hidden title' });
+        expect(
+            toast.shadowRoot.querySelector('.confirmation-title')
+        ).toBeNull();
     });
 
     it('auto-redirect renders the countdown pill with destination + delay', () => {

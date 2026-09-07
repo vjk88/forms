@@ -3,5 +3,5 @@
     <apiVersion>66.0</apiVersion>
     <isExposed>false</isExposed>
     <description
-    >Design mode (rebuild): the settings panel — Simple/Advanced lens over the ONE control registry, 9-area rail, sparse theme overrides with edited-dots/reset/confirm-gate safety semantics (FORM_STUDIO_IA §5-7). Builder-only; never ships to the guest bundle.</description>
+    >Design settings: three Simple sections and five expandable Advanced Design sections over one control registry. Preserves sparse theme overrides, content and layout settings across mode switches. Builder-only; never ships to the guest bundle.</description>
 </LightningComponentBundle>

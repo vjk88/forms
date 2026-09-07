@@ -37,6 +37,21 @@ describe('c-final-nav-one-at-a-time', () => {
         expect(progressText(cmp)).toBe('1 of 3');
     });
 
+    it('uses the configured Back and Continue labels on its own action row', async () => {
+        const cmp = await mount();
+        cmp.backLabel = 'Previous';
+        cmp.options = { advanceLabel: 'Proceed' };
+        await Promise.resolve();
+        expect(
+            cmp.shadowRoot.querySelector('.primary-btn').textContent.trim()
+        ).toBe('Proceed');
+        cmp.shadowRoot.querySelector('.primary-btn').click();
+        await Promise.resolve();
+        expect(
+            cmp.shadowRoot.querySelector('.back-link').textContent.trim()
+        ).toBe('Previous');
+    });
+
     it('advancekey (element renderer verdict) advances only when keyboard mode is on', async () => {
         const cmp = await mount();
         cmp.options = { advanceTrigger: 'keyboard' };

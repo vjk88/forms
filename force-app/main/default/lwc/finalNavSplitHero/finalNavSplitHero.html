@@ -116,7 +116,7 @@
                                     type="button"
                                     onclick={handleBack}
                                 >
-                                    Back
+                                    {backButtonLabel}
                                 </button>
                             </template>
                             <template lwc:if={showAdvance}>
@@ -126,7 +126,7 @@
                                         type="button"
                                         onclick={handleAdvance}
                                     >
-                                        Continue
+                                        {advanceLabel}
                                     </button>
                                     <template lwc:if={keyboardHelperText}>
                                         <p class="key-helper">

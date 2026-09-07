@@ -24,6 +24,9 @@
                         />
                     </svg>
                 </div>
+                <template lwc:if={title}>
+                    <h2 class="confirmation-title">{title}</h2>
+                </template>
                 <lightning-formatted-rich-text
                     class="message"
                     value={message}

@@ -91,6 +91,22 @@ describe('header → pane surface mapping (sweep slice 3)', () => {
         expect(nav.options.paneTitle).toBe('T');
     });
 
+    it.each(['oneAtATime', 'splitHero'])(
+        'passes saved button labels through to the %s action row',
+        async (layout) => {
+            const spec = SPEC({ style: 'standard', title: 'T' });
+            spec.layout = {
+                type: layout,
+                options: { paneFlow: 'oneAtATime', advanceLabel: 'Proceed' }
+            };
+            spec.submit.backLabel = 'Previous';
+            const cmp = await mount(spec);
+            const nav = findNav(cmp.shadowRoot);
+            expect(nav.backLabel).toBe('Previous');
+            expect(nav.options.advanceLabel).toBe('Proceed');
+        }
+    );
+
     it('no banner image → no paneImage key invented', async () => {
         const cmp = await mount(SPEC({ style: 'standard', title: 'T' }));
         const nav = findNav(cmp.shadowRoot);
