@@ -1,7 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
-import getGuestSpec from '@salesforce/apex/FinalGuestController.getGuestSpec';
-import getGuestRecordContext from '@salesforce/apex/FinalGuestController.getGuestRecordContext';
+import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec';
+import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 
 /**
@@ -28,9 +28,12 @@ export default class FinalGuestHost extends LightningElement {
     /** SO-4: record-context verdicts + author-opted prefill (from the ?c__rt=
      *  link token, resolved server-side) fed into the viewer. */
     recordContext;
+    versionId;
     _urlFormId;
     _token;
     _loadedKey;
+    _loadGen = 0;
+    _reloadedForVersion = false;
 
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
@@ -97,39 +100,80 @@ export default class FinalGuestHost extends LightningElement {
 
     async _load() {
         const formId = this.effectiveFormId;
-        if (!formId || formId === this._loadedKey) {
+        const token = this._token;
+        const loadKey = `${formId}:${token || ''}`;
+        if (!formId || loadKey === this._loadedKey) {
             return;
         }
-        this._loadedKey = formId;
+        this._loadedKey = loadKey;
+        const currentGen = ++this._loadGen;
+
+        // R7 — tear the previous respondent's session down BEFORE awaiting
+        // anything. The generation guard alone only discards late RESULTS; the
+        // old spec and recordContext stayed bound to the viewer for the whole
+        // round trip, so token B could seed its session from token A's values,
+        // and that stale viewer remained submittable during the gap. Clearing
+        // the spec also drops the form until the new one arrives, which is what
+        // makes submission unavailable across the transition. An empty or
+        // unavailable new context therefore cannot leave A's values behind:
+        // there is nothing left to retain.
+        this.spec = undefined;
+        this.recordContext = undefined;
+        this.versionId = undefined;
+        this.error = undefined;
+
         try {
-            const raw = await getGuestSpec({ formId });
-            const parsed = JSON.parse(raw);
-            // Availability closed (A3): the server returns only the closed flag
-            // + message, no form structure. Show the message; never mount the
-            // viewer.
-            if (parsed && parsed.closed) {
+            const runtimeRes = await getGuestRuntimeSpec({ formId });
+            if (this._loadGen !== currentGen) {
+                return;
+            }
+            if (runtimeRes && runtimeRes.closed) {
                 this.spec = undefined;
                 this.error =
-                    parsed.closedMessage ||
+                    runtimeRes.closedMessage ||
                     'This form is no longer accepting responses.';
                 return;
             }
-            this.spec = parsed;
+            this.versionId = runtimeRes.versionId;
+            this.spec =
+                typeof runtimeRes.spec === 'string'
+                    ? JSON.parse(runtimeRes.spec)
+                    : runtimeRes.spec;
             this.error = undefined;
-            // SO-4: a record link (?c__rt=) resolves server-side to rule
-            // verdicts + author-opted prefill. Best-effort — a stale/forged
-            // token yields an empty context and the survey renders as a plain
-            // link (record rules read "no match").
-            if (this._token) {
-                getGuestRecordContext({ formId, token: this._token })
-                    .then((ctx) => {
-                        this.recordContext = ctx || undefined;
-                    })
-                    .catch(() => {
-                        this.recordContext = undefined;
+
+            if (token) {
+                try {
+                    const ctx = await getGuestAutofillContext({
+                        formId,
+                        versionId: this.versionId,
+                        token
                     });
+                    if (this._loadGen !== currentGen) {
+                        return;
+                    }
+                    if (
+                        ctx &&
+                        ctx.status === 'versionChanged' &&
+                        !this._reloadedForVersion
+                    ) {
+                        this._reloadedForVersion = true;
+                        this._loadedKey = null;
+                        this._load();
+                        return;
+                    }
+                    this.recordContext = ctx || undefined;
+                } catch {
+                    if (this._loadGen === currentGen) {
+                        this.recordContext = undefined;
+                    }
+                }
+            } else {
+                this.recordContext = undefined;
             }
         } catch (e) {
+            if (this._loadGen !== currentGen) {
+                return;
+            }
             this.spec = undefined;
             this.error =
                 (e && e.body && e.body.message) ||
@@ -157,6 +201,7 @@ export default class FinalGuestHost extends LightningElement {
             meta: {
                 ...(payload.meta || {}),
                 hp: hpField ? hpField.value : '',
+                ...(this.versionId ? { specVersionId: this.versionId } : {}),
                 // SO-4: the link token rides meta.rt (same channel as hp); the
                 // server re-validates it and stamps the record ref from the
                 // TOKEN, never a raw client recordId.

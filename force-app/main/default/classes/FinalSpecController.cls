@@ -92,6 +92,9 @@ public with sharing class FinalSpecController {
             );
         }
 
+        // Server-side Autofill validation (IMPL_PLAN_AUTOFILL_RULES §9)
+        FinalAutofillValidator.validateForPublish(formId, spec);
+
         Savepoint sp = Database.setSavepoint();
         try {
             List<AggregateResult> maxRows = [
@@ -104,11 +107,29 @@ public with sharing class FinalSpecController {
             Decimal nextNumber = latest == null ? 1 : latest + 1;
 
             List<Form_Version__c> actives = [
-                SELECT Id
+                SELECT Id, Spec_JSON__c
                 FROM Form_Version__c
                 WHERE Form__c = :formId AND Is_Active__c = TRUE
                 WITH USER_MODE
             ];
+
+            Boolean disclosureChanged = false;
+            if (
+                !actives.isEmpty() && String.isNotBlank(actives[0].Spec_JSON__c)
+            ) {
+                try {
+                    Map<String, Object> oldSpec = (Map<String, Object>) JSON.deserializeUntyped(
+                        actives[0].Spec_JSON__c
+                    );
+                    disclosureChanged = FinalAutofillService.hasGuestDisclosureChanged(
+                        oldSpec,
+                        spec
+                    );
+                } catch (Exception ignore) {
+                    disclosureChanged = true;
+                }
+            }
+
             for (Form_Version__c v : actives) {
                 v.Is_Active__c = false;
             }
@@ -134,16 +155,17 @@ public with sharing class FinalSpecController {
 
             // Gate writer (Phase A1.5): publishing marks the form Published and
             // stamps when. Status__c = 'Published' is the guest gate's FIRST
-            // condition (FinalGuestController) — without this a final-build form
-            // stays Draft forever and can never be served to a guest. The legacy
-            // Layout_Config__c / Schema_Snapshot__c fields are deliberately NOT
-            // written (final layout/schema truth = Spec_JSON__c); their
-            // publish-time validation rules are deactivated for the final build.
-            update as user new Form__c(
+            // condition (FinalGuestController).
+            // If guest disclosures changed, invalidate prior personalized links (IMPL_PLAN_AUTOFILL_RULES §7).
+            Form__c formUpdate = new Form__c(
                 Id = formId,
                 Status__c = 'Published',
                 Published_Date__c = Datetime.now()
             );
+            if (disclosureChanged) {
+                formUpdate.Links_Invalidated_On__c = Datetime.now();
+            }
+            update as user formUpdate;
             return published.Id;
         } catch (Exception e) {
             Database.rollback(sp);

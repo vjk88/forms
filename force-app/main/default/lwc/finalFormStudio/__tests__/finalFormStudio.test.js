@@ -596,6 +596,71 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('Autofill in Build mode: palette specchange records history and autosaves; testpreview relays to preview stage', async () => {
+        jest.useFakeTimers();
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+
+        const palette = el.shadowRoot.querySelector('c-final-field-palette');
+        const previewStage = el.shadowRoot.querySelector(
+            '.st-buildpreview c-final-preview-stage'
+        );
+        expect(palette).not.toBeNull();
+        expect(previewStage).not.toBeNull();
+
+        // Dispatch testpreview from palette/autofillPanel
+        palette.dispatchEvent(
+            new CustomEvent('testpreview', {
+                bubbles: true,
+                composed: true,
+                detail: {
+                    ruleId: 'af_1',
+                    values: { el_1: 'Test Value' }
+                }
+            })
+        );
+        await Promise.resolve();
+        expect(previewStage.recordContext).toEqual({
+            autofill: [{ ruleId: 'af_1', values: { el_1: 'Test Value' } }]
+        });
+
+        // Dispatch cleartestpreview
+        palette.dispatchEvent(
+            new CustomEvent('cleartestpreview', {
+                bubbles: true,
+                composed: true
+            })
+        );
+        await Promise.resolve();
+        expect(previewStage.recordContext).toBeNull();
+
+        // Dispatch specchange
+        const nextSpec = JSON.parse(JSON.stringify(SPEC));
+        nextSpec.settings = {
+            prefill: {
+                rulesVersion: 1,
+                autofillRules: [{ id: 'af_1', name: 'Rule 1', enabled: true }]
+            }
+        };
+        palette.dispatchEvent(
+            new CustomEvent('specchange', {
+                bubbles: true,
+                composed: true,
+                detail: { spec: nextSpec }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        expect(saved.settings.prefill.autofillRules[0].id).toBe('af_1');
+        jest.useRealTimers();
+    });
+
     it('DnD intents: dropfield at position, moveelement across sections, movepage keeps the active page', async () => {
         jest.useFakeTimers();
         const structured = JSON.parse(JSON.stringify(SPEC));

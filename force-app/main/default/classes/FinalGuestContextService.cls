@@ -46,11 +46,57 @@ public without sharing class FinalGuestContextService {
             spec,
             targetObject
         );
-        if (ruleRows.isEmpty() && prefillFields.isEmpty()) {
+
+        // Autofill rules link mappings with guestAllowed == true
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        Map<String, Object> prefillSettings = settings != null
+            ? asMap(settings.get('prefill'))
+            : null;
+        List<Object> rules = prefillSettings != null
+            ? asList(prefillSettings.get('autofillRules'))
+            : null;
+
+        Map<String, Object> activeLinkRule = null;
+        List<Map<String, Object>> guestLinkMappings = new List<Map<String, Object>>();
+        if (rules != null) {
+            for (Object rObj : rules) {
+                Map<String, Object> rule = asMap(rObj);
+                if (rule == null || rule.get('enabled') != true)
+                    continue;
+                Map<String, Object> source = asMap(rule.get('source'));
+                if (source != null && (String) source.get('type') == 'link') {
+                    String srcObj = (String) source.get('objectApiName');
+                    if (
+                        String.isNotBlank(srcObj) &&
+                        srcObj.equalsIgnoreCase(targetObject)
+                    ) {
+                        activeLinkRule = rule;
+                        for (Object mObj : asList(rule.get('mappings'))) {
+                            Map<String, Object> m = asMap(mObj);
+                            if (
+                                m != null &&
+                                m.get('guestAllowed') == true &&
+                                m.get('from') != null &&
+                                m.get('to') != null
+                            ) {
+                                guestLinkMappings.add(m);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (
+            ruleRows.isEmpty() &&
+            prefillFields.isEmpty() &&
+            guestLinkMappings.isEmpty()
+        ) {
             return empty;
         }
 
-        // ONE query: rule fields + opted prefill fields, spec-declared only.
+        // ONE query: rule fields + survey prefill fields + guest-allowed autofill fields, spec-declared only.
         Set<String> fields = new Set<String>();
         for (Map<String, Object> row : ruleRows) {
             String f = ((String) row.get('source')).substring(7);
@@ -59,6 +105,12 @@ public without sharing class FinalGuestContextService {
             }
         }
         for (String f : prefillFields.values()) {
+            if (fieldMap.containsKey(f.toLowerCase())) {
+                fields.add(f);
+            }
+        }
+        for (Map<String, Object> m : guestLinkMappings) {
+            String f = (String) m.get('from');
             if (fieldMap.containsKey(f.toLowerCase())) {
                 fields.add(f);
             }
@@ -77,6 +129,10 @@ public without sharing class FinalGuestContextService {
                 AccessLevel.SYSTEM_MODE
             );
             rec = found.isEmpty() ? null : found[0];
+        }
+
+        if (rec == null && !fields.isEmpty()) {
+            return empty;
         }
 
         // rule verdicts — same factKey + coercion as the authenticated path
@@ -107,21 +163,69 @@ public without sharing class FinalGuestContextService {
             );
         }
 
-        // prefill — author-opted fields only
+        // prefill — author-opted fields only (surveys)
         Map<String, Object> populated = rec == null
             ? new Map<String, Object>()
             : rec.getPopulatedFieldsAsMap();
+        Map<String, Object> populatedLower = new Map<String, Object>();
+        for (String k : populated.keySet()) {
+            populatedLower.put(k.toLowerCase(), populated.get(k));
+        }
+
         Map<String, Object> prefill = new Map<String, Object>();
         for (String elId : prefillFields.keySet()) {
             String field = prefillFields.get(elId);
-            if (populated.containsKey(field) && populated.get(field) != null) {
-                prefill.put(elId, populated.get(field));
+            if (
+                populatedLower.containsKey(field.toLowerCase()) &&
+                populatedLower.get(field.toLowerCase()) != null
+            ) {
+                prefill.put(elId, populatedLower.get(field.toLowerCase()));
             }
+        }
+
+        // autofill — published guest-opted link mappings
+        List<Map<String, Object>> autofillList = new List<Map<String, Object>>();
+        if (activeLinkRule != null && !guestLinkMappings.isEmpty()) {
+            Map<String, Object> ruleValues = new Map<String, Object>();
+            for (Map<String, Object> m : guestLinkMappings) {
+                String fromField = (String) m.get('from');
+                String toEl = (String) m.get('to');
+                if (fieldMap.containsKey(fromField.toLowerCase())) {
+                    if (populatedLower.containsKey(fromField.toLowerCase())) {
+                        ruleValues.put(
+                            toEl,
+                            populatedLower.get(fromField.toLowerCase())
+                        );
+                    } else if (rec != null) {
+                        ruleValues.put(toEl, null);
+                    }
+                }
+            }
+            autofillList.add(
+                new Map<String, Object>{
+                    'ruleId' => (String) activeLinkRule.get('id'),
+                    'values' => ruleValues
+                }
+            );
         }
 
         return new Map<String, Object>{
             'prefill' => prefill,
-            'ruleFacts' => ruleFacts
+            'ruleFacts' => ruleFacts,
+            'autofill' => autofillList,
+            'recordFound' => (rec != null)
         };
+    }
+
+    private static Map<String, Object> asMap(Object obj) {
+        return obj instanceof Map<String, Object>
+            ? (Map<String, Object>) obj
+            : null;
+    }
+
+    private static List<Object> asList(Object obj) {
+        return obj instanceof List<Object>
+            ? (List<Object>) obj
+            : new List<Object>();
     }
 }

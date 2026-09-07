@@ -1,20 +1,20 @@
 import { createElement } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import FinalGuestHost from 'c/finalGuestHost';
-import getGuestSpec from '@salesforce/apex/FinalGuestController.getGuestSpec';
-import getGuestRecordContext from '@salesforce/apex/FinalGuestController.getGuestRecordContext';
+import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec';
+import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 
 jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
 }));
 jest.mock(
-    '@salesforce/apex/FinalGuestController.getGuestSpec',
+    '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
 jest.mock(
-    '@salesforce/apex/FinalGuestController.getGuestRecordContext',
+    '@salesforce/apex/FinalGuestController.getGuestAutofillContext',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -79,12 +79,14 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('gate pass: fetches the projected spec and feeds it to the viewer', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
         const el = mount('a0Xguest');
         await flush();
         await flush();
 
-        expect(getGuestSpec).toHaveBeenCalledWith({ formId: 'a0Xguest' });
+        expect(getGuestRuntimeSpec).toHaveBeenCalledWith({
+            formId: 'a0Xguest'
+        });
         const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
         expect(viewer).not.toBeNull();
         expect(viewer.spec.form.name).toBe('Guest');
@@ -93,7 +95,7 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('gate fail: shows the generic unavailable message, no viewer', async () => {
-        getGuestSpec.mockRejectedValue({
+        getGuestRuntimeSpec.mockRejectedValue({
             body: { message: 'This form is not available.' }
         });
         const el = mount('a0Xblocked');
@@ -107,7 +109,7 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('delegated submit: calls submitGuest with the payload and completes the viewer', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
         submitGuest.mockResolvedValue({ success: true, childCount: 0 });
         const el = mount('a0Xguest');
         await flush();
@@ -132,9 +134,10 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('closed form: shows the closed message, no viewer', async () => {
-        getGuestSpec.mockResolvedValue(
-            JSON.stringify({ closed: true, closedMessage: 'Closed for now.' })
-        );
+        getGuestRuntimeSpec.mockResolvedValue({
+            closed: true,
+            closedMessage: 'Closed for now.'
+        });
         const el = mount('a0Xclosed');
         await flush();
         await flush();
@@ -146,12 +149,13 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('honeypot: renders the bait field and merges its value into meta.hp', async () => {
-        getGuestSpec.mockResolvedValue(
-            JSON.stringify({
+        getGuestRuntimeSpec.mockResolvedValue({
+            versionId: 'v1',
+            spec: {
                 ...SPEC,
                 settings: { ...SPEC.settings, spamProtection: 'honeypot' }
-            })
-        );
+            }
+        });
         submitGuest.mockResolvedValue({ success: true, childCount: 0 });
         const el = mount('a0Xhp');
         await flush();
@@ -198,7 +202,7 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         });
         const postSpy = jest.spyOn(window, 'postMessage');
 
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
         mount('a0Xembed');
         await flush();
         await flush();
@@ -212,7 +216,7 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('no honeypot field when spamProtection is off', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
         const el = mount('a0Xnohp');
         await flush();
         await flush();
@@ -220,8 +224,10 @@ describe('c-final-guest-host (guest site host, A2)', () => {
     });
 
     it('SO-4: a ?c__rt= token fetches the record context and injects it into the viewer', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
-        getGuestRecordContext.mockResolvedValue({
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
+        getGuestAutofillContext.mockResolvedValue({
+            versionId: 'v1',
+            status: 'applied',
             prefill: { el_ln: 'Ada' },
             ruleFacts: { 'record:Plan__c|equals|Pro': true }
         });
@@ -234,20 +240,28 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         await flush();
         await flush();
 
-        expect(getGuestRecordContext).toHaveBeenCalledWith({
+        expect(getGuestAutofillContext).toHaveBeenCalledWith({
             formId: 'a0Xtok',
+            versionId: 'v1',
             token: 'TOKEN123'
         });
         const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
         expect(viewer.recordContext).toEqual({
+            versionId: 'v1',
+            status: 'applied',
             prefill: { el_ln: 'Ada' },
             ruleFacts: { 'record:Plan__c|equals|Pro': true }
         });
     });
 
     it('SO-4: a token-carrying submit sends it as meta.rt (server re-validates)', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
-        getGuestRecordContext.mockResolvedValue({ prefill: {}, ruleFacts: {} });
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
+        getGuestAutofillContext.mockResolvedValue({
+            versionId: 'v1',
+            status: 'applied',
+            prefill: {},
+            ruleFacts: {}
+        });
         submitGuest.mockResolvedValue({ success: true, childCount: 0 });
         const el = createElement('c-final-guest-host', { is: FinalGuestHost });
         document.body.appendChild(el);
@@ -268,18 +282,19 @@ describe('c-final-guest-host (guest site host, A2)', () => {
 
         const sent = JSON.parse(submitGuest.mock.calls[0][0].payloadJson);
         expect(sent.meta.rt).toBe('TOKEN123');
+        expect(sent.meta.specVersionId).toBe('v1');
     });
 
-    it('SO-4: no token → getGuestRecordContext is never called', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+    it('SO-4: no token → getGuestAutofillContext is never called', async () => {
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
         mount('a0Xplain');
         await flush();
         await flush();
-        expect(getGuestRecordContext).not.toHaveBeenCalled();
+        expect(getGuestAutofillContext).not.toHaveBeenCalled();
     });
 
     it('delegated submit failure: passes the message to the viewer', async () => {
-        getGuestSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
         submitGuest.mockRejectedValue({ body: { message: 'Closed.' } });
         const el = mount('a0Xguest');
         await flush();

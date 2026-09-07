@@ -155,7 +155,88 @@ public with sharing class FinalSpecTransferValidator {
         }
         collectNodes(pages, result);
         validateRules(pages, result);
+        validateAutofill(spec, result);
         return result;
+    }
+
+    private static void validateAutofill(
+        Map<String, Object> spec,
+        Result result
+    ) {
+        Map<String, Object> settings = optionalMap(
+            spec.get('settings'),
+            'The settings block'
+        );
+        if (settings == null) {
+            return;
+        }
+        Map<String, Object> prefill = optionalMap(
+            settings.get('prefill'),
+            'The prefill block'
+        );
+        if (prefill == null) {
+            return;
+        }
+        Object rulesObj = prefill.get('autofillRules');
+        if (rulesObj == null) {
+            return;
+        }
+        List<Object> rules = requireList(
+            rulesObj,
+            'The autofillRules collection'
+        );
+        for (Object rObj : rules) {
+            Map<String, Object> rule = requireMap(rObj, 'Each autofill rule');
+            String ruleId = nullableString(rule.get('id'));
+            if (String.isNotBlank(ruleId)) {
+                result.freshIdByOld.put(ruleId, freshId('af_'));
+            }
+            Map<String, Object> source = optionalMap(
+                rule.get('source'),
+                'The autofill rule source'
+            );
+            if (
+                source != null &&
+                nullableString(source.get('type')) == 'lookup'
+            ) {
+                String elId = nullableString(source.get('elementId'));
+                if (
+                    String.isNotBlank(elId) && !result.elementIds.contains(elId)
+                ) {
+                    throw new ValidationException(
+                        'Autofill rule references missing lookup element: ' +
+                        elId
+                    );
+                }
+            }
+            Object mappingsObj = rule.get('mappings');
+            if (mappingsObj != null) {
+                List<Object> mappings = requireList(
+                    mappingsObj,
+                    'The autofill mappings collection'
+                );
+                for (Object mObj : mappings) {
+                    Map<String, Object> m = requireMap(
+                        mObj,
+                        'Each autofill mapping'
+                    );
+                    String mapId = nullableString(m.get('id'));
+                    if (String.isNotBlank(mapId)) {
+                        result.freshIdByOld.put(mapId, freshId('afm_'));
+                    }
+                    String toEl = nullableString(m.get('to'));
+                    if (
+                        String.isNotBlank(toEl) &&
+                        !result.elementIds.contains(toEl)
+                    ) {
+                        throw new ValidationException(
+                            'Autofill rule references missing destination element: ' +
+                            toEl
+                        );
+                    }
+                }
+            }
+        }
     }
 
     private static void collectNodes(List<Object> pages, Result result) {

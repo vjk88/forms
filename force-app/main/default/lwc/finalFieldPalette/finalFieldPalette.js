@@ -173,6 +173,14 @@ export default class FinalFieldPalette extends LightningElement {
      *  properties; this tab lists every rule and jumps to its owner):
      *  [{key, kind, id, label, summary}]. */
     @api logicIndex = [];
+    /** The full spec object passed down from studio for Autofill authoring. */
+    @api spec;
+    /** Form record ID. */
+    @api formId;
+    /** Whether public guest access is enabled. */
+    @api isPublic = false;
+    /** Active published version ID. */
+    @api activeVersionId;
 
     tab = 'fields';
     search = '';
@@ -214,12 +222,22 @@ export default class FinalFieldPalette extends LightningElement {
         return !(this.logicIndex || []).length;
     }
 
-    get isStub() {
+    get isAutofill() {
         return this.tab === 'autofill';
     }
 
+    get isStub() {
+        return false;
+    }
+
     get stubLabel() {
-        return 'Autofill — prefill mapping arrives with a later slice.';
+        return '';
+    }
+
+    handleNavigateTab(event) {
+        if (event.detail?.tab) {
+            this.tab = event.detail.tab;
+        }
     }
 
     get tabs() {

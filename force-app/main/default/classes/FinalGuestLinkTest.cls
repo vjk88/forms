@@ -571,4 +571,311 @@ private class FinalGuestLinkTest {
         Test.stopTest();
         System.assert(refused, 'a revoked link cannot submit even mid-session');
     }
+
+    private static String subPayloadWithVersion(
+        String token,
+        String versionId
+    ) {
+        return JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_name' => 'Ada' },
+                'repeats' => new Map<String, Object>(),
+                'meta' => new Map<String, Object>{
+                    'rt' => token,
+                    'specVersionId' => versionId
+                }
+            }
+        );
+    }
+
+    private static Form__c makeGuestClassicFormWithAutofill(String name) {
+        Form__c form = new Form__c(
+            Name = name,
+            Form_Type__c = 'Form',
+            Status__c = 'Published',
+            Allowed_Adapters__c = 'Public_Guest',
+            // VR_Primary_Object_Required (ACTIVE): a Form-typed record must
+            // carry its primary object or the insert is rejected.
+            Primary_Context_Object__c = 'Job_Application__c'
+        );
+        insert form;
+
+        Map<String, Object> elName = new Map<String, Object>{
+            'id' => 'el_name',
+            'type' => 'field',
+            'label' => 'Name',
+            'binding' => 'Applicant_Name__c',
+            'config' => new Map<String, Object>{ 'inputType' => 'text' }
+        };
+        Map<String, Object> elSalary = new Map<String, Object>{
+            'id' => 'el_salary',
+            'type' => 'field',
+            'label' => 'Salary',
+            'binding' => 'Desired_Salary__c',
+            'config' => new Map<String, Object>{ 'inputType' => 'text' }
+        };
+
+        Map<String, Object> spec = new Map<String, Object>{
+            'form' => new Map<String, Object>{
+                'type' => 'form',
+                'targetObject' => 'Job_Application__c'
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'p1',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec_main',
+                            'elements' => new List<Object>{ elName, elSalary }
+                        }
+                    }
+                }
+            },
+            'settings' => new Map<String, Object>{
+                'prefill' => new Map<String, Object>{
+                    'rulesVersion' => 1,
+                    'autofillRules' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'af_contact_link',
+                            'name' => 'Link Rule',
+                            'enabled' => true,
+                            'policy' => 'preserveEdits',
+                            'source' => new Map<String, Object>{
+                                'type' => 'link',
+                                'objectApiName' => 'Job_Application__c'
+                            },
+                            'mappings' => new List<Object>{
+                                new Map<String, Object>{
+                                    'id' => 'm1',
+                                    'from' => 'Applicant_Name__c',
+                                    'to' => 'el_name',
+                                    'guestAllowed' => true
+                                },
+                                new Map<String, Object>{
+                                    'id' => 'm2',
+                                    'from' => 'Desired_Salary__c',
+                                    'to' => 'el_salary',
+                                    'guestAllowed' => false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        insert new Form_Version__c(
+            Form__c = form.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Spec_JSON__c = JSON.serialize(spec)
+        );
+        return form;
+    }
+
+    @isTest
+    static void classicFormPersonalizedLinkAutofillContext() {
+        grantJobAppAccess();
+        Form__c form = makeGuestClassicFormWithAutofill('ClassicAutofill');
+        Form_Version__c activeVer = [
+            SELECT Id
+            FROM Form_Version__c
+            WHERE Form__c = :form.Id AND Is_Active__c = TRUE
+            LIMIT 1
+        ];
+        String token;
+        Job_Application__c ja;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            ja = makeRecord();
+            Map<String, Object> res = FinalStudioController.mintRecordLink(
+                form.Id,
+                ja.Id
+            );
+            token = (String) res.get('token');
+        }
+
+        Test.startTest();
+        // Check runtime spec projection
+        Map<String, Object> runtimeSpec = FinalGuestController.getGuestRuntimeSpec(
+            form.Id
+        );
+        System.assertEquals(
+            activeVer.Id,
+            (Id) runtimeSpec.get('versionId'),
+            'versionId matches'
+        );
+        Map<String, Object> specObj = (Map<String, Object>) runtimeSpec.get(
+            'spec'
+        );
+        System.assert(specObj != null, 'spec returned');
+        Map<String, Object> runtime = (Map<String, Object>) specObj.get(
+            'runtime'
+        );
+        System.assert(
+            runtime != null && runtime.containsKey('autofill'),
+            'sanitized autofill runtime descriptor present'
+        );
+
+        // Check autofill context
+        Map<String, Object> ctx = FinalGuestController.getGuestAutofillContext(
+            form.Id,
+            activeVer.Id,
+            token
+        );
+        Test.stopTest();
+
+        System.assertEquals(
+            'applied',
+            (String) ctx.get('status'),
+            'status is applied'
+        );
+        List<Object> afList = (List<Object>) ctx.get('autofill');
+        System.assertEquals(1, afList.size(), 'one rule autofill returned');
+        Map<String, Object> rule0 = (Map<String, Object>) afList[0];
+        System.assertEquals(
+            'af_contact_link',
+            (String) rule0.get('ruleId'),
+            'ruleId matches'
+        );
+        Map<String, Object> vals = (Map<String, Object>) rule0.get('values');
+        System.assertEquals(
+            'Ada Lovelace',
+            vals.get('el_name'),
+            'guest-allowed field populated'
+        );
+        System.assertEquals(
+            false,
+            vals.containsKey('el_salary'),
+            'non-guest field omitted'
+        );
+    }
+
+    @isTest
+    static void classicFormSingleUseTrackedSubmitBurnsAndEnforces() {
+        grantJobAppAccess();
+        Form__c form = makeGuestClassicFormWithAutofill('ClassicSingleUse');
+        Form_Version__c activeVer = [
+            SELECT Id
+            FROM Form_Version__c
+            WHERE Form__c = :form.Id AND Is_Active__c = TRUE
+            LIMIT 1
+        ];
+        String token;
+        Job_Application__c ja;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            ja = makeRecord();
+            Map<String, Object> res = FinalStudioController.mintTrackedLink(
+                form.Id,
+                ja.Id,
+                'guest@example.com',
+                true
+            );
+            token = (String) res.get('token');
+        }
+
+        Test.startTest();
+        // Prefetching doesn't burn
+        FinalGuestController.getGuestAutofillContext(
+            form.Id,
+            activeVer.Id,
+            token
+        );
+        Survey_Invitation__c invBefore = [
+            SELECT Responded_On__c
+            FROM Survey_Invitation__c
+            WHERE Form__c = :form.Id
+            LIMIT 1
+        ];
+        System.assertEquals(
+            null,
+            invBefore.Responded_On__c,
+            'context fetch does not burn single-use invitation'
+        );
+
+        // First submit burns and succeeds
+        String p1 = subPayloadWithVersion(token, activeVer.Id);
+        FinalGuestController.GuestSubmitResult r1 = FinalGuestController.submitGuest(
+            form.Id,
+            p1
+        );
+        System.assertEquals(true, r1.success, 'first submit succeeds');
+
+        Survey_Invitation__c invAfter = [
+            SELECT Responded_On__c
+            FROM Survey_Invitation__c
+            WHERE Form__c = :form.Id
+            LIMIT 1
+        ];
+        System.assertNotEquals(
+            null,
+            invAfter.Responded_On__c,
+            'invitation marked responded'
+        );
+
+        // Second submit with burned token is refused
+        Boolean refused = false;
+        try {
+            FinalGuestController.submitGuest(form.Id, p1);
+        } catch (Exception e) {
+            refused = true;
+        }
+        Test.stopTest();
+        System.assert(
+            refused,
+            'second submit is refused because invitation is burned'
+        );
+    }
+
+    @isTest
+    static void guestAutofillContextVersionChanged() {
+        grantJobAppAccess();
+        Form__c form = makeGuestClassicFormWithAutofill('VersionChanged');
+        Job_Application__c ja = makeRecord();
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Map<String, Object> res = FinalStudioController.mintRecordLink(
+                form.Id,
+                ja.Id
+            );
+            token = (String) res.get('token');
+        }
+
+        Test.startTest();
+        Id fakeStaleVersionId = form.Id; // different Id
+        Map<String, Object> ctx = FinalGuestController.getGuestAutofillContext(
+            form.Id,
+            fakeStaleVersionId,
+            token
+        );
+        Test.stopTest();
+
+        System.assertEquals(
+            'versionChanged',
+            (String) ctx.get('status'),
+            'reports versionChanged on stale version'
+        );
+    }
+
+    @isTest
+    static void classicFormSubmitRejectsStaleSpecVersionId() {
+        grantJobAppAccess();
+        Form__c form = makeGuestClassicFormWithAutofill('StaleSpecVersion');
+        String p = subPayloadWithVersion('dummyToken', 'a01000000000000AAA'); // stale version Id
+
+        Test.startTest();
+        Boolean caught = false;
+        try {
+            FinalGuestController.submitGuest(form.Id, p);
+        } catch (AuraHandledException e) {
+            caught = true;
+            // NOTE: do NOT assert the message text here. An
+            // AuraHandledException thrown out of an @AuraEnabled method
+            // surfaces to Apex as "Script-thrown exception" — org-verified
+            // 2026-09-07, the actual value this assertion received. The
+            // user-facing wording is delivered to the CLIENT, not to
+            // getMessage(), so the assertable contract is the rejection itself.
+        }
+        Test.stopTest();
+        System.assert(caught, 'mismatched specVersionId is rejected');
+    }
 }

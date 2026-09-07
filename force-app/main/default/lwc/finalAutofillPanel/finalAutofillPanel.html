@@ -1,0 +1,630 @@
+<template>
+    <div class="ap-container">
+        <!-- Header -->
+        <header class="ap-head">
+            <template lwc:if={isEditing}>
+                <button
+                    type="button"
+                    class="ap-back-btn"
+                    onclick={handleBackToList}
+                    title="Back to all rules"
+                >
+                    <lightning-icon
+                        icon-name="utility:back"
+                        size="x-small"
+                    ></lightning-icon>
+                    <span>All rules</span>
+                </button>
+            </template>
+            <template lwc:else>
+                <div class="ap-head-title-row">
+                    <div>
+                        <span class="ap-head-label">Autofill Rules</span>
+                        <span class="ap-head-sub"
+                            >Populate answers from Salesforce records</span
+                        >
+                    </div>
+                    <button
+                        type="button"
+                        class="ap-add-rule-btn"
+                        onclick={handleCreateRule}
+                        disabled={maxRulesReached}
+                        title="Add rule"
+                    >
+                        <lightning-icon
+                            icon-name="utility:add"
+                            size="x-small"
+                        ></lightning-icon>
+                        <span>Add rule</span>
+                    </button>
+                </div>
+            </template>
+        </header>
+
+        <!-- Test Data Active Banner (shown persistently when test data is active) -->
+        <template lwc:if={hasActiveTestData}>
+            <div class="ap-test-banner" role="status">
+                <lightning-icon
+                    icon-name="utility:preview"
+                    size="x-small"
+                    class="ap-test-icon"
+                ></lightning-icon>
+                <div class="ap-test-info">
+                    <span class="ap-test-title">Test data active</span>
+                    <span class="ap-test-record">{activeTestRecordId}</span>
+                </div>
+                <button
+                    type="button"
+                    class="ap-clear-test-btn"
+                    onclick={handleClearTestData}
+                    title="Clear test data"
+                >
+                    Clear
+                </button>
+            </div>
+        </template>
+
+        <!-- Main Body -->
+        <div class="ap-body">
+            <!-- VIEW 1: Rule List & Empty State -->
+            <template lwc:if={isList}>
+                <template lwc:if={hasRules}>
+                    <ul class="ap-rule-list">
+                        <template for:each={ruleCards} for:item="r">
+                            <li key={r.id} class={r.cardClass}>
+                                <div class="ap-card-header">
+                                    <div class="ap-card-title-group">
+                                        <span
+                                            class="ap-card-name"
+                                            title={r.name}
+                                            >{r.name}</span
+                                        >
+                                        <div class="ap-card-badges">
+                                            <span
+                                                class="ap-badge ap-badge-source"
+                                                >{r.sourceBadge}</span
+                                            >
+                                            <span class="ap-badge"
+                                                >{r.mappingCountText}</span
+                                            >
+                                            <span class="ap-badge"
+                                                >{r.policyBadge}</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="ap-card-actions">
+                                        <lightning-input
+                                            type="toggle"
+                                            variant="label-hidden"
+                                            label="Enabled"
+                                            message-toggle-active=""
+                                            message-toggle-inactive=""
+                                            checked={r.enabled}
+                                            data-id={r.id}
+                                            onchange={handleToggleRule}
+                                            class="ap-toggle"
+                                        ></lightning-input>
+                                        <button
+                                            type="button"
+                                            class="ap-icon-btn"
+                                            data-id={r.id}
+                                            onclick={handleEditRule}
+                                            title="Edit rule"
+                                        >
+                                            <lightning-icon
+                                                icon-name="utility:edit"
+                                                size="x-small"
+                                            ></lightning-icon>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="ap-icon-btn ap-delete-btn"
+                                            data-id={r.id}
+                                            onclick={handleDeleteRule}
+                                            title="Delete rule"
+                                        >
+                                            <lightning-icon
+                                                icon-name="utility:delete"
+                                                size="x-small"
+                                            ></lightning-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <template lwc:if={r.hasErrors}>
+                                    <div class="ap-card-errors">
+                                        <template
+                                            for:each={r.errors}
+                                            for:item="err"
+                                        >
+                                            <span
+                                                key={err}
+                                                class="ap-error-chip"
+                                            >
+                                                <lightning-icon
+                                                    icon-name="utility:error"
+                                                    size="xx-small"
+                                                    class="ap-chip-icon"
+                                                ></lightning-icon>
+                                                {err}
+                                            </span>
+                                        </template>
+                                    </div>
+                                </template>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+                <template lwc:else>
+                    <div class="ap-empty-state">
+                        <lightning-icon
+                            icon-name="utility:magicwand"
+                            size="large"
+                            class="ap-empty-icon"
+                        ></lightning-icon>
+                        <h3 class="ap-empty-title">
+                            Fill answers from Salesforce records
+                        </h3>
+                        <p class="ap-empty-desc">
+                            Prefill form fields using personalized links or
+                            authenticated lookup selections made by respondents.
+                        </p>
+                        <button
+                            type="button"
+                            class="ap-btn-primary"
+                            onclick={handleCreateRule}
+                        >
+                            Add rule
+                        </button>
+                    </div>
+                </template>
+            </template>
+
+            <!-- VIEW 2: Rule Editor -->
+            <template lwc:elseif={isEditing}>
+                <div class="ap-editor">
+                    <!-- Rule Name -->
+                    <div class="ap-form-group">
+                        <lightning-input
+                            label="Rule Name"
+                            value={draftRule.name}
+                            onchange={handleNameChange}
+                            placeholder="e.g. Contact from personalized link"
+                        ></lightning-input>
+                    </div>
+
+                    <!-- Source Type Selection -->
+                    <div class="ap-form-group">
+                        <label class="ap-label">Source Type</label>
+                        <div class="ap-radio-group">
+                            <button
+                                type="button"
+                                class={linkSourceClass}
+                                data-type="link"
+                                onclick={handleSourceTypeSelect}
+                            >
+                                <lightning-icon
+                                    icon-name="utility:link"
+                                    size="x-small"
+                                ></lightning-icon>
+                                <span>Personalized link</span>
+                            </button>
+                            <button
+                                type="button"
+                                class={lookupSourceClass}
+                                data-type="lookup"
+                                onclick={handleSourceTypeSelect}
+                            >
+                                <lightning-icon
+                                    icon-name="utility:search"
+                                    size="x-small"
+                                ></lightning-icon>
+                                <span>Lookup selection</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Source Configuration -->
+                    <template lwc:if={isSourceLink}>
+                        <div class="ap-form-group">
+                            <template lwc:if={isSurvey}>
+                                <lightning-input
+                                    label="Source Object"
+                                    value={surveySourceObject}
+                                    disabled
+                                ></lightning-input>
+                                <p class="ap-field-hint">
+                                    Survey link prefill is locked to the survey
+                                    context object.
+                                </p>
+                            </template>
+                            <template lwc:else>
+                                <lightning-input
+                                    label="Source Object (API Name)"
+                                    value={draftRule.source.objectApiName}
+                                    onchange={handleSourceObjectChange}
+                                    placeholder="e.g. Contact, Account, Case"
+                                ></lightning-input>
+                                <p class="ap-field-hint">
+                                    The Salesforce object supplying field values
+                                    via the encrypted link.
+                                </p>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:elseif={isSourceLookup}>
+                        <div class="ap-form-group">
+                            <template lwc:if={hasLookupElements}>
+                                <lightning-combobox
+                                    label="Source Lookup Field"
+                                    value={draftRule.source.elementId}
+                                    options={lookupOptions}
+                                    onchange={handleLookupElementChange}
+                                    placeholder="Select a lookup field from the form"
+                                ></lightning-combobox>
+                                <p class="ap-field-hint">
+                                    When respondents select a record in this
+                                    lookup, mapped fields populate.
+                                </p>
+                                <template lwc:if={lookupTargetObject}>
+                                    <p class="ap-field-hint">
+                                        Source object:
+                                        <strong>{lookupTargetObject}</strong>
+                                    </p>
+                                </template>
+                            </template>
+                            <template lwc:else>
+                                <div class="ap-missing-lookup-notice">
+                                    <lightning-icon
+                                        icon-name="utility:info_alt"
+                                        size="small"
+                                    ></lightning-icon>
+                                    <div>
+                                        <p class="ap-notice-title">
+                                            Add a lookup field first
+                                        </p>
+                                        <p class="ap-notice-desc">
+                                            There are no reference or lookup
+                                            fields on this form yet.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="ap-btn-secondary"
+                                        onclick={handleGoToFields}
+                                    >
+                                        Go to Fields
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Policy selection -->
+                    <div class="ap-form-group">
+                        <lightning-combobox
+                            label="Value Replacement Policy"
+                            value={draftRule.policy}
+                            options={policyOptions}
+                            onchange={handlePolicyChange}
+                        ></lightning-combobox>
+                        <p class="ap-field-hint">
+                            Controls whether Autofill keeps or overwrites manual
+                            respondent edits.
+                        </p>
+                        <template lwc:if={isAlwaysReplace}>
+                            <p class="ap-field-warning">
+                                May replace an earlier answer. Edits made while
+                                loading are still kept.
+                            </p>
+                        </template>
+                    </div>
+
+                    <!-- Mappings Section -->
+                    <div class="ap-section-divider"></div>
+                    <div class="ap-mappings-header">
+                        <div>
+                            <span class="ap-section-title">Field Mappings</span>
+                            <span class="ap-section-sub"
+                                >Salesforce field → Form answer</span
+                            >
+                        </div>
+                        <button
+                            type="button"
+                            class="ap-btn-secondary ap-btn-sm"
+                            onclick={handleAddMapping}
+                            disabled={sourceFieldsUnavailable}
+                        >
+                            <lightning-icon
+                                icon-name="utility:add"
+                                size="xx-small"
+                            ></lightning-icon>
+                            <span>Add mapping</span>
+                        </button>
+                    </div>
+
+                    <template lwc:if={loadingSourceFields}>
+                        <div class="ap-loading-container">
+                            <lightning-spinner
+                                alternative-text="Loading fields"
+                                size="small"
+                            ></lightning-spinner>
+                            <span class="ap-loading-text"
+                                >Loading fields for {currentSourceObject}…</span
+                            >
+                        </div>
+                    </template>
+                    <template lwc:elseif={sourceFieldsError}>
+                        <p class="ap-error-box">{sourceFieldsError}</p>
+                    </template>
+                    <template lwc:else>
+                        <template lwc:if={hasMappings}>
+                            <div class="ap-mappings-list">
+                                <template
+                                    for:each={draftMappings}
+                                    for:item="m"
+                                    for:index="idx"
+                                >
+                                    <div key={m.id} class="ap-mapping-row">
+                                        <div class="ap-mapping-fields">
+                                            <lightning-combobox
+                                                label="Salesforce Field"
+                                                variant="label-hidden"
+                                                value={m.from}
+                                                options={sourceFieldOptions}
+                                                data-index={idx}
+                                                onchange={handleMappingFromChange}
+                                                placeholder="Source field"
+                                                class="ap-mapping-select"
+                                            ></lightning-combobox>
+                                            <span class="ap-arrow">→</span>
+                                            <lightning-combobox
+                                                label="Destination Element"
+                                                variant="label-hidden"
+                                                value={m.to}
+                                                options={destinationOptions}
+                                                data-index={idx}
+                                                onchange={handleMappingToChange}
+                                                placeholder="Form answer"
+                                                class="ap-mapping-select"
+                                            ></lightning-combobox>
+                                            <button
+                                                type="button"
+                                                class="ap-icon-btn ap-delete-btn"
+                                                data-index={idx}
+                                                onclick={handleRemoveMapping}
+                                                title="Remove mapping"
+                                            >
+                                                <lightning-icon
+                                                    icon-name="utility:delete"
+                                                    size="x-small"
+                                                ></lightning-icon>
+                                            </button>
+                                        </div>
+                                        <template
+                                            lwc:if={isSourceLinkAndPublic}
+                                        >
+                                            <div
+                                                class="ap-mapping-guest-toggle"
+                                            >
+                                                <lightning-input
+                                                    type="checkbox"
+                                                    label="Allow anyone with this personalized link to receive this value"
+                                                    checked={m.guestAllowed}
+                                                    data-index={idx}
+                                                    onchange={handleGuestAllowedChange}
+                                                ></lightning-input>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <p class="ap-note">
+                                No mappings added yet. Click "Add mapping" above
+                                to connect Salesforce fields to form answers.
+                            </p>
+                        </template>
+                    </template>
+
+                    <!-- Public Form Disclosure Review (for link rules on public forms) -->
+                    <template lwc:if={isSourceLinkAndPublic}>
+                        <div class="ap-disclosure-card">
+                            <div class="ap-disclosure-header">
+                                <lightning-icon
+                                    icon-name="utility:lock"
+                                    size="x-small"
+                                ></lightning-icon>
+                                <span class="ap-disclosure-title"
+                                    >Public Link Guest Disclosure</span
+                                >
+                            </div>
+                            <p class="ap-disclosure-desc">
+                                Allow anyone with this personalized link to
+                                receive these values:
+                            </p>
+                            <template lwc:if={hasDisclosedFields}>
+                                <div class="ap-disclosure-tags">
+                                    <template
+                                        for:each={disclosedFieldLabels}
+                                        for:item="lbl"
+                                    >
+                                        <span
+                                            key={lbl}
+                                            class="ap-disclosure-tag"
+                                            >{lbl}</span
+                                        >
+                                    </template>
+                                </div>
+                            </template>
+                            <template lwc:else>
+                                <span class="ap-disclosure-none"
+                                    >No fields disclosed to anonymous
+                                    respondents. (Only logged-in users with
+                                    record access will receive values).</span
+                                >
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Test in Preview Section -->
+                    <div class="ap-section-divider"></div>
+                    <div class="ap-test-section">
+                        <div class="ap-test-header">
+                            <span class="ap-section-title"
+                                >Test in preview</span
+                            >
+                            <span class="ap-section-sub"
+                                >Load sample values in live preview under your
+                                Salesforce user permissions</span
+                            >
+                        </div>
+                        <div class="ap-test-controls">
+                            <lightning-input
+                                label="Test Record ID"
+                                variant="label-hidden"
+                                value={testRecordInput}
+                                onchange={handleTestRecordInputChange}
+                                placeholder="Enter 15 or 18 character record ID"
+                                class="ap-test-input"
+                            ></lightning-input>
+                            <button
+                                type="button"
+                                class="ap-btn-secondary"
+                                onclick={handleApplyTestRecord}
+                                disabled={testApplyDisabled}
+                            >
+                                <lightning-icon
+                                    icon-name="utility:preview"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                <span>{testButtonLabel}</span>
+                            </button>
+                        </div>
+                        <template lwc:if={testError}>
+                            <p class="ap-error-inline">{testError}</p>
+                        </template>
+                    </div>
+
+                    <!-- Create Personalized Link Section (for link rules) -->
+                    <template lwc:if={isSourceLink}>
+                        <div class="ap-section-divider"></div>
+                        <div class="ap-mint-section">
+                            <div class="ap-mint-header">
+                                <span class="ap-section-title"
+                                    >Create personalized link</span
+                                >
+                                <span class="ap-section-sub"
+                                    >Mint encrypted c__rt link for a specific
+                                    recipient</span
+                                >
+                            </div>
+                            <template lwc:if={canMintLink}>
+                                <div class="ap-mint-form">
+                                    <lightning-input
+                                        label="Record ID"
+                                        value={linkRecordId}
+                                        onchange={handleLinkRecordIdChange}
+                                        placeholder="Record ID to associate with link"
+                                    ></lightning-input>
+                                    <div class="ap-checkbox-row">
+                                        <lightning-input
+                                            type="checkbox"
+                                            label="Track invitation & responses"
+                                            checked={linkTracked}
+                                            onchange={handleLinkTrackedChange}
+                                        ></lightning-input>
+                                    </div>
+                                    <template lwc:if={linkTracked}>
+                                        <lightning-input
+                                            label="Recipient Email / Identifier"
+                                            value={linkRecipient}
+                                            onchange={handleLinkRecipientChange}
+                                            placeholder="Optional recipient address"
+                                        ></lightning-input>
+                                        <div class="ap-checkbox-row">
+                                            <lightning-input
+                                                type="checkbox"
+                                                label="Single-use (burn after submission)"
+                                                checked={linkSingleUse}
+                                                onchange={handleLinkSingleUseChange}
+                                            ></lightning-input>
+                                        </div>
+                                    </template>
+                                    <div class="ap-mint-actions">
+                                        <button
+                                            type="button"
+                                            class="ap-btn-primary ap-btn-sm"
+                                            onclick={handleCreateLink}
+                                            disabled={createLinkDisabled}
+                                        >
+                                            {createLinkLabel}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="ap-btn-secondary ap-btn-sm"
+                                            onclick={handleInvalidateLinks}
+                                        >
+                                            Invalidate all links
+                                        </button>
+                                    </div>
+                                    <template lwc:if={linkError}>
+                                        <p class="ap-error-inline">
+                                            {linkError}
+                                        </p>
+                                    </template>
+                                    <template lwc:if={linkNotice}>
+                                        <p class="ap-notice-inline">
+                                            {linkNotice}
+                                        </p>
+                                    </template>
+                                    <template lwc:if={mintedLink}>
+                                        <div class="ap-minted-result">
+                                            <lightning-input
+                                                label="Generated Link Query"
+                                                value={mintedLink}
+                                                readonly
+                                            ></lightning-input>
+                                            <button
+                                                type="button"
+                                                class="ap-btn-secondary ap-btn-sm ap-copy-btn"
+                                                onclick={handleCopyLink}
+                                            >
+                                                {copiedLinkText}
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <template lwc:else>
+                                <p class="ap-note">
+                                    Publish this form to create personalized
+                                    links. Links cannot be generated from
+                                    unpublished draft rules.
+                                </p>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Save / Done Buttons in Editor Footer -->
+                    <div class="ap-editor-footer">
+                        <button
+                            type="button"
+                            class="ap-btn-secondary"
+                            onclick={handleCancelEdit}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            class="ap-btn-primary"
+                            onclick={handleSaveRule}
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

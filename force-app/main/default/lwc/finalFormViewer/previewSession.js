@@ -145,3 +145,48 @@ export function restorePage(pages, anchor, fallback = 0) {
         ? found
         : Math.max(0, Math.min(fallback, pages.length - 1));
 }
+
+/**
+ * Preserves/prunes runtime Autofill state across builder preview spec changes (IMPL_PLAN_AUTOFILL_RULES §6).
+ */
+export function reconcileAutofillSession(session, previousSpec, nextSpec) {
+    if (!session) return null;
+    const after = index(nextSpec);
+    const validElementIds = new Set(after.fields.keys());
+
+    const editRevision = {};
+    for (const [k, v] of Object.entries(session.editRevision || {})) {
+        if (validElementIds.has(k)) editRevision[k] = v;
+    }
+
+    const touched = {};
+    for (const [k, v] of Object.entries(session.touched || {})) {
+        if (validElementIds.has(k)) touched[k] = v;
+    }
+
+    const staticDefaults = {};
+    for (const [k, v] of Object.entries(session.staticDefaults || {})) {
+        if (validElementIds.has(k)) staticDefaults[k] = v;
+    }
+
+    const nextRules = (nextSpec?.settings?.prefill?.autofillRules || []).filter(
+        (r) => r && r.enabled
+    );
+    const nextRuleIds = new Set(nextRules.map((r) => r.id));
+
+    const owner = {};
+    for (const [k, v] of Object.entries(session.owner || {})) {
+        if (validElementIds.has(k) && v && nextRuleIds.has(v.ruleId)) {
+            owner[k] = v;
+        }
+    }
+
+    return {
+        ...session,
+        editRevision,
+        touched,
+        staticDefaults,
+        owner,
+        rules: nextRules
+    };
+}

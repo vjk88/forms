@@ -251,4 +251,33 @@ describe('c-final-element-renderer', () => {
             expect(rt.value).toBe('<p>The real terms</p>');
         });
     });
+
+    describe('lookup rendering', () => {
+        it('renders c-final-lookup for reference inputType and forwards valuechange', async () => {
+            const cmp = await mount(
+                FIELD({
+                    id: 'el_acc',
+                    config: { inputType: 'reference', referenceTo: 'Account' }
+                })
+            );
+            const lookup = cmp.shadowRoot.querySelector('c-final-lookup');
+            expect(lookup).not.toBeNull();
+            expect(lookup.targetObject).toBe('Account');
+
+            const handler = jest.fn();
+            cmp.addEventListener('valuechange', handler);
+
+            lookup.dispatchEvent(
+                new CustomEvent('valuechange', {
+                    detail: { elementId: 'el_acc', value: '001000000000001AAA' }
+                })
+            );
+
+            expect(handler).toHaveBeenCalledTimes(1);
+            expect(handler.mock.calls[0][0].detail).toEqual({
+                elementId: 'el_acc',
+                value: '001000000000001AAA'
+            });
+        });
+    });
 });
