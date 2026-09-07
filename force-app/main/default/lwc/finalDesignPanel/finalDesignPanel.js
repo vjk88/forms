@@ -8,12 +8,11 @@ import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { layoutCardName } from 'c/finalGalleryPicker';
 import {
-    listAreas,
+    DESIGN_SECTIONS,
     flattenControls,
     getAt,
     setAt,
-    deleteAt,
-    RADIUS_ORDER
+    deleteAt
 } from 'c/finalDesignRegistry';
 
 /**
@@ -34,7 +33,7 @@ export default class FinalDesignPanel extends LightningElement {
     @api formId;
 
     @track advanced = false;
-    @track activeAreaKey = 'theme';
+    @track activeAreaKey = 'brand';
     @track pendingThemeKey = null;
     /** 'theme' | 'layout' | null — which gallery popup is open. */
     @track galleryMode = null;
@@ -140,6 +139,14 @@ export default class FinalDesignPanel extends LightningElement {
         return o.paneFlow || '';
     }
 
+    get ownsAdvance() {
+        return Boolean(
+            this.layoutInfo.ownsAdvance ||
+            (this.layoutInfo.ownsHeader &&
+                this.currentPaneFlow === 'oneAtATime')
+        );
+    }
+
     _controlDef(key) {
         return flattenControls().find((c) => c.control.key === key);
     }
@@ -164,6 +171,12 @@ export default class FinalDesignPanel extends LightningElement {
             return false;
         }
         if (gate.paginated && !this.layoutInfo.paginates) {
+            return false;
+        }
+        if (gate.ownsAdvance && !this.ownsAdvance) {
+            return false;
+        }
+        if (gate.sharedNext && this.ownsAdvance) {
             return false;
         }
         if (gate.formTypes && !gate.formTypes.includes(this.formType)) {
@@ -215,7 +228,10 @@ export default class FinalDesignPanel extends LightningElement {
         const out = [];
         for (const entry of entries) {
             const c = entry.control;
-            if (!this._applies(entry)) {
+            if (
+                !this._applies(entry) ||
+                !this._applies({ appliesTo: entry.groupAppliesTo })
+            ) {
                 continue;
             }
             if (c.needsImage && !this._hasPageImage()) {
@@ -360,62 +376,50 @@ export default class FinalDesignPanel extends LightningElement {
         return out;
     }
 
-    /** Advanced: the active area's groups with their (filtered) controls. */
-    get areaVM() {
-        const area = listAreas().find((a) => a.key === this.activeAreaKey);
-        if (!area) {
-            return { groups: [] };
-        }
+    /** Five task sections, using the same values and gates as Simple. */
+    get advancedSections() {
         const all = this.controlsVM;
-        const groups = [];
-        for (const g of area.groups) {
-            if (!this._applies(g)) {
-                continue;
-            }
-            const controls = all.filter(
-                (c) => c.area === area.key && c.group === g.key
-            );
-            if (controls.length === 0) {
-                continue;
-            }
-            groups.push({
-                key: g.key,
-                label: g.label,
-                note: g.note || '',
-                edited: controls.some((c) => c.edited),
-                controls
-            });
-        }
-        return { label: area.label, groups, narration: this._narration() };
+        return DESIGN_SECTIONS.map((section) => {
+            const groups = section.groups
+                .map((group) => {
+                    const controls = group.controls
+                        .map((key) => all.find((c) => c.key === key))
+                        .filter(Boolean);
+                    return {
+                        ...group,
+                        controls,
+                        edited: controls.some((c) => c.edited)
+                    };
+                })
+                .filter((group) => group.controls.length);
+            return {
+                ...section,
+                open: section.key === this.activeAreaKey,
+                bodyId: `design-${section.key}`,
+                summary: this._sectionSummary(section.key),
+                groups: groups.map((group, index) => ({
+                    ...group,
+                    open: index === 0
+                }))
+            };
+        });
     }
 
-    _narration() {
-        if (this.activeAreaKey === 'paging') {
-            if (this.layoutType === 'splitHero') {
-                return 'Split Hero owns pagination — progress renders in the brand pane.';
-            }
-            if (!this.layoutInfo.paginates) {
-                // scroll has its Flow group (page dividers); accordion is the
-                // one area left with nothing to configure
-                return this.layoutType === 'accordion'
-                    ? 'This layout shows every page at once — nothing to page.'
-                    : '';
-            }
-            return '';
+    _sectionSummary(key) {
+        switch (key) {
+            case 'brand':
+                return this.themeLabel;
+            case 'page':
+                return this.layoutLabel;
+            case 'fields':
+                return 'Fields, labels and section appearance';
+            case 'navigation':
+                return `${this.layoutLabel} · ${this.submitSummary}`;
+            case 'completion':
+                return this.completionSummary;
+            default:
+                return '';
         }
-        if (this.activeAreaKey === 'header' && this.layoutInfo.ownsHeader) {
-            return 'Split Hero paints the header in its brand pane — these words feed the pane.';
-        }
-        return '';
-    }
-
-    get rail() {
-        return listAreas().map((a) => ({
-            key: a.key,
-            label: a.label,
-            icon: a.icon,
-            cls: a.key === this.activeAreaKey ? 'rail-btn on' : 'rail-btn'
-        }));
     }
 
     get simpleVM() {
@@ -426,8 +430,35 @@ export default class FinalDesignPanel extends LightningElement {
             logo: pick('logo'),
             title: pick('title'),
             description: pick('description'),
-            submitLabel: pick('submitLabel')
+            labels: ['backLabel', 'nextLabel', 'advanceLabel', 'submitLabel']
+                .map(pick)
+                .filter(Boolean),
+            asTitle: pick('asTitle'),
+            asMessage: pick('asMessage')
         };
+    }
+
+    get contentSummary() {
+        const title = getAt(this._spec, 'header.title') || '';
+        // Read text only; the stored rich text is never rewritten by a mode switch.
+        const doc = new DOMParser().parseFromString(title, 'text/html');
+        return doc.body.textContent.trim() || 'Logo, title and description';
+    }
+
+    get submitSummary() {
+        return getAt(this._spec, 'submit.label') || 'Submit';
+    }
+
+    get completionSummary() {
+        return this.isToastCompletion ? 'Toast & go' : 'Confirmation screen';
+    }
+
+    get isToastCompletion() {
+        return getAt(this._spec, 'settings.completion.mode') === 'toast';
+    }
+
+    get simpleSelected() {
+        return !this.advanced;
     }
 
     /** Composite theme identity — the same 'key' | 'custom:<id>' form the
@@ -464,8 +495,23 @@ export default class FinalDesignPanel extends LightningElement {
         return Boolean(this.galleryMode);
     }
 
+    get customizedControls() {
+        // Count hidden settings too: a theme switch can clear those overrides.
+        return flattenControls().filter(
+            ({ control: c }) =>
+                this._isEdited(c) ||
+                (c.gradientPath &&
+                    getAt(this.overrides, c.gradientPath) !== undefined) ||
+                (c.dynamicOptions === 'fonts' &&
+                    getAt(this.overrides, 'customFont') !== undefined)
+        );
+    }
+
     get overrideCount() {
-        return this.controlsVM.filter((c) => c.edited).length;
+        return (
+            this.customizedControls.length ||
+            (Object.keys(this.overrides).length ? 1 : 0)
+        );
     }
 
     get hasOverrides() {
@@ -473,7 +519,7 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     get advChipCount() {
-        return this.controlsVM.filter((c) => c.edited && !c.simple).length;
+        return this.customizedControls.filter((c) => !c.control.simple).length;
     }
 
     get showAdvChip() {
@@ -482,8 +528,8 @@ export default class FinalDesignPanel extends LightningElement {
 
     get lensDesc() {
         return this.advanced
-            ? 'Nine areas, every control — grouped by what it styles.'
-            : 'The essentials. Everything else follows the theme.';
+            ? 'Customize branding, layout, fields and completion.'
+            : 'Choose a theme, add your content and publish.';
     }
 
     get simpleLensClass() {
@@ -642,7 +688,7 @@ export default class FinalDesignPanel extends LightningElement {
             (Number.isFinite(op) && op < 100);
         return translucent
             ? ''
-            : 'Frost only shows through a see-through fill — lower Body › Fill opacity or pick a translucent color.';
+            : 'Frost needs a translucent fill. Lower Form appearance › Fill opacity or choose a translucent color.';
     }
 
     /** Solid + gradient land in ONE event; each half gets sparse-delta rules. */
@@ -789,26 +835,14 @@ export default class FinalDesignPanel extends LightningElement {
         this.advanced = true;
     }
 
-    handleRail(event) {
-        this.activeAreaKey = event.currentTarget.dataset.area;
+    handleSectionToggle(event) {
+        const key = event.currentTarget.dataset.area;
+        this.activeAreaKey = key === this.activeAreaKey ? null : key;
     }
 
-    // ----- Simple LOOK chips (same values the Advanced selects drive) -----
-
-    handleLook(event) {
-        const look = event.target.dataset.look;
-        if (look === 'airy' || look === 'dense') {
-            this._apply('density', look === 'airy' ? 'comfortable' : 'compact');
-            return;
-        }
-        const radiusDef = this._controlDef('radius');
-        const current = this._effective(radiusDef.control) || 'soft';
-        const i = RADIUS_ORDER.indexOf(current);
-        const next =
-            look === 'rounder'
-                ? Math.min(i + 1, RADIUS_ORDER.length - 1)
-                : Math.max(i - 1, 0);
-        this._apply('radius', RADIUS_ORDER[next]);
+    handleCompletionSettings() {
+        this.activeAreaKey = 'completion';
+        this.advanced = true;
     }
 
     // ----- gallery popups (theme + layout share ONE shell) -----
@@ -924,12 +958,18 @@ export default class FinalDesignPanel extends LightningElement {
 
     handleGroupReset(event) {
         event.stopPropagation();
-        const groupKey = event.target.dataset.group;
+        const groupKey = event.currentTarget.dataset.group;
+        const section = DESIGN_SECTIONS.find(
+            (s) => s.key === this.activeAreaKey
+        );
+        const group = section && section.groups.find((g) => g.key === groupKey);
+        if (!group) {
+            return;
+        }
         const overrides = this._ensureOverrides();
         for (const entry of flattenControls()) {
             if (
-                entry.area === this.activeAreaKey &&
-                entry.group === groupKey &&
+                group.controls.includes(entry.control.key) &&
                 entry.control.themePath
             ) {
                 deleteAt(overrides, entry.control.themePath);

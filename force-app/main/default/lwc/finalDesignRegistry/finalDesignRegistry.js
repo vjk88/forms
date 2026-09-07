@@ -1,7 +1,6 @@
 /**
  * finalDesignRegistry — the ONE control registry behind Design mode
- * (FORM_STUDIO_IA §5: canonical 9 areas; Simple is a projection of the same
- * registry, never a second implementation).
+ * (Simple and Advanced Design project the same controls, never separate specs).
  *
  * Rules:
  * - Every control maps to something the engine or viewer ACTUALLY consumes —
@@ -70,7 +69,7 @@ const AREAS = [
                         themePath: 'palette.onAccent',
                         // unset = derived readable ink on the accent
                         fallbackToken: '--c-on-accent',
-                        hint: 'Text sitting on accent-colored spots: the highlight badge, the active step number, the side-nav page number. Buttons have their own label color under Actions.'
+                        hint: 'Text on accent-colored highlights and progress indicators. Button labels have their own color under Navigation & buttons.'
                     },
                     {
                         key: 'text',
@@ -364,7 +363,7 @@ const AREAS = [
                         // a BEHAVIOUR decision, not a style knob — it must be
                         // findable without the Advanced lens (reviewer 2026-07-31);
                         // self-gates to surveys, costs forms nothing
-                        simple: true
+                        simple: false
                     }
                 ]
             },
@@ -616,13 +615,6 @@ const AREAS = [
                         fallback: true
                     },
                     {
-                        key: 'advanceLabel',
-                        label: 'Continue button label',
-                        type: 'text',
-                        path: 'layout.options.advanceLabel',
-                        placeholder: 'Continue'
-                    },
-                    {
                         key: 'oaatProgress',
                         label: 'Progress bar',
                         type: 'toggle',
@@ -755,7 +747,7 @@ const AREAS = [
                     },
                     {
                         key: 'description',
-                        label: 'Subtitle',
+                        label: 'Description',
                         type: 'richtext',
                         path: 'header.description',
                         simple: true
@@ -1143,16 +1135,27 @@ const AREAS = [
                         label: 'Next label',
                         type: 'text',
                         path: 'submit.nextLabel',
+                        simple: true,
                         placeholder: 'Next',
-                        appliesTo: { paginated: true }
+                        appliesTo: { paginated: true, sharedNext: true }
                     },
                     {
                         key: 'backLabel',
                         label: 'Back label',
                         type: 'text',
                         path: 'submit.backLabel',
+                        simple: true,
                         placeholder: 'Back',
                         appliesTo: { paginated: true }
+                    },
+                    {
+                        key: 'advanceLabel',
+                        label: 'Continue button label',
+                        type: 'text',
+                        path: 'layout.options.advanceLabel',
+                        simple: true,
+                        appliesTo: { ownsAdvance: true },
+                        placeholder: 'Continue'
                     },
                     {
                         key: 'buttonArrangement',
@@ -1225,10 +1228,20 @@ const AREAS = [
                         ]
                     },
                     {
+                        key: 'asTitle',
+                        label: 'Confirmation title',
+                        type: 'text',
+                        path: 'settings.completion.title',
+                        placeholder: 'Optional title',
+                        simple: true,
+                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                    },
+                    {
                         key: 'asMessage',
                         label: 'Thank-you message',
                         type: 'richtext',
                         path: 'settings.completion.message',
+                        simple: true,
                         placeholder:
                             'Thank you! Your response has been recorded.',
                         needsValue: [{ key: 'asMode', equals: 'screen' }]
@@ -1376,12 +1389,231 @@ export function flattenControls() {
     for (const area of AREAS) {
         for (const group of area.groups) {
             for (const control of group.controls) {
-                out.push({ area: area.key, group: group.key, control });
+                out.push({
+                    area: area.key,
+                    group: group.key,
+                    groupAppliesTo: group.appliesTo,
+                    control
+                });
             }
         }
     }
     return out;
 }
+
+/** Presentation order only. Keys still resolve to the canonical controls above. */
+export const DESIGN_SECTIONS = [
+    {
+        key: 'brand',
+        label: 'Brand & header',
+        groups: [
+            {
+                key: 'content',
+                label: 'Content & logo',
+                controls: [
+                    'logo',
+                    'title',
+                    'description',
+                    'brandName',
+                    'highlight',
+                    'highlightPlacement'
+                ]
+            },
+            {
+                key: 'palette',
+                label: 'Colors',
+                controls: ['accent', 'onAccent', 'text', 'textWeak']
+            },
+            { key: 'fonts', label: 'Typography', controls: ['typography'] },
+            {
+                key: 'header',
+                label: 'Header appearance',
+                controls: [
+                    'headerStyle',
+                    'headerArrangement',
+                    'headerBg',
+                    'headerBgOpacity',
+                    'bannerImage',
+                    'bannerOpacity',
+                    'headerText',
+                    'headerTextWeak'
+                ]
+            }
+        ]
+    },
+    {
+        key: 'page',
+        label: 'Page & form',
+        groups: [
+            {
+                key: 'frame',
+                label: 'Size & spacing',
+                controls: [
+                    'maxWidth',
+                    'density',
+                    'fullBleed',
+                    'oaatBleed',
+                    'paneSide',
+                    'paneRatio',
+                    'railSide',
+                    'railWidth'
+                ]
+            },
+            {
+                key: 'pagebg',
+                label: 'Page background',
+                controls: [
+                    'pageBg',
+                    'pageBgOpacity',
+                    'pageImage',
+                    'pageFit',
+                    'pageScrim',
+                    'pageImageOpacity',
+                    'pageRadius'
+                ]
+            },
+            {
+                key: 'panel',
+                label: 'Form appearance',
+                controls: [
+                    'contentBg',
+                    'contentBgOpacity',
+                    'radius',
+                    'border',
+                    'borderColor',
+                    'shadow',
+                    'glass'
+                ]
+            },
+            {
+                key: 'effects',
+                label: 'Background effects',
+                controls: [
+                    'mesh',
+                    'meshColors',
+                    'meshIntensity',
+                    'meshAnimate',
+                    'texture',
+                    'textureIntensity'
+                ]
+            }
+        ]
+    },
+    {
+        key: 'fields',
+        label: 'Fields & sections',
+        groups: [
+            {
+                key: 'inputs',
+                label: 'Fields',
+                controls: [
+                    'inputStyle',
+                    'fieldBg',
+                    'fieldBorderColor',
+                    'error',
+                    'required'
+                ]
+            },
+            {
+                key: 'labels',
+                label: 'Labels',
+                controls: ['labelPosition', 'labelColor', 'labelStyle']
+            },
+            {
+                key: 'sections',
+                label: 'Sections',
+                controls: [
+                    'sectionHeaders',
+                    'sectionStyle',
+                    'sectionBg',
+                    'sectionBgOpacity',
+                    'sectionBorder',
+                    'sectionBorderColor'
+                ]
+            }
+        ]
+    },
+    {
+        key: 'navigation',
+        label: 'Navigation & buttons',
+        groups: [
+            {
+                key: 'buttons',
+                label: 'Buttons',
+                controls: [
+                    'submitLabel',
+                    'nextLabel',
+                    'backLabel',
+                    'advanceLabel',
+                    'buttonArrangement',
+                    'submitBg',
+                    'submitText'
+                ]
+            },
+            {
+                key: 'progress',
+                label: 'Progress & navigation',
+                controls: [
+                    'stepperMode',
+                    'stepperNarrow',
+                    'stepperNavigation',
+                    'stepperCount',
+                    'tabStyle',
+                    'tabAlignment',
+                    'railContent',
+                    'railNavigation',
+                    'railNarrow',
+                    'oaatProgress',
+                    'heroProgress',
+                    'iconPosition'
+                ]
+            },
+            {
+                key: 'flow',
+                label: 'Page behavior',
+                controls: [
+                    'onePerScreen',
+                    'paneFlow',
+                    'advanceTrigger',
+                    'showDividers',
+                    'allowMultiple',
+                    'firstPanelOpen'
+                ]
+            }
+        ]
+    },
+    {
+        key: 'completion',
+        label: 'After submit',
+        groups: [
+            {
+                key: 'confirmation',
+                label: 'Confirmation',
+                controls: [
+                    'asMode',
+                    'asTitle',
+                    'asMessage',
+                    'asActionButton',
+                    'asButtonLabel',
+                    'asButtonGoesTo',
+                    'asButtonUrl'
+                ]
+            },
+            {
+                key: 'redirect',
+                label: 'Redirect',
+                controls: [
+                    'asAutoRedirect',
+                    'asRedirectTo',
+                    'asRedirectUrl',
+                    'asRedirectDelay',
+                    'asToastGoTo',
+                    'asToastUrl'
+                ]
+            }
+        ]
+    }
+];
 
 // ----- tiny path helpers (dot paths over plain JSON trees) -----
 

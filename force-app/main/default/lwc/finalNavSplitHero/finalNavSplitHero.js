@@ -51,6 +51,15 @@ export default class FinalNavSplitHero extends LightningElement {
      * paneBgOpacity.
      */
     @api options;
+    @api backLabel;
+
+    get backButtonLabel() {
+        return this.backLabel || 'Back';
+    }
+
+    get advanceLabel() {
+        return this.opts.advanceLabel || 'Continue';
+    }
     /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
     @api lockup;
     /** Viewer-resolved action-row arrangement (LAYOUT_REFINEMENTS §3). */

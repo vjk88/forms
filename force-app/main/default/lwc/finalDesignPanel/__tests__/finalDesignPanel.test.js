@@ -1,6 +1,7 @@
 import { createElement } from 'lwc';
 import FinalDesignPanel from 'c/finalDesignPanel';
 import { buildSampleSpec } from 'c/finalSampleSpec';
+import { DESIGN_SECTIONS, flattenControls } from 'c/finalDesignRegistry';
 import listFonts from '@salesforce/apex/FinalFontController.listFonts';
 
 jest.mock(
@@ -24,7 +25,6 @@ jest.mock(
 );
 import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 
-// eslint-disable-next-line @lwc/lwc/no-async-operation
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function mount(spec) {
@@ -47,7 +47,10 @@ async function goAdvanced(el) {
 }
 
 async function openArea(el, key) {
-    el.shadowRoot.querySelector(`.rail-btn[data-area="${key}"]`).click();
+    const button = el.shadowRoot.querySelector(
+        `.section-toggle[data-area="${key}"]`
+    );
+    if (button.getAttribute('aria-expanded') !== 'true') button.click();
     await flush();
 }
 
@@ -82,29 +85,209 @@ describe('c-final-design-panel', () => {
         }
     });
 
+    it('the five Advanced sections cover every registry control exactly once', () => {
+        const keys = DESIGN_SECTIONS.flatMap((s) =>
+            s.groups.flatMap((g) => g.controls)
+        );
+        expect(new Set(keys).size).toBe(keys.length);
+        expect([...keys].sort()).toEqual(
+            flattenControls()
+                .map((e) => e.control.key)
+                .sort()
+        );
+    });
+
+    it('Simple has three sections and only Appearance starts expanded', () => {
+        const el = mount();
+        const sections = [...el.shadowRoot.querySelectorAll('.simple-section')];
+        expect(
+            sections.map((s) => s.querySelector('.section-title').textContent)
+        ).toEqual([
+            'Appearance',
+            'Content & branding',
+            'Buttons & confirmation'
+        ]);
+        expect(sections.map((s) => s.open)).toEqual([true, false, false]);
+        expect(el.shadowRoot.querySelector('.entry-edit')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('[data-key="onePerScreen"]')
+        ).toBeNull();
+    });
+
+    it.each([
+        ['scroll', '', ['submitLabel']],
+        ['accordion', '', ['submitLabel']],
+        ['stepper', '', ['backLabel', 'nextLabel', 'submitLabel']],
+        ['tabs', '', ['backLabel', 'nextLabel', 'submitLabel']],
+        ['rail', '', ['backLabel', 'nextLabel', 'submitLabel']],
+        ['oneAtATime', '', ['backLabel', 'advanceLabel', 'submitLabel']],
+        ['splitHero', '', ['backLabel', 'nextLabel', 'submitLabel']],
+        [
+            'splitHero',
+            'oneAtATime',
+            ['backLabel', 'advanceLabel', 'submitLabel']
+        ]
+    ])(
+        'Simple shows working button labels for %s / %s',
+        (layout, paneFlow, labels) => {
+            const el = mount(
+                buildSampleSpec({ layout, paneFlow, themeKey: 'nordic' })
+            );
+            const actual = [
+                ...el.shadowRoot.querySelectorAll('.simple-text input')
+            ]
+                .map((input) => input.dataset.key)
+                .filter((key) => key !== 'asTitle');
+            expect(actual).toEqual(labels);
+        }
+    );
+
+    it('mode switches and collapsed groups preserve content, options and hidden overrides', async () => {
+        const spec = buildSampleSpec({
+            layout: 'oneAtATime',
+            themeKey: 'nordic'
+        });
+        spec.header.title = '<p><strong>Welcome &amp; hello</strong></p>';
+        spec.theme.overrides = {
+            density: 'compact',
+            palette: { headerText: '#123456' }
+        };
+        spec.layout.options.advanceLabel = 'Proceed';
+        spec.settings = {
+            completion: {
+                mode: 'screen',
+                title: 'All done',
+                message: '<p>Saved</p>',
+                redirectUrl: 'https://example.com/done',
+                autoRedirect: false
+            }
+        };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        expect(
+            el.shadowRoot.querySelectorAll('.section-summary')[1].textContent
+        ).toBe('Welcome & hello');
+        await goAdvanced(el);
+        await openArea(el, 'completion');
+        el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
+        await flush();
+        expect(handler).not.toHaveBeenCalled();
+        expect(el.spec).toEqual(spec);
+        const title = el.shadowRoot.querySelector('input[data-key="asTitle"]');
+        title.value = 'Finished';
+        title.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        const expected = JSON.parse(JSON.stringify(spec));
+        expected.settings.completion.title = 'Finished';
+        expect(lastSpec(handler)).toEqual(expected);
+    });
+
+    it('Simple confirmation edits update the same controls in Advanced', async () => {
+        const el = mount();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        const editor = el.shadowRoot.querySelector(
+            'lightning-input-rich-text[data-key="asMessage"]'
+        );
+        editor.value = '<p>Your response is saved.</p>';
+        editor.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        await goAdvanced(el);
+        await openArea(el, 'completion');
+        expect(
+            el.shadowRoot.querySelector(
+                'lightning-input-rich-text[data-key="asMessage"]'
+            ).value
+        ).toBe('<p>Your response is saved.</p>');
+        expect(lastSpec(handler).settings.completion.message).toBe(
+            '<p>Your response is saved.</p>'
+        );
+    });
+
+    it('a stored toast mode stays intact in Simple and links to its settings', async () => {
+        const spec = buildSampleSpec({ themeKey: 'nordic' });
+        spec.settings = {
+            completion: {
+                mode: 'toast',
+                title: 'Retained title',
+                message: '<p>Retained message</p>'
+            }
+        };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        expect(el.shadowRoot.querySelector('[data-key="asTitle"]')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('[data-key="asMessage"]')
+        ).toBeNull();
+        const link = [
+            ...el.shadowRoot.querySelectorAll('.simple-body button')
+        ].find((b) => b.textContent.includes('after-submit'));
+        link.click();
+        await flush();
+        expect(
+            el.shadowRoot
+                .querySelector('.section-toggle[data-area="completion"]')
+                .getAttribute('aria-expanded')
+        ).toBe('true');
+        expect(handler).not.toHaveBeenCalled();
+        expect(el.spec.settings.completion).toEqual(spec.settings.completion);
+    });
+
+    it('theme switching warns even when the customized control is hidden by a gate', async () => {
+        const spec = buildSampleSpec({ themeKey: 'nordic' });
+        spec.form.type = 'survey';
+        spec.theme.overrides = { labelPosition: 'left' };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickTheme(el, 'brutalist');
+        expect(el.shadowRoot.querySelector('.confirm')).not.toBeNull();
+        expect(handler).not.toHaveBeenCalled();
+        el.shadowRoot.querySelector('.confirm-go').click();
+        await flush();
+        expect(lastSpec(handler).theme.overrides.labelPosition).toBe('left');
+    });
+
+    it('regrouped resets clear appearance only and keep header content', async () => {
+        const spec = buildSampleSpec({ themeKey: 'nordic' });
+        spec.header.bgImage = { url: 'https://example.com/banner.png' };
+        spec.theme.overrides = {
+            palette: { headerText: '#123456', accent: '#654321' }
+        };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await goAdvanced(el);
+        el.shadowRoot.querySelector('[data-group="header"]').click();
+        await flush();
+        const updated = lastSpec(handler);
+        expect(updated.theme.overrides.palette.headerText).toBeUndefined();
+        expect(updated.theme.overrides.palette.accent).toBe('#654321');
+        expect(updated.header).toEqual(spec.header);
+    });
+
     it('starts in Simple: no rail, essentials only', () => {
         const el = mount();
         expect(el.shadowRoot.querySelector('.rail')).toBeNull();
-        expect(el.shadowRoot.querySelector('.s-card')).not.toBeNull();
+        expect(el.shadowRoot.querySelector('.simple-section')).not.toBeNull();
     });
 
-    it('Advanced shows the 9-area rail', async () => {
+    it('Advanced exposes five task sections without a rail', async () => {
         const el = mount();
         await goAdvanced(el);
-        const areas = [...el.shadowRoot.querySelectorAll('.rail-btn')].map(
-            (b) => b.dataset.area
-        );
+        const areas = [
+            ...el.shadowRoot.querySelectorAll('.section-toggle')
+        ].map((b) => b.dataset.area);
         expect(areas).toEqual([
-            'theme',
-            'type',
-            'backdrop',
-            'layout',
-            'paging',
-            'header',
-            'body',
+            'brand',
+            'page',
             'fields',
-            'actions'
+            'navigation',
+            'completion'
         ]);
+        expect(el.shadowRoot.querySelector('.rail')).toBeNull();
     });
 
     it('accent change writes a sparse override and emits specchange', async () => {
@@ -256,7 +439,7 @@ describe('c-final-design-panel', () => {
     it('Simple shows the advanced-overrides chip for non-simple deviations', async () => {
         const el = mount();
         await goAdvanced(el);
-        await openArea(el, 'body');
+        await openArea(el, 'page');
         const shadow = el.shadowRoot.querySelector('select[data-key="shadow"]');
         shadow.value = 'floating';
         shadow.dispatchEvent(new CustomEvent('change'));
@@ -273,16 +456,15 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
         );
         await goAdvanced(el);
-        await openArea(el, 'paging');
+        await openArea(el, 'page');
         expect(
             el.shadowRoot.querySelector('input[data-key="fullBleed"]')
         ).not.toBeNull();
+        await openArea(el, 'navigation');
         expect(
             el.shadowRoot.querySelector('select[data-key="heroProgress"]')
         ).not.toBeNull();
-        expect(el.shadowRoot.querySelector('.narrate').textContent).toContain(
-            'brand pane'
-        );
+        expect(el.shadowRoot.querySelector('.narrate')).toBeNull();
     });
 
     it('paging: stepper gets real step controls, no stale narration', async () => {
@@ -292,7 +474,7 @@ describe('c-final-design-panel', () => {
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
         await goAdvanced(el);
-        await openArea(el, 'paging');
+        await openArea(el, 'navigation');
         expect(el.shadowRoot.querySelector('.narrate')).toBeNull();
         expect(
             el.shadowRoot.querySelector('input[data-key="fullBleed"]')
@@ -328,7 +510,7 @@ describe('c-final-design-panel', () => {
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
         await goAdvanced(el);
-        await openArea(el, 'body');
+        await openArea(el, 'fields');
         expect(
             el.shadowRoot.querySelector(
                 'c-final-color-control[data-key="sectionBg"]'
@@ -345,6 +527,7 @@ describe('c-final-design-panel', () => {
 
         // border hiding (owner 2026-07-12): None/Hidden retire their color
         // pickers (needsValue notEquals gate)
+        await openArea(el, 'page');
         const bw = el.shadowRoot.querySelector('select[data-key="border"]');
         bw.value = 'none';
         bw.dispatchEvent(new CustomEvent('change'));
@@ -355,6 +538,7 @@ describe('c-final-design-panel', () => {
                 'c-final-color-control[data-key="borderColor"]'
             )
         ).toBeNull();
+        await openArea(el, 'fields');
         const sb = el.shadowRoot.querySelector(
             'select[data-key="sectionBorder"]'
         );
@@ -381,7 +565,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'oneAtATime', themeKey: 'nordic' })
         );
         await goAdvanced(el2);
-        await openArea(el2, 'paging');
+        await openArea(el2, 'page');
         expect(
             el2.shadowRoot.querySelector('input[data-key="oaatBleed"]')
         ).not.toBeNull();
@@ -391,7 +575,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'scroll', themeKey: 'nordic' })
         );
         await goAdvanced(el3);
-        await openArea(el3, 'paging');
+        await openArea(el3, 'navigation');
         expect(
             el3.shadowRoot.querySelector('input[data-key="showDividers"]')
         ).not.toBeNull();
@@ -406,7 +590,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
         );
         await goAdvanced(el);
-        await openArea(el, 'header');
+        await openArea(el, 'brand');
         expect(
             el.shadowRoot.querySelector(
                 'c-final-gradient-control[data-key="headerBg"]'
@@ -427,7 +611,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' })
         );
         await goAdvanced(el2);
-        await openArea(el2, 'header');
+        await openArea(el2, 'brand');
         expect(
             el2.shadowRoot.querySelector(
                 'c-final-gradient-control[data-key="headerBg"]'
@@ -445,7 +629,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'tabs', themeKey: 'nordic' })
         );
         await goAdvanced(el);
-        await openArea(el, 'paging');
+        await openArea(el, 'navigation');
         expect(
             el.shadowRoot.querySelector('select[data-key="tabStyle"]')
         ).not.toBeNull();
@@ -457,7 +641,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'rail', themeKey: 'nordic' })
         );
         await goAdvanced(el2);
-        await openArea(el2, 'paging');
+        await openArea(el2, 'navigation');
         const railContent = el2.shadowRoot.querySelector(
             'select[data-key="railContent"]'
         );
@@ -474,7 +658,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'oneAtATime', themeKey: 'nordic' })
         );
         await goAdvanced(el3);
-        await openArea(el3, 'paging');
+        await openArea(el3, 'navigation');
         expect(
             el3.shadowRoot.querySelector('input[data-key="advanceLabel"]')
         ).not.toBeNull();
@@ -488,7 +672,7 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'accordion', themeKey: 'nordic' })
         );
         await goAdvanced(el);
-        await openArea(el, 'paging');
+        await openArea(el, 'navigation');
         expect(
             el.shadowRoot.querySelector('input[data-key="allowMultiple"]')
         ).not.toBeNull();
@@ -507,23 +691,27 @@ describe('c-final-design-panel', () => {
             buildSampleSpec({ layout: 'tabs', themeKey: 'nordic' })
         );
         await goAdvanced(el2);
-        await openArea(el2, 'paging');
+        await openArea(el2, 'navigation');
         expect(
             el2.shadowRoot.querySelector('input[data-key="allowMultiple"]')
         ).toBeNull();
     });
 
-    it('LOOK chips step radius + density (Simple drives the same registry values)', async () => {
+    it('Simple leaves radius and density to Advanced Design', async () => {
         const el = mount();
+        expect(el.shadowRoot.querySelector('[data-look]')).toBeNull();
+        expect(el.shadowRoot.querySelector('[data-key="density"]')).toBeNull();
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        el.shadowRoot.querySelector('.chip[data-look="rounder"]').click();
-        await flush();
-        // nordic radius=soft → next step up is md
-        expect(lastSpec(handler).theme.overrides.radius).toBe('md');
-        el.shadowRoot.querySelector('.chip[data-look="dense"]').click();
-        await flush();
-        expect(lastSpec(handler).theme.overrides.density).toBe('compact');
+        await goAdvanced(el);
+        await openArea(el, 'page');
+        expect(
+            el.shadowRoot.querySelector('select[data-key="density"]')
+        ).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('select[data-key="radius"]')
+        ).not.toBeNull();
+        expect(handler).not.toHaveBeenCalled();
     });
 
     it('custom font pick writes overrides.customFont; built-in pick clears it', async () => {
@@ -542,7 +730,7 @@ describe('c-final-design-panel', () => {
         el.addEventListener('specchange', handler);
         await flush();
         await goAdvanced(el);
-        await openArea(el, 'type');
+        await openArea(el, 'brand');
         const select = el.shadowRoot.querySelector(
             'select[data-key="typography"]'
         );
@@ -604,6 +792,8 @@ describe('c-final-design-panel', () => {
             .click();
         await flush();
         expect(handler).not.toHaveBeenCalled();
+        expect(el.shadowRoot.querySelector('.entry-edit')).toBeNull();
+        await goAdvanced(el);
         el.shadowRoot.querySelector('.entry-edit').click();
         expect(handler.mock.calls[0][0].detail).toEqual({
             themeId: null,

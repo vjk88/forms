@@ -46,6 +46,11 @@ export default class FinalNavOneAtATime extends LightningElement {
     @api arrangement = 'together-left';
     /** Terminal Submit label (viewer: submit.label). */
     @api submitLabel = 'Submit';
+    @api backLabel;
+
+    get backButtonLabel() {
+        return this.backLabel || 'Back';
+    }
 
     @track screenIndex = 0;
     @track multilineFocus = false;

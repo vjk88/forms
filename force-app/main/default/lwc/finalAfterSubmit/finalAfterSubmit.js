@@ -37,6 +37,10 @@ export default class FinalAfterSubmit extends LightningElement {
         return this.cfg.message || DEFAULT_MESSAGE;
     }
 
+    get title() {
+        return this.cfg.title || '';
+    }
+
     get showButton() {
         // default ON (FormBuilder parity) — explicit false hides
         return this.cfg.actionButton !== false;

@@ -44,6 +44,23 @@ describe('c-final-nav-split-hero', () => {
         expect(text()).toBe('Step 2 of 3');
     });
 
+    it('uses configured Back and Continue labels in conversational pane flow', async () => {
+        const cmp = await mount({
+            paneFlow: 'oneAtATime',
+            advanceLabel: 'Proceed'
+        });
+        cmp.backLabel = 'Previous';
+        await Promise.resolve();
+        expect(
+            cmp.shadowRoot.querySelector('.advance-btn').textContent.trim()
+        ).toBe('Proceed');
+        cmp.shadowRoot.querySelector('.advance-btn').click();
+        await Promise.resolve();
+        expect(
+            cmp.shadowRoot.querySelector('.back-link').textContent.trim()
+        ).toBe('Previous');
+    });
+
     it('theme-dressed pane (no config) consumes header tokens', async () => {
         const cmp = await mount({});
         const pane = cmp.shadowRoot.querySelector('.pane');
