@@ -17,6 +17,7 @@ import {
 import {
     createAutofillSession,
     extractAutofillRules,
+    computeRulesFingerprint,
     seedStaticDefaults,
     onManualEdit,
     onSourceChanged,
@@ -760,6 +761,92 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._applyInjectedContext();
     }
 
+    /**
+     * R4 — the authenticated Autofill plan from FinalAutofillController.
+     *
+     * A logged-in respondent reads source records through LDS with their OWN
+     * access, so they need the source object and field API names. The guest
+     * projection deliberately strips those (an anonymous client must never see
+     * them), which left a logged-in customer on the public host with rules that
+     * carried destination ids only — `_handleSourceLookupChange` could never
+     * match a source element, so lookup Autofill silently did nothing.
+     *
+     * Shape: { versionId, lookups: [{elementId, objectApiName}], rules: [...] }.
+     * The server validated every name against the authorized published version,
+     * so this upgrades the session rather than being merely trusted decoration.
+     */
+    @api
+    get autofillPlan() {
+        return this._autofillPlan;
+    }
+    set autofillPlan(value) {
+        this._autofillPlan = value;
+        this._applyAutofillPlan();
+    }
+
+    _autofillPlan;
+    /** elementId → source object, for rendering the picker and reading via LDS. */
+    _lookupObjects = {};
+
+    _applyAutofillPlan() {
+        const plan = this._autofillPlan;
+        if (!plan || !this._autofillSession) {
+            return;
+        }
+        // A plan for a different published version must never be applied — the
+        // element ids it names may not mean the same thing here.
+        if (
+            plan.versionId &&
+            this._autofillSession.specVersionId &&
+            plan.versionId !== this._autofillSession.specVersionId
+        ) {
+            return;
+        }
+
+        const objects = {};
+        for (const l of plan.lookups || []) {
+            if (l && l.elementId && l.objectApiName) {
+                objects[l.elementId] = l.objectApiName;
+            }
+        }
+        this._lookupObjects = objects;
+
+        // Upgrade each projected rule with the source identity and real field
+        // names the plan supplies. Destinations still come from the rule the
+        // runtime already had.
+        const byId = new Map(
+            (plan.rules || [])
+                .filter((r) => r && r.ruleId)
+                .map((r) => [r.ruleId, r])
+        );
+        const upgraded = (this._autofillSession.rules || []).map((rule) => {
+            const p = byId.get(rule.id);
+            if (!p) {
+                return rule;
+            }
+            return {
+                ...rule,
+                policy: p.policy || rule.policy,
+                source: {
+                    ...(rule.source || {}),
+                    type: 'lookup',
+                    elementId: p.sourceElementId,
+                    objectApiName: p.objectApiName
+                },
+                mappings: Array.isArray(p.mappings) ? p.mappings : rule.mappings
+            };
+        });
+        this._autofillSession.rules = upgraded;
+        // The fingerprint guards request identity, so it must move with the
+        // rules or a later result would be judged against a stale contract.
+        this._autofillSession.rulesFingerprint =
+            computeRulesFingerprint(upgraded);
+
+        // A restored or pre-selected lookup answer must fire without waiting for
+        // a DOM change event (§6 initialization order).
+        this._executeLookupRulesFromAnswers();
+    }
+
     _applyInjectedContext() {
         const ctx = this._injectedCtx;
         if (!this.model) {
@@ -956,6 +1043,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                     answered !== undefined && !s.repeat
                                         ? { ...el, value: answered }
                                         : el;
+                                // R4 — on the guest host the projection strips
+                                // bindings, so a lookup element arrives with no
+                                // target object and the picker cannot render.
+                                // The server-validated plan supplies it.
+                                const planObject = this._lookupObjects[el.id];
+                                if (planObject && !base.config?.referenceTo) {
+                                    base = {
+                                        ...base,
+                                        config: {
+                                            ...(base.config || {}),
+                                            referenceTo: planObject
+                                        }
+                                    };
+                                }
                                 if (this.preservePreview) {
                                     base = {
                                         ...base,
@@ -1373,6 +1474,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _getLookupObjectApiName(rule, elementId) {
         if (rule.source?.objectApiName) {
             return rule.source.objectApiName;
+        }
+        // R4 — the server-validated plan wins over anything in the spec, and is
+        // the ONLY source of this on the guest host, where bindings are stripped.
+        if (this._lookupObjects && this._lookupObjects[elementId]) {
+            return this._lookupObjects[elementId];
         }
         if (!this.model || !this.model.pages) {
             return null;

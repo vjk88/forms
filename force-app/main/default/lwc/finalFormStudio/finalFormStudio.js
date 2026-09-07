@@ -1509,6 +1509,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (field.options) {
             element.config.options = field.options;
         }
+        if (field.referenceTo) {
+            // R5a — the lookup element's target object, so the record picker
+            // knows what to search. describeFields only emits this for
+            // single-target references. It is an authoring CONVENIENCE copy:
+            // the validator and the runtime plan both re-derive the target from
+            // Describe, so a tampered spec cannot widen what a lookup reads.
+            element.config.referenceTo = field.referenceTo;
+        }
         return element;
     }
 

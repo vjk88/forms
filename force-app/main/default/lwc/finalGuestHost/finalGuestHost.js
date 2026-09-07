@@ -3,6 +3,8 @@ import { CurrentPageReference } from 'lightning/navigation';
 import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec';
 import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
+import getLookupPlan from '@salesforce/apex/FinalAutofillController.getLookupPlan';
+import isGuest from '@salesforce/user/isGuest';
 
 /**
  * finalGuestHost — the guest-site page component (Phase A2).
@@ -29,6 +31,9 @@ export default class FinalGuestHost extends LightningElement {
      *  link token, resolved server-side) fed into the viewer. */
     recordContext;
     versionId;
+    /** R4: authenticated Autofill plan (source object/field names), fetched
+     *  only for a logged-in respondent — never for an anonymous one. */
+    autofillPlan;
     _urlFormId;
     _token;
     _loadedKey;
@@ -120,6 +125,7 @@ export default class FinalGuestHost extends LightningElement {
         this.spec = undefined;
         this.recordContext = undefined;
         this.versionId = undefined;
+        this.autofillPlan = undefined;
         this.error = undefined;
 
         try {
@@ -140,6 +146,32 @@ export default class FinalGuestHost extends LightningElement {
                     ? JSON.parse(runtimeRes.spec)
                     : runtimeRes.spec;
             this.error = undefined;
+
+            // R4 — a LOGGED-IN respondent can be sitting on this public host,
+            // and they read source records through LDS with their own access.
+            // The projected spec deliberately withholds source object/field API
+            // names from anonymous clients, so without this the customer's
+            // lookup rules had destination ids only and never executed.
+            // `isGuest` only ROUTES; the endpoint re-checks identity server-side
+            // and refuses an anonymous caller regardless of this flag.
+            if (!isGuest) {
+                try {
+                    const plan = await getLookupPlan({
+                        formId,
+                        versionId: this.versionId
+                    });
+                    if (this._loadGen !== currentGen) {
+                        return;
+                    }
+                    this.autofillPlan = plan || undefined;
+                } catch {
+                    // A missing plan must not block the form: every destination
+                    // stays manually editable and normal validation still runs.
+                    if (this._loadGen === currentGen) {
+                        this.autofillPlan = undefined;
+                    }
+                }
+            }
 
             if (token) {
                 try {

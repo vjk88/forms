@@ -657,6 +657,23 @@ public with sharing class FinalStudioController {
                 !fd.isDefaultedOnCreate() &&
                 fd.getType() != Schema.DisplayType.BOOLEAN
             };
+            if (inputType == 'reference') {
+                // R5a — the record picker targets exactly ONE object, so a
+                // polymorphic lookup (OwnerId, WhatId…) is not offerable in this
+                // release. The target comes from Describe and is stamped onto
+                // the element as config.referenceTo; the runtime and validator
+                // re-derive it server-side rather than trusting that copy.
+                List<Schema.SObjectType> refs = fd.getReferenceTo();
+                if (refs == null || refs.size() != 1) {
+                    continue;
+                }
+                Schema.DescribeSObjectResult refDesc = refs[0].getDescribe();
+                if (!refDesc.isAccessible()) {
+                    continue;
+                }
+                row.put('referenceTo', refDesc.getName());
+                row.put('referenceToLabel', refDesc.getLabel());
+            }
             if (
                 fd.getType() == Schema.DisplayType.PICKLIST ||
                 fd.getType() == Schema.DisplayType.MULTIPICKLIST
@@ -766,6 +783,14 @@ public with sharing class FinalStudioController {
             }
             when PICKLIST, MULTIPICKLIST {
                 return 'picklist';
+            }
+            when REFERENCE {
+                // R5a — lookup fields are offerable destinations. Without this
+                // branch describeFields dropped every reference field, so the
+                // palette could not create the lookup element that lookup
+                // Autofill needs as its source. Polymorphic targets are filtered
+                // out by the caller: the record picker needs exactly one object.
+                return 'reference';
             }
             when else {
                 return null;

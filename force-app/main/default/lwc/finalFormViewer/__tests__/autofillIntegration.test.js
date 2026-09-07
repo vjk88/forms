@@ -360,4 +360,68 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         expect(submitBar.disabled).toBe(false);
         jest.useRealTimers();
     });
+
+    it('R4: an authenticated plan upgrades projected rules so lookup Autofill can run', async () => {
+        // A guest-PROJECTED spec: runtime.autofill carries destination ids only.
+        // Source object and field API names are deliberately withheld from
+        // anonymous clients, which is why a logged-in customer needs the plan.
+        const projected = JSON.parse(JSON.stringify(SPEC));
+        delete projected.settings.prefill;
+        projected.runtime = {
+            autofill: [
+                {
+                    ruleId: 'af_lookup',
+                    sourceType: 'lookup',
+                    policy: 'preserveEdits',
+                    destinationElementIds: ['el_phone', 'el_website']
+                }
+            ]
+        };
+
+        const el = mount(projected);
+        await flush();
+        await flush();
+
+        // Without a plan the rule has no source element, so nothing can fire.
+        expect(el.autofillPlan).toBeUndefined();
+
+        el.autofillPlan = {
+            versionId: null,
+            lookups: [
+                { elementId: 'el_account_lookup', objectApiName: 'Account' }
+            ],
+            rules: [
+                {
+                    ruleId: 'af_lookup',
+                    sourceElementId: 'el_account_lookup',
+                    objectApiName: 'Account',
+                    policy: 'preserveEdits',
+                    mappings: [
+                        { from: 'Phone', to: 'el_phone' },
+                        { from: 'Website', to: 'el_website' }
+                    ]
+                }
+            ]
+        };
+        await flush();
+
+        expect(el.autofillPlan).toBeTruthy();
+        expect(el.autofillPlan.rules[0].objectApiName).toBe('Account');
+    });
+
+    it('R4: a plan for a different published version is ignored', async () => {
+        const el = mount();
+        await flush();
+        await flush();
+        el.autofillPlan = {
+            versionId: 'a09000000000000AAA',
+            lookups: [
+                { elementId: 'el_account_lookup', objectApiName: 'Case' }
+            ],
+            rules: []
+        };
+        await flush();
+        // Applying element ids from another version could bind the wrong field.
+        expect(el.answers.el_phone).toBeFalsy();
+    });
 });
