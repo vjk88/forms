@@ -489,11 +489,18 @@ still hiding the value control.
 > **Corrected 2026-09-06:** an earlier version of this note blamed missing FLS on the generated test
 > objects. The real reason is that **their fields were never deployed** — `Property_Inspection__c`
 > describes **0 custom fields** in the org, and the field metadata exists only as untracked local
-> files under `force-app/main/default/objects/`. Deploying `Property_Inspection__c` (which defines
-> `Needs_Urgent_Repair__c`) or `Event_Feedback__c` (`Would_Recommend__c`) would close this
-> permanently. Residual risk is small — the Yes/No control is a `<select>`, the same element as the
-> source and operator selects that ARE org-verified in this component — but it is **not** the same
-> as having seen it render.
+> files under `force-app/main/default/objects/`.
+>
+> **Owner ruling 2026-09-06 — do NOT chase this.** Those five generated objects
+> (`Property_Inspection__c`, `Event_Feedback__c`, `Hardware_Request__c`, `Work_History__c`, and the
+> already-in-use `Job_Application__c`) are **out of scope for this project**: not to be deployed, not
+> to be committed, left untracked. So the "deploy a test object to get a Boolean field" route is
+> **closed**, and this gap stays open by decision rather than by oversight. If checkbox ever needs
+> org verification, it needs a Boolean field that arrives some other way.
+>
+> Residual risk is small — the Yes/No control is a `<select>`, the same element as the source and
+> operator selects that ARE org-verified in this component — but it is **not** the same as having
+> seen it render, and this note exists so nobody re-derives that in three weeks.
 
 #### Two follow-up fixes — 2026-09-06 (owner-supplied, org-verified)
 
