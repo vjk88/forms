@@ -1,0 +1,143 @@
+# IMPL_PLAN — Forms on record pages, editing the record they sit on
+
+**Status:** DRAFT for owner review — no code written. **Raised:** 2026-09-07, owner:
+_"forms should work internally as well … that's the whole reason for forms."_
+**Mode chosen by owner:** **EDIT the record it sits on** (not prefill-only, not related-child).
+
+Companions: [PENDING_WORK.md](./PENDING_WORK.md) §1 P4 · [DEFERRED.md](./DEFERRED.md) #14
+(hosting adapters — this plan is a deliberate _slice_ of it, not its replacement) ·
+[FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) · [HOSTING_ADAPTERS_SPEC.md](./HOSTING_ADAPTERS_SPEC.md)
+
+---
+
+## 1 · The gap, stated precisely
+
+Every claim below was checked against the code on 2026-09-07, not read off a doc.
+
+**What already exists — more than expected:**
+
+| Piece                                                      | State                                                                                                |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `@api recordId` on the viewer                              | **EXISTS** — `finalFormViewer.js:284`, commented _"record-page and embedded hosts set the property"_ |
+| `saveMode: 'update'` as a legal spec value                 | **EXISTS** — `FinalSpecTransferValidator` allow-lists it                                             |
+| Describe validation for update mode                        | **EXISTS** — `FinalSpecDescribeValidator` switches `isCreateable()` → `isUpdateable()` on it         |
+| Guests refused for update forms                            | **EXISTS** — `FinalGuestController:115` refuses a `saveMode='update'` spec outright                  |
+| A renderless LDS record reader under the user's own access | **EXISTS** — `c/finalAutofillRecordSource` (getRecord, optionalFields so unreadable fields omit)     |
+| `Allowed_Adapters__c` on `Form__c`                         | **EXISTS**, unread by `final*` (DEFERRED #14)                                                        |
+
+**What is missing:**
+
+1. **The viewer cannot be placed on a record page.** `lightning__RecordPage` is absent from
+   `finalFormViewer.js-meta.xml` `<targets>`. It does not appear in App Builder for a record page.
+2. **`recordId` is survey-only.** Its consumer is gated on `spec.form.type === 'survey'`
+   (`finalFormViewer.js` ~line 700) — it feeds SO-3 record context. A classic Form accepts the id
+   and ignores it.
+3. **`saveMode` is never read at runtime.** `grep -c saveMode FinalSubmitService.cls` → **0**.
+   Every internal submit builds a new SObject and inserts it. There is no update branch.
+4. **Nothing loads a record's current values into a form.** No `getRecordForEdit`, no equivalent.
+5. **No authoring UI writes `saveMode` at all.** `grep saveMode force-app/**/lwc` → nothing.
+   `FinalFormCreateController` hardcodes `'create'`. **An author cannot produce an update-mode form
+   today by any supported route.** This is the quietest and most important gap: the whole vocabulary
+   exists, and nothing can emit it.
+
+---
+
+## 2 · The flow being built
+
+```
+Record page (Account 001…)
+  └─ c/finalFormViewer   recordId=001…  objectApiName=Account  formId=<configured>
+       ├─ load spec (FinalSpecController.getSpec — unchanged)
+       ├─ GUARD: spec.form.targetObject === objectApiName ? else a clear message
+       ├─ if spec.form.saveMode === 'update':
+       │     read the record's bound fields via LDS (reuse finalAutofillRecordSource)
+       │     seed `answers` from them  ← the record is the baseline truth
+       └─ submit → FinalSubmitController.submitForm(payload.meta.recordId)
+             └─ FinalSubmitService.run → NEW update branch
+                  buildRecord + Id → stripForUpdate(UPDATABLE) → `update as user`
+```
+
+**Security posture (unchanged where it matters).** The update DML runs `update as user`, so a caller
+can only modify records their own CRUD/FLS/sharing already permits — a hand-crafted `meta.recordId`
+buys nothing they did not already have. The spec remains the field allow-list: only fields the
+published spec binds are ever written. Guests stay refused at `FinalGuestController:115`.
+
+---
+
+## 3 · Slices
+
+### Slice 1 — Placement + object guard _(small)_
+
+- `finalFormViewer.js-meta.xml` — add `<target>lightning__RecordPage</target>` and a
+  `targetConfig` exposing `formId` (+ optional `versionId`), matching the App/Home config.
+- `finalFormViewer.js` — add `@api objectApiName` (the platform injects it on a record page).
+- New guard + message when `spec.form.targetObject !== objectApiName`: _"This form saves to
+  {target}, so it can't be used on a {actual} page."_ Renders instead of the form, never a
+  half-broken render.
+- **Ships alone and is useful alone:** it makes today's create-mode forms placeable on record pages.
+
+### Slice 2 — Load the record into the form _(medium)_
+
+- Reuse `c/finalAutofillRecordSource` rather than a new LDS component
+  ([[feedback-build-reusable-components]]) — it already handles the `fields`-vs-`optionalFields`
+  contract that keeps one unreadable field from failing the whole read.
+- Collect bound fields by walking the spec (same walk `FinalSubmitService` does server-side).
+- Seed `answers` from the result **before** Autofill runs.
+- **Precedence:** loaded record values are ordinary existing answers. `preserveEdits` (the default
+  policy) already refuses to overwrite an answer a rule does not own, so record values survive by
+  construction — **to be proven with a test, not assumed.** An `alwaysReplace` rule on an edit form
+  will overwrite the record's value; that is arguably correct and must be a documented behaviour.
+
+### Slice 3 — The update branch on the server _(medium, the real work)_
+
+- `FinalSubmitService.run` — read `form.saveMode`. When `'update'`:
+  - require `meta.recordId`; verify `recordId.getSObjectType() == parentType` (wrong-object =
+    refuse, do not silently insert)
+  - `buildRecord(parentType, parentBindings)` then set `Id`
+  - new `stripForUpdate(...)` mirroring `stripForCreate` but `AccessType.UPDATABLE`
+  - `update as user` (internal posture); GUEST posture must throw — belt to
+    `FinalGuestController`'s existing braces
+- `FinalSubmitController.SubmitResult.recordId` returns the edited id (unchanged shape).
+
+### Slice 4 — Authoring _(small-medium, but nothing is usable without it)_
+
+- A Settings control: **"What this form does" → Create a new record | Edit an existing record.**
+  Writes `spec.form.saveMode`. Home: the Settings drawer ([[project-studio-settings-drawer]]).
+- Publish-time validation: an update form must have a target object whose describe
+  `isUpdateable()` (validator already does this once `saveMode` reaches it).
+
+---
+
+## 4 · Decisions needed before Slice 3 is written
+
+| #   | Decision                                                                                                                | Recommendation                                                                                                                                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Concurrency.** Someone else edits the record between load and submit. Last-write-wins silently discards their change. | **Send `LastModifiedDate` from the load; server refuses a stale update with a clear message.** Cheap now, and silent data loss is the worst failure mode a form builder can have. |
+| D2  | **Repeat sections on an edit form.** Matching existing child rows to repeat entries is a product of its own.            | **Reject at publish**: an update-mode form may not contain a repeat section (clear authoring error), rather than a runtime surprise.                                              |
+| D3  | **After-submit on a record page.** A full-page "Thank you" screen inside a record-page column is wrong.                 | **Toast + refresh the record page** (`RefreshEvent` / `getRecordNotifyChange`) when hosted on a record page; keep the existing completion screen elsewhere.                       |
+| D4  | **Does the form render at all for a user who cannot update the record?**                                                | v1: render read-only-ish and let the save fail with a real message. Proper disable needs a per-record UI-API check — flag as follow-up.                                           |
+| D5  | **Is `saveMode` per-form or per-placement?** DEFERRED #14's adapter model would make it per-placement.                  | **Per-form for v1** (simplest, matches the spec today). Note it as the seam where #14 will eventually take over.                                                                  |
+
+---
+
+## 5 · Test plan
+
+- **Jest**: object-guard message; record values seed answers; `preserveEdits` does not clobber a
+  loaded record value; `alwaysReplace` does (documented); no LDS read when `saveMode` is `create`.
+- **Apex**: update branch writes only spec-bound fields; `stripForUpdate` drops a non-updateable
+  field; wrong-object `meta.recordId` refused; GUEST posture on an update spec throws;
+  stale-`LastModifiedDate` refused (if D1 accepted).
+- **Browser (the one that actually matters — see PENDING_WORK §8 trap 1):** place the form on a real
+  Account record page, confirm current values load, change one, submit, and **re-query the record**
+  to prove it changed. A jest-green edit path is not evidence.
+
+---
+
+## 6 · Out of scope / orphan ledger
+
+- **Related-child creation** (form on Account creates a linked Case) — a separate mode; not built here.
+- **Polymorphic and dependent lookups** — still absent (PENDING_WORK §3.2).
+- **Guest edit** — stays refused, permanently, by design.
+- **`Allowed_Adapters__c`** — still unread. This plan does NOT close DEFERRED #14; it delivers the
+  one surface the owner needs and leaves the declaration model parked.
+- **Nothing is deleted by this plan** — no orphans created.
