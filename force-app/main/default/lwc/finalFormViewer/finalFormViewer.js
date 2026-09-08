@@ -283,6 +283,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  embedded hosts set the property; links use ?c__recordId=). */
     @api recordId;
 
+    /** The hosting record page's object, injected by the platform on
+     *  `lightning__RecordPage` ONLY. Undefined on every other host, which is
+     *  what keeps the placement guard in `_apply` inert everywhere else. */
+    @api objectApiName;
+
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
     activeAutofillRequests = [];
@@ -384,6 +389,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     async _apply(spec, { preserveNav } = {}) {
         if (!spec || spec.specVersion !== 1) {
             this.error = 'This form uses an unsupported specification version.';
+            this.model = null;
+            return;
+        }
+        // Record-page placement guard (IMPL_PLAN_RECORD_PAGE_EDIT Slice 1).
+        // `objectApiName` arrives only on lightning__RecordPage, and a GUEST
+        // spec has had `form.targetObject` stripped by projectForGuest — so
+        // this can fire only where both are known and genuinely disagree. It
+        // stays inert for the guest host, the studio preview and app/home
+        // placements. Without it, dropping a Contact form on an Account page
+        // renders a perfectly normal form whose every save is doomed, and the
+        // author finds out from a runtime error rather than from App Builder.
+        const placementTarget = spec.form && spec.form.targetObject;
+        if (
+            this.objectApiName &&
+            placementTarget &&
+            this.objectApiName !== placementTarget
+        ) {
+            this.error = `This form saves to ${placementTarget}, so it can't be used on a ${this.objectApiName} page.`;
             this.model = null;
             return;
         }

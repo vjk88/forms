@@ -1,6 +1,7 @@
 # IMPL_PLAN — Forms on record pages, editing the record they sit on
 
-**Status:** DRAFT for owner review — no code written. **Raised:** 2026-09-07, owner:
+**Status (2026-09-08):** **Slice 1 SHIPPED** (PR #247 — record-page placement + object guard).
+Slices 2–4 NOT started. Decisions in §4 are **resolved**, not open. **Raised:** 2026-09-07, owner:
 _"forms should work internally as well … that's the whole reason for forms."_
 **Mode chosen by owner:** **EDIT the record it sits on** (not prefill-only, not related-child).
 
@@ -66,7 +67,7 @@ published spec binds are ever written. Guests stay refused at `FinalGuestControl
 
 ## 3 · Slices
 
-### Slice 1 — Placement + object guard _(small)_
+### Slice 1 — Placement + object guard — **SHIPPED 2026-09-08 (PR #247)**
 
 - `finalFormViewer.js-meta.xml` — add `<target>lightning__RecordPage</target>` and a
   `targetConfig` exposing `formId` (+ optional `versionId`), matching the App/Home config.
@@ -75,6 +76,16 @@ published spec binds are ever written. Guests stay refused at `FinalGuestControl
   {target}, so it can't be used on a {actual} page."_ Renders instead of the form, never a
   half-broken render.
 - **Ships alone and is useful alone:** it makes today's create-mode forms placeable on record pages.
+
+**Done:** `lightning__RecordPage` target + its `targetConfig` added; `@api objectApiName` added; the
+guard sits immediately after the existing `specVersion` guard in `_apply` and reuses the existing
+`.viewer-error` surface (no new template branch). 4 jest cases — the refusal, the match, and the two
+inert hosts (no `objectApiName`, and a guest spec whose `targetObject` was stripped). Each positive
+case asserts the page frame actually rendered, because "no error" alone would also pass for a
+component that failed to mount. Jest 792/792, eslint clean, bundle deployed.
+
+**A create-mode form on a record page still ignores the record** — that is Slices 2–3. Slice 1 only
+buys placement plus an honest refusal.
 
 ### Slice 2 — Load the record into the form _(medium)_
 
@@ -108,7 +119,17 @@ published spec binds are ever written. Guests stay refused at `FinalGuestControl
 
 ---
 
-## 4 · Decisions needed before Slice 3 is written
+## 4 · Decisions — RESOLVED by the owner 2026-09-08
+
+| #      | Decision                     | **Owner's call**                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | Concurrency                  | **LAST WRITE WINS.** No `LastModifiedDate` guard. I recommended the guard and the owner ruled otherwise — building it as ruled. Recorded honestly so nobody re-opens it as a bug: a form submitted against a record someone else edited in the meantime **will overwrite their change without warning**, for the fields this form binds. Only spec-bound fields are touched, so unrelated fields are untouched. Revisit if a customer hits it.      |
+| **D2** | Repeat sections on edit form | **BLOCK AT PUBLISH.** An update-mode form may not contain a repeat section; the author gets a clear publish-time error rather than a section that silently does nothing.                                                                                                                                                                                                                                                                            |
+| **D3** | ~~After-submit behaviour~~   | **NOT A DECISION — I was wrong to ask.** After-submit is already fully author-configured and shipped (#78): `settings.completion` exposes `mode` (**including `toast`**), `title`, `message`, `autoRedirect`, `redirectTo`, `redirectUrl`, `redirectDelay`, `actionButton`, `buttonLabel`, `buttonGoesTo`, `buttonUrl`, rendered by `c/finalAfterSubmit`. **Record-page edit changes nothing here** — admins configure it exactly as they do today. |
+| **D4** | User who cannot update       | v1: the save fails with a real message (`update as user` enforces it). A pre-emptive disable needs a per-record check — follow-up, not v1.                                                                                                                                                                                                                                                                                                          |
+| **D5** | `saveMode` per-form          | Per-form for v1. Noted as the seam where DEFERRED #14 eventually takes over.                                                                                                                                                                                                                                                                                                                                                                        |
+
+### Original framing (kept for context)
 
 | #   | Decision                                                                                                                | Recommendation                                                                                                                                                                    |
 | --- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
