@@ -1,6 +1,7 @@
 # IMPL_PLAN — Forms on record pages, editing the record they sit on
 
-**Status:** DRAFT for owner review — no code written. **Raised:** 2026-09-07, owner:
+**Status (2026-09-08):** **Slice 1 SHIPPED** (PR #247 — record-page placement + object guard).
+Slices 2–4 NOT started. Decisions in §4 are **resolved**, not open. **Raised:** 2026-09-07, owner:
 _"forms should work internally as well … that's the whole reason for forms."_
 **Mode chosen by owner:** **EDIT the record it sits on** (not prefill-only, not related-child).
 
