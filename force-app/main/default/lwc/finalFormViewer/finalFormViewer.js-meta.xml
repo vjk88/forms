@@ -11,6 +11,7 @@
     <targets>
         <target>lightning__AppPage</target>
         <target>lightning__HomePage</target>
+        <target>lightning__RecordPage</target>
         <target>lightning__Tab</target>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
@@ -28,6 +29,20 @@
                 type="String"
                 label="Version Id (optional)"
                 description="Render a specific version instead. A ?c__versionId= URL parameter overrides this."
+            />
+        </targetConfig>
+        <targetConfig targets="lightning__RecordPage">
+            <property
+                name="formId"
+                type="String"
+                label="Form Id"
+                description="Form to render (active published version). The page's record is passed to the form automatically."
+            />
+            <property
+                name="versionId"
+                type="String"
+                label="Version Id (optional)"
+                description="Render a specific version instead of the active published one."
             />
         </targetConfig>
         <targetConfig targets="lightningCommunity__Default">
