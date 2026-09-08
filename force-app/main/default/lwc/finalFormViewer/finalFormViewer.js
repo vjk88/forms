@@ -288,6 +288,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  what keeps the placement guard in `_apply` inert everywhere else. */
     @api objectApiName;
 
+    /** Edit mode (IMPL_PLAN_RECORD_PAGE_EDIT Slice 2): the record this form
+     *  edits, the bound fields to read off it, and the element↔field map used
+     *  to seed answers. Null unless `spec.form.saveMode === 'update'`. */
+    _editRecordId = null;
+    _editObject = null;
+    _editFields = [];
+    _editFieldByElement = [];
+    _editLoaded = false;
+
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
     activeAutofillRequests = [];
@@ -713,6 +722,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.dispatchEvent(new CustomEvent('previewready'));
         }
 
+        this._prepareEditMode(spec);
+
         // Survey-object record context (SURVEY_OBJECT_SPEC + V2 SO-3): one
         // round trip seeds mapped-question prefill AND freezes record-rule
         // verdicts. Authenticated renders only — authoring previews simulate,
@@ -868,6 +879,105 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // A restored or pre-selected lookup answer must fire without waiting for
         // a DOM change event (§6 initialization order).
         this._executeLookupRulesFromAnswers();
+    }
+
+    /**
+     * Edit mode setup (IMPL_PLAN_RECORD_PAGE_EDIT Slice 2).
+     *
+     * Only arms when the author declared `saveMode: 'update'` AND a record is
+     * actually in hand. The three exclusions are deliberate, not defensive
+     * noise: the STUDIO PREVIEW and authoring canvas must never load — or
+     * later save over — a real customer record, and `delegateSubmit` is the
+     * guest host, which the server refuses for update specs anyway.
+     */
+    _prepareEditMode(spec) {
+        this._editRecordId = null;
+        this._editObject = null;
+        this._editFields = [];
+        this._editFieldByElement = [];
+        this._editLoaded = false;
+
+        const form = spec.form || {};
+        const rid = this.recordId || this._urlRecordId;
+        if (
+            form.saveMode !== 'update' ||
+            !rid ||
+            !form.targetObject ||
+            this.authoring ||
+            this.preservePreview ||
+            this.delegateSubmit
+        ) {
+            return;
+        }
+
+        // Same walk the server does: only elements the SPEC binds, and repeat
+        // sections skipped (an edit form may not contain one — owner D2).
+        const pairs = [];
+        const fields = new Set();
+        for (const page of spec.pages || []) {
+            for (const section of page.sections || []) {
+                if (section.repeat) {
+                    continue;
+                }
+                for (const el of section.elements || []) {
+                    const field = el && el.binding && el.binding.field;
+                    if (!field || !el.id) {
+                        continue;
+                    }
+                    pairs.push({ elementId: el.id, field });
+                    fields.add(field);
+                }
+            }
+        }
+        if (!pairs.length) {
+            return;
+        }
+        this._editRecordId = rid;
+        this._editObject = form.targetObject;
+        this._editFields = Array.from(fields);
+        this._editFieldByElement = pairs;
+    }
+
+    /** Mounts one record reader for edit mode; null everywhere else. */
+    get editLoad() {
+        if (!this._editRecordId) {
+            return null;
+        }
+        return {
+            recordId: this._editRecordId,
+            objectApiName: this._editObject,
+            fields: this._editFields
+        };
+    }
+
+    /**
+     * Seeds the form from the record being edited. Runs ONCE — re-seeding
+     * after the respondent has started typing would silently undo their work
+     * every time LDS refreshed the record.
+     *
+     * A field present but null is written as null on purpose: on an edit form
+     * the record is the truth, so an empty field on the record must show empty
+     * rather than keep a static default. A field ABSENT from the payload was
+     * unreadable to this user, and is left alone.
+     */
+    handleEditRecordLoad(event) {
+        if (this._editLoaded) {
+            return;
+        }
+        this._editLoaded = true;
+        const values = (event.detail && event.detail.values) || {};
+        const merged = { ...this.answers };
+        let any = false;
+        for (const pair of this._editFieldByElement) {
+            if (Object.prototype.hasOwnProperty.call(values, pair.field)) {
+                const v = values[pair.field];
+                merged[pair.elementId] = v === undefined ? null : v;
+                any = true;
+            }
+        }
+        if (any) {
+            this._answers = merged;
+        }
     }
 
     _applyInjectedContext() {
@@ -1372,6 +1482,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // survey-object writeback context — server re-validates the type
             // and walks the SPEC for mappings; never guest (guard in _apply)
             meta.recordId = this._recordCtx;
+        } else if (this._editRecordId) {
+            // Edit mode: the record this form UPDATES. The server re-checks
+            // that the spec really is saveMode:'update' and that the id is the
+            // right object, and `update as user` means this id grants the
+            // caller nothing their own permissions did not already allow.
+            meta.recordId = this._editRecordId;
         }
         const payload = { answers, repeats, meta };
         if (files.length) {

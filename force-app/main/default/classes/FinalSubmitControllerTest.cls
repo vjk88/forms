@@ -463,4 +463,175 @@ private class FinalSubmitControllerTest {
                 ceiling
         );
     }
+
+    // ===== EDIT MODE (IMPL_PLAN_RECORD_PAGE_EDIT Slice 3) =====================
+    // `saveMode` was a fully specced word this service never read: the spec
+    // allowed it, both validators honoured it, the guest controller refused
+    // it — and every internal submit inserted anyway. These cover the branch
+    // that finally makes it mean something.
+
+    private static Id makeActiveUpdateVersion(
+        String targetObject,
+        String pagesJson
+    ) {
+        Form__c f = new Form__c(
+            Name = 'Edit test',
+            Primary_Context_Object__c = targetObject
+        );
+        insert f;
+        Form_Version__c v = new Form_Version__c(
+            Form__c = f.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Engine_Version__c = 1,
+            Spec_JSON__c = '{"specVersion":1,"form":{"targetObject":"' +
+                targetObject +
+                '","saveMode":"update"},"pages":' +
+                pagesJson +
+                '}'
+        );
+        insert v;
+        return v.Id;
+    }
+
+    private static final String EDIT_PAGES =
+        '[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
+        '{"id":"el_title","type":"field","binding":{"object":"Contact","field":"Title"}}' +
+        ']}]}]';
+
+    private static String editPayload(Id recordId, String title) {
+        Map<String, Object> meta = new Map<String, Object>();
+        if (recordId != null) {
+            meta.put('recordId', recordId);
+        }
+        return JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_title' => title },
+                'meta' => meta
+            }
+        );
+    }
+
+    @IsTest
+    static void updateModeEditsTheRecordInsteadOfInsertingANewOne() {
+        Contact c = new Contact(LastName = 'Vasquez', Title = 'Before');
+        insert c;
+        Integer before = [SELECT COUNT() FROM Contact];
+        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
+
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            versionId,
+            editPayload(c.Id, 'After')
+        );
+        Test.stopTest();
+
+        Assert.areEqual(c.Id, res.recordId, 'returns the EDITED record');
+        Assert.areEqual(
+            'After',
+            [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
+            'the existing record was updated'
+        );
+        // The whole point: no second Contact appeared.
+        Assert.areEqual(
+            before,
+            [SELECT COUNT() FROM Contact],
+            'update mode must not INSERT a new record'
+        );
+    }
+
+    @IsTest
+    static void updateModeRefusesARecordOfTheWrongObject() {
+        // A Job_Application__c id handed to a Contact form. Without the shape
+        // check this would silently fall through to an insert.
+        Job_Application__c ja = new Job_Application__c(
+            Applicant_Name__c = 'Wrong Shape'
+        );
+        insert ja;
+        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
+
+        Boolean threw = false;
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                editPayload(ja.Id, 'nope')
+            );
+        } catch (Exception e) {
+            threw = true;
+        }
+        Test.stopTest();
+
+        Assert.isTrue(threw, 'a wrong-object record id must be refused');
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE Title = 'nope'],
+            'and nothing may be created as a side effect'
+        );
+    }
+
+    @IsTest
+    static void updateModeRefusesWhenNoRecordWasProvided() {
+        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
+
+        Boolean threw = false;
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                editPayload(null, 'orphan')
+            );
+        } catch (Exception e) {
+            threw = true;
+        }
+        Test.stopTest();
+
+        Assert.isTrue(threw, 'edit mode with no record must be refused');
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE Title = 'orphan'],
+            'an edit form must never quietly insert instead'
+        );
+    }
+
+    @IsTest
+    static void updateModeRefusesARepeatingSection() {
+        // Owner ruling D2 (2026-09-08): repeat sections are blocked on edit
+        // forms. Matching typed rows back to existing children is unbuilt, and
+        // inserting duplicates would be worse than refusing.
+        Contact c = new Contact(LastName = 'Repeater', Title = 'Before');
+        insert c;
+        String pages =
+            '[{"id":"pg_1","sections":[' +
+            '{"id":"sec_1","elements":[{"id":"el_title","type":"field","binding":{"object":"Contact","field":"Title"}}]},' +
+            '{"id":"sec_rep","repeat":{"childObject":"Task","relationshipField":"WhoId"},"elements":[]}' +
+            ']}]';
+        Id versionId = makeActiveUpdateVersion('Contact', pages);
+
+        Boolean threw = false;
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                editPayload(c.Id, 'After')
+            );
+        } catch (Exception e) {
+            threw = true;
+        }
+        Test.stopTest();
+
+        Assert.isTrue(
+            threw,
+            'a repeat section on an edit form must be refused'
+        );
+        Assert.areEqual(
+            'Before',
+            [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
+            'and the refusal must happen BEFORE anything is written'
+        );
+    }
 }

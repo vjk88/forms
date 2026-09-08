@@ -120,15 +120,70 @@ public inherited sharing class FinalSubmitService {
             }
         }
 
+        // ---- EDIT MODE (IMPL_PLAN_RECORD_PAGE_EDIT Slice 3) -----------------
+        // Until now `saveMode` was a fully specced word this file never read:
+        // the spec allowed it, both validators honoured it, the guest
+        // controller refused it — and every internal submit inserted anyway.
+        // This is where it finally means something.
+        String saveMode = (String) form.get('saveMode');
+        Boolean isUpdate = saveMode == 'update';
+        Id existingId = null;
+        if (isUpdate) {
+            // Belt to FinalGuestController's brace (it refuses an update spec
+            // before reaching here). A guest must never update anything.
+            if (mode == Posture.GUEST) {
+                throw new AuraHandledException('This form is not available.');
+            }
+            Map<String, Object> meta = asMap(payload.get('meta'));
+            existingId = meta == null ? null : idOrNull(meta.get('recordId'));
+            if (existingId == null) {
+                throw new AuraHandledException(
+                    'This form edits an existing record, but no record was provided.'
+                );
+            }
+            // A client-supplied id cannot be trusted to be the right SHAPE.
+            // (It needs no trust to be the right PERMISSION: `update as user`
+            // below means the caller can only touch what they already could.)
+            if (existingId.getSObjectType() != parentType) {
+                throw new AuraHandledException(
+                    'This form saves to ' +
+                        targetObject +
+                        ', but the record it was given is not a ' +
+                        targetObject +
+                        ' record.'
+                );
+            }
+            // D2 (owner, 2026-09-08): repeat sections are blocked at PUBLISH on
+            // an edit form. This is the runtime half of that ruling — matching
+            // typed rows back to existing children is unbuilt, and silently
+            // inserting duplicates would be worse than refusing.
+            if (!repeatPlans.isEmpty()) {
+                throw new AuraHandledException(
+                    'This form edits a record, so it cannot contain a repeating section.'
+                );
+            }
+        }
+
         Savepoint sp = Database.setSavepoint();
         try {
             SObject parent = buildRecord(parentType, parentBindings);
-            List<SObject> parentList = stripForCreate(
-                new List<SObject>{ parent },
-                mode
-            );
-            doInsert(parentList, mode);
-            Id parentId = parentList[0].Id;
+            Id parentId;
+            if (isUpdate) {
+                parent.put('Id', existingId);
+                List<SObject> parentList = stripForUpdate(
+                    new List<SObject>{ parent },
+                    mode
+                );
+                doUpdate(parentList, mode);
+                parentId = existingId;
+            } else {
+                List<SObject> parentList = stripForCreate(
+                    new List<SObject>{ parent },
+                    mode
+                );
+                doInsert(parentList, mode);
+                parentId = parentList[0].Id;
+            }
 
             Integer childCount = 0;
             for (RepeatPlan plan : repeatPlans) {
@@ -974,6 +1029,28 @@ public inherited sharing class FinalSubmitService {
             .getRecords();
     }
 
+    /**
+     * The edit-mode twin of `stripForCreate`. Createable and updateable are
+     * genuinely different permissions — a field can be one without the other
+     * (a create-only field, or one locked after insert) — so an update MUST
+     * ask the question it is actually asking. The old build made the same
+     * distinction per field (`isUpdate ? !isUpdateable() : !isCreateable()`).
+     *
+     * No GUEST branch on purpose: guests never reach the update path, and if
+     * that ever changed this should fail loudly rather than pass records
+     * through unstripped the way the create twin does for its gated posture.
+     */
+    private static List<SObject> stripForUpdate(
+        List<SObject> records,
+        Posture mode
+    ) {
+        if (mode == Posture.GUEST) {
+            throw new AuraHandledException('This form is not available.');
+        }
+        return Security.stripInaccessible(AccessType.UPDATABLE, records)
+            .getRecords();
+    }
+
     // ---- File attachments (schema §8 `files`) ---------------------------
 
     /**
@@ -1207,6 +1284,25 @@ public inherited sharing class FinalSubmitService {
         } else {
             insert as user records;
         }
+    }
+
+    /**
+     * Edit-mode DML. `update as user` is the whole security story for a
+     * client-supplied record id: the caller can only modify records their own
+     * CRUD/FLS/sharing already permits, so a hand-crafted `meta.recordId`
+     * buys them nothing they did not already have.
+     *
+     * Owner ruling D1 (2026-09-08): LAST WRITE WINS. There is deliberately no
+     * `LastModifiedDate` check — a submit against a record someone else edited
+     * in the meantime overwrites their change to the fields this form binds
+     * (fields the form does not bind are untouched, since only spec-bound
+     * fields are ever built into the record).
+     */
+    private static void doUpdate(List<SObject> records, Posture mode) {
+        if (mode == Posture.GUEST) {
+            throw new AuraHandledException('This form is not available.');
+        }
+        update as user records;
     }
 
     /** Raw JSON answers → a typed SObject (coercion by describe type). */
