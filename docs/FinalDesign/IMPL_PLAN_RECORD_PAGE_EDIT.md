@@ -1,7 +1,10 @@
 # IMPL_PLAN — Forms on record pages, editing the record they sit on
 
-**Status (2026-09-08):** **Slice 1 SHIPPED** (PR #247 — record-page placement + object guard).
-Slices 2–4 NOT started. Decisions in §4 are **resolved**, not open. **Raised:** 2026-09-07, owner:
+**Status (2026-09-08):** **Slices 1, 2 and 3 SHIPPED and org-verified end to end** (PRs #247, #248).
+A form can be placed on a record page, loads that record's current values, and saves changes back to
+it. **Slice 4 (the authoring toggle) is NOT built — so no author can turn this on yet**; every
+edit-mode form must currently have `saveMode:"update"` written into its spec by hand. Decisions in
+§4 are **resolved**, not open. **Raised:** 2026-09-07, owner:
 _"forms should work internally as well … that's the whole reason for forms."_
 **Mode chosen by owner:** **EDIT the record it sits on** (not prefill-only, not related-child).
 
@@ -11,7 +14,11 @@ Companions: [PENDING_WORK.md](./PENDING_WORK.md) §1 P4 · [DEFERRED.md](./DEFER
 
 ---
 
-## 1 · The gap, stated precisely
+## 1 · The gap, stated precisely — **as it stood on 2026-09-07, BEFORE this work**
+
+> **Historical.** Items 1–4 below were closed by PRs #247/#248 (see §3). **Item 5 is still true**:
+> no authoring UI writes `saveMode`. Kept as written because the shape of the gap explains the
+> shape of the slices — do not read this section as current state.
 
 Every claim below was checked against the code on 2026-09-07, not read off a doc.
 
@@ -40,6 +47,32 @@ Every claim below was checked against the code on 2026-09-07, not read off a doc
    `FinalFormCreateController` hardcodes `'create'`. **An author cannot produce an update-mode form
    today by any supported route.** This is the quietest and most important gap: the whole vocabulary
    exists, and nothing can emit it.
+
+---
+
+## 1a · What the OLD build did (owner: _"this feature was already built out in previous form iterations"_)
+
+Read before writing Slices 2–3, per [[feedback-check-formstudio-first]]. The legacy stack solved
+**half** of this, and the half it solved is worth copying:
+
+| Legacy piece                        | What it did                                                                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `formViewer.js-meta.xml`            | Already had `lightning__RecordPage` — plus `datasource="apex://FormChoices"`, so the author **picks** a form instead of pasting an id. **Worth stealing later.** |
+| `formViewer.js`                     | `@api recordId; // edit-mode context` and `existingRecordId: this.effectiveRecordId \|\| null` passed **unconditionally** on submit                              |
+| `FormSubmitController.submitCore`   | `Boolean isUpdate = existingRecordId != null;` then `Database.update(parent, false, AccessLevel.USER_MODE)` vs `insert`                                          |
+| `FormSubmitController.buildSObject` | Per-field, mode-aware FLS: `isUpdate ? !dfr.isUpdateable() : !dfr.isCreateable()`                                                                                |
+
+**Two deliberate departures:**
+
+1. **Legacy inferred edit mode from "a recordId is present"; we require an explicit
+   `saveMode: 'update'`.** Legacy's rule is simpler but makes one thing impossible: a **create**
+   form on a record page (a "Log a Call" form on an Account that creates a Task) would try to update
+   the Account instead. The final build already carries `saveMode` through both validators, so
+   honouring it costs nothing and keeps both products available. The price is Slice 4 — without an
+   authoring toggle, nobody can switch it on.
+2. **Legacy never loaded the edited record's current values.** There is no such code path in
+   `formViewer`; authors approximated it with a URL-sourced autofill rule, so an "edit" form opened
+   with **blank fields**. Slice 2 is genuinely new work, not a port.
 
 ---
 
@@ -87,7 +120,7 @@ component that failed to mount. Jest 792/792, eslint clean, bundle deployed.
 **A create-mode form on a record page still ignores the record** — that is Slices 2–3. Slice 1 only
 buys placement plus an honest refusal.
 
-### Slice 2 — Load the record into the form _(medium)_
+### Slice 2 — Load the record into the form — **SHIPPED 2026-09-08 (PR #248)**
 
 - Reuse `c/finalAutofillRecordSource` rather than a new LDS component
   ([[feedback-build-reusable-components]]) — it already handles the `fields`-vs-`optionalFields`
@@ -99,7 +132,18 @@ buys placement plus an honest refusal.
   construction — **to be proven with a test, not assumed.** An `alwaysReplace` rule on an edit form
   will overwrite the record's value; that is arguably correct and must be a documented behaviour.
 
-### Slice 3 — The update branch on the server _(medium, the real work)_
+**Done:** `_prepareEditMode` walks the spec for bound fields and mounts one
+`c/finalAutofillRecordSource` tagged `__edit__`, reusing the reader the Autofill rules already use
+(runs under the respondent's own access; unreadable fields are omitted, not fatal). Seeding runs
+**once** — a later LDS refresh must never undo what the respondent has typed. A field present but
+**null is written as null**, so an empty field on the record beats a static `defaultValue`: on an
+edit form the record is the truth.
+
+**The exclusions are the load-bearing part.** Edit mode does not arm under `authoring`,
+`preservePreview` or `delegateSubmit` — otherwise opening a form to DESIGN it would read, and on
+submit overwrite, a real customer record from the Studio preview. All three are asserted.
+
+### Slice 3 — The update branch on the server — **SHIPPED 2026-09-08 (PR #248)**
 
 - `FinalSubmitService.run` — read `form.saveMode`. When `'update'`:
   - require `meta.recordId`; verify `recordId.getSObjectType() == parentType` (wrong-object =
@@ -110,7 +154,20 @@ buys placement plus an honest refusal.
     `FinalGuestController`'s existing braces
 - `FinalSubmitController.SubmitResult.recordId` returns the edited id (unchanged shape).
 
-### Slice 4 — Authoring _(small-medium, but nothing is usable without it)_
+**Done:** `FinalSubmitService.run` reads `saveMode` for the first time. Update mode requires
+`meta.recordId`, checks `existingId.getSObjectType() == parentType` (a wrong-object id is refused,
+never silently inserted), refuses a repeat section (D2), refuses GUEST posture, then
+`stripForUpdate` (`AccessType.UPDATABLE` — genuinely different from CREATABLE) and `update as user`.
+
+**Org-verified end to end 2026-09-08**, not merely unit-tested. Real Contact, real App Page host
+(`Final_P0_Test`), real browser: the form loaded `BEFORE-EDIT`/`Operations` off the record, Title was
+changed and saved, and SOQL afterwards showed **Title `AFTER-EDIT`, Department still `Operations`,
+and the Contact count unchanged at 27** — the record was edited, not duplicated.
+
+Apex: 4 new cases (edits-not-inserts with a count assertion, wrong-object refused, no-record refused,
+repeat-section refused). 16/16 in `FinalSubmitControllerTest`.
+
+### Slice 4 — Authoring _(small-medium — and NOTHING is author-reachable without it)_
 
 - A Settings control: **"What this form does" → Create a new record | Edit an existing record.**
   Writes `spec.form.saveMode`. Home: the Settings drawer ([[project-studio-settings-drawer]]).

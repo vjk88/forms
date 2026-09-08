@@ -62,6 +62,19 @@
                             onsubmit={handleSubmit}
                         ></c-final-submit-bar>
                     </lwc:component>
+                    <template lwc:if={editLoad}>
+                        <!-- Edit mode: read the record this form saves to, so
+                             its current values fill the fields. Same reader the
+                             Autofill rules use — it runs under the respondent's
+                             own access, and omits fields they cannot read. -->
+                        <c-final-autofill-record-source
+                            rule-id="__edit__"
+                            record-id={editLoad.recordId}
+                            object-api-name={editLoad.objectApiName}
+                            fields={editLoad.fields}
+                            onrecordsuccess={handleEditRecordLoad}
+                        ></c-final-autofill-record-source>
+                    </template>
                     <template for:each={activeAutofillRequests} for:item="req">
                         <c-final-autofill-record-source
                             key={req.key}
