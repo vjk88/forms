@@ -211,6 +211,53 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         expect(el.answers.el_first_name).toBeFalsy();
     });
 
+    it('GUEST-SHAPED rule (destination ids only, no source field names) still fills', async () => {
+        // Every other test here feeds the AUTHENTICATED spec shape, where each
+        // mapping carries a real `from` field name. The guest projection
+        // publishes the opposite: settings.prefill is stripped entirely and
+        // runtime.autofill carries destinationElementIds only, so
+        // extractAutofillRules rebuilds mappings as `{ to }` with NO `from`.
+        //
+        // That shape was never exercised, and `_toSourceKeyed` keyed on a bare
+        // `m.from` — so every value landed on the single key `undefined` and a
+        // personalized link filled nothing for an anonymous respondent. Two
+        // destinations here (not one) so a regression that collapses them onto
+        // one key cannot pass. Org-verified on the guest site 2026-09-07.
+        const guestSpec = JSON.parse(JSON.stringify(SPEC));
+        delete guestSpec.settings.prefill;
+        guestSpec.runtime = {
+            autofill: [
+                {
+                    ruleId: 'af_link',
+                    sourceType: 'link',
+                    policy: 'preserveEdits',
+                    destinationElementIds: ['el_first_name', 'el_phone']
+                }
+            ]
+        };
+
+        const el = mount(guestSpec);
+        await flush();
+        await flush();
+
+        el.recordContext = {
+            status: 'applied',
+            autofill: [
+                {
+                    ruleId: 'af_link',
+                    values: {
+                        el_first_name: 'Aurelia',
+                        el_phone: '555-0100'
+                    }
+                }
+            ]
+        };
+        await flush();
+
+        expect(el.answers.el_first_name).toBe('Aurelia');
+        expect(el.answers.el_phone).toBe('555-0100');
+    });
+
     it('dispatches lookup source change, mounts record source, and updates answers on recordsuccess', async () => {
         const el = mount();
         await flush();

@@ -918,6 +918,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *
      * Only keys actually present are copied, which keeps "omitted" (unreadable)
      * distinct from an explicit null.
+     *
+     * A GUEST rule has no `from` at all. The guest projection strips source
+     * field names on purpose, so `extractAutofillRules` rebuilds its mappings
+     * from `destinationElementIds` as `{ to }` only. Keying on a bare `m.from`
+     * therefore wrote every value to the single key `undefined`, and `onResult`
+     * — which resolves its lookup key as `mapping.from || destId` — went looking
+     * for `el_fn` and found nothing, so a personalized link filled NOTHING for
+     * an anonymous respondent. Falling back to `m.to` here is the same identity
+     * `onResult` already assumes; org-verified on the guest site 2026-09-07.
      */
     _toSourceKeyed(ruleId, values) {
         const rule = (this._autofillSession?.rules || []).find(
@@ -933,7 +942,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 m.to &&
                 Object.prototype.hasOwnProperty.call(values, m.to)
             ) {
-                out[m.from] = values[m.to];
+                out[m.from || m.to] = values[m.to];
             }
         }
         return out;
