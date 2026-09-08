@@ -1,7 +1,9 @@
 # Pending Work — everything between here and ship
 
 **Compiled:** 2026-09-03 · **Last commit at time of writing:** `47fc433` (2026-08-16, PR #218)
-**Last updated:** 2026-09-07, current through **PR #239** (Design panel reorganization + its org render QA)
+**Last updated:** 2026-09-07, current through **PR #245** (Autofill Rules program: personalized-link
+half #241, authenticated lookup #242, false-passing describe test #243, guest destination-keying
+fix #244, orphaned endpoint removal #245 — all org-verified in a browser, see §8)
 **Ship definition:** a managed 2GP AppExchange package **with Surveys** ([[project-ship-definition]]).
 Companions: [BUILD_PHASES.md](./BUILD_PHASES.md) (what's in scope) · [DEFERRED.md](./DEFERRED.md)
 (consciously parked) · [PRODUCT.md](../../PRODUCT.md) (the promises).
@@ -22,16 +24,16 @@ Phases are [BUILD_PHASES.md](./BUILD_PHASES.md)'s. "Missing" here means **verifi
 2026-09-05**, not "unmentioned in a doc" — each row was checked against the components, objects and
 org rather than against a status header.
 
-| Phase                            | State           | Exactly what is missing                                                                                                                                                                                                                                                                                                                       |
-| -------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0** Walking skeleton          | **Done**        | —                                                                                                                                                                                                                                                                                                                                             |
-| **P1** All seven layouts         | **Done**        | — all seven nav primitives ship                                                                                                                                                                                                                                                                                                               |
-| **P2** Full theme system         | **Done**        | —                                                                                                                                                                                                                                                                                                                                             |
-| **P3** The builder               | **Done**        | Nothing functional. _Naming note:_ `pageManager` and `bindingPicker` were never built as standalone components — page chips live in `finalBuilderCanvas`, binding lives in `finalPropertyPanel`. **Absorbed, not skipped.** The F8 checklist is closed: `pageValidity` is read by all seven navs.                                             |
-| **P4** Element widgets           | **Partial**     | `formLookup` (= Phase D), `formSignature`, `formVideo` — **never built**. `fileUpload` is **internal only** (Slice 1); guest is Slice 2. `formRepeater` renders **stacked-only**.                                                                                                                                                             |
-| **P5** Guest runtime & hardening | **Partial**     | **Rate limiting** (#20) · **guest file upload** · **classic-form prefill** · the **F13 asset-URL decision** (below). Already built: the guest controller family, honeypot, availability windows, `finalAfterSubmit`, and the answer store with `Label_Snapshot__c` + `Entry_Index__c`. **The security-review gate has never been attempted.** |
-| **P6** Creation & templates      | **Partial**     | The **form template gallery** is a placeholder; `Form_Template__c` exists but holds **1 record**, so seeding is effectively undone. **Theme-coherence prune** not done. Already built: creation gallery, Form/Survey fork, and working survey templates (CSAT/NPS/Event).                                                                     |
-| **P7** Cutover & deletion        | **Not started** | All of it: re-publish surviving forms, flip app/Experience consumers, delete 63 legacy LWCs + ~25 legacy Apex classes, drop deprecated fields and retired objects, docs sweep.                                                                                                                                                                |
+| Phase                            | State           | Exactly what is missing                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0** Walking skeleton          | **Done**        | —                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **P1** All seven layouts         | **Done**        | — all seven nav primitives ship                                                                                                                                                                                                                                                                                                                                                                       |
+| **P2** Full theme system         | **Done**        | —                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **P3** The builder               | **Done**        | Nothing functional. _Naming note:_ `pageManager` and `bindingPicker` were never built as standalone components — page chips live in `finalBuilderCanvas`, binding lives in `finalPropertyPanel`. **Absorbed, not skipped.** The F8 checklist is closed: `pageValidity` is read by all seven navs.                                                                                                     |
+| **P4** Element widgets           | **Partial**     | `formSignature`, `formVideo` — **never built**. `formLookup` is **no longer "never built"** (2026-09-07): a single-target reference field renders a real `lightning-record-picker` and can drive Autofill; polymorphic references and DEPENDENT/filtered lookups are still absent — see §3.2. `fileUpload` is **internal only** (Slice 1); guest is Slice 2. `formRepeater` renders **stacked-only**. |
+| **P5** Guest runtime & hardening | **Partial**     | **Rate limiting** (#20) · **guest file upload** · **classic-form prefill** · the **F13 asset-URL decision** (below). Already built: the guest controller family, honeypot, availability windows, `finalAfterSubmit`, and the answer store with `Label_Snapshot__c` + `Entry_Index__c`. **The security-review gate has never been attempted.**                                                         |
+| **P6** Creation & templates      | **Partial**     | The **form template gallery** is a placeholder; `Form_Template__c` exists but holds **1 record**, so seeding is effectively undone. **Theme-coherence prune** not done. Already built: creation gallery, Form/Survey fork, and working survey templates (CSAT/NPS/Event).                                                                                                                             |
+| **P7** Cutover & deletion        | **Not started** | All of it: re-publish surviving forms, flip app/Experience consumers, delete 63 legacy LWCs + ~25 legacy Apex classes, drop deprecated fields and retired objects, docs sweep.                                                                                                                                                                                                                        |
 
 **Surfaced 2026-09-05 — P5 F13, asset URLs, no decision on record.** Built-in theme images snapshot
 `/resource/formThemeAssets/…` paths into published `resolved.tokens`, but Experience Cloud serves
@@ -189,8 +191,20 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 
 - **`formSignature`** — not built (reuses the file path, so it follows §3.1).
 - **`formVideo`** — not built (iframe embeds; needs CSP degradation).
-- **`formLookup`** — not built. This is **Phase D** of the guest/prefill/lookup program
-  ([GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md)), v1 = Core + dependent.
+- **`formLookup`** — **the CORE half is built (2026-09-07); the dependent half is not.** This is
+  **Phase D** of the guest/prefill/lookup program
+  ([GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md)), whose v1 was Core + dependent.
+  - **Built and org-verified:** `FinalStudioController.describeFields` emits `referenceTo` for
+    single-target reference fields, the Studio stamps it onto `element.config.referenceTo`, and the
+    renderer mounts a real `lightning-record-picker` whose selection can source an Autofill rule.
+    Verified in a browser: picking "Edge Communications" filled the mapped fields, and clearing the
+    picker cleared the untouched ones while preserving a value the respondent had typed.
+  - **NOT built:** **dependent / filtered** lookups (narrowing one picker by another field's value)
+    — the whole "dependent" half of Phase D v1. Also absent: **polymorphic** references
+    (`describeFields` deliberately `continue`s past them, because `lightning-record-picker` targets
+    one object), and lookup Autofill for **guests** (a lookup mapping cannot be `guestAllowed` —
+    `FinalAutofillValidator` rejects it, so lookup rules are an authenticated-only feature by
+    design).
 
 ### 3.3 Half-built
 
@@ -347,8 +361,8 @@ worth charging for:
    (§9.1, §9.2). **DONE — org-verified 2026-09-06**, failure path induced and recovered (see §9.2).
 3. **Testing a rule does not require re-entering its inputs** — preview state survives an ordinary
    edit and a mode switch (§9.4). **DONE — org-verified 2026-09-06** (see §9.4).
-4. **No shipped surface advertises unbuilt functionality** — the template shelf and the Autofill
-   "later slice" line (§3.4, §9.1).
+4. **No shipped surface advertises unbuilt functionality** — **half met.** The Autofill "later
+   slice" line is **gone** (2026-09-07, §9.1); the **template shelf placeholder remains** (§3.4).
 5. **Studio chrome meets 4.5:1 for small text** (§9.5) — not because a written promise covers it
    today, but because shipping a form builder whose own buttons fail the bar its theme editor
    enforces on customers is indefensible.
@@ -360,6 +374,25 @@ guest-facing ships with a built-in theme image.
 
 ## 8 · Recently CLOSED — do not re-open
 
+- **Autofill Rules — BOTH halves built and browser-verified (2026-09-07, PRs #241–#245).** The
+  program is real, not just green: **(a) authenticated lookup** — a single-target reference field
+  renders a `lightning-record-picker`, picking a record fills the mapped destinations, and clearing
+  it clears what Autofill owned while preserving anything the respondent typed (org-verified in the
+  Studio: Title cleared, a hand-typed Phone survived); **(b) personalized guest link** — verified as
+  a genuinely anonymous visitor on the live site, with the negative controls holding (a mapping left
+  `guestAllowed:false` did not fill, its value appeared nowhere in the page, and no source field API
+  names reached the client).
+  **Two traps this run left behind, both worth respecting:**
+  1. **A guest defect can hide behind a fully green suite.** Every autofill test fed the
+     _authenticated_ spec shape; the _guest-projected_ shape (`runtime.autofill`, destination ids
+     only, no `from`) had zero coverage, so a bug that made personalized links fill **nothing**
+     passed 787 tests. Fixed in #244 with a two-destination regression test. **When a feature has a
+     guest projection, test the projection, not just the authored spec.**
+  2. **`sf project deploy` does not reach guests.** The LWR site serves a pre-compiled bundle
+     (`webruntime/view/<hash>/prod/…`); an LWC change is invisible on the guest site until the
+     Experience site is **republished**. A deploy that "did nothing" is almost always this.
+     Removed in #245: `FinalAutofillController.resolveLinkForUser`, an `@AuraEnabled` endpoint no LWC
+     ever called — with its accepted consequence recorded as **DEFERRED #30**.
 - **Experience Cloud blank page on tab-away/tab-back** — **RESOLVED.** Option B shipped in
   `8322481` (2026-07-19); live-verified on the guest site 2026-09-03 (same instance reconnected, no
   blank page, zero bug-signature errors, typed answer survived) and recorded in PR #219. The doc
@@ -385,15 +418,15 @@ review ranked them.
 
 ### 9.1 Trivial — an hour or less each
 
-| Finding                                                                          | Why it's small                                                                                                                                                                                                                                                                                                                                                                      |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BLUEPRINT — structure only; the preview is the truth` → "Structure"             | One string, `finalBuilderCanvas.html:4`                                                                                                                                                                                                                                                                                                                                             |
-| Autofill "prefill mapping arrives with a later slice"                            | One string, `finalFieldPalette.js:222`                                                                                                                                                                                                                                                                                                                                              |
-| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**                   | Publish failures now carry their own message and retry; draft-save state stays independent. Org-verified 2026-09-06: real failure induced, correct copy, Retry recovered AND persisted the edit. See §9.2.                                                                                                                                                                          |
-| Duplicate Availability heading + the submission-service sentence                 | Copy deletion                                                                                                                                                                                                                                                                                                                                                                       |
-| **Arrangement hint names a control that layout doesn't have** (found 2026-09-07) | `buttonArrangement`'s hint is the static string "How Back / **Next** / Submit line up" (`finalDesignRegistry.js`), but on one-at-a-time and Split Hero · Conversational there is no Next — the control directly above it reads "Continue button label". PR #239's Next/Continue split is what made it wrong. One string; needs to vary with `ownsAdvance`, or drop the button names |
-| Delete-control accessible names                                                  | Contextual `aria-label`                                                                                                                                                                                                                                                                                                                                                             |
-| Copy: "answer store", "every answer becomes a field"                             | Wording only                                                                                                                                                                                                                                                                                                                                                                        |
+| Finding                                                                           | Why it's small                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BLUEPRINT — structure only; the preview is the truth` → "Structure"              | One string, `finalBuilderCanvas.html:4`                                                                                                                                                                                                                                                                                                                                             |
+| ~~Autofill "prefill mapping arrives with a later slice"~~ — **CLOSED 2026-09-07** | The placeholder is gone: `finalFieldPalette`'s `isStub` now returns `false` and the Autofill tab is a real authoring surface. Nothing on that tab advertises unbuilt work any more                                                                                                                                                                                                  |
+| **A failed PUBLISH reported "Save failed" — FIXED 2026-09-06**                    | Publish failures now carry their own message and retry; draft-save state stays independent. Org-verified 2026-09-06: real failure induced, correct copy, Retry recovered AND persisted the edit. See §9.2.                                                                                                                                                                          |
+| Duplicate Availability heading + the submission-service sentence                  | Copy deletion                                                                                                                                                                                                                                                                                                                                                                       |
+| **Arrangement hint names a control that layout doesn't have** (found 2026-09-07)  | `buttonArrangement`'s hint is the static string "How Back / **Next** / Submit line up" (`finalDesignRegistry.js`), but on one-at-a-time and Split Hero · Conversational there is no Next — the control directly above it reads "Continue button label". PR #239's Next/Continue split is what made it wrong. One string; needs to vary with `ownsAdvance`, or drop the button names |
+| Delete-control accessible names                                                   | Contextual `aria-label`                                                                                                                                                                                                                                                                                                                                                             |
+| Copy: "answer store", "every answer becomes a field"                              | Wording only                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### 9.2 Small and contained — about half a day each _(provisional)_
 

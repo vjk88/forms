@@ -136,46 +136,6 @@ private class FinalAutofillControllerTest {
     }
 
     @isTest
-    static void testResolveLinkForUser() {
-        Form__c f = createTestForm();
-        Form_Version__c v = [
-            SELECT Id
-            FROM Form_Version__c
-            WHERE Form__c = :f.Id AND Is_Active__c = TRUE
-            LIMIT 1
-        ];
-        Job_Application__c ja = new Job_Application__c(
-            Applicant_Name__c = 'Grace Hopper'
-        );
-        insert ja;
-
-        Map<String, Object> linkRes = FinalStudioController.mintRecordLink(
-            f.Id,
-            ja.Id
-        );
-        String token = (String) linkRes.get('token');
-
-        Test.startTest();
-        Map<String, Object> resolved = FinalAutofillController.resolveLinkForUser(
-            f.Id,
-            v.Id,
-            token
-        );
-        Test.stopTest();
-
-        System.assertEquals(v.Id, (Id) resolved.get('versionId'));
-        Map<String, Object> rule = (Map<String, Object>) resolved.get('rule');
-        System.assertEquals('af_link1', rule.get('ruleId'));
-        System.assertEquals(ja.Id, (Id) rule.get('recordId'));
-        System.assertEquals('Job_Application__c', rule.get('objectApiName'));
-        List<Map<String, Object>> mappings = (List<Map<String, Object>>) rule.get(
-            'mappings'
-        );
-        System.assertEquals(1, mappings.size());
-        System.assertEquals('el_name', mappings[0].get('to'));
-    }
-
-    @isTest
     static void testGetTestRecordValues() {
         Form__c f = createTestForm();
         Job_Application__c ja = new Job_Application__c(
