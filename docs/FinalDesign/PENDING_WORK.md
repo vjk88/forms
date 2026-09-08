@@ -147,6 +147,10 @@ and retired objects (DATA_MODEL_DELTA §4).
 
 ### 3.1 File upload — **Slice 1 BUILT 2026-09-03** (internal); guest still open
 
+**Design added 2026-09-08:** [Guest uploads and larger attachments implementation plan](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)
+covers staged native transport, larger-file limits, guest admission, final submission, cleanup,
+and platform verification. This is documentation only; Slice 2 remains unimplemented.
+
 The stub is gone. Internal file upload works end to end: drop zone + keyboard-reachable picker,
 answers on the normal `valuechange` channel, and an atomic `ContentVersion` insert via
 `FirstPublishLocationId` inside the submit savepoint, with a server-side allow-list, size caps and
@@ -194,6 +198,10 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 - **`formLookup`** — **the CORE half is built (2026-09-07); the dependent half is not.** This is
   **Phase D** of the guest/prefill/lookup program
   ([GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md)), whose v1 was Core + dependent.
+  - **Implementation plan (2026-09-08):**
+    [Reusable lookup and dependent filters](./IMPL_PLAN_DEPENDENT_LOOKUP.md) covers the native
+    picker core, Forms and Flow adapters, Studio configuration, dependency lifecycle, and
+    server-side selection validation. Design only; the remaining work below is still pending.
   - **Built and org-verified:** `FinalStudioController.describeFields` emits `referenceTo` for
     single-target reference fields, the Studio stamps it onto `element.config.referenceTo`, and the
     renderer mounts a real `lightning-record-picker` whose selection can source an Autofill rule.

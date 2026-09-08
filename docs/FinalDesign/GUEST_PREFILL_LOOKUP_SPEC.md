@@ -118,6 +118,14 @@ sourceObject?, mappings: [{ from, to }] }` — `to` is an ELEMENT ID, never a fi
 
 ## Phase D — Custom lookup (Core + dependent)
 
+**Authenticated implementation refinement (2026-09-08):**
+[Reusable lookup and dependent filters implementation plan](./IMPL_PLAN_DEPENDENT_LOOKUP.md)
+builds on the existing native record picker. For authenticated D1/D2, it supersedes
+the custom search endpoint and token/operator configuration proposed below with a
+reusable native wrapper, structured filters, and server-side selection validation.
+This is a plan, not completed implementation. Guest search and broader Phase D
+extensions remain separate.
+
 - **Element:** reference-bound fields gain Display-as "Search picker" →
   `c/finalLookup`: type-ahead (300ms debounce, min 2 chars, max 8 results),
   primary + secondary display fields, keyboard nav + ARIA combobox.

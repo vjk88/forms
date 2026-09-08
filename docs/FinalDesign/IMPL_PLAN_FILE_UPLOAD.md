@@ -1,5 +1,10 @@
 # Implementation Plan — File Upload (PENDING_WORK §3.1)
 
+**Slice 2 design added 2026-09-08:** [Guest uploads and larger attachments](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)
+defines native Salesforce transport, staged receipts, atomic final association, quotas, cleanup,
+and the required LWR platform proof. It is a proposed design, not an implementation or deployment
+status update. Slice 1's existing inline transport remains documented below.
+
 > **Status:** **SLICE 1 BUILT** (2026-09-03) — internal audience, deployed and org-verified.
 > Slice 2 (guest upload) still needs the explicit owner "go" described in §3.
 >
