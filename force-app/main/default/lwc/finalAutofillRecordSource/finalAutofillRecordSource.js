@@ -50,6 +50,9 @@ export default class FinalAutofillRecordSource extends LightningElement {
             return;
         }
         if (data) {
+            // A queued response must never be labelled as a different record.
+            if (data.id && data.id.slice(0, 15) !== this.recordId.slice(0, 15))
+                return;
             const values = {};
             const recordFields = data.fields || {};
             for (const fieldName of this.fields) {

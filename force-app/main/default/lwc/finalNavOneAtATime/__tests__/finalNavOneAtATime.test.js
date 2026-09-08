@@ -26,6 +26,26 @@ const progressText = (cmp) =>
     cmp.shadowRoot.querySelector('.progress-text').textContent;
 
 describe('c-final-nav-one-at-a-time', () => {
+    it('keeps Continue usable but disables the terminal Save while the viewer is loading', async () => {
+        const cmp = await mount();
+        cmp.submitDisabled = true;
+        const submit = jest.fn();
+        cmp.addEventListener('submit', submit);
+        await Promise.resolve();
+        const button = () => cmp.shadowRoot.querySelector('.primary-btn');
+        expect(button().disabled).toBe(false);
+        button().click();
+        await Promise.resolve();
+        button().click();
+        await Promise.resolve();
+        expect(button().disabled).toBe(true);
+        button().dispatchEvent(new CustomEvent('click'));
+        expect(submit).not.toHaveBeenCalled();
+        cmp.submitDisabled = false;
+        await Promise.resolve();
+        button().click();
+        expect(submit).toHaveBeenCalledTimes(1);
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

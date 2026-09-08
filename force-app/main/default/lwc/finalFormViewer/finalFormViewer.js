@@ -1,5 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
+import { notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
+import Toast from 'lightning/toast';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -22,6 +24,7 @@ import {
     onManualEdit,
     onSourceChanged,
     onResult,
+    isRequestCurrent,
     onRequestFailure
 } from './autofillEngine';
 
@@ -281,12 +284,29 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     /** Record context for survey-object prefill/writeback (record-page and
      *  embedded hosts set the property; links use ?c__recordId=). */
-    @api recordId;
+    _recordId;
+    @api
+    get recordId() {
+        return this._recordId;
+    }
+    set recordId(value) {
+        this._recordId = value;
+        if (this._editSpec) this._prepareEditMode(this._editSpec);
+    }
 
     /** The hosting record page's object, injected by the platform on
      *  `lightning__RecordPage` ONLY. Undefined on every other host, which is
      *  what keeps the placement guard in `_apply` inert everywhere else. */
-    @api objectApiName;
+    _objectApiName;
+    @api
+    get objectApiName() {
+        return this._objectApiName;
+    }
+    set objectApiName(value) {
+        if (value === this._objectApiName) return;
+        this._objectApiName = value;
+        if (this._editSpec) this._apply(this._editSpec);
+    }
 
     /** Edit mode (IMPL_PLAN_RECORD_PAGE_EDIT Slice 2): the record this form
      *  edits, the bound fields to read off it, and the element↔field map used
@@ -295,7 +315,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _editObject = null;
     _editFields = [];
     _editFieldByElement = [];
-    _editLoaded = false;
+    _editSpec;
+    _editContextKey;
+    _editState = 'inactive';
+    _editGeneration = 0;
+    _editReaders = [];
+    _editStartedRevisions = {};
+    _submitGeneration = 0;
 
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
@@ -309,12 +335,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             ref && ref.state ? ref.state.c__versionId : undefined;
         this._urlRecordId =
             ref && ref.state ? ref.state.c__recordId : undefined;
+        if (this._editSpec) this._prepareEditMode(this._editSpec);
         this._load();
     }
 
     connectedCallback() {
         if (this._connectedOnce) {
             this._refreshNavCtor();
+            if (
+                this._editState === 'loading' &&
+                this._editRecordId &&
+                this._autofillSession
+            )
+                this._beginEditRead();
         }
         this._connectedOnce = true;
         this._load();
@@ -325,6 +358,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  (An LWR reconnect re-arms nothing: completion state survives, and the
      *  respondent can still use the completion screen's own controls.) */
     disconnectedCallback() {
+        this._editGeneration += 1;
+        this._editReaders = [];
+        this._submitGeneration += 1;
+        this._submitting = false;
         clearTimeout(this._redirectTimer);
         for (const timerId of this._autofillTimers.values()) {
             clearTimeout(timerId);
@@ -381,13 +418,21 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return;
         }
         this._loadedKey = key;
+        this._submitGeneration += 1;
+        this._submitting = false;
+        this._editSpec = null;
+        this._editGeneration += 1;
+        this._editReaders = [];
+        this.model = null;
         try {
             const raw = await getSpec({
                 formId: formId || null,
                 versionId: versionId || null
             });
+            if (key !== this._loadedKey) return;
             await this._apply(JSON.parse(raw));
         } catch (e) {
+            if (key !== this._loadedKey) return;
             this.model = null;
             this.error =
                 (e && e.body && e.body.message) ||
@@ -396,6 +441,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     async _apply(spec, { preserveNav } = {}) {
+        const seq = (this._applySeq = (this._applySeq || 0) + 1);
+        this._submitGeneration += 1;
+        this._submitting = false;
+        if (this._requiresEditRecord(spec) || this._editState !== 'inactive')
+            this.model = null;
+        this._editSpec = spec;
+        this._editGeneration += 1;
+        this._editReaders = [];
+        if (this._requiresEditRecord(spec)) this._editState = 'loading';
         if (!spec || spec.specVersion !== 1) {
             this.error = 'This form uses an unsupported specification version.';
             this.model = null;
@@ -419,7 +473,6 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.model = null;
             return;
         }
-        const seq = (this._applySeq = (this._applySeq || 0) + 1);
         // The P2 gate, by construction: a PUBLISHED spec carries resolved
         // tokens and must never fetch the theme catalog (managed recipes stay
         // out of the delivered bundle). Only the draft/preview path — no
@@ -709,6 +762,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             paneLockup
         };
         this.error = undefined;
+        this._prepareEditMode(spec, true);
         this._executeLookupRulesFromAnswers();
 
         if (preview) {
@@ -721,8 +775,6 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this.preservePreview) {
             this.dispatchEvent(new CustomEvent('previewready'));
         }
-
-        this._prepareEditMode(spec);
 
         // Survey-object record context (SURVEY_OBJECT_SPEC + V2 SO-3): one
         // round trip seeds mapped-question prefill AND freezes record-rule
@@ -884,31 +936,71 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /**
      * Edit mode setup (IMPL_PLAN_RECORD_PAGE_EDIT Slice 2).
      *
-     * Only arms when the author declared `saveMode: 'update'` AND a record is
-     * actually in hand. The three exclusions are deliberate, not defensive
+     * Update forms require a successful read before saving; a missing record
+     * is an explicit blocked state. The exclusions are deliberate:
      * noise: the STUDIO PREVIEW and authoring canvas must never load — or
      * later save over — a real customer record, and `delegateSubmit` is the
      * guest host, which the server refuses for update specs anyway.
      */
-    _prepareEditMode(spec) {
-        this._editRecordId = null;
-        this._editObject = null;
-        this._editFields = [];
-        this._editFieldByElement = [];
-        this._editLoaded = false;
+    _requiresEditRecord(spec) {
+        return (
+            spec?.form?.saveMode === 'update' &&
+            spec.form.type !== 'survey' &&
+            !this.authoring &&
+            !this.preservePreview &&
+            !this.delegateSubmit
+        );
+    }
 
+    _prepareEditMode(spec, force = false) {
         const form = spec.form || {};
-        const rid = this.recordId || this._urlRecordId;
-        if (
-            form.saveMode !== 'update' ||
-            !rid ||
-            !form.targetObject ||
-            this.authoring ||
-            this.preservePreview ||
-            this.delegateSubmit
-        ) {
+        const rid = this.recordId || this._urlRecordId || null;
+        if (!this._requiresEditRecord(spec)) {
+            this._editState = 'inactive';
+            this._editRecordId = null;
+            this._editContextKey = null;
+            this._editReaders = [];
             return;
         }
+        const key = JSON.stringify([
+            this.effectiveFormId,
+            this.effectiveVersionId,
+            rid,
+            form.targetObject,
+            this.objectApiName
+        ]);
+        if (!force && key === this._editContextKey) return;
+        const switching = this._editContextKey && key !== this._editContextKey;
+        this._editContextKey = key;
+        this._editGeneration += 1;
+        this._submitGeneration += 1;
+        this._submitting = false;
+        this._editReaders = [];
+        this._editState = rid ? 'loading' : 'missingRecord';
+        this._editRecordId = rid;
+        this._editObject = form.targetObject;
+        clearTimeout(this._redirectTimer);
+        for (const timer of this._autofillTimers.values()) clearTimeout(timer);
+        this._autofillTimers.clear();
+        this.activeAutofillRequests = [];
+        this._autofillSession = createAutofillSession({
+            specVersionId: this.effectiveVersionId || null,
+            rules: extractAutofillRules(spec)
+        });
+        const defaults = seedStaticDefaults(spec);
+        this._autofillSession.staticDefaults = defaults;
+        this._answers = { ...defaults };
+        if (switching) this._injectedCtx = null;
+        this._ruleFacts = null;
+        this._recordCtx = null;
+        this._revealed = [];
+        this.pageIndex = 0;
+        this.completed = false;
+        this.submittedRecordId = null;
+        this._submitError = undefined;
+        this._startedAt = new Date().toISOString();
+        // Revision baseline belongs to the record session, not each retry.
+        this._editStartedRevisions = {};
 
         // Same walk the server does: only elements the SPEC binds, and repeat
         // sections skipped (an edit form may not contain one — owner D2).
@@ -929,25 +1021,80 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 }
             }
         }
-        if (!pairs.length) {
-            return;
-        }
-        this._editRecordId = rid;
-        this._editObject = form.targetObject;
         this._editFields = Array.from(fields);
         this._editFieldByElement = pairs;
+        if (rid && form.targetObject) this._beginEditRead();
+        else if (rid) this._editState = 'error';
     }
 
-    /** Mounts one record reader for edit mode; null everywhere else. */
-    get editLoad() {
-        if (!this._editRecordId) {
-            return null;
+    _beginEditRead() {
+        this._editGeneration += 1;
+        this._editState = 'loading';
+        this._editReaders = [
+            {
+                key: this._editGeneration,
+                generation: this._editGeneration,
+                sessionId: this._autofillSession.sessionId,
+                recordId: this._editRecordId,
+                objectApiName: this._editObject,
+                fields: this._editFields
+            }
+        ];
+    }
+
+    get isEditBlocked() {
+        return this._editState !== 'inactive' && this._editState !== 'ready';
+    }
+
+    get isSubmitBlocked() {
+        return this.isEditBlocked || this.isAutofillPending || this._submitting;
+    }
+
+    get isEditLoading() {
+        return this._editState === 'loading';
+    }
+    get canRetryEdit() {
+        return this._editState === 'error';
+    }
+    get editError() {
+        if (this._editState === 'missingRecord')
+            return 'This form needs an existing record. Open it from a record page or record link.';
+        if (this._editState === 'error')
+            return 'Could not load this record. Retry to continue.';
+        return null;
+    }
+
+    _isCurrentEditResponse(detail) {
+        return (
+            this.isConnected &&
+            this._editState === 'loading' &&
+            detail?.recordId === this._editRecordId &&
+            detail.generation === this._editGeneration &&
+            detail.sessionId === this._autofillSession?.sessionId
+        );
+    }
+
+    handleEditRecordError(event) {
+        if (!this._isCurrentEditResponse(event.detail)) return;
+        this._editState = 'error';
+    }
+
+    async handleEditRetry() {
+        if (!this.canRetryEdit) return;
+        const generation = ++this._editGeneration;
+        this._editState = 'loading';
+        try {
+            // Refresh LDS before remounting; remount alone can replay a cached failure.
+            await notifyRecordUpdateAvailable([
+                { recordId: this._editRecordId }
+            ]);
+            if (generation !== this._editGeneration || !this.isConnected)
+                return;
+            this._beginEditRead();
+        } catch {
+            if (generation === this._editGeneration && this.isConnected)
+                this._editState = 'error';
         }
-        return {
-            recordId: this._editRecordId,
-            objectApiName: this._editObject,
-            fields: this._editFields
-        };
     }
 
     /**
@@ -961,28 +1108,30 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      * unreadable to this user, and is left alone.
      */
     handleEditRecordLoad(event) {
-        if (this._editLoaded) {
-            return;
-        }
-        this._editLoaded = true;
+        if (!this._isCurrentEditResponse(event.detail)) return;
         const values = (event.detail && event.detail.values) || {};
-        const merged = { ...this.answers };
-        let any = false;
+        const patch = {};
         for (const pair of this._editFieldByElement) {
-            if (Object.prototype.hasOwnProperty.call(values, pair.field)) {
+            const revision =
+                this._autofillSession.editRevision[pair.elementId] || 0;
+            if (
+                revision ===
+                    (this._editStartedRevisions[pair.elementId] || 0) &&
+                Object.prototype.hasOwnProperty.call(values, pair.field)
+            ) {
                 const v = values[pair.field];
-                merged[pair.elementId] = v === undefined ? null : v;
-                any = true;
+                patch[pair.elementId] = v === undefined ? null : v;
             }
         }
-        if (any) {
-            this._answers = merged;
-        }
+        this._applyAutofillPatch(patch);
+        this._editState = 'ready';
+        this._applyInjectedContext();
+        this._executeLookupRulesFromAnswers();
     }
 
     _applyInjectedContext() {
         const ctx = this._injectedCtx;
-        if (!this.model) {
+        if (!this.model || this.isEditBlocked) {
             return;
         }
         // R6 — a null context must actually REMOVE what Autofill applied.
@@ -1373,6 +1522,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     async handleSubmit() {
+        if (!this.model || this.error || this.isSubmitBlocked) return;
         // Submit validates EVERY visible page; the first invalid one becomes
         // the current page with its failures shown.
         const validity = this.pageValidity;
@@ -1407,21 +1557,41 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._submitting = true;
         this._submitError = undefined;
+        const submitGeneration = ++this._submitGeneration;
+        const submittedEditRecordId = this._editRecordId;
+        const submittedEditObject = this._editObject;
         try {
             const res = await submitForm({
                 formId: this.effectiveFormId || null,
                 versionId: this.effectiveVersionId || null,
                 payloadJson: JSON.stringify(this._payload())
             });
+            if (submitGeneration !== this._submitGeneration) return;
             this.submittedRecordId = res ? res.recordId : null;
             this.completed = true;
             this._scheduleCompletion();
         } catch (e) {
+            if (submitGeneration !== this._submitGeneration) {
+                if (submittedEditRecordId) {
+                    Toast.show(
+                        {
+                            label: `Save failed for ${submittedEditObject} ${submittedEditRecordId}`,
+                            message:
+                                'Return to that record to review your changes and try saving again.',
+                            variant: 'error',
+                            mode: 'sticky'
+                        },
+                        this
+                    );
+                }
+                return;
+            }
             this._submitError =
                 (e && e.body && e.body.message) ||
                 'Your response could not be saved. Please try again.';
         } finally {
-            this._submitting = false;
+            if (submitGeneration === this._submitGeneration)
+                this._submitting = false;
         }
     }
 
@@ -1569,6 +1739,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     _executeLookupRulesFromAnswers() {
+        if (this.isEditBlocked) return;
         if (!this._autofillSession || !this._autofillSession.rules) {
             return;
         }
@@ -1583,6 +1754,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     _handleSourceLookupChange(elementId, value) {
+        if (this.isEditBlocked) return;
         if (!this._autofillSession || !this._autofillSession.rules) {
             return;
         }
@@ -1725,10 +1897,6 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     handleAutofillRecordSuccess(event) {
         const { ruleId, recordId, generation, sessionId, values } =
             event.detail;
-        this._clearAutofillTimeout(ruleId, generation);
-        this.activeAutofillRequests = this.activeAutofillRequests.filter(
-            (r) => !(r.ruleId === ruleId && r.generation === generation)
-        );
         const identity = {
             sessionId,
             specVersionId: this._autofillSession?.specVersionId,
@@ -1737,6 +1905,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             generation,
             sourceKey: recordId
         };
+        if (!isRequestCurrent(this._autofillSession, identity)) return;
+        this._clearAutofillTimeout(ruleId, generation);
+        this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !(r.ruleId === ruleId && r.generation === generation)
+        );
         const res = onResult(
             this._autofillSession,
             identity,
@@ -1751,10 +1924,6 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     handleAutofillRecordError(event) {
         const { ruleId, recordId, generation, sessionId } = event.detail;
-        this._clearAutofillTimeout(ruleId, generation);
-        this.activeAutofillRequests = this.activeAutofillRequests.filter(
-            (r) => !(r.ruleId === ruleId && r.generation === generation)
-        );
         const identity = {
             sessionId,
             specVersionId: this._autofillSession?.specVersionId,
@@ -1763,6 +1932,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             generation,
             sourceKey: recordId
         };
+        if (!isRequestCurrent(this._autofillSession, identity)) return;
+        this._clearAutofillTimeout(ruleId, generation);
+        this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !(r.ruleId === ruleId && r.generation === generation)
+        );
         if (this._autofillSession) {
             onRequestFailure(this._autofillSession, identity, 'failed');
         }
