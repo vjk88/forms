@@ -14,7 +14,11 @@ Companions: [PENDING_WORK.md](./PENDING_WORK.md) §1 P4 · [DEFERRED.md](./DEFER
 
 ---
 
-## 1 · The gap, stated precisely
+## 1 · The gap, stated precisely — **as it stood on 2026-09-07, BEFORE this work**
+
+> **Historical.** Items 1–4 below were closed by PRs #247/#248 (see §3). **Item 5 is still true**:
+> no authoring UI writes `saveMode`. Kept as written because the shape of the gap explains the
+> shape of the slices — do not read this section as current state.
 
 Every claim below was checked against the code on 2026-09-07, not read off a doc.
 
