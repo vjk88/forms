@@ -46,6 +46,7 @@ export default class FinalNavOneAtATime extends LightningElement {
     @api arrangement = 'together-left';
     /** Terminal Submit label (viewer: submit.label). */
     @api submitLabel = 'Submit';
+    @api submitDisabled = false;
     @api backLabel;
 
     get backButtonLabel() {
@@ -112,6 +113,10 @@ export default class FinalNavOneAtATime extends LightningElement {
         return this.onLastScreen
             ? this.submitLabel || 'Submit'
             : this.advanceLabel;
+    }
+
+    get primaryDisabled() {
+        return this.onLastScreen && this.submitDisabled;
     }
 
     get layoutClass() {
@@ -209,6 +214,7 @@ export default class FinalNavOneAtATime extends LightningElement {
     }
 
     handlePrimary() {
+        if (this.primaryDisabled) return;
         if (this.onLastScreen) {
             this.dispatchEvent(new CustomEvent('submit'));
         } else {

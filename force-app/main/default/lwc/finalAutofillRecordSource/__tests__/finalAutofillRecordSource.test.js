@@ -3,6 +3,33 @@ import FinalAutofillRecordSource from 'c/finalAutofillRecordSource';
 import { getRecord } from 'lightning/uiRecordApi';
 
 describe('c-final-autofill-record-source', () => {
+    it('does not relabel a response for a different record', async () => {
+        const element = createElement('c-final-autofill-record-source', {
+            is: FinalAutofillRecordSource
+        });
+        element.ruleId = '__edit__';
+        element.recordId = '003000000000002AAA';
+        element.objectApiName = 'Contact';
+        element.fields = ['Title'];
+        const success = jest.fn();
+        element.addEventListener('recordsuccess', success);
+        document.body.appendChild(element);
+        getRecord.emit({
+            id: '003000000000001AAA',
+            fields: { Title: { value: 'Old record' } }
+        });
+        await Promise.resolve();
+        expect(success).not.toHaveBeenCalled();
+        getRecord.emit({
+            id: '003000000000002AAA',
+            fields: { Title: { value: 'Current record' } }
+        });
+        await Promise.resolve();
+        expect(success).toHaveBeenCalledTimes(1);
+        expect(success.mock.calls[0][0].detail.values.Title).toBe(
+            'Current record'
+        );
+    });
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

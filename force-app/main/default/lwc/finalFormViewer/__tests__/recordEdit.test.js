@@ -111,6 +111,8 @@ describe('c-final-form-viewer record edit mode', () => {
                 detail: {
                     ruleId: '__edit__',
                     recordId: RECORD,
+                    generation: editSource(el).generation,
+                    sessionId: editSource(el).sessionId,
                     // Department is present but EMPTY on the record. On an edit
                     // form the record is the truth, so the default must lose.
                     values: { Title: 'Head of Napping', Department: null }
@@ -135,6 +137,8 @@ describe('c-final-form-viewer record edit mode', () => {
                     detail: {
                         ruleId: '__edit__',
                         recordId: RECORD,
+                        generation: editSource(el).generation,
+                        sessionId: editSource(el).sessionId,
                         values: { Title: title }
                     }
                 })

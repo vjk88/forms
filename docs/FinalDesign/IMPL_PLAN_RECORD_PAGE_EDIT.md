@@ -219,3 +219,9 @@ repeat-section refused). 16/16 in `FinalSubmitControllerTest`.
 - **`Allowed_Adapters__c`** — still unread. This plan does NOT close DEFERRED #14; it delivers the
   one surface the owner needs and leaves the declaration model parked.
 - **Nothing is deleted by this plan** — no orphans created.
+
+### Lifecycle correction — 2026-09-08
+
+The original one-record load/edit/save verification did not cover record switching, pending reads, failed reads, or lookup Autofill after hydration. Those five defects are corrected in the current working tree. See [Record-edit lifecycle implementation and rollout](./IMPL_PLAN_RECORD_EDIT_LIFECYCLE_FIXES.md) for the current deployment status and verification evidence.
+
+The runtime now uses keyed record sessions, blocks submission until hydration, hides editable controls while loading, exposes Retry after load failures, starts lookup Autofill after hydration, and reports an old record's failed save through a sticky toast without changing the new record. The server's existing type/access validation and last-write-wins policy remain unchanged. Slice 4 authoring controls remain outside this patch.

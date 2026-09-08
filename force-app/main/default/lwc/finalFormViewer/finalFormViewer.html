@@ -25,54 +25,80 @@
                     ></c-final-after-submit>
                 </template>
                 <template lwc:elseif={navCtor}>
+                    <template lwc:if={isEditLoading}>
+                        <div class="viewer-loading" role="status">
+                            <lightning-spinner
+                                alternative-text="Loading record"
+                                size="medium"
+                            ></lightning-spinner>
+                        </div>
+                    </template>
+                    <template lwc:if={editError}>
+                        <div class="viewer-submit-error" role="alert">
+                            <p>{editError}</p>
+                            <template lwc:if={canRetryEdit}>
+                                <lightning-button
+                                    label="Retry"
+                                    onclick={handleEditRetry}
+                                ></lightning-button>
+                            </template>
+                        </div>
+                    </template>
                     <template lwc:if={submitError}>
                         <div class="viewer-submit-error" role="alert">
                             {submitError}
                         </div>
                     </template>
-                    <lwc:component
-                        lwc:is={navCtor}
-                        pages={visiblePages}
-                        current-page-index={pageIndex}
-                        page-validity={pageValidity}
-                        options={model.layoutOptions}
-                        lockup={model.paneLockup}
-                        arrangement={model.buttonArrangement}
-                        bleed={model.bleed}
-                        submit-label={effectiveSubmitLabel}
-                        back-label={model.submit.backLabel}
-                        onpagechange={handlePageChange}
-                        onsubmit={handleSubmit}
-                        onvaluechange={handleValueChange}
-                        onadvanceblocked={handleAdvanceBlocked}
-                    >
-                        <!-- Slotted from the engine's template: button intents
-                             never cross the primitive's shadow boundary. -->
-                        <c-final-submit-bar
-                            slot="actions"
-                            config={effectiveSubmitConfig}
-                            show-back={showBack}
-                            show-next={showNext}
-                            show-submit={showSubmit}
-                            submitting={_submitting}
-                            disabled={isAutofillPending}
+                    <div hidden={isEditBlocked} data-edit-surface>
+                        <lwc:component
+                            lwc:is={navCtor}
+                            pages={visiblePages}
+                            current-page-index={pageIndex}
+                            page-validity={pageValidity}
+                            options={model.layoutOptions}
+                            lockup={model.paneLockup}
                             arrangement={model.buttonArrangement}
-                            onback={handleBack}
-                            onnext={handleNext}
+                            bleed={model.bleed}
+                            submit-label={effectiveSubmitLabel}
+                            submit-disabled={isSubmitBlocked}
+                            back-label={model.submit.backLabel}
+                            onpagechange={handlePageChange}
                             onsubmit={handleSubmit}
-                        ></c-final-submit-bar>
-                    </lwc:component>
-                    <template lwc:if={editLoad}>
+                            onvaluechange={handleValueChange}
+                            onadvanceblocked={handleAdvanceBlocked}
+                        >
+                            <!-- Slotted from the engine's template: button intents
+                             never cross the primitive's shadow boundary. -->
+                            <c-final-submit-bar
+                                slot="actions"
+                                config={effectiveSubmitConfig}
+                                show-back={showBack}
+                                show-next={showNext}
+                                show-submit={showSubmit}
+                                submitting={_submitting}
+                                disabled={isSubmitBlocked}
+                                arrangement={model.buttonArrangement}
+                                onback={handleBack}
+                                onnext={handleNext}
+                                onsubmit={handleSubmit}
+                            ></c-final-submit-bar>
+                        </lwc:component>
+                    </div>
+                    <template for:each={_editReaders} for:item="reader">
                         <!-- Edit mode: read the record this form saves to, so
                              its current values fill the fields. Same reader the
                              Autofill rules use — it runs under the respondent's
                              own access, and omits fields they cannot read. -->
                         <c-final-autofill-record-source
+                            key={reader.key}
                             rule-id="__edit__"
-                            record-id={editLoad.recordId}
-                            object-api-name={editLoad.objectApiName}
-                            fields={editLoad.fields}
+                            record-id={reader.recordId}
+                            object-api-name={reader.objectApiName}
+                            fields={reader.fields}
+                            generation={reader.generation}
+                            session-id={reader.sessionId}
                             onrecordsuccess={handleEditRecordLoad}
+                            onrecorderror={handleEditRecordError}
                         ></c-final-autofill-record-source>
                     </template>
                     <template for:each={activeAutofillRequests} for:item="req">
