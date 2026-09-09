@@ -51,11 +51,12 @@ const SPEC = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-function mount({ spec = SPEC, objectApiName } = {}) {
+function mount({ spec = SPEC, objectApiName, existingRecordId } = {}) {
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
     if (objectApiName !== undefined) {
         el.objectApiName = objectApiName;
     }
+    el.existingRecordId = existingRecordId;
     el.spec = JSON.parse(JSON.stringify(spec));
     document.body.appendChild(el);
     return el;
@@ -83,7 +84,10 @@ describe('c-final-form-viewer record-page placement guard', () => {
     });
 
     it('refuses a form whose target object is not the page object', async () => {
-        const el = mount({ objectApiName: 'Account' });
+        const el = mount({
+            objectApiName: 'Account',
+            existingRecordId: '{!recordId}'
+        });
         await flush();
         await flush();
 
@@ -91,6 +95,14 @@ describe('c-final-form-viewer record-page placement guard', () => {
             "This form saves to Contact, so it can't be used on a Account page."
         );
         expect(rendered(el)).toBe(false);
+    });
+
+    it('allows create on a different object record page', async () => {
+        const el = mount({ objectApiName: 'Account' });
+        await flush();
+        await flush();
+        expect(errorText(el)).toBeNull();
+        expect(rendered(el)).toBe(true);
     });
 
     it('renders when the page object matches the form target', async () => {

@@ -30,19 +30,43 @@
                 label="Version Id (optional)"
                 description="Render a specific version instead. A ?c__versionId= URL parameter overrides this."
             />
+            <property
+                name="existingRecordId"
+                type="String"
+                label="Existing Record Id (optional)"
+                description="Forms: leave blank to create. Enter a record ID, recordId, or {!recordId} to edit. Current-record expressions require a record page. URL fallback: c__existingRecordId."
+            />
+            <property
+                name="surveyContextRecordId"
+                type="String"
+                label="Survey Context Record Id (optional)"
+                description="Surveys: optional record for prefill, visibility rules and mapped writeback. Enter a record ID, recordId, or {!recordId}. URL fallback: c__surveyContextRecordId."
+            />
         </targetConfig>
         <targetConfig targets="lightning__RecordPage">
             <property
                 name="formId"
                 type="String"
                 label="Form Id"
-                description="Form to render (active published version). The page's record is passed to the form automatically."
+                description="Form to render (active published version). Configure Existing Record Id to edit, or leave it blank to create."
             />
             <property
                 name="versionId"
                 type="String"
                 label="Version Id (optional)"
                 description="Render a specific version instead of the active published one."
+            />
+            <property
+                name="existingRecordId"
+                type="String"
+                label="Existing Record Id (optional)"
+                description="Forms: leave blank to create. Enter a record ID, recordId, or {!recordId} to edit. Current-record expressions require a record page. URL fallback: c__existingRecordId."
+            />
+            <property
+                name="surveyContextRecordId"
+                type="String"
+                label="Survey Context Record Id (optional)"
+                description="Surveys: optional record for prefill, visibility rules and mapped writeback. Enter a record ID, recordId, or {!recordId}. URL fallback: c__surveyContextRecordId."
             />
         </targetConfig>
         <targetConfig targets="lightningCommunity__Default">
@@ -57,6 +81,18 @@
                 type="String"
                 label="Version Id (optional)"
                 description="Render a specific version instead. A ?c__versionId= URL parameter overrides this."
+            />
+            <property
+                name="existingRecordId"
+                type="String"
+                label="Existing Record Id (optional)"
+                description="Forms: leave blank to create. Enter a record ID, recordId, or {!recordId} to edit. Current-record expressions require a record page. URL fallback: c__existingRecordId."
+            />
+            <property
+                name="surveyContextRecordId"
+                type="String"
+                label="Survey Context Record Id (optional)"
+                description="Surveys: optional record for prefill, visibility rules and mapped writeback. Enter a record ID, recordId, or {!recordId}. URL fallback: c__surveyContextRecordId."
             />
         </targetConfig>
     </targetConfigs>

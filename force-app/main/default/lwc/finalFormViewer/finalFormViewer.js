@@ -282,16 +282,98 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** SO-4: guest-host-injected {ruleFacts, prefill} (see recordContext). */
     _injectedCtx;
 
-    /** Record context for survey-object prefill/writeback (record-page and
-     *  embedded hosts set the property; links use ?c__recordId=). */
-    _recordId;
+    /** Explicit host inputs. Blank means create / no survey context. */
+    _existingRecordId;
+    _surveyContextRecordId;
+    _pageRef;
+    _urlExistingRecordId;
+    _urlSurveyContextRecordId;
+    _surveyContextKey;
+    _surveyLoading = false;
+    _editConfigurationError;
+
     @api
-    get recordId() {
-        return this._recordId;
+    get existingRecordId() {
+        return this._existingRecordId;
     }
-    set recordId(value) {
-        this._recordId = value;
-        if (this._editSpec) this._prepareEditMode(this._editSpec);
+    set existingRecordId(value) {
+        this._existingRecordId = value;
+        this._recordInputsChanged();
+    }
+
+    @api
+    get surveyContextRecordId() {
+        return this._surveyContextRecordId;
+    }
+    set surveyContextRecordId(value) {
+        this._surveyContextRecordId = value;
+        this._recordInputsChanged();
+    }
+
+    _recordInput(property, urlValue) {
+        return String(property || '').trim() || String(urlValue || '').trim();
+    }
+
+    _isPageRecordExpression(value) {
+        return value === 'recordId' || value === '{!recordId}';
+    }
+
+    _resolveRecordInput(value) {
+        const candidate = this._isPageRecordExpression(value)
+            ? this._pageRef?.type === 'standard__recordPage'
+                ? this._pageRef.attributes?.recordId
+                : null
+            : value;
+        return /^(?:[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/.test(candidate || '')
+            ? candidate
+            : null;
+    }
+
+    get _existingInput() {
+        return this._recordInput(
+            this._existingRecordId,
+            this._urlExistingRecordId
+        );
+    }
+
+    get _surveyInput() {
+        return this._recordInput(
+            this._surveyContextRecordId,
+            this._urlSurveyContextRecordId
+        );
+    }
+
+    _surveyKey() {
+        return JSON.stringify([
+            this._surveyInput,
+            this._resolveRecordInput(this._surveyInput)
+        ]);
+    }
+
+    _recordInputsChanged() {
+        if (
+            !this._editSpec ||
+            this.authoring ||
+            this.preservePreview ||
+            this.delegateSubmit
+        )
+            return;
+        if (this.error && !this.model) {
+            this._apply(this._editSpec);
+        } else if (this._editSpec.form?.type === 'survey') {
+            if (this._surveyKey() !== this._surveyContextKey) {
+                // Invalidate the old response before the next asynchronous apply.
+                this.model = null;
+                this._answers = {};
+                this._recordCtx = null;
+                this._ruleFacts = null;
+                this._injectedCtx = null;
+                clearTimeout(this._redirectTimer);
+                this._apply(this._editSpec);
+            }
+        } else {
+            this._prepareEditMode(this._editSpec);
+        }
     }
 
     /** The hosting record page's object, injected by the platform on
@@ -310,7 +392,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     /** Edit mode (IMPL_PLAN_RECORD_PAGE_EDIT Slice 2): the record this form
      *  edits, the bound fields to read off it, and the element↔field map used
-     *  to seed answers. Null unless `spec.form.saveMode === 'update'`. */
+     *  to seed answers. Set only when existingRecordId is explicitly configured. */
     _editRecordId = null;
     _editObject = null;
     _editFields = [];
@@ -333,15 +415,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._urlFormId = ref && ref.state ? ref.state.c__formId : undefined;
         this._urlVersionId =
             ref && ref.state ? ref.state.c__versionId : undefined;
-        this._urlRecordId =
-            ref && ref.state ? ref.state.c__recordId : undefined;
-        if (this._editSpec) this._prepareEditMode(this._editSpec);
+        this._pageRef = ref;
+        this._urlExistingRecordId = ref?.state?.c__existingRecordId;
+        this._urlSurveyContextRecordId = ref?.state?.c__surveyContextRecordId;
+        this._recordInputsChanged();
         this._load();
     }
 
     connectedCallback() {
         if (this._connectedOnce) {
             this._refreshNavCtor();
+            if (this._surveyLoading && this._editSpec)
+                this._apply(this._editSpec);
             if (
                 this._editState === 'loading' &&
                 this._editRecordId &&
@@ -455,16 +540,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.model = null;
             return;
         }
-        // Record-page placement guard (IMPL_PLAN_RECORD_PAGE_EDIT Slice 1).
-        // `objectApiName` arrives only on lightning__RecordPage, and a GUEST
-        // spec has had `form.targetObject` stripped by projectForGuest — so
-        // this can fire only where both are known and genuinely disagree. It
-        // stays inert for the guest host, the studio preview and app/home
-        // placements. Without it, dropping a Contact form on an Account page
-        // renders a perfectly normal form whose every save is doomed, and the
-        // author finds out from a runtime error rather than from App Builder.
+        // Creating on a record page does not consume that page's record.
+        // Explicit IDs are validated by LDS/Apex against the form target.
         const placementTarget = spec.form && spec.form.targetObject;
         if (
+            this._isPageRecordExpression(
+                spec.form?.type === 'survey'
+                    ? this._surveyInput
+                    : this._existingInput
+            ) &&
             this.objectApiName &&
             placementTarget &&
             this.objectApiName !== placementTarget
@@ -783,7 +867,22 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // the payload flag.
         this._recordCtx = null;
         this._ruleFacts = null;
-        const rid = this.recordId || this._urlRecordId;
+        const rid = this._resolveRecordInput(this._surveyInput);
+        this._surveyContextKey = this._surveyKey();
+        this._surveyLoading = false;
+        if (
+            spec.form?.type === 'survey' &&
+            this._surveyInput &&
+            !rid &&
+            !this.authoring &&
+            !this.preservePreview &&
+            !this.delegateSubmit
+        ) {
+            this.error =
+                'Survey context needs a valid record ID. The configured current-record expression requires a record page.';
+            this.model = null;
+            return;
+        }
         if (
             rid &&
             !this.authoring &&
@@ -795,13 +894,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             (specHasMappings(spec) || specHasRecordRules(spec))
         ) {
             this._recordCtx = rid;
+            this._surveyLoading = true;
             getRecordContext({
                 versionId: this.effectiveVersionId || null,
                 formId: this.effectiveFormId || null,
                 recordId: rid
             })
                 .then((res) => {
-                    if (seq !== this._applySeq || !res) {
+                    if (seq !== this._applySeq || !this.isConnected) {
                         return;
                     }
                     // REASSIGN, never mutate — facts feed render getters
@@ -820,6 +920,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     }
                 })
                 .catch(() => {
+                    if (seq !== this._applySeq || !this.isConnected) return;
+                    this._surveyLoading = false;
                     // best-effort: an unreadable record must never block the
                     // survey itself from rendering — record rules read "no
                     // match" exactly like a plain no-context link
@@ -936,15 +1038,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /**
      * Edit mode setup (IMPL_PLAN_RECORD_PAGE_EDIT Slice 2).
      *
-     * Update forms require a successful read before saving; a missing record
-     * is an explicit blocked state. The exclusions are deliberate:
+     * An explicit edit target requires a successful read before saving;
+     * an unresolved expression is an explicit blocked state. The exclusions are deliberate:
      * noise: the STUDIO PREVIEW and authoring canvas must never load — or
      * later save over — a real customer record, and `delegateSubmit` is the
      * guest host, which the server refuses for update specs anyway.
      */
     _requiresEditRecord(spec) {
         return (
-            spec?.form?.saveMode === 'update' &&
+            Boolean(this._existingInput) &&
+            spec?.form &&
             spec.form.type !== 'survey' &&
             !this.authoring &&
             !this.preservePreview &&
@@ -954,18 +1057,28 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     _prepareEditMode(spec, force = false) {
         const form = spec.form || {};
-        const rid = this.recordId || this._urlRecordId || null;
+        const rid = this._resolveRecordInput(this._existingInput);
         if (!this._requiresEditRecord(spec)) {
+            const wasEditing = this._editContextKey;
+            this._editGeneration += 1;
+            this._editConfigurationError = null;
             this._editState = 'inactive';
             this._editRecordId = null;
             this._editContextKey = null;
             this._editReaders = [];
+            if (wasEditing && !force) {
+                this.model = null;
+                this._answers = {};
+                clearTimeout(this._redirectTimer);
+                this._apply(spec);
+            }
             return;
         }
         const key = JSON.stringify([
             this.effectiveFormId,
             this.effectiveVersionId,
             rid,
+            this._existingInput,
             form.targetObject,
             this.objectApiName
         ]);
@@ -976,6 +1089,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._submitGeneration += 1;
         this._submitting = false;
         this._editReaders = [];
+        this._editConfigurationError = null;
         this._editState = rid ? 'loading' : 'missingRecord';
         this._editRecordId = rid;
         this._editObject = form.targetObject;
@@ -1023,7 +1137,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._editFields = Array.from(fields);
         this._editFieldByElement = pairs;
-        if (rid && form.targetObject) this._beginEditRead();
+        const hasRepeats = (spec.pages || []).some((page) =>
+            (page.sections || []).some((section) => section.repeat)
+        );
+        const pageObject =
+            this.objectApiName || this._pageRef?.attributes?.objectApiName;
+        if (hasRepeats) {
+            this._editConfigurationError =
+                'Editing an existing record is not supported for forms with repeating sections.';
+        } else if (
+            this._isPageRecordExpression(this._existingInput) &&
+            pageObject &&
+            form.targetObject &&
+            pageObject !== form.targetObject
+        ) {
+            this._editConfigurationError = `This form saves to ${form.targetObject}, but the current page is for ${pageObject}.`;
+        }
+        if (this._editConfigurationError) this._editState = 'error';
+        else if (rid && form.targetObject) this._beginEditRead();
         else if (rid) this._editState = 'error';
     }
 
@@ -1047,18 +1178,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     get isSubmitBlocked() {
-        return this.isEditBlocked || this.isAutofillPending || this._submitting;
+        return (
+            this.isEditBlocked ||
+            this._surveyLoading ||
+            this.isAutofillPending ||
+            this._submitting
+        );
     }
 
     get isEditLoading() {
         return this._editState === 'loading';
     }
     get canRetryEdit() {
-        return this._editState === 'error';
+        return this._editState === 'error' && !this._editConfigurationError;
     }
     get editError() {
+        if (this._editConfigurationError) return this._editConfigurationError;
         if (this._editState === 'missingRecord')
-            return 'This form needs an existing record. Open it from a record page or record link.';
+            return 'This form needs a valid existing record ID. A current-record expression requires a record page.';
         if (this._editState === 'error')
             return 'Could not load this record. Retry to continue.';
         return null;
@@ -1653,11 +1790,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // and walks the SPEC for mappings; never guest (guard in _apply)
             meta.recordId = this._recordCtx;
         } else if (this._editRecordId) {
-            // Edit mode: the record this form UPDATES. The server re-checks
-            // that the spec really is saveMode:'update' and that the id is the
-            // right object, and `update as user` means this id grants the
-            // caller nothing their own permissions did not already allow.
-            meta.recordId = this._editRecordId;
+            // The explicit edit target selects update. Apex validates its
+            // object and enforces the running user's access.
+            meta.existingRecordId = this._editRecordId;
         }
         const payload = { answers, repeats, meta };
         if (files.length) {

@@ -64,7 +64,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function mount(spec = EDIT_SPEC, props = {}) {
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
-    el.recordId = RECORD;
+    el.existingRecordId = RECORD;
     el.objectApiName = 'Contact';
     Object.assign(el, props);
     el.spec = JSON.parse(JSON.stringify(spec));
@@ -153,7 +153,7 @@ describe('c-final-form-viewer record edit mode', () => {
         expect(el.answers.el_title).toBe('First');
     });
 
-    it('does NOT arm for a create-mode form, even on a record page', async () => {
+    it('edits when explicitly configured even if the saved spec says create', async () => {
         const createSpec = JSON.parse(JSON.stringify(EDIT_SPEC));
         createSpec.form.saveMode = 'create';
 
@@ -161,7 +161,7 @@ describe('c-final-form-viewer record edit mode', () => {
         await flush();
         await flush();
 
-        expect(editSource(el)).toBeNull();
+        expect(editSource(el).recordId).toBe(RECORD);
     });
 
     // The Studio preview and authoring canvas render this same component. If

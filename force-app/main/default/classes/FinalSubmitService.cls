@@ -120,13 +120,19 @@ public inherited sharing class FinalSubmitService {
             }
         }
 
-        // ---- EDIT MODE (IMPL_PLAN_RECORD_PAGE_EDIT Slice 3) -----------------
-        // Until now `saveMode` was a fully specced word this file never read:
-        // the spec allowed it, both validators honoured it, the guest
-        // controller refused it — and every internal submit inserted anyway.
-        // This is where it finally means something.
-        String saveMode = (String) form.get('saveMode');
-        Boolean isUpdate = saveMode == 'update';
+        // Runtime intent comes from the explicit edit target, never the
+        // authoring saveMode hint. Client IDs still grant no permissions.
+        Map<String, Object> meta = asMap(payload.get('meta'));
+        Object requestedId = meta == null ? null : meta.get('existingRecordId');
+        Boolean isUpdate =
+            requestedId != null &&
+            (!(requestedId instanceof String) ||
+            !String.isBlank((String) requestedId));
+        if (!String.isBlank(getStr(meta, 'recordId'))) {
+            throw new AuraHandledException(
+                'Use existingRecordId to select the record to edit.'
+            );
+        }
         Id existingId = null;
         if (isUpdate) {
             // Belt to FinalGuestController's brace (it refuses an update spec
@@ -134,11 +140,10 @@ public inherited sharing class FinalSubmitService {
             if (mode == Posture.GUEST) {
                 throw new AuraHandledException('This form is not available.');
             }
-            Map<String, Object> meta = asMap(payload.get('meta'));
-            existingId = meta == null ? null : idOrNull(meta.get('recordId'));
+            existingId = idOrNull(requestedId);
             if (existingId == null) {
                 throw new AuraHandledException(
-                    'This form edits an existing record, but no record was provided.'
+                    'The existing record ID is invalid.'
                 );
             }
             // A client-supplied id cannot be trusted to be the right SHAPE.
@@ -609,6 +614,8 @@ public inherited sharing class FinalSubmitService {
      *  pick the value column from the JSON value's own type first, then the
      *  element's declared kind. Unparseable claims fall back to text —
      *  never a crash, never a dropped answer. */
+    // Failed typed parsing intentionally falls through to the text fallback.
+    @SuppressWarnings('PMD.EmptyCatchBlock')
     private static void writeTypedValue(
         Form_Response_Answer__c row,
         Map<String, Object> el,
@@ -1289,7 +1296,7 @@ public inherited sharing class FinalSubmitService {
     /**
      * Edit-mode DML. `update as user` is the whole security story for a
      * client-supplied record id: the caller can only modify records their own
-     * CRUD/FLS/sharing already permits, so a hand-crafted `meta.recordId`
+     * CRUD/FLS/sharing already permits, so a hand-crafted `meta.existingRecordId`
      * buys them nothing they did not already have.
      *
      * Owner ruling D1 (2026-09-08): LAST WRITE WINS. There is deliberately no
