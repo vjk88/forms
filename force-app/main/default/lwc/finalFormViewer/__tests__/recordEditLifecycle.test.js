@@ -64,7 +64,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function mount(spec = EDIT_SPEC, props = {}) {
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
-    el.recordId = RECORD;
+    el.existingRecordId = RECORD;
     el.objectApiName = 'Contact';
     Object.assign(el, props);
     el.spec = JSON.parse(JSON.stringify(spec));
@@ -111,7 +111,7 @@ describe('review: record edit lifecycle regressions', () => {
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
         });
-        el.recordId = RECORD;
+        el.existingRecordId = RECORD;
         el.objectApiName = 'Contact';
         el.versionId = 'a0Vtest';
         document.body.appendChild(el);
@@ -142,7 +142,7 @@ describe('review: record edit lifecycle regressions', () => {
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
         });
-        el.recordId = RECORD;
+        el.existingRecordId = RECORD;
         el.objectApiName = 'Contact';
         el.versionId = 'a0Vtest';
         document.body.appendChild(el);
@@ -150,7 +150,7 @@ describe('review: record edit lifecycle regressions', () => {
         await flush();
         loadRecord(el, { Title: 'Record A' });
         await flush();
-        el.recordId = '003000000000002AAA';
+        el.existingRecordId = '003000000000002AAA';
         await flush();
         await flush();
         loadRecord(el, { Title: 'Record B' });
@@ -158,7 +158,8 @@ describe('review: record edit lifecycle regressions', () => {
         nav(el).dispatchEvent(new CustomEvent('submit'));
         await flush();
         expect(
-            JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta.recordId
+            JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta
+                .existingRecordId
         ).toBe('003000000000002AAA');
     });
     it('starts Autofill for a lookup hydrated from the existing record', async () => {
@@ -246,7 +247,7 @@ async function published(props = {}) {
     getSpec.mockResolvedValue(JSON.stringify(EDIT_SPEC));
     submitForm.mockResolvedValue({ recordId: RECORD });
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
-    el.recordId = RECORD;
+    el.existingRecordId = RECORD;
     el.objectApiName = 'Contact';
     el.versionId = 'a0Vtest';
     Object.assign(el, props);
@@ -317,33 +318,33 @@ describe('record lifecycle boundaries', () => {
         expect(el.answers.el_title).toBeNull();
         expect(el.answers.el_dept).toBe('Unassigned');
     });
-    it('blocks a missing ID, handles a late ID, and clears the previous answers when removed', async () => {
-        const el = await published({ recordId: null });
+    it('creates with a blank ID, edits with a late ID, and resets on removal', async () => {
+        const el = await published({ existingRecordId: null });
         expect(editSource(el)).toBeNull();
-        expect(
-            el.shadowRoot.querySelector('[role="alert"]').textContent
-        ).toContain('existing record');
-        nav(el).dispatchEvent(new CustomEvent('submit'));
-        await flush();
-        expect(submitForm).not.toHaveBeenCalled();
-        el.recordId = RECORD;
+        expect(el.shadowRoot.querySelector('[role="alert"]')).toBeNull();
+        el.existingRecordId = RECORD;
         await flush();
         loadRecord(el, { Title: 'A' });
         await flush();
-        el.recordId = null;
+        el.existingRecordId = null;
+        await flush();
         await flush();
         expect(el.answers.el_title).toBeUndefined();
         nav(el).dispatchEvent(new CustomEvent('submit'));
         await flush();
-        expect(submitForm).not.toHaveBeenCalled();
+        expect(submitForm).toHaveBeenCalledTimes(1);
+        expect(
+            JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta
+                .existingRecordId
+        ).toBeUndefined();
     });
     it('handles URL-only record changes without fetching the same spec again', async () => {
-        const el = await published({ recordId: null });
-        CurrentPageReference.emit({ state: { c__recordId: RECORD } });
+        const el = await published({ existingRecordId: null });
+        CurrentPageReference.emit({ state: { c__existingRecordId: RECORD } });
         await flush();
         loadRecord(el, { Title: 'A' });
         await flush();
-        CurrentPageReference.emit({ state: { c__recordId: B } });
+        CurrentPageReference.emit({ state: { c__existingRecordId: B } });
         await flush();
         expect(editSource(el).recordId).toBe(B);
         expect(el.answers.el_title).toBeUndefined();
@@ -352,7 +353,8 @@ describe('record lifecycle boundaries', () => {
         nav(el).dispatchEvent(new CustomEvent('submit'));
         await flush();
         expect(
-            JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta.recordId
+            JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta
+                .existingRecordId
         ).toBe(B);
         expect(getSpec).toHaveBeenCalledTimes(1);
     });
@@ -361,9 +363,9 @@ describe('record lifecycle boundaries', () => {
         await flush();
         await flush();
         const old = identity(editSource(el));
-        el.recordId = B;
+        el.existingRecordId = B;
         await flush();
-        el.recordId = RECORD;
+        el.existingRecordId = RECORD;
         await flush();
         const src = editSource(el);
         src.dispatchEvent(
@@ -380,7 +382,7 @@ describe('record lifecycle boundaries', () => {
         loadRecord(el, { Title: 'Current A' });
         await flush();
         change(el, 'My edit');
-        el.recordId = RECORD;
+        el.existingRecordId = RECORD;
         await flush();
         expect(el.answers.el_title).toBe('My edit');
     });
@@ -430,7 +432,7 @@ describe('record lifecycle boundaries', () => {
             );
             nav(el).dispatchEvent(new CustomEvent('submit'));
             await flush();
-            el.recordId = B;
+            el.existingRecordId = B;
             await flush();
             if (outcome === 'success') resolve({ recordId: RECORD });
             else reject({ body: { message: 'Old failure' } });
@@ -445,7 +447,7 @@ describe('record lifecycle boundaries', () => {
             await flush();
             expect(
                 JSON.parse(submitForm.mock.calls[1][0].payloadJson).meta
-                    .recordId
+                    .existingRecordId
             ).toBe(B);
         }
     );
@@ -552,7 +554,7 @@ describe('edit request invalidation during retry and Autofill', () => {
         loadRecord(el, { Title: null, AccountId: '001000000000001AAA' });
         await flush();
         const old = identity(ruleSource(el));
-        el.recordId = B;
+        el.existingRecordId = B;
         await flush();
         loadRecord(el, { Title: null, AccountId: '001000000000002AAA' });
         await flush();
@@ -582,7 +584,7 @@ describe('edit request invalidation during retry and Autofill', () => {
         );
         el.shadowRoot.querySelector('lightning-button').click();
         await flush();
-        el.recordId = B;
+        el.existingRecordId = B;
         await flush();
         const next = identity(editSource(el));
         finish();
@@ -628,7 +630,7 @@ describe('loading presentation and previous-record failure feedback', () => {
         loadRecord(el, { Title: 'Loaded' });
         await flush();
         expect(surface().hidden).toBe(false);
-        el.recordId = B;
+        el.existingRecordId = B;
         await flush();
         expect(surface().hidden).toBe(true);
     });
@@ -645,7 +647,7 @@ describe('loading presentation and previous-record failure feedback', () => {
         );
         nav(el).dispatchEvent(new CustomEvent('submit'));
         await flush();
-        el.recordId = B;
+        el.existingRecordId = B;
         await flush();
         loadRecord(el, { Title: 'B' });
         await flush();
@@ -662,5 +664,110 @@ describe('loading presentation and previous-record failure feedback', () => {
         expect(el.answers.el_title).toBe('B');
         expect(el.submitError).toBeUndefined();
         expect(el.shadowRoot.querySelector('c-final-after-submit')).toBeNull();
+    });
+});
+
+describe('explicit record configuration', () => {
+    afterEach(() => {
+        document.body.replaceChildren();
+        jest.clearAllMocks();
+    });
+
+    it.each(['recordId', '{!recordId}'])(
+        'resolves %s without a public recordId property',
+        async (expression) => {
+            const el = await published({ existingRecordId: expression });
+            expect(editSource(el)).toBeNull();
+            nav(el).dispatchEvent(new CustomEvent('submit'));
+            await flush();
+            expect(submitForm).not.toHaveBeenCalled();
+            CurrentPageReference.emit({
+                type: 'standard__recordPage',
+                attributes: { recordId: RECORD, objectApiName: 'Contact' }
+            });
+            await flush();
+            expect(editSource(el).recordId).toBe(RECORD);
+            loadRecord(el, { Title: 'A' });
+            await flush();
+            change(el, 'Manual');
+            CurrentPageReference.emit({
+                type: 'standard__recordPage',
+                attributes: { recordId: RECORD, objectApiName: 'Contact' }
+            });
+            await flush();
+            expect(el.answers.el_title).toBe('Manual');
+            CurrentPageReference.emit({
+                type: 'standard__recordPage',
+                attributes: { recordId: B, objectApiName: 'Contact' }
+            });
+            await flush();
+            expect(el.answers.el_title).toBeUndefined();
+            expect(editSource(el).recordId).toBe(B);
+            CurrentPageReference.emit({
+                type: 'standard__app',
+                attributes: {}
+            });
+            await flush();
+            expect(editSource(el)).toBeNull();
+            expect(
+                el.shadowRoot.querySelector('[role="alert"]').textContent
+            ).toContain('existing record');
+        }
+    );
+
+    it('ignores implicit page context, legacy URLs, and survey IDs for ordinary forms', async () => {
+        const el = await published({
+            existingRecordId: null,
+            surveyContextRecordId: RECORD
+        });
+        CurrentPageReference.emit({
+            type: 'standard__recordPage',
+            attributes: { recordId: RECORD },
+            state: { c__recordId: RECORD }
+        });
+        await flush();
+        expect(editSource(el)).toBeNull();
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        expect(
+            JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta
+                .existingRecordId
+        ).toBeUndefined();
+    });
+
+    it('gives the explicit attribute precedence over the URL fallback', async () => {
+        const el = await published();
+        CurrentPageReference.emit({ state: { c__existingRecordId: B } });
+        await flush();
+        expect(editSource(el).recordId).toBe(RECORD);
+        el.existingRecordId = '';
+        await flush();
+        expect(editSource(el).recordId).toBe(B);
+    });
+
+    it('blocks malformed IDs instead of creating', async () => {
+        const el = await published({ existingRecordId: 'not-an-id' });
+        expect(editSource(el)).toBeNull();
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        expect(submitForm).not.toHaveBeenCalled();
+    });
+
+    it('blocks editing repeats before reading or submitting', async () => {
+        const spec = JSON.parse(JSON.stringify(EDIT_SPEC));
+        spec.pages[0].sections[0].repeat = {
+            childObject: 'Case',
+            relationshipField: 'ContactId'
+        };
+        const el = mount(spec);
+        await flush();
+        await flush();
+        expect(editSource(el)).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('[role="alert"]').textContent
+        ).toContain('repeating sections');
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        expect(submitForm).not.toHaveBeenCalled();
     });
 });

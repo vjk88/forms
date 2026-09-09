@@ -1,5 +1,7 @@
 # IMPL_PLAN — Forms on record pages, editing the record they sit on
 
+> Current contract (2026-09-09): [Explicit record context](EXPLICIT_RECORD_CONTEXT.md) supersedes the `recordId` / `saveMode` activation rules below. The lifecycle protections still apply.
+
 **Status (2026-09-08):** **Slices 1, 2 and 3 SHIPPED and org-verified end to end** (PRs #247, #248).
 A form can be placed on a record page, loads that record's current values, and saves changes back to
 it. **Slice 4 (the authoring toggle) is NOT built — so no author can turn this on yet**; every

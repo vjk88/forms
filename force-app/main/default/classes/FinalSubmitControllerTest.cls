@@ -464,12 +464,7 @@ private class FinalSubmitControllerTest {
         );
     }
 
-    // ===== EDIT MODE (IMPL_PLAN_RECORD_PAGE_EDIT Slice 3) =====================
-    // `saveMode` was a fully specced word this service never read: the spec
-    // allowed it, both validators honoured it, the guest controller refused
-    // it — and every internal submit inserted anyway. These cover the branch
-    // that finally makes it mean something.
-
+    // Explicit edit targets override the legacy authoring saveMode hint.
     private static Id makeActiveUpdateVersion(
         String targetObject,
         String pagesJson
@@ -502,7 +497,7 @@ private class FinalSubmitControllerTest {
     private static String editPayload(Id recordId, String title) {
         Map<String, Object> meta = new Map<String, Object>();
         if (recordId != null) {
-            meta.put('recordId', recordId);
+            meta.put('existingRecordId', recordId);
         }
         return JSON.serialize(
             new Map<String, Object>{
@@ -573,28 +568,147 @@ private class FinalSubmitControllerTest {
     }
 
     @IsTest
-    static void updateModeRefusesWhenNoRecordWasProvided() {
-        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
+    static void blankExistingIdCreatesDespiteLegacyUpdateHint() {
+        String pages = EDIT_PAGES.replace('Title', 'LastName');
+        Id versionId = makeActiveUpdateVersion('Contact', pages);
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            versionId,
+            editPayload(null, 'Created')
+        );
+        Test.stopTest();
+        Assert.areEqual(
+            'Created',
+            [SELECT LastName FROM Contact WHERE Id = :res.recordId].LastName,
+            'A blank explicit target creates, regardless of the saved hint'
+        );
+    }
 
-        Boolean threw = false;
+    @IsTest
+    static void explicitIdUpdatesDespiteCreateHint() {
+        Contact c = new Contact(LastName = 'Explicit', Title = 'Before');
+        insert c;
+        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
+        Form_Version__c v = [
+            SELECT Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Id = :versionId
+        ];
+        v.Spec_JSON__c = v.Spec_JSON__c.replace(
+            '"saveMode":"update"',
+            '"saveMode":"create"'
+        );
+        update v;
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            versionId,
+            editPayload(c.Id, 'After')
+        );
+        Test.stopTest();
+        Assert.areEqual(c.Id, res.recordId, 'Explicit target selects update');
+        Assert.areEqual(
+            'After',
+            [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
+            'Record updated'
+        );
+    }
+
+    @IsTest
+    static void malformedExistingIdDoesNotCreate() {
+        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
         Test.startTest();
         try {
             FinalSubmitController.submitForm(
                 null,
                 versionId,
-                editPayload(null, 'orphan')
+                '{"answers":{"el_title":"Invalid"},"meta":{"existingRecordId":"{!recordId}"}}'
             );
-        } catch (Exception e) {
-            threw = true;
+            Assert.fail('An unresolved expression must be rejected');
+        } catch (AuraHandledException expected) {
+            Assert.areEqual(
+                0,
+                [SELECT COUNT() FROM Contact WHERE Title = 'Invalid'],
+                'No insert on invalid ID'
+            );
         }
         Test.stopTest();
+    }
 
-        Assert.isTrue(threw, 'edit mode with no record must be refused');
-        Assert.areEqual(
-            0,
-            [SELECT COUNT() FROM Contact WHERE Title = 'orphan'],
-            'an edit form must never quietly insert instead'
+    @IsTest
+    static void nonStringExistingIdDoesNotCreate() {
+        Id versionId = makeActiveUpdateVersion(
+            'Contact',
+            EDIT_PAGES.replace('Title', 'LastName')
         );
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                null,
+                versionId,
+                '{"answers":{"el_title":"Invalid"},"meta":{"existingRecordId":42}}'
+            );
+            Assert.fail('Non-string IDs must be rejected');
+        } catch (AuraHandledException expected) {
+            Assert.areEqual(
+                0,
+                [SELECT COUNT() FROM Contact WHERE LastName = 'Invalid'],
+                'No insert on invalid ID'
+            );
+        }
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void legacyRecordIdDoesNotSilentlyCreate() {
+        Contact c = new Contact(LastName = 'Legacy', Title = 'Before');
+        insert c;
+        Id versionId = makeActiveUpdateVersion('Contact', EDIT_PAGES);
+        String payload = editPayload(c.Id, 'After')
+            .replace('existingRecordId', 'recordId');
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(null, versionId, payload);
+            Assert.fail('Legacy callers must migrate explicitly');
+        } catch (AuraHandledException expected) {
+            Assert.areEqual(
+                'Before',
+                [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
+                'Legacy request did not update'
+            );
+        }
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void guestCannotSupplyAnEditTarget() {
+        Contact c = new Contact(LastName = 'Protected', Title = 'Before');
+        insert c;
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            '{"form":{"targetObject":"Contact","saveMode":"create"},"pages":' +
+                EDIT_PAGES +
+                '}'
+        );
+        Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+            editPayload(c.Id, 'After')
+        );
+        Test.startTest();
+        try {
+            FinalSubmitService.run(
+                spec,
+                payload,
+                FinalSubmitService.Posture.GUEST
+            );
+            Assert.fail('Guest edit targets must be rejected');
+        } catch (AuraHandledException expected) {
+            Assert.areEqual(
+                'Before',
+                [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
+                'Guest did not update'
+            );
+        }
+        Test.stopTest();
     }
 
     @IsTest
