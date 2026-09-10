@@ -23,6 +23,25 @@ No production `stagedV1` authoring toggle, respondent session endpoints, Forms r
 
 The plan explicitly says to prove the native transport before the full editor, and to stop if the proof fails. Its real LWR/ContentVersion behavior cannot be established locally. Preparing this first batch does **not** complete guest uploads or close the pending-work item.
 
+## Running the tests costs org file-publication budget
+
+**Measured 2026-09-10: one full `FinalUploadProofTest` run consumes 222 of the org's 2500/day
+`ContentPublicationLimit`** — every guarded row is a real file publication.
+
+It was **~502** as first written: two tests each inserted 251 files. Five validation runs exhausted
+the whole org quota (it read `remaining = -10`), after which **unrelated tests began failing with
+`ContentPublication Limit exceeded` and coverage was under-reported across every class** — the
+"67% controller coverage" that appeared to block this batch was partly that artifact. File uploads
+elsewhere in the org fail too while the quota is spent.
+
+Reduced by making the unmarked pass-through test 5 rows instead of 251 (with no marker and no
+enrolled guest the guard returns before any per-row work, so 251 proved nothing 5 does not) and the
+cross-chunk test 210 instead of 251 (the trigger chunks at 200; ten rows in the second chunk is
+enough). The suite now runs ~11 times a day instead of ~4.
+
+**Check `sf org list limits` before re-running, and treat any coverage or failure number from a
+depleted org as meaningless.**
+
 ## Owner-controlled installation
 
 Use [the targeted manifest](../../manifest/guest-upload-proof.xml) only after reviewing this batch.

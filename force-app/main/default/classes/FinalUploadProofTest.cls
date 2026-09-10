@@ -356,20 +356,30 @@ private with sharing class FinalUploadProofTest {
         );
     }
 
+    /**
+     * Unmarked uploads are untouched.
+     *
+     * This used to insert 251 files to claim it proved "across trigger
+     * chunks". It did not: with no marker and no enrolled guest the guard
+     * collects no candidates and returns before doing any per-row work, so
+     * five rows prove exactly what 251 proved — at a fiftieth of the cost.
+     * Cross-chunk behaviour is proven where the guard actually has state, in
+     * bulkGuardProcessesDistinctGrantsAcrossTriggerChunks below.
+     */
     @IsTest
-    static void bulkOrdinaryFilesRemainUnaffected() {
+    static void ordinaryFilesRemainUnaffected() {
         configure();
         List<ContentVersion> versions = new List<ContentVersion>();
-        for (Integer index = 0; index < 251; index++) {
+        for (Integer index = 0; index < 5; index++) {
             versions.add(file(null, 'ordinary-' + index + '.txt'));
         }
         Test.startTest();
         insert versions;
         Test.stopTest();
         Assert.areEqual(
-            251,
+            5,
             [SELECT COUNT() FROM ContentVersion],
-            'Unmarked authenticated uploads retain existing behavior across trigger chunks.'
+            'Unmarked authenticated uploads retain existing behavior.'
         );
     }
 
@@ -377,9 +387,14 @@ private with sharing class FinalUploadProofTest {
     static void bulkGuardProcessesDistinctGrantsAcrossTriggerChunks() {
         configure();
         FinalUploadProofStore.lockLedger(true);
+        // 210, not 251: the trigger chunks at 200, so this still spans two
+        // chunks with ten rows in the second — enough to catch state that
+        // leaks or resets between them. Every row here is a real file
+        // publication against the org's 2500/day ContentPublicationLimit,
+        // so the count is chosen deliberately, not generously.
         List<Final_Upload_Proof__c> grants = new List<Final_Upload_Proof__c>();
         List<ContentVersion> versions = new List<ContentVersion>();
-        for (Integer index = 0; index < 251; index++) {
+        for (Integer index = 0; index < 210; index++) {
             String token = FinalUploadCapability.mint();
             grants.add(
                 new Final_Upload_Proof__c(
@@ -399,7 +414,7 @@ private with sharing class FinalUploadProofTest {
         insert versions;
         Test.stopTest();
         Assert.areEqual(
-            251,
+            210,
             [
                 SELECT COUNT()
                 FROM Final_Upload_Proof__c
@@ -408,7 +423,7 @@ private with sharing class FinalUploadProofTest {
             'Every independent grant accepted once.'
         );
         Assert.areEqual(
-            251,
+            210,
             [
                 SELECT COUNT()
                 FROM ContentVersion
