@@ -1,0 +1,94 @@
+<template>
+    <lightning-card title="Upload transport proof">
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            <p class="slds-m-bottom_small">
+                Sandbox test harness. Files stay staged for operator inspection;
+                this does not submit a form.
+            </p>
+            <template lwc:if={isOperator}>
+                <lightning-input
+                    data-id="actor"
+                    label="Upload actor User ID"
+                    value={actorUserId}
+                    onchange={handleActor}
+                    disabled={busy}
+                ></lightning-input>
+                <lightning-input
+                    data-id="size"
+                    type="number"
+                    label="Maximum file bytes (up to 25 MiB)"
+                    value={maxBytes}
+                    min="1"
+                    max="26214400"
+                    step="1"
+                    onchange={handleSize}
+                    disabled={busy}
+                ></lightning-input>
+                <lightning-button
+                    data-id="create"
+                    label="Issue test slot"
+                    onclick={handleCreate}
+                    disabled={busy}
+                    class="slds-m-top_small"
+                ></lightning-button>
+            </template>
+            <lightning-textarea
+                data-id="grant"
+                label="Temporary test grant"
+                value={grantText}
+                onchange={handleGrantText}
+                max-length="2048"
+                placeholder="Paste the grant from the proof operator"
+            ></lightning-textarea>
+            <p class="slds-text-body_small slds-m-bottom_small">
+                Do not put the grant in URLs, logs, screenshots, saved
+                documents, or shared messages.
+            </p>
+            <lightning-button
+                data-id="use"
+                label="Use test slot"
+                onclick={handleUseGrant}
+                disabled={busy}
+            ></lightning-button>
+            <lightning-button
+                data-id="reset"
+                label="Clear browser state"
+                onclick={handleReset}
+                class="slds-m-left_small"
+            ></lightning-button>
+            <template lwc:if={isOperator}>
+                <lightning-button
+                    data-id="inspect"
+                    label="Inspect ledger"
+                    onclick={handleInspect}
+                    disabled={busy}
+                    class="slds-m-left_small"
+                ></lightning-button>
+            </template>
+            <template lwc:if={activeGrant}>
+                <p class="slds-m-top_medium">{sizeGuidance}</p>
+                <template for:each={nativeInstances} for:item="instance">
+                    <lightning-file-upload
+                        key={instance.generation}
+                        data-generation={instance.generation}
+                        label="Upload one test file"
+                        accept={accept}
+                        file-field-name={markerField}
+                        file-field-value={slotToken}
+                        onuploadfinished={handleUploadFinished}
+                    ></lightning-file-upload>
+                </template>
+            </template>
+            <p role="status" aria-live="polite" class="slds-m-top_small">
+                {message}
+            </p>
+            <template lwc:if={inspection}>
+                <lightning-textarea
+                    label="Operator inspection result"
+                    value={inspection}
+                    read-only
+                ></lightning-textarea>
+            </template>
+        </div>
+    </lightning-card>
+</template>

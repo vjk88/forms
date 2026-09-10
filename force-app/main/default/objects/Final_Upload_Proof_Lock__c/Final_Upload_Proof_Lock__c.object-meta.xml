@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+    >Sandbox-only native upload proof ledger. No respondent CRUD or production form integration.</description>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Upload Proof Lock</label>
+    <nameField><displayFormat>UP-{000000}</displayFormat><label
+        >Upload Proof Lock Number</label><type>AutoNumber</type></nameField>
+    <pluralLabel>Upload Proof Lock Records</pluralLabel>
+    <sharingModel>Private</sharingModel>
+</CustomObject>

@@ -1,9 +1,13 @@
 # Guest uploads and larger attachments: technical implementation plan
 
-**Status:** Proposed design; no application code or metadata implemented by this document.  
+**Status:** Batch 1 transport-proof code prepared locally on 2026-09-09; not deployed or org-verified. Batches 2–7 remain pending.  
 **Date:** 2026-09-08.  
 **Audience:** Developer implementing the feature, with explicit contracts and verification gates.  
 **Scope:** Guest uploads on the published Experience Cloud LWR form, larger uploads for authenticated respondents on supported hosts, final submission, retries, quotas, cleanup, and authoring controls.
+
+See [the transport-proof handoff](./GUEST_UPLOAD_PROOF_HANDOFF.md) for the actual first batch,
+targeted metadata manifest, local checks, and the owner-run org gate. The prototype is
+isolated from the production form pipeline and does not enable staged respondent uploads.
 
 This is Slice 2 of [the existing file-upload plan](./IMPL_PLAN_FILE_UPLOAD.md). The owner requested this design; it does not record an implementation, deployment, or production-enablement approval. Existing internal upload behavior remains available during migration.
 
