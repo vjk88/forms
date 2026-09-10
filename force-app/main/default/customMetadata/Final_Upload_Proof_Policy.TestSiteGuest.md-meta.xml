@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>TestSite guest proof policy</label>
+    <protected>false</protected>
+    <!-- Enrols ONLY the TestSite guest identity. Never populate
+         Actor_User_Id__c as well: `FinalUploadProofPolicy.enabled` treats a
+         populated actor field as the authoritative one and would stop checking
+         the guest id.
+
+         Enrolment means this guest must supply a valid slot for ANY
+         ContentVersion insert, even with admission disabled. Verified safe
+         before enrolling: guest form submissions currently refuse file uploads
+         outright in FinalSubmitService.attachFiles ("This form cannot accept
+         file uploads."), so no existing guest upload path is affected. -->
+    <values>
+        <field>Admission_Enabled__c</field>
+        <value
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xsi:type="xsd:boolean"
+        >true</value>
+    </values>
+    <values>
+        <field>Guest_User_Id__c</field>
+        <value
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xsi:type="xsd:string"
+        >005hk000000aHLhAAM</value>
+    </values>
+</CustomMetadata>
