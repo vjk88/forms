@@ -80,26 +80,63 @@ This is a scoped manifest deployment. Do not use an unscoped deploy. Do not depl
 
 The separate internal controller is custom-permission gated server-side; hiding buttons is not the security boundary. The customer/guest browser does not mint a slot itself in this batch. All grants are operator-issued to keep this incomplete prototype bounded and separate from public form admission.
 
+## GATE RESULT — the transport proof FAILED (2026-09-10)
+
+**A native `lightning-file-upload` cannot pass this guard as written.** The plan says to prove the
+native transport boundary first and stop if it fails. It failed.
+
+Run in the org — deployed, operator enrolled, slot issued, real browser: the uploader reported
+**"Can't upload proof-upload.txt — 0 of 1 file uploaded"**, no `ContentVersion` was created, and the
+grant stayed `RESERVED`.
+
+The cause was isolated server-side with two otherwise identical inserts against valid grants:
+
+| Row                               | Result                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| marker only                       | **accepted**                                                                      |
+| marker + `FirstPublishLocationId` | **refused** — "This upload is not authorized or its slot is no longer available." |
+
+`lightning-file-upload` has to publish the file somewhere. With no `record-id` it still stamps
+`FirstPublishLocationId` (the uploader's own Files), and `FinalUploadProofGuard.beforeInsert` refuses
+any row where that field is set:
+
+```apex
+row.ContentDocumentId != null || row.FirstPublishLocationId != null   ->   refuse(row)
+```
+
+So the guard's "no caller-chosen target" rule and the platform's native uploader are **mutually
+exclusive by construction**. Every native upload is refused — always, not intermittently.
+
+**This is a design decision, not a bug to patch quietly.** The rule exists so an uploader cannot
+choose which business record a file attaches to; that is a real protection and it should not be
+deleted to make a test pass. The narrow amendment worth considering is to permit
+`FirstPublishLocationId` **only when it equals the uploading actor's own User Id** — files land in
+that user's own Files, never on a business record — and keep refusing every other value. That
+preserves the intent and admits native transport. It needs an owner ruling before anyone writes it.
+
+Every remaining check below is untested: the first one is what failed, and the rest are downstream
+of a working upload.
+
 ## Record actual evidence before continuing
 
 All entries start **NOT RUN**. Record real dates/results without capabilities or sensitive filenames. Operator inspection IDs are allowed only in restricted QA evidence, never returned to an anonymous caller.
 
-| Check                                    | Expected result                                                                                                                                        | Status  |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| Authenticated native upload              | READY ledger; correct bytes and exact version; marker cleared; no business target link.                                                                | NOT RUN |
-| Anonymous LWR upload                     | Same metadata invariants, no guest ledger CRUD; inspect the actual default owner and implicit link after commit.                                       | NOT RUN |
-| Customer license native upload           | Operator-issued actor-bound grant works using that customer's ordinary Files transport rights.                                                         | NOT RUN |
-| Exact boundary / one byte over           | Boundary commits; over-limit attempt leaves zero committed version/document and no READY receipt. Query the actual rows.                               | NOT RUN |
-| Unsupported extension                    | Crafted/native attempt fails server-side, even if browser accept filtering is bypassed. No stored file.                                                | NOT RUN |
-| Fabricated / expired / wrong actor grant | Rejected atomically; no receipt or file. Use a second browser signed in as a different user for actor mismatch.                                        | NOT RUN |
-| Same slot concurrently in two browsers   | Exactly one committed document and one READY ledger. A sequential retry is also rejected.                                                              | NOT RUN |
-| Unmarked enrolled guest request          | Remove the marker attributes using a temporary isolated negative-test uploader; native request must fail.                                              | NOT RUN |
-| Admission disabled, enrollment retained  | Old unused grants and unmarked guest attempts both fail. Ordinary unrelated authenticated uploads still work.                                          | NOT RUN |
-| New version / marked update              | Cannot replace the accepted content or edit away protection.                                                                                           | NOT RUN |
-| Marker cleanup lifecycle                 | Raw field null after commit. If after-insert update is incompatible with native transport, stop and amend the design.                                  | NOT RUN |
-| Anonymous readback                       | No anonymous file search/download, public distribution, authoring/ledger access, or unexpected implicit link. Probe from a separate anonymous browser. | NOT RUN |
-| Namespace / ContentVersion validation    | Qualified marker works; required-field/custom validation behavior documented for intended org.                                                         | NOT RUN |
-| Removal/finalization race                | Deferred to the later real session/finalization implementation; this prototype has no removal or submit endpoint.                                      | NOT RUN |
+| Check                                    | Expected result                                                                                                                                        | Status                                            |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| Authenticated native upload              | READY ledger; correct bytes and exact version; marker cleared; no business target link.                                                                | **FAILED 2026-09-10 — see the gate result above** |
+| Anonymous LWR upload                     | Same metadata invariants, no guest ledger CRUD; inspect the actual default owner and implicit link after commit.                                       | NOT RUN                                           |
+| Customer license native upload           | Operator-issued actor-bound grant works using that customer's ordinary Files transport rights.                                                         | NOT RUN                                           |
+| Exact boundary / one byte over           | Boundary commits; over-limit attempt leaves zero committed version/document and no READY receipt. Query the actual rows.                               | NOT RUN                                           |
+| Unsupported extension                    | Crafted/native attempt fails server-side, even if browser accept filtering is bypassed. No stored file.                                                | NOT RUN                                           |
+| Fabricated / expired / wrong actor grant | Rejected atomically; no receipt or file. Use a second browser signed in as a different user for actor mismatch.                                        | NOT RUN                                           |
+| Same slot concurrently in two browsers   | Exactly one committed document and one READY ledger. A sequential retry is also rejected.                                                              | NOT RUN                                           |
+| Unmarked enrolled guest request          | Remove the marker attributes using a temporary isolated negative-test uploader; native request must fail.                                              | NOT RUN                                           |
+| Admission disabled, enrollment retained  | Old unused grants and unmarked guest attempts both fail. Ordinary unrelated authenticated uploads still work.                                          | NOT RUN                                           |
+| New version / marked update              | Cannot replace the accepted content or edit away protection.                                                                                           | NOT RUN                                           |
+| Marker cleanup lifecycle                 | Raw field null after commit. If after-insert update is incompatible with native transport, stop and amend the design.                                  | NOT RUN                                           |
+| Anonymous readback                       | No anonymous file search/download, public distribution, authoring/ledger access, or unexpected implicit link. Probe from a separate anonymous browser. | NOT RUN                                           |
+| Namespace / ContentVersion validation    | Qualified marker works; required-field/custom validation behavior documented for intended org.                                                         | NOT RUN                                           |
+| Removal/finalization race                | Deferred to the later real session/finalization implementation; this prototype has no removal or submit endpoint.                                      | NOT RUN                                           |
 
 READY proves only the implemented metadata checks. Extensions/FileType are not malware inspection. The guard never queries file bodies. Post-insert size rejection does not prevent bytes reaching Salesforce's transport.
 
