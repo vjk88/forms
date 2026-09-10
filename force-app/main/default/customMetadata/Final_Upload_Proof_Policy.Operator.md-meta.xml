@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Operator proof policy</label>
+    <protected>false</protected>
+    <!-- Both identity fields deliberately EMPTY. `FinalUploadProofPolicy.enabled`
+         then admits only `actor == UserInfo.getUserId()` for a non-Guest, i.e.
+         the internal operator issuing a slot to themselves. Populating either
+         field would widen this to a named user or a guest identity — never
+         populate both. -->
+    <values>
+        <field>Admission_Enabled__c</field>
+        <value
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xsi:type="xsd:boolean"
+        >true</value>
+    </values>
+</CustomMetadata>
