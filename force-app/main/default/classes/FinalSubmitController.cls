@@ -18,6 +18,12 @@ public with sharing class FinalSubmitController {
         public Id recordId;
         @AuraEnabled
         public Integer childCount;
+        /** Field-level rejections, so the respondent lands on the field that
+         *  actually failed instead of reading one generic sentence. Null on
+         *  success. Authenticated callers only — the guest controller never
+         *  discloses field detail. */
+        @AuraEnabled
+        public List<FinalSubmitService.FieldError> errors;
     }
 
     @AuraEnabled
@@ -56,6 +62,7 @@ public with sharing class FinalSubmitController {
         SubmitResult res = new SubmitResult();
         res.recordId = outcome.recordId;
         res.childCount = outcome.childCount;
+        res.errors = outcome.errors;
         return res;
     }
 

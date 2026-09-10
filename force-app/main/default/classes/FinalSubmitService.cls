@@ -32,6 +32,51 @@ public inherited sharing class FinalSubmitService {
     public class SubmitOutcome {
         public Id recordId;
         public Integer childCount;
+        /** Populated INSTEAD of recordId when the save was rejected and the
+         *  caller is entitled to field-level detail (never a guest). */
+        public List<FieldError> errors;
+    }
+
+    /**
+     * One rejected write, carrying the fields it blames.
+     *
+     * The old build returned this shape and the respondent landed on the exact
+     * field that failed; the rebuild collapsed every failure into a single
+     * sentence, so a validation rule on one field told the respondent nothing
+     * about which. `fields` may be empty — object-level and cross-field rules
+     * name nothing, and those become a form-level message.
+     */
+    public class FieldError {
+        @AuraEnabled
+        public String message;
+        @AuraEnabled
+        public List<String> fields;
+    }
+
+    /**
+     * DmlException → per-field errors.
+     *
+     * `getDmlFieldNames` (NOT `getDmlFields`, which returns SObjectField
+     * tokens) gives the API names the spec already binds, so the client maps
+     * them straight to elements with no describe call.
+     */
+    private static List<FieldError> dmlErrors(DmlException e) {
+        List<FieldError> out = new List<FieldError>();
+        for (Integer i = 0; i < e.getNumDml(); i++) {
+            FieldError fe = new FieldError();
+            fe.message = e.getDmlMessage(i);
+            fe.fields = e.getDmlFieldNames(i) == null
+                ? new List<String>()
+                : e.getDmlFieldNames(i);
+            out.add(fe);
+        }
+        if (out.isEmpty()) {
+            FieldError fe = new FieldError();
+            fe.message = e.getMessage();
+            fe.fields = new List<String>();
+            out.add(fe);
+        }
+        return out;
     }
 
     /**
@@ -205,6 +250,19 @@ public inherited sharing class FinalSubmitService {
         } catch (AuraHandledException e) {
             Database.rollback(sp);
             throw e;
+        } catch (DmlException e) {
+            Database.rollback(sp);
+            // A GUEST is told nothing about which field of which object
+            // rejected the write — a public form must not become a probe for
+            // an org's validation rules. Guests keep the flat refusal.
+            if (mode == Posture.GUEST) {
+                throw new AuraHandledException(
+                    'Your response could not be saved. Nothing was recorded.'
+                );
+            }
+            SubmitOutcome res = new SubmitOutcome();
+            res.errors = dmlErrors(e);
+            return res;
         } catch (Exception e) {
             Database.rollback(sp);
             throw new AuraHandledException(

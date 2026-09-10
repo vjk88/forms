@@ -1,7 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import { notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
-import Toast from 'lightning/toast';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -404,6 +403,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _editReaders = [];
     _editStartedRevisions = {};
     _submitGeneration = 0;
+    /** elementId -> [message] from the SERVER's rejection of the last submit.
+     *  Separate from client validation so the two can coexist on one field. */
+    _serverFieldErrors = {};
 
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
@@ -1495,14 +1497,26 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                 // repeat entries answer as ONE consolidated
                                 // value — per-entry failure display is
                                 // DEFERRED, so never annotate inside
+                                // Server rejections bypass the reveal gate:
+                                // the respondent has already submitted, so
+                                // there is nothing left to "reveal", and a
+                                // form with no client validation at all must
+                                // still be able to show what the save refused.
+                                const fromServer =
+                                    this._serverFieldErrors[el.id] || [];
                                 if (!reveal || s.repeat) {
-                                    return base;
+                                    return fromServer.length
+                                        ? { ...base, errors: fromServer }
+                                        : base;
                                 }
-                                const errors = validateElement(
-                                    base,
-                                    this.answers[el.id],
-                                    ctx
-                                );
+                                const errors = [
+                                    ...validateElement(
+                                        base,
+                                        this.answers[el.id],
+                                        ctx
+                                    ),
+                                    ...fromServer
+                                ];
                                 return errors.length
                                     ? { ...base, errors }
                                     : base;
@@ -1526,6 +1540,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     handleValueChange(event) {
         const { elementId, value } = event.detail;
+        // A server rejection describes the value that was SENT. The moment the
+        // respondent changes that field the message is about something that no
+        // longer exists, so it goes — otherwise they fix the field and the
+        // complaint stays on screen.
+        if (this._serverFieldErrors[elementId]) {
+            const next = { ...this._serverFieldErrors };
+            delete next[elementId];
+            this._serverFieldErrors = next;
+        }
         if (this._autofillSession) {
             onManualEdit(this._autofillSession, elementId, value);
         }
@@ -1658,6 +1681,118 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._reveal(typeof index === 'number' ? index : this.pageIndex);
     }
 
+    /**
+     * Server rejection -> the exact field that failed.
+     *
+     * The old build did this and the rebuild lost it: every save failure
+     * collapsed into one sentence, so a validation rule on a single field told
+     * the respondent nothing about which field, or which page it was on.
+     *
+     * `fields` comes from `DmlException.getDmlFields`, which is already the API
+     * names the spec binds, so mapping is a straight lookup. Anything the
+     * server blames on no field we render — an object-level or cross-field
+     * rule — has nowhere to land and stays by the Save button.
+     */
+    /**
+     * Field identity, normalised — because `DmlException.getDmlFieldNames`
+     * does NOT answer consistently, and this cost a false-green Apex test:
+     *
+     *   anonymous Apex / Apex test  ->  "LastName"    (API name)
+     *   live LWC request            ->  "Last Name"   (the LABEL)
+     *
+     * Verified in this org 2026-09-09 on the same failing insert. A test that
+     * asserts the API name therefore passes while the real submit maps
+     * nothing. Lowercasing, dropping a `__c`/`__r` suffix and stripping every
+     * non-alphanumeric collapses both spellings — and collapses a custom
+     * field's API name onto its label too (`Applicant_Name__c` and
+     * `Applicant Name` both become `applicantname`).
+     */
+    _normalizeFieldKey(value) {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/__(c|r)$/, '')
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    _applyServerErrors(errors) {
+        const byField = new Map();
+        const index = (key, id) => {
+            if (!key) {
+                return;
+            }
+            if (!byField.has(key)) {
+                byField.set(key, []);
+            }
+            if (!byField.get(key).includes(id)) {
+                byField.get(key).push(id);
+            }
+        };
+        for (const page of (this._editSpec && this._editSpec.pages) || []) {
+            for (const section of page.sections || []) {
+                for (const el of section.elements || []) {
+                    const field = el && el.binding && el.binding.field;
+                    if (!field || !el.id) {
+                        continue;
+                    }
+                    // Indexed under BOTH the API name and the element's label,
+                    // because the platform does not answer consistently — see
+                    // `_normalizeFieldKey`.
+                    index(this._normalizeFieldKey(field), el.id);
+                    index(this._normalizeFieldKey(el.label), el.id);
+                }
+            }
+        }
+
+        const mapped = {};
+        const unmapped = [];
+        for (const err of errors) {
+            const message = (err && err.message) || 'This answer was rejected.';
+            const targets = [];
+            for (const field of (err && err.fields) || []) {
+                for (const id of byField.get(this._normalizeFieldKey(field)) ||
+                    []) {
+                    targets.push(id);
+                }
+            }
+            if (!targets.length) {
+                unmapped.push(message);
+                continue;
+            }
+            for (const id of targets) {
+                if (!mapped[id]) {
+                    mapped[id] = [];
+                }
+                mapped[id].push(message);
+            }
+        }
+
+        this._serverFieldErrors = mapped;
+        const anyField = Object.keys(mapped).length > 0;
+        // Something ALWAYS shows next to Save, even when every message also
+        // landed on a field — the respondent pressed a button there and needs
+        // an answer there.
+        this._submitError = unmapped.length
+            ? unmapped.join(' ')
+            : anyField
+              ? 'Some answers were not accepted. See the highlighted fields.'
+              : 'Your response could not be saved. Please try again.';
+
+        // Land them on the first page that actually has a problem; a message
+        // on a page they cannot see is no message at all.
+        const pages = this.visiblePages;
+        const bad = pages.findIndex((page) =>
+            (page.sections || []).some((section) =>
+                (section.elements || []).some(
+                    (el) => el.errors && el.errors.length
+                )
+            )
+        );
+        if (bad >= 0) {
+            this.pageIndex = bad;
+            this._reveal(bad);
+        }
+    }
+
     async handleSubmit() {
         if (!this.model || this.error || this.isSubmitBlocked) return;
         // Submit validates EVERY visible page; the first invalid one becomes
@@ -1694,9 +1829,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._submitting = true;
         this._submitError = undefined;
+        this._serverFieldErrors = {};
         const submitGeneration = ++this._submitGeneration;
-        const submittedEditRecordId = this._editRecordId;
-        const submittedEditObject = this._editObject;
         try {
             const res = await submitForm({
                 formId: this.effectiveFormId || null,
@@ -1704,23 +1838,27 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 payloadJson: JSON.stringify(this._payload())
             });
             if (submitGeneration !== this._submitGeneration) return;
+            if (res && res.errors && res.errors.length) {
+                this._applyServerErrors(res.errors);
+                return;
+            }
             this.submittedRecordId = res ? res.recordId : null;
             this.completed = true;
             this._scheduleCompletion();
         } catch (e) {
+            // A failure that belongs to a record the respondent has already
+            // navigated away from cannot be shown on the form now on screen —
+            // that form belongs to a different record, and annotating it would
+            // blame the wrong one. It is dropped deliberately.
+            //
+            // This previously raised a sticky `lightning/toast`. Removed
+            // 2026-09-09 (owner): that module is used by NOTHING else in this
+            // codebase — the other seven components use ShowToastEvent — and
+            // its rendering on a Lightning record page was never proven, so
+            // the notice may never have appeared at all. Saving already shows
+            // a spinner on the submit bar and reports failures inline next to
+            // Save, which is where an error belongs.
             if (submitGeneration !== this._submitGeneration) {
-                if (submittedEditRecordId) {
-                    Toast.show(
-                        {
-                            label: `Save failed for ${submittedEditObject} ${submittedEditRecordId}`,
-                            message:
-                                'Return to that record to review your changes and try saving again.',
-                            variant: 'error',
-                            mode: 'sticky'
-                        },
-                        this
-                    );
-                }
                 return;
             }
             this._submitError =
