@@ -906,6 +906,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     if (seq !== this._applySeq || !this.isConnected) {
                         return;
                     }
+                    // Clearing this is what re-enables Submit. Only the catch
+                    // used to do it, so a survey whose record context loaded
+                    // SUCCESSFULLY stayed blocked forever — the failure path
+                    // recovered and the happy path did not. Caught in a
+                    // browser 2026-09-09; 843 green tests did not see it.
+                    this._surveyLoading = false;
                     // REASSIGN, never mutate — facts feed render getters
                     this._ruleFacts = res.ruleFacts || null;
                     const values = res.prefill || {};
@@ -1730,15 +1736,26 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         for (const page of (this._editSpec && this._editSpec.pages) || []) {
             for (const section of page.sections || []) {
                 for (const el of section.elements || []) {
-                    const field = el && el.binding && el.binding.field;
-                    if (!field || !el.id) {
+                    if (!el || !el.id) {
                         continue;
                     }
-                    // Indexed under BOTH the API name and the element's label,
-                    // because the platform does not answer consistently — see
-                    // `_normalizeFieldKey`.
+                    // A classic form BINDS a field; a survey question MAPS one
+                    // (`el.mapping`) for writeback onto the connected record.
+                    // Both reach real Salesforce fields and both can be
+                    // rejected, so both are indexed — routing built only on
+                    // `binding` was blind to every survey.
+                    const field =
+                        (el.binding && el.binding.field) ||
+                        (el.mapping && el.mapping.field);
+                    if (!field) {
+                        continue;
+                    }
+                    // Indexed under BOTH the API name and the element's own
+                    // wording, because the platform does not answer
+                    // consistently — see `_normalizeFieldKey`.
                     index(this._normalizeFieldKey(field), el.id);
                     index(this._normalizeFieldKey(el.label), el.id);
+                    index(this._normalizeFieldKey(el.title), el.id);
                 }
             }
         }

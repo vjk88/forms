@@ -2,6 +2,7 @@ import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
 
 jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
@@ -13,6 +14,11 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalSpecController.getSpec',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalSurveyObjectController.getRecordContext',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -208,5 +214,94 @@ describe('server submit errors reach the field that failed', () => {
             el.shadowRoot.querySelector('c-final-after-submit')
         ).not.toBeNull();
         expect(el.submitError).toBeUndefined();
+    });
+});
+
+/**
+ * SURVEYS reach real fields too — a mapped question writes back onto the
+ * connected record, and that write can be rejected. Routing built only on
+ * `binding` was blind to every survey, because survey questions carry
+ * `mapping` instead.
+ */
+const SURVEY_SPEC = {
+    specVersion: 1,
+    form: { name: 'Survey errors', type: 'survey', targetObject: 'Contact' },
+    layout: { type: 'scroll', options: {} },
+    header: { style: 'none' },
+    theme: null,
+    settings: { completion: { mode: 'screen' } },
+    submit: { label: 'Send' },
+    pages: [
+        {
+            id: 'pg_1',
+            name: 'One',
+            sections: [
+                {
+                    id: 'sec_1',
+                    style: 'plain',
+                    columns: 1,
+                    elements: [
+                        {
+                            id: 'q_role',
+                            type: 'field',
+                            label: 'Your role',
+                            mapping: { object: 'Contact', field: 'Title' },
+                            render: { inputType: 'text' }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+};
+
+describe('survey writeback rejections reach the mapped question', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        jest.clearAllMocks();
+    });
+
+    it('re-enables Submit once the record context LOADS, not only when it fails', async () => {
+        // The success path used to leave `_surveyLoading` true forever, so a
+        // survey with a connected record could never be submitted at all —
+        // only the failure path cleared it. Found in a browser 2026-09-09
+        // with 843 tests green.
+        getRecordContext.mockResolvedValue({ ruleFacts: {}, prefill: {} });
+        getSpec.mockResolvedValue(JSON.stringify(SURVEY_SPEC));
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vx';
+        el.surveyContextRecordId = '003000000000001AAA';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        await flush();
+
+        expect(getRecordContext).toHaveBeenCalled();
+        expect(deepQuery(el.shadowRoot, 'c-final-submit-bar').disabled).toBe(
+            false
+        );
+    });
+
+    it('routes a rejected mapped field onto the question that maps it', async () => {
+        getSpec.mockResolvedValue(JSON.stringify(SURVEY_SPEC));
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+
+        submitForm.mockResolvedValue({
+            errors: [{ message: 'Title must be approved.', fields: ['Title'] }]
+        });
+        await submit(el);
+
+        expect(fieldErrorTexts(el)).toContain('Title must be approved.');
+        expect(el.shadowRoot.querySelector('c-final-after-submit')).toBeNull();
     });
 });

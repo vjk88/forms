@@ -469,6 +469,28 @@ public inherited sharing class FinalSubmitService {
         } catch (AuraHandledException e) {
             Database.rollback(sp);
             throw e;
+        } catch (DmlException e) {
+            Database.rollback(sp);
+            // A survey's own answer rows are app-owned and system-mode, so a
+            // DML failure here is almost always the MAPPED WRITEBACK — real
+            // fields on the connected record, rejected by a validation rule or
+            // the runner's edit rights. That is a failure the respondent can
+            // actually act on, and it is worth naming: the writeback sits
+            // inside this savepoint, so a rejected field discards the entire
+            // response, and "could not be saved" leaves them nothing to fix.
+            //
+            // Writeback is INTERNAL-only (guests carry no record context), so
+            // a guest cannot reach a field-level failure at all. The guard
+            // stays anyway: nothing about a public form should ever depend on
+            // a condition two hundred lines away staying true.
+            if (mode == Posture.GUEST) {
+                throw new AuraHandledException(
+                    'Your response could not be saved. Nothing was recorded.'
+                );
+            }
+            SubmitOutcome res = new SubmitOutcome();
+            res.errors = dmlErrors(e);
+            return res;
         } catch (Exception e) {
             Database.rollback(sp);
             throw new AuraHandledException(
