@@ -384,17 +384,26 @@ private with sharing class FinalUploadProofTest {
     }
 
     @IsTest
-    static void bulkGuardProcessesDistinctGrantsAcrossTriggerChunks() {
+    static void guardProcessesDistinctGrantsAtFullCapacity() {
         configure();
         FinalUploadProofStore.lockLedger(true);
-        // 210, not 251: the trigger chunks at 200, so this still spans two
-        // chunks with ten rows in the second — enough to catch state that
-        // leaks or resets between them. Every row here is a real file
-        // publication against the org's 2500/day ContentPublicationLimit,
-        // so the count is chosen deliberately, not generously.
+        // 20, not 251 — the most the system can ever actually produce.
+        //
+        // This test used to insert 251 marked files to cross the 200-row
+        // trigger chunk boundary, and bypassed `checkBudget` to do it. That
+        // budget REFUSES at 20 grants, so the test was switching off the
+        // guardrail in order to exercise a state the guardrail exists to
+        // prevent. A real submission carries at most a handful of files
+        // (owner ruling 2026-09-10: assume 5), and no operator can hold more
+        // than 20 slots at once, so >200 marked rows in one transaction is
+        // unreachable by any path this product has.
+        //
+        // 20 is therefore the true worst case: the system's own ceiling,
+        // exercised in full. If `checkBudget` ever allows more than 200
+        // grants, revisit this — the chunk seam becomes reachable again.
         List<Final_Upload_Proof__c> grants = new List<Final_Upload_Proof__c>();
         List<ContentVersion> versions = new List<ContentVersion>();
-        for (Integer index = 0; index < 210; index++) {
+        for (Integer index = 0; index < 20; index++) {
             String token = FinalUploadCapability.mint();
             grants.add(
                 new Final_Upload_Proof__c(
@@ -414,7 +423,7 @@ private with sharing class FinalUploadProofTest {
         insert versions;
         Test.stopTest();
         Assert.areEqual(
-            210,
+            20,
             [
                 SELECT COUNT()
                 FROM Final_Upload_Proof__c
@@ -423,13 +432,13 @@ private with sharing class FinalUploadProofTest {
             'Every independent grant accepted once.'
         );
         Assert.areEqual(
-            210,
+            20,
             [
                 SELECT COUNT()
                 FROM ContentVersion
                 WHERE Final_Upload_fileupload__c = NULL
             ],
-            'Every raw marker removed across trigger chunks.'
+            'Every raw marker removed across a full-capacity batch.'
         );
     }
 

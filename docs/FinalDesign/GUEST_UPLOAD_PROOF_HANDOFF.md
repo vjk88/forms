@@ -25,22 +25,32 @@ The plan explicitly says to prove the native transport before the full editor, a
 
 ## Running the tests costs org file-publication budget
 
-**Measured 2026-09-10: one full `FinalUploadProofTest` run consumes 222 of the org's 2500/day
-`ContentPublicationLimit`** — every guarded row is a real file publication.
+**Measured 2026-09-10: one full `FinalUploadProofTest` run consumes 32 of the org's 2500/day
+`ContentPublicationLimit`.** Every guarded row is a real file publication.
 
-It was **~502** as first written: two tests each inserted 251 files. Five validation runs exhausted
+It was **~502** as first written — two tests each inserted 251 files. Five validation runs exhausted
 the whole org quota (it read `remaining = -10`), after which **unrelated tests began failing with
-`ContentPublication Limit exceeded` and coverage was under-reported across every class** — the
-"67% controller coverage" that appeared to block this batch was partly that artifact. File uploads
-elsewhere in the org fail too while the quota is spent.
+`ContentPublication Limit exceeded` and coverage was under-reported across every class**. The "67%
+controller coverage" that appeared to block this batch was largely that artifact. While the quota is
+spent, **file uploads elsewhere in the org fail too.**
 
-Reduced by making the unmarked pass-through test 5 rows instead of 251 (with no marker and no
-enrolled guest the guard returns before any per-row work, so 251 proved nothing 5 does not) and the
-cross-chunk test 210 instead of 251 (the trigger chunks at 200; ten rows in the second chunk is
-enough). The suite now runs ~11 times a day instead of ~4.
+Both 251s were testing scenarios this product cannot produce:
+
+- The unmarked pass-through test now inserts **5**, not 251. With no marker and no enrolled guest the
+  guard collects no candidates and returns before any per-row work, so 251 rows proved nothing 5 do
+  not.
+- The multi-grant test now inserts **20**, not 251. It used to bypass `checkBudget` to cross the
+  200-row trigger chunk boundary — but that budget **refuses at 20 grants**, so the test was
+  switching off the guardrail to exercise a state the guardrail exists to prevent. A real submission
+  carries at most a handful of files (owner ruling: assume 5), and no operator can hold more than 20
+  slots at once, so >200 marked rows in one transaction is unreachable by any path this product has.
+  **20 is the system's own ceiling, now exercised in full.**
+
+If `checkBudget` ever permits more than 200 grants, revisit that test — the chunk seam becomes
+reachable again.
 
 **Check `sf org list limits` before re-running, and treat any coverage or failure number from a
-depleted org as meaningless.**
+depleted org as meaningless.** The counter updates on a delay, so read it a minute after a run.
 
 ## Owner-controlled installation
 
