@@ -813,4 +813,83 @@ private class FinalSubmitControllerTest {
             'a rejected save writes nothing'
         );
     }
+
+    // ===== SURVEY WRITEBACK ERRORS ==================================
+    // A survey's own answer rows are app-owned and system-mode, so its only
+    // realistic field-level failure is the MAPPED WRITEBACK onto the connected
+    // record. That write sits inside the savepoint, so a rejected field
+    // discards the ENTIRE response — which makes "could not be saved" an
+    // especially poor answer.
+    //
+    // Provoking it takes care, because the writeback is deliberately hard to
+    // break: `coerceForField` abbreviates strings to field length (so
+    // STRING_TOO_LONG is unreachable), numbers are coerced, and unknown or
+    // inaccessible fields are skipped rather than thrown on. An invalid email
+    // is one of the few values that survives coercion intact and is then
+    // refused by the database — no org-specific validation rule required.
+
+    @IsTest
+    static void surveyWritebackRejectionNamesTheMappedField() {
+        Contact c = new Contact(
+            LastName = 'Writeback',
+            Email = 'ok@example.com'
+        );
+        insert c;
+
+        Form__c f = new Form__c(
+            Name = 'Survey writeback test',
+            Primary_Context_Object__c = 'Contact'
+        );
+        insert f;
+        Form_Version__c v = new Form_Version__c(
+            Form__c = f.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Engine_Version__c = 1,
+            Spec_JSON__c = '{"specVersion":1,"form":{"type":"survey","targetObject":"Contact"},' +
+                '"pages":[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
+                '{"id":"el_email","type":"field","label":"Your email",' +
+                '"mapping":{"object":"Contact","field":"Email"},' +
+                '"config":{"inputType":"text"}}' +
+                ']}]}]}'
+        );
+        insert v;
+
+        String payload = JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{
+                    'el_email' => 'definitely not an email'
+                },
+                'meta' => new Map<String, Object>{ 'recordId' => c.Id }
+            }
+        );
+
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            v.Id,
+            payload
+        );
+        Test.stopTest();
+
+        Assert.isNotNull(
+            res.errors,
+            'a rejected survey writeback must return errors, not a flat refusal'
+        );
+        Assert.isFalse(res.errors.isEmpty(), 'errors must not be empty');
+        Assert.areEqual(
+            'ok@example.com',
+            [SELECT Email FROM Contact WHERE Id = :c.Id].Email,
+            'a rejected writeback must roll the record back'
+        );
+        Assert.areEqual(
+            0,
+            [
+                SELECT COUNT()
+                FROM Form_Response__c
+                WHERE Form_Version__c = :v.Id
+            ],
+            'and must roll the whole response back with it'
+        );
+    }
 }
