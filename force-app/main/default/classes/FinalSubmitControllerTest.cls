@@ -748,4 +748,69 @@ private class FinalSubmitControllerTest {
             'and the refusal must happen BEFORE anything is written'
         );
     }
+
+    // ===== SERVER FIELD ERRORS =====================================
+    // The old build returned SubmitResult.errors and the respondent landed on
+    // the field that failed. The rebuild collapsed every rejection into one
+    // sentence; this is that channel restored.
+
+    // WARNING — this assertion is TRUE HERE AND MISLEADING ELSEWHERE.
+    // `DmlException.getDmlFieldNames` does not answer consistently:
+    //   anonymous Apex / this test  ->  "LastName"   (API name)
+    //   live LWC request            ->  "Last Name"  (the LABEL)
+    // Verified in this org 2026-09-09 on the same failing insert. The first
+    // version of the client mapped by API name only, so every Apex and Jest
+    // test passed while the real submit routed nothing to any field. The
+    // client now normalises both spellings; do not "simplify" it back.
+    @IsTest
+    static void submitReturnsFieldErrorsNamingTheFieldThatFailed() {
+        // Bind LastName and Title, then answer only Title. The insert fails
+        // REQUIRED_FIELD_MISSING and Salesforce names the field for us.
+        Id versionId = makeActiveVersion(
+            'Contact',
+            '[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
+                '{"id":"el_ln","type":"field","binding":{"object":"Contact","field":"LastName"}},' +
+                '{"id":"el_title","type":"field","binding":{"object":"Contact","field":"Title"}}' +
+                ']}]}]'
+        );
+        String payload = JSON.serialize(
+            new Map<String, Object>{
+                'answers' => new Map<String, Object>{ 'el_title' => 'Auditor' }
+            }
+        );
+
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            versionId,
+            payload
+        );
+        Test.stopTest();
+
+        Assert.isNotNull(res.errors, 'a rejected save must return errors');
+        Assert.isFalse(res.errors.isEmpty(), 'errors must not be empty');
+        Assert.isNull(res.recordId, 'nothing may be reported as saved');
+
+        Boolean namesLastName = false;
+        for (FinalSubmitService.FieldError fe : res.errors) {
+            Assert.isTrue(
+                String.isNotBlank(fe.message),
+                'every error carries a message'
+            );
+            for (String f : fe.fields) {
+                if (f == 'LastName') {
+                    namesLastName = true;
+                }
+            }
+        }
+        Assert.isTrue(
+            namesLastName,
+            'the rejection must name the field that failed, not just a sentence'
+        );
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE Title = 'Auditor'],
+            'a rejected save writes nothing'
+        );
+    }
 }

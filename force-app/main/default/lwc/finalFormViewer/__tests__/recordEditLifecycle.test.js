@@ -596,12 +596,7 @@ describe('edit request invalidation during retry and Autofill', () => {
     });
 });
 
-import Toast from 'lightning/toast';
-jest.mock('lightning/toast', () => ({
-    __esModule: true,
-    default: { show: jest.fn() }
-}));
-describe('loading presentation and previous-record failure feedback', () => {
+describe('loading presentation and previous-record failure handling', () => {
     afterEach(() => {
         while (document.body.firstChild)
             document.body.removeChild(document.body.firstChild);
@@ -634,7 +629,13 @@ describe('loading presentation and previous-record failure feedback', () => {
         await flush();
         expect(surface().hidden).toBe(true);
     });
-    it('shows a sticky toast identifying A when its save fails after navigation to B', async () => {
+    // The sticky lightning/toast this used to assert was removed 2026-09-09:
+    // nothing else in the codebase uses that module and its rendering on a
+    // Lightning record page was never proven, so the notice may never have
+    // appeared. What still matters — and is asserted here — is that A's
+    // failure cannot contaminate B: no error on B's form, no completion
+    // screen, and B's answers untouched.
+    it("drops a previous record's save failure instead of blaming the new one", async () => {
         const el = await published();
         loadRecord(el, { Title: 'A' });
         await flush();
@@ -653,14 +654,6 @@ describe('loading presentation and previous-record failure feedback', () => {
         await flush();
         fail({ body: { message: 'Validation failed' } });
         await flush();
-        expect(Toast.show).toHaveBeenCalledWith(
-            expect.objectContaining({
-                label: expect.stringContaining(RECORD),
-                mode: 'sticky',
-                variant: 'error'
-            }),
-            expect.anything()
-        );
         expect(el.answers.el_title).toBe('B');
         expect(el.submitError).toBeUndefined();
         expect(el.shadowRoot.querySelector('c-final-after-submit')).toBeNull();
