@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses><apexClass>FinalUploadProofController</apexClass><enabled
+        >true</enabled></classAccesses>
+    <customPermissions><enabled>true</enabled><name
+        >Final_Upload_Proof_Admin</name></customPermissions>
+    <description
+    >Sandbox proof operator only. Does not enable guest uploads or grant guest access.</description>
+    <fieldPermissions><editable>true</editable><field
+        >ContentVersion.Final_Upload_fileupload__c</field><readable
+        >true</readable></fieldPermissions>
+    <label>Upload Transport Proof Administrator</label>
+</PermissionSet>

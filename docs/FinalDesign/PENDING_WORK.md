@@ -151,7 +151,9 @@ and retired objects (DATA_MODEL_DELTA §4).
 
 **Design added 2026-09-08:** [Guest uploads and larger attachments implementation plan](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)
 covers staged native transport, larger-file limits, guest admission, final submission, cleanup,
-and platform verification. This is documentation only; Slice 2 remains unimplemented.
+and platform verification. **2026-09-09:** the owner authorized implementation without deployment;
+the isolated [batch-1 transport proof](./GUEST_UPLOAD_PROOF_HANDOFF.md) is prepared locally.
+The native org gate is still pending. Production Slice 2 remains unimplemented.
 
 The stub is gone. Internal file upload works end to end: drop zone + keyboard-reachable picker,
 answers on the normal `valuechange` channel, and an atomic `ContentVersion` insert via
@@ -334,7 +336,8 @@ the packaging track instead of ahead of it.
    #252. (b) Make the **F13 asset-URL decision** below — it is a decision, not a build, and
    published forms with a built-in theme image may be showing guests broken images today.
 1. ~~**File upload (§3.1)**~~ — **Slice 1 DONE 2026-09-03** (internal). Slice 2 (guest) now has a
-   written design ([IMPL_PLAN_GUEST_FILE_UPLOAD.md](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)); awaits a go.
+   written design ([IMPL_PLAN_GUEST_FILE_UPLOAD.md](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)); implementation
+   authorized 2026-09-09, with the isolated transport-proof batch prepared locally and org proof pending.
 2. **Accessibility pass (§4.1)** — small, bounded, and currently contradicts a stated product promise.
 3. **Open the packaging track (§2.3 + §2.4)** — namespace, 2GP, legacy purge. Longest pole, and the
    namespace decision constrains everything downstream, so start it before it's urgent.

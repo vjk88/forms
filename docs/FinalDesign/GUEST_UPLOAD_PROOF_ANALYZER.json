@@ -1,0 +1,1477 @@
+{
+  "runDir": "C:\\Users\\jayas\\Documents\\Projects\\SF Projects\\forms\\",
+  "violationCounts": {
+    "total": 73,
+    "sev1": 0,
+    "sev2": 0,
+    "sev3": 23,
+    "sev4": 50,
+    "sev5": 0
+  },
+  "versions": {
+    "code-analyzer": "0.47.0",
+    "pmd": "0.40.0"
+  },
+  "violations": [
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadCapability.cls",
+          "startLine": 4,
+          "startColumn": 19,
+          "endLine": 9,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadCapability.cls",
+          "startLine": 12,
+          "startColumn": 19,
+          "endLine": 19,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofController.cls",
+          "startLine": 5,
+          "startColumn": 19,
+          "endLine": 57,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "CyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofController.cls",
+          "startLine": 5,
+          "startColumn": 19,
+          "endLine": 57,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'createGrant(Id, Integer)' has a cyclomatic complexity of 14.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofController.cls",
+          "startLine": 61,
+          "startColumn": 19,
+          "endLine": 113,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "StdCyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 6,
+          "startColumn": 21,
+          "endLine": 262,
+          "endColumn": 2
+        }
+      ],
+      "message": "The class 'FinalUploadProofGuard' has a Standard Cyclomatic Complexity of 5 (Highest = 13).",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#stdcyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "CognitiveComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 6,
+          "startColumn": 21,
+          "endLine": 262,
+          "endColumn": 2
+        }
+      ],
+      "message": "The class 'FinalUploadProofGuard' has a total cognitive complexity of 58 (highest 20), current threshold is 50",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cognitivecomplexity"
+      ]
+    },
+    {
+      "rule": "CyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 6,
+          "startColumn": 21,
+          "endLine": 262,
+          "endColumn": 2
+        }
+      ],
+      "message": "The class 'FinalUploadProofGuard' has a total cyclomatic complexity of 63 (highest 17).",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 10,
+          "startColumn": 19,
+          "endLine": 67,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "StdCyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 10,
+          "startColumn": 19,
+          "endLine": 67,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'beforeInsert' has a Standard Cyclomatic Complexity of 13.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#stdcyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "NcssMethodCount",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 10,
+          "startColumn": 19,
+          "endLine": 67,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'beforeInsert()' has an NCSS line count of 55 (limit: 40)",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#ncssmethodcount"
+      ]
+    },
+    {
+      "rule": "CognitiveComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 10,
+          "startColumn": 19,
+          "endLine": 67,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'beforeInsert(List<ContentVersion>)' has a cognitive complexity of 20, current threshold is 15",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cognitivecomplexity"
+      ]
+    },
+    {
+      "rule": "CyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 10,
+          "startColumn": 19,
+          "endLine": 67,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'beforeInsert(List<ContentVersion>)' has a cyclomatic complexity of 17.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 70,
+          "startColumn": 19,
+          "endLine": 151,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "StdCyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 70,
+          "startColumn": 19,
+          "endLine": 151,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'afterInsert' has a Standard Cyclomatic Complexity of 11.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#stdcyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "NcssMethodCount",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 70,
+          "startColumn": 19,
+          "endLine": 151,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'afterInsert()' has an NCSS line count of 54 (limit: 40)",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#ncssmethodcount"
+      ]
+    },
+    {
+      "rule": "NcssCount",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Apex", "Custom"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 70,
+          "startColumn": 19,
+          "endLine": 151,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'afterInsert(List<ContentVersion>)' has a NCSS line count of 49 (limit: 40).",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#ncsscount"
+      ]
+    },
+    {
+      "rule": "CyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 70,
+          "startColumn": 19,
+          "endLine": 151,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'afterInsert(List<ContentVersion>)' has a cyclomatic complexity of 13.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 154,
+          "startColumn": 19,
+          "endLine": 180,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "CyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 154,
+          "startColumn": 19,
+          "endLine": 180,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'beforeUpdate(List<ContentVersion>, Map<Id, ContentVersion>)' has a cyclomatic complexity of 10.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "CyclomaticComplexity",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofGuard.cls",
+          "startLine": 196,
+          "startColumn": 20,
+          "endLine": 230,
+          "endColumn": 6
+        }
+      ],
+      "message": "The method 'validMetadata(ContentVersion, Final_Upload_Proof__c)' has a cyclomatic complexity of 13.",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#cyclomaticcomplexity"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 12,
+          "startColumn": 19,
+          "endLine": 15,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 20,
+          "startColumn": 19,
+          "endLine": 31,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 34,
+          "startColumn": 19,
+          "endLine": 36,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 39,
+          "startColumn": 19,
+          "endLine": 49,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc @return",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 39,
+          "startColumn": 19,
+          "endLine": 49,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing or mismatched ApexDoc @param",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 52,
+          "startColumn": 19,
+          "endLine": 64,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 67,
+          "startColumn": 19,
+          "endLine": 74,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofPolicy.cls",
+          "startLine": 77,
+          "startColumn": 19,
+          "endLine": 90,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 14,
+          "startColumn": 19,
+          "endLine": 46,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing or mismatched ApexDoc @param",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "AvoidBooleanMethodParameters",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 14,
+          "startColumn": 35,
+          "endLine": 14,
+          "endColumn": 53
+        }
+      ],
+      "message": "Avoid Boolean method parameters",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#avoidbooleanmethodparameters"
+      ]
+    },
+    {
+      "rule": "AvoidDeeplyNestedIfStmts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "Design", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 27,
+          "startColumn": 17,
+          "endLine": 33,
+          "endColumn": 18
+        }
+      ],
+      "message": "Deeply nested if..then statements are hard to read",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_design.html#avoiddeeplynestedifstmts"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 49,
+          "startColumn": 19,
+          "endLine": 74,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 77,
+          "startColumn": 19,
+          "endLine": 91,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 94,
+          "startColumn": 19,
+          "endLine": 113,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 116,
+          "startColumn": 19,
+          "endLine": 122,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 125,
+          "startColumn": 19,
+          "endLine": 132,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 135,
+          "startColumn": 19,
+          "endLine": 149,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing or mismatched ApexDoc @param",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "AvoidNonRestrictiveQueries",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Performance", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 136,
+          "startColumn": 34,
+          "endLine": 139,
+          "endColumn": 10
+        }
+      ],
+      "message": "Avoid SOQL queries without a where or limit statement",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_performance.html#avoidnonrestrictivequeries"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 152,
+          "startColumn": 19,
+          "endLine": 154,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 157,
+          "startColumn": 19,
+          "endLine": 159,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 162,
+          "startColumn": 19,
+          "endLine": 164,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc main description",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "ApexDoc",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Documentation", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofStore.cls",
+          "startLine": 166,
+          "startColumn": 12,
+          "endLine": 167,
+          "endColumn": 6
+        }
+      ],
+      "message": "Missing ApexDoc comment",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_documentation.html#apexdoc"
+      ]
+    },
+    {
+      "rule": "AvoidNonRestrictiveQueries",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Performance", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 45,
+          "startColumn": 13,
+          "endLine": 45,
+          "endColumn": 49
+        }
+      ],
+      "message": "Avoid SOQL queries without a where or limit statement",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_performance.html#avoidnonrestrictivequeries"
+      ]
+    },
+    {
+      "rule": "AvoidNonRestrictiveQueries",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "Performance", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 50,
+          "startColumn": 13,
+          "endLine": 50,
+          "endColumn": 50
+        }
+      ],
+      "message": "Avoid SOQL queries without a where or limit statement",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_performance.html#avoidnonrestrictivequeries"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 65,
+          "startColumn": 12,
+          "endLine": 90,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 93,
+          "startColumn": 12,
+          "endLine": 139,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 142,
+          "startColumn": 12,
+          "endLine": 152,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 155,
+          "startColumn": 12,
+          "endLine": 160,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 155,
+          "startColumn": 12,
+          "endLine": 160,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 163,
+          "startColumn": 12,
+          "endLine": 168,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 163,
+          "startColumn": 12,
+          "endLine": 168,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 171,
+          "startColumn": 12,
+          "endLine": 183,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 171,
+          "startColumn": 12,
+          "endLine": 183,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 186,
+          "startColumn": 12,
+          "endLine": 193,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 186,
+          "startColumn": 12,
+          "endLine": 193,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 196,
+          "startColumn": 12,
+          "endLine": 202,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 196,
+          "startColumn": 12,
+          "endLine": 202,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 205,
+          "startColumn": 12,
+          "endLine": 217,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 205,
+          "startColumn": 12,
+          "endLine": 217,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 220,
+          "startColumn": 12,
+          "endLine": 229,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveAsserts",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 220,
+          "startColumn": 12,
+          "endLine": 229,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit tests should System.assert() or assertEquals() or assertNotEquals()",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaveasserts"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 232,
+          "startColumn": 12,
+          "endLine": 250,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 253,
+          "startColumn": 12,
+          "endLine": 279,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ForLoopsMustUseBraces",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "CodeStyle", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 266,
+          "startColumn": 13,
+          "endLine": 268,
+          "endColumn": 14
+        }
+      ],
+      "message": "Avoid using for statements without curly braces",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_codestyle.html#forloopsmustusebraces"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 282,
+          "startColumn": 12,
+          "endLine": 304,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 307,
+          "startColumn": 12,
+          "endLine": 321,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 324,
+          "startColumn": 12,
+          "endLine": 338,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 341,
+          "startColumn": 12,
+          "endLine": 383,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 386,
+          "startColumn": 12,
+          "endLine": 411,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 414,
+          "startColumn": 12,
+          "endLine": 428,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "ApexUnitTestClassShouldHaveRunAs",
+      "engine": "pmd",
+      "severity": 4,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\classes\\FinalUploadProofTest.cls",
+          "startLine": 472,
+          "startColumn": 12,
+          "endLine": 486,
+          "endColumn": 6
+        }
+      ],
+      "message": "Apex unit test classes should have at least one System.runAs() call",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#apexunittestclassshouldhaverunas"
+      ]
+    },
+    {
+      "rule": "AvoidLogicInTrigger",
+      "engine": "pmd",
+      "severity": 3,
+      "tags": ["Recommended", "BestPractices", "Apex"],
+      "primaryLocationIndex": 0,
+      "locations": [
+        {
+          "file": "force-app\\main\\default\\triggers\\FinalUploadContentVersion.trigger",
+          "startLine": 1,
+          "startColumn": 1,
+          "endLine": 18,
+          "endColumn": 3
+        }
+      ],
+      "message": "Avoid logic in triggers",
+      "resources": [
+        "https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_apex_bestpractices.html#avoidlogicintrigger"
+      ]
+    }
+  ]
+}

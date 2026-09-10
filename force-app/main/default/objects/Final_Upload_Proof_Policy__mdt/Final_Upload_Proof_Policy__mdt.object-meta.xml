@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+    >Transport proof only. Enrolled guest identities remain guarded when Admission Enabled is false.</description>
+    <label>Upload Proof Policy</label>
+    <pluralLabel>Upload Proof Policies</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

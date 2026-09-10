@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Upload Transport Proof (Sandbox Only)</masterLabel>
+    <description
+    >Batch-1 LWR native transport test harness. No production form submission or guest Apex calls.</description>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightningCommunity__Page</target>
+    </targets>
+</LightningComponentBundle>
