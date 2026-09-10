@@ -50,11 +50,26 @@ public with sharing class FinalUploadProofGuard {
             for (ContentVersion row : candidates) {
                 String hash = FinalUploadCapability.digest(marker(row));
                 Final_Upload_Proof__c grant = grants.get(hash);
+                // A caller may not choose which BUSINESS record a file
+                // attaches to — that is the protection here. It may land in
+                // the uploader's OWN files, which is where the platform puts
+                // it: `lightning-file-upload` always stamps a publish
+                // location, so refusing every non-null value refused every
+                // native upload, always (org-verified 2026-09-10: "Can't
+                // upload", no version created, grant left RESERVED).
+                //
+                // This now matches what `afterInsert` already allowed — it
+                // accepts a link whose target IS the document owner and flags
+                // anything else. The two halves disagreed; before was stricter
+                // than after, and strictly wrong.
+                Boolean ownFilesOnly =
+                    row.FirstPublishLocationId == null ||
+                    row.FirstPublishLocationId == UserInfo.getUserId();
                 if (
                     !validGrant(grant) ||
                     seen.contains(hash) ||
                     row.ContentDocumentId != null ||
-                    row.FirstPublishLocationId != null
+                    !ownFilesOnly
                 ) {
                     refuse(row);
                 }

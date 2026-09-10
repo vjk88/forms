@@ -247,6 +247,41 @@ private with sharing class FinalUploadProofTest {
         Test.stopTest();
     }
 
+    /**
+     * The uploader's OWN files are a legitimate destination.
+     *
+     * `lightning-file-upload` always stamps a publish location, so the guard's
+     * original blanket refusal of any non-null `FirstPublishLocationId` refused
+     * every native upload — org-verified 2026-09-10: "Can't upload", no version
+     * created, grant left RESERVED. Salesforce's own docs describe this as the
+     * supported pattern, and `afterInsert` already accepted a link whose target
+     * is the document owner; only `beforeInsert` disagreed.
+     *
+     * The protection that matters is unchanged and still asserted by
+     * rejectsCallerChosenTarget below: a caller may not pick a BUSINESS record.
+     */
+    @IsTest
+    static void acceptsTheUploadersOwnFilesAsTheLocation() {
+        String token = reserve(10);
+        ContentVersion version = file(token, 'own-files.txt');
+        version.FirstPublishLocationId = UserInfo.getUserId();
+
+        Test.startTest();
+        Database.SaveResult result = Database.insert(version, false);
+        Test.stopTest();
+
+        Assert.isTrue(
+            result.isSuccess(),
+            'A native upload landing in the uploader own files must be accepted: ' +
+            JSON.serialize(result.getErrors())
+        );
+        Assert.areEqual(
+            'READY',
+            [SELECT State__c FROM Final_Upload_Proof__c LIMIT 1].State__c,
+            'and the slot must be consumed.'
+        );
+    }
+
     @IsTest
     static void rejectsCallerChosenTarget() {
         String token = reserve(10);
@@ -472,17 +507,23 @@ private with sharing class FinalUploadProofTest {
 
     @IsTest
     static void operatorPermissionIsRequired() {
-        configure();
+        User outsider = nonOperator();
         Test.startTest();
-        try {
-            FinalUploadProofController.createGrant(UserInfo.getUserId(), 10);
-            Assert.fail('An unassigned operator must not mint grants.');
-        } catch (AuraHandledException expected) {
-            Assert.areEqual(
-                0,
-                [SELECT COUNT() FROM Final_Upload_Proof__c],
-                'Denied operator wrote nothing.'
-            );
+        System.runAs(outsider) {
+            configure();
+            try {
+                FinalUploadProofController.createGrant(
+                    UserInfo.getUserId(),
+                    10
+                );
+                Assert.fail('An unassigned operator must not mint grants.');
+            } catch (AuraHandledException expected) {
+                Assert.areEqual(
+                    0,
+                    [SELECT COUNT() FROM Final_Upload_Proof__c],
+                    'Denied operator wrote nothing.'
+                );
+            }
         }
         Test.stopTest();
     }
@@ -490,16 +531,8 @@ private with sharing class FinalUploadProofTest {
     @IsTest
     static void operatorCanMintAndInspectWithoutPersistingSecret() {
         configure();
-        PermissionSet permission = [
-            SELECT Id
-            FROM PermissionSet
-            WHERE Name = 'Final_Upload_Proof_Admin'
-            LIMIT 1
-        ];
-        insert new PermissionSetAssignment(
-            AssigneeId = UserInfo.getUserId(),
-            PermissionSetId = permission.Id
-        );
+        // Via the shared helper, which tolerates a user who already holds it.
+        asOperator();
         System.runAs(new User(Id = UserInfo.getUserId())) {
             Test.startTest();
             Map<String, Object> grant = FinalUploadProofController.createGrant(
@@ -554,10 +587,54 @@ private with sharing class FinalUploadProofTest {
             WHERE Name = 'Final_Upload_Proof_Admin'
             LIMIT 1
         ];
-        insert new PermissionSetAssignment(
-            AssigneeId = UserInfo.getUserId(),
-            PermissionSetId = permission.Id
+        // The running user may ALREADY hold this — an operator who set the
+        // harness up in the org, for instance. A blind insert then fails with
+        // DUPLICATE_VALUE and takes six unrelated tests down with it, so the
+        // suite would pass or fail depending on who ran it.
+        List<PermissionSetAssignment> held = [
+            SELECT Id
+            FROM PermissionSetAssignment
+            WHERE
+                PermissionSetId = :permission.Id
+                AND AssigneeId = :UserInfo.getUserId()
+        ];
+        if (held.isEmpty()) {
+            insert new PermissionSetAssignment(
+                AssigneeId = UserInfo.getUserId(),
+                PermissionSetId = permission.Id
+            );
+        }
+    }
+
+    /**
+     * A user guaranteed NOT to hold the operator permission.
+     *
+     * `operatorPermissionIsRequired` used to rely on the running user happening
+     * to lack it, so it broke the moment a real operator was enrolled in the
+     * org. A purpose-made user cannot drift.
+     */
+    private static User nonOperator() {
+        Profile p = [
+            SELECT Id
+            FROM Profile
+            WHERE UserType = 'Standard'
+            LIMIT 1
+        ];
+        String unique = String.valueOf(Crypto.getRandomInteger())
+            .replace('-', '');
+        User u = new User(
+            ProfileId = p.Id,
+            LastName = 'ProofNonOperator',
+            Email = 'proof.nonoperator@example.com',
+            Username = 'proof.nonoperator.' + unique + '@example.com',
+            Alias = 'pnop',
+            TimeZoneSidKey = 'America/Los_Angeles',
+            LocaleSidKey = 'en_US',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US'
         );
+        insert u;
+        return u;
     }
 
     private static void assertDenied(String because) {
