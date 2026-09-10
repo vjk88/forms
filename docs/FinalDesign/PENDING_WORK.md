@@ -1,9 +1,11 @@
 # Pending Work — everything between here and ship
 
 **Compiled:** 2026-09-03 · **Last commit at time of writing:** `47fc433` (2026-08-16, PR #218)
-**Last updated:** 2026-09-07, current through **PR #245** (Autofill Rules program: personalized-link
-half #241, authenticated lookup #242, false-passing describe test #243, guest destination-keying
-fix #244, orphaned endpoint removal #245 — all org-verified in a browser, see §8)
+**Last updated:** 2026-09-09, current through **PR #254**. Since #245: forms on record pages
+(#246–#248, #250), explicit record context replacing `saveMode` (#252 — **breaking**), per-field
+submit errors restored for forms (#253) and surveys (#254), plus two written-but-unbuilt plans
+(#251). All org-verified in a browser — see §8, including four separate defects a fully green
+suite did not see.
 **Ship definition:** a managed 2GP AppExchange package **with Surveys** ([[project-ship-definition]]).
 Companions: [BUILD_PHASES.md](./BUILD_PHASES.md) (what's in scope) · [DEFERRED.md](./DEFERRED.md)
 (consciously parked) · [PRODUCT.md](../../PRODUCT.md) (the promises).
@@ -24,16 +26,16 @@ Phases are [BUILD_PHASES.md](./BUILD_PHASES.md)'s. "Missing" here means **verifi
 2026-09-05**, not "unmentioned in a doc" — each row was checked against the components, objects and
 org rather than against a status header.
 
-| Phase                            | State           | Exactly what is missing                                                                                                                                                                                                                                                                                                                                                                               |
-| -------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0** Walking skeleton          | **Done**        | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **P1** All seven layouts         | **Done**        | — all seven nav primitives ship                                                                                                                                                                                                                                                                                                                                                                       |
-| **P2** Full theme system         | **Done**        | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **P3** The builder               | **Done**        | Nothing functional. _Naming note:_ `pageManager` and `bindingPicker` were never built as standalone components — page chips live in `finalBuilderCanvas`, binding lives in `finalPropertyPanel`. **Absorbed, not skipped.** The F8 checklist is closed: `pageValidity` is read by all seven navs.                                                                                                     |
-| **P4** Element widgets           | **Partial**     | `formSignature`, `formVideo` — **never built**. `formLookup` is **no longer "never built"** (2026-09-07): a single-target reference field renders a real `lightning-record-picker` and can drive Autofill; polymorphic references and DEPENDENT/filtered lookups are still absent — see §3.2. `fileUpload` is **internal only** (Slice 1); guest is Slice 2. `formRepeater` renders **stacked-only**. |
-| **P5** Guest runtime & hardening | **Partial**     | **Rate limiting** (#20) · **guest file upload** · **classic-form prefill** · the **F13 asset-URL decision** (below). Already built: the guest controller family, honeypot, availability windows, `finalAfterSubmit`, and the answer store with `Label_Snapshot__c` + `Entry_Index__c`. **The security-review gate has never been attempted.**                                                         |
-| **P6** Creation & templates      | **Partial**     | The **form template gallery** is a placeholder; `Form_Template__c` exists but holds **1 record**, so seeding is effectively undone. **Theme-coherence prune** not done. Already built: creation gallery, Form/Survey fork, and working survey templates (CSAT/NPS/Event).                                                                                                                             |
-| **P7** Cutover & deletion        | **Not started** | All of it: re-publish surviving forms, flip app/Experience consumers, delete 63 legacy LWCs + ~25 legacy Apex classes, drop deprecated fields and retired objects, docs sweep.                                                                                                                                                                                                                        |
+| Phase                            | State           | Exactly what is missing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0** Walking skeleton          | **Done**        | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **P1** All seven layouts         | **Done**        | — all seven nav primitives ship                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **P2** Full theme system         | **Done**        | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **P3** The builder               | **Done**        | Nothing functional. _Naming note:_ `pageManager` and `bindingPicker` were never built as standalone components — page chips live in `finalBuilderCanvas`, binding lives in `finalPropertyPanel`. **Absorbed, not skipped.** The F8 checklist is closed: `pageValidity` is read by all seven navs.                                                                                                                                                                                                                                                                                     |
+| **P4** Element widgets           | **Partial**     | `formSignature`, `formVideo` — **never built**. `formLookup` is **no longer "never built"** (2026-09-07): a single-target reference field renders a real `lightning-record-picker` and can drive Autofill; polymorphic references and DEPENDENT/filtered lookups are still absent — see §3.2. `fileUpload` is **internal only** (Slice 1); guest is Slice 2. `formRepeater` renders **stacked-only** (and is BLOCKED on edit forms). **NEW 2026-09-09:** a form can now sit on a **record page**, load that record's values and save back to it (#247/#248/#250/#252) — org-verified. |
+| **P5** Guest runtime & hardening | **Partial**     | **Rate limiting** (#20) · **guest file upload** (design now written — see §3.1) · the **F13 asset-URL decision** (below). ~~classic-form prefill~~ **partly CLOSED**: a classic form's personalized-link Autofill context now resolves for guests (`FinalGuestLinkTest.classicFormPersonalizedLinkAutofillContext`, passing 2026-09-09). Already built: the guest controller family, honeypot, availability windows, `finalAfterSubmit`, and the answer store with `Label_Snapshot__c` + `Entry_Index__c`. **The security-review gate has never been attempted.**                     |
+| **P6** Creation & templates      | **Partial**     | The **form template gallery** is a placeholder; `Form_Template__c` exists but holds **1 record**, so seeding is effectively undone. **Theme-coherence prune** not done. Already built: creation gallery, Form/Survey fork, and working survey templates (CSAT/NPS/Event).                                                                                                                                                                                                                                                                                                             |
+| **P7** Cutover & deletion        | **Not started** | All of it: re-publish surviving forms, flip app/Experience consumers, delete 63 legacy LWCs + ~25 legacy Apex classes, drop deprecated fields and retired objects, docs sweep.                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 **Surfaced 2026-09-05 — P5 F13, asset URLs, no decision on record.** Built-in theme images snapshot
 `/resource/formThemeAssets/…` paths into published `resolved.tokens`, but Experience Cloud serves
@@ -327,7 +329,12 @@ work in progress. Worth a deliberate pass:
 Ordered by what the product is missing **today**, with the packaging-gated items sequenced against
 the packaging track instead of ahead of it.
 
-1. ~~**File upload (§3.1)**~~ — **Slice 1 DONE 2026-09-03** (internal). Slice 2 (guest) awaits a go.
+0. **Two loose ends from this week, both small** — (a) verify the `{!recordId}` sentinel on a **real
+   record page**; only the refusal case has been exercised, and it is the primary use case of
+   #252. (b) Make the **F13 asset-URL decision** below — it is a decision, not a build, and
+   published forms with a built-in theme image may be showing guests broken images today.
+1. ~~**File upload (§3.1)**~~ — **Slice 1 DONE 2026-09-03** (internal). Slice 2 (guest) now has a
+   written design ([IMPL_PLAN_GUEST_FILE_UPLOAD.md](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)); awaits a go.
 2. **Accessibility pass (§4.1)** — small, bounded, and currently contradicts a stated product promise.
 3. **Open the packaging track (§2.3 + §2.4)** — namespace, 2GP, legacy purge. Longest pole, and the
    namespace decision constrains everything downstream, so start it before it's urgent.
@@ -381,6 +388,40 @@ guest-facing ships with a built-in theme image.
 ---
 
 ## 8 · Recently CLOSED — do not re-open
+
+- **Forms on record pages, and submit errors that name the field (2026-09-08/09, PRs #246–#254).**
+  A form can now sit on a record page, load that record's values and save back to it, and a
+  rejected save lands on the question that caused it instead of one generic sentence.
+  - **Record context is EXPLICIT and this was BREAKING (#252).** The viewer no longer declares a
+    public `recordId` or silently consumes the page record. Two configured inputs —
+    `existingRecordId` (blank = create, an id = edit, `recordId`/`{!recordId}` = the page's record,
+    anything unresolvable = **blocked, never a silent create**) and `surveyContextRecordId`.
+    `saveMode` no longer selects the runtime operation; `c__recordId` is no longer consumed.
+    **Any placement relying on the old automatic behaviour now CREATES instead of editing, and
+    surveys lose context until configured.**
+  - **Per-field submit errors, restored from the old build (#253 forms, #254 surveys).** Guests
+    deliberately get none of the detail — a public form must not become a probe for an org's
+    validation rules.
+  - **NOT verified:** the `{!recordId}` sentinel resolving on a real `standard__recordPage`. The QA
+    host is an App Page, so only the refusal case was exercised.
+
+- **THE PATTERN WORTH READING BEFORE YOU TRUST A GREEN RUN (2026-09-07/09).** Four separate defects
+  shipped or nearly shipped this week with the whole suite green. None were caught by tests; every
+  one was caught by opening a browser.
+  1. **A guest defect hid behind 787 passing tests** — the guest-projected spec shape had zero
+     coverage, so personalized links filled **nothing** (#244).
+  2. **A false-passing Apex test** asserted on a field the org does not have (#243). `FieldDefinition`
+     lists `Job_Application__c.Related_Contact__c`; **SOQL says it does not exist. SOQL is the truth.**
+  3. **`DmlException.getDmlFieldNames` answers differently by context** — `"LastName"` in an Apex
+     test, `"Last Name"` (the LABEL) in a live LWC request. The first cut of #253 mapped by API name
+     only: Apex green, 841 Jest green, and the real submit routed nothing to any field.
+  4. **A survey with a connected record could not be submitted at all** — `_surveyLoading` was
+     cleared only by the `.catch()`, never the success path, so the failure path recovered and the
+     happy path did not (#254, shipped in #252 the day before, 843 tests green over it).
+
+  **Working rule: for anything touching a real Salesforce surface, a green suite is necessary and
+  never sufficient.** Test the projection, not just the authored spec; and remember a metadata
+  deploy does not reach guests without an Experience site publish.
 
 - **Autofill Rules — BOTH halves built and browser-verified (2026-09-07, PRs #241–#245).** The
   program is real, not just green: **(a) authenticated lookup** — a single-target reference field
