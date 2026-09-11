@@ -95,6 +95,12 @@ public with sharing class FinalSpecController {
         // Server-side Autofill validation (IMPL_PLAN_AUTOFILL_RULES §9)
         FinalAutofillValidator.validateForPublish(formId, spec);
 
+        // Server-side lookup filter validation (IMPL_PLAN_DEPENDENT_LOOKUP §8).
+        // A filter the server cannot recompile must never reach a respondent:
+        // at submit the same policy is rebuilt from THIS spec, and a rule that
+        // fails to compile there would block every selection made against it.
+        FinalLookupPolicy.validateForPublish(formId, spec);
+
         Savepoint sp = Database.setSavepoint();
         try {
             List<AggregateResult> maxRows = [

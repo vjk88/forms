@@ -302,6 +302,87 @@ a first-class **Repeating Group** item, catalog §5).
   the right child record — and ~4.3 MB base64 × N entries is a heap bomb. The files entry shape
   reserves `entryIndex` (ignore-unknown = additive) for when this is genuinely wanted.
 
+### 4.2 Lookup filters — `element.lookupConfig` (v1)
+
+An OPTIONAL sibling of `config` on a reference element. Absent means today's
+behaviour: an unfiltered search across the whole target object. Reference
+metadata stays in `config.referenceTo` and does not move here.
+
+```json
+{
+  "id": "el_contact",
+  "binding": { "object": "Case", "field": "ContactId" },
+  "config": { "inputType": "reference", "referenceTo": "Contact" },
+  "lookupConfig": {
+    "version": 1,
+    "filter": {
+      "mode": "all",
+      "criteria": [
+        {
+          "id": "lc_account",
+          "fieldPath": "AccountId",
+          "operator": "eq",
+          "value": { "kind": "answer", "elementId": "el_account" }
+        }
+      ]
+    },
+    "displayInfo": { "primaryField": "Name", "additionalFields": ["Title"] },
+    "matchingInfo": {
+      "primaryField": { "fieldPath": "Name", "mode": "startsWith" }
+    }
+  }
+}
+```
+
+`lookupConfig.version` is its OWN version, independent of `specVersion`.
+Publish and import reject a version this build does not know rather than
+guessing — a filter that silently means something else is a data-exposure bug,
+not a rendering glitch.
+
+**A criterion value is one of two kinds**, and they are not interchangeable:
+
+| kind       | shape                                  | meaning                                                |
+| ---------- | -------------------------------------- | ------------------------------------------------------ |
+| `constant` | `{ "kind": "constant", "value": … }`   | a fixed, typed value authored into the form            |
+| `answer`   | `{ "kind": "answer", "elementId": … }` | whatever the respondent put in that element, right now |
+
+An explicit constant `null` is a real criterion. An unanswered controlling
+element is not — see the disable rule below.
+
+**v1 limits.** These are product limits, not statements about what the platform
+can do:
+
+- At most **10 criteria**; `mode` is `all` or `any`, compiled to native AND/OR.
+  There is no expression editor and no custom filter logic string.
+- **Direct fields only.** No relationship traversal, no raw SOQL, no `$User`
+  expressions, no JavaScript.
+- Operators by field type: reference/ID, text, single picklist and boolean take
+  `eq` and `ne`; number, currency and percent add `lt`, `lte`, `gt`, `gte`.
+- **Deferred:** date and date/time, multi-select picklists, encrypted, long and
+  rich text, list operators (`in`), and wildcard operators.
+- An `answer` source must be **scalar, outside a repeater, and type-compatible**
+  with the field it filters. A reference source must target the object the field
+  actually points at. `false` and `0` are answers; never test an answer for
+  truthiness to decide whether it was given.
+
+**Two runtime laws, both learned from watching the real control:**
+
+1. **A missing controlling answer disables the whole lookup** — including under
+   `mode: "any"`. Dropping the unresolvable row instead would quietly widen the
+   search to every record on the object, which is the opposite of what the
+   author asked for.
+2. **A dependency change clears the selected value.** The native picker does not
+   validate its own selection against a changed filter and will happily keep
+   showing a record that no longer qualifies (measured:
+   [DEPENDENT_LOOKUP_SPIKE_EVIDENCE](./DEPENDENT_LOOKUP_SPIKE_EVIDENCE.md)).
+   Keeping a still-valid selection through revalidation is a later enhancement.
+
+**Server, not client.** The filter is UX. The same policy is recompiled from the
+published spec at submit and each selected Id is re-checked for object, access
+and membership under the respondent's own permissions. An answer is never
+authorization: equality to a submitted AccountId does not entitle anyone to read
+that Account's Contacts.
+
 ## 5 · The `resolved` block (resolve-at-publish)
 
 Written by the **publish action only** (ARCH §4.2): it runs `themeEngine.resolveTokens(theme,
