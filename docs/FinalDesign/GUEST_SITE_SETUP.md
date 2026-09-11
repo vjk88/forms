@@ -48,6 +48,61 @@ Site → **Administration → Pages → (Guest profile)**, or Builder →
 > target object. `FinalGuestController` inserts in `SYSTEM_MODE` with the
 > published spec as the allow-list, so guests own nothing and can name nothing.
 
+## 3a. Why there are two components, and which one to use
+
+You will see **two** form components in Experience Builder and in the component
+list. This confuses everyone the first time. They are **not** two form renderers,
+and you have not been given a duplicate to maintain.
+
+**There is exactly one thing that draws a form: `finalFormViewer`.** It draws every
+form everywhere — record pages, app pages, the Studio preview, and the public site.
+Only one place in the codebase knows how to render a question.
+
+**`finalGuestHost` does not draw anything.** It is a thin wrapper that does the
+_talking to Salesforce_ on behalf of an anonymous visitor, then hands the finished
+form definition to `finalFormViewer` and lets it draw:
+
+```
+Public site page
+  └─ finalGuestHost          asks Salesforce for the form (guest-safe way)
+        └─ finalFormViewer   draws it — and makes NO calls of its own
+
+Inside Salesforce
+  └─ finalFormViewer         asks for the form itself, and draws it
+```
+
+### Why a wrapper is needed at all
+
+A guest and a logged-in user need completely different conversations with
+Salesforce for the same form:
+
+|                        | Logged-in user                                            | Anonymous guest                                                                |
+| ---------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| What it receives       | the full form definition, field and object names included | a **stripped** definition — no field names, no object names, no prefill config |
+| How it saves           | as that user, under their own permissions                 | through one locked-down entry point, bounded by the published form             |
+| Which Apex it may call | several classes                                           | exactly one: `FinalGuestController`                                            |
+
+The alternative — teaching `finalFormViewer` to behave differently for guests —
+would put every guest rule inside the same component that runs inside Salesforce.
+Any mistake in that logic would be exposed publicly. Keeping it in a wrapper means
+the renderer contains **no guest code at all**, so there is nothing there to get
+wrong. When the wrapper hands it a form directly, the viewer makes no Salesforce
+calls whatsoever — it only draws.
+
+### The rule
+
+- **On a public site page → `finalGuestHost`.** Always.
+- **Inside Salesforce → `finalFormViewer`.** Always.
+- Never the other way round.
+
+### What going wrong looks like
+
+Putting `finalFormViewer` straight onto a public page renders
+**"The form could not be loaded."** It asks Salesforce the internal way, a guest
+cannot answer that question, and it gives up. Observed on this org's site Home page
+2026-09-11 — the message was the wrong component, not a broken form. Removing it
+fixed the page; `/form`, which uses the guest host, was unaffected throughout.
+
 ## 4. Place the host on a page
 
 Experience Builder → drag **"Final Guest Form Host"** (`c/finalGuestHost`) onto a
