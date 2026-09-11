@@ -4,6 +4,32 @@
 > rules that don't belong in the component catalog. Component attributes live in
 > [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md). Authored 2026-07-03.
 
+## One renderer, two hosts — why `finalGuestHost` exists
+
+**Law: `finalFormViewer` contains no guest code, and never will.**
+
+There is exactly one component that renders a form — `finalFormViewer` — used on
+record pages, app pages, the Studio preview and the public site alike.
+`finalGuestHost` renders nothing. It is the **only** thing that touches the
+`FinalGuestController` family: it fetches the guest-projected spec, feeds it to
+`finalFormViewer` through the `spec` API, and owns the submit via `delegateSubmit`.
+Handed a spec that way, the viewer issues **no Apex calls of its own**.
+
+The reason is containment. A guest gets a projected spec (field and object names
+stripped), a single permitted Apex class, and a system-mode insert bounded by the
+published spec; an authenticated user gets the full spec and `as user` DML. Teaching
+one component both postures would put every guest rule inside the component that
+also runs inside Salesforce, where a mistake is publicly exposed. A wrapper keeps
+the blast radius at one file that only guests ever load.
+
+**Consequence to remember:** `finalFormViewer` placed directly on a public page
+shows **"The form could not be loaded"** — it asks through `FinalSpecController`,
+which a guest cannot answer. That is a misplacement, not a bug. Seen on this org's
+site Home page 2026-09-11.
+
+Plain-language version, with the placement rule and a diagram, lives in
+[GUEST_SITE_SETUP.md](./GUEST_SITE_SETUP.md) §3a — send anyone confused there.
+
 ## Guest file uploads — `fileUpload` & `formSignature` (review B)
 
 Guest users on Experience / Site pages **cannot create `ContentVersion` (Files) directly** without
@@ -67,7 +93,7 @@ The presentation contract lives in catalog §2; the engine-side rules bind here:
   has erred, it re-validates on **every input** until valid. Never validate while typing a fresh
   field.
 - Next/Submit with invalid fields: block, validate the full current page, set `pageValidity`, focus
-  + scroll the first invalid field (respect reduced motion). No toasts, ever.
+  - scroll the first invalid field (respect reduced motion). No toasts, ever.
 - **Submit dispatch sets the Submitting state** (buttons disabled, spinner) and clears on
   resolve/reject — the double-submit guard is structural, not a debounce.
 
