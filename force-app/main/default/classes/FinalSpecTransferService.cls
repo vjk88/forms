@@ -168,6 +168,10 @@ public with sharing class FinalSpecTransferService {
                         element.get('visibility'),
                         validation.freshIdByOld
                     );
+                    rewriteLookupConfig(
+                        element.get('lookupConfig'),
+                        validation.freshIdByOld
+                    );
                     Object validationValue = element.get('validation');
                     if (validationValue != null) {
                         for (
@@ -275,6 +279,52 @@ public with sharing class FinalSpecTransferService {
                         m.put('to', validation.freshIdByOld.get(oldTo));
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Repoint a lookup filter at the imported copies of its questions.
+     *
+     * Missed here, a filter would keep pointing at the SOURCE form's element
+     * ids: every criterion would read an answer that does not exist, which by
+     * the disable-on-missing-source rule silently bricks the lookup rather than
+     * throwing. Cheap to forget, expensive to notice.
+     */
+    private static void rewriteLookupConfig(
+        Object lookupConfigValue,
+        Map<String, String> freshIdByOld
+    ) {
+        if (!(lookupConfigValue instanceof Map<String, Object>)) {
+            return;
+        }
+        Map<String, Object> lookupConfig = (Map<String, Object>) lookupConfigValue;
+        Object filterValue = lookupConfig.get('filter');
+        if (!(filterValue instanceof Map<String, Object>)) {
+            return;
+        }
+        Object criteriaValue = ((Map<String, Object>) filterValue)
+            .get('criteria');
+        if (!(criteriaValue instanceof List<Object>)) {
+            return;
+        }
+        for (Object critValue : (List<Object>) criteriaValue) {
+            if (!(critValue instanceof Map<String, Object>)) {
+                continue;
+            }
+            Map<String, Object> crit = (Map<String, Object>) critValue;
+            String critId = String.valueOf(crit.get('id'));
+            if (freshIdByOld.containsKey(critId)) {
+                crit.put('id', freshIdByOld.get(critId));
+            }
+            Object valueValue = crit.get('value');
+            if (!(valueValue instanceof Map<String, Object>)) {
+                continue;
+            }
+            Map<String, Object> value = (Map<String, Object>) valueValue;
+            String sourceId = String.valueOf(value.get('elementId'));
+            if (freshIdByOld.containsKey(sourceId)) {
+                value.put('elementId', freshIdByOld.get(sourceId));
             }
         }
     }
