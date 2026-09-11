@@ -166,6 +166,10 @@ export default class FinalPropertyPanel extends LightningElement {
     @api ruleIndex;
     /** The repeat section this node lives inside, or null (lint scoping). */
     @api hostRepeatSectionId;
+    /** Answers a lookup filter may read: [{id, label, inputType, referenceTo}].
+     *  Richer than ruleSources, which carries no type and so cannot tell
+     *  whether an answer could stand in for a given field. */
+    @api lookupAnswerSources = [];
 
     _node;
     _childObject;
@@ -1199,6 +1203,37 @@ export default class FinalPropertyPanel extends LightningElement {
     /** Checks are a FIELD affordance (schema: validation on elements). */
     get showChecks() {
         return this.isField;
+    }
+
+    // ---- lookup results (schema §4.2) ----
+
+    /** Only a single-target reference field can carry a lookup filter; the
+     *  target is stamped by describe at creation, never typed by an author. */
+    get isLookupField() {
+        return Boolean(
+            this.isField &&
+            (this.cfg.inputType === 'reference' ||
+                this.cfg.inputType === 'lookup') &&
+            this.lookupTargetObject
+        );
+    }
+
+    get lookupTargetObject() {
+        return this.cfg.referenceTo || this.cfg.targetObject || null;
+    }
+
+    get lookupTargetLabel() {
+        return this.cfg.referenceToLabel || this.lookupTargetObject;
+    }
+
+    get lookupElementLabel() {
+        return this.n.label || 'this lookup';
+    }
+
+    handleLookupConfigChange(event) {
+        // A lookupConfig lives beside `config`, not inside it, so this is a
+        // node-level patch.
+        this._prop({ lookupConfig: event.detail.lookupConfig });
     }
 
     // ---- intents ----

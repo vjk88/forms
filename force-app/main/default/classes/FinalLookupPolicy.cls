@@ -555,16 +555,7 @@ public with sharing class FinalLookupPolicy {
             );
             return;
         }
-        // Search eligibility is narrower than filter eligibility — the native
-        // control only matches on text, so a filterable number field is not a
-        // legal search field even though it is a legal condition field.
-        Schema.DisplayType t = f.getDescribe().getType();
-        if (
-            t != Schema.DisplayType.STRING &&
-            t != Schema.DisplayType.EMAIL &&
-            t != Schema.DisplayType.PHONE &&
-            t != Schema.DisplayType.URL
-        ) {
+        if (!isSearchableType(f.getDescribe().getType())) {
             diagnostics.add(
                 new Diagnostic(
                     'UNSUPPORTED_SEARCH_FIELD',
@@ -899,7 +890,9 @@ public with sharing class FinalLookupPolicy {
     // Type rules
     // =====================================================================
 
-    private static Boolean isSupportedType(Schema.DisplayType t) {
+    /** Public so the authoring describe endpoint offers exactly the fields
+     *  this class will later accept. One rulebook, not two. */
+    public static Boolean isSupportedType(Schema.DisplayType t) {
         return numericTypes().contains(t) ||
             textTypes().contains(t) ||
             t == Schema.DisplayType.BOOLEAN ||
@@ -930,11 +923,20 @@ public with sharing class FinalLookupPolicy {
         };
     }
 
-    private static Set<String> allowedOperators(Schema.DisplayType t) {
+    public static Set<String> allowedOperators(Schema.DisplayType t) {
         if (numericTypes().contains(t)) {
             return new Set<String>{ 'eq', 'ne', 'lt', 'lte', 'gt', 'gte' };
         }
         return new Set<String>{ 'eq', 'ne' };
+    }
+
+    /**
+     * Search eligibility is NARROWER than filter eligibility. The native
+     * control only matches on text, so a filterable number field is a legal
+     * condition field and an illegal search field.
+     */
+    public static Boolean isSearchableType(Schema.DisplayType t) {
+        return textTypes().contains(t);
     }
 
     private static String soqlOperator(String op) {

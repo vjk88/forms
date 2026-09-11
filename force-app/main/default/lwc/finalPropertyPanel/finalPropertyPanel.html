@@ -697,6 +697,20 @@
                 ></lightning-input>
             </div>
 
+            <template lwc:if={isLookupField}>
+                <div class="pp-group">
+                    <h4 class="pp-grouptitle">Lookup results</h4>
+                    <c-final-lookup-config-editor
+                        target-object={lookupTargetObject}
+                        target-object-label={lookupTargetLabel}
+                        element-label={lookupElementLabel}
+                        answer-sources={lookupAnswerSources}
+                        config={n.lookupConfig}
+                        onlookupconfigchange={handleLookupConfigChange}
+                    ></c-final-lookup-config-editor>
+                </div>
+            </template>
+
             <div class="pp-group">
                 <h4 class="pp-grouptitle">Checks</h4>
                 <c-final-validation-editor
