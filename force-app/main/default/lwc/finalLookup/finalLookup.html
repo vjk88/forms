@@ -1,28 +1,21 @@
 <template>
-    <template lwc:if={isGuestUser}>
-        <div class="lookup-guest-unavailable" role="status">
-            <lightning-icon
-                icon-name="utility:info"
-                size="x-small"
-                class="slds-m-right_x-small"
-            ></lightning-icon>
-            <span>{unavailableMessage}</span>
-        </div>
-    </template>
-    <template lwc:else>
-        <div class="lookup-wrapper">
-            <lightning-record-picker
-                data-id="picker"
-                object-api-name={targetObject}
-                value={value}
-                label={label}
-                placeholder={placeholder}
-                required={required}
-                disabled={isLookupDisabled}
-                variant="label-hidden"
-                onchange={handleChange}
-                onerror={handleError}
-            ></lightning-record-picker>
-        </div>
-    </template>
+    <div class="lookup-wrapper">
+        <c-final-record-lookup
+            data-id="core"
+            object-api-name={targetObject}
+            value={value}
+            label={label}
+            placeholder={placeholder}
+            required={required}
+            disabled={isLookupDisabled}
+            pending={pending}
+            unavailable-message={unavailableMessage}
+            filter={filter}
+            matching-info={matchingInfo}
+            display-info={displayInfo}
+            context-key={contextKey}
+            onselectionchange={handleSelectionChange}
+            onlookuperror={handleLookupError}
+        ></c-final-record-lookup>
+    </div>
 </template>

@@ -1,0 +1,38 @@
+<template>
+    <div class={wrapperClass}>
+        <template lwc:if={isUnavailable}>
+            <div class="record-lookup__unavailable" role="status">
+                <lightning-icon
+                    icon-name="utility:info"
+                    size="x-small"
+                    class="slds-m-right_x-small"
+                ></lightning-icon>
+                <span>{unavailableMessage}</span>
+            </div>
+        </template>
+        <template lwc:else>
+            <lightning-record-picker
+                data-id="picker"
+                object-api-name={objectApiName}
+                value={displayValue}
+                label={label}
+                placeholder={placeholder}
+                required={required}
+                disabled={isPickerDisabled}
+                variant={pickerVariant}
+                filter={filter}
+                matching-info={matchingInfo}
+                display-info={displayInfo}
+                onchange={handleChange}
+                onready={handleReady}
+                onerror={handleError}
+            ></lightning-record-picker>
+        </template>
+
+        <template lwc:if={hasError}>
+            <div class="record-lookup__error" role="alert" data-id="error">
+                {errorText}
+            </div>
+        </template>
+    </div>
+</template>

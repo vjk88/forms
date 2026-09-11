@@ -1,0 +1,21 @@
+.record-lookup {
+    width: 100%;
+}
+
+.record-lookup__unavailable {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    font-size: 0.8125rem;
+    line-height: 1.25;
+}
+
+.record-lookup__error {
+    margin-top: 0.25rem;
+    color: var(--slds-g-color-error-base-40, #ea001e);
+    font-size: 0.75rem;
+    line-height: 1.25;
+}
