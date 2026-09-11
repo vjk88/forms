@@ -161,17 +161,32 @@
                 </div>
             </template>
             <template lwc:elseif={isLookup}>
-                <c-final-lookup
-                    element-id={el.id}
-                    label={el.label}
-                    value={el.value}
-                    target-object={lookupTargetObject}
-                    placeholder={el.placeholder}
-                    required={el.required}
-                    disabled={el.disabled}
-                    read-only={el.readOnly}
-                    onvaluechange={handleLookupChange}
-                ></c-final-lookup>
+                <!-- Keyed on the filter GENERATION, not on the element id.
+                     A native picker carries no request identity, so a
+                     selection made against a retired filter must not be
+                     accepted; the adapter drops it, and this remount is what
+                     gives the respondent a live control to select in again.
+                     `key` is a for:each-only directive, so a one-item list is
+                     the legitimate way to say "remount this". -->
+                <template for:each={lookupGenerations} for:item="gen">
+                    <c-final-lookup
+                        key={gen}
+                        element-id={el.id}
+                        label={el.label}
+                        value={el.value}
+                        target-object={lookupTargetObject}
+                        placeholder={el.placeholder}
+                        required={el.required}
+                        disabled={el.disabled}
+                        read-only={el.readOnly}
+                        filter={el.filter}
+                        matching-info={el.matchingInfo}
+                        display-info={el.displayInfo}
+                        unavailable-message={el.unavailableMessage}
+                        context-key={el.generation}
+                        onvaluechange={handleLookupChange}
+                    ></c-final-lookup>
+                </template>
             </template>
             <template lwc:else>
                 <lightning-input
