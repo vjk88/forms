@@ -1135,6 +1135,39 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return out;
     }
 
+    /**
+     * Answers a lookup filter may read (schema §4.2).
+     *
+     * Not the same roster as ruleSources: a filter has to know an answer's
+     * TYPE to decide whether it could stand in for a given field, and it can
+     * never read an answer from inside a repeating group — a repeated answer
+     * has no single value to filter by.
+     */
+    get lookupAnswerSources() {
+        const selectedId = this.selectedNode && this.selectedNode.id;
+        const out = [];
+        for (const page of (this.spec && this.spec.pages) || []) {
+            for (const section of page.sections || []) {
+                if (section.repeat) {
+                    continue;
+                }
+                for (const el of section.elements || []) {
+                    if (el.type !== 'field' || el.id === selectedId) {
+                        continue;
+                    }
+                    const cfg = el.config || {};
+                    out.push({
+                        id: el.id,
+                        label: el.label || el.id,
+                        inputType: cfg.inputType,
+                        referenceTo: cfg.referenceTo || cfg.targetObject || null
+                    });
+                }
+            }
+        }
+        return out;
+    }
+
     /** SO-3: record fields the rule editor may offer as sources (surveys
      *  with a connected object only) — the same describe roster mapping
      *  uses, so the two rosters can never disagree. */
@@ -1298,6 +1331,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         const patch = event.detail.patch || {};
         this._patchSelection((t) => {
             Object.assign(t.node, patch);
+            // A cleared lookup filter is the ABSENCE of lookupConfig, not a
+            // null one — the schema says no config means unfiltered, and a
+            // leftover null is noise every consumer then has to tolerate.
+            if ('lookupConfig' in patch && !patch.lookupConfig) {
+                delete t.node.lookupConfig;
+            }
             // schema §4: `required` is authoring sugar — the validation
             // entry is the one truth the runtime evaluates
             if ('required' in patch && t.kind === 'element') {
