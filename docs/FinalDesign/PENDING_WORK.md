@@ -199,24 +199,39 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 
 - **`formSignature`** — not built (reuses the file path, so it follows §3.1).
 - **`formVideo`** — not built (iframe embeds; needs CSP degradation).
-- **`formLookup`** — **the CORE half is built (2026-09-07); the dependent half is not.** This is
-  **Phase D** of the guest/prefill/lookup program
-  ([GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md)), whose v1 was Core + dependent.
-  - **Implementation plan (2026-09-08):**
-    [Reusable lookup and dependent filters](./IMPL_PLAN_DEPENDENT_LOOKUP.md) covers the native
-    picker core, Forms and Flow adapters, Studio configuration, dependency lifecycle, and
-    server-side selection validation. Design only; the remaining work below is still pending.
-  - **Built and org-verified:** `FinalStudioController.describeFields` emits `referenceTo` for
-    single-target reference fields, the Studio stamps it onto `element.config.referenceTo`, and the
-    renderer mounts a real `lightning-record-picker` whose selection can source an Autofill rule.
-    Verified in a browser: picking "Edge Communications" filled the mapped fields, and clearing the
-    picker cleared the untouched ones while preserving a value the respondent had typed.
-  - **NOT built:** **dependent / filtered** lookups (narrowing one picker by another field's value)
-    — the whole "dependent" half of Phase D v1. Also absent: **polymorphic** references
-    (`describeFields` deliberately `continue`s past them, because `lightning-record-picker` targets
-    one object), and lookup Autofill for **guests** (a lookup mapping cannot be `guestAllowed` —
-    `FinalAutofillValidator` rejects it, so lookup rules are an authenticated-only feature by
-    design).
+- **`formLookup`** — **Phase D v1 is BUILT and org-verified (2026-09-11).** Core half shipped
+  2026-09-07; the dependent half shipped in four slices, PRs #264-#267, against
+  [Reusable lookup and dependent filters](./IMPL_PLAN_DEPENDENT_LOOKUP.md). Part of the
+  guest/prefill/lookup program ([GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md)).
+  - **What an author can now do:** open a reference field's **Lookup results** section in the
+    Studio and say what each result shows, what searching matches on, and which conditions narrow
+    the list, in sentences rather than JSON. Publish refuses a filter it cannot recompile.
+  - **What a respondent now sees:** a dependent lookup is blocked until its parent is answered
+    (_"Choose Account first."_), narrows to the parent once given, and is **cleared** when the
+    parent changes. Org-verified end to end: Edge Communications offered only Sean Forbes, United
+    Oil only Stella Pavlova, and the child cleared on the switch.
+  - **What the server does:** `FinalLookupPolicy` recompiles the filter from the authoritative spec
+    at submit and re-checks every selected id for object, readability and membership in USER_MODE,
+    before the savepoint opens. A missing controlling answer DISABLES a lookup rather than widening
+    it. Guests get a flat refusal with no field named.
+  - **Shape and limits:** `element.lookupConfig` v1, [FORM_SPEC_SCHEMA §4.2](./FORM_SPEC_SCHEMA.md)
+    — up to 10 direct-field conditions, all/any, no traversal or formulas. Dates, multi-select
+    picklists, long/rich/encrypted text and list operators are deferred.
+  - **STILL NOT built:** the **Screen Flow adapter** (slice 5, `finalLookupFlow`) — owner deferred
+    it, so the lookup is not yet reusable outside Forms. **Polymorphic** references remain out
+    (`lightning-record-picker` targets one object). Lookup Autofill for **guests** stays refused by
+    design (`FinalAutofillValidator` rejects a `guestAllowed` lookup mapping).
+  - **OPEN GATE:** logged-in **Experience Cloud** is unverified — the org has no community user, so
+    the host spike could not be run there. Licences are available; this is a fixture problem, not a
+    platform limit. **Do not release authorable filters to an Experience Cloud audience until it is
+    run.** Anonymous guests are unaffected (lookup is refused for them outright). Evidence and the
+    throwaway spike rig: [DEPENDENT_LOOKUP_SPIKE_EVIDENCE.md](./DEPENDENT_LOOKUP_SPIKE_EVIDENCE.md).
+  - **Org landmine found while building this:** the org has **phantom fields** that the Apex
+    compiler accepts but that do not exist at runtime — describe omits them and SOQL refuses them.
+    `Job_Application__c.Related_Contact__c` (field file untracked in the repo, never deployed) and
+    the standard `Contact.HasOptedOutOfEmail` both behave this way. A class referencing one deploys
+    clean and fails only when the query runs. **Check runtime describe, not the compiler and not the
+    repo, before writing a fixture.**
 
 ### 3.3 Half-built
 
@@ -408,9 +423,9 @@ guest-facing ships with a built-in theme image.
   - **NOT verified:** the `{!recordId}` sentinel resolving on a real `standard__recordPage`. The QA
     host is an App Page, so only the refusal case was exercised.
 
-- **THE PATTERN WORTH READING BEFORE YOU TRUST A GREEN RUN (2026-09-07/09).** Four separate defects
-  shipped or nearly shipped this week with the whole suite green. None were caught by tests; every
-  one was caught by opening a browser.
+- **THE PATTERN WORTH READING BEFORE YOU TRUST A GREEN RUN (2026-09-07/11).** Five separate defects
+  shipped or nearly shipped with the whole suite green. None were caught by tests; every one was
+  caught by opening a browser.
   1. **A guest defect hid behind 787 passing tests** — the guest-projected spec shape had zero
      coverage, so personalized links filled **nothing** (#244).
   2. **A false-passing Apex test** asserted on a field the org does not have (#243). `FieldDefinition`
@@ -422,9 +437,23 @@ guest-facing ships with a built-in theme image.
      cleared only by the `.catch()`, never the success path, so the failure path recovered and the
      happy path did not (#254, shipped in #252 the day before, 843 tests green over it).
 
+  5. **A dependent lookup kept its stale record, with 942 tests green (2026-09-11, #267).** The
+     adapter was correctly refusing a selection stamped with a retired filter generation; the
+     remount that gives the respondent a live control to select in again had not been built. Every
+     viewer test dispatched `valuechange` from the ADAPTER, which skips that guard entirely, so no
+     test in the suite could ever have reached the bug. **A test that enters below the component
+     it is meant to protect proves nothing about it.**
+
   **Working rule: for anything touching a real Salesforce surface, a green suite is necessary and
-  never sufficient.** Test the projection, not just the authored spec; and remember a metadata
-  deploy does not reach guests without an Experience site publish.
+  never sufficient.** Test the projection, not just the authored spec; enter the chain where a
+  respondent enters it, not below the guard you are testing; and remember a metadata deploy does
+  not reach guests without an Experience site publish.
+
+  **And a schema landmine the org keeps re-arming:** it carries **phantom fields** the Apex compiler
+  accepts but that do not exist at runtime. `Job_Application__c.Related_Contact__c` (item 2 above)
+  and the standard `Contact.HasOptedOutOfEmail` both compile, both deploy, and both fail only when
+  a query runs. Check runtime describe before writing a fixture — not the compiler, not
+  `FieldDefinition`, and not the repo.
 
 - **Autofill Rules — BOTH halves built and browser-verified (2026-09-07, PRs #241–#245).** The
   program is real, not just green: **(a) authenticated lookup** — a single-target reference field
