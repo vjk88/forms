@@ -47,10 +47,19 @@ export default class FinalLookup extends LightningElement {
         return Boolean(this.disabled || this.readOnly);
     }
 
-    get unavailableMessage() {
+    /** Why the caller says this lookup cannot be used right now, e.g. a
+     *  controlling answer that has not been given yet. */
+    @api unavailableMessage;
+
+    /**
+     * The guest refusal outranks everything. A guest cannot search at all, so
+     * telling them to choose a parent answer first would be a lie: filling it
+     * in would not help.
+     */
+    get effectiveUnavailableMessage() {
         return this.isGuestUser
             ? 'Lookup selection is unavailable for guest respondents. Enter details directly if applicable.'
-            : undefined;
+            : this.unavailableMessage;
     }
 
     handleSelectionChange(event) {

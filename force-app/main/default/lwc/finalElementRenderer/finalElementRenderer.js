@@ -362,6 +362,13 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
+    /** One item, whose key is the current filter generation. A change to it
+     *  remounts the lookup rather than mutating a live one. Unfiltered lookups
+     *  have no generation and so never remount. */
+    get lookupGenerations() {
+        return [(this.el && this.el.generation) || 'static'];
+    }
+
     get lookupTargetObject() {
         return (
             this.cfg.referenceTo ||

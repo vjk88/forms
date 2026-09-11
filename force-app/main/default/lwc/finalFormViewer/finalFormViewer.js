@@ -16,6 +16,17 @@ import {
     restorePage
 } from './previewSession';
 import {
+    indexLookups,
+    buildGraph,
+    affectedLookups,
+    compileFilter,
+    filterFingerprint,
+    displayInfoOf,
+    matchingInfoOf,
+    sameAnswer,
+    BLOCKED
+} from 'c/finalLookupUtils';
+import {
     createAutofillSession,
     extractAutofillRules,
     computeRulesFingerprint,
@@ -26,6 +37,28 @@ import {
     isRequestCurrent,
     onRequestFailure
 } from './autofillEngine';
+
+/**
+ * Where an answer came from. Every write to `_answers` names one, because the
+ * origin decides what else is allowed to happen:
+ *
+ *  - `user`       a respondent touched the control. Only this marks the answer
+ *                 manually edited, which is what stops Autofill overwriting it.
+ *  - `autofill`   a rule filled it in.
+ *  - `dependency` a parent lookup changed and this child had to be cleared.
+ *                 Emphatically NOT a manual edit: treating it as one would
+ *                 make an automatic clear look like a deliberate answer and
+ *                 permanently pin the field against Autofill.
+ *  - `hydrate`    loading a record, a draft, a preview or a prefill.
+ *  - `reset`      a wholesale replacement, e.g. switching spec or edit target.
+ */
+export const ANSWER_ORIGIN = {
+    USER: 'user',
+    AUTOFILL: 'autofill',
+    DEPENDENCY: 'dependency',
+    HYDRATE: 'hydrate',
+    RESET: 'reset'
+};
 
 /**
  * One-question-per-screen auto-split (SURVEY_PLAN §10 Q4, ruled 2026-07-27,
@@ -363,7 +396,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             if (this._surveyKey() !== this._surveyContextKey) {
                 // Invalidate the old response before the next asynchronous apply.
                 this.model = null;
-                this._answers = {};
+                this._applyAnswers({}, ANSWER_ORIGIN.RESET, { replace: true });
                 this._recordCtx = null;
                 this._ruleFacts = null;
                 this._injectedCtx = null;
@@ -722,9 +755,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Any spec change resets the post-submit state — the Design preview
         // returns to the form the moment a control is touched.
         this.completed = false;
-        this._answers = preview
-            ? reconcileAnswers(preview.answers, preview.spec, spec)
-            : {};
+        this._applyAnswers(
+            preview
+                ? reconcileAnswers(preview.answers, preview.spec, spec)
+                : {},
+            ANSWER_ORIGIN.RESET,
+            { replace: true }
+        );
         // R6 — preservation mode must still CREATE a session when there is not
         // one yet. Studio sets preserve-session, so on the first mount this took
         // the reconcile branch with a null session, reconcile returned null
@@ -758,7 +795,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         }
         if (defaultsApplied) {
-            this._answers = seededAnswers;
+            this._applyAnswers(seededAnswers, ANSWER_ORIGIN.HYDRATE, {
+                replace: true
+            });
         }
         this._revealed = [];
         this._submitError = undefined;
@@ -924,7 +963,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                         }
                     }
                     if (any) {
-                        this._answers = merged;
+                        this._applyAnswers(merged, ANSWER_ORIGIN.HYDRATE, {
+                            replace: true
+                        });
                     }
                 })
                 .catch(() => {
@@ -1076,7 +1117,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._editReaders = [];
             if (wasEditing && !force) {
                 this.model = null;
-                this._answers = {};
+                this._applyAnswers({}, ANSWER_ORIGIN.RESET, { replace: true });
                 clearTimeout(this._redirectTimer);
                 this._apply(spec);
             }
@@ -1111,7 +1152,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         });
         const defaults = seedStaticDefaults(spec);
         this._autofillSession.staticDefaults = defaults;
-        this._answers = { ...defaults };
+        this._applyAnswers(defaults, ANSWER_ORIGIN.RESET, { replace: true });
         if (switching) this._injectedCtx = null;
         this._ruleFacts = null;
         this._recordCtx = null;
@@ -1268,7 +1309,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 patch[pair.elementId] = v === undefined ? null : v;
             }
         }
-        this._applyAutofillPatch(patch);
+        // Loading the record being edited is hydration, not a respondent
+        // filling the form in one field at a time.
+        this._applyAnswers(patch, ANSWER_ORIGIN.HYDRATE);
         this._editState = 'ready';
         this._applyInjectedContext();
         this._executeLookupRulesFromAnswers();
@@ -1298,7 +1341,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         }
         if (any) {
-            this._answers = merged;
+            this._applyAnswers(merged, ANSWER_ORIGIN.HYDRATE, {
+                replace: true
+            });
         }
 
         // Autofill rules from guest context or injected link context
@@ -1493,6 +1538,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                         }
                                     };
                                 }
+                                // A filtered lookup carries its COMPILED
+                                // filter, not its authored one: the criteria
+                                // are resolved against the answers as they
+                                // stand right now. `lookupGeneration` is the
+                                // stamp the adapter checks a selection
+                                // against, because a native event carries no
+                                // request identity of its own.
+                                const lookupState = this._lookupStateFor(el.id);
+                                if (lookupState) {
+                                    base = { ...base, ...lookupState };
+                                }
                                 if (this.preservePreview) {
                                     base = {
                                         ...base,
@@ -1558,25 +1614,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._autofillSession) {
             onManualEdit(this._autofillSession, elementId, value);
         }
-        // The page under the user must stay THE SAME PAGE when this answer
-        // flips a visibility rule — hiding/showing an EARLIER page renumbers
-        // the filtered list, and a raw index would silently move the view
-        // (same identity law as _revealed). Re-locate by revealKey; fall
-        // back to the clamp only when the current page itself was hidden
-        // (the next page slides into its place).
-        const current = this.visiblePages[this.pageIndex];
-        const key = current ? current.revealKey : undefined;
-        this._answers = { ...this.answers, [elementId]: value };
-        const pages = this.visiblePages;
-        const at =
-            key !== undefined
-                ? pages.findIndex((p) => p.revealKey === key)
-                : -1;
-        if (at >= 0) {
-            this.pageIndex = at;
-        } else if (this.pageIndex > pages.length - 1) {
-            this.pageIndex = Math.max(pages.length - 1, 0);
-        }
+        this._applyAnswers({ [elementId]: value }, ANSWER_ORIGIN.USER);
         this._handleSourceLookupChange(elementId, value);
     }
 
@@ -2235,9 +2273,63 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     _applyAutofillPatch(patch) {
+        this._applyAnswers(patch, ANSWER_ORIGIN.AUTOFILL);
+    }
+
+    // =================================================================
+    // The one place answers change
+    // =================================================================
+
+    /**
+     * THE answer-application entry point. Native selection, Autofill,
+     * dependency clears and hydration all come through here, so the rules
+     * about page identity, same-value writes and dependent lookups are stated
+     * once instead of re-derived at every call site.
+     *
+     * `replace` swaps the whole answer set (a new spec, a new edit target)
+     * instead of merging into it.
+     */
+    _applyAnswers(patch, origin, options) {
+        const replace = Boolean(options && options.replace);
+        const incoming = patch || {};
+
+        if (replace) {
+            this._answers = { ...incoming };
+            this._resetLookupCaches();
+            this._seedLookupGenerations();
+            return [];
+        }
+
+        // A write that changes nothing is not a change. Letting one through
+        // would clear dependent lookups every time an unrelated rule re-ran
+        // over the same values.
+        //
+        // "Nothing" is judged carefully. A key that was never set is NOT the
+        // same as a key holding null or '': loading a record that genuinely
+        // has an empty Title must record that emptiness, which is the
+        // null-versus-omitted distinction the record-edit work depends on.
+        const changed = [];
+        for (const id of Object.keys(incoming)) {
+            const known = Object.prototype.hasOwnProperty.call(
+                this.answers,
+                id
+            );
+            if (!known || !sameAnswer(this.answers[id], incoming[id])) {
+                changed.push(id);
+            }
+        }
+        if (!changed.length) {
+            return [];
+        }
+
+        // The page under the respondent must stay THE SAME PAGE when an answer
+        // flips a visibility rule: hiding or showing an EARLIER page renumbers
+        // the filtered list, and a raw index would silently move the view.
+        // Re-locate by revealKey, and fall back to the clamp only when the
+        // current page itself was hidden.
         const current = this.visiblePages[this.pageIndex];
         const key = current ? current.revealKey : undefined;
-        this._answers = { ...this.answers, ...patch };
+        this._answers = { ...this.answers, ...incoming };
         const pages = this.visiblePages;
         const at =
             key !== undefined
@@ -2248,5 +2340,226 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         } else if (this.pageIndex > pages.length - 1) {
             this.pageIndex = Math.max(pages.length - 1, 0);
         }
+
+        // Hydration is a BATCH, not a series of respondent actions. Loading
+        // a record that already holds a valid parent and child must not clear
+        // the child merely because the parent arrived. Record where every
+        // filter now stands instead, so the next real change is measured
+        // against that.
+        if (
+            origin === ANSWER_ORIGIN.HYDRATE ||
+            origin === ANSWER_ORIGIN.RESET
+        ) {
+            this._seedLookupGenerations();
+        } else if (origin !== ANSWER_ORIGIN.DEPENDENCY) {
+            this._settleDependencies(changed);
+        }
+        return changed;
+    }
+
+    /** Record where every compiled filter currently stands, clearing nothing. */
+    _seedLookupGenerations() {
+        const index = this._lookupIndex;
+        if (!index || !index.size) {
+            return;
+        }
+        const next = {};
+        for (const [lookupId, entry] of index) {
+            next[lookupId] = filterFingerprint(
+                entry.config,
+                this.answers,
+                this._answerContextKey
+            );
+        }
+        this._lookupGeneration = next;
+    }
+
+    // =================================================================
+    // Dependent lookups
+    // =================================================================
+
+    /**
+     * Keyed on the MODEL, not memoised once.
+     *
+     * Answers are reset before `model` is assigned, so a cache built on first
+     * touch would be built against a model that does not exist yet and would
+     * then never rebuild — every filtered lookup would silently render as an
+     * unfiltered one.
+     */
+    get _lookupIndex() {
+        if (this._lookupModelRef !== this.model) {
+            this._lookupModelRef = this.model;
+            this._lookupIndexCache = indexLookups(this.model);
+            this._lookupGraphCache = buildGraph(this._lookupIndexCache);
+            this._lookupGeneration = {};
+        }
+        return this._lookupIndexCache;
+    }
+
+    _resetLookupCaches() {
+        this._lookupModelRef = undefined;
+        this._lookupIndexCache = undefined;
+        this._lookupGraphCache = undefined;
+        this._elementLabelModelRef = undefined;
+        this._elementLabelCache = undefined;
+        this._lookupGeneration = {};
+    }
+
+    /**
+     * A parent answer moved, so every lookup downstream of it may now be
+     * showing a record that no longer qualifies.
+     *
+     * The native control will not notice. Measured, not assumed: it keeps
+     * displaying and reporting a selection that fails the new filter (see
+     * DEPENDENT_LOOKUP_SPIKE_EVIDENCE). So the clear is ours to make.
+     *
+     * Clears are applied ONCE, parent-first, through the same entry point as
+     * any other answer, with origin `dependency` so they are never mistaken
+     * for a respondent's manual edit.
+     */
+    _settleDependencies(changedIds) {
+        if (this._settling) {
+            return;
+        }
+        const index = this._lookupIndex;
+        if (!index || !index.size) {
+            return;
+        }
+        const graph = this._lookupGraphCache;
+        const affected = [];
+        for (const id of changedIds) {
+            for (const lookupId of affectedLookups(graph, id)) {
+                if (!affected.includes(lookupId)) {
+                    affected.push(lookupId);
+                }
+            }
+        }
+        if (!affected.length) {
+            return;
+        }
+
+        this._settling = true;
+        try {
+            const clears = {};
+            // Decide against a WORKING copy that already carries the clears
+            // made so far. `affected` is parent-first, so a grandchild has to
+            // see its parent as already cleared — judged against the
+            // untouched answers it would look unchanged and survive, which is
+            // exactly how a three-deep chain keeps a stale selection.
+            const working = { ...this.answers };
+            for (const lookupId of affected) {
+                const entry = index.get(lookupId);
+                if (!entry) {
+                    continue;
+                }
+                const before = this._lookupGeneration[lookupId];
+                const after = filterFingerprint(
+                    entry.config,
+                    working,
+                    this._answerContextKey
+                );
+                this._lookupGeneration[lookupId] = after;
+                // Only a filter that actually MOVED invalidates a selection.
+                if (before !== undefined && before === after) {
+                    continue;
+                }
+                const held = working[lookupId];
+                if (held !== undefined && held !== null && held !== '') {
+                    clears[lookupId] = null;
+                    working[lookupId] = null;
+                }
+            }
+            if (Object.keys(clears).length) {
+                this._applyAnswers(clears, ANSWER_ORIGIN.DEPENDENCY);
+                // A cleared lookup is still a lookup change as far as Autofill
+                // is concerned: whatever it filled in from the old record has
+                // to go too. That is the existing path, and it must NOT run
+                // through onManualEdit.
+                for (const lookupId of Object.keys(clears)) {
+                    this._handleSourceLookupChange(lookupId, null);
+                }
+            }
+        } finally {
+            this._settling = false;
+        }
+    }
+
+    /** Identity of the surrounding configuration. A new spec version or a new
+     *  edit target retires every compiled filter, even one whose criteria
+     *  happen to look identical. */
+    get _answerContextKey() {
+        return (
+            String(this.effectiveVersionId || '') +
+            '|' +
+            String(this._editContextKey || '')
+        );
+    }
+
+    /** Native-facing lookup state for one element, or null when it carries no
+     *  filter. */
+    _lookupStateFor(elementId) {
+        const index = this._lookupIndex;
+        const entry = index && index.get(elementId);
+        if (!entry) {
+            return null;
+        }
+        const compiled = compileFilter(entry.config, this.answers);
+        const generation = filterFingerprint(
+            entry.config,
+            this.answers,
+            this._answerContextKey
+        );
+        let unavailableMessage;
+        if (compiled.blocked) {
+            unavailableMessage =
+                compiled.reason === BLOCKED.SOURCE_REQUIRED
+                    ? this._chooseFirstMessage(entry)
+                    : 'This lookup is not set up correctly, so it cannot be used.';
+        }
+        return {
+            filter: compiled.filter,
+            generation,
+            displayInfo: displayInfoOf(entry.config),
+            matchingInfo: matchingInfoOf(entry.config),
+            unavailableMessage
+        };
+    }
+
+    /** "Choose Account first." Named, so the respondent knows what to do. */
+    _chooseFirstMessage(entry) {
+        const labels = [];
+        for (const sourceId of entry.sources) {
+            const label = this._elementLabels[sourceId];
+            if (label && !labels.includes(label)) {
+                labels.push(label);
+            }
+        }
+        if (!labels.length) {
+            return 'Answer the question above first.';
+        }
+        const joined =
+            labels.length === 1
+                ? labels[0]
+                : labels.slice(0, -1).join(', ') +
+                  ' and ' +
+                  labels[labels.length - 1];
+        return 'Choose ' + joined + ' first.';
+    }
+
+    /** Keyed on the model for the same reason the lookup index is. */
+    get _elementLabels() {
+        if (this._elementLabelModelRef !== this.model) {
+            this._elementLabelModelRef = this.model;
+            const out = {};
+            for (const page of (this.model && this.model.pages) || []) {
+                for (const section of page.sections || []) {
+                    for (const el of section.elements || []) {
+                        out[el.id] = el.label || el.id;
+                    }
+                }
+            }
+            this._elementLabelCache = out;
+        }
+        return this._elementLabelCache;
     }
 }
