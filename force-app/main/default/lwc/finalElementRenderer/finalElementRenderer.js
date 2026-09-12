@@ -380,21 +380,27 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
-    /** Our own control. */
+    /** Our own search box — only when the author asked for filters. */
     get isLookup() {
         return this.isAnyLookup && !this.isNativeLookup;
     }
 
     /**
-     * The author chose the platform's own field (BUILDER_SURFACES `renderAs`).
-     * Everything the platform does with it — configured lookup filters,
-     * dependent lookups, record-type behaviour — is the platform's business
-     * and happens without us reading, mirroring or warning about any of it.
+     * The platform's own field, and the DEFAULT for a reference field: a
+     * lookup is what the schema says it is, so "Default" can only mean the
+     * standard Salesforce lookup. Everything the platform then does with it —
+     * configured lookup filters, dependent lookups, record-type behaviour —
+     * is the platform's business and happens without us reading, mirroring or
+     * warning about any of it.
+     *
+     * Falls back to our own control when there is no field to hand over:
+     * survey questions bind nothing, and the guest projection strips bindings,
+     * so `lightning-input-field` would have no `field-name` to render.
      */
     get isNativeLookup() {
         return (
             this.isAnyLookup &&
-            this.renderAs === 'Salesforce_Lookup' &&
+            this.renderAs !== 'Filtered_Search' &&
             Boolean(this.nativeObjectApiName && this.nativeFieldName)
         );
     }

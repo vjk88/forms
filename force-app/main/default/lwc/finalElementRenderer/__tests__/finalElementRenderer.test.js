@@ -282,11 +282,31 @@ describe('c-final-element-renderer', () => {
     });
 
     describe('lookup rendering', () => {
-        it('renders c-final-lookup for reference inputType and forwards valuechange', async () => {
+        it('a bound reference field renders the standard Salesforce lookup', async () => {
+            // "Default" for a reference field means the platform's own field:
+            // a lookup is what the schema already says it is.
             const cmp = await mount(
                 FIELD({
                     id: 'el_acc',
-                    config: { inputType: 'reference', referenceTo: 'Account' }
+                    binding: { object: 'Case', field: 'AccountId' },
+                    config: { inputType: 'reference' }
+                })
+            );
+            expect(
+                cmp.shadowRoot.querySelector('lightning-input-field')
+            ).not.toBeNull();
+            expect(cmp.shadowRoot.querySelector('c-final-lookup')).toBeNull();
+        });
+
+        it('renders c-final-lookup when the author asked for filters, and forwards valuechange', async () => {
+            const cmp = await mount(
+                FIELD({
+                    id: 'el_acc',
+                    binding: { object: 'Case', field: 'AccountId' },
+                    config: {
+                        inputType: 'reference',
+                        renderAs: 'Filtered_Search'
+                    }
                 })
             );
             const lookup = cmp.shadowRoot.querySelector('c-final-lookup');
