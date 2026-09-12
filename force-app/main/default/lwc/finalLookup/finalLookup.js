@@ -38,6 +38,33 @@ export default class FinalLookup extends LightningElement {
     /** Parent-supplied message when the held record no longer qualifies. */
     @api validationError;
 
+    /**
+     * A fingerprint of the answers this lookup filters on. When it changes
+     * while a record is still held, that record may no longer qualify.
+     *
+     * We do NOT clear the selection. The respondent chose it deliberately, and
+     * deleting their work to spare them a correction is the rude version. We
+     * mark it, say why, and let the submit gate do the rest.
+     */
+    @api
+    get filterKey() {
+        return this._filterKey;
+    }
+    set filterKey(next) {
+        const value = next || '';
+        const had = this._filterKeySeen;
+        const changed = had && value !== this._filterKey;
+        this._filterKey = value;
+        this._filterKeySeen = true;
+        if (changed && this._value) {
+            this._markStale(true);
+        }
+    }
+
+    _filterKey = '';
+    _filterKeySeen = false;
+    _stale = false;
+
     _value = null;
     _displayLabel = '';
 
@@ -138,7 +165,33 @@ export default class FinalLookup extends LightningElement {
     }
 
     get errorMessage() {
-        return this.validationError || '';
+        if (this.validationError) {
+            return this.validationError;
+        }
+        return this._stale ? this.staleMessage : '';
+    }
+
+    get staleMessage() {
+        const what = this._displayLabel || 'This selection';
+        return `${what} may no longer be available. Choose again.`;
+    }
+
+    _markStale(stale) {
+        if (this._stale === stale) {
+            return;
+        }
+        this._stale = stale;
+        this.dispatchEvent(
+            new CustomEvent('lookupinvalid', {
+                detail: {
+                    elementId: this.elementId,
+                    invalid: stale,
+                    message: stale ? this.staleMessage : ''
+                },
+                bubbles: true,
+                composed: true
+            })
+        );
     }
 
     get emptyMessage() {
@@ -278,6 +331,7 @@ export default class FinalLookup extends LightningElement {
         this._displayLabel = '';
         this.term = '';
         this.results = [];
+        this._markStale(false);
         this._emit(null, '');
         // Put the caret back where the user expects to keep typing.
         // eslint-disable-next-line @lwc/lwc/no-async-operation
@@ -364,6 +418,7 @@ export default class FinalLookup extends LightningElement {
         this.term = '';
         this.results = [];
         this._close();
+        this._markStale(false);
         this._emit(row.id, row.title);
     }
 

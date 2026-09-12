@@ -160,12 +160,38 @@
                     </template>
                 </div>
             </template>
+            <!-- Native mode: the author asked for the platform's own field,
+                 so the platform renders it and applies whatever it applies.
+                 We supply the label chrome and read the value back out. -->
+            <template lwc:elseif={isNativeLookup}>
+                <label class="fl-native-label" if:true={el.label}
+                    >{el.label}</label
+                >
+                <lightning-record-edit-form
+                    object-api-name={nativeObjectApiName}
+                    record-id={nativeRecordId}
+                >
+                    <lightning-input-field
+                        field-name={nativeFieldName}
+                        value={el.value}
+                        required={el.required}
+                        disabled={nativeDisabled}
+                        variant="label-hidden"
+                        onchange={handleNativeFieldChange}
+                    ></lightning-input-field>
+                </lightning-record-edit-form>
+            </template>
             <template lwc:elseif={isLookup}>
                 <c-final-lookup
                     element-id={el.id}
                     label={el.label}
                     value={el.value}
-                    target-object={lookupTargetObject}
+                    display-label={lookupDisplayLabel}
+                    form-id={lookupFormId}
+                    version-id={lookupVersionId}
+                    answers={lookupAnswers}
+                    filter-key={lookupFilterKey}
+                    validation-error={lookupError}
                     placeholder={el.placeholder}
                     required={el.required}
                     disabled={el.disabled}
