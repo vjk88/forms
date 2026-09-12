@@ -223,10 +223,58 @@ matters more than the guest path.
 
 ---
 
-## 8. Open questions for the owner
+## 8. Owner rulings, 2026-09-11
 
-1. **Slice order.** S5 (native field mode) early, or after the custom control?
-2. **Guest search on or off for v1?** Item 11 is a product decision, not an
-   engineering one.
-3. **Does native field mode need to support our filter rows at all,** or is
-   "the platform's filter, take it or leave it" acceptable?
+1. **Native field mode ships first.** It becomes S1; the custom control follows.
+2. **Platform filter only in native mode.** The field's configured filter, take
+   it or leave it. An author who needs more switches that element to custom
+   mode. We never layer our rows on top of it.
+3. **Guest search is in scope for v1**, hard-gated by the spec-derived object
+   and field allow-list.
+
+---
+
+## 9. S1 detail — native field mode
+
+### 9.1 The describe call finally earns its keep
+
+`getFilteredLookupInfo()` gives controlling fields and never criteria. For v1
+that is a dead end. For native mode it is **exactly** what we need: it names the
+fields the platform filter reads, which is the list of carriers to render.
+
+New Apex, small: `getNativeLookupInfo(objectApiName, fieldApiName)` returns
+`{ supported, hasFilter, isDependent, isOptional, controllingFields[] }`.
+`supported` also answers the UI API object-coverage gate (ledger item 1).
+
+### 9.2 Where the form wraps
+
+**Section level**, matching legacy `formSectionRenderer`. A section holding at
+least one native-mode element renders its body inside
+`lightning-record-edit-form`.
+
+Considered and rejected: per-element wrapping puts every field in its own form,
+so `$Source` filters see nothing and the whole point is lost. Page-level
+wrapping would cover more but means touching every layout template, and nesting
+the layout inside a form invites styling and nested-form trouble.
+
+**Consequence, stated plainly:** a controlling field in a _different section_
+will not be seen by the filter. The filter then reads the saved record value
+instead of the user's unsaved edit. Authors get a warning at publish when a
+native-mode lookup's controlling field lives outside its section.
+
+### 9.3 Files
+
+| File                              | Change                                                                            |
+| :-------------------------------- | :-------------------------------------------------------------------------------- |
+| `classes/FinalLookupDescribe.cls` | new, small: `getNativeLookupInfo`                                                 |
+| `lwc/finalSectionRenderer`        | wrap body in `record-edit-form` when the section needs it; render hidden carriers |
+| `lwc/finalElementRenderer`        | `lightning-input-field` branch for native mode, `variant="label-hidden"`          |
+| `lwc/finalFormViewer`             | pass record context down; harvest field `change` into the answers map             |
+| `lwc/finalPropertyPanel`          | the mode radio, offered only for a bound reference field                          |
+| `FORM_SPEC_SCHEMA.md`             | `element.lookupMode: "native" \| "custom"`, default custom                        |
+
+### 9.4 Not in S1
+
+Custom mode, the Apex compiler, the combobox, guest search, filter authoring.
+`finalLookup` keeps its current `lightning-record-picker` body until S2 replaces
+it, so nothing regresses for authenticated non-record-bound forms.
