@@ -252,6 +252,35 @@ describe('c-final-element-renderer', () => {
         });
     });
 
+    describe('input typing', () => {
+        // The map used to stop at `date`, so every DateTime field rendered as
+        // a free-text box that happily accepted "ghfhfhfghfh".
+        const CASES = [
+            ['text', 'text'],
+            ['email', 'email'],
+            ['phone', 'tel'],
+            ['number', 'number'],
+            ['date', 'date'],
+            ['datetime', 'datetime'],
+            ['url', 'url']
+        ];
+        it.each(CASES)(
+            'renders a %s field as lightning-input type %s',
+            async (specType, nativeType) => {
+                const cmp = await mount(
+                    FIELD({
+                        id: 'el_x',
+                        config: { inputType: specType }
+                    })
+                );
+                const input =
+                    cmp.shadowRoot.querySelector('lightning-input');
+                expect(input).not.toBeNull();
+                expect(input.type).toBe(nativeType);
+            }
+        );
+    });
+
     describe('lookup rendering', () => {
         it('renders c-final-lookup for reference inputType and forwards valuechange', async () => {
             const cmp = await mount(
