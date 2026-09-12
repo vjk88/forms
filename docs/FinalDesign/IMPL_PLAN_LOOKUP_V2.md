@@ -33,11 +33,9 @@ product copy. None of those are lookup problems. They are UI API problems.
 | Object coverage         | UI-API-supported objects only                                                | Any queryable object                |
 | Available when          | The form is bound to that object **and** the element binds that field        | Always                              |
 
-Native field mode is what makes "reuse the field's configured Salesforce lookup
-filter" achievable at all. We established that the criteria are not readable:
-`getFilteredLookupInfo()` returns controlling fields and nothing else, and the
-Tooling `CustomField` route fails on exactly the fields people care about (see
-§7). So we stop trying to read the filter and let the platform enforce it.
+A field's configured lookup filter is the platform's business. Native field mode
+lets the platform enforce it. Custom mode does not read it, reimplement it, or
+care that it exists.
 
 **Authoring surface:** one radio in the element inspector.
 _Use the field's Salesforce lookup filter_ / _Use my own conditions_. The first
@@ -207,20 +205,6 @@ matters more than the guest path.
 12. **This contradicts the standing preference for native base components.** It
     is a deliberate exception, and the guest gap is the reason.
 
-**Measured, not assumed — the Tooling API route is a dead end**
-
-13. Standard fields are not `CustomField` records. Querying Tooling
-    `CustomField` for `Case` in this org returns four rows, all custom.
-    `ContactId` is absent and cannot be retrieved that way.
-14. `TableEnumOrId` holds the object **id** for custom objects
-    (`Job_Application__c` fields return `01Ihk000000JNH5EAO`), not an API name,
-    and `DeveloperName` drops the `__c`.
-15. `FieldDefinition` has no lookup-filter column at all.
-16. Reading a standard field's lookup filter therefore needs a Metadata API
-    retrieve, which is a callout with a session id, which in a packaged app
-    means a Named Credential and a Security Review conversation.
-    **Native field mode exists so we never have to do this.**
-
 ---
 
 ## 8. Owner rulings, 2026-09-11
@@ -236,11 +220,10 @@ matters more than the guest path.
 
 ## 9. S1 detail — native field mode
 
-### 9.1 The describe call finally earns its keep
+### 9.1 Which carriers to render
 
-`getFilteredLookupInfo()` gives controlling fields and never criteria. For v1
-that is a dead end. For native mode it is **exactly** what we need: it names the
-fields the platform filter reads, which is the list of carriers to render.
+`getFilteredLookupInfo()` names the fields a platform filter reads. That is the
+list of carriers to render, and the only thing we need from it.
 
 New Apex, small: `getNativeLookupInfo(objectApiName, fieldApiName)` returns
 `{ supported, hasFilter, isDependent, isOptional, controllingFields[] }`.
