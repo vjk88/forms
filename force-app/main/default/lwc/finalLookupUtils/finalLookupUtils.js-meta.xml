@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>66.0</apiVersion>
-    <isExposed>false</isExposed>
-    <description
-    >Lookup filter logic (schema §4.2). Pure module — the same compile + dependency rules serve the Studio preview and the runtime. The server re-derives all of it at submit; this is behaviour, not a boundary.</description>
-</LightningComponentBundle>

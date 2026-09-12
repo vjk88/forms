@@ -1,5 +1,14 @@
-/* The guest-unavailable treatment moved into c/finalRecordLookup, which now
-   owns every rendered state of a lookup. */
 .lookup-wrapper {
     width: 100%;
+}
+
+.lookup-guest-unavailable {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    color: var(--slds-g-color-neutral-base-30, #706e6b);
+    font-size: 0.8125rem;
+    line-height: 1.25;
 }

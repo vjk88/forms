@@ -214,13 +214,6 @@ public inherited sharing class FinalSubmitService {
             }
         }
 
-        // Checked BEFORE the savepoint: a refused lookup should never have
-        // started a transaction in the first place.
-        SubmitOutcome lookupRefusal = refuseBadLookups(spec, answers, mode);
-        if (lookupRefusal != null) {
-            return lookupRefusal;
-        }
-
         Savepoint sp = Database.setSavepoint();
         try {
             SObject parent = buildRecord(parentType, parentBindings);
@@ -276,119 +269,6 @@ public inherited sharing class FinalSubmitService {
                 'Your response could not be saved. Nothing was recorded.'
             );
         }
-    }
-
-    /**
-     * Lookup filters are a SAVE rule, not search UX.
-     *
-     * The client disabled the control, narrowed the search and cleared the
-     * child when its parent moved. None of that is evidence. The policy is
-     * recompiled here from the AUTHORITATIVE spec and every selection is
-     * re-checked against current records, so a payload assembled by hand, a
-     * stale tab, or a relationship that changed between choosing and
-     * submitting are all caught at the same gate.
-     *
-     * Errors blame the BOUND FIELD rather than the element id, because that is
-     * the vocabulary the client already maps back to a question — the same
-     * path DML rejections travel.
-     */
-    private static List<FieldError> lookupErrors(
-        Map<String, Object> spec,
-        Map<String, Object> answers
-    ) {
-        List<FieldError> out = new List<FieldError>();
-        Map<String, String> verdicts = FinalLookupPolicy.verifySelections(
-            spec,
-            answers
-        );
-        if (verdicts.isEmpty()) {
-            return out;
-        }
-        Map<String, String> fieldByElement = new Map<String, String>();
-        Map<String, String> labelByElement = new Map<String, String>();
-        for (Object pageObj : asList(spec.get('pages'))) {
-            for (Object secObj : asList(asMap(pageObj).get('sections'))) {
-                for (Object elObj : asList(asMap(secObj).get('elements'))) {
-                    Map<String, Object> el = asMap(elObj);
-                    if (el == null) {
-                        continue;
-                    }
-                    String elId = (String) el.get('id');
-                    if (String.isBlank(elId)) {
-                        continue;
-                    }
-                    labelByElement.put(
-                        elId,
-                        String.isBlank((String) el.get('label'))
-                            ? 'This lookup'
-                            : (String) el.get('label')
-                    );
-                    Map<String, Object> binding = asMap(el.get('binding'));
-                    if (binding != null) {
-                        fieldByElement.put(elId, (String) binding.get('field'));
-                    }
-                }
-            }
-        }
-
-        for (String elId : verdicts.keySet()) {
-            String code = verdicts.get(elId);
-            if (code == FinalLookupPolicy.CODE_OK) {
-                continue;
-            }
-            String label = labelByElement.containsKey(elId)
-                ? labelByElement.get(elId)
-                : 'This lookup';
-            String message;
-            if (code == FinalLookupPolicy.CODE_SOURCE_REQUIRED) {
-                message =
-                    label +
-                    ': answer the question it depends on, then choose again.';
-            } else if (code == FinalLookupPolicy.CODE_CONFIG_UNAVAILABLE) {
-                message =
-                    label + ' is not set up correctly, so it cannot be saved.';
-            } else {
-                // Deliberately incurious. Saying whether the record exists but
-                // is unreadable, versus simply fails the filter, would turn a
-                // form into a probe.
-                message =
-                    label +
-                    ': that record is not available for this question. Choose another.';
-            }
-            FieldError fe = new FieldError();
-            fe.message = message;
-            fe.fields = String.isBlank(fieldByElement.get(elId))
-                ? new List<String>()
-                : new List<String>{ fieldByElement.get(elId) };
-            out.add(fe);
-        }
-        return out;
-    }
-
-    /**
-     * Refuse the save when any lookup selection cannot be justified.
-     *
-     * A GUEST is told nothing about which question or which field, for the
-     * same reason they are told nothing about a validation rule: a public form
-     * must not become a probe.
-     */
-    private static SubmitOutcome refuseBadLookups(
-        Map<String, Object> spec,
-        Map<String, Object> answers,
-        Posture mode
-    ) {
-        List<FieldError> problems = lookupErrors(spec, answers);
-        if (problems.isEmpty()) {
-            return null;
-        }
-        if (mode == Posture.GUEST) {
-            throw new AuraHandledException(
-                'Your response could not be saved. Nothing was recorded.'
-            );
-        }
-        SubmitOutcome res = new SubmitOutcome();
-        res.errors = problems;
-        return res;
     }
 
     private class RepeatPlan {
@@ -477,13 +357,6 @@ public inherited sharing class FinalSubmitService {
         String sess = getStr(meta, 'sessionId');
         if (sess != null) {
             response.Session_Id__c = sess.abbreviate(255);
-        }
-
-        // Surveys can carry lookup questions too, and a mapped one writes to
-        // a real record. Same gate, same place: before the transaction opens.
-        SubmitOutcome lookupRefusal = refuseBadLookups(spec, answers, mode);
-        if (lookupRefusal != null) {
-            return lookupRefusal;
         }
 
         Savepoint sp = Database.setSavepoint();
