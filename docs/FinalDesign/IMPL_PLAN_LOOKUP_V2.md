@@ -23,15 +23,14 @@ product copy. None of those are lookup problems. They are UI API problems.
 
 ## 2. Two modes, chosen per element, never mixed
 
-|                         | **Native field mode**                                                        | **Custom mode**                     |
-| :---------------------- | :--------------------------------------------------------------------------- | :---------------------------------- |
-| Renders                 | `lightning-input-field` inside `lightning-record-edit-form`                  | `c/finalLookup` over an Apex search |
-| Filter source           | The field's **configured Salesforce lookup filter**, applied by the platform | Our `lookupConfig` filter rows      |
-| `$Source.Field` filters | Work, including against unsaved edits                                        | Not applicable                      |
-| Dependent lookups       | Free, platform-driven                                                        | Our engine                          |
-| Guests                  | **No** (UI API)                                                              | Yes, hard-gated                     |
-| Object coverage         | UI-API-supported objects only                                                | Any queryable object                |
-| Available when          | The form is bound to that object **and** the element binds that field        | Always                              |
+|                   | **Native field mode**                                                        | **Custom mode**                     |
+| :---------------- | :--------------------------------------------------------------------------- | :---------------------------------- |
+| Renders           | `lightning-input-field` inside `lightning-record-edit-form`                  | `c/finalLookup` over an Apex search |
+| Filter source     | The field's **configured Salesforce lookup filter**, applied by the platform | Our `lookupConfig` filter rows      |
+| Dependent lookups | Free, platform-driven                                                        | Our engine                          |
+| Guests            | **No** (UI API)                                                              | Yes, hard-gated                     |
+| Object coverage   | UI-API-supported objects only                                                | Any queryable object                |
+| Available when    | The form is bound to that object **and** the element binds that field        | Always                              |
 
 A field's configured lookup filter is the platform's business. Native field mode
 lets the platform enforce it. Custom mode does not read it, reimplement it, or
@@ -44,11 +43,9 @@ target object. Choosing it hides the filter rows entirely.
 
 ---
 
-## 3. Native field mode — the carrier pattern
+## 3. Native field mode
 
-Lifted from legacy `formSectionRenderer`, which already solved this.
-
-- A section that contains at least one native-mode field wraps its elements in
+- A section holding at least one native-mode field wraps its body in
   `lightning-record-edit-form` with `object-api-name`, `record-id` and
   `record-type-id`. We never call its `submit()`. It is a **render and FLS
   container only**; our own Apex still owns the save.
@@ -58,12 +55,12 @@ Lifted from legacy `formSectionRenderer`, which already solved this.
   (`event.detail.value`, keyed by `event.target.fieldName`) and written into the
   answers map through the normal path. For a lookup that value is the record id,
   which is what the payload already carries.
-- **The carrier trick:** any field a lookup filter references via `$Source` must
-  be registered in the same `record-edit-form`, even when we render our own
-  control for it. Legacy does this with a hidden
-  `<lightning-input-field class="carrier slds-hide">`. Without it the platform
-  filter evaluates against the _saved_ record value and ignores the user's
-  unsaved edit.
+
+**We inspect nothing.** Whatever the platform does with that field — lookup
+filters, dependent lookups, record-type behaviour — is the platform's business
+and happens without our involvement. An author who wants native behaviour picks
+native mode and gets it. We do not read, mirror, warn about, or engineer around
+any of it.
 
 ---
 
@@ -159,7 +156,7 @@ is genuinely new code.
 | S2  | `c/finalLookup` rewritten as an ARIA combobox over S1                     | yes            |
 | S3  | Authoring: rule-editor shell + field pickers + operator widening          | yes            |
 | S4  | Viewer wiring: recompile, mark-invalid, cascade, submit gate              | yes            |
-| S5  | Native field mode: record-edit-form container + carrier pattern           | yes            |
+| S5  | Native field mode: record-edit-form container                             | yes            |
 | S6  | Guest gating: allow-list, rate discipline, no field-level detail          | yes            |
 | S7  | Environment verification: LEX, Lightning Out, Experience Cloud, guest     | gate           |
 
@@ -177,32 +174,26 @@ matters more than the guest path.
    than assumed.
 2. **No guests.** UI API is unavailable to guest users, so this mode is
    authenticated-only by nature.
-3. **`$Source` filters only see fields inside the same `record-edit-form`.**
-   Mitigated by the carrier pattern, but it means a filter's controlling field
-   must be on the same form. Cross-page controlling fields will not work.
-4. **The platform owns the filter.** We cannot add conditions on top of it. It
+3. **The platform owns the filter.** We cannot add conditions on top of it. It
    is the field's filter or ours, never both.
-5. **Styling drift.** `lightning-input-field` brings SLDS defaults that our
+4. **Styling drift.** `lightning-input-field` brings SLDS defaults that our
    theme engine does not control as tightly as our own inputs.
-6. **Record type matters.** Lookup filters can differ per record type, so
+5. **Record type matters.** Lookup filters can differ per record type, so
    `record-type-id` has to be passed and kept current.
-7. **New-record forms** have no `$Source` values until the user types, so a
-   filter referencing an empty field behaves differently than on an edit.
+   **Custom mode**
 
-**Custom mode**
-
-8. **Accessibility is the real cost.** A hand-rolled combobox is the usual
+6. **Accessibility is the real cost.** A hand-rolled combobox is the usual
    failure point. This needs screen-reader testing, not just unit tests.
-9. **Apex on every keystroke.** Debounce, minimum length and result caps are
+7. **Apex on every keystroke.** Debounce, minimum length and result caps are
    specified, but query selectivity on large objects still needs attention.
-10. **We lose recent items, object icons and free maintenance.** Salesforce
-    stops fixing our combobox for us.
-11. **Guest search is a data-exposure decision, not only a technical one.** An
-    anonymous visitor must not be able to enumerate an object by typing one
-    letter. The spec's answer is the hard-gated, spec-derived object and field
-    allow-list with config read only from the published spec. That line has to
-    hold or the feature should stay off.
-12. **This contradicts the standing preference for native base components.** It
+8. **We lose recent items, object icons and free maintenance.** Salesforce
+   stops fixing our combobox for us.
+9. **Guest search is a data-exposure decision, not only a technical one.** An
+   anonymous visitor must not be able to enumerate an object by typing one
+   letter. The spec's answer is the hard-gated, spec-derived object and field
+   allow-list with config read only from the published spec. That line has to
+   hold or the feature should stay off.
+10. **This contradicts the standing preference for native base components.** It
     is a deliberate exception, and the guest gap is the reason.
 
 ---
@@ -220,15 +211,6 @@ matters more than the guest path.
 
 ## 9. S1 detail — native field mode
 
-### 9.1 Which carriers to render
-
-`getFilteredLookupInfo()` names the fields a platform filter reads. That is the
-list of carriers to render, and the only thing we need from it.
-
-New Apex, small: `getNativeLookupInfo(objectApiName, fieldApiName)` returns
-`{ supported, hasFilter, isDependent, isOptional, controllingFields[] }`.
-`supported` also answers the UI API object-coverage gate (ledger item 1).
-
 ### 9.2 Where the form wraps
 
 **Section level**, matching legacy `formSectionRenderer`. A section holding at
@@ -236,7 +218,7 @@ least one native-mode element renders its body inside
 `lightning-record-edit-form`.
 
 Considered and rejected: per-element wrapping puts every field in its own form,
-so `$Source` filters see nothing and the whole point is lost. Page-level
+which strands each field on its own and defeats the point. Page-level
 wrapping would cover more but means touching every layout template, and nesting
 the layout inside a form invites styling and nested-form trouble.
 
@@ -247,14 +229,13 @@ native-mode lookup's controlling field lives outside its section.
 
 ### 9.3 Files
 
-| File                              | Change                                                                            |
-| :-------------------------------- | :-------------------------------------------------------------------------------- |
-| `classes/FinalLookupDescribe.cls` | new, small: `getNativeLookupInfo`                                                 |
-| `lwc/finalSectionRenderer`        | wrap body in `record-edit-form` when the section needs it; render hidden carriers |
-| `lwc/finalElementRenderer`        | `lightning-input-field` branch for native mode, `variant="label-hidden"`          |
-| `lwc/finalFormViewer`             | pass record context down; harvest field `change` into the answers map             |
-| `lwc/finalPropertyPanel`          | the mode radio, offered only for a bound reference field                          |
-| `FORM_SPEC_SCHEMA.md`             | `element.lookupMode: "native" \| "custom"`, default custom                        |
+| File                       | Change                                                                   |
+| :------------------------- | :----------------------------------------------------------------------- |
+| `lwc/finalSectionRenderer` | wrap body in `record-edit-form` when the section needs it                |
+| `lwc/finalElementRenderer` | `lightning-input-field` branch for native mode, `variant="label-hidden"` |
+| `lwc/finalFormViewer`      | pass record context down; harvest field `change` into the answers map    |
+| `lwc/finalPropertyPanel`   | the mode radio, offered only for a bound reference field                 |
+| `FORM_SPEC_SCHEMA.md`      | `element.lookupMode: "native" \| "custom"`, default custom               |
 
 ### 9.4 Not in S1
 
