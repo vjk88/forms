@@ -122,17 +122,8 @@ const REPEAT_STYLES = [
 
 /** Display-as choices per inputType (legacy renderAsOptions, BUILDER_SURFACES §2). */
 function renderAsChoicesFor(inputType) {
-    // A reference field is a lookup either way, so "Default" would name
-    // nothing. The real choice is who decides which records appear.
     const isReference = inputType === 'reference' || inputType === 'lookup';
-    const opts = [
-        {
-            label: isReference
-                ? 'Search box (you choose which records appear)'
-                : 'Default (from schema)',
-            value: 'Default'
-        }
-    ];
+    const opts = [{ label: 'Default (from schema)', value: 'Default' }];
     if (inputType === 'text' || inputType === 'textarea') {
         opts.push(
             { label: 'Dropdown', value: 'Dropdown' },
@@ -153,12 +144,12 @@ function renderAsChoicesFor(inputType) {
         opts.push({ label: 'Slider', value: 'Slider' });
     }
     if (isReference) {
-        // Hands the field to the platform, which brings whatever Salesforce
-        // already does with it, its configured lookup filter included.
-        opts.push({
-            label: 'Standard Salesforce lookup (uses the field setup)',
-            value: 'Salesforce_Lookup'
-        });
+        // 'Default' for a reference field IS the standard Salesforce lookup —
+        // it renders lightning-input-field and the platform does whatever it
+        // already does, configured lookup filter included. The only thing
+        // worth naming is the alternative: our own search box, where the
+        // author decides which records are offered.
+        opts.push({ label: 'Search with filters', value: 'Filtered_Search' });
     }
     return opts;
 }
@@ -925,12 +916,13 @@ export default class FinalPropertyPanel extends LightningElement {
         );
     }
 
-    /** Our own control is configurable; the platform's is not ours to configure. */
+    /** Only our own control is configurable; the platform's is not ours to
+     *  configure, so offering filter boxes beside it would be a lie. */
     get showLookupFilter() {
         const t = this.cfg.inputType;
         return (
             (t === 'reference' || t === 'lookup') &&
-            this.cfg.renderAs !== 'Salesforce_Lookup'
+            this.cfg.renderAs === 'Filtered_Search'
         );
     }
 

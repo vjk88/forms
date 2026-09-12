@@ -53,7 +53,13 @@ const SPEC = {
                             type: 'field',
                             label: 'Contact',
                             binding: { object: 'Case', field: 'ContactId' },
-                            config: { inputType: 'reference' },
+                            // Filters mean our control, and the author has to
+                            // say so: a reference field renders the standard
+                            // Salesforce lookup unless asked otherwise.
+                            config: {
+                                inputType: 'reference',
+                                renderAs: 'Filtered_Search'
+                            },
                             lookupConfig: {
                                 targetObject: 'Contact',
                                 displayFields: ['Name'],
@@ -250,7 +256,7 @@ describe('c-final-form-viewer — dependent lookups', () => {
     });
 });
 
-describe('c-final-form-viewer — form-level Display-as default', () => {
+describe('c-final-form-viewer — reference default and the form-level override', () => {
     beforeEach(() => jest.useFakeTimers());
 
     afterEach(() => {
@@ -274,25 +280,61 @@ describe('c-final-form-viewer — form-level Display-as default', () => {
         return el;
     }
 
-    it('a form default sends reference fields to the platform control', async () => {
+    /** The shared SPEC, with the reference element's renderAs replaced. */
+    function specWithRenderAs(renderAs) {
         const spec = JSON.parse(JSON.stringify(SPEC));
-        spec.settings.fieldDefaults = { reference: 'Salesforce_Lookup' };
+        const el = spec.pages[0].sections[0].elements[1];
+        if (renderAs) {
+            el.config.renderAs = renderAs;
+        } else {
+            delete el.config.renderAs;
+        }
+        return spec;
+    }
+
+    it('a plain reference field renders the standard Salesforce lookup', async () => {
+        // "Default" for a reference field can only mean the standard lookup:
+        // that IS what the schema says the field is.
+        const el = await mountWith(specWithRenderAs(null));
+        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
+        expect(lookupOf(el)).toBeNull();
+    });
+
+    it('Default is explicit about the same thing', async () => {
+        const el = await mountWith(specWithRenderAs('Default'));
+        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
+        expect(lookupOf(el)).toBeNull();
+    });
+
+    it('Filtered_Search asks for our own control', async () => {
+        const el = await mountWith(specWithRenderAs('Filtered_Search'));
+        expect(lookupOf(el)).not.toBeNull();
+        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).toBeNull();
+    });
+
+    it('a form-level default reaches a field that states no choice', async () => {
+        const spec = specWithRenderAs(null);
+        spec.settings.fieldDefaults = { reference: 'Filtered_Search' };
+        const el = await mountWith(spec);
+        expect(lookupOf(el)).not.toBeNull();
+    });
+
+    it("the element's own choice still beats the form default", async () => {
+        const spec = specWithRenderAs('Default');
+        spec.settings.fieldDefaults = { reference: 'Filtered_Search' };
         const el = await mountWith(spec);
         expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
         expect(lookupOf(el)).toBeNull();
     });
 
-    it('an element that states its own choice ignores the form default', async () => {
-        const spec = JSON.parse(JSON.stringify(SPEC));
-        spec.settings.fieldDefaults = { reference: 'Salesforce_Lookup' };
-        spec.pages[0].sections[0].elements[1].config.renderAs = 'Default';
+    it('falls back to our control when there is no field to hand over', async () => {
+        // Survey questions bind nothing, and the guest projection strips
+        // bindings, so the platform field would have no field-name. Rather
+        // than render an empty box, our own control takes over.
+        const spec = specWithRenderAs(null);
+        delete spec.pages[0].sections[0].elements[1].binding;
         const el = await mountWith(spec);
         expect(lookupOf(el)).not.toBeNull();
         expect(deepQuery(el.shadowRoot, 'lightning-input-field')).toBeNull();
-    });
-
-    it('no default means our own control, as before', async () => {
-        const el = await mountWith(SPEC);
-        expect(lookupOf(el)).not.toBeNull();
     });
 });
