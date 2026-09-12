@@ -255,8 +255,17 @@ export default class FinalElementRenderer extends LightningElement {
 
     // ---- Display-as variants (BUILDER_SURFACES §2: config.renderAs) ----
 
+    /**
+     * The element's own choice wins; otherwise the form's default for this
+     * field type; otherwise the schema's. One getter feeds every variant
+     * below, so a form-level default reaches all of them at once.
+     */
     get renderAs() {
-        return this.cfg.renderAs || 'Default';
+        return (
+            this.cfg.renderAs ||
+            (this.el && this.el.renderDefault) ||
+            'Default'
+        );
     }
 
     /** Options: custom rows win; else the describe options (picklists). */
@@ -376,7 +385,7 @@ export default class FinalElementRenderer extends LightningElement {
     get isNativeLookup() {
         return (
             this.isAnyLookup &&
-            this.cfg.renderAs === 'Salesforce_Lookup' &&
+            this.renderAs === 'Salesforce_Lookup' &&
             Boolean(this.nativeObjectApiName && this.nativeFieldName)
         );
     }

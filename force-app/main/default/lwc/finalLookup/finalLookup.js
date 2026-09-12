@@ -356,7 +356,7 @@ export default class FinalLookup extends LightningElement {
             }
             this.results = (rows || []).map((r, i) => this._decorate(r, i, -1));
             this.activeIndex = -1;
-        } catch (e) {
+        } catch {
             if (generation !== this._generation) {
                 return;
             }

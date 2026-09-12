@@ -28,6 +28,12 @@ const OPERATOR_OPTIONS = [
 
 const NO_VALUE = new Set(['isBlank', 'isNotBlank']);
 
+/**
+ * Lookup filters speak a wider vocabulary than visibility rules, because they
+ * compile to SOQL rather than to a yes/no in the browser. A caller supplies
+ * these through `extraOperators`; visibility rules never see them, so the
+ * expression engine's operator set is untouched and saved rules cannot break.
+ */
 const OPERATOR_LABELS = new Map(
     OPERATOR_OPTIONS.map((o) => [o.value, o.label])
 );
@@ -112,6 +118,17 @@ function canDisplay(kind, value) {
 export default class FinalRuleEditor extends LightningElement {
     /** The visibility config (§7) or null/undefined = always visible. */
     @api value;
+
+    /**
+     * Extra `{value, label}` operators this editor should offer, appended to
+     * the built-in list. Lookup filters use it for the comparisons SOQL has
+     * and a browser rule does not (at-most, at-least, in, includes, excludes).
+     */
+    @api extraOperators;
+
+    /** Word for a row's left-hand side. Visibility rules pick a question;
+     *  a lookup filter picks a field on the object being searched. */
+    @api sourceLabel;
     /** Pickable source elements: [{id, label}] — scoped by the studio
      *  (repeater elements never offered outside their section, §7). */
     @api sources = [];
@@ -230,13 +247,20 @@ export default class FinalRuleEditor extends LightningElement {
         const rules = (this.value && this.value.rules) || [];
         return rules.map((rule, i) => {
             const allowed = OPERATORS_BY_TYPE[this._subtype(rule.source)];
-            let operatorOptions = (
-                allowed || OPERATOR_OPTIONS.map((o) => o.value)
-            ).map((v) => ({
-                value: v,
-                label: OPERATOR_LABELS.get(v),
-                selected: v === rule.operator ? true : undefined
-            }));
+            const extra = Array.isArray(this.extraOperators)
+                ? this.extraOperators
+                : [];
+            const labelFor = (v) => {
+                const found = extra.find((o) => o.value === v);
+                return found ? found.label : OPERATOR_LABELS.get(v);
+            };
+            let operatorOptions = (allowed || OPERATOR_OPTIONS.map((o) => o.value))
+                .concat(extra.map((o) => o.value))
+                .map((v) => ({
+                    value: v,
+                    label: labelFor(v),
+                    selected: v === rule.operator ? true : undefined
+                }));
             // A saved rule may hold an operator this subtype no longer offers
             // (authored before typing, or the source was repointed). Show it
             // rather than let the select silently resolve to its first option
@@ -247,7 +271,7 @@ export default class FinalRuleEditor extends LightningElement {
                     {
                         value: rule.operator,
                         label: `${
-                            OPERATOR_LABELS.get(rule.operator) || rule.operator
+                            labelFor(rule.operator) || rule.operator
                         } (not valid here)`,
                         selected: true
                     }

@@ -77,11 +77,12 @@ const SPEC = {
     ]
 };
 
-const flush = async () => {
-    for (let i = 0; i < 6; i++) {
-        await Promise.resolve();
-    }
-};
+const flush = () =>
+    Promise.resolve()
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve());
 
 function deepQueryAll(root, selector, acc = []) {
     acc.push(...root.querySelectorAll(selector));
@@ -246,5 +247,52 @@ describe('c-final-form-viewer — dependent lookups', () => {
         await flush();
         await flush();
         expect(lookupOf(el).shadowRoot.querySelector('.fl-error')).toBeNull();
+    });
+});
+
+describe('c-final-form-viewer — form-level Display-as default', () => {
+    beforeEach(() => jest.useFakeTimers());
+
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        jest.useRealTimers();
+        jest.clearAllMocks();
+    });
+
+    async function mountWith(spec) {
+        getSpec.mockResolvedValue(JSON.stringify(spec));
+        search.mockResolvedValue([]);
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        return el;
+    }
+
+    it('a form default sends reference fields to the platform control', async () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.settings.fieldDefaults = { reference: 'Salesforce_Lookup' };
+        const el = await mountWith(spec);
+        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
+        expect(lookupOf(el)).toBeNull();
+    });
+
+    it('an element that states its own choice ignores the form default', async () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.settings.fieldDefaults = { reference: 'Salesforce_Lookup' };
+        spec.pages[0].sections[0].elements[1].config.renderAs = 'Default';
+        const el = await mountWith(spec);
+        expect(lookupOf(el)).not.toBeNull();
+        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).toBeNull();
+    });
+
+    it('no default means our own control, as before', async () => {
+        const el = await mountWith(SPEC);
+        expect(lookupOf(el)).not.toBeNull();
     });
 });

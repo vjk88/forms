@@ -1,0 +1,43 @@
+<template>
+    <div class="lf-root">
+        <template lwc:if={loadError}>
+            <div class="lf-error" role="alert">{loadError}</div>
+        </template>
+
+        <lightning-input
+            label="Show in each result"
+            field-level-help="The first field is the result's main line; a second becomes the smaller line under it."
+            value={displayFieldsValue}
+            placeholder="Name, Account.Name"
+            onchange={handleDisplayFields}
+        ></lightning-input>
+
+        <lightning-input
+            label="Search these fields"
+            field-level-help="Leave empty to search whatever is shown in the result."
+            value={searchFieldsValue}
+            placeholder="Name"
+            onchange={handleSearchFields}
+        ></lightning-input>
+
+        <p class="lf-hint" if:true={fieldHint}>{fieldHint}</p>
+
+        <lightning-input
+            type="checkbox"
+            label="Let people filling this form anonymously search it"
+            field-level-help="Off unless you mean it. Anyone with the link could look through these records."
+            checked={allowGuest}
+            onchange={handleGuestToggle}
+        ></lightning-input>
+
+        <div class="lf-conditions">
+            <c-final-rule-editor
+                value={ruleValue}
+                sources={sources}
+                noun="field"
+                extra-operators={extraOperators}
+                onrulechange={handleRuleChange}
+            ></c-final-rule-editor>
+        </div>
+    </div>
+</template>

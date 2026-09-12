@@ -854,6 +854,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // settings.completion) — rendered by c/finalAfterSubmit on
             // submit; redirect EXECUTION lands with P3.
             afterSubmit: (spec.settings && spec.settings.completion) || {},
+            // Form-level "Display as" default per field type (SCHEMA §3
+            // settings.fieldDefaults). An element's own choice still wins.
+            fieldDefaults: (spec.settings && spec.settings.fieldDefaults) || {},
             header:
                 !layout.ownsHeader && header.style !== 'none' && hasLockup
                     ? header
@@ -1460,6 +1463,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         const needErrors =
             this._hasValidation && (this._revealed || []).length > 0;
+        const fieldDefaults = this.model.fieldDefaults || {};
         const ctx = this._ruleCtx();
         let pages = this.model.pages;
         if (this._hasRules) {
@@ -1533,6 +1537,21 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                             ...(base.config || {}),
                                             referenceTo: planObject
                                         }
+                                    };
+                                }
+                                // Form-level "Display as" default for this
+                                // field type. The element's own choice still
+                                // wins; this only fills the gap.
+                                const typeDefault =
+                                    fieldDefaults[
+                                        (base.config &&
+                                            base.config.inputType) ||
+                                            ''
+                                    ];
+                                if (typeDefault && !base.config?.renderAs) {
+                                    base = {
+                                        ...base,
+                                        renderDefault: typeDefault
                                     };
                                 }
                                 // Our lookup needs a little runtime context.

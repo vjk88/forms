@@ -17,11 +17,12 @@ const ROWS = [
 /* Fake timers are on for the debounce, so a setTimeout-based flush would wait
    forever. Drain microtasks instead: promise continuations and LWC's rerender
    both land there. */
-const flush = async () => {
-    for (let i = 0; i < 5; i++) {
-        await Promise.resolve();
-    }
-};
+const flush = () =>
+    Promise.resolve()
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve());
 
 function mount(props = {}) {
     const el = createElement('c-final-lookup', { is: FinalLookup });

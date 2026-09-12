@@ -1,0 +1,23 @@
+.lf-root {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.lf-hint {
+    margin: -0.375rem 0 0;
+    font-size: 0.75rem;
+    color: #5c5c5c;
+}
+
+.lf-error {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+    color: #ba0517;
+    background: #fef1f1;
+    border-radius: 0.25rem;
+}
+
+.lf-conditions {
+    margin-top: 0.25rem;
+}
