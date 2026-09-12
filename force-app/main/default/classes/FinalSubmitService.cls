@@ -53,6 +53,108 @@ public inherited sharing class FinalSubmitService {
         public List<String> fields;
     }
 
+    // ------------------------------------------------- lookup enforcement
+
+    /**
+     * The submit-time half of the lookup contract.
+     *
+     * The browser filtered a dropdown; that is UX, not security. Every lookup
+     * answer is re-checked here against the SAME compiled filter the search
+     * used, under the submitting user's own permissions. A record that no
+     * longer qualifies is refused before anything is written, so a form can
+     * never half-save around a bad reference.
+     *
+     * A guest is told a field is not acceptable and nothing else — naming the
+     * filter would describe data they cannot see.
+     */
+    private static List<FieldError> lookupErrors(
+        Map<String, Object> spec,
+        Map<String, Object> answers,
+        Posture mode
+    ) {
+        List<FieldError> out = new List<FieldError>();
+        if (answers == null || answers.isEmpty()) {
+            return out;
+        }
+        for (Object pageObj : asList(spec.get('pages'))) {
+            Map<String, Object> page = asMap(pageObj);
+            if (page == null) {
+                continue;
+            }
+            for (Object secObj : asList(page.get('sections'))) {
+                Map<String, Object> sec = asMap(secObj);
+                if (sec == null) {
+                    continue;
+                }
+                for (Object elObj : asList(sec.get('elements'))) {
+                    Map<String, Object> el = asMap(elObj);
+                    if (el == null) {
+                        continue;
+                    }
+                    Map<String, Object> cfg = asMap(el.get('lookupConfig'));
+                    if (cfg == null) {
+                        continue;
+                    }
+                    String elId = (String) el.get('id');
+                    Object raw = answers.get(elId);
+                    if (!(raw instanceof String) || String.isBlank((String) raw)) {
+                        continue; // nothing chosen is not a violation
+                    }
+                    Id chosen;
+                    try {
+                        chosen = Id.valueOf((String) raw);
+                    } catch (Exception e) {
+                        out.add(
+                            lookupError(el, mode, 'is not a valid selection.')
+                        );
+                        continue;
+                    }
+                    Set<Id> ok = FinalLookupService.verify(
+                        cfg,
+                        new Set<Id>{ chosen },
+                        answers
+                    );
+                    if (!ok.contains(chosen)) {
+                        out.add(
+                            lookupError(
+                                el,
+                                mode,
+                                'is no longer available for the answers on this form.'
+                            )
+                        );
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    private static FieldError lookupError(
+        Map<String, Object> el,
+        Posture mode,
+        String reason
+    ) {
+        FieldError fe = new FieldError();
+        String label = (String) el.get('label');
+        if (mode == Posture.GUEST) {
+            fe.message = 'One of your answers could not be accepted.';
+        } else {
+            fe.message =
+                (String.isBlank(label) ? 'That selection' : label) +
+                ' ' +
+                reason;
+        }
+        // The client routes by bound field name; an unbound question has none
+        // and becomes a form-level message rather than a mis-aimed one.
+        fe.fields = new List<String>();
+        Map<String, Object> binding = asMap(el.get('binding'));
+        String field = binding == null ? null : (String) binding.get('field');
+        if (String.isNotBlank(field)) {
+            fe.fields.add(field);
+        }
+        return fe;
+    }
+
     /**
      * DmlException → per-field errors.
      *
@@ -214,6 +316,13 @@ public inherited sharing class FinalSubmitService {
             }
         }
 
+        List<FieldError> badLookups = lookupErrors(spec, answers, mode);
+        if (!badLookups.isEmpty()) {
+            SubmitOutcome refused = new SubmitOutcome();
+            refused.errors = badLookups;
+            return refused;
+        }
+
         Savepoint sp = Database.setSavepoint();
         try {
             SObject parent = buildRecord(parentType, parentBindings);
@@ -357,6 +466,15 @@ public inherited sharing class FinalSubmitService {
         String sess = getStr(meta, 'sessionId');
         if (sess != null) {
             response.Session_Id__c = sess.abbreviate(255);
+        }
+
+        // Surveys carry lookups too, and a survey response is just as capable
+        // of pointing at a record the filter excludes.
+        List<FieldError> badLookups = lookupErrors(spec, answers, mode);
+        if (!badLookups.isEmpty()) {
+            SubmitOutcome refused = new SubmitOutcome();
+            refused.errors = badLookups;
+            return refused;
         }
 
         Savepoint sp = Database.setSavepoint();

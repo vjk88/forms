@@ -255,8 +255,17 @@ export default class FinalElementRenderer extends LightningElement {
 
     // ---- Display-as variants (BUILDER_SURFACES §2: config.renderAs) ----
 
+    /**
+     * The element's own choice wins; otherwise the form's default for this
+     * field type; otherwise the schema's. One getter feeds every variant
+     * below, so a form-level default reaches all of them at once.
+     */
     get renderAs() {
-        return this.cfg.renderAs || 'Default';
+        return (
+            this.cfg.renderAs ||
+            (this.el && this.el.renderDefault) ||
+            'Default'
+        );
     }
 
     /** Options: custom rows win; else the describe options (picklists). */
@@ -354,12 +363,81 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
-    get isLookup() {
+    get isAnyLookup() {
         return (
             this.isField &&
             (this.cfg.inputType === 'reference' ||
                 this.cfg.inputType === 'lookup')
         );
+    }
+
+    /** Our own control. */
+    get isLookup() {
+        return this.isAnyLookup && !this.isNativeLookup;
+    }
+
+    /**
+     * The author chose the platform's own field (BUILDER_SURFACES `renderAs`).
+     * Everything the platform does with it — configured lookup filters,
+     * dependent lookups, record-type behaviour — is the platform's business
+     * and happens without us reading, mirroring or warning about any of it.
+     */
+    get isNativeLookup() {
+        return (
+            this.isAnyLookup &&
+            this.renderAs === 'Salesforce_Lookup' &&
+            Boolean(this.nativeObjectApiName && this.nativeFieldName)
+        );
+    }
+
+    get nativeObjectApiName() {
+        const b = this.el && this.el.binding;
+        return (b && b.object) || (this.el && this.el.targetObjectApiName) || null;
+    }
+
+    get nativeFieldName() {
+        const b = this.el && this.el.binding;
+        return (b && b.field) || null;
+    }
+
+    get nativeRecordId() {
+        return (this.el && this.el.recordId) || null;
+    }
+
+    get nativeDisabled() {
+        return Boolean(this.el && (this.el.disabled || this.el.readOnly));
+    }
+
+    // ---- our lookup's runtime context, stamped onto the element by the
+    // viewer so it does not have to be threaded through every layout layer
+    get lookupCtx() {
+        return (this.el && this.el.lookup) || {};
+    }
+
+    get lookupFormId() {
+        return this.lookupCtx.formId || null;
+    }
+
+    get lookupVersionId() {
+        return this.lookupCtx.versionId || null;
+    }
+
+    get lookupAnswers() {
+        return this.lookupCtx.answers || {};
+    }
+
+    /** Changes whenever a value this lookup filters on changes. */
+    get lookupFilterKey() {
+        return this.lookupCtx.filterKey || '';
+    }
+
+    get lookupDisplayLabel() {
+        return this.lookupCtx.displayLabel || '';
+    }
+
+    get lookupError() {
+        const fromServer = (this.el && this.el.errors) || [];
+        return this.lookupCtx.error || (fromServer.length ? fromServer[0] : '');
     }
 
     get lookupTargetObject() {
@@ -1414,6 +1492,12 @@ export default class FinalElementRenderer extends LightningElement {
         if (event && event.detail) {
             this.dispatchValue(event.detail.value);
         }
+    }
+
+    /** `lightning-input-field` answers with the record id in `detail.value`. */
+    handleNativeFieldChange(event) {
+        const v = event && event.detail ? event.detail.value : null;
+        this.dispatchValue(v == null ? null : v);
     }
 
     handleChange(event) {

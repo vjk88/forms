@@ -476,6 +476,20 @@
                     </select>
                 </template>
 
+                <!-- Lookup results. Only for OUR control: native mode hands
+                     the field to the platform, so there is nothing here to
+                     configure and offering boxes would be a lie. -->
+                <template lwc:if={showLookupFilter}>
+                    <div class="pp-fld pp-lookup">
+                        <span class="pp-label">Lookup results</span>
+                        <c-final-lookup-filter
+                            target-object={lookupTargetObject}
+                            value={lookupConfigValue}
+                            onlookupconfigchange={handleLookupConfigChange}
+                        ></c-final-lookup-filter>
+                    </div>
+                </template>
+
                 <template lwc:if={showOptionsEditor}>
                     <div class="pp-fld">
                         <span class="pp-label">Options</span>

@@ -142,6 +142,15 @@ function renderAsChoicesFor(inputType) {
     if (inputType === 'number') {
         opts.push({ label: 'Slider', value: 'Slider' });
     }
+    if (inputType === 'reference' || inputType === 'lookup') {
+        // 'Default' is our own search control. This hands the field to the
+        // platform instead, which brings whatever Salesforce already does
+        // with it — its configured lookup filter included.
+        opts.push({
+            label: "Salesforce's own lookup",
+            value: 'Salesforce_Lookup'
+        });
+    }
     return opts;
 }
 
@@ -905,6 +914,41 @@ export default class FinalPropertyPanel extends LightningElement {
             ],
             this.behaviorValue
         );
+    }
+
+    /** Our own control is configurable; the platform's is not ours to configure. */
+    get showLookupFilter() {
+        const t = this.cfg.inputType;
+        return (
+            (t === 'reference' || t === 'lookup') &&
+            this.cfg.renderAs !== 'Salesforce_Lookup'
+        );
+    }
+
+    get lookupTargetObject() {
+        return (
+            this.cfg.referenceTo ||
+            this.cfg.targetObject ||
+            (this.lookupConfigValue && this.lookupConfigValue.targetObject) ||
+            null
+        );
+    }
+
+    get lookupConfigValue() {
+        return this.n.lookupConfig || null;
+    }
+
+    handleLookupConfigChange(event) {
+        const value = (event.detail && event.detail.value) || null;
+        // The target object is ours to stamp, not the author's to type: it
+        // comes from the field this element already binds.
+        const next =
+            value && this.lookupTargetObject
+                ? { ...value, targetObject: this.lookupTargetObject }
+                : value;
+        // lookupConfig lives on the ELEMENT, beside binding, not inside
+        // `config` — the server reads it straight off the published element.
+        this._prop({ lookupConfig: next });
     }
 
     get renderAsOptions() {

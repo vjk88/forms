@@ -262,7 +262,11 @@ describe('c-final-element-renderer', () => {
             );
             const lookup = cmp.shadowRoot.querySelector('c-final-lookup');
             expect(lookup).not.toBeNull();
-            expect(lookup.targetObject).toBe('Account');
+            // The control is NOT told which object to search. The server reads
+            // that from the published spec, so a rewritten property buys
+            // nothing. It gets only enough to identify the config.
+            expect(lookup.targetObject).toBeUndefined();
+            expect(lookup.elementId).toBe('el_acc');
 
             const handler = jest.fn();
             cmp.addEventListener('valuechange', handler);

@@ -149,6 +149,34 @@ function splitOnePerScreen(pages) {
  * the engine runs live (builder-preview semantics — fine for internal P0).
  * `?c__formId=` / `?c__versionId=` URL params override the configured properties.
  */
+/**
+ * A fingerprint of everything a lookup's filter depends on.
+ *
+ * The server owns the real filter; this is only here so the control can notice
+ * that the ground moved under a selection the respondent already made. When
+ * this string changes and a record is still held, that record may no longer
+ * qualify and the respondent is told so immediately rather than at submit.
+ */
+export function lookupFilterKey(el, answers) {
+    const rows =
+        el && el.lookupConfig && el.lookupConfig.filter
+            ? el.lookupConfig.filter.rows
+            : null;
+    if (!Array.isArray(rows)) {
+        return '';
+    }
+    const parts = [];
+    for (const row of rows) {
+        const raw = row && row.value;
+        if (typeof raw === 'string' && raw.indexOf('$field.') === 0) {
+            const id = raw.slice(7);
+            const v = answers ? answers[id] : undefined;
+            parts.push(id + '=' + JSON.stringify(v === undefined ? null : v));
+        }
+    }
+    return parts.join('|');
+}
+
 export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api formId;
     @api versionId;
@@ -393,6 +421,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  edits, the bound fields to read off it, and the element↔field map used
      *  to seed answers. Set only when existingRecordId is explicitly configured. */
     _editRecordId = null;
+
+    /** elementId → message, for lookups whose filter moved under them. */
+    _lookupStale = {};
+    /** elementId → the resolved name of a restored selection. */
+    _lookupLabels = {};
     _editObject = null;
     _editFields = [];
     _editFieldByElement = [];
@@ -425,6 +458,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     connectedCallback() {
+        // A composed, bubbling event from the lookup reaches the host. The
+        // listener goes here rather than in the constructor: under Lightning
+        // Web Security a constructor-time template listener never fires.
+        if (!this._lookupListenerBound) {
+            this._lookupListenerBound = true;
+            this.addEventListener('lookupinvalid', (e) =>
+                this.handleLookupInvalid(e)
+            );
+        }
         if (this._connectedOnce) {
             this._refreshNavCtor();
             if (this._surveyLoading && this._editSpec)
@@ -812,6 +854,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // settings.completion) — rendered by c/finalAfterSubmit on
             // submit; redirect EXECUTION lands with P3.
             afterSubmit: (spec.settings && spec.settings.completion) || {},
+            // Form-level "Display as" default per field type (SCHEMA §3
+            // settings.fieldDefaults). An element's own choice still wins.
+            fieldDefaults: (spec.settings && spec.settings.fieldDefaults) || {},
             header:
                 !layout.ownsHeader && header.style !== 'none' && hasLockup
                     ? header
@@ -1418,6 +1463,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         const needErrors =
             this._hasValidation && (this._revealed || []).length > 0;
+        const fieldDefaults = this.model.fieldDefaults || {};
         const ctx = this._ruleCtx();
         let pages = this.model.pages;
         if (this._hasRules) {
@@ -1490,6 +1536,43 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                         config: {
                                             ...(base.config || {}),
                                             referenceTo: planObject
+                                        }
+                                    };
+                                }
+                                // Form-level "Display as" default for this
+                                // field type. The element's own choice still
+                                // wins; this only fills the gap.
+                                const typeDefault =
+                                    fieldDefaults[
+                                        (base.config &&
+                                            base.config.inputType) ||
+                                            ''
+                                    ];
+                                if (typeDefault && !base.config?.renderAs) {
+                                    base = {
+                                        ...base,
+                                        renderDefault: typeDefault
+                                    };
+                                }
+                                // Our lookup needs a little runtime context.
+                                // Stamping it on the element beats threading
+                                // four more props through every layout layer.
+                                if (base.lookupConfig) {
+                                    base = {
+                                        ...base,
+                                        lookup: {
+                                            formId: this.effectiveFormId || null,
+                                            versionId:
+                                                this.effectiveVersionId || null,
+                                            answers: this.answers,
+                                            filterKey: lookupFilterKey(
+                                                base,
+                                                this.answers
+                                            ),
+                                            displayLabel:
+                                                this._lookupLabels[el.id] || '',
+                                            error:
+                                                this._lookupStale[el.id] || ''
                                         }
                                     };
                                 }
@@ -1810,8 +1893,49 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
     }
 
+    /**
+     * A lookup reports that the answers its filter depends on have changed
+     * while it still holds a record. We keep the selection on screen and mark
+     * it, rather than clearing it: the respondent chose that record on purpose,
+     * and silently deleting their work to save them a correction is rude.
+     * The server still has the final say at submit.
+     */
+    handleLookupInvalid(event) {
+        const { elementId, invalid, message } = (event && event.detail) || {};
+        if (!elementId) {
+            return;
+        }
+        const next = { ...this._lookupStale };
+        if (invalid) {
+            next[elementId] = message || 'Check this selection.';
+        } else {
+            delete next[elementId];
+        }
+        this._lookupStale = next;
+    }
+
+    get hasStaleLookups() {
+        return Object.keys(this._lookupStale).length > 0;
+    }
+
     async handleSubmit() {
         if (!this.model || this.error || this.isSubmitBlocked) return;
+        // A marked lookup blocks the submit. Letting it through would mean a
+        // guaranteed server refusal and a round trip to learn what the form
+        // already knew.
+        if (this.hasStaleLookups) {
+            const first = Object.keys(this._lookupStale)[0];
+            const page = this.visiblePages.findIndex((p) =>
+                (p.sections || []).some((sec) =>
+                    (sec.elements || []).some((el) => el.id === first)
+                )
+            );
+            if (page >= 0) {
+                this.pageIndex = page;
+                this._reveal(page);
+            }
+            return;
+        }
         // Submit validates EVERY visible page; the first invalid one becomes
         // the current page with its failures shown.
         const validity = this.pageValidity;
