@@ -164,9 +164,6 @@
                  so the platform renders it and applies whatever it applies.
                  We supply the label chrome and read the value back out. -->
             <template lwc:elseif={isNativeLookup}>
-                <label class="fl-native-label" if:true={el.label}
-                    >{el.label}</label
-                >
                 <lightning-record-edit-form
                     object-api-name={nativeObjectApiName}
                     record-id={nativeRecordId}

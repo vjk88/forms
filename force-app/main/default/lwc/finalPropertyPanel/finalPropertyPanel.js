@@ -122,7 +122,17 @@ const REPEAT_STYLES = [
 
 /** Display-as choices per inputType (legacy renderAsOptions, BUILDER_SURFACES §2). */
 function renderAsChoicesFor(inputType) {
-    const opts = [{ label: 'Default (from schema)', value: 'Default' }];
+    // A reference field is a lookup either way, so "Default" would name
+    // nothing. The real choice is who decides which records appear.
+    const isReference = inputType === 'reference' || inputType === 'lookup';
+    const opts = [
+        {
+            label: isReference
+                ? 'Search box (you choose which records appear)'
+                : 'Default (from schema)',
+            value: 'Default'
+        }
+    ];
     if (inputType === 'text' || inputType === 'textarea') {
         opts.push(
             { label: 'Dropdown', value: 'Dropdown' },
@@ -142,12 +152,11 @@ function renderAsChoicesFor(inputType) {
     if (inputType === 'number') {
         opts.push({ label: 'Slider', value: 'Slider' });
     }
-    if (inputType === 'reference' || inputType === 'lookup') {
-        // 'Default' is our own search control. This hands the field to the
-        // platform instead, which brings whatever Salesforce already does
-        // with it — its configured lookup filter included.
+    if (isReference) {
+        // Hands the field to the platform, which brings whatever Salesforce
+        // already does with it, its configured lookup filter included.
         opts.push({
-            label: "Salesforce's own lookup",
+            label: 'Standard Salesforce lookup (uses the field setup)',
             value: 'Salesforce_Lookup'
         });
     }
