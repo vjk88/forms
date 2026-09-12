@@ -19,12 +19,21 @@ import {
  * ordinary required validation entry (false fails required — engine §7).
  */
 
+/**
+ * Spec inputType → lightning-input type.
+ *
+ * Anything missing here falls through to 'text', which is silent and wrong:
+ * a DateTime field rendered as a free-text box accepts "ghfhfhfghfh". Keep
+ * this in step with `FinalStudioController.inputTypeOf`, which is what
+ * decides the spec vocabulary in the first place.
+ */
 const INPUT_TYPES = {
     text: 'text',
     email: 'email',
     phone: 'tel',
     number: 'number',
     date: 'date',
+    datetime: 'datetime',
     url: 'url',
     checkbox: 'checkbox'
 };
