@@ -7,20 +7,6 @@
     display: block;
 }
 
-.fl-label {
-    display: block;
-    margin-bottom: 0.25rem;
-    font-size: var(--c-field-label-size, 0.8125rem);
-    font-weight: var(--c-field-label-weight, 500);
-    color: var(--c-field-label-ink, #3e3e3c);
-}
-
-.fl-required {
-    margin-left: 0.125rem;
-    color: var(--c-error-ink, #ba0517);
-    text-decoration: none;
-}
-
 .fl-combobox {
     position: relative;
 }

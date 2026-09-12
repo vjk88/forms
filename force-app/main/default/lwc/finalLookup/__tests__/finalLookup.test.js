@@ -68,6 +68,29 @@ describe('c-final-lookup', () => {
         jest.clearAllMocks();
     });
 
+    it('draws no visible label of its own, but keeps the assistive one', async () => {
+        // The host renders the themeable label (aria-hidden) and this control
+        // carries the accessible name, so a screen reader announces the field
+        // once. Drawing our own put the label on screen twice.
+        const el = mount();
+        await flush();
+        expect(el.shadowRoot.querySelector('label')).toBeNull();
+        expect(input(el).getAttribute('aria-label')).toBe('Contact');
+    });
+
+    it('a read-only pill still carries the accessible name', async () => {
+        const el = mount({
+            value: '003a',
+            displayLabel: 'Rose Gonzalez',
+            readOnly: true
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('label')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.fl-pill').getAttribute('aria-label')
+        ).toBe('Contact');
+    });
+
     it('does not search below the two-character minimum', async () => {
         const el = mount();
         await type(el, 'a');

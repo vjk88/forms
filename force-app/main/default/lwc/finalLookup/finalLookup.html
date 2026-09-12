@@ -3,8 +3,7 @@
          user can focus but not use reads as broken rather than as locked. -->
     <template lwc:if={showPill}>
         <div class="fl-field">
-            <label class="fl-label" if:true={label}>{label}</label>
-            <div class="fl-pill" data-readonly="true">
+            <div class="fl-pill" data-readonly="true" aria-label={label}>
                 <lightning-icon
                     icon-name="utility:record"
                     size="xx-small"
@@ -16,14 +15,10 @@
     </template>
 
     <template lwc:else>
+        <!-- No visible label here on purpose. The host renders the themeable
+             one (aria-hidden) and this control keeps the assistive name, so a
+             screen reader announces the field exactly once. -->
         <div class="fl-field" data-invalid={invalidAttr}>
-            <label class="fl-label" for="input" if:true={label}>
-                {label}
-                <abbr class="fl-required" title="required" if:true={required}
-                    >*</abbr
-                >
-            </label>
-
             <!-- A held selection is a pill with a clear button, not text in the
                  input. The user picked a RECORD, so show a record. -->
             <template lwc:if={hasSelection}>
@@ -59,6 +54,7 @@
                         role="combobox"
                         autocomplete="off"
                         placeholder={placeholder}
+                        aria-label={label}
                         value={term}
                         disabled={disabled}
                         aria-expanded={ariaExpanded}
