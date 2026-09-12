@@ -1,28 +1,123 @@
 <template>
-    <template lwc:if={isGuestUser}>
-        <div class="lookup-guest-unavailable" role="status">
-            <lightning-icon
-                icon-name="utility:info"
-                size="x-small"
-                class="slds-m-right_x-small"
-            ></lightning-icon>
-            <span>{unavailableMessage}</span>
+    <!-- Read-only and disabled render a pill, never a dead input. An input the
+         user can focus but not use reads as broken rather than as locked. -->
+    <template lwc:if={showPill}>
+        <div class="fl-field">
+            <label class="fl-label" if:true={label}>{label}</label>
+            <div class="fl-pill" data-readonly="true">
+                <lightning-icon
+                    icon-name="utility:record"
+                    size="xx-small"
+                    alternative-text=""
+                ></lightning-icon>
+                <span class="fl-pill-text">{pillText}</span>
+            </div>
         </div>
     </template>
+
     <template lwc:else>
-        <div class="lookup-wrapper">
-            <lightning-record-picker
-                data-id="picker"
-                object-api-name={targetObject}
-                value={value}
-                label={label}
-                placeholder={placeholder}
-                required={required}
-                disabled={isLookupDisabled}
-                variant="label-hidden"
-                onchange={handleChange}
-                onerror={handleError}
-            ></lightning-record-picker>
+        <div class="fl-field" data-invalid={invalidAttr}>
+            <label class="fl-label" for="input" if:true={label}>
+                {label}
+                <abbr class="fl-required" title="required" if:true={required}
+                    >*</abbr
+                >
+            </label>
+
+            <!-- A held selection is a pill with a clear button, not text in the
+                 input. The user picked a RECORD, so show a record. -->
+            <template lwc:if={hasSelection}>
+                <div class="fl-pill">
+                    <lightning-icon
+                        icon-name="utility:record"
+                        size="xx-small"
+                        alternative-text=""
+                    ></lightning-icon>
+                    <span class="fl-pill-text">{pillText}</span>
+                    <button
+                        class="fl-clear"
+                        type="button"
+                        title={clearTitle}
+                        aria-label={clearTitle}
+                        onclick={handleClear}
+                    >
+                        <lightning-icon
+                            icon-name="utility:close"
+                            size="xx-small"
+                            alternative-text=""
+                        ></lightning-icon>
+                    </button>
+                </div>
+            </template>
+
+            <template lwc:else>
+                <div class="fl-combobox" role="none">
+                    <input
+                        id="input"
+                        class="fl-input"
+                        type="text"
+                        role="combobox"
+                        autocomplete="off"
+                        placeholder={placeholder}
+                        value={term}
+                        disabled={disabled}
+                        aria-expanded={ariaExpanded}
+                        aria-controls="listbox"
+                        aria-autocomplete="list"
+                        aria-invalid={ariaInvalid}
+                        aria-describedby="status"
+                        oninput={handleInput}
+                        onkeydown={handleKeydown}
+                        onfocus={handleFocus}
+                        onblur={handleBlur}
+                    />
+                    <span class="fl-spinner" if:true={loading} aria-hidden="true"
+                        ></span>
+
+                    <div
+                        id="listbox"
+                        class="fl-listbox"
+                        role="listbox"
+                        aria-label={listboxLabel}
+                        if:true={open}
+                    >
+                        <template lwc:if={hasResults}>
+                            <template for:each={results} for:item="r">
+                                <div
+                                    key={r.id}
+                                    id={r.id}
+                                    class={r.optionClass}
+                                    role="option"
+                                    data-id={r.id}
+                                    aria-selected={r.selected}
+                                    onmousedown={handleOptionMouseDown}
+                                    onmouseenter={handleOptionHover}
+                                >
+                                    <span class="fl-opt-title">{r.title}</span>
+                                    <span
+                                        class="fl-opt-sub"
+                                        if:true={r.subtitle}
+                                        >{r.subtitle}</span
+                                    >
+                                </div>
+                            </template>
+                        </template>
+                        <template lwc:else>
+                            <div class="fl-empty">{emptyMessage}</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- One error line, owned by this component. The live region also
+                 announces result counts, so a screen-reader user is told what
+                 typing produced without having to go looking. -->
+            <div id="status" class="fl-status" role="status" aria-live="polite">
+                {statusText}
+            </div>
+            <div class="fl-error" role="alert" if:true={errorMessage}>
+                {errorMessage}
+            </div>
         </div>
     </template>
 </template>
