@@ -1,38 +1,7 @@
 # Reusable lookup and dependent filters — technical implementation plan
 
-Status: **SLICES 0-4 BUILT AND MERGED, 2026-09-11** (PRs #264, #265, #266, #267).
-Slice 5, the Screen Flow adapter, was deliberately deferred by the owner and is
-NOT built. Prepared 2026-09-08; audience: junior developer, with senior review
-of Apex access enforcement.
-
-## What shipped, and what the plan got wrong
-
-Read [DEPENDENT_LOOKUP_SPIKE_EVIDENCE.md](./DEPENDENT_LOOKUP_SPIKE_EVIDENCE.md)
-before changing anything here: §3's compatibility gate was run, and it corrected
-two assumptions in this document.
-
-- **The native picker works under Lightning Out.** §3's contingency for a
-  "clearly labeled simulated preview" in the Studio host is dead. The real
-  control renders, searches and filters there.
-- **`checkValidity()` and `reportValidity()` both exist and both return real
-  booleans, and `clearSelection()` is public.** §4's defensive wording about
-  not assuming them was unnecessary on this platform, and the dependency engine
-  never needed the remount-by-key trick merely to clear a child.
-- **What the plan got right, and it is the load-bearing one:** a stale selection
-  SURVIVES a filter change. The control never validates its own value against
-  the current filter, which is why §5's clear-on-dependency-change rule and §7's
-  "setting a value does not prove membership" warning both stand.
-
-One thing the plan under-specified, found only by opening a browser: an
-immutable instance context (§7) is useless without the remount that goes with
-it. The adapter correctly dropped every selection made after a filter change,
-and the child silently kept its old record, with a fully green Jest suite. The
-remount now lives in `finalElementRenderer`, keyed on the filter generation.
-
-Schema lives in [FORM_SPEC_SCHEMA §4.2](./FORM_SPEC_SCHEMA.md). Open gate:
-logged-in Experience Cloud is still unverified, because the org has no community
-user. Do not release authorable filters to an Experience Cloud audience until
-that is run.
+Status: proposed implementation; no feature code changed by this document.
+Prepared: 2026-09-08. Audience: junior developer, with senior review of Apex access enforcement.
 
 ## 1. Outcome and scope
 
