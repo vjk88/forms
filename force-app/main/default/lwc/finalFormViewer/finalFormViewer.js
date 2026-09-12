@@ -1948,16 +1948,65 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             message || 'Your response could not be saved. Please try again.';
     }
 
+    /** Answer keys the rules currently HIDE. A hidden question keeps its
+     *  answer in memory — a rule can flip back and the respondent must not
+     *  lose their typing — but that answer is not an answer, so it never
+     *  leaves the browser.
+     *
+     *  This subtracts the visible walk from the model walk rather than
+     *  keeping only what is visible, so a key the spec does not know about
+     *  (a stale answer, a host-seeded one) passes through untouched. Apex
+     *  skips any element id it is not sent, so an omitted answer leaves the
+     *  bound field alone instead of writing null over it — which is what
+     *  makes hiding a field safe in record-edit mode. */
+    get _hiddenAnswerKeys() {
+        if (!this.model || !this._hasRules) {
+            return null;
+        }
+        // Repeat sections answer as ONE consolidated entry, so they are kept
+        // or dropped whole; their child element ids never key the flat store.
+        const collect = (pages, into) => {
+            for (const page of pages || []) {
+                for (const section of page.sections || []) {
+                    if (section.repeat) {
+                        into.add(`repeat:${section.id}`);
+                        continue;
+                    }
+                    for (const el of section.elements || []) {
+                        into.add(el.id);
+                    }
+                }
+            }
+        };
+        const shown = new Set();
+        collect(this.visiblePages, shown);
+        const all = new Set();
+        collect(this.model.pages, all);
+        const hidden = new Set();
+        for (const key of all) {
+            if (!shown.has(key)) {
+                hidden.add(key);
+            }
+        }
+        return hidden;
+    }
+
     /** Schema §8: answers keyed by element id; repeat sections answer as
      *  ONE consolidated `repeat:{sectionId}` entry → the repeats map; file
      *  answers lift OUT of `answers` into the top-level `files` array, since
      *  they become ContentVersion records rather than a field on the target
-     *  object. `files` is omitted entirely when nothing was attached. */
+     *  object. `files` is omitted entirely when nothing was attached.
+     *  Rule-hidden questions are dropped on the way out (see
+     *  `_hiddenAnswerKeys`) — including their uploads. */
     _payload() {
         const answers = {};
         const repeats = {};
         const files = [];
+        const hidden = this._hiddenAnswerKeys;
         for (const key of Object.keys(this.answers)) {
+            if (hidden && hidden.has(key)) {
+                continue;
+            }
             if (key.indexOf('repeat:') === 0) {
                 repeats[key.slice(7)] = this.answers[key];
             } else if (this._ruleTypeIndex.get(key) === 'file') {
