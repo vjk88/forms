@@ -423,34 +423,49 @@ public inherited sharing class FinalLookupService {
         }
         List<String> canonical = new List<String>();
         for (Integer i = 0; i < parts.size(); i++) {
-            Boolean last = (i == parts.size() - 1);
             String seg = parts[i];
             Map<String, Schema.SObjectField> fields = current.getDescribe()
                 .fields.getMap();
-            Schema.SObjectField f = fields.get(seg.toLowerCase());
-            if (f == null && !last) {
-                // relationship name, e.g. "Account" → field "AccountId"
-                f = fields.get((seg + 'id').toLowerCase());
-            }
-            if (f == null) {
-                return null;
-            }
-            Schema.DescribeFieldResult d = f.getDescribe();
-            if (last) {
-                canonical.add(d.getName());
+            if (i == parts.size() - 1) {
+                Schema.SObjectField f = fields.get(seg.toLowerCase());
+                if (f == null) {
+                    return null;
+                }
+                canonical.add(f.getDescribe().getName());
                 return String.join(canonical, '.');
             }
-            if (
-                d.getType() != Schema.DisplayType.REFERENCE ||
-                String.isBlank(d.getRelationshipName())
-            ) {
+            // A hop may be written either way: the FIELD (`AccountId`,
+            // `Job_Application__c`) or the RELATIONSHIP (`Account`,
+            // `Job_Application__r`). Authors and SOQL disagree about which is
+            // natural, so accept both and emit the relationship name.
+            Schema.DescribeFieldResult hop = null;
+            Schema.SObjectField direct = fields.get(seg.toLowerCase());
+            if (direct != null) {
+                Schema.DescribeFieldResult d = direct.getDescribe();
+                if (d.getType() == Schema.DisplayType.REFERENCE) {
+                    hop = d;
+                }
+            }
+            if (hop == null) {
+                for (Schema.SObjectField f : fields.values()) {
+                    Schema.DescribeFieldResult d = f.getDescribe();
+                    if (
+                        d.getType() == Schema.DisplayType.REFERENCE &&
+                        seg.equalsIgnoreCase(d.getRelationshipName())
+                    ) {
+                        hop = d;
+                        break;
+                    }
+                }
+            }
+            if (hop == null || String.isBlank(hop.getRelationshipName())) {
                 return null;
             }
-            List<Schema.SObjectType> refs = d.getReferenceTo();
+            List<Schema.SObjectType> refs = hop.getReferenceTo();
             if (refs == null || refs.size() != 1) {
                 return null; // polymorphic traversal is not v1
             }
-            canonical.add(d.getRelationshipName());
+            canonical.add(hop.getRelationshipName());
             current = refs[0];
         }
         return null;
