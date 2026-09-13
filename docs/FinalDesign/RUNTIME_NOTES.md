@@ -30,6 +30,24 @@ site Home page 2026-09-11.
 Plain-language version, with the placement rule and a diagram, lives in
 [GUEST_SITE_SETUP.md](./GUEST_SITE_SETUP.md) §3a — send anyone confused there.
 
+## Native base components — normalise their values where they enter our code
+
+`lightning-input-field` returns a lookup's selection as an **array** in `event.detail.value`
+(`["001…"]`), per the official component reference, even though multi-select lookups are not
+supported. Native values are normalised at the single point they enter our code —
+`finalElementRenderer.handleNativeFieldChange` — so the answers map, Autofill and submit only ever
+see a plain record Id.
+
+**Why this is law (2026-09-13):** passing the array through made Autofill's record read wait
+forever — an array is not a record Id, so LDS `getRecord` never resolves — and the form sat on
+"Finishing Autofill…" until its 10-second timeout while filling nothing. Submit would also have
+written an array into the lookup field. Every Jest test passed, because the `lightning-input-field`
+stub hands back whatever the test sets.
+
+**Rules:** before wiring a base component's event or value, read its official reference for the
+exact `event.detail` shape; normalise at the boundary; and write the test fixture in the documented
+shape, not the one you assumed.
+
 ## Guest file uploads — `fileUpload` & `formSignature` (review B)
 
 Guest users on Experience / Site pages **cannot create `ContentVersion` (Files) directly** without

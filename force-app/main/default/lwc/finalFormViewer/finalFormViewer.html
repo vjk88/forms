@@ -49,7 +49,17 @@
                             {submitError}
                         </div>
                     </template>
-                    <div hidden={isEditBlocked} data-edit-surface>
+                    <div
+                        class="viewer-surface"
+                        hidden={isEditBlocked}
+                        data-edit-surface
+                    >
+                        <template lwc:if={isAutofillPending}>
+                            <lightning-spinner
+                                alternative-text="Loading"
+                                size="small"
+                            ></lightning-spinner>
+                        </template>
                         <lwc:component
                             lwc:is={navCtor}
                             pages={visiblePages}

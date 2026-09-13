@@ -273,8 +273,7 @@ describe('c-final-element-renderer', () => {
                         config: { inputType: specType }
                     })
                 );
-                const input =
-                    cmp.shadowRoot.querySelector('lightning-input');
+                const input = cmp.shadowRoot.querySelector('lightning-input');
                 expect(input).not.toBeNull();
                 expect(input.type).toBe(nativeType);
             }
@@ -296,6 +295,38 @@ describe('c-final-element-renderer', () => {
                 cmp.shadowRoot.querySelector('lightning-input-field')
             ).not.toBeNull();
             expect(cmp.shadowRoot.querySelector('c-final-lookup')).toBeNull();
+        });
+
+        it('unwraps the array a native lookup hands back, so the answer is a plain Id', async () => {
+            // Documented platform contract: lightning-input-field returns a
+            // lookup selection as ["001…"]. Passing the array on made Autofill's
+            // record read never resolve. The fixture uses the REAL shape.
+            const cmp = await mount(
+                FIELD({
+                    id: 'el_acc',
+                    binding: { object: 'Case', field: 'AccountId' },
+                    config: { inputType: 'reference' }
+                })
+            );
+            const handler = jest.fn();
+            cmp.addEventListener('valuechange', handler);
+            const field = cmp.shadowRoot.querySelector('lightning-input-field');
+
+            field.dispatchEvent(
+                new CustomEvent('change', {
+                    detail: { value: ['001000000000001AAA'] }
+                })
+            );
+            expect(handler.mock.calls[0][0].detail).toEqual({
+                elementId: 'el_acc',
+                value: '001000000000001AAA'
+            });
+
+            // Cleared: the platform sends an empty array.
+            field.dispatchEvent(
+                new CustomEvent('change', { detail: { value: [] } })
+            );
+            expect(handler.mock.calls[1][0].detail.value).toBeNull();
         });
 
         it('a polymorphic lookup renders native even when filters are asked for', async () => {
