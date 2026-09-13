@@ -271,9 +271,7 @@ export default class FinalElementRenderer extends LightningElement {
      */
     get renderAs() {
         return (
-            this.cfg.renderAs ||
-            (this.el && this.el.renderDefault) ||
-            'Default'
+            this.cfg.renderAs || (this.el && this.el.renderDefault) || 'Default'
         );
     }
 
@@ -409,7 +407,9 @@ export default class FinalElementRenderer extends LightningElement {
 
     get nativeObjectApiName() {
         const b = this.el && this.el.binding;
-        return (b && b.object) || (this.el && this.el.targetObjectApiName) || null;
+        return (
+            (b && b.object) || (this.el && this.el.targetObjectApiName) || null
+        );
     }
 
     get nativeFieldName() {
@@ -1511,10 +1511,19 @@ export default class FinalElementRenderer extends LightningElement {
         }
     }
 
-    /** `lightning-input-field` answers with the record id in `detail.value`. */
+    /**
+     * `lightning-input-field` hands a LOOKUP's selection back as an ARRAY in
+     * `detail.value` (`["001…"]`). That is documented, even though
+     * multi-select lookups are unsupported. Normalise here, the one place a
+     * native value enters our code: passing the array on made Autofill's
+     * record read never resolve (the form sat on "Finishing Autofill…" for
+     * 10 s) and would have saved an array into the lookup field.
+     * See RUNTIME_NOTES "Native base components".
+     */
     handleNativeFieldChange(event) {
-        const v = event && event.detail ? event.detail.value : null;
-        this.dispatchValue(v == null ? null : v);
+        const raw = event && event.detail ? event.detail.value : null;
+        const v = Array.isArray(raw) ? (raw.length ? raw[0] : null) : raw;
+        this.dispatchValue(v == null || v === '' ? null : v);
     }
 
     handleChange(event) {

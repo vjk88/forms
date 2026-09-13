@@ -14,6 +14,11 @@
     min-height: 240px;
 }
 
+/* Anchors the Autofill spinner over the form. */
+.viewer-surface {
+    position: relative;
+}
+
 /* Submit failure — the response was NOT recorded; say so where the eye is. */
 .viewer-submit-error {
     margin: 0 0 var(--c-space-4);

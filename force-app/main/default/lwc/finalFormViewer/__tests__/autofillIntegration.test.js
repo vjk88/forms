@@ -280,6 +280,9 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         expect(recordSource.recordId).toBe('001000000000001AAA');
         expect(recordSource.objectApiName).toBe('Account');
 
+        // A loading spinner covers the form while the record is read.
+        expect(el.shadowRoot.querySelector('lightning-spinner')).not.toBeNull();
+
         // Simulate successful record load
         recordSource.dispatchEvent(
             new CustomEvent('recordsuccess', {
