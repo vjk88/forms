@@ -199,24 +199,24 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 
 - **`formSignature`** — not built (reuses the file path, so it follows §3.1).
 - **`formVideo`** — not built (iframe embeds; needs CSP degradation).
-- **`formLookup`** — **the CORE half is built (2026-09-07); the dependent half is not.** This is
-  **Phase D** of the guest/prefill/lookup program
-  ([GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md)), whose v1 was Core + dependent.
-  - **Implementation plan (2026-09-08):**
-    [Reusable lookup and dependent filters](./IMPL_PLAN_DEPENDENT_LOOKUP.md) covers the native
-    picker core, Forms and Flow adapters, Studio configuration, dependency lifecycle, and
-    server-side selection validation. Design only; the remaining work below is still pending.
-  - **Built and org-verified:** `FinalStudioController.describeFields` emits `referenceTo` for
-    single-target reference fields, the Studio stamps it onto `element.config.referenceTo`, and the
-    renderer mounts a real `lightning-record-picker` whose selection can source an Autofill rule.
-    Verified in a browser: picking "Edge Communications" filled the mapped fields, and clearing the
-    picker cleared the untouched ones while preserving a value the respondent had typed.
-  - **NOT built:** **dependent / filtered** lookups (narrowing one picker by another field's value)
-    — the whole "dependent" half of Phase D v1. Also absent: **polymorphic** references
-    (`describeFields` deliberately `continue`s past them, because `lightning-record-picker` targets
-    one object), and lookup Autofill for **guests** (a lookup mapping cannot be `guestAllowed` —
-    `FinalAutofillValidator` rejects it, so lookup rules are an authenticated-only feature by
-    design).
+- **`formLookup`** — **BUILT 2026-09-11/12 (PRs #275–#278).** Plan:
+  [IMPL_PLAN_LOOKUP_V2.md](./IMPL_PLAN_LOOKUP_V2.md).
+  - **Default (from schema)** on a reference field renders native `lightning-input-field`; the
+    platform applies whatever it applies, configured lookup filters included.
+  - **Search with filters** (`renderAs: 'Filtered_Search'`) is our own combobox over one Apex
+    compiler that serves both search and the submit check. Dependent filters work: a changed
+    filter marks the held selection invalid rather than clearing it.
+  - **Ruled out, owner 2026-09-13 — do not list as pending:** a **Flow screen component**. The
+    lookup works inside our LWCs only.
+  - **System limitation, owner 2026-09-13:** **polymorphic** references (Task "Related To",
+    `OwnerId`) can never use Search with filters and must always use Default (from schema).
+    **Gap to close:** `FinalStudioController.describeFields` still `continue`s past every
+    multi-target reference, a leftover from the `lightning-record-picker` era, so today a
+    polymorphic field cannot be added to a form at all.
+  - **Still unverified:** logged-in Experience Cloud (the org has no community user), and whether
+    guests can render `lightning-input-field` when their profile has object access.
+  - Lookup Autofill stays authenticated-only by design: `FinalAutofillValidator` rejects a
+    `guestAllowed` lookup mapping.
 
 ### 3.3 Half-built
 
@@ -224,12 +224,21 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
   back. Per-entry validation gating and inline per-entry failures are deferred; entries validate at
   the database on submit. Repeat answers ride one consolidated `repeat:{sectionId}` answer, so
   repeat elements cannot drive visibility rules.
-- **Prefill Phases B + C** — surveys have record-aware prefill via SO-4 tokens, but **classic forms
-  have no prefill at all**.
-  **Design added 2026-09-07:** [Autofill rules implementation plan](./IMPL_PLAN_AUTOFILL_RULES.md)
-  specifies personalized-link and authenticated lookup-driven Autofill, including a basic
-  lookup selector, authoring, runtime behavior, permissions, and tests. Design only; this
-  does not close the implementation or verification work above.
+- **Prefill — corrected 2026-09-13.** The old line "classic forms have no prefill at all" went
+  stale when Autofill shipped (PRs #241–#245). Verified against code, classic forms fill answers
+  three ways today:
+  - **Personalized link** (Autofill source `link`) — a signed link fills mapped questions, guests
+    included.
+  - **Lookup pick** (Autofill source `lookup`) — choosing a record in a lookup fills mapped
+    questions. Authenticated only.
+  - **Record edit** — a form on a record page loads that record's current values (#247–#252).
+
+  **Still missing:**
+  - **Plain URL parameters** (`?Email=a@b.com` filling a question). Spec Phase B named a
+    `urlParams` source; nothing implements it. `FinalAutofillValidator` accepts only `link` and
+    `lookup`, and the viewer and guest host read only the `c__` context ids and the link token.
+  - **A default value an author can set.** The runtime already honours `element.defaultValue`
+    (`autofillEngine.seedStaticDefaults`), but no Studio control writes it.
 
 ### 3.4 Creation & templates (P6)
 
