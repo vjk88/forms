@@ -106,13 +106,15 @@ public with sharing class FinalAutofillController {
         String formTargetObject = getFormTargetObject(spec);
         Map<String, String> lookupObjectsByElementId = new Map<String, String>();
         List<Map<String, Object>> lookupDescriptors = new List<Map<String, Object>>();
+        Map<String, Set<Schema.SObjectType>> polymorphicTargetsByElementId = new Map<String, Set<Schema.SObjectType>>();
 
         // Inspect elements to find reference/lookup fields
         inspectLookups(
             spec,
             formTargetObject,
             lookupObjectsByElementId,
-            lookupDescriptors
+            lookupDescriptors,
+            polymorphicTargetsByElementId
         );
 
         // Inspect autofillRules for lookup rules
@@ -134,6 +136,28 @@ public with sharing class FinalAutofillController {
                 if (source != null && (String) source.get('type') == 'lookup') {
                     String elId = (String) source.get('elementId');
                     String sObj = lookupObjectsByElementId.get(elId);
+                    Boolean polymorphic = false;
+                    Set<Schema.SObjectType> targets = polymorphicTargetsByElementId.get(
+                        elId
+                    );
+                    if (targets != null) {
+                        // One object per rule (owner 2026-09-13). The rule names
+                        // it; Describe decides whether it is really one of this
+                        // lookup's targets. A rule naming anything else is
+                        // dropped from the plan rather than trusted.
+                        polymorphic = true;
+                        sObj = null;
+                        String chosen = (String) source.get('objectApiName');
+                        Schema.SObjectType chosenType = String.isBlank(chosen)
+                            ? null
+                            : Schema.getGlobalDescribe().get(chosen);
+                        if (chosenType != null && targets.contains(chosenType)) {
+                            Schema.DescribeSObjectResult chosenDescribe = chosenType.getDescribe();
+                            if (chosenDescribe.isAccessible()) {
+                                sObj = chosenDescribe.getName();
+                            }
+                        }
+                    }
                     if (String.isNotBlank(sObj)) {
                         List<Map<String, Object>> mappings = extractAccessibleMappings(
                             rule,
@@ -144,6 +168,15 @@ public with sharing class FinalAutofillController {
                                 'ruleId' => (String) rule.get('id'),
                                 'sourceElementId' => elId,
                                 'objectApiName' => sObj,
+                                // The first three characters of every record id
+                                // of this object. The runtime compares the chosen
+                                // record against it, so a polymorphic rule only
+                                // reads a record that is really its object.
+                                'keyPrefix' => Schema.getGlobalDescribe()
+                                    .get(sObj)
+                                    .getDescribe()
+                                    .getKeyPrefix(),
+                                'polymorphic' => polymorphic,
                                 'policy' => rule.get('policy') != null
                                     ? (String) rule.get('policy')
                                     : 'preserveEdits',
@@ -160,6 +193,57 @@ public with sharing class FinalAutofillController {
             'lookups' => lookupDescriptors,
             'rules' => rulePlans
         };
+    }
+
+    /**
+     * Authoring: the objects a polymorphic lookup can point at, so a lookup
+     * Autofill rule can name the ONE it reads. Readable objects only, sorted by
+     * label, each with the key prefix its record ids start with.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> describeReferenceTargets(
+        String objectApiName,
+        String fieldApiName
+    ) {
+        gateNotGuest();
+        Map<String, Schema.SObjectField> fieldMap = String.isBlank(objectApiName)
+            ? null
+            : fieldsOf(objectApiName);
+        Schema.SObjectField field = (fieldMap == null ||
+            String.isBlank(fieldApiName))
+            ? null
+            : fieldMap.get(fieldApiName.toLowerCase());
+        if (
+            field == null ||
+            field.getDescribe().getType() != Schema.DisplayType.REFERENCE ||
+            !field.getDescribe().isAccessible()
+        ) {
+            throw new AuraHandledException(
+                'That field is not a lookup you can read.'
+            );
+        }
+        Map<String, Map<String, Object>> byLabel = new Map<String, Map<String, Object>>();
+        for (Schema.SObjectType target : field.getDescribe().getReferenceTo()) {
+            Schema.DescribeSObjectResult d = target.getDescribe();
+            if (!d.isAccessible()) {
+                continue;
+            }
+            byLabel.put(
+                d.getLabel() + '|' + d.getName(),
+                new Map<String, Object>{
+                    'value' => d.getName(),
+                    'label' => d.getLabel(),
+                    'keyPrefix' => d.getKeyPrefix()
+                }
+            );
+        }
+        List<String> keys = new List<String>(byLabel.keySet());
+        keys.sort();
+        List<Map<String, Object>> out = new List<Map<String, Object>>();
+        for (String key : keys) {
+            out.add(byLabel.get(key));
+        }
+        return out;
     }
 
     private static void gateNotGuest() {
@@ -206,7 +290,8 @@ public with sharing class FinalAutofillController {
         Map<String, Object> spec,
         String formTargetObject,
         Map<String, String> lookupObjectsByElementId,
-        List<Map<String, Object>> lookupDescriptors
+        List<Map<String, Object>> lookupDescriptors,
+        Map<String, Set<Schema.SObjectType>> polymorphicTargetsByElementId
     ) {
         for (Object pageObj : asList(spec.get('pages'))) {
             Map<String, Object> page = asMap(pageObj);
@@ -263,12 +348,22 @@ public with sharing class FinalAutofillController {
                         continue;
                     }
 
-                    // Single-target only (§5): a polymorphic lookup has no one
-                    // object for LDS to read through. The target comes from
-                    // Describe, never from a client-authored `referenceTo`.
+                    // The target comes from Describe, never from a
+                    // client-authored `referenceTo`.
                     List<Schema.SObjectType> refToList = fd.getReferenceTo();
-                    if (refToList == null || refToList.size() != 1)
+                    if (refToList == null || refToList.isEmpty())
                         continue;
+                    if (refToList.size() > 1) {
+                        // Polymorphic (Task "Related To"). No single object is
+                        // published for the picker, which renders natively
+                        // anyway. The rules loop resolves each rule's chosen
+                        // object against this set.
+                        polymorphicTargetsByElementId.put(
+                            elId,
+                            new Set<Schema.SObjectType>(refToList)
+                        );
+                        continue;
+                    }
 
                     String refName = refToList[0].getDescribe().getName();
                     lookupObjectsByElementId.put(elId, refName);

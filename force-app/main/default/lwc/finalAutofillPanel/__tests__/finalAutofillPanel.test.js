@@ -1,6 +1,7 @@
 import { createElement } from 'lwc';
 import FinalAutofillPanel from 'c/finalAutofillPanel';
 import describeSourceFields from '@salesforce/apex/FinalAutofillController.describeSourceFields';
+import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
 import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTestRecordValues';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
@@ -9,6 +10,11 @@ import LightningConfirm from 'lightning/confirm';
 
 jest.mock(
     '@salesforce/apex/FinalAutofillController.describeSourceFields',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalAutofillController.describeReferenceTargets',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -289,10 +295,15 @@ describe('c-final-autofill-panel', () => {
         expect(navListener.mock.calls[0][0].detail.tab).toBe('fields');
     });
 
-    it('never offers a polymorphic lookup as an autofill source', async () => {
-        // Task "Related To" can point at many objects, so there is no one
-        // object to read mapped fields from. A rule on it would fill nothing.
-        const specPolyOnly = {
+    it('a polymorphic lookup asks which object the rule reads, then loads its fields', async () => {
+        // Task "Related To" can point at many objects. One object per rule:
+        // the author names it, and the rule stamps that object's key prefix
+        // so the runtime only reads records that really are that object.
+        describeReferenceTargets.mockResolvedValue([
+            { value: 'Account', label: 'Account', keyPrefix: '001' },
+            { value: 'Opportunity', label: 'Opportunity', keyPrefix: '006' }
+        ]);
+        const specPoly = {
             pages: [
                 {
                     sections: [
@@ -307,6 +318,12 @@ describe('c-final-autofill-panel', () => {
                                         inputType: 'reference',
                                         polymorphic: true
                                     }
+                                },
+                                {
+                                    id: 'el_phone',
+                                    type: 'field',
+                                    label: 'Phone',
+                                    config: { inputType: 'phone' }
                                 }
                             ]
                         }
@@ -314,15 +331,54 @@ describe('c-final-autofill-panel', () => {
                 }
             ]
         };
-        const el = mount({ spec: specPolyOnly });
+        const el = mount({ spec: specPoly, formId: 'a00123' });
         await flush();
         el.shadowRoot.querySelector('.ap-btn-primary').click();
         await flush();
         el.shadowRoot.querySelector('button[data-type="lookup"]').click();
         await flush();
+        await flush();
+
         expect(
             el.shadowRoot.querySelector('.ap-missing-lookup-notice')
-        ).not.toBeNull();
+        ).toBeNull();
+        expect(describeReferenceTargets).toHaveBeenCalledWith({
+            objectApiName: 'Task',
+            fieldApiName: 'WhatId'
+        });
+        const picker = el.shadowRoot.querySelector(
+            'lightning-combobox.ap-poly-object'
+        );
+        expect(picker).not.toBeNull();
+        expect(picker.options.map((o) => o.value)).toEqual([
+            'Account',
+            'Opportunity'
+        ]);
+        // No object chosen yet, so no fields are loaded.
+        expect(describeSourceFields).not.toHaveBeenCalled();
+
+        picker.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'Account' } })
+        );
+        await flush();
+        expect(describeSourceFields).toHaveBeenCalledWith({
+            formId: 'a00123',
+            objectApiName: 'Account'
+        });
+
+        const rulesListener = jest.fn();
+        el.addEventListener('ruleschange', rulesListener);
+        el.shadowRoot
+            .querySelector('.ap-editor-footer .ap-btn-primary')
+            .click();
+        await flush();
+        const saved = rulesListener.mock.calls[0][0].detail.rules.at(-1);
+        expect(saved.source).toEqual({
+            type: 'lookup',
+            elementId: 'el_what',
+            objectApiName: 'Account',
+            keyPrefix: '001'
+        });
     });
 
     it('renders guest disclosure review on public forms with link rules', async () => {

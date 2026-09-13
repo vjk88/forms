@@ -180,7 +180,10 @@ public with sharing class FinalAutofillValidator {
         Integer enabledRuleCount = 0;
         Integer enabledMappingCount = 0;
         Set<String> distinctSourceFields = new Set<String>();
-        Set<String> claimedDestinations = new Set<String>();
+        // destination element id -> the claims made on it. A claim is
+        // 'rule:<id>', or 'poly:<lookupElementId>:<object>' for a rule on a
+        // polymorphic lookup, so rules that can never apply together may share.
+        Map<String, Set<String>> claimedDestinations = new Map<String, Set<String>>();
         Set<String> lookupSourceElements = new Set<String>();
         Integer enabledLinkRules = 0;
 
@@ -213,6 +216,7 @@ public with sharing class FinalAutofillValidator {
 
             // Link rule checks
             String sourceObjectApi = null;
+            String destinationClaimKey = 'rule:' + ruleId;
             if (sourceType == 'link') {
                 enabledLinkRules++;
                 if (enabledLinkRules > 1) {
@@ -262,7 +266,16 @@ public with sharing class FinalAutofillValidator {
                         )
                     );
                 } else {
-                    if (lookupSourceElements.contains(lookupElId)) {
+                    // One rule per lookup, except a polymorphic lookup, which may
+                    // carry one rule per object it can point at.
+                    String chosenForKey = (String) source.get('objectApiName');
+                    String lookupRuleKey =
+                        lookupElId +
+                        '|' +
+                        (String.isBlank(chosenForKey)
+                            ? ''
+                            : chosenForKey.toLowerCase());
+                    if (lookupSourceElements.contains(lookupRuleKey)) {
                         diagnostics.add(
                             new Diagnostic(
                                 'AUTOFILL_DUPLICATE_LOOKUP_RULE',
@@ -274,7 +287,7 @@ public with sharing class FinalAutofillValidator {
                             )
                         );
                     }
-                    lookupSourceElements.add(lookupElId);
+                    lookupSourceElements.add(lookupRuleKey);
 
                     Map<String, Object> lookupEl = elementById.get(lookupElId);
                     if (lookupEl == null) {
@@ -326,16 +339,63 @@ public with sharing class FinalAutofillValidator {
                                 'referenceTo'
                             );
                         }
-                        // Describe, not a client hint: a lookup that can point
-                        // at several objects has no single object to read the
-                        // mapped fields from, so the rule would fill nothing.
-                        if (isPolymorphicBinding(binding)) {
+                        // A polymorphic lookup (Task "Related To") names ONE of
+                        // its objects per rule, and the rule fires only when the
+                        // chosen record is that object. Describe decides whether
+                        // the named object is really a target, never the client.
+                        List<Schema.SObjectType> targets = referenceTargetsOf(
+                            binding
+                        );
+                        String chosenObject = (String) source.get(
+                            'objectApiName'
+                        );
+                        String canonicalChosen = canonicalTarget(
+                            targets,
+                            chosenObject
+                        );
+                        if (targets != null && targets.size() > 1) {
+                            if (String.isBlank(chosenObject)) {
+                                diagnostics.add(
+                                    new Diagnostic(
+                                        'AUTOFILL_POLYMORPHIC_OBJECT_REQUIRED',
+                                        ruleId,
+                                        null,
+                                        'Choose which object this lookup rule reads.'
+                                    )
+                                );
+                            } else if (canonicalChosen == null) {
+                                diagnostics.add(
+                                    new Diagnostic(
+                                        'AUTOFILL_POLYMORPHIC_OBJECT_NOT_A_TARGET',
+                                        ruleId,
+                                        null,
+                                        chosenObject +
+                                        ' is not one of the objects this lookup can point at.'
+                                    )
+                                );
+                            } else {
+                                sourceObjectApi = canonicalChosen;
+                                destinationClaimKey =
+                                    'poly:' +
+                                    lookupElId +
+                                    ':' +
+                                    canonicalChosen.toLowerCase();
+                            }
+                        } else if (
+                            String.isNotBlank(chosenObject) &&
+                            targets != null &&
+                            canonicalChosen == null
+                        ) {
+                            // The runtime prefers a rule's named object, so a wrong
+                            // one on a single-target lookup would read the wrong
+                            // object entirely.
                             diagnostics.add(
                                 new Diagnostic(
-                                    'AUTOFILL_POLYMORPHIC_LOOKUP',
+                                    'AUTOFILL_LOOKUP_OBJECT_MISMATCH',
                                     ruleId,
                                     null,
-                                    'A lookup that can point at several objects cannot drive autofill.'
+                                    chosenObject +
+                                    ' is not the object this lookup points at.'
                                 )
                             );
                         }
@@ -473,7 +533,20 @@ public with sharing class FinalAutofillValidator {
                         )
                     );
                 } else {
-                    if (claimedDestinations.contains(toElement)) {
+                    Set<String> priorClaims = claimedDestinations.get(
+                        toElement
+                    );
+                    if (priorClaims == null) {
+                        priorClaims = new Set<String>();
+                        claimedDestinations.put(toElement, priorClaims);
+                    }
+                    Boolean destinationConflict = false;
+                    for (String prior : priorClaims) {
+                        if (!mutuallyExclusive(prior, destinationClaimKey)) {
+                            destinationConflict = true;
+                        }
+                    }
+                    if (destinationConflict) {
                         diagnostics.add(
                             new Diagnostic(
                                 'AUTOFILL_DESTINATION_CONFLICT',
@@ -484,7 +557,7 @@ public with sharing class FinalAutofillValidator {
                             )
                         );
                     }
-                    claimedDestinations.add(toElement);
+                    priorClaims.add(destinationClaimKey);
 
                     if (hasSurveyPrefill.containsKey(toElement)) {
                         diagnostics.add(
@@ -585,28 +658,51 @@ public with sharing class FinalAutofillValidator {
         return diagnostics;
     }
 
-    /** True when Describe says the bound field references more than one object. */
-    private static Boolean isPolymorphicBinding(Map<String, Object> binding) {
+    /** The objects a bound lookup field points at, per Describe; null when the
+     *  binding cannot be resolved to a real field. */
+    private static List<Schema.SObjectType> referenceTargetsOf(
+        Map<String, Object> binding
+    ) {
         if (binding == null) {
-            return false;
+            return null;
         }
         String objectName = (String) binding.get('object');
         String fieldName = (String) binding.get('field');
         if (String.isBlank(objectName) || String.isBlank(fieldName)) {
-            return false;
+            return null;
         }
         Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
         if (t == null) {
-            return false;
+            return null;
         }
         Schema.SObjectField f = t.getDescribe()
             .fields.getMap()
             .get(fieldName.toLowerCase());
-        if (f == null) {
+        return f == null ? null : f.getDescribe().getReferenceTo();
+    }
+
+    /** The canonical API name of `objectName` if it is one of `targets`. */
+    private static String canonicalTarget(
+        List<Schema.SObjectType> targets,
+        String objectName
+    ) {
+        if (targets == null || String.isBlank(objectName)) {
+            return null;
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
+        if (t == null || !new Set<Schema.SObjectType>(targets).contains(t)) {
+            return null;
+        }
+        return t.getDescribe().getName();
+    }
+
+    /** Two destination claims that can never be live together: rules on the SAME
+     *  polymorphic lookup naming DIFFERENT objects. */
+    private static Boolean mutuallyExclusive(String a, String b) {
+        if (a == b || !a.startsWith('poly:') || !b.startsWith('poly:')) {
             return false;
         }
-        List<Schema.SObjectType> refs = f.getDescribe().getReferenceTo();
-        return refs != null && refs.size() > 1;
+        return a.substringBeforeLast(':') == b.substringBeforeLast(':');
     }
 
     private static Boolean isSupportedSourceType(Schema.DisplayType type) {

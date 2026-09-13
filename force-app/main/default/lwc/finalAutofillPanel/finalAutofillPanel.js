@@ -1,5 +1,6 @@
 import { LightningElement, api, track } from 'lwc';
 import describeSourceFields from '@salesforce/apex/FinalAutofillController.describeSourceFields';
+import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
 import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTestRecordValues';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
@@ -139,23 +140,26 @@ export default class FinalAutofillPanel extends LightningElement {
         return this.formElements
             .filter((el) => {
                 if (el.type !== 'field' || el.inRepeater) return false;
-                // A polymorphic lookup has no single object to read fields
-                // from, so it cannot drive autofill. Offering it would create a
-                // rule that silently fills nothing.
-                if (el.config?.polymorphic) return false;
                 const inputType = el.config?.inputType;
                 const refTo = el.binding?.referenceTo || el.config?.referenceTo;
                 return inputType === 'reference' || Boolean(refTo);
             })
             .map((el) => {
-                const refTo =
-                    el.binding?.referenceTo ||
-                    el.config?.referenceTo ||
-                    'Record';
+                // Polymorphic lookups (Task "Related To") have no single object;
+                // each rule on one names the object it reads.
+                const polymorphic = Boolean(el.config?.polymorphic);
+                const refTo = polymorphic
+                    ? ''
+                    : el.binding?.referenceTo ||
+                      el.config?.referenceTo ||
+                      'Record';
                 return {
-                    label: `${el.label || el.id} (${refTo})`,
+                    label: polymorphic
+                        ? `${el.label || el.id} (several objects)`
+                        : `${el.label || el.id} (${refTo})`,
                     value: el.id,
                     objectApiName: refTo,
+                    polymorphic,
                     element: el
                 };
             });
@@ -172,12 +176,45 @@ export default class FinalAutofillPanel extends LightningElement {
         }));
     }
 
-    get lookupTargetObject() {
-        if (!this.draftRule?.source?.elementId) return '';
-        const found = this.lookupElements.find(
-            (l) => l.value === this.draftRule.source.elementId
+    referenceTargets = [];
+    referenceTargetsError = '';
+    _referenceTargetsFor = null;
+
+    get selectedLookup() {
+        if (!this.draftRule?.source?.elementId) return null;
+        return (
+            this.lookupElements.find(
+                (l) => l.value === this.draftRule.source.elementId
+            ) || null
         );
-        return found ? found.objectApiName : '';
+    }
+
+    /** A polymorphic lookup needs the author to name the ONE object this rule
+     *  reads; the rule fills answers only when the chosen record is that
+     *  object. Owner ruling 2026-09-13. */
+    get isPolymorphicLookupSource() {
+        return Boolean(this.isSourceLookup && this.selectedLookup?.polymorphic);
+    }
+
+    get lookupTargetObject() {
+        const found = this.selectedLookup;
+        if (!found) return '';
+        return found.polymorphic
+            ? this.draftRule?.source?.objectApiName || ''
+            : found.objectApiName;
+    }
+
+    get showSingleTargetHint() {
+        return (
+            Boolean(this.lookupTargetObject) && !this.isPolymorphicLookupSource
+        );
+    }
+
+    get polymorphicTargetOptions() {
+        return (this.referenceTargets || []).map((t) => ({
+            label: t.label,
+            value: t.value
+        }));
     }
 
     get destinationOptions() {
@@ -282,6 +319,9 @@ export default class FinalAutofillPanel extends LightningElement {
         const lookupMap = new Map(
             this.lookupElements.map((l) => [l.value, l.label])
         );
+        const polymorphicIds = new Set(
+            this.lookupElements.filter((l) => l.polymorphic).map((l) => l.value)
+        );
         const destMap = new Map(
             this.destinationOptions.map((d) => [d.value, d.label])
         );
@@ -290,7 +330,7 @@ export default class FinalAutofillPanel extends LightningElement {
             const isLink = r.source?.type === 'link';
             const sourceBadge = isLink
                 ? `Link: ${r.source?.objectApiName || 'Unconfigured'}`
-                : `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}`;
+                : `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}${r.source?.objectApiName ? ` · ${r.source.objectApiName}` : ''}`;
 
             const mappingCount = (r.mappings || []).length;
             const mappingCountText = `${mappingCount} mapping${mappingCount === 1 ? '' : 's'}`;
@@ -306,6 +346,12 @@ export default class FinalAutofillPanel extends LightningElement {
                 errors.push('Lookup field missing');
             } else if (!isLink && !lookupMap.has(r.source?.elementId)) {
                 errors.push('Lookup field not found on form');
+            } else if (
+                !isLink &&
+                polymorphicIds.has(r.source?.elementId) &&
+                !r.source?.objectApiName
+            ) {
+                errors.push('Choose which object this rule reads');
             }
 
             if (mappingCount === 0) {
@@ -385,6 +431,9 @@ export default class FinalAutofillPanel extends LightningElement {
         const obj = this.currentSourceObject;
         if (obj) {
             this._fetchSourceFields(obj);
+        }
+        if (this.isPolymorphicLookupSource) {
+            this._loadReferenceTargets(this.selectedLookup);
         }
     }
 
@@ -469,12 +518,14 @@ export default class FinalAutofillPanel extends LightningElement {
         this.draftRule.source.type = type;
         if (type === 'link') {
             delete this.draftRule.source.elementId;
+            delete this.draftRule.source.keyPrefix;
             this.draftRule.source.objectApiName = this.isSurvey
                 ? this.surveySourceObject
                 : '';
             // Reset mappings guestAllowed if needed
         } else if (type === 'lookup') {
             delete this.draftRule.source.objectApiName;
+            delete this.draftRule.source.keyPrefix;
             this.draftRule.source.elementId =
                 this.lookupElements[0]?.value || '';
             // Lookup mappings cannot be guest allowed
@@ -488,6 +539,9 @@ export default class FinalAutofillPanel extends LightningElement {
             this._fetchSourceFields(obj);
         } else {
             this.sourceFields = [];
+        }
+        if (this.isPolymorphicLookupSource) {
+            this._loadReferenceTargets(this.selectedLookup);
         }
     }
 
@@ -505,11 +559,70 @@ export default class FinalAutofillPanel extends LightningElement {
     handleLookupElementChange(event) {
         if (!this.draftRule || !this.isSourceLookup) return;
         this.draftRule.source.elementId = event.target.value;
+        // A different lookup means a different set of possible objects.
+        delete this.draftRule.source.objectApiName;
+        delete this.draftRule.source.keyPrefix;
+        this._lastFetchedObject = null;
+        if (this.isPolymorphicLookupSource) {
+            this.sourceFields = [];
+            this._loadReferenceTargets(this.selectedLookup);
+            return;
+        }
         const obj = this.lookupTargetObject;
         if (obj) {
             this._fetchSourceFields(obj);
         } else {
             this.sourceFields = [];
+        }
+    }
+
+    handlePolymorphicObjectChange(event) {
+        if (!this.draftRule || !this.isPolymorphicLookupSource) return;
+        const value = event.detail ? event.detail.value : event.target.value;
+        const target = (this.referenceTargets || []).find(
+            (t) => t.value === value
+        );
+        this.draftRule.source.objectApiName = value || '';
+        // Every record id of this object starts with it; the runtime compares
+        // the chosen record against it so the rule never reads another object.
+        if (target && target.keyPrefix) {
+            this.draftRule.source.keyPrefix = target.keyPrefix;
+        } else {
+            delete this.draftRule.source.keyPrefix;
+        }
+        if (value) {
+            this._fetchSourceFields(value);
+        } else {
+            this.sourceFields = [];
+        }
+    }
+
+    async _loadReferenceTargets(lookup) {
+        const binding = lookup?.element?.binding;
+        const objectApiName = binding?.object;
+        const fieldApiName = binding?.field;
+        if (!objectApiName || !fieldApiName) {
+            this.referenceTargets = [];
+            this.referenceTargetsError =
+                'This lookup is not bound to a field, so its objects cannot be listed.';
+            return;
+        }
+        const key = `${objectApiName}.${fieldApiName}`;
+        if (this._referenceTargetsFor === key) return;
+        this._referenceTargetsFor = key;
+        this.referenceTargetsError = '';
+        try {
+            this.referenceTargets =
+                (await describeReferenceTargets({
+                    objectApiName,
+                    fieldApiName
+                })) || [];
+        } catch (e) {
+            this.referenceTargets = [];
+            this._referenceTargetsFor = null;
+            this.referenceTargetsError =
+                e?.body?.message ||
+                'Could not list the objects this lookup can point at.';
         }
     }
 

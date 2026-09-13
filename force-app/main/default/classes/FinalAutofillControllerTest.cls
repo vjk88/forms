@@ -390,4 +390,139 @@ private class FinalAutofillControllerTest {
             'a polymorphic lookup has no single target to stamp'
         );
     }
+
+    @isTest
+    static void describeReferenceTargetsListsEachObjectWithItsKeyPrefix() {
+        List<Map<String, Object>> targets;
+        Test.startTest();
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            targets = FinalAutofillController.describeReferenceTargets(
+                'Task',
+                'WhatId'
+            );
+        }
+        Test.stopTest();
+        Map<String, Object> account = null;
+        for (Map<String, Object> t : targets) {
+            if (t.get('value') == 'Account') {
+                account = t;
+            }
+        }
+        System.assert(targets.size() > 1, 'Related To points at several objects');
+        System.assertNotEquals(null, account, 'Account is a Related To target');
+        System.assertEquals('001', account.get('keyPrefix'));
+    }
+
+    @isTest
+    static void describeReferenceTargetsRefusesAFieldThatIsNotALookup() {
+        Boolean refused = false;
+        try {
+            FinalAutofillController.describeReferenceTargets('Task', 'Subject');
+        } catch (AuraHandledException e) {
+            refused = true;
+        }
+        System.assert(refused, 'Subject is not a lookup');
+    }
+
+    @isTest
+    static void lookupPlanResolvesAPolymorphicRuleToItsChosenObject() {
+        Form__c f = new Form__c(
+            Name = 'Poly Form',
+            Form_Type__c = 'Form',
+            Status__c = 'Published',
+            Allowed_Adapters__c = 'Public_Guest',
+            Primary_Context_Object__c = 'Job_Application__c'
+        );
+        insert f;
+        Map<String, Object> ruleAccount = new Map<String, Object>{
+            'id' => 'r_acc',
+            'enabled' => true,
+            'source' => new Map<String, Object>{
+                'type' => 'lookup',
+                'elementId' => 'el_what',
+                'objectApiName' => 'Account'
+            },
+            'mappings' => new List<Object>{
+                new Map<String, Object>{ 'from' => 'Phone', 'to' => 'el_phone' }
+            }
+        };
+        Map<String, Object> ruleUser = new Map<String, Object>{
+            'id' => 'r_user',
+            'enabled' => true,
+            'source' => new Map<String, Object>{
+                'type' => 'lookup',
+                'elementId' => 'el_what',
+                'objectApiName' => 'User'
+            },
+            'mappings' => new List<Object>{
+                new Map<String, Object>{ 'from' => 'Phone', 'to' => 'el_phone' }
+            }
+        };
+        Map<String, Object> spec = new Map<String, Object>{
+            'form' => new Map<String, Object>{
+                'type' => 'form',
+                'targetObject' => 'Task'
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'p1',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec1',
+                            'elements' => new List<Object>{
+                                new Map<String, Object>{
+                                    'id' => 'el_what',
+                                    'type' => 'field',
+                                    'binding' => new Map<String, Object>{
+                                        'object' => 'Task',
+                                        'field' => 'WhatId'
+                                    },
+                                    'config' => new Map<String, Object>{
+                                        'inputType' => 'reference',
+                                        'polymorphic' => true
+                                    }
+                                },
+                                new Map<String, Object>{
+                                    'id' => 'el_phone',
+                                    'type' => 'field',
+                                    'config' => new Map<String, Object>{
+                                        'inputType' => 'phone'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            'settings' => new Map<String, Object>{
+                'prefill' => new Map<String, Object>{
+                    'autofillRules' => new List<Object>{ ruleAccount, ruleUser }
+                }
+            }
+        };
+        Form_Version__c v = new Form_Version__c(
+            Form__c = f.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Spec_JSON__c = JSON.serialize(spec)
+        );
+        insert v;
+
+        Map<String, Object> plan;
+        Test.startTest();
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            plan = FinalAutofillController.getLookupPlan(f.Id, v.Id);
+        }
+        Test.stopTest();
+
+        List<Map<String, Object>> rules = (List<Map<String, Object>>) plan.get(
+            'rules'
+        );
+        // The User rule names an object Related To cannot point at: dropped.
+        System.assertEquals(1, rules.size(), rules);
+        System.assertEquals('r_acc', rules[0].get('ruleId'));
+        System.assertEquals('Account', rules[0].get('objectApiName'));
+        System.assertEquals('001', rules[0].get('keyPrefix'));
+        System.assertEquals(true, rules[0].get('polymorphic'));
+    }
 }
