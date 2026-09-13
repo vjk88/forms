@@ -139,6 +139,10 @@ export default class FinalAutofillPanel extends LightningElement {
         return this.formElements
             .filter((el) => {
                 if (el.type !== 'field' || el.inRepeater) return false;
+                // A polymorphic lookup has no single object to read fields
+                // from, so it cannot drive autofill. Offering it would create a
+                // rule that silently fills nothing.
+                if (el.config?.polymorphic) return false;
                 const inputType = el.config?.inputType;
                 const refTo = el.binding?.referenceTo || el.config?.referenceTo;
                 return inputType === 'reference' || Boolean(refTo);

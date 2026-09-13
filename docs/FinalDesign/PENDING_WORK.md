@@ -209,10 +209,11 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
   - **Ruled out, owner 2026-09-13 — do not list as pending:** a **Flow screen component**. The
     lookup works inside our LWCs only.
   - **System limitation, owner 2026-09-13:** **polymorphic** references (Task "Related To",
-    `OwnerId`) can never use Search with filters and must always use Default (from schema).
-    **Gap to close:** `FinalStudioController.describeFields` still `continue`s past every
-    multi-target reference, a leftover from the `lightning-record-picker` era, so today a
-    polymorphic field cannot be added to a form at all.
+    `OwnerId`) can never use Search with filters and always render as Default (from schema).
+    **Restored 2026-09-13:** `describeFields` offers them again, flagged `polymorphic`. The
+    property panel shows no Display-as choice for them, the renderer stays native even under a
+    form-level Filtered_Search default, and Autofill refuses them as a lookup source in both the
+    panel and `FinalAutofillValidator`.
   - **Still unverified:** logged-in Experience Cloud (the org has no community user), and whether
     guests can render `lightning-input-field` when their profile has object access.
   - Lookup Autofill stays authenticated-only by design: `FinalAutofillValidator` rejects a

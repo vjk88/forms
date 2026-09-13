@@ -289,6 +289,42 @@ describe('c-final-autofill-panel', () => {
         expect(navListener.mock.calls[0][0].detail.tab).toBe('fields');
     });
 
+    it('never offers a polymorphic lookup as an autofill source', async () => {
+        // Task "Related To" can point at many objects, so there is no one
+        // object to read mapped fields from. A rule on it would fill nothing.
+        const specPolyOnly = {
+            pages: [
+                {
+                    sections: [
+                        {
+                            elements: [
+                                {
+                                    id: 'el_what',
+                                    type: 'field',
+                                    label: 'Related To',
+                                    binding: { object: 'Task', field: 'WhatId' },
+                                    config: {
+                                        inputType: 'reference',
+                                        polymorphic: true
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        const el = mount({ spec: specPolyOnly });
+        await flush();
+        el.shadowRoot.querySelector('.ap-btn-primary').click();
+        await flush();
+        el.shadowRoot.querySelector('button[data-type="lookup"]').click();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.ap-missing-lookup-notice')
+        ).not.toBeNull();
+    });
+
     it('renders guest disclosure review on public forms with link rules', async () => {
         const el = mount({ spec: SAMPLE_SPEC, isPublic: true });
         await flush();

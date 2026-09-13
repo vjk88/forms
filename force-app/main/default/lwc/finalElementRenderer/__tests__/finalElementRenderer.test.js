@@ -298,6 +298,27 @@ describe('c-final-element-renderer', () => {
             expect(cmp.shadowRoot.querySelector('c-final-lookup')).toBeNull();
         });
 
+        it('a polymorphic lookup renders native even when filters are asked for', async () => {
+            // Task "Related To" can point at many objects. Our search box needs
+            // exactly one, so a form-level Filtered_Search default must not
+            // reach it: the platform's own field renders instead.
+            const cmp = await mount(
+                FIELD({
+                    id: 'el_what',
+                    binding: { object: 'Task', field: 'WhatId' },
+                    config: {
+                        inputType: 'reference',
+                        polymorphic: true,
+                        renderAs: 'Filtered_Search'
+                    }
+                })
+            );
+            expect(
+                cmp.shadowRoot.querySelector('lightning-input-field')
+            ).not.toBeNull();
+            expect(cmp.shadowRoot.querySelector('c-final-lookup')).toBeNull();
+        });
+
         it('renders c-final-lookup when the author asked for filters, and forwards valuechange', async () => {
             const cmp = await mount(
                 FIELD({

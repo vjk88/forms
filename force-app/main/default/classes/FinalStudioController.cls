@@ -658,21 +658,41 @@ public with sharing class FinalStudioController {
                 fd.getType() != Schema.DisplayType.BOOLEAN
             };
             if (inputType == 'reference') {
-                // R5a — the record picker targets exactly ONE object, so a
-                // polymorphic lookup (OwnerId, WhatId…) is not offerable in this
-                // release. The target comes from Describe and is stamped onto
-                // the element as config.referenceTo; the runtime and validator
+                // The target comes from Describe and is stamped onto the
+                // element as config.referenceTo; the runtime and validator
                 // re-derive it server-side rather than trusting that copy.
                 List<Schema.SObjectType> refs = fd.getReferenceTo();
-                if (refs == null || refs.size() != 1) {
+                if (refs == null || refs.isEmpty()) {
                     continue;
                 }
-                Schema.DescribeSObjectResult refDesc = refs[0].getDescribe();
-                if (!refDesc.isAccessible()) {
-                    continue;
+                if (refs.size() > 1) {
+                    // Polymorphic (WhatId, WhoId, OwnerId). Offered, but only
+                    // the platform's own lightning-input-field can render it,
+                    // because it lets the respondent choose the object first.
+                    // Our search box needs exactly one object, so the element is
+                    // flagged and "Search with filters" is never offered for it.
+                    // Owner ruling 2026-09-13: a system limitation, not a gap.
+                    // This used to `continue`, hiding every such field — a
+                    // leftover from when lookups rendered lightning-record-picker.
+                    Boolean anyReadable = false;
+                    for (Schema.SObjectType target : refs) {
+                        if (target.getDescribe().isAccessible()) {
+                            anyReadable = true;
+                            break;
+                        }
+                    }
+                    if (!anyReadable) {
+                        continue;
+                    }
+                    row.put('polymorphic', true);
+                } else {
+                    Schema.DescribeSObjectResult refDesc = refs[0].getDescribe();
+                    if (!refDesc.isAccessible()) {
+                        continue;
+                    }
+                    row.put('referenceTo', refDesc.getName());
+                    row.put('referenceToLabel', refDesc.getLabel());
                 }
-                row.put('referenceTo', refDesc.getName());
-                row.put('referenceToLabel', refDesc.getLabel());
             }
             if (
                 fd.getType() == Schema.DisplayType.PICKLIST ||

@@ -361,4 +361,33 @@ private class FinalAutofillControllerTest {
         // config.referenceTo purely as an authoring convenience.
         System.assertEquals('Account', lookupRow.get('referenceTo'));
     }
+
+    @isTest
+    static void describeFieldsOffersPolymorphicLookupsFlagged() {
+        // Owner ruling 2026-09-13: polymorphic lookups such as Task "Related
+        // To" are offered again. They carry no single referenceTo, because
+        // there is no one object to stamp, and a flag the Studio uses to
+        // render them only as the platform's own field.
+        List<Map<String, Object>> fields;
+        Test.startTest();
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            fields = FinalStudioController.describeFields('Task');
+        }
+        Test.stopTest();
+
+        Map<String, Object> whatRow = null;
+        for (Map<String, Object> f : fields) {
+            if (f.get('apiName') == 'WhatId') {
+                whatRow = f;
+            }
+        }
+        System.assertNotEquals(null, whatRow, 'Task.WhatId must be offerable');
+        System.assertEquals('reference', whatRow.get('inputType'));
+        System.assertEquals(true, whatRow.get('polymorphic'));
+        System.assertEquals(
+            null,
+            whatRow.get('referenceTo'),
+            'a polymorphic lookup has no single target to stamp'
+        );
+    }
 }

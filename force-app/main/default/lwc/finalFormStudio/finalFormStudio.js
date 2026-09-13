@@ -1517,6 +1517,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // Describe, so a tampered spec cannot widen what a lookup reads.
             element.config.referenceTo = field.referenceTo;
         }
+        if (field.polymorphic) {
+            // Can point at several objects (Task "Related To"). Only the
+            // platform's own field can render that, so the property panel never
+            // offers our search box and the renderer always goes native.
+            element.config.polymorphic = true;
+        }
         return element;
     }
 
