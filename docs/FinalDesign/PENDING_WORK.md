@@ -211,9 +211,15 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
   - **System limitation, owner 2026-09-13:** **polymorphic** references (Task "Related To",
     `OwnerId`) can never use Search with filters and always render as Default (from schema).
     **Restored 2026-09-13:** `describeFields` offers them again, flagged `polymorphic`. The
-    property panel shows no Display-as choice for them, the renderer stays native even under a
-    form-level Filtered_Search default, and Autofill refuses them as a lookup source in both the
-    panel and `FinalAutofillValidator`.
+    property panel shows no Display-as choice for them, and the renderer stays native even under
+    a form-level Filtered_Search default.
+  - **Autofill from a polymorphic lookup: one object per rule (owner 2026-09-13).** The author
+    names the object a rule reads, and the rule stamps that object's key prefix. At runtime a
+    chosen record of any other object counts as "no record" for that rule: its old values
+    clear and nothing is read. One lookup can carry a rule per object, and those rules may share
+    destination questions because only one can ever apply. `FinalAutofillValidator` requires the
+    object, checks it is a real target via Describe, and checks mapped fields against it;
+    `getLookupPlan` drops a rule naming anything else.
   - **Still unverified:** logged-in Experience Cloud (the org has no community user), and whether
     guests can render `lightning-input-field` when their profile has object access.
   - Lookup Autofill stays authenticated-only by design: `FinalAutofillValidator` rejects a

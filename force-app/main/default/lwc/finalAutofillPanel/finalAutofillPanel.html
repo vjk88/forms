@@ -265,7 +265,28 @@
                                     When respondents select a record in this
                                     lookup, mapped fields populate.
                                 </p>
-                                <template lwc:if={lookupTargetObject}>
+                                <template lwc:if={isPolymorphicLookupSource}>
+                                    <lightning-combobox
+                                        class="ap-poly-object"
+                                        label="Object this rule reads"
+                                        value={draftRule.source.objectApiName}
+                                        options={polymorphicTargetOptions}
+                                        onchange={handlePolymorphicObjectChange}
+                                        placeholder="Choose an object"
+                                    ></lightning-combobox>
+                                    <p class="ap-field-hint">
+                                        This lookup can point at several
+                                        objects. The rule fills answers only when
+                                        the chosen record is this object. Add
+                                        another rule for another object.
+                                    </p>
+                                    <template lwc:if={referenceTargetsError}>
+                                        <p class="ap-field-hint">
+                                            {referenceTargetsError}
+                                        </p>
+                                    </template>
+                                </template>
+                                <template lwc:if={showSingleTargetHint}>
                                     <p class="ap-field-hint">
                                         Source object:
                                         <strong>{lookupTargetObject}</strong>

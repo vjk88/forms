@@ -279,15 +279,14 @@ private class FinalAutofillValidatorTest {
             'Expected validateForPublish to throw AuraHandledException'
         );
     }
-    @isTest
-    static void testPolymorphicLookupSourceRejected() {
-        // Task "Related To" references many objects. There is no single object
-        // to read mapped fields from, so an autofill rule on it would silently
-        // fill nothing. The validator decides that from Describe, not from a
-        // client-authored flag.
+    // ----- polymorphic lookups: one object per rule (owner 2026-09-13) -----
+
+    /** Base spec plus a Task "Related To" lookup carrying the given rules. */
+    private static Map<String, Object> polymorphicSpec(List<Object> rules) {
         Map<String, Object> spec = createBaseSpec();
-        List<Object> pages = (List<Object>) spec.get('pages');
-        Map<String, Object> page = (Map<String, Object>) pages[0];
+        Map<String, Object> page = (Map<String, Object>) (
+            (List<Object>) spec.get('pages')
+        )[0];
         Map<String, Object> section = (Map<String, Object>) (
             (List<Object>) page.get('sections')
         )[0];
@@ -305,42 +304,135 @@ private class FinalAutofillValidatorTest {
                     }
                 }
             );
-        Map<String, Object> prefill = (Map<String, Object>) (
-            (Map<String, Object>) spec.get('settings')
-        ).get('prefill');
-        prefill.put(
-            'autofillRules',
-            new List<Object>{
-                new Map<String, Object>{
-                    'id' => 'r_poly',
-                    'enabled' => true,
-                    'source' => new Map<String, Object>{
-                        'type' => 'lookup',
-                        'elementId' => 'el_what'
-                    },
-                    'mappings' => new List<Object>{
-                        new Map<String, Object>{
-                            'from' => 'Name',
-                            'to' => 'el_phone'
-                        }
-                    }
-                }
-            }
-        );
+        (
+            (Map<String, Object>) (
+                (Map<String, Object>) spec.get('settings')
+            ).get('prefill')
+        ).put('autofillRules', rules);
+        return spec;
+    }
 
-        Test.startTest();
-        List<FinalAutofillValidator.Diagnostic> diags = FinalAutofillValidator.validate(
-            spec,
-            null
-        );
-        Test.stopTest();
-
-        Boolean found = false;
-        for (FinalAutofillValidator.Diagnostic d : diags) {
-            if (d.code == 'AUTOFILL_POLYMORPHIC_LOOKUP') {
-                found = true;
-            }
+    private static Map<String, Object> polyRule(
+        String id,
+        String objectApiName,
+        String fromField
+    ) {
+        Map<String, Object> source = new Map<String, Object>{
+            'type' => 'lookup',
+            'elementId' => 'el_what'
+        };
+        if (objectApiName != null) {
+            source.put('objectApiName', objectApiName);
         }
-        System.assert(found, 'Expected AUTOFILL_POLYMORPHIC_LOOKUP, got ' + diags);
+        return new Map<String, Object>{
+            'id' => id,
+            'enabled' => true,
+            'source' => source,
+            'mappings' => new List<Object>{
+                new Map<String, Object>{ 'from' => fromField, 'to' => 'el_phone' }
+            }
+        };
+    }
+
+    private static Set<String> codesOf(Map<String, Object> spec) {
+        Set<String> codes = new Set<String>();
+        for (
+            FinalAutofillValidator.Diagnostic d : FinalAutofillValidator.validate(
+                spec,
+                null
+            )
+        ) {
+            codes.add(d.code);
+        }
+        return codes;
+    }
+
+    @isTest
+    static void polymorphicLookupRuleMustNameItsObject() {
+        Set<String> codes = codesOf(
+            polymorphicSpec(new List<Object>{ polyRule('r1', null, 'Phone') })
+        );
+        System.assert(
+            codes.contains('AUTOFILL_POLYMORPHIC_OBJECT_REQUIRED'),
+            codes
+        );
+    }
+
+    @isTest
+    static void polymorphicLookupRuleRejectsAnObjectTheFieldCannotPointAt() {
+        // Related To points at business records, never at User.
+        Set<String> codes = codesOf(
+            polymorphicSpec(new List<Object>{ polyRule('r1', 'User', 'Phone') })
+        );
+        System.assert(
+            codes.contains('AUTOFILL_POLYMORPHIC_OBJECT_NOT_A_TARGET'),
+            codes
+        );
+    }
+
+    @isTest
+    static void polymorphicLookupRuleOnARealTargetIsValid() {
+        Set<String> codes = codesOf(
+            polymorphicSpec(
+                new List<Object>{ polyRule('r1', 'Account', 'Phone') }
+            )
+        );
+        System.assert(
+            !codes.contains('AUTOFILL_POLYMORPHIC_OBJECT_REQUIRED'),
+            codes
+        );
+        System.assert(
+            !codes.contains('AUTOFILL_POLYMORPHIC_OBJECT_NOT_A_TARGET'),
+            codes
+        );
+        System.assert(
+            !codes.contains('AUTOFILL_SOURCE_FIELD_INACCESSIBLE'),
+            codes
+        );
+    }
+
+    @isTest
+    static void polymorphicLookupRuleChecksFieldsAgainstItsChosenObject() {
+        // Subject is a Case field, not an Account field: mappings are checked
+        // against the object the rule names.
+        Set<String> codes = codesOf(
+            polymorphicSpec(
+                new List<Object>{ polyRule('r1', 'Account', 'Subject') }
+            )
+        );
+        System.assert(
+            codes.contains('AUTOFILL_SOURCE_FIELD_INACCESSIBLE'),
+            codes
+        );
+    }
+
+    @isTest
+    static void onePolymorphicLookupCanHaveARulePerObjectSharingDestinations() {
+        // The chosen record is an Account or an Opportunity, never both, so the
+        // two rules can never fill the same question at once.
+        Set<String> codes = codesOf(
+            polymorphicSpec(
+                new List<Object>{
+                    polyRule('r_acc', 'Account', 'Phone'),
+                    polyRule('r_opp', 'Opportunity', 'Name')
+                }
+            )
+        );
+        System.assert(!codes.contains('AUTOFILL_DUPLICATE_LOOKUP_RULE'), codes);
+        System.assert(!codes.contains('AUTOFILL_DESTINATION_CONFLICT'), codes);
+    }
+
+    @isTest
+    static void twoRulesForTheSameObjectOnOneLookupAreStillDuplicates() {
+        Set<String> codes = codesOf(
+            polymorphicSpec(
+                new List<Object>{
+                    polyRule('r1', 'Account', 'Phone'),
+                    polyRule('r2', 'Account', 'Phone')
+                }
+            )
+        );
+        System.assert(codes.contains('AUTOFILL_DUPLICATE_LOOKUP_RULE'), codes);
+        System.assert(codes.contains('AUTOFILL_DESTINATION_CONFLICT'), codes);
     }
 }

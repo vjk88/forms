@@ -471,4 +471,73 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         // Applying element ids from another version could bind the wrong field.
         expect(el.answers.el_phone).toBeFalsy();
     });
+    /** SPEC with its lookup rule pointed at a polymorphic lookup reading Account. */
+    function polymorphicSpec() {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.settings.prefill.autofillRules[1].source = {
+            type: 'lookup',
+            elementId: 'el_account_lookup',
+            objectApiName: 'Account',
+            keyPrefix: '001'
+        };
+        spec.pages[0].sections[0].elements[2].config = {
+            inputType: 'reference',
+            polymorphic: true
+        };
+        return spec;
+    }
+
+    it('a polymorphic lookup rule reads only records of its own object', async () => {
+        const el = mount(polymorphicSpec());
+        await flush();
+        await flush();
+
+        // An Opportunity (006) is not this rule's object: nothing is read.
+        answer(el, 'el_account_lookup', '006000000000001AAA');
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-autofill-record-source')
+        ).toBeNull();
+        expect(deepQuery(el.shadowRoot, 'c-final-submit-bar').disabled).toBe(
+            false
+        );
+
+        // An Account (001) is: it is read through the rule's object.
+        answer(el, 'el_account_lookup', '001000000000001AAA');
+        await flush();
+        const source = el.shadowRoot.querySelector(
+            'c-final-autofill-record-source'
+        );
+        expect(source).not.toBeNull();
+        expect(source.objectApiName).toBe('Account');
+    });
+
+    it('switching to a record of another object clears what the rule filled', async () => {
+        const el = mount(polymorphicSpec());
+        await flush();
+        await flush();
+        answer(el, 'el_account_lookup', '001000000000001AAA');
+        await flush();
+        const source = el.shadowRoot.querySelector(
+            'c-final-autofill-record-source'
+        );
+        source.dispatchEvent(
+            new CustomEvent('recordsuccess', {
+                detail: {
+                    ruleId: 'af_lookup',
+                    recordId: '001000000000001AAA',
+                    generation: source.generation,
+                    sessionId: source.sessionId,
+                    values: { Phone: '555-1234', Website: 'https://a.test' }
+                }
+            })
+        );
+        await flush();
+        expect(el.answers.el_phone).toBe('555-1234');
+
+        answer(el, 'el_account_lookup', '006000000000001AAA');
+        await flush();
+        expect(el.answers.el_phone).toBeFalsy();
+        expect(el.answers.el_website).toBeFalsy();
+    });
 });

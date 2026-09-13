@@ -1072,7 +1072,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     ...(rule.source || {}),
                     type: 'lookup',
                     elementId: p.sourceElementId,
-                    objectApiName: p.objectApiName
+                    objectApiName: p.objectApiName,
+                    // What lets a rule on a polymorphic lookup refuse a record
+                    // of another object (see _handleSourceLookupChange).
+                    keyPrefix: p.keyPrefix || rule.source?.keyPrefix
                 },
                 mappings: Array.isArray(p.mappings) ? p.mappings : rule.mappings
             };
@@ -2226,7 +2229,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 r.source?.type === 'lookup' && r.source?.elementId === elementId
         );
         for (const rule of lookupRules) {
-            const sourceRecordId = value || null;
+            // A rule on a polymorphic lookup (Task "Related To") reads ONE
+            // object. A record of any other object means "no record" for this
+            // rule: its old values are cleared and nothing is read, because LDS
+            // would reject fields that belong to a different object.
+            const prefix = rule.source?.keyPrefix;
+            const matchesObject =
+                !value || !prefix || String(value).slice(0, 3) === prefix;
+            const sourceRecordId = matchesObject ? value || null : null;
             const { clearedPatch, requestIdentity } = onSourceChanged(
                 this._autofillSession,
                 rule.id,
