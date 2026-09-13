@@ -326,6 +326,19 @@ public with sharing class FinalAutofillValidator {
                                 'referenceTo'
                             );
                         }
+                        // Describe, not a client hint: a lookup that can point
+                        // at several objects has no single object to read the
+                        // mapped fields from, so the rule would fill nothing.
+                        if (isPolymorphicBinding(binding)) {
+                            diagnostics.add(
+                                new Diagnostic(
+                                    'AUTOFILL_POLYMORPHIC_LOOKUP',
+                                    ruleId,
+                                    null,
+                                    'A lookup that can point at several objects cannot drive autofill.'
+                                )
+                            );
+                        }
                     }
                 }
             }
@@ -570,6 +583,30 @@ public with sharing class FinalAutofillValidator {
         }
 
         return diagnostics;
+    }
+
+    /** True when Describe says the bound field references more than one object. */
+    private static Boolean isPolymorphicBinding(Map<String, Object> binding) {
+        if (binding == null) {
+            return false;
+        }
+        String objectName = (String) binding.get('object');
+        String fieldName = (String) binding.get('field');
+        if (String.isBlank(objectName) || String.isBlank(fieldName)) {
+            return false;
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
+        if (t == null) {
+            return false;
+        }
+        Schema.SObjectField f = t.getDescribe()
+            .fields.getMap()
+            .get(fieldName.toLowerCase());
+        if (f == null) {
+            return false;
+        }
+        List<Schema.SObjectType> refs = f.getDescribe().getReferenceTo();
+        return refs != null && refs.size() > 1;
     }
 
     private static Boolean isSupportedSourceType(Schema.DisplayType type) {

@@ -121,7 +121,7 @@ const REPEAT_STYLES = [
 ];
 
 /** Display-as choices per inputType (legacy renderAsOptions, BUILDER_SURFACES §2). */
-function renderAsChoicesFor(inputType) {
+function renderAsChoicesFor(inputType, polymorphic) {
     const isReference = inputType === 'reference' || inputType === 'lookup';
     const opts = [{ label: 'Default (from schema)', value: 'Default' }];
     if (inputType === 'text' || inputType === 'textarea') {
@@ -143,7 +143,10 @@ function renderAsChoicesFor(inputType) {
     if (inputType === 'number') {
         opts.push({ label: 'Slider', value: 'Slider' });
     }
-    if (isReference) {
+    if (isReference && !polymorphic) {
+        // Polymorphic lookups (Task "Related To") never get our search box:
+        // it needs exactly one object. Owner ruling 2026-09-13, a system
+        // limitation, so Default is the only option they can have.
         // 'Default' for a reference field IS the standard Salesforce lookup —
         // it renders lightning-input-field and the platform does whatever it
         // already does, configured lookup filter included. The only thing
@@ -922,6 +925,7 @@ export default class FinalPropertyPanel extends LightningElement {
         const t = this.cfg.inputType;
         return (
             (t === 'reference' || t === 'lookup') &&
+            !this.cfg.polymorphic &&
             this.cfg.renderAs === 'Filtered_Search'
         );
     }
@@ -954,7 +958,7 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get renderAsOptions() {
         const cur = this.cfg.renderAs || 'Default';
-        return renderAsChoicesFor(this.cfg.inputType).map((o) => ({
+        return renderAsChoicesFor(this.cfg.inputType, this.cfg.polymorphic).map((o) => ({
             ...o,
             selected: o.value === cur ? true : undefined
         }));

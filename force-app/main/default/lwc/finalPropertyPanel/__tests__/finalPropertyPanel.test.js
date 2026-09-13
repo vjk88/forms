@@ -414,4 +414,50 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         await flush();
         expect(guestToggle(el)).toBeFalsy();
     });
+    describe('lookup Display-as', () => {
+        const refNode = (config) => ({
+            id: 'el_ref',
+            type: 'field',
+            label: 'Ref',
+            binding: { object: 'Task', field: 'WhatId' },
+            config: { inputType: 'reference', ...config }
+        });
+
+        it('a single-target lookup offers Default and Search with filters', async () => {
+            const el = mount({
+                kind: 'element',
+                bindingObjectApi: 'Case',
+                node: refNode({ referenceTo: 'Contact' })
+            });
+            await flush();
+            const opts = [
+                ...el.shadowRoot.querySelectorAll('.pp-renderas option')
+            ].map((o) => o.value);
+            expect(opts).toEqual(['Default', 'Filtered_Search']);
+        });
+
+        it('a polymorphic lookup offers no choice at all, only Default', async () => {
+            // Owner ruling 2026-09-13: a system limitation. With one option
+            // left the Display-as select is not rendered.
+            const el = mount({
+                kind: 'element',
+                bindingObjectApi: 'Task',
+                node: refNode({ polymorphic: true })
+            });
+            await flush();
+            expect(el.shadowRoot.querySelector('.pp-renderas')).toBeNull();
+        });
+
+        it('a polymorphic lookup never shows the filter editor, even if renderAs says so', async () => {
+            const el = mount({
+                kind: 'element',
+                bindingObjectApi: 'Task',
+                node: refNode({ polymorphic: true, renderAs: 'Filtered_Search' })
+            });
+            await flush();
+            expect(
+                el.shadowRoot.querySelector('c-final-lookup-filter')
+            ).toBeNull();
+        });
+    });
 });

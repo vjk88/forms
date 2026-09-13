@@ -279,4 +279,68 @@ private class FinalAutofillValidatorTest {
             'Expected validateForPublish to throw AuraHandledException'
         );
     }
+    @isTest
+    static void testPolymorphicLookupSourceRejected() {
+        // Task "Related To" references many objects. There is no single object
+        // to read mapped fields from, so an autofill rule on it would silently
+        // fill nothing. The validator decides that from Describe, not from a
+        // client-authored flag.
+        Map<String, Object> spec = createBaseSpec();
+        List<Object> pages = (List<Object>) spec.get('pages');
+        Map<String, Object> page = (Map<String, Object>) pages[0];
+        Map<String, Object> section = (Map<String, Object>) (
+            (List<Object>) page.get('sections')
+        )[0];
+        ((List<Object>) section.get('elements'))
+            .add(
+                new Map<String, Object>{
+                    'id' => 'el_what',
+                    'type' => 'field',
+                    'config' => new Map<String, Object>{
+                        'inputType' => 'reference'
+                    },
+                    'binding' => new Map<String, Object>{
+                        'object' => 'Task',
+                        'field' => 'WhatId'
+                    }
+                }
+            );
+        Map<String, Object> prefill = (Map<String, Object>) (
+            (Map<String, Object>) spec.get('settings')
+        ).get('prefill');
+        prefill.put(
+            'autofillRules',
+            new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'r_poly',
+                    'enabled' => true,
+                    'source' => new Map<String, Object>{
+                        'type' => 'lookup',
+                        'elementId' => 'el_what'
+                    },
+                    'mappings' => new List<Object>{
+                        new Map<String, Object>{
+                            'from' => 'Name',
+                            'to' => 'el_phone'
+                        }
+                    }
+                }
+            }
+        );
+
+        Test.startTest();
+        List<FinalAutofillValidator.Diagnostic> diags = FinalAutofillValidator.validate(
+            spec,
+            null
+        );
+        Test.stopTest();
+
+        Boolean found = false;
+        for (FinalAutofillValidator.Diagnostic d : diags) {
+            if (d.code == 'AUTOFILL_POLYMORPHIC_LOOKUP') {
+                found = true;
+            }
+        }
+        System.assert(found, 'Expected AUTOFILL_POLYMORPHIC_LOOKUP, got ' + diags);
+    }
 }

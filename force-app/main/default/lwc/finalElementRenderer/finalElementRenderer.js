@@ -400,7 +400,9 @@ export default class FinalElementRenderer extends LightningElement {
     get isNativeLookup() {
         return (
             this.isAnyLookup &&
-            this.renderAs !== 'Filtered_Search' &&
+            // A polymorphic lookup renders native even when a form-level
+            // default says Filtered_Search: our box needs exactly one object.
+            (this.cfg.polymorphic || this.renderAs !== 'Filtered_Search') &&
             Boolean(this.nativeObjectApiName && this.nativeFieldName)
         );
     }
