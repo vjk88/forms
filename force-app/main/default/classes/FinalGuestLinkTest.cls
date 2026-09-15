@@ -589,11 +589,18 @@ private class FinalGuestLinkTest {
     }
 
     private static Form__c makeGuestClassicFormWithAutofill(String name) {
+        return makeClassicFormWithAutofill(name, true);
+    }
+
+    private static Form__c makeClassicFormWithAutofill(
+        String name,
+        Boolean isPublic
+    ) {
         Form__c form = new Form__c(
             Name = name,
             Form_Type__c = 'Form',
             Status__c = 'Published',
-            Allowed_Adapters__c = 'Public_Guest',
+            Allowed_Adapters__c = isPublic ? 'Public_Guest' : null,
             // VR_Primary_Object_Required (ACTIVE): a Form-typed record must
             // carry its primary object or the insert is rejected.
             Primary_Context_Object__c = 'Job_Application__c'
@@ -877,5 +884,124 @@ private class FinalGuestLinkTest {
         }
         Test.stopTest();
         System.assert(caught, 'mismatched specVersionId is rejected');
+    }
+
+    // ---------------------------------- signed-in respondents (2026-09-15)
+    // Owner ruling: a personalized link works for everyone, guest or not,
+    // and on forms that are not public. The token is the permission.
+
+    @isTest
+    static void signedInLinkFillsANonPublicForm() {
+        grantJobAppAccess();
+        Form__c form = makeClassicFormWithAutofill('SignedInLink', false);
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            token = (String) FinalStudioController.mintRecordLink(
+                    form.Id,
+                    ja.Id
+                )
+                .get('token');
+        }
+
+        Test.startTest();
+        Map<String, Object> ctx = FinalAutofillController.getLinkContext(
+            form.Id,
+            token
+        );
+        Map<String, Object> guestCtx = FinalGuestController.getGuestAutofillContext(
+            form.Id,
+            null,
+            token
+        );
+        Test.stopTest();
+
+        System.assertEquals('applied', ctx.get('status'), 'link applies');
+        Map<String, Object> rule0 = (Map<String, Object>) ((List<Object>) ctx.get(
+            'autofill'
+        ))[0];
+        Map<String, Object> vals = (Map<String, Object>) rule0.get('values');
+        System.assertEquals(
+            'Ada Lovelace',
+            vals.get('el_name'),
+            'the link fills the form for a signed-in user'
+        );
+        System.assertEquals(
+            false,
+            vals.containsKey('el_salary'),
+            'a signed-in user gets exactly what a guest gets'
+        );
+        System.assertEquals(
+            'unavailable',
+            guestCtx.get('status'),
+            'the public site still refuses a form that is not public'
+        );
+    }
+
+    @isTest
+    static void signedInLinkWithBadTokenFillsNothing() {
+        Form__c form = makeClassicFormWithAutofill('SignedInBadLink', false);
+        Test.startTest();
+        Map<String, Object> ctx = FinalAutofillController.getLinkContext(
+            form.Id,
+            'not-a-real-token'
+        );
+        Map<String, Object> none = FinalAutofillController.getLinkContext(
+            form.Id,
+            null
+        );
+        Test.stopTest();
+        System.assertEquals('unavailable', ctx.get('status'), 'forged link');
+        System.assertEquals('empty', none.get('status'), 'no link at all');
+    }
+
+    @isTest
+    static void signedInSubmitBurnsASingleUseLink() {
+        grantJobAppAccess();
+        Form__c form = makeClassicFormWithAutofill('SignedInSingleUse', false);
+        String token;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            token = (String) FinalStudioController.mintTrackedLink(
+                    form.Id,
+                    ja.Id,
+                    'staff@example.com',
+                    true
+                )
+                .get('token');
+        }
+        String payload = subPayload(token);
+
+        Test.startTest();
+        FinalSubmitController.SubmitResult first = FinalSubmitController.submitForm(
+            form.Id,
+            null,
+            payload
+        );
+        Boolean refused = false;
+        try {
+            FinalSubmitController.submitForm(form.Id, null, payload);
+        } catch (AuraHandledException e) {
+            refused = true;
+        }
+        Test.stopTest();
+
+        System.assertEquals(null, first.errors, 'first submit has no errors');
+        System.assertNotEquals(null, first.recordId, 'first submit saves');
+        Survey_Invitation__c inv = [
+            SELECT Responded_On__c
+            FROM Survey_Invitation__c
+            WHERE Form__c = :form.Id
+            LIMIT 1
+        ];
+        System.assertNotEquals(
+            null,
+            inv.Responded_On__c,
+            'a signed-in submit marks the invitation used'
+        );
+        System.assert(
+            refused,
+            'a used single-use link is refused inside Salesforce too'
+        );
     }
 }

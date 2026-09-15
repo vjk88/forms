@@ -3,6 +3,7 @@
  *
  * - describeSourceFields: Author-only read-only source field picker (accessible fields).
  * - getLookupPlan: Authenticated respondent metadata plan for lookups & lookup autofill rules.
+ * - getLinkContext: Personalized-link values for a signed-in respondent.
  *
  * Enforces:
  * - Rejects guest callers on all methods (UserInfo.getUserType() == 'Guest').
@@ -151,7 +152,9 @@ public with sharing class FinalAutofillController {
                         Schema.SObjectType chosenType = String.isBlank(chosen)
                             ? null
                             : Schema.getGlobalDescribe().get(chosen);
-                        if (chosenType != null && targets.contains(chosenType)) {
+                        if (
+                            chosenType != null && targets.contains(chosenType)
+                        ) {
                             Schema.DescribeSObjectResult chosenDescribe = chosenType.getDescribe();
                             if (chosenDescribe.isAccessible()) {
                                 sObj = chosenDescribe.getName();
@@ -200,13 +203,44 @@ public with sharing class FinalAutofillController {
      * Autofill rule can name the ONE it reads. Readable objects only, sorted by
      * label, each with the key prefix its record ids start with.
      */
+    /**
+     * Personalized link (?c__rt=) for a SIGNED-IN respondent: the same values a
+     * guest gets from FinalGuestController.getGuestAutofillContext, without the
+     * guest-only public-form gate (owner 2026-09-15 - links work for everyone,
+     * including forms that are not public). The token is the permission.
+     * Returns { versionId, status, prefill, ruleFacts, autofill }.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getLinkContext(Id formId, String token) {
+        gateNotGuest();
+        if (formId == null) {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
+        // The respondent must be able to open the form at all: the same
+        // USER_MODE read FinalSpecController.getSpec renders it from.
+        List<Form_Version__c> versions = [
+            SELECT Id, Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Form__c = :formId AND Is_Active__c = TRUE
+            WITH USER_MODE
+            ORDER BY Version_Number__c DESC
+            LIMIT 1
+        ];
+        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
+        return FinalLinkService.contextFor(formId, versions[0], token);
+    }
+
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> describeReferenceTargets(
         String objectApiName,
         String fieldApiName
     ) {
         gateNotGuest();
-        Map<String, Schema.SObjectField> fieldMap = String.isBlank(objectApiName)
+        Map<String, Schema.SObjectField> fieldMap = String.isBlank(
+                objectApiName
+            )
             ? null
             : fieldsOf(objectApiName);
         Schema.SObjectField field = (fieldMap == null ||
