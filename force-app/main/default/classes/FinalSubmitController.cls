@@ -13,6 +13,8 @@
  * never serves guests (RUNTIME_NOTES elevated-context rules).
  */
 public with sharing class FinalSubmitController {
+    private static final String LINK_REFUSED = 'This link is no longer valid. Nothing was recorded.';
+
     public class SubmitResult {
         @AuraEnabled
         public Id recordId;
@@ -53,12 +55,46 @@ public with sharing class FinalSubmitController {
         } catch (Exception e) {
             throw new AuraHandledException('The payload is not valid JSON.');
         }
-        FinalSubmitService.SubmitOutcome outcome = FinalSubmitService.run(
-            spec,
-            payload,
-            version.Id, // the SERVER-loaded version identity (never client-claimed)
-            FinalSubmitService.Posture.INTERNAL
-        );
+        // Personalized link (?c__rt=): the same checks a guest gets (owner
+        // 2026-09-15 - links work for everyone). A revoked/expired/used tracked
+        // link is refused before anything saves; a single-use link burns; the
+        // response is stamped with the link's record.
+        Map<String, Object> meta = payload.get(
+                'meta'
+            ) instanceof Map<String, Object>
+            ? (Map<String, Object>) payload.get('meta')
+            : null;
+        Object rt = meta == null ? null : meta.get('rt');
+        FinalLinkService.LinkSubmit link;
+        try {
+            link = FinalLinkService.beginSubmit(
+                version.Form__c,
+                spec,
+                rt instanceof String ? (String) rt : null
+            );
+        } catch (FinalLinkService.LinkException e) {
+            throw new AuraHandledException(LINK_REFUSED);
+        }
+        FinalSubmitService.SubmitOutcome outcome;
+        try {
+            outcome = FinalSubmitService.run(
+                spec,
+                payload,
+                version.Id, // the SERVER-loaded version identity (never client-claimed)
+                FinalSubmitService.Posture.INTERNAL
+            );
+        } catch (Exception e) {
+            link.rollback();
+            throw e;
+        }
+        // Field errors mean nothing saved: leave the link unused.
+        if (outcome.errors == null || outcome.errors.isEmpty()) {
+            try {
+                link.finish(outcome.recordId);
+            } catch (FinalLinkService.LinkException e) {
+                throw new AuraHandledException(LINK_REFUSED);
+            }
+        }
         SubmitResult res = new SubmitResult();
         res.recordId = outcome.recordId;
         res.childCount = outcome.childCount;
@@ -74,7 +110,7 @@ public with sharing class FinalSubmitController {
         List<Form_Version__c> versions;
         if (versionId != null) {
             versions = [
-                SELECT Id, Spec_JSON__c
+                SELECT Id, Form__c, Spec_JSON__c
                 FROM Form_Version__c
                 WHERE Id = :versionId
                 WITH USER_MODE
@@ -82,7 +118,7 @@ public with sharing class FinalSubmitController {
             ];
         } else if (formId != null) {
             versions = [
-                SELECT Id, Spec_JSON__c
+                SELECT Id, Form__c, Spec_JSON__c
                 FROM Form_Version__c
                 WHERE Form__c = :formId AND Is_Active__c = TRUE
                 WITH USER_MODE

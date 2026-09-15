@@ -168,82 +168,17 @@ public without sharing class FinalGuestController {
             return fake;
         }
 
-        // The link token rides `meta.rt` (same channel as the honeypot); the
-        // server re-validates it cryptographically.
+        // The link token rides `meta.rt` (same channel as the honeypot). All
+        // link checks live in FinalLinkService, shared with signed-in submits:
+        // a revoked/expired/used tracked link is refused BEFORE anything saves,
+        // a single-use link burns, and the response gets the link's record.
         Map<String, Object> tokenMeta = asMap(payload.get('meta'));
         String token = tokenMeta == null ? null : (String) tokenMeta.get('rt');
-        String targetObject = surveyTargetObject(spec);
-        if (String.isBlank(targetObject)) {
-            // R2 — same guest-boundary rule as getGuestAutofillContext: resolve
-            // from the already-gated spec, never through the user-mode helper.
-            // As the Guest User that helper always threw, leaving targetObject
-            // blank, which made claims null and got every valid TRACKED classic
-            // link refused below.
-            FinalAutofillService.LinkSourceContract contract = FinalAutofillService.resolveLinkSourceFromSpec(
-                spec,
-                f.Form_Type__c,
-                f.Primary_Context_Object__c
-            );
-            if (contract != null) {
-                targetObject = contract.objectApiName;
-            }
-        }
-        FinalSurveyTokenService.Claims claims = (String.isBlank(token) ||
-            String.isBlank(targetObject))
-            ? null
-            : validClaims(formId, token, targetObject);
-
-        // SO-4 Tier 2 ENFORCEMENT: a tracked link that's revoked, expired, or
-        // already used (single-use) is refused BEFORE anything saves — the
-        // scanner law's "checked on submit too". A token carrying an invitation
-        // whose full validation failed can't submit; stateless Tier 1 tokens and
-        // tokenless submits are unaffected.
-        FinalSurveyTokenService.Claims raw = String.isBlank(token)
-            ? null
-            : FinalSurveyTokenService.resolve(token);
-        if (raw != null && raw.invitationId != null && claims == null) {
+        FinalLinkService.LinkSubmit link;
+        try {
+            link = FinalLinkService.beginSubmit(formId, spec, token);
+        } catch (FinalLinkService.LinkException e) {
             throw new AuraHandledException(UNAVAILABLE);
-        }
-
-        // Transactional single-use lock & rollback (IMPL_PLAN_AUTOFILL_RULES §8)
-        Savepoint sp = null;
-        Survey_Invitation__c lockedInv = null;
-        if (claims != null && claims.invitationId != null) {
-            List<Survey_Invitation__c> invRows = [
-                SELECT
-                    Id,
-                    Form__c,
-                    Record_Id__c,
-                    Revoked__c,
-                    Single_Use__c,
-                    Expires_On__c,
-                    Responded_On__c
-                FROM Survey_Invitation__c
-                WHERE Id = :claims.invitationId
-                LIMIT 1
-                FOR UPDATE
-            ];
-            if (
-                invRows.isEmpty() ||
-                invRows[0].Revoked__c == true ||
-                invRows[0].Form__c != formId
-            ) {
-                throw new AuraHandledException(UNAVAILABLE);
-            }
-            lockedInv = invRows[0];
-            if (
-                lockedInv.Single_Use__c == true &&
-                lockedInv.Responded_On__c != null
-            ) {
-                throw new AuraHandledException(UNAVAILABLE);
-            }
-            if (
-                lockedInv.Expires_On__c != null &&
-                lockedInv.Expires_On__c < Datetime.now()
-            ) {
-                throw new AuraHandledException(UNAVAILABLE);
-            }
-            sp = Database.setSavepoint();
         }
 
         FinalSubmitService.SubmitOutcome outcome;
@@ -255,46 +190,13 @@ public without sharing class FinalGuestController {
                 FinalSubmitService.Posture.GUEST
             );
         } catch (Exception e) {
-            if (sp != null) {
-                Database.rollback(sp);
-            }
+            link.rollback();
             throw e;
         }
-
-        if (lockedInv != null) {
-            try {
-                if (lockedInv.Responded_On__c == null) {
-                    lockedInv.Responded_On__c = Datetime.now();
-                    Database.update(
-                        new List<Survey_Invitation__c>{ lockedInv },
-                        true,
-                        AccessLevel.SYSTEM_MODE
-                    );
-                }
-            } catch (Exception e) {
-                if (sp != null) {
-                    Database.rollback(sp);
-                }
-                throw new AuraHandledException(UNAVAILABLE);
-            }
-            FinalSurveyInvitationService.publishEvent(
-                'responded',
-                formId,
-                lockedInv.Id,
-                claims.recordId
-            );
-        }
-
-        // SO-4: STAMP the record reference onto the response — server-side, from
-        // the VERIFIED TOKEN, never a raw client recordId. Guests still never
-        // touch the business record (invariant 5); this only links our own
-        // Form_Response__c so the customer's Flow can act on it.
-        if (
-            claims != null &&
-            outcome.recordId != null &&
-            outcome.recordId.getSObjectType() == Form_Response__c.SObjectType
-        ) {
-            stampRecordRef(outcome.recordId, claims.recordId, targetObject);
+        try {
+            link.finish(outcome.recordId);
+        } catch (FinalLinkService.LinkException e) {
+            throw new AuraHandledException(UNAVAILABLE);
         }
 
         GuestSubmitResult res = new GuestSubmitResult();
@@ -323,11 +225,11 @@ public without sharing class FinalGuestController {
             gate(formId); // published + guest-enabled, same hard gate
             Form_Version__c version = activeVersion(formId);
             Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
-            String targetObject = surveyTargetObject(spec);
+            String targetObject = FinalLinkService.surveyTargetObject(spec);
             if (String.isBlank(targetObject)) {
                 return empty;
             }
-            FinalSurveyTokenService.Claims c = validClaims(
+            FinalSurveyTokenService.Claims c = FinalLinkService.validClaims(
                 formId,
                 token,
                 targetObject
@@ -356,13 +258,6 @@ public without sharing class FinalGuestController {
         Id versionId,
         String token
     ) {
-        Map<String, Object> emptyResp = new Map<String, Object>{
-            'versionId' => versionId,
-            'status' => 'empty',
-            'prefill' => new Map<String, Object>(),
-            'ruleFacts' => new Map<String, Boolean>(),
-            'autofill' => new List<Object>()
-        };
         try {
             Form__c f = gate(formId);
             Form_Version__c version = activeVersion(f.Id);
@@ -376,94 +271,8 @@ public without sharing class FinalGuestController {
                 };
             }
 
-            if (String.isBlank(token)) {
-                return emptyResp;
-            }
-
-            // R9 — availability is re-checked HERE, independently. `gate` only
-            // proves Published + Public_Guest; it says nothing about opening or
-            // closing windows or the response cap. A prior getGuestRuntimeSpec
-            // call is not an authorization guarantee, and this endpoint is
-            // directly callable, so a closed/capped form must disclose nothing
-            // even though its token is otherwise valid.
-            Map<String, Object> unavailableResp = new Map<String, Object>{
-                'versionId' => version.Id,
-                'status' => 'unavailable',
-                'prefill' => new Map<String, Object>(),
-                'ruleFacts' => new Map<String, Boolean>(),
-                'autofill' => new List<Object>()
-            };
-            // R2 — resolve the contract from the spec `activeVersion` ALREADY
-            // loaded behind the gate above. Calling the user-mode
-            // resolveLinkSource(formId) here made every valid guest link return
-            // `unavailable`, because the Guest User cannot read Form__c /
-            // Form_Version__c by design. Parse before any projection:
-            // projectForGuest strips settings.prefill in place.
-            Map<String, Object> activeSpec = parseSpec(version.Spec_JSON__c);
-
-            if (
-                FinalSubmitService.isClosed(activeSpec) ||
-                FinalSubmitService.responseCapReached(activeSpec, version.Id)
-            ) {
-                return unavailableResp;
-            }
-
-            FinalAutofillService.LinkSourceContract contract = FinalAutofillService.resolveLinkSourceFromSpec(
-                activeSpec,
-                f.Form_Type__c,
-                f.Primary_Context_Object__c
-            );
-            if (contract == null || String.isBlank(contract.objectApiName)) {
-                return unavailableResp;
-            }
-
-            String targetObject = contract.objectApiName;
-
-            FinalSurveyTokenService.Claims c = validClaims(
-                formId,
-                token,
-                targetObject
-            );
-            if (c == null) {
-                return new Map<String, Object>{
-                    'versionId' => version.Id,
-                    'status' => 'unavailable',
-                    'prefill' => new Map<String, Object>(),
-                    'ruleFacts' => new Map<String, Boolean>(),
-                    'autofill' => new List<Object>()
-                };
-            }
-
-            Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
-            Map<String, Object> computed = FinalGuestContextService.compute(
-                spec,
-                targetObject,
-                c.recordId
-            );
-
-            if (computed.get('recordFound') == false) {
-                return new Map<String, Object>{
-                    'versionId' => version.Id,
-                    'status' => 'unavailable',
-                    'prefill' => new Map<String, Object>(),
-                    'ruleFacts' => new Map<String, Boolean>(),
-                    'autofill' => new List<Object>()
-                };
-            }
-
-            return new Map<String, Object>{
-                'versionId' => version.Id,
-                'status' => 'applied',
-                'prefill' => computed.get('prefill') != null
-                    ? computed.get('prefill')
-                    : new Map<String, Object>(),
-                'ruleFacts' => computed.get('ruleFacts') != null
-                    ? computed.get('ruleFacts')
-                    : new Map<String, Boolean>(),
-                'autofill' => computed.get('autofill') != null
-                    ? computed.get('autofill')
-                    : new List<Object>()
-            };
+            // Links are shared with signed-in users: FinalLinkService.
+            return FinalLinkService.contextFor(f.Id, version, token);
         } catch (Exception e) {
             return new Map<String, Object>{
                 'versionId' => versionId,
@@ -473,155 +282,6 @@ public without sharing class FinalGuestController {
                 'autofill' => new List<Object>()
             };
         }
-    }
-
-    // ----- SO-4 token helpers -----
-
-    /** Resolve + fully validate a guest link token against this form and its
-     *  object: signature, form match, expiry, the per-form kill switch
-     *  (Links_Invalidated_On__c), and record sObjectType. null = not usable. */
-    private static FinalSurveyTokenService.Claims validClaims(
-        Id formId,
-        String token,
-        String targetObject
-    ) {
-        FinalSurveyTokenService.Claims c = FinalSurveyTokenService.resolve(
-            token
-        );
-        if (c == null || c.formId != formId) {
-            return null;
-        }
-        Long now = Datetime.now().getTime();
-        if (c.expiry != null && c.expiry < now) {
-            return null; // per-link expiry passed
-        }
-        // mass kill switch: any link issued before the cutoff is dead
-        List<Form__c> forms = [
-            SELECT Links_Invalidated_On__c
-            FROM Form__c
-            WHERE Id = :formId
-            LIMIT 1
-        ];
-        if (!forms.isEmpty() && forms[0].Links_Invalidated_On__c != null) {
-            Long cutoff = forms[0].Links_Invalidated_On__c.getTime();
-            // <= so a link issued AT the cutoff instant is dead too:
-            // revocation wins ties (safer boundary than letting it survive).
-            if (c.issuedAt == null || c.issuedAt <= cutoff) {
-                return null;
-            }
-        }
-        // the record must belong to THIS survey's object
-        Schema.SObjectType t = Schema.getGlobalDescribe()
-            .get(targetObject.toLowerCase());
-        if (t == null || c.recordId.getSObjectType() != t) {
-            return null;
-        }
-        // SO-4 Tier 2: a tracked link is only valid while its invitation is.
-        if (c.invitationId != null) {
-            Survey_Invitation__c inv = loadInvitation(c.invitationId);
-            if (
-                inv == null ||
-                inv.Revoked__c == true ||
-                inv.Form__c != formId ||
-                inv.Record_Id__c != String.valueOf(c.recordId) ||
-                (inv.Expires_On__c != null &&
-                inv.Expires_On__c < Datetime.now()) ||
-                (inv.Single_Use__c == true &&
-                inv.Responded_On__c != null)
-            ) {
-                return null; // revoked / expired / already used / mismatched
-            }
-        }
-        return c;
-    }
-
-    /** Load a tracked invitation (guest, system context — the verified token is
-     *  the authorization; a guest has no sharing to the row). */
-    private static Survey_Invitation__c loadInvitation(Id invitationId) {
-        List<Survey_Invitation__c> rows = [
-            SELECT
-                Id,
-                Form__c,
-                Record_Id__c,
-                Revoked__c,
-                Single_Use__c,
-                Expires_On__c,
-                Responded_On__c
-            FROM Survey_Invitation__c
-            WHERE Id = :invitationId
-            LIMIT 1
-        ];
-        return rows.isEmpty() ? null : rows[0];
-    }
-
-    /** Stamp the token-sourced record ref onto the just-created response
-     *  (claims already validated by the caller). Best-effort. */
-    private static void stampRecordRef(
-        Id responseId,
-        Id recordId,
-        String targetObject
-    ) {
-        try {
-            Database.update(
-                new List<Form_Response__c>{
-                    new Form_Response__c(
-                        Id = responseId,
-                        Related_Record_Id__c = String.valueOf(recordId),
-                        Related_Record_Type__c = targetObject
-                    )
-                },
-                true,
-                AccessLevel.SYSTEM_MODE
-            );
-        } catch (Exception e) {
-            System.debug(
-                LoggingLevel.WARN,
-                'SO-4 record-ref stamp skipped: ' + e.getMessage()
-            );
-        }
-    }
-
-    /** SO-4 Tier 2: stamp Responded_On (the single-use burn + tracking marker)
-     *  the FIRST time this invitation submits, and emit the 'responded' event.
-     *  Post-run + best-effort — the response is already saved. */
-    private static void burnInvitation(
-        Id invitationId,
-        Id formId,
-        Id recordId
-    ) {
-        try {
-            List<Survey_Invitation__c> rows = [
-                SELECT Id, Responded_On__c
-                FROM Survey_Invitation__c
-                WHERE Id = :invitationId
-                LIMIT 1
-            ];
-            if (!rows.isEmpty() && rows[0].Responded_On__c == null) {
-                rows[0].Responded_On__c = Datetime.now();
-                Database.update(rows, true, AccessLevel.SYSTEM_MODE);
-            }
-            FinalSurveyInvitationService.publishEvent(
-                'responded',
-                formId,
-                invitationId,
-                recordId
-            );
-        } catch (Exception e) {
-            System.debug(
-                LoggingLevel.WARN,
-                'SO-4 invitation burn skipped: ' + e.getMessage()
-            );
-        }
-    }
-
-    /** targetObject for a survey spec, or null (forms/no object). */
-    private static String surveyTargetObject(Map<String, Object> spec) {
-        Map<String, Object> form = asMap(spec.get('form'));
-        if (form == null || form.get('type') != 'survey') {
-            return null;
-        }
-        String obj = (String) form.get('targetObject');
-        return String.isBlank(obj) ? null : obj;
     }
 
     // ----- spam (A3) — availability helpers moved to FinalSubmitService

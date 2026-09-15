@@ -5,6 +5,7 @@ import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
+import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkContext';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
@@ -308,6 +309,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _loadedKey;
     /** SO-4: guest-host-injected {ruleFacts, prefill} (see recordContext). */
     _injectedCtx;
+    /** Personalized link token from `?c__rt=` (signed-in hosts only; the guest
+     *  host reads its own and delegates submit). */
+    _urlLinkToken;
+    /** `formId|token` whose link context was requested — one fetch per link. */
+    _linkCtxKey;
+    /** True while the link's values load: shows the spinner, holds Submit. */
+    _linkLoading = false;
 
     /** Explicit host inputs. Blank means create / no survey context. */
     _existingRecordId;
@@ -453,6 +461,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._pageRef = ref;
         this._urlExistingRecordId = ref?.state?.c__existingRecordId;
         this._urlSurveyContextRecordId = ref?.state?.c__surveyContextRecordId;
+        this._urlLinkToken = ref?.state?.c__rt || undefined;
         this._recordInputsChanged();
         this._load();
     }
@@ -986,6 +995,53 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // `recordContext` property. Runs after the reset above so a spec
         // re-apply can't wipe it.
         this._applyInjectedContext();
+        this._loadLinkContext(seq);
+    }
+
+    /**
+     * Personalized link inside Salesforce (owner 2026-09-15: links work for
+     * everyone, not just guests). No guest host sits here, so the viewer reads
+     * `?c__rt=` itself and feeds the result through the SAME injected-context
+     * path the guest host uses. The server resolves the token; a dead link
+     * fills nothing and never blocks the form.
+     */
+    _loadLinkContext(seq) {
+        const token = this._urlLinkToken;
+        const formId = this.effectiveFormId;
+        if (
+            !token ||
+            !formId ||
+            this.delegateSubmit ||
+            this.authoring ||
+            this.preservePreview ||
+            this._inlineSpec
+        ) {
+            return;
+        }
+        const key = `${formId}|${token}`;
+        if (key === this._linkCtxKey) {
+            return; // already loaded; the call above re-applied it
+        }
+        this._linkCtxKey = key;
+        this._linkLoading = true;
+        getLinkContext({ formId, token })
+            .then((ctx) => {
+                if (seq !== this._applySeq || !this.isConnected) {
+                    return;
+                }
+                if (ctx && ctx.status === 'applied') {
+                    this._injectedCtx = ctx;
+                    this._applyInjectedContext();
+                }
+            })
+            .catch(() => {
+                // a stale or forged link renders the plain form
+            })
+            .finally(() => {
+                if (key === this._linkCtxKey) {
+                    this._linkLoading = false;
+                }
+            });
     }
 
     /**
@@ -1564,7 +1620,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                     base = {
                                         ...base,
                                         lookup: {
-                                            formId: this.effectiveFormId || null,
+                                            formId:
+                                                this.effectiveFormId || null,
                                             versionId:
                                                 this.effectiveVersionId || null,
                                             answers: this.answers,
@@ -1976,10 +2033,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._serverFieldErrors = {};
         const submitGeneration = ++this._submitGeneration;
         try {
+            const payload = this._payload();
+            if (this._urlLinkToken) {
+                payload.meta.rt = this._urlLinkToken;
+            }
             const res = await submitForm({
                 formId: this.effectiveFormId || null,
                 versionId: this.effectiveVersionId || null,
-                payloadJson: JSON.stringify(this._payload())
+                payloadJson: JSON.stringify(payload)
             });
             if (submitGeneration !== this._submitGeneration) return;
             if (res && res.errors && res.errors.length) {
@@ -2180,7 +2241,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     // ----- Autofill Runtime (IMPL_PLAN_AUTOFILL_RULES §6) -----
 
     get isAutofillPending() {
-        return (this.activeAutofillRequests || []).length > 0;
+        return (
+            this._linkLoading || (this.activeAutofillRequests || []).length > 0
+        );
     }
 
     get effectiveSubmitConfig() {
