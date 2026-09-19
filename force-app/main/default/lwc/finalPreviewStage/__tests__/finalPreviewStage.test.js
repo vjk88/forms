@@ -80,6 +80,7 @@ describe('c-final-preview-stage', () => {
         };
         const el = await mount({ spec, preserveSession: true });
         el.shadowRoot.querySelector('[data-device="mobile"]').click();
+        el.shadowRoot.querySelector('[data-zoom="actual"]').click();
         el.shadowRoot
             .querySelector('c-final-form-viewer')
             .shadowRoot.querySelector('x-test')
@@ -92,6 +93,7 @@ describe('c-final-preview-stage', () => {
         el.remove();
         const restored = await mount({ spec, preserveSession: true, session });
         expect(restored.getSession().device).toBe('mobile');
+        expect(restored.getSession().zoom).toBe('actual');
         expect(restored.getSession().viewer.answers.q).toBe('Hello');
         expect(
             restored.shadowRoot
@@ -102,6 +104,7 @@ describe('c-final-preview-stage', () => {
         restored.shadowRoot.querySelector('.ps-refresh').click();
         await flush();
         expect(restored.getSession().device).toBe('mobile');
+        expect(restored.getSession().zoom).toBe('actual');
         expect(restored.getSession().viewer.answers).toEqual({});
     });
     afterEach(() => {
@@ -122,6 +125,131 @@ describe('c-final-preview-stage', () => {
         expect(style).toContain('width:1280px');
         // --frame-offset trick: min-height calc resolves to the device height
         expect(style).toContain('calc(100dvh - 800px)');
+        expect(el.getSession().zoom).toBe('fit');
+        expect(
+            el.shadowRoot
+                .querySelector('[data-zoom="fit"]')
+                .getAttribute('aria-pressed')
+        ).toBe('true');
+    });
+
+    it.each([undefined, 'invalid'])(
+        'defaults an older or invalid zoom session to Fit (%s)',
+        async (zoom) => {
+            const el = await mount({ session: { device: 'tablet', zoom } });
+            expect(el.getSession().zoom).toBe('fit');
+            expect(el.getSession().device).toBe('tablet');
+        }
+    );
+
+    describe('preview sizing', () => {
+        let observers;
+        let frames;
+        let originalResizeObserver;
+
+        beforeEach(() => {
+            observers = [];
+            frames = [];
+            originalResizeObserver = global.ResizeObserver;
+            global.ResizeObserver = jest.fn().mockImplementation((callback) => {
+                observers.push(callback);
+                return { observe: jest.fn(), disconnect: jest.fn() };
+            });
+            jest.spyOn(window, 'requestAnimationFrame').mockImplementation(
+                (callback) => frames.push(callback)
+            );
+            jest.spyOn(window, 'cancelAnimationFrame').mockImplementation(
+                () => {}
+            );
+        });
+
+        afterEach(() => {
+            global.ResizeObserver = originalResizeObserver;
+            jest.restoreAllMocks();
+        });
+
+        async function resize() {
+            observers.forEach((callback) => callback());
+            frames.splice(0).forEach((callback) => callback());
+            await flush();
+        }
+
+        it('fits a narrow pane, switches to actual size without remounting, and resets horizontal scroll on Fit', async () => {
+            const el = await mount();
+            const viewport = el.shadowRoot.querySelector('.ps-viewport');
+            const canvas = el.shadowRoot.querySelector('.ps-canvas');
+            const surface = el.shadowRoot.querySelector('.ps-surface');
+            const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+            Object.defineProperty(viewport, 'clientWidth', {
+                configurable: true,
+                value: 940
+            });
+            Object.defineProperty(canvas, 'offsetHeight', {
+                configurable: true,
+                value: 800
+            });
+            await resize();
+            expect(canvas.style.width).toBe('1280px');
+            expect(canvas.style.transform).toContain('scale(0.734375)');
+            expect(surface.style.width).toBe('940px');
+            expect(surface.style.height).toBe('588px');
+            expect(el.shadowRoot.querySelector('.ps-scale').textContent).toBe(
+                '73%'
+            );
+
+            el.shadowRoot.querySelector('[data-zoom="actual"]').click();
+            await resize();
+            expect(canvas.style.width).toBe('1280px');
+            expect(canvas.style.transform).toContain('scale(1)');
+            expect(surface.style.width).toBe('1280px');
+            expect(surface.style.height).toBe('800px');
+            expect(
+                el.shadowRoot
+                    .querySelector('[data-zoom="actual"]')
+                    .getAttribute('aria-pressed')
+            ).toBe('true');
+            expect(el.shadowRoot.querySelector('c-final-form-viewer')).toBe(
+                viewer
+            );
+
+            Object.defineProperty(viewport, 'clientWidth', {
+                configurable: true,
+                value: 640
+            });
+            await resize();
+            expect(canvas.style.transform).toContain('scale(1)');
+            viewport.scrollLeft = 300;
+            el.shadowRoot.querySelector('[data-zoom="fit"]').click();
+            await resize();
+            expect(canvas.style.transform).toContain('scale(0.5)');
+            expect(surface.style.width).toBe('640px');
+            expect(surface.style.height).toBe('400px');
+            expect(viewport.scrollLeft).toBe(0);
+
+            Object.defineProperty(canvas, 'offsetHeight', {
+                configurable: true,
+                value: 1200
+            });
+            await resize();
+            expect(surface.style.height).toBe('600px');
+        });
+
+        it('centers mobile at its natural size without upscaling and preserves zoom across device changes', async () => {
+            const el = await mount();
+            const viewport = el.shadowRoot.querySelector('.ps-viewport');
+            const canvas = el.shadowRoot.querySelector('.ps-canvas');
+            Object.defineProperty(viewport, 'clientWidth', { value: 940 });
+            Object.defineProperty(canvas, 'offsetHeight', { value: 844 });
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await resize();
+            expect(canvas.style.width).toBe('390px');
+            expect(canvas.style.transform).toBe('translateX(275px) scale(1)');
+            el.shadowRoot.querySelector('[data-zoom="actual"]').click();
+            el.shadowRoot.querySelector('[data-device="desktop"]').click();
+            await resize();
+            expect(el.getSession().zoom).toBe('actual');
+            expect(canvas.style.transform).toBe('translateX(0px) scale(1)');
+        });
     });
 
     it('device toggle re-lays-out the canvas at the device width', async () => {

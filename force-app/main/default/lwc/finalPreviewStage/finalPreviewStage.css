@@ -3,6 +3,7 @@
 /* ps- prefix on all chrome classes (reference-lex-css-class-collision). */
 :host {
     display: block;
+    min-width: 0;
 }
 
 .ps-bar {
@@ -10,6 +11,7 @@
     top: 0;
     z-index: 2;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -18,14 +20,16 @@
     border-bottom: 1px solid var(--c-studio-border-subtle);
 }
 
-.ps-devices {
+.ps-devices,
+.ps-zooms {
     display: inline-flex;
     border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
     overflow: hidden;
 }
 
-.ps-device {
+.ps-device,
+.ps-zoom {
     border: 0;
     background: var(--c-studio-surface);
     font: inherit;
@@ -35,14 +39,31 @@
     cursor: pointer;
 }
 
-.ps-device + .ps-device {
+.ps-device + .ps-device,
+.ps-zoom + .ps-zoom {
     border-left: 1px solid var(--c-studio-border-strong);
 }
 
-.ps-device.on {
+.ps-device.on,
+.ps-zoom.on {
     background: var(--c-studio-accent);
     color: var(--c-studio-on-accent);
     font-weight: 600;
+}
+
+.ps-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.ps-scale {
+    min-width: 4ch;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-studio-text-weak);
+    text-align: right;
 }
 
 .ps-refresh {
@@ -58,23 +79,35 @@
 }
 
 .ps-refresh:hover,
-.ps-device:hover:not(.on) {
+.ps-device:hover:not(.on),
+.ps-zoom:hover:not(.on) {
     background: var(--c-studio-hover);
 }
 
-/* The scaled canvas still occupies its unscaled layout box — clip the ghost
-   overflow; JS pins this element's height to the visual (scaled) height. */
 .ps-viewport {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* JS sizes this surface to the visual canvas, clipping its unscaled box. */
+.ps-surface {
+    position: relative;
     overflow: hidden;
 }
 
 .ps-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
     transform-origin: top left;
 }
 
-button.ps-device:focus-visible {
+button.ps-device:focus-visible,
+button.ps-zoom:focus-visible,
+.ps-viewport:focus-visible {
     outline-offset: -4px;
 }
-button.ps-device.on:focus-visible {
+button.ps-device.on:focus-visible,
+button.ps-zoom.on:focus-visible {
     outline-color: var(--c-studio-on-accent);
 }
