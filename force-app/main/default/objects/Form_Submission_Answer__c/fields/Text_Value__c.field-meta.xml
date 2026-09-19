@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Text_Value__c</fullName>
+    <description
+    >Holds Text, Email, Phone, URL and Choice answers - and any answer that failed to convert (see Value_Unparsed__c).</description>
+    <label>Text Value</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

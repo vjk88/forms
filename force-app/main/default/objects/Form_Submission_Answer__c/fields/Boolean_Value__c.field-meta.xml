@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Boolean_Value__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+    >Holds Boolean answers (yes/no, consent, checkbox). Meaningful ONLY when Answer_Type__c is Boolean; on any other row this is an unused default, not an answer of false.</description>
+    <externalId>false</externalId>
+    <label>Boolean Value</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Value_Unparsed__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+    >The answer did not convert to its declared type, so the raw value is in Text_Value__c. Answer_Type__c still names the type the question declared (FREEFORM_SPEC 5.2.1).</description>
+    <externalId>false</externalId>
+    <label>Value Unparsed</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

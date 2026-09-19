@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Element_Key__c</fullName>
+    <description
+    >The question's permanent id from the spec (el_xxxxxxxx), minted when the question was created. Renaming or moving a question never changes it; deleting and re-adding one produces a different id.</description>
+    <externalId>false</externalId>
+    <label>Element Key</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
