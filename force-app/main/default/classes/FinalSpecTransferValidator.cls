@@ -3,10 +3,9 @@
  * schema vocabulary, structural references, and describe-based bindings.
  */
 public with sharing class FinalSpecTransferValidator {
-    private static final Set<String> FORM_TYPES = new Set<String>{
-        'form',
-        'survey'
-    };
+    /** The allow-list IS the type table - a literal here would go stale the
+     *  next time a type is added (it did, for Freeform). */
+    private static final Set<String> FORM_TYPES = FinalFormTypes.specValues();
     private static final Set<String> SAVE_MODES = new Set<String>{
         'create',
         'update'
@@ -115,7 +114,9 @@ public with sharing class FinalSpecTransferValidator {
         }
 
         String targetObject = nullableString(formBlock.get('targetObject'));
-        if (formType == 'form' && String.isBlank(targetObject)) {
+        if (
+            FinalFormTypes.needsObject(formType) && String.isBlank(targetObject)
+        ) {
             throw new ValidationException(
                 'A Form requires a connected Salesforce object.'
             );
@@ -124,7 +125,7 @@ public with sharing class FinalSpecTransferValidator {
             targetObject = validateObject(
                 targetObject,
                 saveMode,
-                formType == 'survey'
+                !FinalFormTypes.needsObject(formType)
             );
             formBlock.put('targetObject', targetObject);
         }

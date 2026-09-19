@@ -19,9 +19,7 @@ public with sharing class FinalFormActionsService {
         String currentSpecJson
     ) {
         Form__c source = requireEditableSource(sourceFormId);
-        String expectedType = source.Form_Type__c == 'Survey'
-            ? 'survey'
-            : 'form';
+        String expectedType = specTypeOf(source);
         try {
             FinalSpecTransferService.PreparedSpec prepared = FinalSpecTransferService.prepareExport(
                 currentSpecJson,
@@ -81,7 +79,7 @@ public with sharing class FinalFormActionsService {
             Form__c imported = new Form__c(
                 Name = importName,
                 Description__c = plan.description,
-                Form_Type__c = plan.formType == 'survey' ? 'Survey' : 'Form',
+                Form_Type__c = FinalFormTypes.toPicklist(plan.formType),
                 Status__c = 'Draft',
                 Primary_Context_Object__c = plan.prepared.targetObject,
                 Allowed_Adapters__c = 'Internal_Record_Page'
@@ -149,9 +147,7 @@ public with sharing class FinalFormActionsService {
         String cloneName = validateNewName(requestedName, 'cloned');
         Form__c source = requireEditableSource(sourceFormId);
 
-        String expectedType = source.Form_Type__c == 'Survey'
-            ? 'survey'
-            : 'form';
+        String expectedType = specTypeOf(source);
         FinalSpecTransferService.PreparedSpec prepared;
         try {
             prepared = FinalSpecTransferService.prepareClone(
@@ -278,6 +274,24 @@ public with sharing class FinalFormActionsService {
             FinalFormLifecycleService.restoreForm(formId);
         } catch (FinalFormLifecycleService.LifecycleException e) {
             throw new ActionException(e.getMessage());
+        }
+    }
+
+    /**
+     * The source record's spec-side type name.
+     *
+     * This used to be `Form_Type__c == 'Survey' ? 'survey' : 'form'`, which did not
+     * fail on a third type - it QUIETLY relabelled it, and the clone then died
+     * comparing the spec against the wrong expected type. An unrecognized type
+     * now says so.
+     */
+    private static String specTypeOf(Form__c source) {
+        try {
+            return FinalFormTypes.fromPicklist(source.Form_Type__c);
+        } catch (FinalFormTypes.UnknownFormTypeException e) {
+            throw new ActionException(
+                'This form has an unrecognized form type, so it cannot be copied or exported.'
+            );
         }
     }
 

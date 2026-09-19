@@ -147,16 +147,32 @@ public inherited sharing class FinalFormActionsSelector {
               ];
     }
 
-    /** Counts response roots across every version of one form. */
+    /**
+     * Counts stored responses of EVERY kind across all versions of one form:
+     * survey responses AND Freeform submissions.
+     *
+     * Safe delete asks this before offering a hard delete. Counting only
+     * Form_Response__c would have told an author that a Freeform holding 500
+     * submissions was safe to delete (the Restrict lookup would then refuse
+     * the DML, so the answer was both wrong AND useless).
+     */
     public static Integer countResponses(Id formId) {
-        return formId == null
-            ? 0
-            : [
-                  SELECT COUNT()
-                  FROM Form_Response__c
-                  WHERE Form_Version__r.Form__c = :formId
-                  WITH USER_MODE
-              ];
+        if (formId == null) {
+            return 0;
+        }
+        Integer surveyResponses = [
+            SELECT COUNT()
+            FROM Form_Response__c
+            WHERE Form_Version__r.Form__c = :formId
+            WITH USER_MODE
+        ];
+        Integer freeformSubmissions = [
+            SELECT COUNT()
+            FROM Form_Submission__c
+            WHERE Form__c = :formId
+            WITH USER_MODE
+        ];
+        return surveyResponses + freeformSubmissions;
     }
 
     /** Counts tracked invitations owned by one form. */

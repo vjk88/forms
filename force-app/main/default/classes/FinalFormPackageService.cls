@@ -108,7 +108,7 @@ public with sharing class FinalFormPackageService {
         );
         String formType = requireString(metadata.get('type'), 'Package type')
             .toLowerCase();
-        if (formType != 'form' && formType != 'survey') {
+        if (!FinalFormTypes.isKnown(formType)) {
             throw new PackageException('The package form type is unsupported.');
         }
         Map<String, Object> spec = requireMap(
