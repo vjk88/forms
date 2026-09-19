@@ -154,7 +154,7 @@ no other shipping component carries this bug class.
 > ⚠️ **SUPERSEDED (2026-09-03) — read this box before acting on §7.** Everything
 > below was written on 2026-07-19, when the guest path did not exist yet. It has
 > since been built and shipped: **Phase A** delivered `FinalGuestController` +
-> `c/finalGuestHost`, and [GUEST_SITE_SETUP.md](./GUEST_SITE_SETUP.md) is the
+> `c/finalGuestHost`, and [GUEST_SITE_SETUP.md](../GUEST_SITE_SETUP.md) is the
 > current setup guide. §8's verification loaded a published survey as a genuine
 > anonymous visitor, so the "not built" premise below is simply out of date.
 > **Do not use `c/formViewer` for guest testing** — that legacy workaround is

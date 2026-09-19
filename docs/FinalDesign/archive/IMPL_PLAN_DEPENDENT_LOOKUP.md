@@ -9,7 +9,7 @@ Build a reusable single-record lookup using `lightning-record-picker`. Keep the 
 
 The main journey is: select an Account, then select a Contact belonging to that Account. Changing the Account clears the Contact and updates the available results immediately. Selecting or clearing that Contact continues to drive existing Autofill rules.
 
-This is an extension of the working lookup, not a replacement of Autofill. It refines authenticated D1/D2 in [the program spec](./GUEST_PREFILL_LOOKUP_SPEC.md). Native search replaces the earlier proposed custom search endpoint for this scope. Anonymous search, polymorphic references, multiple selections, inline record creation, recent records, external data, and repeater-row dependencies remain separate work.
+This is an extension of the working lookup, not a replacement of Autofill. It refines authenticated D1/D2 in [the program spec](../specs/GUEST_PREFILL_LOOKUP_SPEC.md). Native search replaces the earlier proposed custom search endpoint for this scope. Anonymous search, polymorphic references, multiple selections, inline record creation, recent records, external data, and repeater-row dependencies remain separate work.
 
 “Reusable” means embeddable in supported Salesforce LWC hosts and Screen Flows. It does not promise support in every browser container or anonymous website.
 
@@ -227,7 +227,7 @@ This is a proposed implementation inventory, not a list of code changed by this 
 | 4: runtime and enforcement | `lwc/finalFormViewer/`, `lwc/finalGuestHost/`, `classes/FinalAutofillController.cls`, `classes/FinalSubmitService.cls` | New `classes/FinalLookupController.cls` and test class, metadata companions; policy projection, dependency lifecycle, submit checks. |
 | 5: reuse outside Forms     | No existing Flow adapter assumed                                                                                       | New `lwc/finalLookupFlow/`, metadata, tests, sample Screen Flow setup instructions.                                                  |
 
-Each new LWC bundle needs the usual JS, HTML where rendering, and metadata files; add CSS only when needed. Each slice has tests beside the code it owns. Update [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) when the schema actually lands. Keep the pending-work entry pending until runtime/org evidence exists.
+Each new LWC bundle needs the usual JS, HTML where rendering, and metadata files; add CSS only when needed. Each slice has tests beside the code it owns. Update [FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) when the schema actually lands. Keep the pending-work entry pending until runtime/org evidence exists.
 
 Slices are development order, not permission to release partially enforced filtering. Do not expose authorable filters in production before the dependency engine and server checks are both present. If the native host spike fails, document that host's limitation before deciding on a separate custom provider implementation.
 

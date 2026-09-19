@@ -381,7 +381,7 @@ status, archived filtering, and Restore.
 - `force-app/main/default/classes/FinalStudioController.cls`
 - `force-app/main/default/classes/FinalStudioControllerTest.cls`
 - `force-app/main/default/permissionsets/Form_Builder_Admin.permissionset-meta.xml`
-- `docs/FinalDesign/FORM_STUDIO_IA.md`
+- `docs/FinalDesign/specs/FORM_STUDIO_IA.md`
 - `docs/FinalDesign/DEFERRED.md`
 
 The permission set must add access to the new controller and confirm the

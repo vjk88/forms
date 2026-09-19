@@ -20,7 +20,7 @@ Passing Jest does not establish Apex compilation, guest security, real UI API be
 
 ### R1. New Apex test calls a nonexistent method overload
 
-**Location:** [FinalAutofillControllerTest.cls:129](../../force-app/main/default/classes/FinalAutofillControllerTest.cls#L129), [FinalStudioController.cls:327](../../force-app/main/default/classes/FinalStudioController.cls#L327).
+**Location:** [FinalAutofillControllerTest.cls:129](../../../force-app/main/default/classes/FinalAutofillControllerTest.cls#L129), [FinalStudioController.cls:327](../../../force-app/main/default/classes/FinalStudioController.cls#L327).
 
 The test calls `FinalStudioController.mintRecordLink(f.Id, ja.Id, null)`. The controller defines only `mintRecordLink(Id formId, Id recordId)`. This test cannot compile against the local class as written. Jest does not compile Apex, so the green local suite misses it.
 
@@ -28,7 +28,7 @@ The test calls `FinalStudioController.mintRecordLink(f.Id, ja.Id, null)`. The co
 
 ### R2. Guest context now depends on guest access to authoring records
 
-**Location:** [FinalGuestController.cls:345](../../force-app/main/default/classes/FinalGuestController.cls#L345), [FinalAutofillService.cls:102](../../force-app/main/default/classes/FinalAutofillService.cls#L102). Classic submission also calls this helper at [FinalGuestController.cls:168](../../force-app/main/default/classes/FinalGuestController.cls#L168).
+**Location:** [FinalGuestController.cls:345](../../../force-app/main/default/classes/FinalGuestController.cls#L345), [FinalAutofillService.cls:102](../../../force-app/main/default/classes/FinalAutofillService.cls#L102). Classic submission also calls this helper at [FinalGuestController.cls:168](../../../force-app/main/default/classes/FinalGuestController.cls#L168).
 
 `getGuestAutofillContext` calls `FinalAutofillService.resolveLinkSource`, which is `with sharing` and queries `Form__c` and `Form_Version__c` using `WITH USER_MODE`. The intended guest model deliberately does not grant access to these authoring records. The helper therefore throws or finds no record; the endpoint catches this and returns `unavailable` for a valid link.
 
@@ -40,7 +40,7 @@ Because the host now uses the new endpoint for existing surveys too, this can re
 
 ### R3. LDS record read omits a required request parameter
 
-**Location:** [finalAutofillRecordSource.js:30](../../force-app/main/default/lwc/finalAutofillRecordSource/finalAutofillRecordSource.js#L30).
+**Location:** [finalAutofillRecordSource.js:30](../../../force-app/main/default/lwc/finalAutofillRecordSource/finalAutofillRecordSource.js#L30).
 
 The wire supplies `recordId` and `optionalFields`, but neither `fields` nor `layoutTypes`. Putting `Account.Id` inside `optionalFields` does not satisfy the required parameter. Salesforce documents that one of `fields` or `layoutTypes` is required. [Official getRecord contract](https://developer.salesforce.com/docs/platform/lwc/guide/reference-wire-adapters-record.html).
 
@@ -50,7 +50,7 @@ The wire supplies `recordId` and `optionalFields`, but neither `fields` nor `lay
 
 ### R4. Authenticated source plans are not connected to any LWC
 
-**Location:** [FinalAutofillController.cls:63](../../force-app/main/default/classes/FinalAutofillController.cls#L63), [finalGuestHost.js:130](../../force-app/main/default/lwc/finalGuestHost/finalGuestHost.js#L130), [finalFormViewer.js:1240](../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L1240).
+**Location:** [FinalAutofillController.cls:63](../../../force-app/main/default/classes/FinalAutofillController.cls#L63), [finalGuestHost.js:130](../../../force-app/main/default/lwc/finalGuestHost/finalGuestHost.js#L130), [finalFormViewer.js:1240](../../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L1240).
 
 There are no LWC calls to `getLookupPlan` or `resolveLinkForUser`. The guest host always loads the guest-projected configuration and calls the guest context API, including for logged-in customers.
 
@@ -68,7 +68,7 @@ The controller's `loadActivePublishedVersion` also has no separate public-custom
 
 ### R5. Authors cannot create the intended source lookup, and plan parsing uses the wrong binding shape
 
-**Location:** [FinalStudioController.cls:613](../../force-app/main/default/classes/FinalStudioController.cls#L613), [FinalStudioController.cls:705](../../force-app/main/default/classes/FinalStudioController.cls#L705), [FinalAutofillController.cls:270](../../force-app/main/default/classes/FinalAutofillController.cls#L270).
+**Location:** [FinalStudioController.cls:613](../../../force-app/main/default/classes/FinalStudioController.cls#L613), [FinalStudioController.cls:705](../../../force-app/main/default/classes/FinalStudioController.cls#L705), [FinalAutofillController.cls:270](../../../force-app/main/default/classes/FinalAutofillController.cls#L270).
 
 `inputTypeOf` still has no `REFERENCE` branch. The normal Describe/palette path therefore excludes lookup fields, and no reference-target metadata is added there. The panel's “Add a lookup field first” action cannot complete the required dependency through the normal authoring flow.
 
@@ -80,7 +80,7 @@ Separately, `inspectLookups` casts each element's `binding` to `String`. Final b
 
 ### R6. Studio's real preview path cannot apply Autofill
 
-**Location:** [finalFormViewer.js:534](../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L534), [previewSession.js:152](../../force-app/main/default/lwc/finalFormViewer/previewSession.js#L152), [finalFormStudio.js:575](../../force-app/main/default/lwc/finalFormStudio/finalFormStudio.js#L575), [finalFormViewer.js:759](../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L759).
+**Location:** [finalFormViewer.js:534](../../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L534), [previewSession.js:152](../../../force-app/main/default/lwc/finalFormViewer/previewSession.js#L152), [finalFormStudio.js:575](../../../force-app/main/default/lwc/finalFormStudio/finalFormStudio.js#L575), [finalFormViewer.js:759](../../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L759).
 
 Two independent problems block preview:
 
@@ -93,7 +93,7 @@ Both behaviors were reproduced by executing the actual modules. Fixing only one 
 
 ### R7. Changing the URL token retains the previous person's context
 
-**Location:** [finalGuestHost.js:101](../../force-app/main/default/lwc/finalGuestHost/finalGuestHost.js#L101), [finalFormViewer.js:734](../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L734).
+**Location:** [finalGuestHost.js:101](../../../force-app/main/default/lwc/finalGuestHost/finalGuestHost.js#L101), [finalFormViewer.js:734](../../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L734).
 
 The host detects a new form/token load generation, but does not clear the previous `spec`, `recordContext`, or viewer session before awaiting the new requests. It assigns the next spec while the old context is still injected. The viewer can consequently seed the new session with the previous token's values. If the new token returns empty/unavailable context, there is no clearing patch to remove those values.
 
@@ -105,7 +105,7 @@ The old viewer also remains available to submit while the host's current URL tok
 
 ### R8. Link minters do not check access to fields they will disclose
 
-**Location:** [FinalStudioController.cls:411](../../force-app/main/default/classes/FinalStudioController.cls#L411), [FinalSurveyLinkInvocable.cls:87](../../force-app/main/default/classes/FinalSurveyLinkInvocable.cls#L87).
+**Location:** [FinalStudioController.cls:411](../../../force-app/main/default/classes/FinalStudioController.cls#L411), [FinalSurveyLinkInvocable.cls:87](../../../force-app/main/default/classes/FinalSurveyLinkInvocable.cls#L87).
 
 The Studio minter checks a user-mode `SELECT Id`; Flow checks `UserRecordAccess`. Neither checks read permission for the effective guest-disclosed fields. A user who can read the record but not a published sensitive field can mint a token that the system-context guest path is intended to use to disclose that field. This becomes exposed once R2 is repaired.
 
@@ -115,7 +115,7 @@ The Studio minter checks a user-mode `SELECT Id`; Flow checks `UserRecordAccess`
 
 ### R9. The new context endpoint does not enforce form availability windows
 
-**Location:** [FinalGuestController.cls:328](../../force-app/main/default/classes/FinalGuestController.cls#L328).
+**Location:** [FinalGuestController.cls:328](../../../force-app/main/default/classes/FinalGuestController.cls#L328).
 
 `getGuestRuntimeSpec` checks `FinalSubmitService.isClosed` and the response cap, but `getGuestAutofillContext` only applies `gate` and active-version matching before reading personal values. `gate` checks Published/Public_Guest, not opening/closing windows or caps. Calling the context endpoint directly can therefore bypass the availability rule that would hide the form, once source resolution succeeds.
 
@@ -127,7 +127,7 @@ The Studio minter checks a user-mode `SELECT Id`; Flow checks `UserRecordAccess`
 
 ### R10. Preview rule edits do not invalidate pending requests
 
-**Location:** [previewSession.js:152](../../force-app/main/default/lwc/finalFormViewer/previewSession.js#L152), [finalFormViewer.js:1359](../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L1359).
+**Location:** [previewSession.js:152](../../../force-app/main/default/lwc/finalFormViewer/previewSession.js#L152), [finalFormViewer.js:1359](../../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L1359).
 
 Reconciliation replaces `rules` but retains the previous fingerprint and pending request state. A request begun before changing its source/mappings remains current; this was reproduced with `isRequestCurrent`. The viewer also reconstructs result identity using the current fingerprint/version rather than the original captured request identity.
 
@@ -135,7 +135,7 @@ Reconciliation replaces `rules` but retains the previous fingerprint and pending
 
 ### R11. “Invalidate all links” rejects classic forms
 
-**Location:** [FinalStudioController.cls:478](../../force-app/main/default/classes/FinalStudioController.cls#L478).
+**Location:** [FinalStudioController.cls:478](../../../force-app/main/default/classes/FinalStudioController.cls#L478).
 
 The new Autofill panel exposes this action for classic forms, but the server still throws `Record links are for surveys.` The generalized minting path and invalidation path disagree.
 
@@ -143,7 +143,7 @@ The new Autofill panel exposes this action for classic forms, but the server sti
 
 ### R12. Flow source-contract lookup is no longer bulk-safe across forms
 
-**Location:** [FinalSurveyLinkInvocable.cls:80](../../force-app/main/default/classes/FinalSurveyLinkInvocable.cls#L80).
+**Location:** [FinalSurveyLinkInvocable.cls:80](../../../force-app/main/default/classes/FinalSurveyLinkInvocable.cls#L80).
 
 The invocable loops over distinct form IDs and calls a helper that queries each form and active version separately. A batch of roughly 50 distinct eligible forms exhausts the synchronous SOQL allowance even before other transaction work. The cache helps repeated use of one form, but does not bulkify distinct forms.
 
@@ -151,7 +151,7 @@ The invocable loops over distinct form IDs and calls a helper that queries each 
 
 ### R13. Always replace leaves obsolete values after source clear/change
 
-**Location:** [autofillEngine.js:174](../../force-app/main/default/lwc/finalFormViewer/autofillEngine.js#L174), [autofillEngine.js:358](../../force-app/main/default/lwc/finalFormViewer/autofillEngine.js#L358).
+**Location:** [autofillEngine.js:174](../../../force-app/main/default/lwc/finalFormViewer/autofillEngine.js#L174), [autofillEngine.js:358](../../../force-app/main/default/lwc/finalFormViewer/autofillEngine.js#L358).
 
 After an earlier manual edit, `alwaysReplace` can legitimately apply a new value and assign rule ownership. It leaves `touched[destination]` true, however, and `onSourceChanged` refuses to clear any touched destination. Clearing the lookup then leaves the newly Autofilled value from the old source, despite there being no edit since Autofill took ownership. This was reproduced against the actual engine.
 

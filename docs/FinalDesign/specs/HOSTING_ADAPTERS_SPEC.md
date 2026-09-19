@@ -2,7 +2,7 @@
 
 > Owner intent: the FinalDesign runtime must be reusable across a wide variety of use cases —
 > a form declares **where it may render**, and every surface adapter validates that declaration
-> **server-side** before serving the spec. Deferred ledger item; see [DEFERRED.md](./DEFERRED.md).
+> **server-side** before serving the spec. Deferred ledger item; see [DEFERRED.md](../DEFERRED.md).
 
 ## The concept
 
@@ -18,14 +18,14 @@ legacy value set and enforcement code are NOT the spec — rebuild both when sch
 
 ## Target surface set
 
-| Surface | What it means | Notes for the build |
-|---|---|---|
-| Internal app page | LEX app/home/tab hosting (today's `Final P0 Test`) | v1 baseline — effectively always allowed |
-| Lightning Record Page | Form on a record flexipage in **record-edit** or **record-create** mode | Needs record-context binding (prefill/save against the hosting record). **Survey NEVER allowed here** — type-derived constraint |
-| Flow screen | Viewer as a Flow screen component | Needs a Flow I/O contract (inputs: recordId/prefill; outputs: created record Id, completion state) |
-| Experience / guest page | Published public form | Already the P5 plan — guest is just the first adapter to build |
-| External iFrame embed | Form embedded on non-Salesforce websites | Biggest scope: Sites/LWR endpoint, CSP `frame-ancestors`, clickjacking posture, resize messaging, spam tier — interacts with review F13 (asset URLs) |
-| Embedded LWC | Composed inside another team's LWC | Legacy `Embedded` value; needs a public-API posture for the viewer |
+| Surface                 | What it means                                                           | Notes for the build                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Internal app page       | LEX app/home/tab hosting (today's `Final P0 Test`)                      | v1 baseline — effectively always allowed                                                                                                             |
+| Lightning Record Page   | Form on a record flexipage in **record-edit** or **record-create** mode | Needs record-context binding (prefill/save against the hosting record). **Survey NEVER allowed here** — type-derived constraint                      |
+| Flow screen             | Viewer as a Flow screen component                                       | Needs a Flow I/O contract (inputs: recordId/prefill; outputs: created record Id, completion state)                                                   |
+| Experience / guest page | Published public form                                                   | Already the P5 plan — guest is just the first adapter to build                                                                                       |
+| External iFrame embed   | Form embedded on non-Salesforce websites                                | Biggest scope: Sites/LWR endpoint, CSP `frame-ancestors`, clickjacking posture, resize messaging, spam tier — interacts with review F13 (asset URLs) |
+| Embedded LWC            | Composed inside another team's LWC                                      | Legacy `Embedded` value; needs a public-API posture for the viewer                                                                                   |
 
 ## Model rules
 
@@ -38,7 +38,7 @@ legacy value set and enforcement code are NOT the spec — rebuild both when sch
    answer-store) implies surface eligibility: Survey ≠ Record Page; a record-bound Form is the
    natural Record Page / Flow citizen.
 4. **Creation flow sets type-sensible defaults** when this builds — until then the field is inert
-   for final* (nothing reads it) and its picklist default stays as-is.
+   for final\* (nothing reads it) and its picklist default stays as-is.
 
 ## Open questions (decide when scheduled)
 

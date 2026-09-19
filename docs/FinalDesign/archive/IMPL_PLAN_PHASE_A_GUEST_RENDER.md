@@ -1,8 +1,8 @@
 # IMPL_PLAN — Phase A: Guest render + submit
 
-**Program:** [GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md) Phase A
+**Program:** [GUEST_PREFILL_LOOKUP_SPEC.md](../specs/GUEST_PREFILL_LOOKUP_SPEC.md) Phase A
 **Status:** AWAITING OWNER REVIEW — no code until approved.
-**Law:** [RUNTIME_NOTES.md](./RUNTIME_NOTES.md) (separate `without sharing` family,
+**Law:** [RUNTIME_NOTES.md](../RUNTIME_NOTES.md) (separate `without sharing` family,
 hard gate, projection-only spec delivery, spec-as-allow-list submits).
 **Precondition shipped:** PR #131 fixed the LWR blank-page bug (stale `lwc:is`
 ctor) — the site host is now reliable.
@@ -20,7 +20,7 @@ guest doesn't need to see (like which Salesforce fields it writes to).
 publishSpec` only flips `Form_Version__c` rows. The guest gate (`Status__c =
 'Published'` + adapters contains `Public_Guest`) would NEVER pass today. Phase A
    must add the writers (slice A1.5 below).
-2. **The viewer's inline-spec path SIMULATES submit** ([finalFormViewer.js:558](../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L558):
+2. **The viewer's inline-spec path SIMULATES submit** ([finalFormViewer.js:558](../../../force-app/main/default/lwc/finalFormViewer/finalFormViewer.js#L558):
    `authoring || _inlineSpec → completed = true`, no record). The guest host feeds
    the viewer an inline spec, so without a change the guest submit would silently
    save nothing. A2 adds a delegate-submit contract (below).
@@ -28,7 +28,7 @@ publishSpec` only flips `Form_Version__c` rows. The guest gate (`Status__c =
    is served whole. Guest family mirrors that (no overflow work in Phase A).
 4. **Image public-ness is frozen at upload time.** `FinalAssetController` decides
    public ContentDistribution vs internal shepherd URL from `Allowed_Adapters__c`
-   AT UPLOAD ([FinalAssetController.cls:69](../../force-app/main/default/classes/FinalAssetController.cls#L69)).
+   AT UPLOAD ([FinalAssetController.cls:69](../../../force-app/main/default/classes/FinalAssetController.cls#L69)).
    Upload a logo while the form is private, enable Public link later ⇒ the spec
    still carries the internal URL ⇒ broken images for every guest. Handled in
    A1.5 + A1 projection (below). Built-in theme images (static resource) carry a

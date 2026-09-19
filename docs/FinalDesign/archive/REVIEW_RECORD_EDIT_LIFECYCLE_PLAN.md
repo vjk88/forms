@@ -4,7 +4,7 @@
 requested by the owner 2026-09-08. **Opinion only — no code was changed and nothing was opened.**
 
 **Disclosure:** that plan fixes bugs in code I wrote and merged the same day
-([IMPL_PLAN_RECORD_PAGE_EDIT.md](./IMPL_PLAN_RECORD_PAGE_EDIT.md), PRs #247/#248). I verified each of
+([IMPL_PLAN_RECORD_PAGE_EDIT.md](../specs/IMPL_PLAN_RECORD_PAGE_EDIT.md), PRs #247/#248). I verified each of
 its five findings against the source rather than defend my own work, and **all five are real.** The
 criticisms below are of the _plan document_, not of whether the bugs exist.
 
@@ -80,7 +80,7 @@ prevented **only by a browser-side gate**. If that gate regresses, or any other 
 server still writes the defaults over live data.
 
 This codebase already carries a known client-only-enforcement weakness
-([PENDING_WORK.md](./PENDING_WORK.md) §2.1, DEFERRED #24). This adds a second one **in the same
+([PENDING_WORK.md](../PENDING_WORK.md) §2.1, DEFERRED #24). This adds a second one **in the same
 shape, on the write path**. The server could refuse an update whose payload it can tell is
 unhydrated. Deciding not to is defensible; not discussing it is the gap.
 

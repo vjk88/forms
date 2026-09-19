@@ -1,6 +1,6 @@
 # Record-edit lifecycle fixes — implementation and rollout
 
-> Current contract (2026-09-09): [Explicit record context](EXPLICIT_RECORD_CONTEXT.md) supersedes the `recordId` / `saveMode` activation rules below. The lifecycle protections still apply.
+> Current contract (2026-09-09): [Explicit record context](../specs/EXPLICIT_RECORD_CONTEXT.md) supersedes the `recordId` / `saveMode` activation rules below. The lifecycle protections still apply.
 
 Status: implemented and deployed to revclouddev; browser journey verification remains pending.
 Updated: 2026-09-08.

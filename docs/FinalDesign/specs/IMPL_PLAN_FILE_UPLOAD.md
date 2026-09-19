@@ -40,7 +40,7 @@ Schema §4.1 states the builder blocks file elements from repeatable sections, b
 record — and ~4.3 MB base64 × N entries is a heap bomb."_
 
 **That block does not exist.** `file` is a palette **block**, not a field
-([finalFieldPalette.js:128](../../force-app/main/default/lwc/finalFieldPalette/finalFieldPalette.js#L128)),
+([finalFieldPalette.js:128](../../../force-app/main/default/lwc/finalFieldPalette/finalFieldPalette.js#L128)),
 and the canvas gatekeeper waves blocks through unconditionally:
 
 ```js

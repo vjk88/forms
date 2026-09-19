@@ -3,8 +3,8 @@
 > **Status:** owner review 2026-07-05 (this session), decisions LOCKED. The _structural_ parts
 > are buildable now, theme-independent. The _skin_ (fonts, colours, field styling) rides on the
 > theme layer (P2), which is **TABLED** by owner. Companion source-of-truth:
-> [ARCHITECTURE_LAYOUTS_THEMES.md](./ARCHITECTURE_LAYOUTS_THEMES.md),
-> [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md).
+> [ARCHITECTURE_LAYOUTS_THEMES.md](../ARCHITECTURE_LAYOUTS_THEMES.md),
+> [COMPONENT_CATALOG.md](../COMPONENT_CATALOG.md).
 
 Owner walked two target mockups (screenshots, not saved to disk):
 `design-explorations/final-layouts/oneAtATime.html` + `.../stepper.html` were referenced but the
@@ -40,7 +40,7 @@ mechanism (splitHero was the 1st). Three zones:
   but did not explicitly pick default-on-toggle vs always — confirm before build if it matters.
 - **Advance = "Continue" + plain muted "or press Return", NO key-chip.** Owner KEPT the
   signature-distance ruling; the mockup's `OK ↵` chip is **not** adopted. (Current shipped behaviour
-  already correct — [finalNavOneAtATime.css:115](../../force-app/main/default/lwc/finalNavOneAtATime/finalNavOneAtATime.css#L115).)
+  already correct — [finalNavOneAtATime.css:115](../../../force-app/main/default/lwc/finalNavOneAtATime/finalNavOneAtATime.css#L115).)
 - **Eyebrow label = section label**; index auto (owner confirmed).
 
 **Theme dependency (TABLED):** serif display headline, underline-only fields, dark surfaces, crimson
@@ -56,7 +56,7 @@ match once themes exist.
 Target: green "done" / blue "active" / gray "upcoming" numbered steps, colour-coded connectors,
 divider, then the page heading.
 
-**Structure already shipped.** [finalNavStepper.js:63-84](../../force-app/main/default/lwc/finalNavStepper/finalNavStepper.js#L63)
+**Structure already shipped.** [finalNavStepper.js:63-84](../../../force-app/main/default/lwc/finalNavStepper/finalNavStepper.js#L63)
 emits `.done` / `.active` / bare (upcoming) on each step button, with `.step-marker` (number) +
 `.step-label` inline. The mockup is a **CSS/theme reskin on existing hooks — not a rebuild.** Owner:
 "just styling, change it later."
@@ -75,9 +75,9 @@ draw the action row and disagree, so it _jumps_ on the last screen —
 
 - intermediate screens: OneAtATime's own row, `justify-content: space-between` → Back far-left,
   Continue far-right, Back = quiet text link
-  ([finalNavOneAtATime.css:55](../../force-app/main/default/lwc/finalNavOneAtATime/finalNavOneAtATime.css#L55));
+  ([finalNavOneAtATime.css:55](../../../force-app/main/default/lwc/finalNavOneAtATime/finalNavOneAtATime.css#L55));
 - last screen: shared `submitBar` → Back + Submit _grouped_, aligned (default **right**), Back =
-  bordered button ([finalSubmitBar.js:40](../../force-app/main/default/lwc/finalSubmitBar/finalSubmitBar.js#L40)).
+  bordered button ([finalSubmitBar.js:40](../../../force-app/main/default/lwc/finalSubmitBar/finalSubmitBar.js#L40)).
 
 So on the final step Back teleports left→right, restyles link→button, and the primary swaps
 Continue→Submit. Three things move.
