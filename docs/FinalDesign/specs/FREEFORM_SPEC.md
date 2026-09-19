@@ -238,10 +238,12 @@ answer row remains readable even if its version is somehow unavailable.
 - **Permissions:**
   - `Form_Builder_Admin` gets create/read/edit/delete + View All on both objects, as for survey
     responses.
-  - **Respondents need no object permissions at all** — signed-in and guest submits both write
-    through the fenced server-side insert (`FinalSubmitService.cls:1026`), which can only create
-    app-owned records ("you don't need a key to the post office to mail a letter"). The fence list
-    grows from 3 objects to 5.
+  - **No respondent needs permission on these two objects** — signed-in and guest submits both write
+    the submission and its answers through the fenced server-side insert
+    (`FinalSubmitService.cls:1026`), which can only create app-owned records ("you don't need a key
+    to the post office to mail a letter"). The fence list grows from 3 objects to 5. The one thing a
+    signed-in respondent writes under their **own** permissions is an attached file, which uses
+    Salesforce's standard content permissions (§7.3).
   - A **read-only permission set** ships for people who must read submissions without being builder
     admins; the reader (§8) runs under the reader's own permissions.
 
@@ -316,12 +318,22 @@ Survey passes today's descriptor and must behave identically, D16 excepted.
 
 ### 7.3 Postures
 
-- **Signed in:** the running user's own permissions.
-- **Guest:** the published spec is the allow-list — the walk only ever collects questions the spec
-  declares, so a crafted payload cannot name an object or a field. DML runs in the fenced system-mode
-  insert limited to app-owned objects. F1 writes nothing outside the submission and its answers.
-- **Guest file uploads are refused** today (`FinalSubmitService.cls:1332`) and stay refused in F1;
-  §6.3's warning makes the boundary visible at publish rather than at submit.
+The answer store is **not** the object-bound Form path, and it does not inherit that path's posture.
+Writing a submission is fenced for **both** audiences; the running person's own permissions govern
+what is _read_ and what is written **outside** the app's own objects.
+
+| Step                                | Signed in                                                                                                                                                          | Guest                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Submission + answer rows            | **Fenced system-mode create** (`FinalSubmitService.cls:1026`)                                                                                                      | **Fenced system-mode create** — identical                                                                                     |
+| What may be written at all          | The published spec is the allow-list: the walk only collects questions the spec declares, so a crafted payload can never name an object or a field                 | Identical                                                                                                                     |
+| Lookup answers re-checked at submit | The submitter's own permissions (`USER_MODE`, `FinalLookupService.cls:119`)                                                                                        | The guest user's own permissions, same query                                                                                  |
+| `Submitted_By__c`                   | Stamped with the running user                                                                                                                                      | Left blank                                                                                                                    |
+| File attachments                    | **The respondent's own permissions** (`insert as user`, `FinalSubmitService.cls:1490`) — Salesforce's standard content permissions, not permissions on our objects | **Refused** today (`FinalSubmitService.cls:1332`) and still refused in F1; §6.3 warns at publish instead of failing at submit |
+| Reading a submission afterwards     | The reader's own permissions (§8)                                                                                                                                  | Guests never read submissions                                                                                                 |
+
+So neither audience needs any permission on `Form_Submission__c` or `Form_Submission_Answer__c` to
+submit ("you don't need a key to the post office to mail a letter"), and F1 writes nothing outside the
+submission, its answers, and — for signed-in respondents only — the files they attach.
 
 ### 7.4 Duplicate submissions (D15)
 
