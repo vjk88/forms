@@ -3,9 +3,9 @@
 > **Status: extracted contract, binds at P3 (`builderCanvas`).** These rules were hard-won in the
 > legacy `formStudio` builder ("we fixed a lot of issues… I don't know where they are logged" —
 > owner 2026-07-05); this doc is where they're logged. Source of record for each rule is cited into
-> [formStudio.js](../../force-app/main/default/lwc/formStudio/formStudio.js) as of extraction —
+> [formStudio.js](../../../force-app/main/default/lwc/formStudio/formStudio.js) as of extraction —
 > the REBUILD reimplements the rules from this doc, never by porting shell code. Companions:
-> [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md) §5 · [[reference-formstudio-dnd]] (DnD event
+> [COMPONENT_CATALOG.md](../COMPONENT_CATALOG.md) §5 · [[reference-formstudio-dnd]] (DnD event
 > model: capture-phase gatekeeper, imperative highlights, native no-drop — kept as-is).
 
 ## 1 · Drop validity — ONE source of truth
@@ -13,12 +13,12 @@
 One predicate decides BOTH the cursor and the highlight (legacy `_sectionAcceptsDrag`,
 formStudio.js:2439). The gatekeeper consults it; nothing else re-derives validity.
 
-| Drag kind | May drop where |
-|---|---|
-| Section / page reorder | Anywhere in the canvas (insertion line) |
-| Palette content block (hero-class, image, divider…) | Anywhere — including standalone in the gaps BETWEEN sections |
-| Palette **field** | Only into a real field-section — **never** into a content block, **never** into a repeater section (child fields are added via the repeater's inspector, not the parent-object palette), **never** in gaps between sections |
-| Existing **element** move | Only between sections sharing its **data context** (§2) |
+| Drag kind                                           | May drop where                                                                                                                                                                                                              |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Section / page reorder                              | Anywhere in the canvas (insertion line)                                                                                                                                                                                     |
+| Palette content block (hero-class, image, divider…) | Anywhere — including standalone in the gaps BETWEEN sections                                                                                                                                                                |
+| Palette **field**                                   | Only into a real field-section — **never** into a content block, **never** into a repeater section (child fields are added via the repeater's inspector, not the parent-object palette), **never** in gaps between sections |
+| Existing **element** move                           | Only between sections sharing its **data context** (§2)                                                                                                                                                                     |
 
 Rejection = native no-drop cursor. **No toasts, no error flashes** — invalid spots simply refuse.
 

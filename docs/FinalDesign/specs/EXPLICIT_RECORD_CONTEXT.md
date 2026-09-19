@@ -74,9 +74,9 @@ All validation deployments were `checkOnly`; these changes have not been applied
 
 This is the task-specific file set. The workspace also contains unrelated changes that should not be included automatically. Validation JSON under `scratch/` is local evidence, not part of this file set.
 
-- `docs/FinalDesign/EXPLICIT_RECORD_CONTEXT.md`
-- `docs/FinalDesign/IMPL_PLAN_RECORD_EDIT_LIFECYCLE_FIXES.md`
-- `docs/FinalDesign/IMPL_PLAN_RECORD_PAGE_EDIT.md`
+- `docs/FinalDesign/specs/EXPLICIT_RECORD_CONTEXT.md`
+- `docs/FinalDesign/archive/IMPL_PLAN_RECORD_EDIT_LIFECYCLE_FIXES.md`
+- `docs/FinalDesign/specs/IMPL_PLAN_RECORD_PAGE_EDIT.md`
 - `force-app/main/default/classes/FinalSubmitControllerTest.cls`
 - `force-app/main/default/classes/FinalSubmitService.cls`
 - `force-app/main/default/lwc/finalFormViewer/__tests__/recordEdit.test.js`

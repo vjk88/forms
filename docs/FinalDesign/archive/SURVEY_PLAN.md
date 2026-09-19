@@ -6,9 +6,9 @@
 > Settings-mode IA (anonymous toggle's home). Every slice org-verified: internal + guest
 > submits, SOQL receipts, Studio screenshots.**
 > This is the program-level plan for Surveys (the second leg of SHIP: Phase A → **Surveys** → package).
-> Companions: [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) (spec shapes this extends) ·
-> [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) (answer-store objects) ·
-> [GUEST_PREFILL_LOOKUP_SPEC.md](./GUEST_PREFILL_LOOKUP_SPEC.md) (guest + context-link plumbing surveys ride on) ·
+> Companions: [FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) (spec shapes this extends) ·
+> [DATA_MODEL_DELTA.md](../DATA_MODEL_DELTA.md) (answer-store objects) ·
+> [GUEST_PREFILL_LOOKUP_SPEC.md](../specs/GUEST_PREFILL_LOOKUP_SPEC.md) (guest + context-link plumbing surveys ride on) ·
 > `docs/SURVEYS_BUSINESS_OVERVIEW.md` (OLD-BUILD business doc — model carried forward, statuses stale).
 > Authored 2026-07-26.
 
@@ -260,7 +260,7 @@ that's an attachment, not an answer value.
   (real Unicode emoji, not tinted SVG); the final long-text step with a word-count chip and
   starter-prompt chips; a chat-thread rendering where questions arrive as bubbles and answers
   collapse into replies. Direction demonstrated in
-  `docs/FinalDesign/survey_renderings_ux.html` (Card Deck + Chat Thread over one identical
+  `docs/FinalDesign/archive/survey_renderings_ux.html` (Card Deck + Chat Thread over one identical
   survey definition). Proposed shape: a per-form **`renderingPack` key in the spec** (additive —
   ignore-unknown keeps old runtimes safe); widgets read pack + tokens; the answer-store contract
   is untouched. Interacts with §10 Q4 (Card Deck ≈ one-question-per-screen) — see §10 Q9.

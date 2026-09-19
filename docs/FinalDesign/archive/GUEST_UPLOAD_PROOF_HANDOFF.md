@@ -4,7 +4,7 @@ Prepared 2026-09-09. **Local implementation only; no deployment or Git operation
 
 ## What is implemented
 
-The native transport proof required by [implementation plan §3](./IMPL_PLAN_GUEST_FILE_UPLOAD.md#3-first-implementation-batch-prove-the-native-transport-boundary):
+The native transport proof required by [implementation plan §3](../specs/IMPL_PLAN_GUEST_FILE_UPLOAD.md#3-first-implementation-batch-prove-the-native-transport-boundary):
 
 - Optional, namespace-resolved ContentVersion correlation field.
 - 256-bit random, single-use capabilities; only SHA-256 digests in a private proof ledger.
@@ -54,7 +54,7 @@ depleted org as meaningless.** The counter updates on a delay, so read it a minu
 
 ## Owner-controlled installation
 
-Use [the targeted manifest](../../manifest/guest-upload-proof.xml) only after reviewing this batch.
+Use [the targeted manifest](../../../manifest/guest-upload-proof.xml) only after reviewing this batch.
 
 The manifest contains only this proof's Apex, trigger, LWC, ledger/configuration metadata, optional ContentVersion field, and operator permission set. It does not contain site settings, authoring records, existing permission sets, or all application metadata.
 
@@ -241,4 +241,4 @@ The temporary Salesforce CLI log-write issue was avoided by setting `SF_DISABLE_
 
 After the transport evidence passes, implement production schema/policy and persisted quotas, then the respondent control and atomic submission path. Preserve the plan's exact published-form gates and capability boundaries; the sandbox proof intentionally has no form/version/availability gate because it is not a production endpoint. Do not reuse its global proof budget or operator grant creation as public admission.
 
-See [the mechanically checked file inventory](./GUEST_UPLOAD_PROOF_CHANGED_FILES.md) for every file prepared in this batch.
+See [the mechanically checked file inventory](../GUEST_UPLOAD_PROOF_CHANGED_FILES.md) for every file prepared in this batch.

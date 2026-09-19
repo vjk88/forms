@@ -74,7 +74,7 @@ Additional files:
 | `jest.config.js`                                                             | Resolve the CSS-only module to its real stylesheet in Jest; no stylesheet mock          |
 | `scripts/qa/studio-colors.cjs`                                               | New repeatable contrast, token-reference, import-scope and stylesheet compilation audit |
 | `docs/FinalDesign/PENDING_WORK.md`                                           | Update §9.5 with local completion and pending org verification                          |
-| `docs/FinalDesign/STUDIO_COLOR_CONSISTENCY.md`                               | This handoff and file inventory                                                         |
+| `docs/FinalDesign/archive/STUDIO_COLOR_CONSISTENCY.md`                       | This handoff and file inventory                                                         |
 
 **Include the new `finalStudioStyles` bundle when deploying the changed authoring components.** The importing components depend on it. The Jest config, QA script and documentation are local tooling only.
 

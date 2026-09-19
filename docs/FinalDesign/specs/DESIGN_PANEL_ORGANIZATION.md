@@ -41,7 +41,7 @@ Both modes write the same spec paths. Merely switching modes emits no specchange
 - `force-app/main/default/lwc/finalNavSplitHero/__tests__/finalNavSplitHero.test.js`
 - `force-app/main/default/lwc/finalFormViewer/__tests__/headerPaneMap.test.js`
 - `force-app/main/default/lwc/finalDesignPanel/finalDesignPanel.js-meta.xml`
-- `docs/FinalDesign/DESIGN_PANEL_ORGANIZATION.md` (this handoff)
+- `docs/FinalDesign/specs/DESIGN_PANEL_ORGANIZATION.md` (this handoff)
 
 ## Validation
 
@@ -84,7 +84,7 @@ screen rendered both on the real buttons, which closes the open question about w
 - **The Arrangement hint is now wrong on conversational layouts.** It reads "How Back / **Next** /
   Submit line up" (static, unconditional) but those layouts have no Next — the control directly
   above it says "Continue button label". This reorganization's Next/Continue split is what made the
-  hint inaccurate. Logged in [PENDING_WORK.md](./PENDING_WORK.md) §9.1.
+  hint inaccurate. Logged in [PENDING_WORK.md](../PENDING_WORK.md) §9.1.
 - **Brand & header opens onto three stacked rich-text editors** (Title, Description, Brand name),
   each with a permanent toolbar, pushing Colors / Typography / Header appearance below the fold. It
   is the default-open section, so it is the first thing seen in Advanced. Same fix as the existing

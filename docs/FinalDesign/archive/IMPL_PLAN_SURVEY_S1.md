@@ -6,8 +6,8 @@
 > green. All decisions were ruled (7-1 yes · 7-2 system mode · 7-3 topics-as-tags).
 > Build notes: §10.**
 > Parent: [SURVEY_PLAN.md](./SURVEY_PLAN.md) (APPROVED 2026-07-27) §6/§9 S1 ·
-> [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) §8 (submit contract) ·
-> [DATA_MODEL_DELTA.md](./DATA_MODEL_DELTA.md) §2 · RUNTIME_NOTES (guest law).
+> [FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) §8 (submit contract) ·
+> [DATA_MODEL_DELTA.md](../DATA_MODEL_DELTA.md) §2 · RUNTIME_NOTES (guest law).
 > Authored 2026-07-27.
 
 **Slice gate (from SURVEY_PLAN §9):** internal + guest survey submit render-verified;

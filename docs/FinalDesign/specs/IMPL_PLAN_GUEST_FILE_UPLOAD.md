@@ -5,7 +5,7 @@
 **Audience:** Developer implementing the feature, with explicit contracts and verification gates.  
 **Scope:** Guest uploads on the published Experience Cloud LWR form, larger uploads for authenticated respondents on supported hosts, final submission, retries, quotas, cleanup, and authoring controls.
 
-See [the transport-proof handoff](./GUEST_UPLOAD_PROOF_HANDOFF.md) for the actual first batch,
+See [the transport-proof handoff](../archive/GUEST_UPLOAD_PROOF_HANDOFF.md) for the actual first batch,
 targeted metadata manifest, local checks, and the owner-run org gate. The prototype is
 isolated from the production form pipeline and does not enable staged respondent uploads.
 
@@ -71,8 +71,8 @@ No existing dedicated upload-session/slot/quota objects or ContentVersion upload
 
 Two older documentation statements need an explicit architectural update when implementation lands:
 
-- [RUNTIME_NOTES.md](./RUNTIME_NOTES.md) describes Apex inserting guest `VersionData` and using `FirstPublishLocationId` immediately. The staged path instead uses native transport and links to the server-created submission later. The restriction against arbitrary client-selected target records remains mandatory.
-- [FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) documents inline `files` and deferred draft attachments. This adds an opt-in receipt contract; it does not silently reinterpret old payloads or implement durable save-and-resume attachments.
+- [RUNTIME_NOTES.md](../RUNTIME_NOTES.md) describes Apex inserting guest `VersionData` and using `FirstPublishLocationId` immediately. The staged path instead uses native transport and links to the server-created submission later. The restriction against arbitrary client-selected target records remains mandatory.
+- [FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) documents inline `files` and deferred draft attachments. This adds an opt-in receipt contract; it does not silently reinterpret old payloads or implement durable save-and-resume attachments.
 
 ## 3. First implementation batch: prove the native transport boundary
 
@@ -437,4 +437,4 @@ The implementation handoff must provide a **mechanically generated actual change
 
 A guest can upload a realistic attachment on the published LWR form, correct answers, remove/retry files, and submit exactly once; files attach only to that submission. Larger authenticated uploads work on supported hosts. Invalid admissions, quota overruns, stale sessions, wrong receipts, failed finalization, and abandoned uploads have tested outcomes. Existing internal inline uploads still work. Studio simulation and real upload testing are clearly distinguished.
 
-No implementation item in [PENDING_WORK.md](./PENDING_WORK.md) is closed merely by creating this plan.
+No implementation item in [PENDING_WORK.md](../PENDING_WORK.md) is closed merely by creating this plan.

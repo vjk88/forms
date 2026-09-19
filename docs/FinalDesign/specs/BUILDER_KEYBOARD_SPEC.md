@@ -86,7 +86,7 @@ assistive-technology and live-org verification of the revised menu remains pendi
 - `force-app/main/default/lwc/finalBuilderCanvas/__tests__/finalBuilderCanvas.test.js`
 - `force-app/main/default/lwc/finalFormStudio/finalFormStudio.js`
 - `force-app/main/default/lwc/finalFormStudio/__tests__/finalFormStudio.test.js`
-- `docs/FinalDesign/BUILDER_KEYBOARD_SPEC.md` (new)
+- `docs/FinalDesign/specs/BUILDER_KEYBOARD_SPEC.md` (new)
 - `docs/FinalDesign/PENDING_WORK.md`
 
 Git and deployment remain with the owner.

@@ -10,9 +10,9 @@ edit-mode form must currently have `saveMode:"update"` written into its spec by 
 _"forms should work internally as well … that's the whole reason for forms."_
 **Mode chosen by owner:** **EDIT the record it sits on** (not prefill-only, not related-child).
 
-Companions: [PENDING_WORK.md](./PENDING_WORK.md) §1 P4 · [DEFERRED.md](./DEFERRED.md) #14
+Companions: [PENDING_WORK.md](../PENDING_WORK.md) §1 P4 · [DEFERRED.md](../DEFERRED.md) #14
 (hosting adapters — this plan is a deliberate _slice_ of it, not its replacement) ·
-[FORM_SPEC_SCHEMA.md](./FORM_SPEC_SCHEMA.md) · [HOSTING_ADAPTERS_SPEC.md](./HOSTING_ADAPTERS_SPEC.md)
+[FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) · [HOSTING_ADAPTERS_SPEC.md](./HOSTING_ADAPTERS_SPEC.md)
 
 ---
 
@@ -224,6 +224,6 @@ repeat-section refused). 16/16 in `FinalSubmitControllerTest`.
 
 ### Lifecycle correction — 2026-09-08
 
-The original one-record load/edit/save verification did not cover record switching, pending reads, failed reads, or lookup Autofill after hydration. Those five defects are corrected in the current working tree. See [Record-edit lifecycle implementation and rollout](./IMPL_PLAN_RECORD_EDIT_LIFECYCLE_FIXES.md) for the current deployment status and verification evidence.
+The original one-record load/edit/save verification did not cover record switching, pending reads, failed reads, or lookup Autofill after hydration. Those five defects are corrected in the current working tree. See [Record-edit lifecycle implementation and rollout](../archive/IMPL_PLAN_RECORD_EDIT_LIFECYCLE_FIXES.md) for the current deployment status and verification evidence.
 
 The runtime now uses keyed record sessions, blocks submission until hydration, hides editable controls while loading, exposes Retry after load failures, starts lookup Autofill after hydration, and reports an old record's failed save through a sticky toast without changing the new record. The server's existing type/access validation and last-write-wins policy remain unchanged. Slice 4 authoring controls remain outside this patch.

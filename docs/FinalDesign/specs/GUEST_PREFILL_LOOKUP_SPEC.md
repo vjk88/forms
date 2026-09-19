@@ -1,7 +1,7 @@
 # Guest Delivery · Prefill · Custom Lookup — Program Spec
 
 **Implementation design added 2026-09-07:**
-[Autofill rules implementation plan](./IMPL_PLAN_AUTOFILL_RULES.md) covers personalized-link
+[Autofill rules implementation plan](../archive/IMPL_PLAN_AUTOFILL_RULES.md) covers personalized-link
 and authenticated lookup-driven Autofill, reusing the existing SO-4 token infrastructure.
 It proposes Build > Autofill authoring and a basic authenticated lookup dependency;
 the broader Phase D lookup scope remains separate. This is a design, not an implementation
@@ -9,7 +9,7 @@ or org-verification status update.
 
 **Status:** ACTIVE — owner started Phase A on 2026-07-19 ("lets start phase A -
 guest render"); each phase still gets its own IMPL_PLAN before code (Phase A's:
-[IMPL_PLAN_PHASE_A_GUEST_RENDER.md](./IMPL_PLAN_PHASE_A_GUEST_RENDER.md)).
+[IMPL_PLAN_PHASE_A_GUEST_RENDER.md](../archive/IMPL_PLAN_PHASE_A_GUEST_RENDER.md)).
 **Correction (2026-07-19):** this doc was first merged while the owner's hosting
 questions were still open — the earlier "owner rulings: hosting" stamp was wrong.
 **Owner rulings that stand:** order = **Guest → Prefill → Lookup** · lookup v1 =
@@ -17,7 +17,7 @@ questions were still open — the earlier "owner rulings: hosting" stamp was wro
 v2). **Hosting settled by reality, not ruling:** the org already runs an LWR site
 (rev-5e-dev-ed.develop.my.site.com) with the viewer placed on it; the server
 family is host-agnostic either way. Iframe embed = bridge per Phase A4.
-**Security law:** everything here obeys [RUNTIME_NOTES.md](./RUNTIME_NOTES.md) — this
+**Security law:** everything here obeys [RUNTIME_NOTES.md](../RUNTIME_NOTES.md) — this
 spec adds build shape, not new security rules.
 
 ---
@@ -119,7 +119,7 @@ sourceObject?, mappings: [{ from, to }] }` — `to` is an ELEMENT ID, never a fi
 ## Phase D — Custom lookup (Core + dependent)
 
 **Authenticated implementation refinement (2026-09-08):**
-[Reusable lookup and dependent filters implementation plan](./IMPL_PLAN_DEPENDENT_LOOKUP.md)
+[Reusable lookup and dependent filters implementation plan](../archive/IMPL_PLAN_DEPENDENT_LOOKUP.md)
 builds on the existing native record picker. For authenticated D1/D2, it supersedes
 the custom search endpoint and token/operator configuration proposed below with a
 reusable native wrapper, structured filters, and server-side selection validation.

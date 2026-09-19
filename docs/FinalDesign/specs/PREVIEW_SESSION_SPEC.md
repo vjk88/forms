@@ -76,5 +76,5 @@ Paths below are relative to the repository root. No Git operations or deployment
 - `force-app/main/default/lwc/finalElementRenderer/__tests__/finalElementRendererFile.test.js`
 - `force-app/main/default/lwc/finalSectionRenderer/finalSectionRenderer.js`
 - `force-app/main/default/lwc/finalSectionRenderer/__tests__/repeats.test.js`
-- `docs/FinalDesign/PREVIEW_SESSION_SPEC.md` (new)
+- `docs/FinalDesign/specs/PREVIEW_SESSION_SPEC.md` (new)
 - `docs/FinalDesign/PENDING_WORK.md`

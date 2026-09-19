@@ -60,6 +60,7 @@ repeated headers/process indicators, Submit on every page, height traps) and the
 anti-checklist; **`formDesigner` is the stable-behavior reference** (owner correction 2026-07-04).
 
 **Per-layout chrome checklist (every primitive passes ALL of these):**
+
 1. **Buttons** — one `submitBar`, correct placement per layout; **Submit appears ONLY on the final
    page, Next/Back elsewhere** (formStudio bug: its sideNav shell showed "Submit" on every page);
    One-at-a-Time contexts default the advance label to **Continue** (catalog §2).
@@ -84,7 +85,7 @@ walk on stepper + tabs + accordion.
 **Build:** `themeCatalog` (all built-ins, managed-hidden) · theme property completeness (fonts,
 field states, effects) · `themeGallery` + `themeCard` · `Theme_Definition__c` + `themeEditor`
 (custom themes, Save/Save-As) · `designPanel` (Simple/Advanced lens + 9-area Advanced rail per
-[FORM_STUDIO_IA.md](./FORM_STUDIO_IA.md) §5 — supersedes the earlier 7-tab IA) with registry-driven
+[FORM_STUDIO_IA.md](./specs/FORM_STUDIO_IA.md) §5 — supersedes the earlier 7-tab IA) with registry-driven
 conditional visibility · `colorControl` + `contrastBadge` + `imageUploader` · **resolve-at-publish** (publish
 action compiles `Spec_JSON__c` with the `resolved` block).
 
@@ -107,10 +108,10 @@ Experience site in P5, where modules are served individually and "open as guest"
 ## P3 · The builder
 
 **Build:** `formStudio` (Build|Design modes, top bar, and the `c__formId`/`?formId=` URL contract
-per [FORM_STUDIO_IA.md](./FORM_STUDIO_IA.md) §2–4; the app's Home/Forms tabs land here too as the
+per [FORM_STUDIO_IA.md](./specs/FORM_STUDIO_IA.md) §2–4; the app's Home/Forms tabs land here too as the
 builder's entry point, stubs for the rest per §1) · `builderCanvas` (**DnD = sanctioned CODE PORT of
 legacy formStudio's machinery** — owner 2026-07-05, the one exception to rule 1; rules + port scope
-in [CANVAS_RULES.md](./CANVAS_RULES.md) §7 and [[reference-formstudio-dnd]]) · `fieldPalette`
+in [CANVAS_RULES.md](./specs/CANVAS_RULES.md) §7 and [[reference-formstudio-dnd]]) · `fieldPalette`
 (registry-driven) · `propertyPanel` · `pageManager` · `bindingPicker` · `visibilityRules` +
 `validationEditor` over a jest-covered `expressionEngine` · `historyManager` (in-memory, Build-mode
 only, coalescing).
@@ -125,10 +126,10 @@ structural edits. Preview === published render (one-parser rule holds).
 
 ## P4 · Element widgets
 
-**Build (registry rows, one PR each):** `formLookup` (per CUSTOM_LOOKUP_SPEC phases) · `fileUpload`
+**Build (registry rows, one PR each):** `formLookup` (per CUSTOM*LOOKUP_SPEC phases) · `fileUpload`
 (base64-on-submit path re-proven) · `formRepeater` (+ sectionRenderer Repeatable composition) ·
 `formSignature` (reuses the file path) · `formVideo` (iframe embeds).
-_`heroElement` RETIRED (owner 2026-07-05) — hero = splitHero's brand pane, built in P1._
+*`heroElement` RETIRED (owner 2026-07-05) — hero = splitHero's brand pane, built in P1.\_
 _`formMap` DEFERRED to v2 — [DEFERRED.md](./DEFERRED.md) #1 (registry key reserved)._
 
 **Gate:** each widget submits end-to-end internally; unknown-type placeholder verified (forward
@@ -137,11 +138,11 @@ compat). Video degrades gracefully without CSP setup. _Note: File upload and sig
 ## P5 · Guest runtime & hardening
 
 **Build:** guest `without sharing` controller set (spec fetch, submit, file insert)
-with RUNTIME_NOTES guardrails · spam protection (honeypot default, rate limit, availability
+with RUNTIME*NOTES guardrails · spam protection (honeypot default, rate limit, availability
 enforced server-side at submit) · `formCompletion` · prefill/autofill (guest-safe allow-list,
 signed prefill token) · survey answer-store writes with `Label_Snapshot__c` + `Entry_Index__c`.
-_Save & Resume (`Form_Draft__c`, `draftManager`, purge job) DEFERRED to v2 —
-[DEFERRED.md](./DEFERRED.md) #2._
+\_Save & Resume (`Form_Draft__c`, `draftManager`, purge job) DEFERRED to v2 —
+[DEFERRED.md](./DEFERRED.md) #2.*
 
 _Asset-URL checkpoint (review F13): built-in theme images snapshot `/resource/formThemeAssets/…`
 paths into published `resolved.tokens`; Experience Cloud serves static resources under a site base

@@ -13,7 +13,7 @@ Companions: [BUILD_PHASES.md](./BUILD_PHASES.md) (what's in scope) · [DEFERRED.
 > **How this was compiled — and how to keep it honest.** Every claim below was checked
 > against code, the org, or git history on 2026-09-03, not read off a ledger row. That
 > matters because this document's immediate predecessor was a status header that had been
-> wrong for six weeks: [FINALFORMVIEWER_EXPERIENCE_CLOUD_BLANK_PAGE.md](./FINALFORMVIEWER_EXPERIENCE_CLOUD_BLANK_PAGE.md)
+> wrong for six weeks: [FINALFORMVIEWER_EXPERIENCE_CLOUD_BLANK_PAGE.md](./archive/FINALFORMVIEWER_EXPERIENCE_CLOUD_BLANK_PAGE.md)
 > said "fix NOT yet implemented" while the fix had shipped the same day the doc was written
 > (it was untracked, so nothing forced it to keep up). **A status line is a claim. Re-verify
 > before acting on anything here, and if you close an item, edit this file in the same PR.**
@@ -41,7 +41,7 @@ org rather than against a status header.
 `/resource/formThemeAssets/…` paths into published `resolved.tokens`, but Experience Cloud serves
 static resources under a **site base path**, and `FinalGuestController` does no URL rewriting
 (verified). A published form using a built-in theme image can therefore show **broken images to
-guests**. BUILD_PHASES §P5 and [CODE_REVIEW_FINDINGS.md](./CODE_REVIEW_FINDINGS.md) §191 both say
+guests**. BUILD_PHASES §P5 and [CODE_REVIEW_FINDINGS.md](./archive/CODE_REVIEW_FINDINGS.md) §191 both say
 "decide at P2/P5"; neither records a decision. Either rewrite per-audience at publish, or serve
 theme assets from a guest-safe channel. Cheap to decide, annoying to discover in Security Review.
 
@@ -149,16 +149,16 @@ and retired objects (DATA_MODEL_DELTA §4).
 
 ### 3.1 File upload — **Slice 1 BUILT 2026-09-03** (internal); guest still open
 
-**Design added 2026-09-08:** [Guest uploads and larger attachments implementation plan](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)
+**Design added 2026-09-08:** [Guest uploads and larger attachments implementation plan](./specs/IMPL_PLAN_GUEST_FILE_UPLOAD.md)
 covers staged native transport, larger-file limits, guest admission, final submission, cleanup,
 and platform verification. **2026-09-09:** the owner authorized implementation without deployment;
-the isolated [batch-1 transport proof](./GUEST_UPLOAD_PROOF_HANDOFF.md) is prepared locally.
+the isolated [batch-1 transport proof](./archive/GUEST_UPLOAD_PROOF_HANDOFF.md) is prepared locally.
 The native org gate is still pending. Production Slice 2 remains unimplemented.
 
 The stub is gone. Internal file upload works end to end: drop zone + keyboard-reachable picker,
 answers on the normal `valuechange` channel, and an atomic `ContentVersion` insert via
 `FirstPublishLocationId` inside the submit savepoint, with a server-side allow-list, size caps and
-extension checks. Plan and full detail: [IMPL_PLAN_FILE_UPLOAD.md](./IMPL_PLAN_FILE_UPLOAD.md).
+extension checks. Plan and full detail: [IMPL_PLAN_FILE_UPLOAD.md](./specs/IMPL_PLAN_FILE_UPLOAD.md).
 
 Two things came out of it that are still live:
 
@@ -200,7 +200,7 @@ scale, nps, rating, yesNo, imageChoice, likert, ranking, matrix`):
 - **`formSignature`** — not built (reuses the file path, so it follows §3.1).
 - **`formVideo`** — not built (iframe embeds; needs CSP degradation).
 - **`formLookup`** — **BUILT 2026-09-11/12 (PRs #275–#278).** Plan:
-  [IMPL_PLAN_LOOKUP_V2.md](./IMPL_PLAN_LOOKUP_V2.md).
+  [IMPL_PLAN_LOOKUP_V2.md](./archive/IMPL_PLAN_LOOKUP_V2.md).
   - **Default (from schema)** on a reference field renders native `lightning-input-field`; the
     platform applies whatever it applies, configured lookup filters included.
   - **Search with filters** (`renderAs: 'Filtered_Search'`) is our own combobox over one Apex
@@ -352,7 +352,7 @@ the packaging track instead of ahead of it.
    #252. (b) Make the **F13 asset-URL decision** below — it is a decision, not a build, and
    published forms with a built-in theme image may be showing guests broken images today.
 1. ~~**File upload (§3.1)**~~ — **Slice 1 DONE 2026-09-03** (internal). Slice 2 (guest) now has a
-   written design ([IMPL_PLAN_GUEST_FILE_UPLOAD.md](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)); implementation
+   written design ([IMPL_PLAN_GUEST_FILE_UPLOAD.md](./specs/IMPL_PLAN_GUEST_FILE_UPLOAD.md)); implementation
    authorized 2026-09-09, with the isolated transport-proof batch prepared locally and org proof pending.
 2. **Accessibility pass (§4.1)** — small, bounded, and currently contradicts a stated product promise.
 3. **Open the packaging track (§2.3 + §2.4)** — namespace, 2GP, legacy purge. Longest pole, and the
@@ -389,7 +389,7 @@ worth charging for:
    between sections/pages (§9.3). **Reorder + select + delete: DONE, org-verified 2026-09-06.**
    **Move BETWEEN sections/pages by keyboard: knowingly NOT met** — the owner rejected both the
    action bar and the context menu that carried it, so cross-container moves are drag-only. Alt+↑/↓
-   covers reordering among siblings. See [BUILDER_KEYBOARD_SPEC.md](./BUILDER_KEYBOARD_SPEC.md).
+   covers reordering among siblings. See [BUILDER_KEYBOARD_SPEC.md](./specs/BUILDER_KEYBOARD_SPEC.md).
 2. **No failure message names the wrong operation, and none is invisible at any width** — a failed
    publish must not say "Save failed", and the status must survive below 1100px with a real Retry
    (§9.1, §9.2). **DONE — org-verified 2026-09-06**, failure path induced and recovered (see §9.2).
@@ -475,7 +475,7 @@ guest-facing ships with a built-in theme image.
 
 ## 9 · Studio UX review (2026-09-05) — findings not covered above
 
-Source: [FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md](./FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md).
+Source: [FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md](./archive/FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md).
 **11 of its specific `file:line` and contrast claims were independently verified; all 11 held**,
 including both contrast ratios recomputed from the hex values (3.743:1 and 5.472:1). Treat its
 findings as load-bearing.
@@ -689,7 +689,7 @@ one as if it were current — it is not.
 
 What survives is keyboard navigation plus **Alt + ↑/↓ to reorder among siblings**. The heading is
 now "Structure". A stable keyed wrapper fixes a rendering failure on mixed section/block pages.
-[Current behavior, changed files and smoke test](./BUILDER_KEYBOARD_SPEC.md), which records both
+[Current behavior, changed files and smoke test](./specs/BUILDER_KEYBOARD_SPEC.md), which records both
 rejected designs so neither is re-proposed as a fresh idea.
 
 > **Known gap, deliberately accepted:** "Move to…" was the only keyboard route for moving an item
@@ -743,7 +743,7 @@ mouse, which is a harder failure than any single widget defect in §4.1.
 ### 9.4 Needs a spec before it can be estimated
 
 - **Preview session preservation — implemented locally 2026-09-06.**
-  [Session contract and org smoke test](./PREVIEW_SESSION_SPEC.md) define pruning and memory ownership.
+  [Session contract and org smoke test](./specs/PREVIEW_SESSION_SPEC.md) define pruning and memory ownership.
   Editable Build/Design retain answers, page identity and device; deleted questions, removed choices
   and incompatible bindings prune only affected values. Repeater rows hydrate from the session;
   changing the child object resets that repeater. Files retain existing in-memory objects without
@@ -820,5 +820,5 @@ clean.
 > `finalThemeCatalog.js`. That is a **coincidence, not a leak** — the catalog is not in the diff,
 > and the theme-switch test above falsifies the leak reading.
 
-[Exact changed files, contrast results and org checklist](./STUDIO_COLOR_CONSISTENCY.md).
+[Exact changed files, contrast results and org checklist](./archive/STUDIO_COLOR_CONSISTENCY.md).
 The new `finalStudioStyles` bundle must ship with the authoring components.

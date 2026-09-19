@@ -497,8 +497,8 @@ Required handoff: changed files, configuration/schema examples, targeted test re
 
 ## References
 
-- [Guest Delivery / Prefill / Lookup program](./GUEST_PREFILL_LOOKUP_SPEC.md): program context; this document supplies the two-source implementation plan and updates the authoring placement for this feature.
-- [Final form schema](./FORM_SPEC_SCHEMA.md): additive settings location, element IDs, defaults, and published snapshots.
-- [Runtime notes](./RUNTIME_NOTES.md): authenticated LDS reads and guarded guest authorization.
-- [Pending work](./PENDING_WORK.md): project status; this design does not close its implementation items.
-- [Legacy element properties, section 15b](../redesign/ELEMENT_PROPERTIES_SPEC.md): historical Autofill ideas only; do not copy its storage or raw guest record-ID authorization.
+- [Guest Delivery / Prefill / Lookup program](../specs/GUEST_PREFILL_LOOKUP_SPEC.md): program context; this document supplies the two-source implementation plan and updates the authoring placement for this feature.
+- [Final form schema](../FORM_SPEC_SCHEMA.md): additive settings location, element IDs, defaults, and published snapshots.
+- [Runtime notes](../RUNTIME_NOTES.md): authenticated LDS reads and guarded guest authorization.
+- [Pending work](../PENDING_WORK.md): project status; this design does not close its implementation items.
+- [Legacy element properties, section 15b](../../redesign/ELEMENT_PROPERTIES_SPEC.md): historical Autofill ideas only; do not copy its storage or raw guest record-ID authorization.
