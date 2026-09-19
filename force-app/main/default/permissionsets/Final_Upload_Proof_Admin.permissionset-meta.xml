@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <classAccesses><apexClass>FinalUploadProofController</apexClass><enabled
-        >true</enabled></classAccesses>
-    <customPermissions><enabled>true</enabled><name
-        >Final_Upload_Proof_Admin</name></customPermissions>
+    <classAccesses>
+        <apexClass>FinalUploadProofController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Final_Upload_Proof_Admin</name>
+    </customPermissions>
     <description
     >Sandbox proof operator only. Does not enable guest uploads or grant guest access.</description>
-    <fieldPermissions><editable>true</editable><field
-        >ContentVersion.Final_Upload_fileupload__c</field><readable
-        >true</readable></fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
     <label>Upload Transport Proof Administrator</label>
-    <!-- The operator harness tab. A fresh CustomTab is hidden from every
-         profile by default, so without this the page answers "Page doesn't
-         exist" even to an assigned operator. It belongs here rather than on a
-         profile: tab visibility should travel with the operator grant and be
-         removed with it. -->
     <tabSettings>
         <tab>Final_Upload_Proof</tab>
         <visibility>Visible</visibility>
