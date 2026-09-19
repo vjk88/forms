@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Submission_Key__c</fullName>
+    <caseSensitive>true</caseSensitive>
+    <description
+    >Idempotency key minted by the browser per submit attempt (FREEFORM_SPEC D15). Unique, so a retry after a lost response returns the existing submission instead of storing a second one. Session_Id__c is NOT a substitute - it survives across submissions.</description>
+    <externalId>true</externalId>
+    <label>Submission Key</label>
+    <length>64</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

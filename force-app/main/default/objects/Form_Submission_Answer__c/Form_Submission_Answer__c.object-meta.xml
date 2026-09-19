@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+    >One answered question on a Freeform submission (FREEFORM_SPEC 5.2). Value columns share their API names with Form_Response_Answer__c so one writer serves both stores; Answer_Type__c says which column holds the answer.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableStreamingApi>true</enableStreamingApi>
+    <label>Freeform Answer</label>
+    <nameField>
+        <displayFormat>FSA-{00000000}</displayFormat>
+        <label>Answer Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Freeform Answers</pluralLabel>
+    <searchLayouts />
+    <sharingModel>ControlledByParent</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

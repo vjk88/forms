@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Form_Type__c</fullName>
-    <description>Determines whether this is a standard Form or a Survey</description>
-    <inlineHelpText>Select Form for data collection forms, or Survey for anonymous feedback collection</inlineHelpText>
+    <description
+    >Which of the three form types this is: Form (bound to one Salesforce object), Survey (answer store with survey analytics), or Freeform (its own submission store, with optional mappings to any number of objects)</description>
+    <inlineHelpText
+    >Form: you know which Salesforce data you need. Survey: you want feedback and analysis. Freeform: you know what you want to ask and will decide later where the answers go.</inlineHelpText>
     <label>Form Type</label>
     <required>true</required>
     <trackTrending>false</trackTrending>
@@ -20,6 +22,11 @@
                 <fullName>Survey</fullName>
                 <default>false</default>
                 <label>Survey</label>
+            </value>
+            <value>
+                <fullName>Freeform</fullName>
+                <default>false</default>
+                <label>Freeform</label>
             </value>
         </valueSetDefinition>
     </valueSet>

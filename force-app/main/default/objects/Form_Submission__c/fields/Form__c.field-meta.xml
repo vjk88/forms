@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Form__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description
+    >The form this submission belongs to. Denormalized from the version so the Form record gets a Submissions related list and reports can filter by form directly.</description>
+    <label>Form</label>
+    <referenceTo>Form__c</referenceTo>
+    <relationshipLabel>Freeform Submissions</relationshipLabel>
+    <relationshipName>Freeform_Submissions</relationshipName>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>
