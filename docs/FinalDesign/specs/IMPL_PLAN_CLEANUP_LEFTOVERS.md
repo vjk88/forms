@@ -1,16 +1,44 @@
 # Cleanup plan — leftovers, test scaffolding and dead fields
 
-**Status:** FOR OWNER REVIEW — nothing deleted yet. Written 2026-09-19.
+**Status:** DECIDED + partly DONE 2026-09-19 — the owner's decisions are in
+[CLEANUP_DECISIONS.csv](./CLEANUP_DECISIONS.csv) ("Your decision" column).
+
+**Done 2026-09-19 (repo + org, org-verified):**
+
+- Deleted fields: `Form_Response__c.Account__c`, `.Campaign__c`, `.Case__c`, `.Contact__c`, `.Lead__c`,
+  `.Opportunity__c`, `.Primary_Record_Id__c`, `Form__c.Global_Styles_JSON__c`,
+  `Form_Response_Answer__c.Lookup_Reference_Id__c` (all empty in the org before deletion).
+- Deleted `finalDesignTest` (LWC), `Final_Design_Test` (Lightning page + tab).
+- Archived: `GUEST_UPLOAD_PROOF_CHANGED_FILES.md`, `STUDIO_ACTIONS_SMOKE_TEST_MATRIX.md`,
+  `design_panel_ia_expanded.html`, `design_panel_ia_proposal.html`.
+- Deleted (local, never committed): `docs/FinalDesign/COMPONENT_CATALOG.csv`,
+  `docs/redesign/Screenshot 2026-07-01 220543.jpg`.
+- `.gitignore`: `.agents/`, `.claude/skills/`, `.claude/agent-memory/`, `.impeccable/`,
+  `docs/ux-prototype/`, `scratch/`.
+- Permission set `Form_Builder_Admin` left untouched (owner: "don't worry about permission sets");
+  it still lists the deleted fields and tab, so a future deploy of it must drop those entries.
+
+**Kept by owner decision:** the whole guest-upload test gate (§1) until the test passes;
+`Final_P0_Test`; `CUSTOM_FONTS.md`, `docs/redesign/DESIGN_MODE_IA.csv` and
+`design_mode_complete_mockup.html` left as local files; the test objects (§3) as-is.
+**To discuss:** `Form__c.Default_Owner_Id__c`, the 3 sentiment fields, `Allowed_Adapters__c` and its values.
 Scope is cleanup item #4: things that are not the old build (that is P7) but are still clutter.
 Every row says what it is, who uses it, and what I propose. **You decide the ones marked ⚖️.**
 
+**Decisions are recorded per item in [CLEANUP_DECISIONS.csv](./CLEANUP_DECISIONS.csv)** (87 rows, exact
+names, a "Your decision" column). The CSV is the list to act on; this doc explains it.
+
 ---
 
-## 1. The guest-upload proof run (PRs #256–#262) — delete
+## 1. The guest-upload test gate (PRs #256–#262) — keep until the test passes
 
-A throwaway test to see whether a guest could push a file into Salesforce. It stopped at an org
-setting (PR #262) and never became product code. **Nothing outside the proof uses any of it**
-(checked: no references from other classes or components).
+**Corrected 2026-09-19:** this is NOT throwaway. It is the transport test the guest-upload plan
+(`IMPL_PLAN_GUEST_FILE_UPLOAD.md`) must pass before the real build; it stalled only because two org
+settings are off (PR #262). Nothing outside it references it — but it is LIVE: the trigger
+`FinalUploadContentVersion` runs on every ContentVersion insert/update in the org, and the TestSite
+guest is enrolled, so that guest's ordinary uploads are rejected. Its own handoff says never deploy
+it to a production business org. **Proposal:** keep it until the test runs, then delete it all; or
+delete now if guest upload is not coming soon (trigger first).
 
 | Kind              | Items                                                                                                                                                     |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |

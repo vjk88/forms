@@ -52,3 +52,13 @@ brain/
 
 # Code Analyzer run artifacts
 code-analyzer-results-*.json
+
+# Local tool state (owner 2026-09-19: never commit)
+.agents/
+.claude/skills/
+.claude/agent-memory/
+.impeccable/
+
+# Local-only work kept out of git (owner 2026-09-19)
+docs/ux-prototype/
+scratch/
