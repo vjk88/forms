@@ -1,0 +1,1805 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Design Panel IA — proposal render (FinalDesign P2)</title>
+        <style>
+            /* ============ chassis (panel chrome = light, SLDS-adjacent) ============ */
+            :root {
+                --ink: #181818;
+                --ink-2: #5c5c5c;
+                --line: #e5e5e5;
+                --line-2: #d8d8d8;
+                --chrome: #f3f3f3;
+                --panel: #ffffff;
+                --brand: #0d9488;
+                --brand-ink: #0b6e65;
+                --warn-bg: #fef3e8;
+                --warn-ink: #8a5300;
+                --fail-bg: #fdeeee;
+                --fail-ink: #a3251d;
+                --pass-bg: #e8f6ef;
+                --pass-ink: #1b6e46;
+                --radius: 8px;
+                font-size: 16px;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                font:
+                    13px/1.45 -apple-system,
+                    'Segoe UI',
+                    Roboto,
+                    Helvetica,
+                    Arial,
+                    sans-serif;
+                color: var(--ink);
+                background: var(--chrome);
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            button {
+                font: inherit;
+                cursor: pointer;
+            }
+
+            /* ============ top bar ============ */
+            .topbar {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 0 16px;
+                height: 48px;
+                background: #fff;
+                border-bottom: 1px solid var(--line);
+                flex: none;
+            }
+            .crumb {
+                color: var(--ink-2);
+            }
+            .crumb b {
+                color: var(--ink);
+                font-weight: 600;
+            }
+            .mode {
+                display: flex;
+                margin-left: auto;
+                border: 1px solid var(--line-2);
+                border-radius: 999px;
+                overflow: hidden;
+            }
+            .mode button {
+                border: 0;
+                background: none;
+                padding: 5px 16px;
+                color: var(--ink-2);
+            }
+            .mode button.on {
+                background: var(--ink);
+                color: #fff;
+            }
+            .iconbtn {
+                width: 30px;
+                height: 30px;
+                border: 1px solid var(--line-2);
+                border-radius: 7px;
+                background: #fff;
+                color: var(--ink-2);
+                display: grid;
+                place-items: center;
+            }
+            .iconbtn[disabled] {
+                opacity: 0.4;
+                cursor: default;
+            }
+            .publish {
+                border: 0;
+                background: var(--brand);
+                color: #fff;
+                font-weight: 600;
+                padding: 7px 16px;
+                border-radius: 7px;
+            }
+
+            /* ============ 3-pane app ============ */
+            .app {
+                flex: 1;
+                display: flex;
+                min-height: 0;
+            }
+
+            /* --- area rail --- */
+            .rail {
+                width: 64px;
+                flex: none;
+                background: #fff;
+                border-right: 1px solid var(--line);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding-top: 10px;
+                gap: 4px;
+            }
+            .rail button {
+                width: 52px;
+                border: 0;
+                background: none;
+                border-radius: 9px;
+                padding: 8px 0 6px;
+                color: var(--ink-2);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 3px;
+                font-size: 10.5px;
+                font-weight: 600;
+                letter-spacing: 0.01em;
+            }
+            .rail button svg {
+                width: 19px;
+                height: 19px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.7;
+            }
+            .rail button.on {
+                background: #e6f4f2;
+                color: var(--brand-ink);
+            }
+            .rail button:hover:not(.on) {
+                background: var(--chrome);
+            }
+
+            /* --- settings panel --- */
+            .settings {
+                width: 340px;
+                flex: none;
+                background: var(--panel);
+                border-right: 1px solid var(--line);
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+            }
+            .panel-head {
+                padding: 14px 16px 10px;
+                border-bottom: 1px solid var(--line);
+            }
+            .panel-head h1 {
+                margin: 0;
+                font-size: 14px;
+            }
+            .panel-head p {
+                margin: 2px 0 0;
+                color: var(--ink-2);
+                font-size: 12px;
+            }
+            .panel-scroll {
+                overflow-y: auto;
+                flex: 1;
+                padding: 12px 12px 24px;
+            }
+
+            /* promoted entry cards — the 80% actions, pinned above every area */
+            .entry {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                text-align: left;
+                border: 1px solid var(--line);
+                background: #fafafa;
+                border-radius: var(--radius);
+                padding: 9px 12px;
+                margin-bottom: 8px;
+            }
+            .entry:hover {
+                border-color: var(--line-2);
+                background: #f5f5f5;
+            }
+            .entry .k {
+                font-size: 10.5px;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                color: var(--ink-2);
+            }
+            .entry .v {
+                font-weight: 600;
+                font-size: 13px;
+            }
+            .entry .swatchrow {
+                display: flex;
+                gap: 3px;
+                margin-top: 3px;
+            }
+            .entry .sw {
+                width: 12px;
+                height: 12px;
+                border-radius: 3px;
+                border: 1px solid rgba(0, 0, 0, 0.12);
+            }
+            .entry .chev {
+                margin-left: auto;
+                color: var(--ink-2);
+            }
+            .entry-note {
+                margin: 0 2px 14px;
+                color: var(--ink-2);
+                font-size: 11.5px;
+            }
+
+            /* groups (sections within an area) */
+            .group {
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                margin-bottom: 8px;
+                background: #fff;
+            }
+            .group > header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 12px;
+                cursor: pointer;
+                user-select: none;
+            }
+            .group > header h2 {
+                margin: 0;
+                font-size: 12.5px;
+                font-weight: 700;
+            }
+            .group > header .count {
+                color: var(--ink-2);
+                font-size: 11px;
+                font-weight: 400;
+            }
+            .editdot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--brand);
+                display: none;
+            }
+            .editdot::after {
+                content: '';
+                position: absolute;
+            }
+            .group.edited .editdot {
+                display: inline-block;
+            }
+            .group.edited > header h2::after {
+                content: ' · edited';
+                color: var(--brand-ink);
+                font-weight: 600;
+                font-size: 11px;
+            }
+            .group > header .tw {
+                margin-left: auto;
+                color: var(--ink-2);
+                transition: transform 0.15s ease-out;
+            }
+            .group.open > header .tw {
+                transform: rotate(90deg);
+            }
+            .group .body {
+                display: none;
+                padding: 2px 12px 12px;
+            }
+            .group.open .body {
+                display: block;
+            }
+
+            .row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 0;
+            }
+            .row[hidden] {
+                display: none;
+            }
+            .row label {
+                flex: 1;
+                color: var(--ink);
+            }
+            .row .hint {
+                color: var(--ink-2);
+                font-size: 11px;
+            }
+            .row select,
+            .row input[type='text'] {
+                font: inherit;
+                border: 1px solid var(--line-2);
+                border-radius: 6px;
+                padding: 4px 8px;
+                background: #fff;
+                color: var(--ink);
+                max-width: 150px;
+            }
+            input[type='color'] {
+                width: 30px;
+                height: 24px;
+                border: 1px solid var(--line-2);
+                border-radius: 6px;
+                padding: 1px;
+                background: #fff;
+            }
+            .hex {
+                font-family: Consolas, monospace;
+                font-size: 11.5px;
+                color: var(--ink-2);
+                width: 56px;
+            }
+
+            /* contrast badge — CORRECT semantics */
+            .badge {
+                font-size: 10.5px;
+                font-weight: 700;
+                border-radius: 5px;
+                padding: 2px 7px;
+                white-space: nowrap;
+            }
+            .badge.pass {
+                background: var(--pass-bg);
+                color: var(--pass-ink);
+            }
+            .badge.large {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .badge.fail {
+                background: var(--fail-bg);
+                color: var(--fail-ink);
+            }
+            .badge-row {
+                padding: 0 0 6px 0;
+                margin-top: -2px;
+            }
+            .badge-row .fixhint {
+                font-size: 11px;
+                color: var(--ink-2);
+                margin-left: 6px;
+            }
+
+            /* surface sub-cards: each surface owns its COMPLETE look */
+            .surface {
+                border: 1px solid var(--line);
+                border-radius: 7px;
+                padding: 8px 10px;
+                margin: 6px 0;
+            }
+            .surface h3 {
+                margin: 0 0 2px;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                color: var(--ink-2);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .surface .row {
+                padding: 4px 0;
+            }
+
+            /* conditional-visibility narration (never a silent vanish) */
+            .narrate {
+                display: none;
+                align-items: flex-start;
+                gap: 8px;
+                background: #f4f1fb;
+                color: #4a3d78;
+                border-radius: 7px;
+                padding: 8px 10px;
+                font-size: 11.5px;
+                margin: 6px 0;
+            }
+            .narrate.on {
+                display: flex;
+            }
+            .narrate svg {
+                flex: none;
+                width: 14px;
+                height: 14px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.8;
+                margin-top: 1px;
+            }
+
+            /* theme-reset confirm (error prevention made real) */
+            .confirm {
+                display: none;
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+                border-radius: 7px;
+                padding: 9px 10px;
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+            .confirm.on {
+                display: block;
+            }
+            .confirm .acts {
+                margin-top: 7px;
+                display: flex;
+                gap: 6px;
+            }
+            .confirm button {
+                border: 1px solid currentColor;
+                background: none;
+                color: inherit;
+                border-radius: 6px;
+                padding: 3px 10px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            .confirm button.go {
+                background: var(--warn-ink);
+                color: #fff;
+                border-color: var(--warn-ink);
+            }
+
+            .resetchip {
+                border: 0;
+                background: none;
+                color: var(--brand-ink);
+                font-size: 11.5px;
+                font-weight: 600;
+                padding: 2px 4px;
+                display: none;
+            }
+            .group.edited .resetchip {
+                display: inline-block;
+            }
+
+            .jump {
+                border: 0;
+                background: none;
+                color: var(--brand-ink);
+                font-size: 11.5px;
+                font-weight: 600;
+                padding: 0;
+            }
+
+            /* ============ preview pane ============ */
+            .stage {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .stage-bar {
+                display: flex;
+                align-items: center;
+                padding: 9px 16px;
+                color: var(--ink-2);
+                font-size: 12px;
+                gap: 8px;
+            }
+            .stage-bar .dev {
+                margin-left: auto;
+                display: flex;
+                gap: 2px;
+                border: 1px solid var(--line-2);
+                border-radius: 7px;
+                overflow: hidden;
+            }
+            .stage-bar .dev button {
+                border: 0;
+                background: #fff;
+                color: var(--ink-2);
+                padding: 3px 12px;
+                font-size: 12px;
+            }
+            .stage-bar .dev button.on {
+                background: var(--ink);
+                color: #fff;
+            }
+            .stage-scroll {
+                flex: 1;
+                overflow: auto;
+                padding: 0 24px 24px;
+            }
+
+            /* ---- the themed form (driven by --p-* vars = stand-ins for --c-*) ---- */
+            .form-viewport {
+                max-width: 980px;
+                margin: 0 auto;
+            }
+            .form-viewport.mobile {
+                max-width: 400px;
+            }
+            .fpage {
+                background: var(--p-page-bg);
+                border-radius: 12px;
+                padding: 40px 28px;
+                min-height: 560px;
+                font-family: var(--p-font);
+            }
+            .fpanel {
+                max-width: 640px;
+                margin: 0 auto;
+                background: var(--p-content-bg);
+                border: 1px solid var(--p-content-border);
+                border-radius: var(--p-radius);
+                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+                padding: 28px;
+                color: var(--p-text);
+            }
+            .fheader {
+                margin-bottom: 20px;
+                padding: 16px;
+                background: var(--p-header-bg);
+                border-radius: calc(var(--p-radius) - 2px);
+            }
+            .fbrand {
+                font-weight: 800;
+                letter-spacing: 0.03em;
+                font-size: 12px;
+                color: var(--p-text-weak);
+                text-transform: uppercase;
+            }
+            .fheader .fbrand,
+            .fheader .fdesc {
+                color: var(--p-header-text, var(--p-text));
+                opacity: 0.78;
+            }
+            .ftitle {
+                margin: 6px 0 4px;
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--p-header-text, var(--p-text));
+            }
+            .fdesc {
+                margin: 0;
+                color: var(--p-text-weak);
+                font-size: 13.5px;
+            }
+            .fsection {
+                background: color-mix(in srgb, var(--p-text) 4%, transparent);
+                border: 1px solid
+                    color-mix(in srgb, var(--p-text) 12%, transparent);
+                border-radius: calc(var(--p-radius) - 2px);
+                padding: 16px;
+                margin-top: 16px;
+            }
+            .fsection h4 {
+                margin: 0 0 12px;
+                font-size: 13px;
+                color: var(--p-text);
+            }
+            .fgrid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            .form-viewport.mobile .fgrid {
+                grid-template-columns: 1fr;
+            }
+            .ffield label {
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 4px;
+                color: var(--p-text);
+            }
+            .ffield .inp {
+                height: 34px;
+                border: 1px solid var(--p-field-border);
+                background: var(--p-field-bg);
+                border-radius: calc(var(--p-radius) - 3px);
+            }
+            .factions {
+                margin-top: 20px;
+                display: flex;
+                justify-content: flex-end;
+            }
+            .fsubmit {
+                border: 0;
+                background: var(--p-accent);
+                color: var(--p-on-accent);
+                font-weight: 700;
+                padding: 10px 22px;
+                border-radius: calc(var(--p-radius) - 2px);
+                font-size: 13.5px;
+            }
+
+            /* split-hero variant */
+            .fpage.split {
+                display: grid;
+                grid-template-columns: 1fr 1.4fr;
+                padding: 0;
+                overflow: hidden;
+            }
+            .fpage.split .fpane {
+                background: var(--p-header-bg);
+                color: var(--p-header-text);
+                padding: 32px 24px;
+                display: flex;
+                flex-direction: column;
+            }
+            .fpage.split .fpane .fbrand {
+                color: currentColor;
+                opacity: 0.75;
+            }
+            .fpage.split .fpane .ptitle {
+                font-size: 26px;
+                font-weight: 800;
+                margin: auto 0;
+            }
+            .fpage.split .fpane .dots {
+                display: flex;
+                gap: 6px;
+            }
+            .fpage.split .fpane .dot {
+                width: 9px;
+                height: 9px;
+                border-radius: 50%;
+                background: color-mix(in srgb, currentColor 35%, transparent);
+            }
+            .fpage.split .fpane .dot.on {
+                background: currentColor;
+            }
+            .fpage.split .fformside {
+                padding: 32px 24px;
+            }
+            .fpage.split .fpanel {
+                box-shadow: none;
+                border: 0;
+                background: none;
+                padding: 0;
+            }
+            .fpage.split .fheader,
+            .fpage.split .fbrand {
+                display: none;
+            }
+            .form-viewport.mobile .fpage.split {
+                grid-template-columns: 1fr;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    transition: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="topbar">
+            <span class="crumb"
+                >FormStudio / Customer Feedback / <b>Design</b></span
+            >
+            <div class="mode">
+                <button type="button">Build</button>
+                <button type="button" class="on">Design</button>
+            </div>
+            <button
+                class="iconbtn"
+                disabled
+                title="Design-mode undo (specced, rides historyManager)"
+            >
+                ↶
+            </button>
+            <button class="iconbtn" disabled title="Redo">↷</button>
+            <button class="publish" type="button">Publish</button>
+        </div>
+
+        <div class="app">
+            <!-- ============ 3-AREA RAIL ============ -->
+            <nav class="rail" aria-label="Design areas">
+                <button type="button" class="on" data-area="theme">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="8.5" />
+                        <path d="M12 3.5v17M3.5 12h17" opacity="0.35" />
+                    </svg>
+                    Theme
+                </button>
+                <button type="button" data-area="layout">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="6" rx="1.5" />
+                        <rect x="4" y="14" width="7" height="6" rx="1.5" />
+                        <rect x="14" y="14" width="6" height="6" rx="1.5" />
+                    </svg>
+                    Layout
+                </button>
+                <button type="button" data-area="header">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="16" rx="2" />
+                        <path d="M4 9.5h16" />
+                    </svg>
+                    Header
+                </button>
+                <button type="button" data-area="body">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="16" rx="2" />
+                        <path d="M8 9h8M8 13h8M8 17h5" />
+                    </svg>
+                    Body
+                </button>
+                <button type="button" data-area="actions">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="4" y="8" width="16" height="8" rx="4" />
+                        <path d="M9 12h6" opacity="0.5" />
+                    </svg>
+                    Actions
+                </button>
+            </nav>
+
+            <!-- ============ SETTINGS PANEL ============ -->
+            <aside class="settings">
+                <div class="panel-head">
+                    <h1 id="areaTitle">Theme</h1>
+                    <p id="areaDesc">
+                        The global look: inks, type, atmosphere.
+                    </p>
+                </div>
+                <div class="panel-scroll">
+                    <!-- promoted entry cards: pinned above every area -->
+                    <button class="entry" type="button" id="themeEntry">
+                        <div>
+                            <div class="k">THEME</div>
+                            <div class="v" id="themeName">
+                                Nordic Minimalist
+                            </div>
+                            <div class="swatchrow" id="themeSwatches"></div>
+                        </div>
+                        <span class="chev">›</span>
+                    </button>
+                    <button class="entry" type="button" id="layoutEntry">
+                        <div>
+                            <div class="k">LAYOUT</div>
+                            <div class="v" id="layoutName">Classic Card</div>
+                        </div>
+                        <span class="chev">›</span>
+                    </button>
+                    <p class="entry-note">
+                        Theme is the starting point. Everything below is this
+                        form's override of it.
+                        <em>(click cards to cycle, demo)</em>
+                    </p>
+
+                    <!-- theme-switch confirm: destructive action gets a gate -->
+                    <div class="confirm" id="themeConfirm" role="alert">
+                        Switching to <b id="confirmTheme"></b> resets
+                        <b id="confirmCount"></b> edited control(s) to the new
+                        theme's defaults.
+                        <div class="acts">
+                            <button type="button" class="go" id="confirmGo">
+                                Switch theme
+                            </button>
+                            <button type="button" id="confirmNo">
+                                Keep my edits
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ======== AREA: THEME (global look) ======== -->
+                    <div data-panel="theme">
+                        <section class="group open" id="gPalette">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Palette</h2>
+                                <span class="count">brand inks only</span>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label for="accent">Accent</label>
+                                    <span class="hex" id="accentHex"
+                                        >#0d9488</span
+                                    >
+                                    <input
+                                        type="color"
+                                        id="accent"
+                                        value="#0d9488"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label for="onAccent">Button text</label>
+                                    <span class="hex" id="onAccentHex"
+                                        >#ffffff</span
+                                    >
+                                    <input
+                                        type="color"
+                                        id="onAccent"
+                                        value="#ffffff"
+                                    />
+                                </div>
+                                <div class="badge-row row">
+                                    <span class="badge pass" id="btnBadge"
+                                        >4.6:1 · AA ✓</span
+                                    >
+                                    <span class="fixhint" id="btnFix"></span>
+                                </div>
+                                <div class="row">
+                                    <label for="textC">Text</label>
+                                    <span class="hex" id="textCHex"
+                                        >#1f2937</span
+                                    >
+                                    <input
+                                        type="color"
+                                        id="textC"
+                                        value="#1f2937"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Muted text</label
+                                    ><span class="hex">#6b7280</span
+                                    ><input type="color" value="#6b7280" />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group open" id="gAtmosphere">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Page &amp; atmosphere</h2>
+                                <span class="count"
+                                    >the canvas behind everything</span
+                                >
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label for="pageBg">Page fill</label
+                                    ><span class="hex" id="pageBgHex"
+                                        >#f4f7f5</span
+                                    ><input
+                                        type="color"
+                                        id="pageBg"
+                                        value="#f4f7f5"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Page image</label
+                                    ><select>
+                                        <option>None</option>
+                                        <option>Upload…</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Mesh</label
+                                    ><select>
+                                        <option>None</option>
+                                        <option>Aurora</option>
+                                        <option>Dusk</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Texture</label
+                                    ><select>
+                                        <option>None</option>
+                                        <option>Dots</option>
+                                        <option>Grid</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Glass blur</label
+                                    ><select id="glassSel">
+                                        <option>Off</option>
+                                        <option>On</option>
+                                    </select>
+                                </div>
+                                <div class="narrate" id="glassNarrate">
+                                    <svg viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="M12 8v5M12 16.2v.3" />
+                                    </svg>
+                                    <span
+                                        >Glass is off on <b>Split Hero</b>: the
+                                        pane paints its own surface.</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group" id="gType">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Type</h2>
+                                <span class="count">fonts live here now</span>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label for="fontSel">Font pairing</label>
+                                    <select id="fontSel">
+                                        <option value="system">System</option>
+                                        <option value="editorial">
+                                            Editorial (serif display)
+                                        </option>
+                                        <option value="mono">Mono</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <span class="hint"
+                                        >Custom font upload arrives later
+                                        (CUSTOM_FONTS.md).</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- ======== AREA: LAYOUT ======== -->
+                    <div data-panel="layout" hidden>
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Layout</h2>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Max content width</label
+                                    ><select>
+                                        <option>Medium · 760px</option>
+                                        <option>Narrow · 560px</option>
+                                        <option>Wide · 1040px</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Density</label
+                                    ><select>
+                                        <option>Comfortable</option>
+                                        <option>Compact</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Section padding</label
+                                    ><select>
+                                        <option>Theme default</option>
+                                        <option>Roomy</option>
+                                        <option>Tight</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <span class="hint"
+                                        >No breakpoint control: collapse is
+                                        container-driven (locked rule).</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group open" id="gPagination">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Pagination</h2>
+                                <span class="count">stepper · progress</span>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Progress indicator</label
+                                    ><select>
+                                        <option>Steps</option>
+                                        <option>Bar</option>
+                                        <option>None</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Stepper placement</label
+                                    ><select>
+                                        <option>Top</option>
+                                        <option>Left</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+                        <div class="narrate" id="pagNarrate">
+                            <svg viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 8v5M12 16.2v.3" />
+                            </svg>
+                            <span
+                                ><b>Split Hero</b> owns pagination; progress
+                                renders in the brand pane. 2 controls parked
+                                (values kept).</span
+                            >
+                        </div>
+                    </div>
+
+                    <!-- ======== AREA: HEADER (one home: words + surface) ======== -->
+                    <div data-panel="header" hidden>
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Branding &amp; words</h2>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Header style</label
+                                    ><select>
+                                        <option>Standard</option>
+                                        <option>Hero</option>
+                                        <option>Minimal</option>
+                                        <option>None</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Logo</label
+                                    ><select>
+                                        <option>Wordmark (brand name)</option>
+                                        <option>Upload image…</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Title</label
+                                    ><input
+                                        type="text"
+                                        id="titleInp"
+                                        value="Customer Satisfaction"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Subtitle</label
+                                    ><input
+                                        type="text"
+                                        id="subInp"
+                                        value="Two minutes, honest answers."
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Highlight message</label
+                                    ><input
+                                        type="text"
+                                        value=""
+                                        placeholder="Optional banner line"
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group open" id="headerSurface">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Header surface</h2>
+                                <span class="count" id="headerSurfaceNote"
+                                    >fill · banner</span
+                                >
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label for="headerBg">Fill</label
+                                    ><span class="hex" id="headerBgHex"
+                                        >#134e4a</span
+                                    ><input
+                                        type="color"
+                                        id="headerBg"
+                                        value="#134e4a"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Banner image</label
+                                    ><select>
+                                        <option>None</option>
+                                        <option>Upload…</option>
+                                    </select>
+                                </div>
+                                <div class="narrate" id="headerNarrate">
+                                    <svg viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="M12 8v5M12 16.2v.3" />
+                                    </svg>
+                                    <span
+                                        >On <b>Split Hero</b> this surface
+                                        paints the brand pane; the in-form
+                                        header steps aside.</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- ======== AREA: BODY (sections + fields) ======== -->
+                    <div data-panel="body" hidden>
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Content panel</h2>
+                                <span class="count"
+                                    >the sheet the form sits on</span
+                                >
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label for="contentBg">Fill + alpha</label
+                                    ><span class="hex" id="contentBgHex"
+                                        >#ffffff</span
+                                    ><input
+                                        type="color"
+                                        id="contentBg"
+                                        value="#ffffff"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Shadow</label
+                                    ><select>
+                                        <option>Soft</option>
+                                        <option>None</option>
+                                        <option>Floating</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Corner rounding</label
+                                    ><select>
+                                        <option>Theme default</option>
+                                        <option>Sharp</option>
+                                        <option>Soft</option>
+                                        <option>Pill</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Sections</h2>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Style preset</label
+                                    ><select>
+                                        <option>Card</option>
+                                        <option>Boxed</option>
+                                        <option>Outline</option>
+                                        <option>Subtle</option>
+                                        <option>Flat</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Inner padding</label
+                                    ><select>
+                                        <option>Theme default</option>
+                                        <option>Roomy</option>
+                                        <option>Tight</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Fields</h2>
+                                <span class="count"
+                                    >one home: look + behavior</span
+                                >
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Input fill</label
+                                    ><select>
+                                        <option>Auto (theme)</option>
+                                        <option>White</option>
+                                        <option>Lifted</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Label position</label
+                                    ><select>
+                                        <option>Top</option>
+                                        <option>Left</option>
+                                        <option>Hidden</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Label style</label
+                                    ><select>
+                                        <option>Default</option>
+                                        <option>Uppercase</option>
+                                        <option>Muted</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Control scale</label
+                                    ><select>
+                                        <option>Comfortable · 44px</option>
+                                        <option>Compact · 36px</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Focus color</label
+                                    ><input type="color" value="#0d9488" />
+                                </div>
+                                <div class="row">
+                                    <label>Error color</label
+                                    ><input type="color" value="#b42318" />
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- ======== AREA: ACTIONS & COMPLETION (promoted) ======== -->
+                    <div data-panel="actions" hidden>
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Buttons</h2>
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Submit label</label
+                                    ><input
+                                        type="text"
+                                        id="submitLabel"
+                                        value="Send feedback"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Arrangement</label
+                                    ><select>
+                                        <option>Together · right</option>
+                                        <option>Together · left</option>
+                                        <option>Split</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <label>Next / Back labels</label
+                                    ><input
+                                        type="text"
+                                        value="Continue / Back"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <span class="hint"
+                                        >One action row on every page; Submit
+                                        only on the last (locked rule).</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="group open">
+                            <header>
+                                <span class="editdot"></span>
+                                <h2>Completion</h2>
+                                <span class="count"
+                                    >what happens after submit</span
+                                >
+                                <button
+                                    class="resetchip"
+                                    type="button"
+                                    data-reset
+                                >
+                                    Reset to theme</button
+                                ><span class="tw">›</span>
+                            </header>
+                            <div class="body">
+                                <div class="row">
+                                    <label>Outcome</label>
+                                    <select id="outcomeSel">
+                                        <option value="message">
+                                            Thank-you message
+                                        </option>
+                                        <option value="redirect">
+                                            Redirect
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="row" id="thanksRow">
+                                    <label>Thank-you message</label
+                                    ><input
+                                        type="text"
+                                        value="Thanks! We read every answer."
+                                    />
+                                </div>
+                                <div class="row" id="redirectRow" hidden>
+                                    <label>Redirect URL</label
+                                    ><input
+                                        type="text"
+                                        placeholder="https://…"
+                                    />
+                                </div>
+                                <div class="row">
+                                    <label>Show summary before submit</label
+                                    ><select>
+                                        <option>Off</option>
+                                        <option>On (review page)</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <span class="hint"
+                                        >Completion previews the whole form
+                                        (Phase 2 spec).</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ============ LIVE PREVIEW ============ -->
+            <main class="stage">
+                <div class="stage-bar">
+                    <span
+                        >Live preview (the published render, same parser)</span
+                    >
+                    <div class="dev">
+                        <button type="button" class="on" id="devDesktop">
+                            Desktop
+                        </button>
+                        <button type="button" id="devMobile">Mobile</button>
+                    </div>
+                </div>
+                <div class="stage-scroll">
+                    <div class="form-viewport" id="viewport">
+                        <div class="fpage" id="fpage">
+                            <!-- split-hero pane (hidden on classic) -->
+                            <div class="fpane" id="fpane" hidden>
+                                <div class="fbrand">NORTHWIND</div>
+                                <div class="ptitle">We read every answer.</div>
+                                <div>
+                                    <div class="dots">
+                                        <span class="dot on"></span
+                                        ><span class="dot"></span
+                                        ><span class="dot"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fformside" id="fformside">
+                                <div class="fpanel">
+                                    <div class="fheader" id="fheader">
+                                        <div class="fbrand">NORTHWIND</div>
+                                        <h2 class="ftitle">
+                                            Customer Satisfaction
+                                        </h2>
+                                        <p class="fdesc">
+                                            Two minutes, honest answers.
+                                        </p>
+                                    </div>
+                                    <div class="fsection">
+                                        <h4>Personal details</h4>
+                                        <div class="fgrid">
+                                            <div class="ffield">
+                                                <label>Full name</label>
+                                                <div class="inp"></div>
+                                            </div>
+                                            <div class="ffield">
+                                                <label>Email</label>
+                                                <div class="inp"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="fsection">
+                                        <h4>Your experience</h4>
+                                        <div class="fgrid">
+                                            <div class="ffield">
+                                                <label>Rating</label>
+                                                <div class="inp"></div>
+                                            </div>
+                                            <div class="ffield">
+                                                <label>Would recommend?</label>
+                                                <div class="inp"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="factions">
+                                        <button
+                                            class="fsubmit"
+                                            id="fsubmit"
+                                            type="button"
+                                        >
+                                            Send feedback
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            /* ================= demo model ================= */
+            const THEMES = {
+                nordic: {
+                    name: 'Nordic Minimalist',
+                    font: 'system',
+                    p: {
+                        accent: '#0d9488',
+                        onAccent: '#ffffff',
+                        pageBg: '#f4f7f5',
+                        contentBg: '#ffffff',
+                        text: '#1f2937',
+                        textWeak: '#6b7280',
+                        headerBg: '#134e4a',
+                        headerText: '#ffffff',
+                        fieldBg: '#ffffff',
+                        fieldBorder: '#c9ced6',
+                        radius: '12px'
+                    }
+                },
+                dracula: {
+                    name: 'Dracula',
+                    font: 'system',
+                    p: {
+                        accent: '#bd93f9',
+                        onAccent: '#1a1c25',
+                        pageBg: '#191a21',
+                        contentBg: '#282a36',
+                        text: '#f8f8f2',
+                        textWeak: '#8b93b8',
+                        headerBg: '#1e1f29',
+                        headerText: '#f8f8f2',
+                        fieldBg: 'rgba(255,255,255,0.06)',
+                        fieldBorder: '#44475a',
+                        radius: '10px'
+                    }
+                },
+                ivory: {
+                    name: 'Editorial Ivory',
+                    font: 'editorial',
+                    p: {
+                        accent: '#0f766e',
+                        onAccent: '#ffffff',
+                        pageBg: '#f6f4ee',
+                        contentBg: '#fffdf7',
+                        text: '#232019',
+                        textWeak: '#6f6a5e',
+                        headerBg: 'transparent',
+                        headerText: '#232019',
+                        fieldBg: '#ffffff',
+                        fieldBorder: '#bdbbb5',
+                        radius: '8px'
+                    }
+                }
+            };
+            const THEME_ORDER = ['nordic', 'dracula', 'ivory'];
+            const LAYOUTS = [
+                { key: 'classic', name: 'Classic Card' },
+                { key: 'split', name: 'Split Hero' }
+            ];
+            const FONTS = {
+                system: "-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",
+                editorial: "Georgia,'Iowan Old Style','Times New Roman',serif",
+                mono: "Consolas,'Liberation Mono',Menlo,monospace"
+            };
+
+            let themeIdx = 0,
+                layoutIdx = 0;
+            let pendingTheme = null;
+            const edits = new Set(); // control ids deviating from theme
+
+            const $ = (id) => document.getElementById(id);
+            const page = $('fpage');
+
+            /* ---------- contrast math (the badge done RIGHT) ---------- */
+            function lum(hex) {
+                const h = hex.replace('#', '');
+                const c = [0, 2, 4].map((i) => {
+                    let v = parseInt(h.substr(i, 2), 16) / 255;
+                    return v <= 0.03928
+                        ? v / 12.92
+                        : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+            }
+            function ratio(a, b) {
+                const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+                return (l1 + 0.05) / (l2 + 0.05);
+            }
+            function paintBadge() {
+                const r = ratio($('accent').value, $('onAccent').value);
+                const badge = $('btnBadge'),
+                    fix = $('btnFix');
+                const txt = r.toFixed(1) + ':1';
+                if (r >= 4.5) {
+                    badge.className = 'badge pass';
+                    badge.textContent = txt + ' · AA ✓';
+                    fix.textContent = '';
+                } else if (r >= 3) {
+                    badge.className = 'badge large';
+                    badge.textContent = txt + ' · large text only';
+                    fix.textContent =
+                        'button labels need 4.5:1. Darken the accent.';
+                } else {
+                    badge.className = 'badge fail';
+                    badge.textContent = txt + ' · fails AA ✗';
+                    fix.textContent =
+                        'unreadable. Pick a darker accent or dark text.';
+                }
+            }
+
+            /* ---------- preview painting ---------- */
+            function applyTheme(quiet) {
+                const t = THEMES[THEME_ORDER[themeIdx]];
+                $('themeName').textContent = t.name;
+                const sw = $('themeSwatches');
+                sw.innerHTML = '';
+                [
+                    t.p.accent,
+                    t.p.pageBg,
+                    t.p.contentBg,
+                    t.p.headerBg === 'transparent' ? t.p.pageBg : t.p.headerBg
+                ].forEach((c) => {
+                    const d = document.createElement('span');
+                    d.className = 'sw';
+                    d.style.background = c;
+                    sw.appendChild(d);
+                });
+
+                const set = (k, v) => page.style.setProperty(k, v);
+                set('--p-accent', t.p.accent);
+                set('--p-on-accent', t.p.onAccent);
+                set('--p-page-bg', t.p.pageBg);
+                set('--p-content-bg', t.p.contentBg);
+                set(
+                    '--p-content-border',
+                    'color-mix(in srgb, ' + t.p.text + ' 14%, transparent)'
+                );
+                set('--p-text', t.p.text);
+                set('--p-text-weak', t.p.textWeak);
+                set('--p-header-bg', t.p.headerBg);
+                set('--p-header-text', t.p.headerText);
+                set('--p-field-bg', t.p.fieldBg);
+                set('--p-field-border', t.p.fieldBorder);
+                set('--p-radius', t.p.radius);
+                set('--p-font', FONTS[t.font]);
+
+                // sync panel controls to theme values
+                const pairs = [
+                    ['accent', t.p.accent],
+                    ['onAccent', t.p.onAccent],
+                    ['pageBg', t.p.pageBg],
+                    ['contentBg', t.p.contentBg],
+                    [
+                        'headerBg',
+                        t.p.headerBg === 'transparent'
+                            ? '#f6f4ee'
+                            : t.p.headerBg
+                    ],
+                    ['textC', t.p.text]
+                ];
+                for (const [id, v] of pairs) {
+                    $(id).value = v;
+                    const hx = $(id + 'Hex');
+                    if (hx) hx.textContent = v;
+                }
+                $('fontSel').value = t.font;
+                if (!quiet) {
+                    clearEdits();
+                }
+                paintBadge();
+            }
+
+            function applyLayout() {
+                const l = LAYOUTS[layoutIdx];
+                $('layoutName').textContent = l.name;
+                const split = l.key === 'split';
+                page.classList.toggle('split', split);
+                $('fpane').hidden = !split;
+                $('fheader').style.display = split ? 'none' : '';
+                // conditional visibility = narrated, never silent; values kept
+                $('gPagination').style.display = split ? 'none' : '';
+                $('pagNarrate').classList.toggle('on', split);
+                $('headerSurfaceNote').textContent = split
+                    ? 'paints the brand pane'
+                    : 'fill · banner';
+                $('headerNarrate').classList.toggle('on', split);
+                $('glassNarrate').classList.toggle('on', split);
+                $('glassSel').disabled = split;
+            }
+
+            /* ---------- edited-state machinery ---------- */
+            function markEdited(inputEl) {
+                edits.add(inputEl.id || 'x');
+                inputEl.closest('.group').classList.add('edited');
+            }
+            function clearEdits() {
+                edits.clear();
+                document
+                    .querySelectorAll('.group.edited')
+                    .forEach((g) => g.classList.remove('edited'));
+            }
+            document.querySelectorAll('[data-reset]').forEach((b) =>
+                b.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    applyTheme(true); // demo: reset = re-sync from theme
+                    e.target.closest('.group').classList.remove('edited');
+                })
+            );
+
+            /* ---------- wire the functional controls ---------- */
+            const wire = (id, cssVar, hexId) => {
+                $(id).addEventListener('input', () => {
+                    const v = $(id).value;
+                    if (cssVar) page.style.setProperty(cssVar, v);
+                    if (hexId) $(hexId).textContent = v;
+                    markEdited($(id));
+                    paintBadge();
+                });
+            };
+            wire('accent', '--p-accent', 'accentHex');
+            wire('onAccent', '--p-on-accent', 'onAccentHex');
+            wire('pageBg', '--p-page-bg', 'pageBgHex');
+            wire('contentBg', '--p-content-bg', 'contentBgHex');
+            wire('headerBg', '--p-header-bg', 'headerBgHex');
+            wire('textC', '--p-text', 'textCHex');
+            $('fontSel').addEventListener('input', () => {
+                page.style.setProperty('--p-font', FONTS[$('fontSel').value]);
+                markEdited($('fontSel'));
+            });
+            $('submitLabel').addEventListener('input', () => {
+                $('fsubmit').textContent = $('submitLabel').value || 'Submit';
+            });
+
+            /* ---------- promoted cards: theme cycle guarded by confirm ---------- */
+            $('themeEntry').addEventListener('click', () => {
+                const next = (themeIdx + 1) % THEME_ORDER.length;
+                if (edits.size > 0) {
+                    pendingTheme = next;
+                    $('confirmTheme').textContent =
+                        THEMES[THEME_ORDER[next]].name;
+                    $('confirmCount').textContent = edits.size;
+                    $('themeConfirm').classList.add('on');
+                    return;
+                }
+                themeIdx = next;
+                applyTheme();
+            });
+            $('confirmGo').addEventListener('click', () => {
+                themeIdx = pendingTheme;
+                $('themeConfirm').classList.remove('on');
+                applyTheme();
+            });
+            $('confirmNo').addEventListener('click', () =>
+                $('themeConfirm').classList.remove('on')
+            );
+
+            $('layoutEntry').addEventListener('click', () => {
+                layoutIdx = (layoutIdx + 1) % LAYOUTS.length;
+                applyLayout();
+            });
+
+            /* ---------- rail ---------- */
+            document.querySelectorAll('.rail button').forEach((b) =>
+                b.addEventListener('click', () => {
+                    document
+                        .querySelectorAll('.rail button')
+                        .forEach((x) => x.classList.remove('on'));
+                    b.classList.add('on');
+                    const area = b.dataset.area;
+                    document
+                        .querySelectorAll('[data-panel]')
+                        .forEach((p) => (p.hidden = p.dataset.panel !== area));
+                    $('areaTitle').textContent = {
+                        theme: 'Theme',
+                        layout: 'Layout',
+                        header: 'Header',
+                        body: 'Body',
+                        actions: 'Actions & Completion'
+                    }[area];
+                    $('areaDesc').textContent = {
+                        theme: 'The global look: inks, type, atmosphere.',
+                        layout: 'Structure, width, pagination.',
+                        header: 'Branding, words, and the header surface. One home.',
+                        body: 'The content panel, sections, and fields.',
+                        actions: 'Buttons, and what happens after submit.'
+                    }[area];
+                })
+            );
+
+            /* completion outcome toggles its dependent rows (the [*condition] pattern) */
+            $('outcomeSel').addEventListener('input', () => {
+                const redirect = $('outcomeSel').value === 'redirect';
+                $('thanksRow').hidden = redirect;
+                $('redirectRow').hidden = !redirect;
+            });
+
+            /* header words drive the preview */
+            $('titleInp').addEventListener('input', () => {
+                document.querySelector('.ftitle').textContent =
+                    $('titleInp').value || 'Untitled form';
+            });
+            $('subInp').addEventListener('input', () => {
+                document.querySelector('.fdesc').textContent =
+                    $('subInp').value;
+            });
+
+            /* group accordions */
+            document.querySelectorAll('.group > header').forEach((h) =>
+                h.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-reset]')) return;
+                    h.parentElement.classList.toggle('open');
+                })
+            );
+
+            /* device toggle */
+            $('devDesktop').addEventListener('click', () => {
+                $('viewport').classList.remove('mobile');
+                $('devDesktop').classList.add('on');
+                $('devMobile').classList.remove('on');
+            });
+            $('devMobile').addEventListener('click', () => {
+                $('viewport').classList.add('mobile');
+                $('devMobile').classList.add('on');
+                $('devDesktop').classList.remove('on');
+            });
+
+            applyTheme();
+            applyLayout();
+        </script>
+    </body>
+</html>
