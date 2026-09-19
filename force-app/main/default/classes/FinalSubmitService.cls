@@ -97,7 +97,9 @@ public inherited sharing class FinalSubmitService {
                     }
                     String elId = (String) el.get('id');
                     Object raw = answers.get(elId);
-                    if (!(raw instanceof String) || String.isBlank((String) raw)) {
+                    if (
+                        !(raw instanceof String) || String.isBlank((String) raw)
+                    ) {
                         continue; // nothing chosen is not a violation
                     }
                     Id chosen;
@@ -205,10 +207,23 @@ public inherited sharing class FinalSubmitService {
         Id versionId,
         Posture mode
     ) {
-        Map<String, Object> formNode = asMap(spec.get('form'));
-        Object formType = formNode == null ? null : formNode.get('type');
-        if (formType instanceof String && (String) formType == 'survey') {
+        // Three types, three paths, and NO fallback: an unrecognized type
+        // used to land in the object path below and fail complaining about a
+        // missing target object, which described the wrong problem.
+        String formType = FinalFormTypes.fromSpecOrDefault(
+            spec,
+            FinalFormTypes.FORM
+        );
+        if (formType == FinalFormTypes.SURVEY) {
             return runSurvey(spec, payload, versionId, mode);
+        }
+        if (formType == FinalFormTypes.FREEFORM) {
+            // The Freeform answer store lands in S5; until then nothing can
+            // create a Freeform to submit, and a wrong-path write would be
+            // worse than an honest refusal.
+            throw new AuraHandledException(
+                'Freeform submissions are not available yet.'
+            );
         }
         Map<String, Object> answers = asMap(payload.get('answers'));
         Map<String, Object> repeats = asMap(payload.get('repeats'));
