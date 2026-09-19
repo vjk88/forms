@@ -41,6 +41,7 @@ export default class FinalPreviewStage extends LightningElement {
         this.device = BY_KEY[this.session?.device]
             ? this.session.device
             : 'desktop';
+        this.zoom = this.session?.zoom === 'actual' ? 'actual' : 'fit';
         this.previewState = this.session?.viewer;
     }
 
@@ -48,6 +49,7 @@ export default class FinalPreviewStage extends LightningElement {
     getSession() {
         return {
             device: this.device,
+            zoom: this.zoom,
             viewer: this.template
                 .querySelector('c-final-form-viewer')
                 ?.getPreviewState()
@@ -62,6 +64,7 @@ export default class FinalPreviewStage extends LightningElement {
     }
 
     device = 'desktop';
+    zoom = 'fit';
     scale = 1;
     offsetX = 0;
 
@@ -87,6 +90,34 @@ export default class FinalPreviewStage extends LightningElement {
             `transform:translateX(${this.offsetX}px) scale(${this.scale});` +
             `--frame-offset: calc(100dvh - ${dev.height}px);`
         );
+    }
+
+    get zoomButtons() {
+        return [
+            {
+                key: 'fit',
+                label: 'Fit',
+                title: 'Fit desktop or device width in the preview pane'
+            },
+            {
+                key: 'actual',
+                label: '100%',
+                title: 'Show actual size; scroll horizontally when needed'
+            }
+        ].map((z) => ({
+            ...z,
+            pressed: String(z.key === this.zoom),
+            cls: z.key === this.zoom ? 'ps-zoom on' : 'ps-zoom'
+        }));
+    }
+
+    get scaleLabel() {
+        return `${Math.round(this.scale * 100)}%`;
+    }
+
+    handleZoom(event) {
+        this.zoom = event.currentTarget.dataset.zoom;
+        this._sync();
     }
 
     handleDevice(event) {
@@ -154,20 +185,33 @@ export default class FinalPreviewStage extends LightningElement {
     _apply() {
         const viewport = this.template.querySelector('.ps-viewport');
         const canvas = this.template.querySelector('.ps-canvas');
-        if (!viewport || !canvas) {
+        const surface = this.template.querySelector('.ps-surface');
+        if (!viewport || !canvas || !surface) {
             return;
         }
         const dev = BY_KEY[this.device];
         const paneWidth = viewport.clientWidth;
+        if (!paneWidth) {
+            return;
+        }
         // never upscale — small devices center at 1:1 instead of blowing up
-        const scale = Math.min(1, paneWidth / dev.width);
+        const scale =
+            this.zoom === 'actual' ? 1 : Math.min(1, paneWidth / dev.width);
         this.scale = scale;
         this.offsetX = Math.max(0, (paneWidth - dev.width * scale) / 2);
-        // the scaled canvas still OCCUPIES its unscaled layout height — pin
-        // the viewport to the visual height so the outer scroll matches
+        // Clip the unscaled layout box inside a surface sized to the visual
+        // canvas. The viewport can then scroll at 100% without ghost overflow
+        // in Fit mode, and its horizontal scrollbar has its own layout space.
+        const width = `${Math.max(paneWidth, dev.width * scale)}px`;
         const height = `${Math.ceil(canvas.offsetHeight * scale)}px`;
-        if (viewport.style.height !== height) {
-            viewport.style.height = height;
+        if (surface.style.width !== width) {
+            surface.style.width = width;
+        }
+        if (surface.style.height !== height) {
+            surface.style.height = height;
+        }
+        if (this.zoom === 'fit') {
+            viewport.scrollLeft = 0;
         }
     }
 }

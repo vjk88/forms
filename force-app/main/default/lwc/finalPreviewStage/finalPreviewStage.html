@@ -14,31 +14,58 @@
                 </button>
             </template>
         </div>
-        <button
-            type="button"
-            class="ps-refresh"
-            title="Restart preview"
-            aria-label="Restart preview"
-            onclick={handleRefresh}
-        >
-            ⟳
-        </button>
+        <div class="ps-tools">
+            <div class="ps-zooms" role="group" aria-label="Preview zoom">
+                <template for:each={zoomButtons} for:item="z">
+                    <button
+                        key={z.key}
+                        type="button"
+                        class={z.cls}
+                        aria-pressed={z.pressed}
+                        data-zoom={z.key}
+                        title={z.title}
+                        onclick={handleZoom}
+                    >
+                        {z.label}
+                    </button>
+                </template>
+            </div>
+            <span class="ps-scale" title="Current preview scale"
+                >{scaleLabel}</span
+            >
+            <button
+                type="button"
+                class="ps-refresh"
+                title="Restart preview"
+                aria-label="Restart preview"
+                onclick={handleRefresh}
+            >
+                ⟳
+            </button>
+        </div>
     </div>
-    <div class="ps-viewport">
-        <div class="ps-canvas" style={canvasStyle}>
-            <template for:each={frames} for:item="f">
-                <c-final-form-viewer
-                    key={f.key}
-                    preserve-preview={preserveSession}
-                    preview-state={previewState}
-                    onpreviewready={handlePreviewReady}
-                    spec={spec}
-                    record-context={recordContext}
-                    authoring={authoring}
-                    embedded
-                    onelementselect={handleElementSelect}
-                ></c-final-form-viewer>
-            </template>
+    <div
+        class="ps-viewport"
+        tabindex="0"
+        role="region"
+        aria-label="Form preview; scroll horizontally at 100% zoom"
+    >
+        <div class="ps-surface">
+            <div class="ps-canvas" style={canvasStyle}>
+                <template for:each={frames} for:item="f">
+                    <c-final-form-viewer
+                        key={f.key}
+                        preserve-preview={preserveSession}
+                        preview-state={previewState}
+                        onpreviewready={handlePreviewReady}
+                        spec={spec}
+                        record-context={recordContext}
+                        authoring={authoring}
+                        embedded
+                        onelementselect={handleElementSelect}
+                    ></c-final-form-viewer>
+                </template>
+            </div>
         </div>
     </div>
 </template>
