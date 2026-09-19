@@ -568,16 +568,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Form_Submission__c.Form__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Form_Submission__c.Form_Version__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Form_Submission__c.Submission_Key__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -609,11 +599,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Form_Submission_Answer__c.Label_Snapshot__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Form_Submission_Answer__c.Answer_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
