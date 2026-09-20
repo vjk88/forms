@@ -67,3 +67,44 @@
 .sr-error {
     color: var(--slds-g-color-error-base-30, #b60554);
 }
+
+/* A matrix keeps its statements under the question they belong to, indented
+   so the question still reads as one answer rather than a run of rows. */
+.sr-matrix {
+    margin: 0.1rem 0 0;
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.sr-matrix-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.5rem;
+    padding: 0.1rem 0;
+}
+.sr-statement {
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+}
+.sr-statement::after {
+    content: ':';
+}
+/* A file title is a button so it can open the standard preview, but it must
+   read as the link it is, not as a control. */
+.sr-file-open {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--slds-g-link-color, #0176d3);
+    cursor: pointer;
+    text-align: left;
+}
+.sr-file-open:hover,
+.sr-file-open:focus-visible {
+    text-decoration: underline;
+}
+.sr-file-detail {
+    color: var(--slds-g-color-neutral-base-50, #999);
+    font-size: 0.75rem;
+}

@@ -39,10 +39,75 @@
                             <div key={row.key} class="sr-row">
                                 <dt class="sr-label">{row.label}</dt>
                                 <dd class="sr-value">
-                                    <template lwc:if={row.answered}>
-                                        <span class="sr-answer"
-                                            >{row.value}</span
-                                        >
+                                    <!-- a matrix keeps its statements together,
+                                         in the order the version asked them -->
+                                    <template lwc:if={row.isMatrix}>
+                                        <dl class="sr-matrix">
+                                            <template
+                                                for:each={row.lines}
+                                                for:item="line"
+                                            >
+                                                <div
+                                                    key={line.key}
+                                                    class="sr-matrix-line"
+                                                >
+                                                    <dt class="sr-statement">
+                                                        {line.label}
+                                                    </dt>
+                                                    <dd class="sr-value">
+                                                        <template
+                                                            lwc:if={line.answered}
+                                                        >
+                                                            <span
+                                                                class="sr-answer"
+                                                                >{line.value}</span
+                                                            >
+                                                            <template
+                                                                lwc:if={line.unparsed}
+                                                            >
+                                                                <span
+                                                                    class="sr-unparsed"
+                                                                    >{line.note}</span
+                                                                >
+                                                            </template>
+                                                        </template>
+                                                        <template lwc:else>
+                                                            <span
+                                                                class="sr-skipped"
+                                                                >{line.value}</span
+                                                            >
+                                                        </template>
+                                                    </dd>
+                                                </div>
+                                            </template>
+                                        </dl>
+                                    </template>
+                                    <template lwc:elseif={row.answered}>
+                                        <template lwc:if={row.isEmail}>
+                                            <lightning-formatted-email
+                                                value={row.value}
+                                                class="sr-answer"
+                                            ></lightning-formatted-email>
+                                        </template>
+                                        <template lwc:elseif={row.isPhone}>
+                                            <lightning-formatted-phone
+                                                value={row.value}
+                                                class="sr-answer"
+                                            ></lightning-formatted-phone>
+                                        </template>
+                                        <template lwc:elseif={row.isUrl}>
+                                            <lightning-formatted-url
+                                                value={row.value}
+                                                label={row.value}
+                                                target="_blank"
+                                                class="sr-answer"
+                                            ></lightning-formatted-url>
+                                        </template>
+                                        <template lwc:else>
+                                            <span class="sr-answer"
+                                                >{row.value}</span
+                                            >
+                                        </template>
                                         <template lwc:if={row.unparsed}>
                                             <span class="sr-unparsed"
                                                 >{row.note}</span
@@ -71,7 +136,19 @@
                                     icon-name="doctype:attachment"
                                     size="x-small"
                                 ></lightning-icon>
-                                <span>{file.title}</span>
+                                <button
+                                    class="sr-file-open"
+                                    type="button"
+                                    data-id={file.documentId}
+                                    onclick={handleFileOpen}
+                                >
+                                    {file.title}
+                                </button>
+                                <template lwc:if={file.detail}>
+                                    <span class="sr-file-detail"
+                                        >{file.detail}</span
+                                    >
+                                </template>
                             </li>
                         </template>
                     </ul>
