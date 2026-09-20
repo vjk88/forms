@@ -1,4 +1,5 @@
 import { LightningElement, api, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
 import getSubmission from '@salesforce/apex/FinalSubmissionController.getSubmission';
 
 /**
@@ -14,8 +15,14 @@ import getSubmission from '@salesforce/apex/FinalSubmissionController.getSubmiss
  *   - asked but skipped    → "No answer"
  *   - asked, answered, but the value did not match its type → the raw text,
  *     with a quiet note (Value_Unparsed__c)
+ *
+ * The version is also what turns stored values back into words. A choice is
+ * stored as its option VALUE, which is an internal key: "vip" on screen is a
+ * leak of how the form was built, not an answer anybody gave.
  */
-export default class FinalSubmissionReader extends LightningElement {
+export default class FinalSubmissionReader extends NavigationMixin(
+    LightningElement
+) {
     @api recordId;
 
     data;
@@ -54,11 +61,27 @@ export default class FinalSubmissionReader extends LightningElement {
     }
 
     get files() {
-        return (this.data && this.data.files) || [];
+        return ((this.data && this.data.files) || []).map((f) => ({
+            ...f,
+            detail: fileDetail(f)
+        }));
     }
 
     get hasFiles() {
         return this.files.length > 0;
+    }
+
+    /** Open an attachment in the standard file preview. */
+    handleFileOpen(event) {
+        const documentId = event.currentTarget.dataset.id;
+        if (!documentId) {
+            return;
+        }
+        this[NavigationMixin.Navigate]({
+            type: 'standard__namedPage',
+            attributes: { pageName: 'filePreview' },
+            state: { selectedRecordId: documentId }
+        });
     }
 
     /** answers keyed by element id; matrix rows keep their composite key. */
@@ -119,14 +142,14 @@ export default class FinalSubmissionReader extends LightningElement {
                 continue;
             }
             for (const a of list) {
-                orphans.push({
-                    key: `${key}-${orphans.length}`,
-                    label: a.label || key,
-                    value: displayValue(a, null),
-                    answered: true,
-                    unparsed: a.unparsed,
-                    note: a.unparsed ? unparsedNote(a) : ''
-                });
+                orphans.push(
+                    answeredRow(
+                        `${key}-${orphans.length}`,
+                        a.label || key,
+                        a,
+                        null
+                    )
+                );
             }
         }
         if (orphans.length) {
@@ -172,46 +195,86 @@ function collectFor(elementId, answers, seen) {
 
 function renderQuestion(el, mine) {
     const label = el.label || el.id;
-    if (mine.matrix.length) {
-        return mine.matrix.map(({ statement, a }) => ({
-            key: `${el.id}-${statement}`,
-            label: `${label} — ${statementLabel(el, statement)}`,
-            value: displayValue(a, el),
-            answered: true,
-            unparsed: a.unparsed,
-            note: a.unparsed ? unparsedNote(a) : ''
-        }));
+    const statements = matrixStatements(el);
+    if (statements.length || mine.matrix.length) {
+        return [matrixGroup(el, label, statements, mine.matrix)];
     }
     if (!mine.exact.length) {
-        // asked, and deliberately left alone
-        return [
-            {
-                key: el.id,
-                label,
-                value: 'No answer',
-                answered: false,
-                unparsed: false,
-                note: ''
-            }
-        ];
+        return [skippedRow(el.id, label)]; // asked, and deliberately left alone
     }
-    return mine.exact.map((a, i) => ({
-        key: mine.exact.length > 1 ? `${el.id}-${i}` : el.id,
-        label:
+    return mine.exact.map((a, i) =>
+        answeredRow(
+            mine.exact.length > 1 ? `${el.id}-${i}` : el.id,
             a.entryIndex === null || a.entryIndex === undefined
                 ? label
                 : `${label} (entry ${a.entryIndex + 1})`,
-        value: displayValue(a, el),
+            a,
+            el
+        )
+    );
+}
+
+function matrixStatements(el) {
+    const rows = (el.config && el.config.rows) || [];
+    return rows.filter((r) => r && r.value !== undefined && r.value !== null);
+}
+
+/**
+ * A matrix question, walked in the VERSION's statement order.
+ *
+ * Iterating the stored answers instead would put them in whatever order the
+ * query returned and drop any statement the person skipped — so a matrix
+ * would be the one question type where a skip is invisible.
+ */
+function matrixGroup(el, label, statements, answered) {
+    const byStatement = new Map();
+    for (const { statement, a } of answered) {
+        byStatement.set(statement, a);
+    }
+    const lines = [];
+    const placed = new Set();
+    for (const r of statements) {
+        const value = String(r.value);
+        placed.add(value);
+        const a = byStatement.get(value);
+        const text = r.label || value;
+        lines.push(
+            a
+                ? answeredRow(`${el.id}-${value}`, text, a, el)
+                : skippedRow(`${el.id}-${value}`, text)
+        );
+    }
+    // A statement answered under an earlier version keeps its answer, under
+    // its own key — the same courtesy the orphan section gives a question.
+    for (const [value, a] of byStatement) {
+        if (!placed.has(value)) {
+            lines.push(answeredRow(`${el.id}-${value}`, value, a, el));
+        }
+    }
+    return { key: el.id, label, isMatrix: true, answered: true, lines };
+}
+
+function answeredRow(key, label, a, el) {
+    return {
+        key,
+        label,
+        ...displayValue(a, el),
         answered: true,
         unparsed: a.unparsed,
         note: a.unparsed ? unparsedNote(a) : ''
-    }));
+    };
 }
 
-function statementLabel(el, statementValue) {
-    const rows = (el.config && el.config.rows) || [];
-    const hit = rows.find((r) => String(r.value) === statementValue);
-    return hit ? hit.label || hit.value : statementValue;
+function skippedRow(key, label) {
+    return {
+        key,
+        label,
+        value: 'No answer',
+        isText: true,
+        answered: false,
+        unparsed: false,
+        note: ''
+    };
 }
 
 function unparsedNote(a) {
@@ -221,31 +284,57 @@ function unparsedNote(a) {
 }
 
 /**
- * The stored answer as text, chosen by Answer_Type__c.
+ * The stored answer, ready to render, chosen by Answer_Type__c.
  *
  * The type is what makes the six value columns readable: without it, an
- * unticked checkbox column and "not a boolean question" look identical.
+ * unticked checkbox column and "not a boolean question" look identical. It
+ * also decides the SHAPE — an email is a link, a date is localized text — so
+ * this returns the flags the template branches on rather than a bare string.
  */
 function displayValue(a, el) {
     if (a.unparsed) {
-        return a.text;
+        return plain(a.text);
     }
     switch (a.answerType) {
         case 'Boolean':
-            return a.checked ? 'Yes' : 'No';
+            return plain(a.checked ? 'Yes' : 'No');
         case 'Number':
-            return a.number === null || a.number === undefined
-                ? ''
-                : String(a.number);
+            return plain(
+                a.number === null || a.number === undefined
+                    ? ''
+                    : String(a.number)
+            );
         case 'Date':
-            return a.date || '';
+            return plain(a.date || '');
         case 'DateTime':
-            return a.dateTime ? new Date(a.dateTime).toLocaleString() : '';
+            return plain(
+                a.dateTime ? new Date(a.dateTime).toLocaleString() : ''
+            );
         case 'Options':
-            return optionLabels(a, el);
+            return plain(optionLabels(a, el));
+        case 'Choice':
+            // Single and multiple choice are the same thing at different
+            // cardinalities. They read through the SAME resolver, which is
+            // exactly what was missing: Options resolved labels, Choice fell
+            // through to raw text, and nothing connected the two.
+            return plain(optionLabel(a.text, optionsOf(el)));
+        case 'Email':
+            return { value: a.text || '', isEmail: true };
+        case 'Phone':
+            return { value: a.text || '', isPhone: true };
+        case 'URL':
+            return { value: a.text || '', isUrl: true };
         default:
-            return a.text || '';
+            return plain(a.text || '');
     }
+}
+
+function plain(value) {
+    return { value, isText: true };
+}
+
+function optionsOf(el) {
+    return (el && el.config && el.config.options) || [];
 }
 
 /** Stored values are keys; the version's own choice list gives them names. */
@@ -256,11 +345,58 @@ function optionLabels(a, el) {
     } catch {
         return a.options || '';
     }
-    const options = (el && el.config && el.config.options) || [];
-    return values
-        .map((v) => {
-            const hit = options.find((o) => String(o.value) === String(v));
-            return hit ? hit.label || hit.value : v;
-        })
-        .join(', ');
+    const options = optionsOf(el);
+    return values.map((v) => optionLabel(v, options)).join(', ');
+}
+
+/**
+ * One stored choice value, as a person should read it.
+ *
+ * `options` is the choice list from the version that was FILLED IN, each
+ * entry `{ value, label }`. `value` is what was stored — an internal key
+ * like "vip", never the wording.
+ *
+ * Comparison is by string: a spec authored with numeric option values stores
+ * "1" and declares 1, and those must still be the same option.
+ *
+ * An unmatched value falls back to the key itself, with no marker attached.
+ * That case is not the exception it looks like — the orphan section renders
+ * with no element at all, so EVERY answer there arrives here unmatched, and a
+ * note on each one would only repeat the heading already above them. Inside a
+ * live question it means the author deleted the option after someone picked
+ * it; the key is still the truthful answer, and a parenthetical repeated
+ * across six selections of a multi-select would cost more than it explains.
+ */
+function optionLabel(value, options) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    const key = String(value);
+    const hit = (options || []).find((o) => o && String(o.value) === key);
+    if (!hit) {
+        return key;
+    }
+    // An option may carry a value and no wording; the key is then all the
+    // name it ever had.
+    return hit.label === null ||
+        hit.label === undefined ||
+        String(hit.label).trim() === ''
+        ? key
+        : hit.label;
+}
+
+function fileDetail(f) {
+    const parts = [];
+    if (f.extension) {
+        parts.push(String(f.extension).toUpperCase());
+    }
+    if (typeof f.size === 'number' && f.size > 0) {
+        const mb = f.size / (1024 * 1024);
+        parts.push(
+            mb >= 1
+                ? `${mb.toFixed(1)} MB`
+                : `${Math.max(1, Math.round(f.size / 1024))} KB`
+        );
+    }
+    return parts.join(' · ');
 }
