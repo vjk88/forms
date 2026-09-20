@@ -1,0 +1,69 @@
+/* A submission is read, not scanned: one column, generous line height, and a
+   clear difference between an answer, a skipped question and a value that
+   did not match its type. */
+.sr-head {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.sr-form {
+    font-weight: 700;
+    font-size: 1rem;
+}
+.sr-meta {
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+}
+.sr-note {
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--slds-g-color-neutral-base-50, #747474);
+}
+.sr-section {
+    padding: 0.75rem 1rem 0.25rem;
+}
+.sr-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+    margin-bottom: 0.5rem;
+}
+.sr-row {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
+}
+.sr-label {
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+}
+.sr-value {
+    margin: 0.15rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.sr-skipped {
+    color: var(--slds-g-color-neutral-base-50, #999);
+    font-style: italic;
+}
+.sr-unparsed {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    color: var(--slds-g-color-warning-base-30, #8c4b02);
+}
+.sr-files {
+    margin: 0;
+}
+.sr-file {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0;
+    font-size: 0.875rem;
+}
+.sr-error {
+    color: var(--slds-g-color-error-base-30, #b60554);
+}
