@@ -60,6 +60,25 @@
                     </span>
                     <span class="kind-foot">Pick a template &amp; theme →</span>
                 </button>
+                <button
+                    class="kind-card"
+                    type="button"
+                    onclick={handleKindFreeform}
+                >
+                    <span class="kind-icon">
+                        <lightning-icon
+                            icon-name="utility:edit_form"
+                            size="medium"
+                        ></lightning-icon>
+                    </span>
+                    <span class="kind-name">Freeform</span>
+                    <span class="kind-blurb">
+                        Ask anything you like — answers are kept with the
+                        submission, and you decide later which of them should
+                        also write to Salesforce records.
+                    </span>
+                    <span class="kind-foot">Pick a layout &amp; theme →</span>
+                </button>
             </div>
         </template>
 
@@ -70,7 +89,7 @@
                     <button
                         class="d-back"
                         type="button"
-                        onclick={handleBackToKind}
+                        onclick={handleBackFromLayout}
                     >
                         <lightning-icon
                             icon-name="utility:back"
@@ -99,8 +118,15 @@
                 </button>
             </header>
 
-            <!-- Entry mode toggle -->
-            <div class="entry-bar" role="tablist" aria-label="How to start">
+            <!-- Entry mode toggle. A freeform reached this screen from
+                 its OWN template shelf, so offering 'Form templates' here
+                 would send it back into the form path. -->
+            <div
+                lwc:if={showEntryToggle}
+                class="entry-bar"
+                role="tablist"
+                aria-label="How to start"
+            >
                 <button
                     class={templateTabClass}
                     type="button"
@@ -199,16 +225,13 @@
             </header>
 
             <div class="thm-head">
-                <h1 class="thm-title">Pick a survey template</h1>
-                <p class="thm-sub">
-                    Complete and ready — answers land in the answer store, one
-                    question per screen. You pick the theme next.
-                </p>
+                <h1 class="thm-title">{templatesTitle}</h1>
+                <p class="thm-sub">{templatesSub}</p>
             </div>
 
             <section class="lg-group">
                 <div class="tpl-grid">
-                    <template for:each={surveyTemplates} for:item="t">
+                    <template for:each={templateCards} for:item="t">
                         <button
                             key={t.key}
                             type="button"
@@ -575,6 +598,138 @@
                         >
                             <template lwc:if={isCreating}>Creating…</template>
                             <template lwc:else>Create survey</template>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: live preview -->
+                <div class="d-preview">
+                    <div class="d-preview-bar">
+                        <span class="d-preview-label">Live preview</span>
+                        <div
+                            class="dev-toggle"
+                            role="group"
+                            aria-label="Preview width"
+                        >
+                            <template for:each={deviceOptions} for:item="d">
+                                <button
+                                    key={d.value}
+                                    class={d.cls}
+                                    type="button"
+                                    data-value={d.value}
+                                    title={d.title}
+                                    onclick={handleDevice}
+                                >
+                                    <lightning-icon
+                                        icon-name={d.icon}
+                                        size="x-small"
+                                        alternative-text={d.title}
+                                    ></lightning-icon>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="d-stage" aria-hidden="true">
+                        <div
+                            class={previewFrameClass}
+                            style={previewFrameStyle}
+                        >
+                            <c-final-form-viewer
+                                spec={previewSpec}
+                            ></c-final-form-viewer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ============== FREEFORM DETAILS (Freeform path, final) ============== -->
+        <template lwc:elseif={isFreeformDetailsStep}>
+            <header class="d-head">
+                <button
+                    class="d-back"
+                    type="button"
+                    onclick={handleBackToTheme}
+                >
+                    <lightning-icon
+                        icon-name="utility:back"
+                        size="x-small"
+                        alternative-text="Back"
+                    ></lightning-icon>
+                    <span>Back</span>
+                </button>
+                <button
+                    class="g-close"
+                    type="button"
+                    title="Close"
+                    onclick={handleClose}
+                >
+                    <lightning-icon
+                        icon-name="utility:close"
+                        size="x-small"
+                        alternative-text="Close"
+                    ></lightning-icon>
+                </button>
+            </header>
+
+            <div class="d-body">
+                <!-- Left: configure -->
+                <div class="d-config">
+                    <label class="d-field-label" for="cg-ffname"
+                        >Freeform name</label
+                    >
+                    <input
+                        id="cg-ffname"
+                        class="d-input"
+                        type="text"
+                        value={formName}
+                        oninput={handleName}
+                        placeholder={chosenTemplateName}
+                    />
+
+                    <p class="d-help">
+                        Answers are kept with this submission. Nothing is
+                        written to Salesforce records until you set up mapping —
+                        and you can add that later without touching your
+                        questions.
+                    </p>
+
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Theme</span>
+                        <button
+                            class="d-theme-chip"
+                            type="button"
+                            onclick={handleChangeTheme}
+                        >
+                            <span class="d-theme-name">{chosenThemeLabel}</span>
+                            <span class="d-theme-change">
+                                <lightning-icon
+                                    icon-name="utility:image"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
+
+                    <div lwc:if={errorMessage} class="d-error" role="alert">
+                        <lightning-icon
+                            icon-name="utility:error"
+                            variant="error"
+                            size="x-small"
+                        ></lightning-icon>
+                        <span>{errorMessage}</span>
+                    </div>
+
+                    <div class="d-actions">
+                        <button
+                            class="cg-create"
+                            type="button"
+                            onclick={handleCreateFreeform}
+                            disabled={isCreating}
+                        >
+                            <template lwc:if={isCreating}>Creating…</template>
+                            <template lwc:else>Create freeform</template>
                         </button>
                     </div>
                 </div>
