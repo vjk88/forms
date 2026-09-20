@@ -1517,8 +1517,41 @@ public inherited sharing class FinalSubmitService {
     @TestVisible
     private static Boolean testFailAnswerInsert = false;
 
-    /** SYSTEM-MODE create for the three survey storage objects ONLY (ruling
-     *  7-2 — the mailbox). Never reads, updates, or deletes. All-or-none. */
+    /**
+     * The five objects a submission may create (ruling 7-2, FREEFORM_SPEC
+     * §5.4 / §7.3). Two answer stores: a survey's response and its answers
+     * with their topic links, and a Freeform's submission and its answers.
+     *
+     * Nothing is added here without deciding that a GUEST, who owns nothing
+     * and can create nothing, may cause that object to be written.
+     */
+    private static final Set<String> FENCE = new Set<String>{
+        'Form_Response__c',
+        'Form_Response_Answer__c',
+        'Form_Answer_Topic__c',
+        'Form_Submission__c',
+        'Form_Submission_Answer__c'
+    };
+
+    /**
+     * SYSTEM-MODE create for the five answer-store objects ONLY (ruling 7-2 —
+     * the mailbox). Never reads, updates, or deletes. All-or-none.
+     *
+     * `AccessLevel.SYSTEM_MODE` means "skip the permission check", which is
+     * the whole point: a guest owns nothing and can create nothing, yet must
+     * be able to leave a submission. You don't need a key to the post office
+     * to mail a letter.
+     *
+     * That makes this the ONE place in the submit path where permissions do
+     * not apply, so the list above is checked rather than assumed. It was
+     * assumed until 2026-09-20: the method was called "fenced" and its
+     * comment named three objects, while the code inserted whatever it was
+     * handed. Nothing was exposed — every caller builds fixed SObject types
+     * and the published spec is the real allow-list — but the name promised
+     * a guarantee it did not provide, in the one method where the promise
+     * matters. A sixth caller now has to say so out loud.
+     */
+    @TestVisible
     private static void insertFenced(List<SObject> records) {
         if (
             testFailAnswerInsert &&
@@ -1527,7 +1560,26 @@ public inherited sharing class FinalSubmitService {
         ) {
             throw new AuraHandledException('Injected test failure.');
         }
+        for (SObject record : records) {
+            String objectName = record.getSObjectType().getDescribe().getName();
+            if (!FENCE.contains(objectName)) {
+                // Not an AuraHandledException: this can only be a programming
+                // error, and it must read like one in the log rather than as
+                // something a respondent did.
+                throw new FenceException(
+                    objectName +
+                        ' cannot be created by a submission. Only ' +
+                        String.join(new List<String>(FENCE), ', ') +
+                        ' may be, and adding to that list means deciding a' +
+                        ' guest may cause it to be written.'
+                );
+            }
+        }
         Database.insert(records, true, AccessLevel.SYSTEM_MODE);
+    }
+
+    /** An object reached the fenced insert that has no business there. */
+    public class FenceException extends Exception {
     }
 
     /** settings.anonymous == true → keep scores, store no identity (S1
