@@ -2148,6 +2148,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  object. `files` is omitted entirely when nothing was attached.
      *  Rule-hidden questions are dropped on the way out (see
      *  `_hiddenAnswerKeys`) — including their uploads. */
+    /**
+     * The idempotency key for THIS filled-in form.
+     *
+     * Minted once and reused: a retry after a lost response must carry the
+     * same key, or it would store a second submission. Cleared only when the
+     * viewer starts a new form.
+     */
+    _submissionKey() {
+        if (!this._submissionKeyValue) {
+            const bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+            this._submissionKeyValue = Array.from(bytes)
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+        return this._submissionKeyValue;
+    }
+
     _payload() {
         const answers = {};
         const repeats = {};
@@ -2175,7 +2193,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         const meta = {
             startedAt: this._startedAt,
-            submittedAt: new Date().toISOString()
+            submittedAt: new Date().toISOString(),
+            // One key per filled-in form, kept across retries. If our answer
+            // is lost in transit and the browser sends the same payload
+            // again, the server recognises the repeat and returns the
+            // submission it already stored instead of storing a second one
+            // (FREEFORM_SPEC D15). A new key is minted only for a new form.
+            submissionKey: this._submissionKey()
         };
         if (this._recordCtx) {
             // survey-object writeback context — server re-validates the type
