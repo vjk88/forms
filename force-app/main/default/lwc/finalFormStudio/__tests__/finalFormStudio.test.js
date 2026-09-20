@@ -637,6 +637,60 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('Build mode: freeform choice questions mint renderAs INSIDE config', async () => {
+        // Caught in the org, not by a test: renderAs at the element root is
+        // silently ignored - the renderer reads cfg.renderAs - so a
+        // Multiple choice rendered as a dropdown. The tokens matter too:
+        // Radio_Buttons, not Radio_Group.
+        jest.useFakeTimers();
+        const freeform = JSON.parse(JSON.stringify(SPEC));
+        freeform.form = { id: 'a0F1', name: 'Freeform', type: 'freeform' };
+        loadStudio.mockResolvedValue({
+            name: 'Freeform',
+            specJson: JSON.stringify(freeform),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const palette = el.shadowRoot.querySelector('c-final-field-palette');
+        for (const questionType of [
+            'questionDropdown',
+            'questionChoice',
+            'questionMultiChoice',
+            'questionEmail'
+        ]) {
+            palette.dispatchEvent(
+                new CustomEvent('addquestion', { detail: { questionType } })
+            );
+        }
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(
+            saveDraft.mock.calls[saveDraft.mock.calls.length - 1][0].specJson
+        );
+        const added = saved.pages[0].sections[0].elements.slice(-4);
+        expect(added.map((e) => e.config.renderAs)).toEqual([
+            'Dropdown',
+            'Radio_Buttons',
+            'Checkbox_Group',
+            undefined
+        ]);
+        // and nothing stray at the element root, where it would be ignored
+        expect(added.every((e) => e.renderAs === undefined)).toBe(true);
+        // choice questions arrive with real options; an empty one looks broken
+        expect(added[2].config.options).toHaveLength(3);
+        expect(added[3].config.inputType).toBe('email');
+        jest.useRealTimers();
+    });
+
     it('Autofill in Build mode: palette specchange records history and autosaves; testpreview relays to preview stage', async () => {
         jest.useFakeTimers();
         const el = mount();

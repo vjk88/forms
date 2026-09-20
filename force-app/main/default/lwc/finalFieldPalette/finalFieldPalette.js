@@ -7,6 +7,7 @@ import {
     PALETTE_CELL_MIME,
     PALETTE_FILE_MIME
 } from 'c/finalBuilderCanvas';
+import { usesQuestions, FREEFORM } from 'c/finalFormTypes';
 
 /** Survey question roster (SURVEY_PLAN §2.1 — S2 slice ships the scale
  *  family + open text/number; S3-S4 grow it). Click-add mints unbound
@@ -144,17 +145,109 @@ const BLOCKS = [
  * Click-add emits `addfield`; the same rows are draggable (the DnD port
  * arrives in slice 3b and reuses these payloads).
  */
+/**
+ * General inputs, added for Freeform (FREEFORM_SPEC D4). The renderer
+ * already draws every one of these from config.inputType - only the
+ * palette never offered them. Survey's roster is deliberately unchanged.
+ */
+const GENERAL_QUESTIONS = [
+    {
+        type: 'questionEmail',
+        label: 'Email',
+        icon: 'utility:email',
+        title: 'An email address, validated as one'
+    },
+    {
+        type: 'questionPhone',
+        label: 'Phone',
+        icon: 'utility:call',
+        title: 'A phone number'
+    },
+    {
+        type: 'questionDate',
+        label: 'Date',
+        icon: 'utility:event',
+        title: 'A date, picked from a calendar'
+    },
+    {
+        type: 'questionUrl',
+        label: 'Link',
+        icon: 'utility:link',
+        title: 'A web address'
+    },
+    {
+        type: 'questionDropdown',
+        label: 'Dropdown',
+        icon: 'utility:picklist_type',
+        title: 'Pick one from a list'
+    },
+    {
+        type: 'questionChoice',
+        label: 'Single choice',
+        icon: 'utility:radio_button',
+        title: 'Pick one - all options on screen'
+    },
+    {
+        type: 'questionMultiChoice',
+        label: 'Multiple choice',
+        icon: 'utility:check',
+        title: 'Pick any number of options'
+    }
+];
+
+/** The three plain inputs Survey already had belong with the general ones
+ *  when Freeform groups its 19 items. */
+const PLAIN_TYPES = new Set([
+    'surveyShortText',
+    'surveyLongText',
+    'surveyNumber'
+]);
+
 export default class FinalFieldPalette extends LightningElement {
     /** The form's primary context object API name. */
     @api objectApi;
 
-    /** Survey mode (spec.form.type === 'survey'): the Fields tab serves the
-     *  QUESTION roster instead of describe-driven fields — survey questions
-     *  bind to no object (FORM_STUDIO_IA survey delta). */
-    @api surveyMode = false;
+    /** The spec's form type. Types that author QUESTIONS (survey, freeform)
+     *  get the question roster on the Fields tab instead of describe-driven
+     *  fields; a Form still gets its object's fields. */
+    @api formType;
 
-    get questions() {
-        return QUESTIONS;
+    get usesQuestions() {
+        return usesQuestions(this.formType);
+    }
+
+    /**
+     * The question roster, grouped.
+     *
+     * Survey keeps ONE ungrouped list of the same 12 items it always had
+     * (D4 - its palette must not move). Freeform serves 19, which reads as
+     * a wall in one column, so its plain inputs and its feedback widgets
+     * are separated.
+     */
+    get questionGroups() {
+        if (this.formType !== FREEFORM) {
+            return [{ key: 'all', label: '', items: QUESTIONS }];
+        }
+        const plain = QUESTIONS.filter((q) => PLAIN_TYPES.has(q.type));
+        const widgets = QUESTIONS.filter((q) => !PLAIN_TYPES.has(q.type));
+        return [
+            {
+                key: 'general',
+                label: 'Questions',
+                items: [...plain, ...GENERAL_QUESTIONS]
+            },
+            {
+                key: 'feedback',
+                label: 'Ratings & scales',
+                items: widgets
+            }
+        ];
+    }
+
+    get questionsSubhead() {
+        return this.formType === FREEFORM
+            ? 'kept with the submission; map them to Salesforce later'
+            : 'every answer becomes a reportable row';
     }
 
     handleAddQuestion(event) {
@@ -249,7 +342,13 @@ export default class FinalFieldPalette extends LightningElement {
             logic: 'utility:strategy',
             autofill: 'utility:magicwand'
         };
-        return ['fields', 'blocks', 'logic', 'autofill'].map((t) => ({
+        // Freeform hides Autofill in F1: its rules assume one object and a
+        // Freeform has none. The multi-object editor ships with F2 (D7).
+        const names =
+            this.formType === FREEFORM
+                ? ['fields', 'blocks', 'logic']
+                : ['fields', 'blocks', 'logic', 'autofill'];
+        return names.map((t) => ({
             key: t,
             label: t[0].toUpperCase() + t.slice(1),
             icon: icons[t],

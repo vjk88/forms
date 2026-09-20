@@ -5,6 +5,7 @@ import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurv
 import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { compatInputTypes } from 'c/finalSurveyMapping';
+import { usesAnalytics } from 'c/finalFormTypes';
 
 /**
  * finalPropertyPanel — the selected node's editor, a direct port of the
@@ -161,6 +162,15 @@ export default class FinalPropertyPanel extends LightningElement {
     /** 'element' | 'section' | 'page' (block wrapper sections arrive as
      *  their inner element — the studio resolves that before passing). */
     @api kind;
+
+    /** The spec's form type. Topics (chart tags) are survey analytics, so
+     *  they appear only for a type that HAS analytics - a Freeform shows
+     *  the same question inspectors without them (FREEFORM_SPEC D4). */
+    @api formType;
+
+    get showTopics() {
+        return this.isSurveyQuestion && usesAnalytics(this.formType);
+    }
     /** The object a FIELD element binds against (read-only display). */
     @api bindingObjectApi;
     /** The hosting section's column count (Width control scope). */
@@ -958,10 +968,12 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get renderAsOptions() {
         const cur = this.cfg.renderAs || 'Default';
-        return renderAsChoicesFor(this.cfg.inputType, this.cfg.polymorphic).map((o) => ({
-            ...o,
-            selected: o.value === cur ? true : undefined
-        }));
+        return renderAsChoicesFor(this.cfg.inputType, this.cfg.polymorphic).map(
+            (o) => ({
+                ...o,
+                selected: o.value === cur ? true : undefined
+            })
+        );
     }
 
     get hasRenderAsChoices() {
