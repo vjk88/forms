@@ -6,6 +6,8 @@ import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import discardDraft from '@salesforce/apex/FinalStudioController.discardDraft';
 import LightningConfirm from 'lightning/confirm';
+import FinalPublishDialog from 'c/finalPublishDialog';
+import publishWarnings from '@salesforce/apex/FinalPublishWarnings.forPublish';
 import listVersions from '@salesforce/apex/FinalStudioController.listVersions';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import setGuestAccess from '@salesforce/apex/FinalStudioController.setGuestAccess';
@@ -21,6 +23,12 @@ import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
 jest.mock('lightning/confirm', () => ({
+    __esModule: true,
+    default: { open: jest.fn() }
+}));
+// Publish has its own dialog now: LightningConfirm takes a plain string, so
+// several warnings ran together into one unreadable paragraph.
+jest.mock('c/finalPublishDialog', () => ({
     __esModule: true,
     default: { open: jest.fn() }
 }));
@@ -46,6 +54,11 @@ jest.mock(
     { virtual: true }
 );
 
+jest.mock(
+    '@salesforce/apex/FinalPublishWarnings.forPublish',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
 jest.mock(
     '@salesforce/apex/FinalStudioController.loadStudio',
     () => ({ default: jest.fn() }),
@@ -2066,6 +2079,8 @@ describe('c-final-form-studio', () => {
             publishSpec.mockReset().mockResolvedValue('a0V3');
             discardDraft.mockReset().mockResolvedValue();
             LightningConfirm.open.mockReset().mockResolvedValue(true);
+            FinalPublishDialog.open.mockReset().mockResolvedValue(true);
+            publishWarnings.mockReset().mockResolvedValue([]);
         });
 
         it('serializes saves and never acknowledges newer edits with an older response', async () => {
@@ -2270,6 +2285,61 @@ describe('c-final-form-studio', () => {
             expect(
                 element.shadowRoot.querySelector('.st-publish-error')
             ).toBeNull();
+        });
+
+        // Two dialogs, chosen by whether there is anything to report. The
+        // plain confirm cannot hold a list, and the modal is overkill for one
+        // sentence, so the wrong one is wrong in both directions.
+        it('asks with a plain confirm when publishing costs nothing', async () => {
+            const element = await ready();
+            publish(element);
+            await micro(12);
+
+            expect(LightningConfirm.open).toHaveBeenCalledTimes(1);
+            expect(FinalPublishDialog.open).not.toHaveBeenCalled();
+            expect(LightningConfirm.open.mock.calls[0][0].label).toBe(
+                'Publish form'
+            );
+        });
+
+        it('hands consequences to the dialog that can list them', async () => {
+            publishWarnings.mockResolvedValue([
+                'You are removing "Phone number", which already has answers.',
+                '"File Upload" cannot accept files from people who are not signed in.'
+            ]);
+            const element = await ready();
+            publish(element);
+            await micro(12);
+
+            expect(FinalPublishDialog.open).toHaveBeenCalledTimes(1);
+            expect(LightningConfirm.open).not.toHaveBeenCalled();
+            const opened = FinalPublishDialog.open.mock.calls[0][0];
+            expect(opened.label).toBe('Publish anyway?');
+            expect(opened.warnings).toHaveLength(2);
+            // the warnings travel as a LIST, not pre-joined into a sentence
+            expect(Array.isArray(opened.warnings)).toBe(true);
+            expect(publishSpec).toHaveBeenCalledTimes(1);
+        });
+
+        it('publishes nothing when the consequences dialog is cancelled', async () => {
+            publishWarnings.mockResolvedValue(['a consequence']);
+            FinalPublishDialog.open.mockResolvedValue(false);
+            const element = await ready();
+            publish(element);
+            await micro(12);
+
+            expect(publishSpec).not.toHaveBeenCalled();
+        });
+
+        it('still publishes when the warnings call fails', async () => {
+            // a courtesy that cannot be computed must not block the act
+            publishWarnings.mockRejectedValue(new Error('no class access'));
+            const element = await ready();
+            publish(element);
+            await micro(12);
+
+            expect(LightningConfirm.open).toHaveBeenCalledTimes(1);
+            expect(publishSpec).toHaveBeenCalledTimes(1);
         });
 
         it('does not publish when confirmation is cancelled', async () => {

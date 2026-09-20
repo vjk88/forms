@@ -1,0 +1,39 @@
+/* The question leads; the warnings are the reason the dialog is wider than
+   a plain confirm. */
+.pd-question {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+.pd-warnings {
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+.pd-warning {
+    display: flex;
+    align-items: start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--slds-g-color-warning-base-95, #fef5e7);
+    border-left: 3px solid var(--slds-g-color-warning-base-60, #f7bb4b);
+}
+.pd-warning:last-child {
+    margin-bottom: 0;
+}
+.pd-warning-icon {
+    flex: 0 0 auto;
+    margin-top: 0.125rem;
+}
+.pd-warning-text {
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+/* Always true, warnings or not — so it sits apart from them rather than
+   reading as the tail of the last one. */
+.pd-note {
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+}
