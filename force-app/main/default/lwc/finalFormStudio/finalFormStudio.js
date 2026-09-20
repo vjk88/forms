@@ -2719,24 +2719,22 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 // form open to people who cannot upload (FREEFORM_SPEC 6.3).
                 // They never block - the author is told, then decides.
                 const warnings = await this._publishWarnings();
-                // Two dialogs on purpose. Most publishes have nothing to
-                // report, and that is one sentence — LightningConfirm's own
-                // size. It is only when there are CONSEQUENCES that a plain
-                // string stops working: it has no list, so several warnings
-                // ran together into one paragraph, the bullets read as stray
-                // dots mid-sentence, and "The live form updates immediately"
-                // landed where it looked like part of the last warning.
-                const ok = warnings.length
-                    ? await FinalPublishDialog.open({
-                          size: 'small',
-                          label: 'Publish anyway?',
-                          formName: this.formName,
-                          warnings
-                      })
-                    : await LightningConfirm.open({
-                          message: `Publish "${this.formName}"? The live form updates immediately.`,
-                          label: 'Publish form'
-                      });
+                // Publish is the one confirmation in this app whose CONTENT
+                // varies: the others are fixed sentences, this one carries
+                // nought to N consequences and D26 promises a fourth the day
+                // a change-type control lands. LightningConfirm takes a
+                // plain string and cannot render a list, so the warnings ran
+                // together into one paragraph with the bullets reading as
+                // stray dots. Rather than switch dialogs by count - which
+                // would move the buttons and change the wording out from
+                // under an author between two publishes of the same form -
+                // publish always asks the same way.
+                const ok = await FinalPublishDialog.open({
+                    size: 'small',
+                    label: warnings.length ? 'Publish anyway?' : 'Publish form',
+                    formName: this.formName,
+                    warnings
+                });
                 if (!ok) return;
             } catch {
                 this.publishError = 'Publishing couldn’t start. Try again.';
