@@ -773,6 +773,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Any spec change resets the post-submit state — the Design preview
         // returns to the form the moment a control is touched.
         this.completed = false;
+        // ...and drops the idempotency key. The viewer is REUSED IN PLACE
+        // when it switches form, version or record, and a key carried across
+        // that switch makes the server answer this submit with the PREVIOUS
+        // submission — reporting success while storing nothing. Guest mode
+        // makes this the only workable place: there the viewer is handed a
+        // spec and never learns a formId or versionId at all.
+        this._submissionKeyValue = undefined;
         this._answers = preview
             ? reconcileAnswers(preview.answers, preview.spec, spec)
             : {};
@@ -2151,9 +2158,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /**
      * The idempotency key for THIS filled-in form.
      *
-     * Minted once and reused: a retry after a lost response must carry the
-     * same key, or it would store a second submission. Cleared only when the
-     * viewer starts a new form.
+     * Minted once per loaded form and reused: a retry after a lost response
+     * must carry the same key, or it would store a second submission.
+     * `_apply` clears it whenever a different form, version or record loads,
+     * so the key can never outlive the questions it was minted for.
      */
     _submissionKey() {
         if (!this._submissionKeyValue) {

@@ -23,6 +23,7 @@
  */
 public without sharing class FinalGuestController {
     private static final String UNAVAILABLE = 'This form is not available.';
+    private static final String VERSION_CHANGED = 'This form changed. Reload it before submitting.';
 
     @AuraEnabled(cacheable=true)
     public static String getGuestSpec(Id formId) {
@@ -96,6 +97,32 @@ public without sharing class FinalGuestController {
         Form_Version__c version = activeVersion(f.Id);
         Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
 
+        Map<String, Object> payload;
+        try {
+            payload = (Map<String, Object>) JSON.deserializeUntyped(
+                payloadJson
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException('The payload is not valid JSON.');
+        }
+        Map<String, Object> meta = asMap(payload.get('meta'));
+
+        // A retry of an attempt that ALREADY LANDED is answered from the
+        // store before availability is judged. The person submitted in time;
+        // it was their confirmation that went missing, not their answer. The
+        // ordering matters most for the submission that took the last slot -
+        // without this it is told the form is full by its own earlier self.
+        FinalSubmitService.SubmitOutcome stored = FinalSubmitService.existingSubmission(
+            getStr(meta, 'submissionKey'),
+            f.Id
+        );
+        if (stored != null) {
+            GuestSubmitResult again = new GuestSubmitResult();
+            again.success = true;
+            again.childCount = stored.childCount;
+            return again;
+        }
+
         // Availability (A3 + S1 cap): a closed/expired/capped form rejects
         // even a replayed POST server-side (the closed-screen client can't
         // reach here anyway). Cap re-checks HERE too — surveys go guest.
@@ -116,46 +143,26 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException(UNAVAILABLE);
         }
 
-        Map<String, Object> payload;
-        try {
-            payload = (Map<String, Object>) JSON.deserializeUntyped(
-                payloadJson
-            );
-        } catch (Exception e) {
-            throw new AuraHandledException('The payload is not valid JSON.');
+        // The browser tells us which version it rendered. When that is not
+        // the version now live, the questions on screen were a DIFFERENT set:
+        // storing those answers against the live spec drops the ones it no
+        // longer declares, re-types the ones whose type changed, and stamps
+        // the submission with a version the person never saw - so the reader
+        // would later replay it in wording they were never asked.
+        //
+        // This used to run only when Autofill rules were enabled. Freeform
+        // has no Autofill in F1, so on a Freeform it never ran at all.
+        String claimedVersionId = getStr(meta, 'specVersionId');
+        if (
+            String.isNotBlank(claimedVersionId) &&
+            claimedVersionId != version.Id
+        ) {
+            throw new AuraHandledException(VERSION_CHANGED);
         }
-
-        // Honeypot (A3): a filled hidden field means a bot. Return a FAKE
-        // success (no record) so it learns nothing — the classic honeypot
-        // When the server-loaded active spec enables new Autofill rules, require meta.specVersionId
-        // and compare it to the authorized active version.
-        Map<String, Object> settings = asMap(spec.get('settings'));
-        Map<String, Object> prefill = settings != null
-            ? asMap(settings.get('prefill'))
-            : null;
-        List<Object> rules = prefill != null
-            ? asList(prefill.get('autofillRules'))
-            : null;
-        Boolean hasEnabledAutofillRules = false;
-        if (rules != null) {
-            for (Object rObj : rules) {
-                Map<String, Object> r = asMap(rObj);
-                if (r != null && r.get('enabled') == true) {
-                    hasEnabledAutofillRules = true;
-                    break;
-                }
-            }
-        }
-        if (hasEnabledAutofillRules) {
-            Map<String, Object> meta = asMap(payload.get('meta'));
-            String specVersionId = meta == null
-                ? null
-                : (String) meta.get('specVersionId');
-            if (String.isBlank(specVersionId) || specVersionId != version.Id) {
-                throw new AuraHandledException(
-                    'This form changed. Reload it before submitting.'
-                );
-            }
+        // Autofill additionally REQUIRES the client to say which version it
+        // had: a stale prefill can carry values the live spec never authorized.
+        if (String.isBlank(claimedVersionId) && hasEnabledAutofill(spec)) {
+            throw new AuraHandledException(VERSION_CHANGED);
         }
 
         // Honeypot (A3): a filled hidden field means a bot. Return a FAKE
@@ -172,8 +179,7 @@ public without sharing class FinalGuestController {
         // link checks live in FinalLinkService, shared with signed-in submits:
         // a revoked/expired/used tracked link is refused BEFORE anything saves,
         // a single-use link burns, and the response gets the link's record.
-        Map<String, Object> tokenMeta = asMap(payload.get('meta'));
-        String token = tokenMeta == null ? null : (String) tokenMeta.get('rt');
+        String token = getStr(meta, 'rt');
         FinalLinkService.LinkSubmit link;
         try {
             link = FinalLinkService.beginSubmit(formId, spec, token);
@@ -542,6 +548,30 @@ public without sharing class FinalGuestController {
     }
 
     // ----- helpers -----
+
+    /** A string field of an untyped map, or null - never a cast error. */
+    private static String getStr(Map<String, Object> m, String key) {
+        Object v = m == null ? null : m.get(key);
+        return v instanceof String ? (String) v : null;
+    }
+
+    /** Does the published spec turn on at least one Autofill rule? */
+    private static Boolean hasEnabledAutofill(Map<String, Object> spec) {
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        Map<String, Object> prefill = settings == null
+            ? null
+            : asMap(settings.get('prefill'));
+        if (prefill == null) {
+            return false;
+        }
+        for (Object rObj : asList(prefill.get('autofillRules'))) {
+            Map<String, Object> r = asMap(rObj);
+            if (r != null && r.get('enabled') == true) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static Map<String, Object> asMap(Object o) {
         return o instanceof Map<String, Object>
