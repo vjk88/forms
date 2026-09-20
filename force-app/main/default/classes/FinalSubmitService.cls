@@ -635,19 +635,30 @@ public inherited sharing class FinalSubmitService {
         Map<String, Object> meta = asMap(payload.get('meta'));
         String submissionKey = getStr(meta, 'submissionKey');
 
+        Id formId = formIdOfVersion(versionId);
+
         // A repeat of an attempt we already stored is not an error: the
-        // browser lost our answer, not its mind.
-        SubmitOutcome replayed = existingSubmission(submissionKey);
+        // browser lost our answer, not its mind. Scoped to THIS form, so a
+        // key left over from another form can never be mistaken for a retry
+        // and answer this submit with a stranger's submission.
+        SubmitOutcome replayed = existingSubmission(submissionKey, formId);
         if (replayed != null) {
             return replayed;
         }
 
-        Id formId = formIdOfVersion(versionId);
         // Counting and then inserting is not atomic: two submissions can both
         // pass the count for the last free slot. When a limit is configured,
         // the form row is locked for the rest of this transaction so
         // acceptance is serialized.
         lockFormIfCapped(spec, formId);
+        // Waiting on that lock takes time, and a twin of this very attempt
+        // may have committed meanwhile - possibly taking the last slot. Ask
+        // again before judging the cap, or a retry gets told the form is full
+        // by its own earlier self.
+        replayed = existingSubmission(submissionKey, formId);
+        if (replayed != null) {
+            return replayed;
+        }
         if (responseCapReached(spec, versionId)) {
             throw new AuraHandledException(closedMessage(spec));
         }
@@ -717,10 +728,20 @@ public inherited sharing class FinalSubmitService {
             // act on. Salesforce enforces this with a unique index, which no
             // amount of checking-first could do.
             if (isDuplicateKey(e)) {
-                SubmitOutcome winner = existingSubmission(submissionKey);
+                SubmitOutcome winner = existingSubmission(
+                    submissionKey,
+                    formId
+                );
                 if (winner != null) {
                     return winner;
                 }
+                // The key is held by a DIFFERENT form. Failing loudly is the
+                // whole point: the alternative was reporting success and
+                // storing nothing, and a reload mints a fresh key.
+                throw new AuraHandledException(
+                    'Your answers could not be saved. Reload the page and try' +
+                    ' again.'
+                );
             }
             throw new AuraHandledException(
                 'Your answers could not be saved. Nothing was recorded.'
@@ -733,17 +754,33 @@ public inherited sharing class FinalSubmitService {
         }
     }
 
-    /** The submission already stored under this key, or null. System mode:
-     *  the key is a secret the client just proved it holds, and a guest can
-     *  read nothing. */
-    private static SubmitOutcome existingSubmission(String submissionKey) {
-        if (String.isBlank(submissionKey)) {
+    /**
+     * The submission already stored under this key FOR THIS FORM, or null.
+     *
+     * System mode: the key is a secret the client just proved it holds, and a
+     * guest can read nothing. The form is part of the question because the
+     * key is minted in a browser that may have filled in another form first -
+     * matching on the key alone once answered a new form's submit with an old
+     * form's submission, and called it success.
+     *
+     * Public because the guest controller must ask BEFORE it judges
+     * availability: a retry of a submission that already landed deserves its
+     * answer even if the form has since closed or filled up.
+     */
+    public static SubmitOutcome existingSubmission(
+        String submissionKey,
+        Id formId
+    ) {
+        if (String.isBlank(submissionKey) || formId == null) {
             return null;
         }
         List<SObject> found = Database.queryWithBinds(
             'SELECT Id, (SELECT Id FROM Answers__r) FROM Form_Submission__c ' +
-            'WHERE Submission_Key__c = :k LIMIT 1',
-            new Map<String, Object>{ 'k' => submissionKey.abbreviate(64) },
+            'WHERE Submission_Key__c = :k AND Form__c = :f LIMIT 1',
+            new Map<String, Object>{
+                'k' => submissionKey.abbreviate(64),
+                'f' => formId
+            },
             AccessLevel.SYSTEM_MODE
         );
         if (found.isEmpty()) {

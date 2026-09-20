@@ -457,4 +457,63 @@ private class FinalFreeformSubmitTest {
         Assert.areEqual(1, rows.size(), 'only the false answer is a row');
         Assert.isTrue(rows.containsKey('el_no'), 'and it is the yes/no one');
     }
+
+    /**
+     * A key minted for one form must never answer another form's submit.
+     *
+     * The viewer is reused in place when it switches forms, and it used to
+     * carry the key across. Matching on the key alone then handed form B's
+     * submit form A's submission and called it success - B's answers were
+     * never stored, and nothing anywhere said so. Failing loudly is the fix
+     * the browser-side reset makes unreachable in practice.
+     */
+    @IsTest
+    static void aKeyFromAnotherFormIsNotMistakenForARetry() {
+        Map<String, Object> specA = makeForm(
+            new List<Object>{ question('el_t', 'field', 'Anything', null) },
+            null
+        );
+        Id formA = formId;
+        FinalSubmitService.SubmitOutcome first = FinalSubmitService.run(
+            specA,
+            payload(new Map<String, Object>{ 'el_t' => 'for A' }, 'shared-key'),
+            versionId,
+            FinalSubmitService.Posture.INTERNAL
+        );
+
+        Map<String, Object> specB = makeForm(
+            new List<Object>{ question('el_t', 'field', 'Anything', null) },
+            null
+        );
+        Id formB = formId;
+        Boolean refused = false;
+        try {
+            FinalSubmitService.run(
+                specB,
+                payload(
+                    new Map<String, Object>{ 'el_t' => 'for B' },
+                    'shared-key'
+                ),
+                versionId,
+                FinalSubmitService.Posture.INTERNAL
+            );
+        } catch (AuraHandledException e) {
+            refused = true;
+        }
+
+        Assert.isTrue(
+            refused,
+            'B is told its answers were not saved, rather than told they were'
+        );
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Form_Submission__c WHERE Form__c = :formB],
+            'and form B has no submission of its own'
+        );
+        Assert.areEqual(
+            first.recordId,
+            [SELECT Id FROM Form_Submission__c WHERE Form__c = :formA].Id,
+            'while form A keeps the one it earned'
+        );
+    }
 }
