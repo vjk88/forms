@@ -1,7 +1,7 @@
 <template>
     <div class="gallery-root">
-        <!-- ==================== KIND (Screen 0): Form or Survey? ==================== -->
-        <template lwc:if={isKindStep}>
+        <!-- ============== FORM TYPE (Screen 0): Form, Survey or Freeform ============== -->
+        <template lwc:if={isTypeStep}>
             <header class="g-head">
                 <div>
                     <h1 class="g-title">What are you creating?</h1>
@@ -22,62 +22,62 @@
                     ></lightning-icon>
                 </button>
             </header>
-            <div class="kind-grid">
+            <div class="type-grid">
                 <button
-                    class="kind-card"
+                    class="type-card"
                     type="button"
-                    onclick={handleKindForm}
+                    onclick={handleTypeForm}
                 >
-                    <span class="kind-icon">
+                    <span class="type-icon">
                         <lightning-icon
                             icon-name="utility:form"
                             size="medium"
                         ></lightning-icon>
                     </span>
-                    <span class="kind-name">Form</span>
-                    <span class="kind-blurb">
+                    <span class="type-name">Form</span>
+                    <span class="type-blurb">
                         Collects structured data into Salesforce records — every
                         answer becomes a field on the object you choose.
                     </span>
-                    <span class="kind-foot">Pick a layout &amp; theme →</span>
+                    <span class="type-foot">Pick a layout &amp; theme →</span>
                 </button>
                 <button
-                    class="kind-card"
+                    class="type-card"
                     type="button"
-                    onclick={handleKindSurvey}
+                    onclick={handleTypeSurvey}
                 >
-                    <span class="kind-icon">
+                    <span class="type-icon">
                         <lightning-icon
                             icon-name="utility:feed"
                             size="medium"
                         ></lightning-icon>
                     </span>
-                    <span class="kind-name">Survey</span>
-                    <span class="kind-blurb">
+                    <span class="type-name">Survey</span>
+                    <span class="type-blurb">
                         Asks questions and measures sentiment — answers land in
                         the answer store, ready for charts and topics. A
                         Salesforce object is optional.
                     </span>
-                    <span class="kind-foot">Pick a template &amp; theme →</span>
+                    <span class="type-foot">Pick a template &amp; theme →</span>
                 </button>
                 <button
-                    class="kind-card"
+                    class="type-card"
                     type="button"
-                    onclick={handleKindFreeform}
+                    onclick={handleTypeFreeform}
                 >
-                    <span class="kind-icon">
+                    <span class="type-icon">
                         <lightning-icon
                             icon-name="utility:edit_form"
                             size="medium"
                         ></lightning-icon>
                     </span>
-                    <span class="kind-name">Freeform</span>
-                    <span class="kind-blurb">
+                    <span class="type-name">Freeform</span>
+                    <span class="type-blurb">
                         Ask anything you like — answers are kept with the
                         submission, and you decide later which of them should
                         also write to Salesforce records.
                     </span>
-                    <span class="kind-foot">Pick a layout &amp; theme →</span>
+                    <span class="type-foot">Pick a layout &amp; theme →</span>
                 </button>
             </div>
         </template>
@@ -156,7 +156,7 @@
             </div>
 
             <!-- Mode A: form templates (placeholder — surveys moved to their
-                 own path behind the kind chooser, owner 2026-07-31) -->
+                 own path behind the type chooser, owner 2026-07-31) -->
             <div lwc:if={isTemplateMode} class="tpl-shelf">
                 <section class="lg-group">
                     <div class="lg-head">
@@ -202,7 +202,7 @@
         <!-- ============ SURVEY TEMPLATES (Survey path, screen 1) ============ -->
         <template lwc:elseif={isTemplatesStep}>
             <header class="d-head">
-                <button class="d-back" type="button" onclick={handleBackToKind}>
+                <button class="d-back" type="button" onclick={handleBackToType}>
                     <lightning-icon
                         icon-name="utility:back"
                         size="x-small"

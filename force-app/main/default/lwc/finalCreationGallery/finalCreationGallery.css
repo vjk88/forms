@@ -535,15 +535,15 @@
     align-items: center;
 }
 
-/* ---- kind chooser (screen 0: Form or Survey, owner 2026-07-31) ---- */
-.kind-grid {
+/* ---- type chooser (screen 0: Form or Survey, owner 2026-07-31) ---- */
+.type-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 420px));
     gap: 18px;
     justify-content: center;
     padding: 24px 0 40px;
 }
-.kind-card {
+.type-card {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -560,24 +560,24 @@
         transform 120ms ease,
         box-shadow 120ms ease;
 }
-.kind-card:hover {
+.type-card:hover {
     border-color: var(--c-studio-accent);
     transform: translateY(-2px);
     box-shadow: 0 10px 24px var(--c-studio-focus-halo);
 }
-.kind-icon {
+.type-icon {
     color: var(--c-studio-accent);
 }
-.kind-name {
+.type-name {
     font-weight: 800;
     font-size: 1.25rem;
 }
-.kind-blurb {
+.type-blurb {
     font-size: 0.875rem;
     color: var(--c-studio-text-weak);
     line-height: 1.45;
 }
-.kind-foot {
+.type-foot {
     margin-top: 6px;
     font-size: 0.8rem;
     font-weight: 700;

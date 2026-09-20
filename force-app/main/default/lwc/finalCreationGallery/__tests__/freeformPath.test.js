@@ -42,15 +42,15 @@ async function mount() {
     return el;
 }
 
-function kindCard(el, name) {
-    return [...el.shadowRoot.querySelectorAll('.kind-card')].find(
-        (c) => c.querySelector('.kind-name').textContent === name
+function typeCard(el, name) {
+    return [...el.shadowRoot.querySelectorAll('.type-card')].find(
+        (c) => c.querySelector('.type-name').textContent === name
     );
 }
 
 /** template -> layout -> theme, leaving the details screen on screen. */
 async function walkToDetails(el) {
-    kindCard(el, 'Freeform').click();
+    typeCard(el, 'Freeform').click();
     await flush();
     el.shadowRoot.querySelector('.tpl-grid .tpl-card').click();
     await flush();
@@ -78,7 +78,7 @@ describe('freeform creation path', () => {
 
     it('offers a Freeform card that opens its own template shelf', async () => {
         const el = await mount();
-        kindCard(el, 'Freeform').click();
+        typeCard(el, 'Freeform').click();
         await flush();
         const cards = el.shadowRoot.querySelectorAll('.tpl-grid .tpl-card');
         expect(cards.length).toBe(1);
@@ -87,7 +87,7 @@ describe('freeform creation path', () => {
 
     it('goes template -> layout -> theme, unlike a survey', async () => {
         const el = await mount();
-        kindCard(el, 'Freeform').click();
+        typeCard(el, 'Freeform').click();
         await flush();
         el.shadowRoot.querySelector('.tpl-grid .tpl-card').click();
         await flush();

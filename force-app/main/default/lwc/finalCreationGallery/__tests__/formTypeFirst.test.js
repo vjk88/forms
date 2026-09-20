@@ -2,7 +2,7 @@ import { createElement } from 'lwc';
 import FinalCreationGallery from 'c/finalCreationGallery';
 import createSurveyFromTemplate from '@salesforce/apex/FinalFormCreateController.createSurveyFromTemplate';
 
-// Kind-first creation flow (owner 2026-07-31): ask Form-or-Survey FIRST;
+// type-first creation flow (owner 2026-07-31): ask form type FIRST;
 // surveys are templates + themes only (no layout step) with an OPTIONAL
 // object picked on the details screen.
 jest.mock(
@@ -42,7 +42,7 @@ function byText(root, selector, text) {
     );
 }
 
-describe('kind-first creation flow', () => {
+describe('type-first creation flow', () => {
     afterEach(() => {
         jest.clearAllMocks();
         while (document.body.firstChild) {
@@ -50,27 +50,27 @@ describe('kind-first creation flow', () => {
         }
     });
 
-    it('opens on the kind chooser, now three kinds', async () => {
+    it('opens on the type chooser, now three types', async () => {
         const el = await mount();
-        const cards = el.shadowRoot.querySelectorAll('.kind-card');
+        const cards = el.shadowRoot.querySelectorAll('.type-card');
         // Freeform joined Form and Survey (FREEFORM_SPEC D5).
         expect(cards.length).toBe(3);
         expect(
-            [...cards].map((c) => c.querySelector('.kind-name').textContent)
+            [...cards].map((c) => c.querySelector('.type-name').textContent)
         ).toEqual(['Form', 'Survey', 'Freeform']);
         expect(el.shadowRoot.querySelector('.card-grid')).toBeNull();
     });
 
     it('Form goes to the layout gallery; Survey goes to templates', async () => {
         const el = await mount();
-        [...el.shadowRoot.querySelectorAll('.kind-card')]
-            .find((c) => c.querySelector('.kind-name').textContent === 'Form')
+        [...el.shadowRoot.querySelectorAll('.type-card')]
+            .find((c) => c.querySelector('.type-name').textContent === 'Form')
             .click();
         await flush();
         expect(el.shadowRoot.querySelector('.card-grid')).not.toBeNull();
 
         const el2 = await mount();
-        byText(el2.shadowRoot, '.kind-card', 'Survey').click();
+        byText(el2.shadowRoot, '.type-card', 'Survey').click();
         await flush();
         const tpls = el2.shadowRoot.querySelectorAll('.tpl-grid .tpl-card');
         expect(tpls.length).toBe(4);
@@ -80,7 +80,7 @@ describe('kind-first creation flow', () => {
 
     it('survey: template → theme → details → create carries theme + optional object', async () => {
         const el = await mount();
-        byText(el.shadowRoot, '.kind-card', 'Survey').click();
+        byText(el.shadowRoot, '.type-card', 'Survey').click();
         await flush();
         el.shadowRoot.querySelector('.tpl-card[data-key="csat"]').click();
         await flush();
