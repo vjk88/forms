@@ -56,7 +56,7 @@
             <template lwc:if={dateError}>
                 <p class="sp-error" role="alert">{dateError}</p>
             </template>
-            <template lwc:if={isSurvey}>
+            <template lwc:if={showResponseLimit}>
                 <lightning-input
                     type="number"
                     label="Response limit"
@@ -108,7 +108,7 @@
             {publicSaveText}
         </p>
 
-        <template lwc:if={isSurvey}>
+        <template lwc:if={showRecordLinks}>
             <template lwc:if={objectApi}>
                 <c-final-record-link-panel
                     object-api={objectApi}

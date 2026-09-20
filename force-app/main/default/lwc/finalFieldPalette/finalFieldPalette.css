@@ -170,3 +170,15 @@
     font-size: 11px;
     color: var(--c-studio-text-weak);
 }
+
+/* Freeform serves 19 question types; the group label keeps that from
+   reading as one wall of buttons (survey stays ungrouped). */
+.fp-group-label {
+    margin: 0.75rem 0 0.25rem;
+    padding: 0 0.25rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--dt-muted, #5c6b7a);
+}

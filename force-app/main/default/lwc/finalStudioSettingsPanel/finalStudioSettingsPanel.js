@@ -1,10 +1,28 @@
 import { LightningElement, api } from 'lwc';
+import { usesAnswerStore, usesContextRecord } from 'c/finalFormTypes';
 
 const DEFAULT_CLOSED_MESSAGE = 'This form is no longer accepting responses.';
 
 export default class FinalStudioSettingsPanel extends LightningElement {
     @api section = 'availability';
-    @api isSurvey;
+    /**
+     * The spec's form type. Two different questions used to hide behind one
+     * isSurvey flag: "does this store responses?" (the response limit) and
+     * "does it have a connected record?" (invitation links). Freeform
+     * answers yes to the first and no to the second.
+     */
+    @api formType;
+
+    /** A limit counts stored submissions, so it needs an answer store. */
+    get showResponseLimit() {
+        return usesAnswerStore(this.formType);
+    }
+
+    /** Record links are scoped to a connected record; Freeform has none
+     *  (F2.5 gives all three types real per-person invitations). */
+    get showRecordLinks() {
+        return usesContextRecord(this.formType);
+    }
     @api objectApi;
     @api mappedCount;
     @api pendingObjectChange;

@@ -27,7 +27,7 @@ describe('studio settings panel', () => {
     it('commits normalized availability changes through one event', () => {
         const element = mount({
             section: 'availability',
-            isSurvey: true,
+            formType: 'survey',
             availability: { status: 'active' }
         });
         const listener = jest.fn();
@@ -45,17 +45,17 @@ describe('studio settings panel', () => {
         });
     });
 
-    it('shows response limit only for surveys and commits a positive cap', () => {
+    it('shows response limit for answer-store types and commits a positive cap', () => {
         const formPanel = mount({
             section: 'availability',
-            isSurvey: false
+            formType: 'form'
         });
         expect(inputByLabel(formPanel, 'Response limit')).toBeUndefined();
         document.body.removeChild(formPanel);
 
         const surveyPanel = mount({
             section: 'availability',
-            isSurvey: true
+            formType: 'survey'
         });
         const listener = jest.fn();
         surveyPanel.addEventListener('settingschange', listener);
@@ -65,6 +65,27 @@ describe('studio settings panel', () => {
         expect(listener.mock.calls[0][0].detail.availability.responseCap).toBe(
             250
         );
+    });
+
+    it('gives Freeform the response limit but NOT record links', () => {
+        // One isSurvey flag used to answer two different questions. A
+        // Freeform stores submissions (so a limit means something) but has
+        // no connected record (so invitation links do not).
+        const panel = mount({
+            section: 'availability',
+            formType: 'freeform'
+        });
+        expect(inputByLabel(panel, 'Response limit')).toBeDefined();
+        document.body.removeChild(panel);
+
+        const access = mount({
+            section: 'access',
+            formType: 'freeform',
+            objectApi: 'Contact'
+        });
+        expect(
+            access.shadowRoot.querySelector('c-final-record-link-panel')
+        ).toBeNull();
     });
 
     it('rejects a closing time before the opening time', async () => {
@@ -103,7 +124,7 @@ describe('studio settings panel', () => {
     it('keeps object and invitation actions on the access surface', async () => {
         const element = mount({
             section: 'access',
-            isSurvey: true,
+            formType: 'survey',
             objectApi: 'Contact'
         });
         await flush();

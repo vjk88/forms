@@ -31,6 +31,7 @@ import {
     pruneRecordRules
 } from 'c/finalSurveyMapping';
 import { createHistory } from 'c/finalHistoryManager';
+import { usesQuestions, FREEFORM } from 'c/finalFormTypes';
 
 /**
  * finalFormStudio — the builder shell (FORM_STUDIO_IA §2–4, P3 slice 1).
@@ -54,6 +55,21 @@ const FORMS_TAB = 'Final_Forms';
 const SAVE_DEBOUNCE_MS = 900;
 
 /** Schema §6: prefixed, crypto-random, client-minted, 8+ chars. */
+/** renderAs lives INSIDE config - the renderer reads cfg.renderAs and the
+ *  property panel writes there too. An element-level renderAs is silently
+ *  ignored (a checkbox group rendered as a dropdown; caught in the org).
+ *  Tokens are Dropdown | Radio_Buttons | Checkbox_Group. */
+
+/** Starter choices for a new choice question. Three is enough to show the
+ *  shape without the author having to delete a crowd. */
+function starterOptions() {
+    return [
+        { value: 'option-1', label: 'First choice' },
+        { value: 'option-2', label: 'Second choice' },
+        { value: 'option-3', label: 'Third choice' }
+    ];
+}
+
 function mintId(prefix) {
     const bytes = new Uint8Array(8);
     crypto.getRandomValues(bytes);
@@ -1799,6 +1815,29 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         );
     }
 
+    /** The spec's form type, or undefined before the spec loads. */
+    get formType() {
+        return this.spec && this.spec.form ? this.spec.form.type : undefined;
+    }
+
+    /** Survey AND Freeform author questions; a Form binds object fields. */
+    get usesQuestions() {
+        return usesQuestions(this.formType);
+    }
+
+    get isFreeform() {
+        return this.formType === FREEFORM;
+    }
+
+    /**
+     * Freeform hides the Autofill tab in F1 (D6/D7). Autofill IS a Freeform
+     * feature, but its rules assume the form has exactly ONE object, and a
+     * Freeform has none - the multi-object rule editor ships with F2.
+     */
+    get showAutofillTab() {
+        return !this.isFreeform;
+    }
+
     /** Question defaults (SURVEY_PLAN §2.2): analytics scale bounds ship
      *  locked to the widget's own bounds so Normalized_Score__c is never a
      *  backfill; topics start empty (picker = S2c). */
@@ -1899,6 +1938,73 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     type: 'imageChoice',
                     label: 'Which do you prefer?',
                     config: { multiple: false, options: [] }
+                };
+            // General inputs (FREEFORM_SPEC D4). Each is an unbound `field`
+            // element whose config.inputType the renderer already knows -
+            // no new widgets, just defaults worth typing into.
+            case 'questionEmail':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Your email',
+                    config: { inputType: 'email' }
+                };
+            case 'questionPhone':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Phone number',
+                    config: { inputType: 'phone' }
+                };
+            case 'questionDate':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Pick a date',
+                    config: { inputType: 'date' }
+                };
+            case 'questionUrl':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Website',
+                    config: { inputType: 'url' }
+                };
+            // The three choice types ship with real starter options: an
+            // empty dropdown renders an empty control, and empty checkboxes
+            // render nothing at all - an author would think it was broken.
+            case 'questionDropdown':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Choose one',
+                    config: {
+                        inputType: 'picklist',
+                        renderAs: 'Dropdown',
+                        options: starterOptions()
+                    }
+                };
+            case 'questionChoice':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Choose one',
+                    config: {
+                        inputType: 'picklist',
+                        renderAs: 'Radio_Buttons',
+                        options: starterOptions()
+                    }
+                };
+            case 'questionMultiChoice':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Choose any that apply',
+                    config: {
+                        inputType: 'picklist',
+                        renderAs: 'Checkbox_Group',
+                        options: starterOptions()
+                    }
                 };
             case 'surveyShortText':
                 return {
