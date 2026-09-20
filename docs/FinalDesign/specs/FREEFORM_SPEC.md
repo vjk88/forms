@@ -1,8 +1,13 @@
 # Freeform — the third form type
 
-> **Status:** design approved in conversation 2026-09-19, **revised the same day** after review round 1
-> (findings 1–6 accepted in full). **No code written.** F1 is specified to build depth. F2's contracts
-> are locked here so F1 cannot box them in; F2's screens get their own spec. Companions:
+> **Status: F1 is BUILT and merged** (2026-09-19, PRs #292-#299 = slices S1-S7), then corrected by
+> **review round 2** (2026-09-20, PRs #300-#302 = 8 findings, all real). This document describes F1 as
+> it now stands, not as it was planned — where the two differ, the shipped behaviour and its ruling
+> (D21-D25) are what count. Two things remain unproven in a browser; §10 names them.
+>
+> **F2 (mapping) has not started** — and F2 is the reason Freeform exists (§1). Its contracts are
+> locked here so F1 cannot box them in; its screens get their own spec. Build plan:
+> [IMPL_PLAN_FREEFORM_F1.md](./IMPL_PLAN_FREEFORM_F1.md). Companions:
 > [DATA_MODEL_DELTA.md](../DATA_MODEL_DELTA.md) · [FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) ·
 > [SURVEY_OBJECT_SPEC.md](./SURVEY_OBJECT_SPEC.md) · [DEFERRED.md](../DEFERRED.md).
 
@@ -54,6 +59,11 @@ Freeform = "I know what I want to ask; I'll decide where it goes."
 | D18 | Guest updates require **both** re-validated eligibility **and** an explicit author grant (per action, per field, filter required). A client-supplied record id is never trusted on its own                                                                                                                                                                      | 2026-09-19 |
 | D19 | The reader renders from the **submission's own published version** — wording, choices, types, sections and order. Current wording, if shown, is secondary                                                                                                                                                                                                       | 2026-09-19 |
 | D20 | **File Upload stays in the Freeform palette.** Guest uploads are built later; publish warns when a public form contains file questions                                                                                                                                                                                                                          | 2026-09-19 |
+| D21 | **Review round 2 (of F1 as shipped) accepted in full** — 8 findings, all 8 real, fixed in PRs #300-#302. Three of them reported _success_ while doing the wrong thing, which is why the F1 walkthrough missed them. The rulings they produced are D22-D25                                                                                                       | 2026-09-20 |
+| D22 | **Version validation is unconditional.** When the client names the version it rendered, the server compares it on every guest submit. It used to run only when Autofill was enabled, so on a Freeform it never ran at all                                                                                                                                       | 2026-09-20 |
+| D23 | **The idempotency key lives exactly as long as the answers it identifies** — cleared by the same code that clears them. The server matches it **scoped to the form**, so a stale key fails loudly instead of returning a stranger's submission                                                                                                                  | 2026-09-20 |
+| D24 | **A known replay is answered before availability is judged.** A retry of the submission that took the last slot must not be told the form is full by its own earlier self                                                                                                                                                                                       | 2026-09-20 |
+| D25 | **The read-only permission set really is restricted** — plain Read, inert until sharing opens a submission. A separate `Freeform_Submission_Admin` carries View All                                                                                                                                                                                             | 2026-09-20 |
 
 ## 3. Phase map
 
@@ -80,8 +90,8 @@ Today the code asks "is this a survey?" in ~40 places, and every one of them is 
 whose `else` means Form. A third type does not crash those lines; it is **quietly misfiled**. So the
 list of types lives in exactly one module per language:
 
-- `c/finalFormKind` (LWC)
-- `FinalFormKind` (Apex)
+- `c/finalFormTypes` (LWC)
+- `FinalFormTypes` (Apex)
 
 Each answers capability questions. Callers ask the capability, never the type name.
 
@@ -120,7 +130,7 @@ Each answers capability questions. Callers ask the capability, never the type na
 | `FinalFormActionsSelector.cls:151`                                                                                                                        | Counts only `Form_Response__c`                     | Also count submissions — otherwise a Freeform with data reports as safe to hard-delete |
 | `VR_Primary_Object_Required`                                                                                                                              | Skips only Survey                                  | Also skip Freeform                                                                     |
 | `FinalAutofillService`, `FinalLinkService`, `FinalSurveyLinkInvocable`, `FinalStudioController` (`setContextObject`, `mintRecordLink`, `invalidateLinks`) | "not survey" means object-bound                    | Explicitly survey-only in F1; revisited in F2/F2.5                                     |
-| `finalFormStudio.js:1796` `isSurvey`, `finalPropertyPanel`, `finalStudioSettingsPanel`, `finalAutofillPanel`, `finalDesignRegistry` `appliesTo.formTypes` | Boolean survey checks                              | Capability getters from `c/finalFormKind`                                              |
+| `finalFormStudio.js:1796` `isSurvey`, `finalPropertyPanel`, `finalStudioSettingsPanel`, `finalAutofillPanel`, `finalDesignRegistry` `appliesTo.formTypes` | Boolean survey checks                              | Capability getters from `c/finalFormTypes`                                             |
 | `finalFormsLibrary.js:52`                                                                                                                                 | `formType \|\| 'Form'`                             | Third label                                                                            |
 
 Survey must come out of this with **unchanged observable behavior**, guarded by the existing Apex and
@@ -244,8 +254,17 @@ answer row remains readable even if its version is somehow unavailable.
     to the post office to mail a letter"). The fence list grows from 3 objects to 5. The one thing a
     signed-in respondent writes under their **own** permissions is an attached file, which uses
     Salesforce's standard content permissions (§7.3).
-  - A **read-only permission set** ships for people who must read submissions without being builder
-    admins; the reader (§8) runs under the reader's own permissions.
+  - **Two** read-only permission sets ship, and the difference between them is the point (D25).
+    `Form_Submission__c` is org-wide **Private**, so sharing decides who sees what:
+    - `Freeform_Submission_Reader` — plain Read. **On its own it shows nothing** until a sharing
+      rule, a manual share or ownership brings a submission into view. This is what "the reader
+      (§8) runs under the reader's own permissions" has to mean to be true.
+    - `Freeform_Submission_Admin` — the same, plus View All, for people whose job is every
+      submission.
+  - Both sets, and `Form_Builder_Admin`, must grant **Apex class access** to
+    `FinalSubmissionController` (and `FinalPublishWarnings` for the builder). A missing grant is
+    invisible: nothing fails a build, the reader simply refuses to load and publish warnings go
+    silent — which reads as "nothing to warn about".
 
 ## 6. Creation and Studio
 
@@ -262,7 +281,7 @@ entry, **Blank freeform**; F3 fills it.
 On create: `Form_Type__c = 'Freeform'`, `Primary_Context_Object__c` blank, spec `form.type =
 'freeform'` with no `targetObject`, chosen layout + theme, then land in Build (same as today).
 
-Apex: the existing survey creator gains a kind parameter rather than being copied. Survey's behavior
+Apex: the existing survey creator gains a form-type parameter rather than being copied. Survey's behavior
 is unchanged.
 
 ### 6.2 Studio surfaces
@@ -295,6 +314,10 @@ version.
    aren't logged in. They'll see an error when they submit."_ Guest uploads are their own project
    (`IMPL_PLAN_GUEST_FILE_UPLOAD.md`).
 
+Computing the warnings must never block a publish — but a **failure** to compute them must not look
+like "nothing to warn about". The client logs it, because those two outcomes are otherwise identical
+on screen and the reassuring one is the wrong one.
+
 ## 7. Submitting
 
 ### 7.1 Dispatch
@@ -322,14 +345,15 @@ The answer store is **not** the object-bound Form path, and it does not inherit 
 Writing a submission is fenced for **both** audiences; the running person's own permissions govern
 what is _read_ and what is written **outside** the app's own objects.
 
-| Step                                | Signed in                                                                                                                                                          | Guest                                                                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| Submission + answer rows            | **Fenced system-mode create** (`FinalSubmitService.cls:1026`)                                                                                                      | **Fenced system-mode create** — identical                                                                                     |
-| What may be written at all          | The published spec is the allow-list: the walk only collects questions the spec declares, so a crafted payload can never name an object or a field                 | Identical                                                                                                                     |
-| Lookup answers re-checked at submit | The submitter's own permissions (`USER_MODE`, `FinalLookupService.cls:119`)                                                                                        | The guest user's own permissions, same query                                                                                  |
-| `Submitted_By__c`                   | Stamped with the running user                                                                                                                                      | Left blank                                                                                                                    |
-| File attachments                    | **The respondent's own permissions** (`insert as user`, `FinalSubmitService.cls:1490`) — Salesforce's standard content permissions, not permissions on our objects | **Refused** today (`FinalSubmitService.cls:1332`) and still refused in F1; §6.3 warns at publish instead of failing at submit |
-| Reading a submission afterwards     | The reader's own permissions (§8)                                                                                                                                  | Guests never read submissions                                                                                                 |
+| Step                                   | Signed in                                                                                                                                                          | Guest                                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Submission + answer rows               | **Fenced system-mode create** (`FinalSubmitService.cls:1026`)                                                                                                      | **Fenced system-mode create** — identical                                                                                     |
+| What may be written at all             | The published spec is the allow-list: the walk only collects questions the spec declares, so a crafted payload can never name an object or a field                 | Identical                                                                                                                     |
+| Lookup answers re-checked at submit    | The submitter's own permissions (`USER_MODE`, `FinalLookupService.cls:119`)                                                                                        | The guest user's own permissions, same query                                                                                  |
+| Version the answers are stored against | The version the client rendered, named in `meta.specVersionId`; a mismatch with the live version is **refused** (D22)                                              | Identical — and this is the audience that meets it, since a guest can be typing while an author publishes                     |
+| `Submitted_By__c`                      | Stamped with the running user                                                                                                                                      | Left blank                                                                                                                    |
+| File attachments                       | **The respondent's own permissions** (`insert as user`, `FinalSubmitService.cls:1490`) — Salesforce's standard content permissions, not permissions on our objects | **Refused** today (`FinalSubmitService.cls:1332`) and still refused in F1; §6.3 warns at publish instead of failing at submit |
+| Reading a submission afterwards        | The reader's own permissions (§8)                                                                                                                                  | Guests never read submissions                                                                                                 |
 
 So neither audience needs any permission on `Form_Submission__c` or `Form_Submission_Answer__c` to
 submit ("you don't need a key to the post office to mail a letter"), and F1 writes nothing outside the
@@ -347,6 +371,16 @@ The server stores it in `Submission_Key__c`, which is unique, so:
 A duplicate key is a normal outcome, not an error: catch the duplicate-value failure, re-query, and
 return the original submission.
 
+**The key's lifetime is the answers' lifetime** (D23). The viewer clears it on the same line that
+clears the answers, so the two can never drift apart: a key that outlives its answers makes the
+server answer a NEW form's submit with the PREVIOUS form's submission — success reported, nothing
+stored, nobody told. Guest mode decides where that line goes: there the viewer is handed a spec and
+never learns a form or version id, so the reset must hang off applying a spec, not off an id.
+
+The server's lookup is **scoped to the form** as well as the key. Scoping cannot fix a stale key on
+its own — the unique index is global — but it converts a silent wrong answer into a loud failure,
+and a reload mints a fresh key.
+
 ### 7.5 Availability and the response limit (D16)
 
 Close date and closed message are shared and unchanged. The Response limit counts **submissions for
@@ -357,6 +391,11 @@ Counting and then inserting is not atomic: two submissions arriving at the last 
 pass the count. When — and only when — a limit is configured, acceptance is **serialized** by locking
 the form row for the duration of the count and insert. **This fix applies to Survey too** (D16), the
 one deliberate behavior change in the shared extraction.
+
+**A known replay is answered before availability is judged** (D24). Otherwise the submission that
+took the last slot is told the form is full by its own earlier self — and a guest gets no error
+detail and no second chance to notice their answers were already safe. Waiting on the row lock also
+takes time, so the replay is re-checked **after** acquiring it, for the twin that commits meanwhile.
 
 ### 7.6 Where F2's mapping attaches (D17)
 
@@ -385,6 +424,21 @@ standard fields + the reader), backed by one USER_MODE Apex read.
   localized, Email/Phone/URL as their natural links, matrix grouped by statement, files as links.
 - An answer flagged `Value_Unparsed__c` shows the raw text with a quiet note that it did not match the
   expected type.
+
+**The version is also the dictionary, not just the order.** A choice is stored as its option
+**value** — an internal key like `vip`, never the wording the respondent read — so rendering it needs
+that version's own option list. Single choice and multiple choice are the same thing at different
+cardinalities and must resolve through **one** routine; keeping them apart is how single choice came
+to print `vip` where multi-select printed "Priority customer". When the option has since been
+deleted there is no wording left: fall back to the stored key with **no** marker, because the
+"questions no longer on this form" section renders with no question attached at all, so every answer
+there is unmatched and a marker would fire on all of them.
+
+**A matrix is walked from the version's statement list, never from the stored answers.** Walking the
+answers takes whatever order the query returned and drops any statement the respondent skipped —
+making matrix the one question type where a deliberate skip is invisible, which is the exact
+distinction this component exists to draw.
+
 - If the current version words a question differently, the current wording may be shown as secondary
   text; the submitted wording always leads.
 
@@ -419,7 +473,7 @@ existing Form or Survey into a Freeform.
 
 **Jest**
 
-14. Creation gallery offers three kinds; the Freeform path never asks for an object.
+14. Creation gallery offers three form types; the Freeform path never asks for an object.
 15. Palette shows the grouped 19 items for Freeform, 12 for Survey.
 16. Question settings hide Topics and Map to field for Freeform.
 17. Settings drawer hides the record-link panel and shows the response limit.
@@ -429,10 +483,33 @@ existing Form or Survey into a Freeform.
     question added later does not appear, a removed question still appears, renamed choices read as
     submitted, and a question whose type changed renders both old and new rows correctly.
 
+**Added by review round 2** (D21). Each of 20-23 fails on the pre-review code; they are the
+regression net, not decoration:
+
+20. A guest submit naming a version that is no longer live is **refused**, and stores nothing (D22).
+21. An idempotency key minted for one form does not answer another form's submit (D23); and the
+    viewer mints a new key when a different form, version or record loads, while a retry of the same
+    one keeps it.
+22. A retry of the submission that filled the last slot returns that submission; a **different**
+    respondent still meets the closed form (D24).
+23. A user holding only `Freeform_Submission_Reader` is refused an unshared submission, reads it once
+    it is shared, and a `Freeform_Submission_Admin` holder reads it either way (D25). A permission
+    set is metadata — nothing else in the build notices when it is wrong.
+24. Reader: a single choice reads by label; a numeric option value matches its stored string; a
+    deleted option falls back to its key; matrix statements hold the version's order against a
+    shuffled query result and a skipped statement reads "No answer"; email, phone, URL and files
+    render as links.
+
 **Org verification** (deployed and clicked through, not just green tests): create → build with a mix
 of widgets and general inputs → visibility rule → preview → publish → submit signed-in → submit as a
 guest → read both submissions on the record page → rename a question, publish, and confirm the old
 submission still reads as submitted → run the report type.
+
+**Still outstanding as of 2026-09-20**: the **guest submit on a published site** and the **publish
+warning dialog** have never been exercised in a browser. Both are covered by tests and neither is
+proven. Review round 2 changed the guest submit path in three places, so this is now the least
+verified part of F1 rather than the most — and a deploy alone never reaches guests, the LWR site
+needs a publish.
 
 ---
 
