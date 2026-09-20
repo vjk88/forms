@@ -13,6 +13,7 @@ import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedL
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
 import publishWarnings from '@salesforce/apex/FinalPublishWarnings.forPublish';
+import FinalPublishDialog from 'c/finalPublishDialog';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -2718,16 +2719,24 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 // form open to people who cannot upload (FREEFORM_SPEC 6.3).
                 // They never block - the author is told, then decides.
                 const warnings = await this._publishWarnings();
-                const ok = await LightningConfirm.open({
-                    message: warnings.length
-                        ? `Publish "${this.formName}"?\n\n${warnings
-                              .map((w) => `• ${w}`)
-                              .join(
-                                  '\n\n'
-                              )}\n\nThe live form updates immediately.`
-                        : `Publish "${this.formName}"? The live form updates immediately.`,
-                    label: warnings.length ? 'Publish anyway?' : 'Publish form'
-                });
+                // Two dialogs on purpose. Most publishes have nothing to
+                // report, and that is one sentence — LightningConfirm's own
+                // size. It is only when there are CONSEQUENCES that a plain
+                // string stops working: it has no list, so several warnings
+                // ran together into one paragraph, the bullets read as stray
+                // dots mid-sentence, and "The live form updates immediately"
+                // landed where it looked like part of the last warning.
+                const ok = warnings.length
+                    ? await FinalPublishDialog.open({
+                          size: 'small',
+                          label: 'Publish anyway?',
+                          formName: this.formName,
+                          warnings
+                      })
+                    : await LightningConfirm.open({
+                          message: `Publish "${this.formName}"? The live form updates immediately.`,
+                          label: 'Publish form'
+                      });
                 if (!ok) return;
             } catch {
                 this.publishError = 'Publishing couldn’t start. Try again.';
