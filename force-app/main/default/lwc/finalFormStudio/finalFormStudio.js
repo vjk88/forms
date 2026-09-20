@@ -12,6 +12,7 @@ import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLin
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import publishSpec from '@salesforce/apex/FinalSpecController.publishSpec';
+import publishWarnings from '@salesforce/apex/FinalPublishWarnings.forPublish';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -2677,6 +2678,25 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     // ----- publish (resolve-at-publish, P2 contract) -----
 
+    /**
+     * Publish-time warnings, or nothing.
+     *
+     * A failure here must never stop a publish: the warnings are a courtesy,
+     * and refusing to publish because we could not compute them would be a
+     * worse outcome than publishing without them.
+     */
+    async _publishWarnings() {
+        try {
+            const found = await publishWarnings({
+                formId: this.formId,
+                specJson: JSON.stringify(this.spec)
+            });
+            return found || [];
+        } catch {
+            return [];
+        }
+    }
+
     async handlePublish() {
         if (this.publishDisabled) {
             return; // publish belongs to the editable state only
@@ -2685,9 +2705,21 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (!this.publishNeedsCleanup) {
             this._confirmingPublish = true;
             try {
+                // Warnings describe consequences the canvas cannot show:
+                // answers already collected under a different shape, a
+                // question with answers being removed, or file questions on a
+                // form open to people who cannot upload (FREEFORM_SPEC 6.3).
+                // They never block - the author is told, then decides.
+                const warnings = await this._publishWarnings();
                 const ok = await LightningConfirm.open({
-                    message: `Publish "${this.formName}"? The live form updates immediately.`,
-                    label: 'Publish form'
+                    message: warnings.length
+                        ? `Publish "${this.formName}"?\n\n${warnings
+                              .map((w) => `• ${w}`)
+                              .join(
+                                  '\n\n'
+                              )}\n\nThe live form updates immediately.`
+                        : `Publish "${this.formName}"? The live form updates immediately.`,
+                    label: warnings.length ? 'Publish anyway?' : 'Publish form'
                 });
                 if (!ok) return;
             } catch {
