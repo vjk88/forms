@@ -135,14 +135,28 @@ a reset, a check or a guard is a claim, and claims in comments are not verified 
 
 ## Still open
 
-1. **Guest submit on a published site, end to end.** Never done in a browser. R1 changed the guest
-   submit path in three places (replay short-circuit ahead of the honeypot and link checks,
-   unconditional version validation, form-scoped key lookup) — all covered by Apex tests, none by a
-   real submit through LWR. Remember a deploy alone does not reach guests; the site needs a publish.
+1. ~~**Guest submit on a published site, end to end.**~~ **DONE 2026-09-20**, and it caught
+   something no test could.
+
+   The first guest submits stored fine and stamped no user, but arrived with an EMPTY
+   `Submission_Key__c` while `Completion_Time_Seconds__c` was populated — so `meta` was being
+   sent, just without the key. The viewer has minted that key on every payload since S5. The
+   only way it can be absent is a browser running a bundle from before that merge: **an LWR
+   site serves a published snapshot, not what is deployed.** Until the site was republished,
+   D15 was simply not in the browser, and a guest double-clicking Submit would have created two
+   submissions — no code defect, and nothing in any test suite could have seen it.
+
+   After a site publish: `FS-00000107`, blank `Submitted_By__c`, key
+   `5fd88906c174642350b364ccc3366502`. Guest submit, storage, the no-user rule and the
+   idempotency key are all now proven on the live site.
+
+   **Still test-only:** a genuine retry returning the same submission. A reload mints a new key
+   by design, so a browser cannot be made to resend one without interrupting the network. The
+   Apex tests stand as the evidence.
+
 2. ~~**The publish-warning dialog, seen.**~~ **DONE 2026-09-20.** Seen in the org, and it was
    wrong: `LightningConfirm` takes a plain string, so three warnings arrived as one paragraph with
-   the bullets reading as stray dots. Replaced with `c/finalPublishDialog` (#304) for the
-   with-consequences case, plain confirm kept for the rest.
+   the bullets reading as stray dots. Replaced with `c/finalPublishDialog` (#304, #306) for EVERY publish - switching dialogs by warning count would move the buttons under an author between two publishes of the same form. Fixed-sentence confirmations elsewhere stay on LightningConfirm.
 
    This also turned up **D26**: publish warning 1 (type change with answers) cannot be triggered by
    any author action, because nothing in the Studio changes a question's type. Kept as latent code.
@@ -150,8 +164,10 @@ a reset, a check or a guard is a claim, and claims in comments are not verified 
    and it is not small: what happens to a picklist's options on the way to text, whether the stored
    answer survives, and whether the renderer copes are all real questions.
 
-Both are written up as owner-runnable steps; they are the last two claims in F1 that rest on tests
-alone.
+**Both are now closed.** The standing lesson from the pair: every defect they found was invisible
+to the test suites by construction — one lived in a comment, one in a published site snapshot,
+one in a UI path that does not exist. Green tests say the code does what it says; only the org
+says the code is reachable and current.
 
 ## Orphan ledger (unchanged)
 

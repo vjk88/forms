@@ -81,6 +81,8 @@ describe('c-final-publish-dialog', () => {
     });
 
     it('is an ordinary confirmation when there is nothing to warn about', async () => {
+        // a real path: publish always opens this dialog, so that an author
+        // publishing the same form twice is not handed a different one
         const el = mount();
         await flush();
 

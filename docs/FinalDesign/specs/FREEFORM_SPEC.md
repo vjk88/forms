@@ -65,7 +65,7 @@ Freeform = "I know what I want to ask; I'll decide where it goes."
 | D24 | **A known replay is answered before availability is judged.** A retry of the submission that took the last slot must not be told the form is full by its own earlier self                                                                                                                                                                                       | 2026-09-20 |
 | D25 | **The read-only permission set really is restricted** — plain Read, inert until sharing opens a submission. A separate `Freeform_Submission_Admin` carries View All                                                                                                                                                                                             | 2026-09-20 |
 | D26 | **Publish warning 1 (type change) is LATENT and stays that way for now.** No Studio control changes a question type, so no author can reach it. Keep the code - correct, tested, ~25 lines - and record it as waiting on a change-type control rather than pretending it ships as a safeguard                                                                   | 2026-09-20 |
-| D27 | **Publish warnings get a real dialog when there are any, and a plain confirm when there are none.** A control that cannot render a list turns several consequences into one unreadable paragraph                                                                                                                                                                | 2026-09-20 |
+| D27 | **Every publish asks through the publish dialog**, warnings or not. Publish is the only confirmation whose content varies, so it is the only one that needs a list; switching dialogs by warning count would move the buttons under an author between two publishes of the same form. Fixed-sentence confirmations stay on LightningConfirm                     | 2026-09-20 |
 
 ## 3. Phase map
 
@@ -326,13 +326,19 @@ Computing the warnings must never block a publish — but a **failure** to compu
 like "nothing to warn about". The client logs it, because those two outcomes are otherwise identical
 on screen and the reassuring one is the wrong one.
 
-**How they are shown.** A publish with nothing to report asks with a plain `LightningConfirm` — it is
-one sentence, which is that control's size. A publish **with** consequences opens
-`c/finalPublishDialog`, because a plain string cannot hold a list: several warnings ran together
-into one paragraph, the bullet characters read as stray dots mid-sentence, and the standing "the
-live form updates immediately" note landed where it looked like part of the last warning. The
-dialog counts the consequences in its heading, gives each one its own row, keeps the standing note
-outside the list, and names the act on its button ("Publish anyway") rather than saying OK.
+**How they are shown.** Every publish asks through `c/finalPublishDialog`, warnings or not (D27).
+Publish is the one confirmation in the app whose CONTENT varies — the others ("Reset all
+customizations?", "Make this form public?") are fixed sentences and stay on `LightningConfirm`,
+which is the right size for a sentence. A plain string cannot hold a list: several warnings ran
+together into one paragraph, the bullet characters read as stray dots mid-sentence, and the
+standing "the live form updates immediately" note landed where it looked like part of the last
+warning.
+
+The dialog counts the consequences in its heading, gives each one its own row, keeps the standing
+note outside the list, and names the act on its button ("Publish anyway") rather than saying OK.
+It handles the empty case itself rather than letting the Studio pick a dialog by warning count:
+an author publishing the same form twice should not find the buttons moved and the wording
+changed because a warning appeared.
 
 ## 7. Submitting
 

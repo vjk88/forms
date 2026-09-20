@@ -2,16 +2,23 @@ import { api } from 'lwc';
 import LightningModal from 'lightning/modal';
 
 /**
- * The publish confirmation **for a publish that has consequences**.
+ * The publish confirmation — for every publish, with or without warnings.
  *
- * A plain publish does not come here: it is one sentence, and the Studio
- * keeps it on `LightningConfirm`, which is the right size for one sentence.
+ * Publish is the one confirmation in this app whose CONTENT varies. The
+ * others ("Reset all customizations?", "Make this form public?") are fixed
+ * sentences and stay on `LightningConfirm`, which is the right size for a
+ * sentence. This one carries nought to N consequences, and D26 promises a
+ * fourth the day a change-type control lands.
  *
- * What a plain string could not do is hold a LIST. Several warnings ran
- * together into one paragraph, the bullet characters read as stray dots
- * mid-sentence, and "The live form updates immediately" landed after the
- * last warning, where it looked like part of it. A warning nobody can
- * separate from its neighbours is a warning nobody reads.
+ * A plain string cannot hold a LIST. Several warnings ran together into one
+ * paragraph, the bullet characters read as stray dots mid-sentence, and "The
+ * live form updates immediately" landed after the last warning, where it
+ * looked like part of it. A warning nobody can separate from its neighbours
+ * is a warning nobody reads.
+ *
+ * It handles the empty case too rather than letting the Studio switch
+ * dialogs by count: an author publishing the same form twice should not find
+ * the buttons moved and the wording changed because a warning appeared.
  *
  * Closing resolves `true` to publish and `false` to cancel — the same
  * contract the caller already had, so only the presentation changed.
@@ -45,14 +52,11 @@ export default class FinalPublishDialog extends LightningModal {
 
     get heading() {
         const count = this.warnings ? this.warnings.length : 0;
-        if (count === 1) {
-            return 'One thing to know before publishing';
-        }
-        // Not a path — a publish with nothing to report stays on
-        // LightningConfirm. This only keeps a stray open from reading
-        // "0 things to know before publishing".
         if (count === 0) {
             return 'Publish form';
+        }
+        if (count === 1) {
+            return 'One thing to know before publishing';
         }
         return `${count} things to know before publishing`;
     }

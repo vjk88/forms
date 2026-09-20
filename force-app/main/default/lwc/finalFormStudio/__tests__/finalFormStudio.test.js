@@ -2231,7 +2231,7 @@ describe('c-final-form-studio', () => {
                 .querySelector('.st-publish-error .st-retry')
                 .click();
             await micro(24);
-            expect(LightningConfirm.open).toHaveBeenCalledTimes(2);
+            expect(FinalPublishDialog.open).toHaveBeenCalledTimes(2);
             expect(publishSpec).toHaveBeenCalledTimes(2);
             expect(
                 JSON.parse(publishSpec.mock.calls[1][0].specJson).submit.label
@@ -2287,19 +2287,19 @@ describe('c-final-form-studio', () => {
             ).toBeNull();
         });
 
-        // Two dialogs, chosen by whether there is anything to report. The
-        // plain confirm cannot hold a list, and the modal is overkill for one
-        // sentence, so the wrong one is wrong in both directions.
-        it('asks with a plain confirm when publishing costs nothing', async () => {
+        // Publish always asks the same way. Switching dialogs by warning
+        // count would move the buttons and change the wording out from under
+        // an author between two publishes of the same form.
+        it('uses the publish dialog even when there is nothing to report', async () => {
             const element = await ready();
             publish(element);
             await micro(12);
 
-            expect(LightningConfirm.open).toHaveBeenCalledTimes(1);
-            expect(FinalPublishDialog.open).not.toHaveBeenCalled();
-            expect(LightningConfirm.open.mock.calls[0][0].label).toBe(
-                'Publish form'
-            );
+            expect(FinalPublishDialog.open).toHaveBeenCalledTimes(1);
+            expect(LightningConfirm.open).not.toHaveBeenCalled();
+            const opened = FinalPublishDialog.open.mock.calls[0][0];
+            expect(opened.label).toBe('Publish form');
+            expect(opened.warnings).toEqual([]);
         });
 
         it('hands consequences to the dialog that can list them', async () => {
@@ -2338,12 +2338,12 @@ describe('c-final-form-studio', () => {
             publish(element);
             await micro(12);
 
-            expect(LightningConfirm.open).toHaveBeenCalledTimes(1);
+            expect(FinalPublishDialog.open).toHaveBeenCalledTimes(1);
             expect(publishSpec).toHaveBeenCalledTimes(1);
         });
 
         it('does not publish when confirmation is cancelled', async () => {
-            LightningConfirm.open.mockResolvedValue(false);
+            FinalPublishDialog.open.mockResolvedValue(false);
             const element = await ready();
             publish(element);
             await micro(12);
