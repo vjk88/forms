@@ -1209,7 +1209,7 @@ public inherited sharing class FinalSubmitService {
      * What the PUBLISHED question says this answer is (FREEFORM_SPEC 5.2.1),
      * decided by the element and never by the payload.
      */
-    private static String answerTypeOf(Map<String, Object> el) {
+    public static String answerTypeOf(Map<String, Object> el) {
         Object t = el.get('type');
         String elType = t instanceof String ? (String) t : '';
         if (NUMERIC_TYPES.contains(elType)) {
