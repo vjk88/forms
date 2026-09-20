@@ -37,6 +37,17 @@ public with sharing class FinalPublishWarnings {
         // 1. A question whose answers will now land in a different column.
         //    Old rows keep their own Answer_Type__c, so reporting sees one
         //    question stored two ways - worth knowing, not worth blocking.
+        //
+        //    LATENT (D26, found 2026-09-20). No author can reach this today:
+        //    nothing in the Studio writes a question's inputType or its root
+        //    type. A type is fixed when the question is dragged from the
+        //    palette; delete-then-re-add is a DIFFERENT question with a new
+        //    id, which is warning 2; and importForm always creates a new
+        //    Draft form, which has no answers to warn about. Kept because it
+        //    is correct and cheap, and becomes live the day a change-type
+        //    control exists. Its tests build the before/after specs directly,
+        //    which is exactly why the gap went unnoticed - do not read them
+        //    as evidence that the path works.
         for (String elementId : newQuestions.keySet()) {
             if (!liveQuestions.containsKey(elementId)) {
                 continue;
