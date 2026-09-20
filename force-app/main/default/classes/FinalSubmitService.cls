@@ -29,6 +29,58 @@ public inherited sharing class FinalSubmitService {
         GUEST
     }
 
+    /**
+     * WHERE a set of answers is stored.
+     *
+     * Survey and Freeform run the same walk over the same spec and build the
+     * same rows; they differ only in which two objects receive them and
+     * whether survey analytics apply. One descriptor instead of a second copy
+     * of 200 lines - the value columns share their API names precisely so
+     * this can work.
+     */
+    private class AnswerSink {
+        SObjectType answerType;
+        String parentField;
+        Boolean writesAnswerType;
+        Boolean appliesAnalytics;
+
+        AnswerSink(
+            SObjectType answerType,
+            String parentField,
+            Boolean writesAnswerType,
+            Boolean appliesAnalytics
+        ) {
+            this.answerType = answerType;
+            this.parentField = parentField;
+            this.writesAnswerType = writesAnswerType;
+            this.appliesAnalytics = appliesAnalytics;
+        }
+
+        SObject newRow(Id parentId) {
+            SObject row = answerType.newSObject();
+            row.put(parentField, parentId);
+            return row;
+        }
+    }
+
+    private static AnswerSink surveySink() {
+        return new AnswerSink(
+            Form_Response_Answer__c.SObjectType,
+            'Form_Response__c',
+            false,
+            true
+        );
+    }
+
+    private static AnswerSink freeformSink() {
+        return new AnswerSink(
+            Form_Submission_Answer__c.SObjectType,
+            'Form_Submission__c',
+            true,
+            false
+        );
+    }
+
     public class SubmitOutcome {
         public Id recordId;
         public Integer childCount;
@@ -218,12 +270,7 @@ public inherited sharing class FinalSubmitService {
             return runSurvey(spec, payload, versionId, mode);
         }
         if (formType == FinalFormTypes.FREEFORM) {
-            // The Freeform answer store lands in S5; until then nothing can
-            // create a Freeform to submit, and a wrong-path write would be
-            // worse than an honest refusal.
-            throw new AuraHandledException(
-                'Freeform submissions are not available yet.'
-            );
+            return runFreeform(spec, payload, versionId, mode);
         }
         Map<String, Object> answers = asMap(payload.get('answers'));
         Map<String, Object> repeats = asMap(payload.get('repeats'));
@@ -433,6 +480,11 @@ public inherited sharing class FinalSubmitService {
                 'This survey has no published version to submit to.'
             );
         }
+        // D16: counting and then inserting is not atomic, so the form row is
+        // locked for the rest of this transaction whenever a limit exists.
+        // This is the one behavior change the shared extraction makes to
+        // Survey, and it makes the limit mean what it says.
+        lockFormIfCapped(spec, formIdOfVersion(versionId));
         if (responseCapReached(spec, versionId)) {
             throw new AuraHandledException(closedMessage(spec));
         }
@@ -440,30 +492,9 @@ public inherited sharing class FinalSubmitService {
         Map<String, Object> repeats = asMap(payload.get('repeats'));
         Map<String, Object> meta = asMap(payload.get('meta'));
 
-        // one walk: plain elements + repeat plans (same shape as the form path)
         List<Map<String, Object>> flat = new List<Map<String, Object>>();
         List<RepeatPlan> plans = new List<RepeatPlan>();
-        for (Object pageObj : asList(spec.get('pages'))) {
-            for (Object secObj : asList(asMap(pageObj).get('sections'))) {
-                Map<String, Object> sec = asMap(secObj);
-                if (sec == null) {
-                    continue;
-                }
-                if (asMap(sec.get('repeat')) != null) {
-                    RepeatPlan plan = new RepeatPlan();
-                    plan.sectionId = (String) sec.get('id');
-                    plan.elements = asList(sec.get('elements'));
-                    plans.add(plan);
-                    continue;
-                }
-                for (Object elObj : asList(sec.get('elements'))) {
-                    Map<String, Object> el = asMap(elObj);
-                    if (el != null && el.get('id') != null) {
-                        flat.add(el);
-                    }
-                }
-            }
-        }
+        collectElements(spec, flat, plans);
 
         Set<Id> validTopics = validTopicIds(flat, plans);
 
@@ -492,77 +523,22 @@ public inherited sharing class FinalSubmitService {
             return refused;
         }
 
+        AnswerSink sink = surveySink();
         Savepoint sp = Database.setSavepoint();
         try {
             insertFenced(new List<SObject>{ response });
 
-            List<Form_Response_Answer__c> rows = new List<Form_Response_Answer__c>();
             List<List<Id>> topicsPerRow = new List<List<Id>>();
-            for (Map<String, Object> el : flat) {
-                String elId = (String) el.get('id');
-                if (answers == null || !answers.containsKey(elId)) {
-                    continue;
-                }
-                Object raw = answers.get(elId);
-                // matrix (S4): ONE answer row PER STATEMENT — the sole
-                // exception to one-element-one-row (SURVEY_PLAN §2.1)
-                if (isMatrixElement(el) && raw instanceof Map<String, Object>) {
-                    rows.addAll(
-                        matrixAnswerRows(
-                            el,
-                            (Map<String, Object>) raw,
-                            response.Id,
-                            null,
-                            validTopics,
-                            topicsPerRow
-                        )
-                    );
-                    continue;
-                }
-                Form_Response_Answer__c row = answerRow(
-                    el,
-                    raw,
-                    response.Id,
-                    null,
-                    validTopics,
-                    topicsPerRow
-                );
-                if (row != null) {
-                    rows.add(row);
-                }
-            }
-            for (RepeatPlan plan : plans) {
-                List<Object> entries = repeats == null
-                    ? null
-                    : asList(repeats.get(plan.sectionId));
-                if (entries == null) {
-                    continue;
-                }
-                for (Integer i = 0; i < entries.size(); i++) {
-                    Map<String, Object> entry = asMap(entries[i]);
-                    if (entry == null || entry.isEmpty()) {
-                        continue;
-                    }
-                    for (Object elObj : plan.elements) {
-                        Map<String, Object> el = asMap(elObj);
-                        String elId = el == null ? null : (String) el.get('id');
-                        if (elId == null || !entry.containsKey(elId)) {
-                            continue;
-                        }
-                        Form_Response_Answer__c row = answerRow(
-                            el,
-                            entry.get(elId),
-                            response.Id,
-                            i,
-                            validTopics,
-                            topicsPerRow
-                        );
-                        if (row != null) {
-                            rows.add(row);
-                        }
-                    }
-                }
-            }
+            List<SObject> rows = buildAnswerRows(
+                flat,
+                plans,
+                answers,
+                repeats,
+                response.Id,
+                validTopics,
+                topicsPerRow,
+                sink
+            );
             if (!rows.isEmpty()) {
                 insertFenced(rows);
             }
@@ -571,7 +547,7 @@ public inherited sharing class FinalSubmitService {
                 for (Id topicId : topicsPerRow[i]) {
                     links.add(
                         new Form_Answer_Topic__c(
-                            Answer__c = rows[i].Id,
+                            Answer__c = (Id) rows[i].get('Id'),
                             Topic__c = topicId
                         )
                     );
@@ -582,7 +558,7 @@ public inherited sharing class FinalSubmitService {
             }
 
             // Survey-object writeback (SURVEY_OBJECT_SPEC, owner 2026-07-31):
-            // mapped answers ALSO update the context record — USER MODE, not
+            // mapped answers ALSO update the context record - USER MODE, not
             // the fenced system-mode above (updating a business record needs
             // the runner's real edit rights), inside this savepoint so answer
             // rows and the record land or roll back together. Internal only;
@@ -591,7 +567,7 @@ public inherited sharing class FinalSubmitService {
                 applyMappedWriteback(spec, flat, answers, meta);
             }
 
-            // Survey attachments hang off the response record itself — the
+            // Survey attachments hang off the response record itself - the
             // only record this transaction owns. Inside the savepoint.
             attachFiles(response.Id, spec, payload, mode);
 
@@ -605,7 +581,7 @@ public inherited sharing class FinalSubmitService {
         } catch (DmlException e) {
             Database.rollback(sp);
             // A survey's own answer rows are app-owned and system-mode, so a
-            // DML failure here is almost always the MAPPED WRITEBACK — real
+            // DML failure here is almost always the MAPPED WRITEBACK - real
             // fields on the connected record, rejected by a validation rule or
             // the runner's edit rights. That is a failure the respondent can
             // actually act on, and it is worth naming: the writeback sits
@@ -630,6 +606,307 @@ public inherited sharing class FinalSubmitService {
                 'Your response could not be saved. Nothing was recorded.'
             );
         }
+    }
+
+    /**
+     * Freeform submit (FREEFORM_SPEC F1).
+     *
+     * Same fenced, create-only posture as a survey response: the published
+     * spec is the allow-list, the server decides every field, and the write
+     * is system-mode over app-owned objects only. What differs:
+     *   - the submission carries an idempotency key, so a browser that never
+     *     saw our response can retry without storing a second submission;
+     *   - every answer row records Answer_Type__c;
+     *   - no analytics, no topics, and no mapped writeback (that is F2, and
+     *     it will run in its OWN transaction - a savepoint cannot protect
+     *     answers from an uncatchable failure).
+     */
+    private static SubmitOutcome runFreeform(
+        Map<String, Object> spec,
+        Map<String, Object> payload,
+        Id versionId,
+        Posture mode
+    ) {
+        if (versionId == null) {
+            throw new AuraHandledException(
+                'This form has no published version to submit to.'
+            );
+        }
+        Map<String, Object> meta = asMap(payload.get('meta'));
+        String submissionKey = getStr(meta, 'submissionKey');
+
+        // A repeat of an attempt we already stored is not an error: the
+        // browser lost our answer, not its mind.
+        SubmitOutcome replayed = existingSubmission(submissionKey);
+        if (replayed != null) {
+            return replayed;
+        }
+
+        Id formId = formIdOfVersion(versionId);
+        // Counting and then inserting is not atomic: two submissions can both
+        // pass the count for the last free slot. When a limit is configured,
+        // the form row is locked for the rest of this transaction so
+        // acceptance is serialized.
+        lockFormIfCapped(spec, formId);
+        if (responseCapReached(spec, versionId)) {
+            throw new AuraHandledException(closedMessage(spec));
+        }
+
+        Map<String, Object> answers = asMap(payload.get('answers'));
+        Map<String, Object> repeats = asMap(payload.get('repeats'));
+
+        List<Map<String, Object>> flat = new List<Map<String, Object>>();
+        List<RepeatPlan> plans = new List<RepeatPlan>();
+        collectElements(spec, flat, plans);
+
+        List<FieldError> badLookups = lookupErrors(spec, answers, mode);
+        if (!badLookups.isEmpty()) {
+            SubmitOutcome refused = new SubmitOutcome();
+            refused.errors = badLookups;
+            return refused;
+        }
+
+        Form_Submission__c submission = new Form_Submission__c(
+            Form__c = formId,
+            Form_Version__c = versionId,
+            Submitted_Date__c = Datetime.now(),
+            Completion_Time_Seconds__c = completionSeconds(meta)
+        );
+        if (String.isNotBlank(submissionKey)) {
+            submission.Submission_Key__c = submissionKey.abbreviate(64);
+        }
+        if (!isAnonymous(spec) && mode == Posture.INTERNAL) {
+            submission.Submitted_By__c = UserInfo.getUserId();
+        }
+        String sess = getStr(meta, 'sessionId');
+        if (sess != null) {
+            submission.Session_Id__c = sess.abbreviate(255);
+        }
+
+        AnswerSink sink = freeformSink();
+        Savepoint sp = Database.setSavepoint();
+        try {
+            insertFenced(new List<SObject>{ submission });
+
+            List<SObject> rows = buildAnswerRows(
+                flat,
+                plans,
+                answers,
+                repeats,
+                submission.Id,
+                new Set<Id>(),
+                new List<List<Id>>(),
+                sink
+            );
+            if (!rows.isEmpty()) {
+                insertFenced(rows);
+            }
+            attachFiles(submission.Id, spec, payload, mode);
+
+            SubmitOutcome res = new SubmitOutcome();
+            res.recordId = submission.Id;
+            res.childCount = rows.size();
+            return res;
+        } catch (AuraHandledException e) {
+            Database.rollback(sp);
+            throw e;
+        } catch (DmlException e) {
+            Database.rollback(sp);
+            // Two submissions racing on the same key: whoever lost reads the
+            // winner back rather than reporting a failure the person cannot
+            // act on. Salesforce enforces this with a unique index, which no
+            // amount of checking-first could do.
+            if (isDuplicateKey(e)) {
+                SubmitOutcome winner = existingSubmission(submissionKey);
+                if (winner != null) {
+                    return winner;
+                }
+            }
+            throw new AuraHandledException(
+                'Your answers could not be saved. Nothing was recorded.'
+            );
+        } catch (Exception e) {
+            Database.rollback(sp);
+            throw new AuraHandledException(
+                'Your answers could not be saved. Nothing was recorded.'
+            );
+        }
+    }
+
+    /** The submission already stored under this key, or null. System mode:
+     *  the key is a secret the client just proved it holds, and a guest can
+     *  read nothing. */
+    private static SubmitOutcome existingSubmission(String submissionKey) {
+        if (String.isBlank(submissionKey)) {
+            return null;
+        }
+        List<SObject> found = Database.queryWithBinds(
+            'SELECT Id, (SELECT Id FROM Answers__r) FROM Form_Submission__c ' +
+            'WHERE Submission_Key__c = :k LIMIT 1',
+            new Map<String, Object>{ 'k' => submissionKey.abbreviate(64) },
+            AccessLevel.SYSTEM_MODE
+        );
+        if (found.isEmpty()) {
+            return null;
+        }
+        SubmitOutcome res = new SubmitOutcome();
+        res.recordId = found[0].Id;
+        List<SObject> kids = found[0].getSObjects('Answers__r');
+        res.childCount = kids == null ? 0 : kids.size();
+        return res;
+    }
+
+    private static Boolean isDuplicateKey(DmlException e) {
+        for (Integer i = 0; i < e.getNumDml(); i++) {
+            if (e.getDmlType(i) == StatusCode.DUPLICATE_VALUE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Id formIdOfVersion(Id versionId) {
+        List<SObject> vs = Database.queryWithBinds(
+            'SELECT Form__c FROM Form_Version__c WHERE Id = :vid',
+            new Map<String, Object>{ 'vid' => versionId },
+            AccessLevel.SYSTEM_MODE
+        );
+        if (vs.isEmpty()) {
+            throw new AuraHandledException('This form is not available.');
+        }
+        return (Id) vs[0].get('Form__c');
+    }
+
+    /**
+     * Serializes acceptance while a response limit is in force (D16).
+     *
+     * FOR UPDATE holds the form row until this transaction commits, so a
+     * second submission waits rather than counting the same free slot. Only
+     * taken when a limit exists - an uncapped form pays nothing.
+     */
+    private static void lockFormIfCapped(Map<String, Object> spec, Id formId) {
+        Map<String, Object> avail = availability(spec);
+        Decimal cap = avail == null
+            ? null
+            : numOrNull(avail.get('responseCap'));
+        if (cap == null || cap <= 0 || formId == null) {
+            return;
+        }
+        Database.queryWithBinds(
+            'SELECT Id FROM Form__c WHERE Id = :fid FOR UPDATE',
+            new Map<String, Object>{ 'fid' => formId },
+            AccessLevel.SYSTEM_MODE
+        );
+    }
+
+    /** One walk over the spec: plain elements and repeat plans. */
+    private static void collectElements(
+        Map<String, Object> spec,
+        List<Map<String, Object>> flat,
+        List<RepeatPlan> plans
+    ) {
+        for (Object pageObj : asList(spec.get('pages'))) {
+            for (Object secObj : asList(asMap(pageObj).get('sections'))) {
+                Map<String, Object> sec = asMap(secObj);
+                if (sec == null) {
+                    continue;
+                }
+                if (asMap(sec.get('repeat')) != null) {
+                    RepeatPlan plan = new RepeatPlan();
+                    plan.sectionId = (String) sec.get('id');
+                    plan.elements = asList(sec.get('elements'));
+                    plans.add(plan);
+                    continue;
+                }
+                for (Object elObj : asList(sec.get('elements'))) {
+                    Map<String, Object> el = asMap(elObj);
+                    if (el != null && el.get('id') != null) {
+                        flat.add(el);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Answered elements + repeat entries -> typed rows, for either store. */
+    private static List<SObject> buildAnswerRows(
+        List<Map<String, Object>> flat,
+        List<RepeatPlan> plans,
+        Map<String, Object> answers,
+        Map<String, Object> repeats,
+        Id parentId,
+        Set<Id> validTopics,
+        List<List<Id>> topicsPerRow,
+        AnswerSink sink
+    ) {
+        List<SObject> rows = new List<SObject>();
+        for (Map<String, Object> el : flat) {
+            String elId = (String) el.get('id');
+            if (answers == null || !answers.containsKey(elId)) {
+                continue;
+            }
+            Object raw = answers.get(elId);
+            if (isMatrixElement(el) && raw instanceof Map<String, Object>) {
+                rows.addAll(
+                    matrixAnswerRows(
+                        el,
+                        (Map<String, Object>) raw,
+                        parentId,
+                        null,
+                        validTopics,
+                        topicsPerRow,
+                        sink
+                    )
+                );
+                continue;
+            }
+            SObject row = answerRow(
+                el,
+                raw,
+                parentId,
+                null,
+                validTopics,
+                topicsPerRow,
+                sink
+            );
+            if (row != null) {
+                rows.add(row);
+            }
+        }
+        for (RepeatPlan plan : plans) {
+            List<Object> entries = repeats == null
+                ? null
+                : asList(repeats.get(plan.sectionId));
+            if (entries == null) {
+                continue;
+            }
+            for (Integer i = 0; i < entries.size(); i++) {
+                Map<String, Object> entry = asMap(entries[i]);
+                if (entry == null || entry.isEmpty()) {
+                    continue;
+                }
+                for (Object elObj : plan.elements) {
+                    Map<String, Object> el = asMap(elObj);
+                    String elId = el == null ? null : (String) el.get('id');
+                    if (elId == null || !entry.containsKey(elId)) {
+                        continue;
+                    }
+                    SObject row = answerRow(
+                        el,
+                        entry.get(elId),
+                        parentId,
+                        i,
+                        validTopics,
+                        topicsPerRow,
+                        sink
+                    );
+                    if (row != null) {
+                        rows.add(row);
+                    }
+                }
+            }
+        }
+        return rows;
     }
 
     private static Boolean isMatrixElement(Map<String, Object> el) {
@@ -739,15 +1016,16 @@ public inherited sharing class FinalSubmitService {
      *  carries "question — statement" so reports read standalone. Topics and
      *  the normalized score apply PER ROW (each appends to topicsPerRow —
      *  the caller's alignment law). */
-    private static List<Form_Response_Answer__c> matrixAnswerRows(
+    private static List<SObject> matrixAnswerRows(
         Map<String, Object> el,
         Map<String, Object> picks,
-        Id responseId,
+        Id parentId,
         Integer entryIndex,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow
+        List<List<Id>> topicsPerRow,
+        AnswerSink sink
     ) {
-        List<Form_Response_Answer__c> out = new List<Form_Response_Answer__c>();
+        List<SObject> out = new List<SObject>();
         Map<String, Object> config = asMap(el.get('config'));
         Map<String, String> statementLabels = new Map<String, String>();
         for (Object rObj : asList(config == null ? null : config.get('rows'))) {
@@ -770,20 +1048,33 @@ public inherited sharing class FinalSubmitService {
             if (v == null) {
                 continue;
             }
-            Form_Response_Answer__c row = new Form_Response_Answer__c(
-                Form_Response__c = responseId,
-                Element_Key__c = (elId + ':' + statementKey).abbreviate(255),
-                Entry_Index__c = entryIndex
+            SObject row = sink.newRow(parentId);
+            row.put(
+                'Element_Key__c',
+                (elId + ':' + statementKey).abbreviate(255)
             );
+            row.put('Entry_Index__c', entryIndex);
             String stLabel = statementLabels.containsKey(statementKey)
                 ? statementLabels.get(statementKey)
                 : statementKey;
-            row.Label_Snapshot__c = (qLabel + ' — ' + stLabel).abbreviate(255);
-            row.Numeric_Value__c = numOrNull(v);
-            if (row.Numeric_Value__c == null) {
-                row.Text_Value__c = String.valueOf(v);
+            row.put(
+                'Label_Snapshot__c',
+                (qLabel + ' — ' + stLabel).abbreviate(255)
+            );
+            Decimal numeric = numOrNull(v);
+            row.put('Numeric_Value__c', numeric);
+            if (numeric == null) {
+                row.put('Text_Value__c', String.valueOf(v));
             }
-            applyAnalytics(row, el, validTopics, topicsPerRow);
+            // A matrix row is typed by ITS OWN value, not the question:
+            // a scale matrix stores numbers, a choice matrix stores picks.
+            if (sink.writesAnswerType) {
+                row.put(
+                    'Answer_Type__c',
+                    numeric == null ? 'Choice' : 'Number'
+                );
+            }
+            applyAnalytics(row, el, validTopics, topicsPerRow, sink);
             out.add(row);
         }
         return out;
@@ -792,13 +1083,14 @@ public inherited sharing class FinalSubmitService {
     /** One answered element → one typed answer row; its valid topic ids are
      *  appended (as one list) to the parallel topicsPerRow. Blank values
      *  return null — nothing to store (Boolean false is NOT blank). */
-    private static Form_Response_Answer__c answerRow(
+    private static SObject answerRow(
         Map<String, Object> el,
         Object value,
-        Id responseId,
+        Id parentId,
         Integer entryIndex,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow
+        List<List<Id>> topicsPerRow,
+        AnswerSink sink
     ) {
         if (value == null) {
             return null;
@@ -809,17 +1101,15 @@ public inherited sharing class FinalSubmitService {
         if (value instanceof List<Object> && ((List<Object>) value).isEmpty()) {
             return null;
         }
-        Form_Response_Answer__c row = new Form_Response_Answer__c(
-            Form_Response__c = responseId,
-            Element_Key__c = (String) el.get('id'),
-            Entry_Index__c = entryIndex
-        );
+        SObject row = sink.newRow(parentId);
+        row.put('Element_Key__c', (String) el.get('id'));
+        row.put('Entry_Index__c', entryIndex);
         Object label = el.get('label');
         if (label instanceof String) {
-            row.Label_Snapshot__c = ((String) label).abbreviate(255);
+            row.put('Label_Snapshot__c', ((String) label).abbreviate(255));
         }
-        writeTypedValue(row, el, value);
-        applyAnalytics(row, el, validTopics, topicsPerRow);
+        writeTypedValue(row, el, value, sink);
+        applyAnalytics(row, el, validTopics, topicsPerRow, sink);
         return row;
     }
 
@@ -829,17 +1119,170 @@ public inherited sharing class FinalSubmitService {
      *  never a crash, never a dropped answer. */
     // Failed typed parsing intentionally falls through to the text fallback.
     @SuppressWarnings('PMD.EmptyCatchBlock')
+    /**
+     * Typed storage is part of the type (SURVEY_PLAN 2.0.4).
+     *
+     * Survey picks the column from the JSON value's own shape. Freeform
+     * cannot: FREEFORM_SPEC 5.2.1 promises the SAME question always stores
+     * the same way, whether the payload carried 42 or "42", so its column
+     * comes from the PUBLISHED question and Answer_Type__c records which one
+     * holds it. A value that will not convert is kept as text and flagged
+     * Value_Unparsed__c - never dropped, never silently retyped.
+     */
     private static void writeTypedValue(
-        Form_Response_Answer__c row,
+        SObject row,
+        Map<String, Object> el,
+        Object value,
+        AnswerSink sink
+    ) {
+        if (!sink.writesAnswerType) {
+            writeUntypedValue(row, el, value);
+            return;
+        }
+        String answerType = answerTypeOf(el);
+        row.put('Answer_Type__c', answerType);
+        if (answerType == 'Options') {
+            List<Object> many = value instanceof List<Object>
+                ? (List<Object>) value
+                : new List<Object>{ value };
+            row.put('Selected_Options_JSON__c', JSON.serialize(many));
+            return;
+        }
+        if (answerType == 'Boolean') {
+            if (value instanceof Boolean) {
+                row.put('Boolean_Value__c', (Boolean) value);
+                return;
+            }
+            String s = String.valueOf(value).toLowerCase();
+            if (s == 'true' || s == 'false') {
+                row.put('Boolean_Value__c', s == 'true');
+                return;
+            }
+            unparsed(row, value);
+            return;
+        }
+        if (answerType == 'Number') {
+            try {
+                row.put(
+                    'Numeric_Value__c',
+                    Decimal.valueOf(String.valueOf(value))
+                );
+            } catch (Exception e) {
+                unparsed(row, value);
+            }
+            return;
+        }
+        if (answerType == 'Date') {
+            try {
+                row.put('Date_Value__c', Date.valueOf(String.valueOf(value)));
+            } catch (Exception e) {
+                unparsed(row, value);
+            }
+            return;
+        }
+        if (answerType == 'DateTime') {
+            try {
+                row.put(
+                    'DateTime_Value__c',
+                    (Datetime) JSON.deserialize(
+                        '"' + String.valueOf(value) + '"',
+                        Datetime.class
+                    )
+                );
+            } catch (Exception e) {
+                unparsed(row, value);
+            }
+            return;
+        }
+        // Text, Email, Phone, URL and Choice all live in the text column;
+        // Answer_Type__c is what tells them apart.
+        row.put('Text_Value__c', String.valueOf(value).abbreviate(32768));
+    }
+
+    /** The raw value survives in the text column, marked as not converted. */
+    private static void unparsed(SObject row, Object value) {
+        row.put('Value_Unparsed__c', true);
+        row.put('Text_Value__c', String.valueOf(value).abbreviate(32768));
+    }
+
+    /**
+     * What the PUBLISHED question says this answer is (FREEFORM_SPEC 5.2.1),
+     * decided by the element and never by the payload.
+     */
+    private static String answerTypeOf(Map<String, Object> el) {
+        Object t = el.get('type');
+        String elType = t instanceof String ? (String) t : '';
+        if (NUMERIC_TYPES.contains(elType)) {
+            return 'Number';
+        }
+        if (elType == 'yesNo' || elType == 'consent') {
+            return 'Boolean';
+        }
+        if (elType == 'ranking') {
+            return 'Options';
+        }
+        Map<String, Object> config = asMap(el.get('config'));
+        if (elType == 'imageChoice') {
+            Object multiple = config == null ? null : config.get('multiple');
+            return multiple == true ? 'Options' : 'Choice';
+        }
+        Object input = config == null ? null : config.get('inputType');
+        String kind = input instanceof String
+            ? ((String) input).toLowerCase()
+            : 'text';
+        if (kind == 'email') {
+            return 'Email';
+        }
+        if (kind == 'phone' || kind == 'tel') {
+            return 'Phone';
+        }
+        if (kind == 'url') {
+            return 'URL';
+        }
+        if (kind == 'date') {
+            return 'Date';
+        }
+        if (kind == 'datetime' || kind == 'datetime-local') {
+            return 'DateTime';
+        }
+        if (
+            kind == 'number' ||
+            kind == 'currency' ||
+            kind == 'percent' ||
+            kind == 'slider'
+        ) {
+            return 'Number';
+        }
+        if (kind == 'checkbox') {
+            return 'Boolean';
+        }
+        if (kind == 'picklist' || kind == 'multipicklist') {
+            Object renderAs = config == null ? null : config.get('renderAs');
+            String how = renderAs instanceof String ? (String) renderAs : '';
+            Boolean multi =
+                kind == 'multipicklist' ||
+                how == 'Checkbox_Group' ||
+                how == 'Custom_MultiSelect';
+            return multi ? 'Options' : 'Choice';
+        }
+        return 'Text';
+    }
+
+    /** The survey rule, unchanged: the JSON value's own shape picks the
+     *  column, then the element's declared kind, then text. */
+    // Failed typed parsing intentionally falls through to the text fallback.
+    @SuppressWarnings('PMD.EmptyCatchBlock')
+    private static void writeUntypedValue(
+        SObject row,
         Map<String, Object> el,
         Object value
     ) {
         if (value instanceof Boolean) {
-            row.Boolean_Value__c = (Boolean) value;
+            row.put('Boolean_Value__c', (Boolean) value);
             return;
         }
         if (value instanceof List<Object>) {
-            row.Selected_Options_JSON__c = JSON.serialize(value);
+            row.put('Selected_Options_JSON__c', JSON.serialize(value));
             return;
         }
         if (
@@ -848,37 +1291,37 @@ public inherited sharing class FinalSubmitService {
             value instanceof Double ||
             value instanceof Long
         ) {
-            row.Numeric_Value__c = Decimal.valueOf(String.valueOf(value));
+            row.put('Numeric_Value__c', Decimal.valueOf(String.valueOf(value)));
             return;
         }
         String s = String.valueOf(value);
         String kind = valueKind(el);
         if (kind == 'number') {
             try {
-                row.Numeric_Value__c = Decimal.valueOf(s);
+                row.put('Numeric_Value__c', Decimal.valueOf(s));
                 return;
             } catch (Exception e) {
                 // fall through to text
             }
         } else if (kind == 'date') {
             try {
-                row.Date_Value__c = Date.valueOf(s);
+                row.put('Date_Value__c', Date.valueOf(s));
                 return;
             } catch (Exception e) {
                 // fall through to text
             }
         } else if (kind == 'datetime') {
             try {
-                row.DateTime_Value__c = (Datetime) JSON.deserialize(
-                    '"' + s + '"',
-                    Datetime.class
+                row.put(
+                    'DateTime_Value__c',
+                    (Datetime) JSON.deserialize('"' + s + '"', Datetime.class)
                 );
                 return;
             } catch (Exception e) {
                 // fall through to text
             }
         }
-        row.Text_Value__c = s.abbreviate(32768);
+        row.put('Text_Value__c', s.abbreviate(32768));
     }
 
     private static final Set<String> NUMERIC_TYPES = new Set<String>{
@@ -926,32 +1369,39 @@ public inherited sharing class FinalSubmitService {
      *  Unknown/retired topic ids keep their display name but get no link —
      *  never fail a submit over a tag (IMPL_PLAN 7-3). */
     private static void applyAnalytics(
-        Form_Response_Answer__c row,
+        SObject row,
         Map<String, Object> el,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow
+        List<List<Id>> topicsPerRow,
+        AnswerSink sink
     ) {
         List<Id> rowTopics = new List<Id>();
+        // Freeform has no analytics (D4), but the parallel-list law still
+        // holds: EVERY row appends exactly one (possibly empty) entry.
+        if (!sink.appliesAnalytics) {
+            topicsPerRow.add(rowTopics);
+            return;
+        }
         Map<String, Object> analytics = asMap(el.get('analytics'));
+        Decimal numeric = (Decimal) row.get('Numeric_Value__c');
         if (analytics != null) {
             Object role = analytics.get('role');
             if (
                 role instanceof String &&
                 (String) role == 'score' &&
-                row.Numeric_Value__c != null
+                numeric != null
             ) {
                 Decimal minV = numOrNull(analytics.get('scaleMin'));
                 Decimal maxV = numOrNull(analytics.get('scaleMax'));
                 if (minV != null && maxV != null && maxV > minV) {
-                    Decimal norm =
-                        ((row.Numeric_Value__c - minV) / (maxV - minV)) * 100;
+                    Decimal norm = ((numeric - minV) / (maxV - minV)) * 100;
                     if (norm < 0) {
                         norm = 0;
                     }
                     if (norm > 100) {
                         norm = 100;
                     }
-                    row.Normalized_Score__c = norm.setScale(2);
+                    row.put('Normalized_Score__c', norm.setScale(2));
                 }
             }
             List<String> names = new List<String>();
@@ -970,8 +1420,10 @@ public inherited sharing class FinalSubmitService {
                 }
             }
             if (!names.isEmpty()) {
-                row.Topic_Snapshot__c = String.join(names, '; ')
-                    .abbreviate(255);
+                row.put(
+                    'Topic_Snapshot__c',
+                    String.join(names, '; ').abbreviate(255)
+                );
             }
         }
         topicsPerRow.add(rowTopics);
@@ -1116,8 +1568,17 @@ public inherited sharing class FinalSubmitService {
             return false;
         }
         Id formId = (Id) vs[0].get('Form__c');
+        // Each answer store counts its OWN rows. Counting survey responses
+        // for a Freeform would report zero forever, and the limit would be a
+        // setting that does nothing (caught by its own test, S5).
+        String soql = FinalFormTypes.fromSpecOrDefault(
+                spec,
+                FinalFormTypes.SURVEY
+            ) == FinalFormTypes.FREEFORM
+            ? 'SELECT COUNT() FROM Form_Submission__c WHERE Form__c = :fid'
+            : 'SELECT COUNT() FROM Form_Response__c WHERE Form_Version__r.Form__c = :fid';
         Integer taken = Database.countQueryWithBinds(
-            'SELECT COUNT() FROM Form_Response__c WHERE Form_Version__r.Form__c = :fid',
+            soql,
             new Map<String, Object>{ 'fid' => formId },
             AccessLevel.SYSTEM_MODE
         );
