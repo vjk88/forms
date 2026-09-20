@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Freeform_Submission_Reader</fullName>
-    <label>Freeform Submission Reader</label>
+    <fullName>Freeform_Submission_Admin</fullName>
+    <label>Freeform Submission Admin</label>
     <description
-    >Read the Freeform submissions shared with you. Form_Submission__c is org-wide Private, so this set alone shows nothing until a share opens a submission - that is the point. To read every submission instead, assign Freeform Submission Admin.</description>
+    >Read EVERY Freeform submission and its answers, without the builder. The unrestricted counterpart to Freeform Submission Reader: View All Records, no sharing needed. Assign only to people whose job is all submissions.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <classAccesses>
         <apexClass>FinalSubmissionController</apexClass>
@@ -16,7 +16,7 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>Form_Submission__c</object>
-        <viewAllRecords>false</viewAllRecords>
+        <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
         <allowCreate>false</allowCreate>

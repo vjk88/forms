@@ -17,6 +17,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>FinalPublishWarnings</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>FinalSpecController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -26,6 +30,10 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FinalStudioPageController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>FinalSubmissionController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>

@@ -2684,6 +2684,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      * A failure here must never stop a publish: the warnings are a courtesy,
      * and refusing to publish because we could not compute them would be a
      * worse outcome than publishing without them.
+     *
+     * But it is logged, because the failure mode is indistinguishable from
+     * "nothing to warn about" — a missing Apex class grant would quietly turn
+     * the whole feature off and read as reassurance. The console is the only
+     * place that difference can show without nagging the author.
      */
     async _publishWarnings() {
         try {
@@ -2692,7 +2697,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 specJson: JSON.stringify(this.spec)
             });
             return found || [];
-        } catch {
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('Publish warnings unavailable:', e);
             return [];
         }
     }
