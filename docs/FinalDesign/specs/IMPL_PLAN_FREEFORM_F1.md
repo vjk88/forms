@@ -139,8 +139,16 @@ a reset, a check or a guard is a claim, and claims in comments are not verified 
    submit path in three places (replay short-circuit ahead of the honeypot and link checks,
    unconditional version validation, form-scoped key lookup) — all covered by Apex tests, none by a
    real submit through LWR. Remember a deploy alone does not reach guests; the site needs a publish.
-2. **The publish-warning dialog, seen.** `FinalPublishWarnings` has 8 Apex tests and the Studio
-   wiring has jest, but nobody has watched the dialog appear.
+2. ~~**The publish-warning dialog, seen.**~~ **DONE 2026-09-20.** Seen in the org, and it was
+   wrong: `LightningConfirm` takes a plain string, so three warnings arrived as one paragraph with
+   the bullets reading as stray dots. Replaced with `c/finalPublishDialog` (#304) for the
+   with-consequences case, plain confirm kept for the rest.
+
+   This also turned up **D26**: publish warning 1 (type change with answers) cannot be triggered by
+   any author action, because nothing in the Studio changes a question's type. Kept as latent code.
+   The feature that would make it live — **a change-type control** — is a candidate slice near F2,
+   and it is not small: what happens to a picklist's options on the way to text, whether the stored
+   answer survives, and whether the renderer copes are all real questions.
 
 Both are written up as owner-runnable steps; they are the last two claims in F1 that rest on tests
 alone.

@@ -64,6 +64,8 @@ Freeform = "I know what I want to ask; I'll decide where it goes."
 | D23 | **The idempotency key lives exactly as long as the answers it identifies** — cleared by the same code that clears them. The server matches it **scoped to the form**, so a stale key fails loudly instead of returning a stranger's submission                                                                                                                  | 2026-09-20 |
 | D24 | **A known replay is answered before availability is judged.** A retry of the submission that took the last slot must not be told the form is full by its own earlier self                                                                                                                                                                                       | 2026-09-20 |
 | D25 | **The read-only permission set really is restricted** — plain Read, inert until sharing opens a submission. A separate `Freeform_Submission_Admin` carries View All                                                                                                                                                                                             | 2026-09-20 |
+| D26 | **Publish warning 1 (type change) is LATENT and stays that way for now.** No Studio control changes a question type, so no author can reach it. Keep the code - correct, tested, ~25 lines - and record it as waiting on a change-type control rather than pretending it ships as a safeguard                                                                   | 2026-09-20 |
+| D27 | **Publish warnings get a real dialog when there are any, and a plain confirm when there are none.** A control that cannot render a list turns several consequences into one unreadable paragraph                                                                                                                                                                | 2026-09-20 |
 
 ## 3. Phase map
 
@@ -308,6 +310,12 @@ version.
 1. **Type change with answers collected** (D12) — _"Answers already collected for 'Your email' are
    stored as text. New answers will be stored as numbers, so reports will show this question in two
    places."_
+   **LATENT — no author can trigger this today** (found 2026-09-20, D26). Nothing in the Studio
+   writes a question's `inputType` or its root `type`: a question's type is fixed when it is
+   dragged from the palette, and delete-then-re-add is a _different_ question with a new id, which
+   is warning 2. Import does not reach it either — `importForm` always creates a new Draft form,
+   which has no answers to warn about. The code is correct and tested; it guards a door that has
+   no handle until a change-type control exists.
 2. **Deleting a question that has answers** (D12) — re-adding it later creates a different question
    for reporting.
 3. **Public access + file questions** (D20) — _"'Attach your CV' can't accept files from people who
@@ -317,6 +325,14 @@ version.
 Computing the warnings must never block a publish — but a **failure** to compute them must not look
 like "nothing to warn about". The client logs it, because those two outcomes are otherwise identical
 on screen and the reassuring one is the wrong one.
+
+**How they are shown.** A publish with nothing to report asks with a plain `LightningConfirm` — it is
+one sentence, which is that control's size. A publish **with** consequences opens
+`c/finalPublishDialog`, because a plain string cannot hold a list: several warnings ran together
+into one paragraph, the bullet characters read as stray dots mid-sentence, and the standing "the
+live form updates immediately" note landed where it looked like part of the last warning. The
+dialog counts the consequences in its heading, gives each one its own row, keeps the standing note
+outside the list, and names the act on its button ("Publish anyway") rather than saying OK.
 
 ## 7. Submitting
 
