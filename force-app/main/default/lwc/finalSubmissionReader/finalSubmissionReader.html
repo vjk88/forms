@@ -1,0 +1,82 @@
+<template>
+    <lightning-card icon-name="standard:form" title="Answers">
+        <template lwc:if={error}>
+            <p class="sr-error slds-p-horizontal_medium" role="alert">
+                {error}
+            </p>
+        </template>
+
+        <template lwc:if={hasData}>
+            <div class="slds-p-horizontal_medium sr-head">
+                <p class="sr-form">{header.formName}</p>
+                <p class="sr-meta">
+                    {header.submissionNumber} · {header.submittedBy} ·
+                    <lightning-formatted-date-time
+                        value={header.submittedDate}
+                        year="numeric"
+                        month="short"
+                        day="2-digit"
+                        hour="2-digit"
+                        minute="2-digit"
+                    ></lightning-formatted-date-time>
+                    <template lwc:if={header.versionLabel}>
+                        · {header.versionLabel}
+                    </template>
+                </p>
+                <p class="sr-note">
+                    Shown as this form asked it at the time — later edits to the
+                    form do not change what is here.
+                </p>
+            </div>
+
+            <template for:each={sections} for:item="section">
+                <section key={section.key} class="sr-section">
+                    <template lwc:if={section.title}>
+                        <h3 class="sr-section-title">{section.title}</h3>
+                    </template>
+                    <dl class="sr-rows">
+                        <template for:each={section.rows} for:item="row">
+                            <div key={row.key} class="sr-row">
+                                <dt class="sr-label">{row.label}</dt>
+                                <dd class="sr-value">
+                                    <template lwc:if={row.answered}>
+                                        <span class="sr-answer"
+                                            >{row.value}</span
+                                        >
+                                        <template lwc:if={row.unparsed}>
+                                            <span class="sr-unparsed"
+                                                >{row.note}</span
+                                            >
+                                        </template>
+                                    </template>
+                                    <template lwc:else>
+                                        <span class="sr-skipped"
+                                            >{row.value}</span
+                                        >
+                                    </template>
+                                </dd>
+                            </div>
+                        </template>
+                    </dl>
+                </section>
+            </template>
+
+            <template lwc:if={hasFiles}>
+                <section class="sr-section">
+                    <h3 class="sr-section-title">Files</h3>
+                    <ul class="sr-files">
+                        <template for:each={files} for:item="file">
+                            <li key={file.id} class="sr-file">
+                                <lightning-icon
+                                    icon-name="doctype:attachment"
+                                    size="x-small"
+                                ></lightning-icon>
+                                <span>{file.title}</span>
+                            </li>
+                        </template>
+                    </ul>
+                </section>
+            </template>
+        </template>
+    </lightning-card>
+</template>
