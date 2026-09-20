@@ -2,6 +2,7 @@ import { LightningElement, track, wire } from 'lwc';
 import getUpdatableObjects from '@salesforce/apex/FinalFormCreateController.getUpdatableObjects';
 import createForm from '@salesforce/apex/FinalFormCreateController.createForm';
 import createSurveyFromTemplate from '@salesforce/apex/FinalFormCreateController.createSurveyFromTemplate';
+import createFreeformFromTemplate from '@salesforce/apex/FinalFormCreateController.createFreeformFromTemplate';
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
 import { studioUrl } from 'c/finalStudioLink';
@@ -112,13 +113,24 @@ const SURVEY_TEMPLATES = [
     }
 ];
 
+/** The Freeform shelf (FREEFORM_SPEC D5). F1 ships one entry; the curated
+ *  catalog arrives in F3. Unlike surveys, a freeform picks its layout. */
+const FREEFORM_TEMPLATES = [
+    {
+        key: 'blank',
+        name: 'Blank freeform',
+        icon: 'utility:add',
+        blurb: 'An empty canvas — ask anything, then decide later where the answers go in Salesforce.'
+    }
+];
+
 export default class FinalCreationGallery extends LightningElement {
     // kind → (form) layout → theme → details → done
     // kind → (survey) templates → theme → surveyDetails → done
     // (owner 2026-07-31: ask Form-or-Survey FIRST; surveys never pick a
     // layout — templates and themes only)
     @track step = 'kind';
-    @track kind = ''; // form | survey
+    @track kind = ''; // form | survey | freeform
     @track entryMode = 'scratch'; // template (placeholder) | scratch
     @track chosenLayout = '';
     @track chosenPaneFlow = '';
@@ -162,6 +174,9 @@ export default class FinalCreationGallery extends LightningElement {
     get isSurveyDetailsStep() {
         return this.step === 'surveyDetails';
     }
+    get isFreeformDetailsStep() {
+        return this.step === 'freeformDetails';
+    }
     get isDone() {
         return this.step === 'done';
     }
@@ -169,6 +184,13 @@ export default class FinalCreationGallery extends LightningElement {
     // ---- kind chooser (screen 0) ----
     get isSurveyKind() {
         return this.kind === 'survey';
+    }
+    get isFreeformKind() {
+        return this.kind === 'freeform';
+    }
+    /** Both answer-store kinds start at the template shelf. */
+    get isTemplateKind() {
+        return this.isSurveyKind || this.isFreeformKind;
     }
     handleKindForm() {
         this.kind = 'form';
@@ -178,9 +200,19 @@ export default class FinalCreationGallery extends LightningElement {
         this.kind = 'survey';
         this.step = 'templates';
     }
+    handleKindFreeform() {
+        this.kind = 'freeform';
+        this.step = 'templates';
+    }
     handleBackToKind() {
         this.step = 'kind';
         this.errorMessage = '';
+    }
+
+    /** The Form path chooses between its template shelf and a bare
+     *  layout here; the freeform path already chose its template. */
+    get showEntryToggle() {
+        return !this.isFreeformKind;
     }
 
     // ---- entry toggle (template = placeholder for now) ----
@@ -212,8 +244,12 @@ export default class FinalCreationGallery extends LightningElement {
     @track chosenTemplate = '';
     @track surveyName = '';
 
-    get surveyTemplates() {
-        return SURVEY_TEMPLATES.map((t) => ({
+    /** The shelf for whichever answer-store kind is being created. */
+    get templateCards() {
+        const shelf = this.isFreeformKind
+            ? FREEFORM_TEMPLATES
+            : SURVEY_TEMPLATES;
+        return shelf.map((t) => ({
             ...t,
             cls:
                 t.key === this.chosenTemplate
@@ -221,9 +257,22 @@ export default class FinalCreationGallery extends LightningElement {
                     : 'tpl-card'
         }));
     }
+    get templatesTitle() {
+        return this.isFreeformKind
+            ? 'Start your freeform'
+            : 'Pick a survey template';
+    }
+    get templatesSub() {
+        return this.isFreeformKind
+            ? 'Answers are kept with the submission. You pick the layout and theme next, and can map answers to Salesforce later.'
+            : 'Complete and ready — answers land in the answer store, one question per screen. You pick the theme next.';
+    }
 
     get chosenTemplateName() {
-        const t = SURVEY_TEMPLATES.find((x) => x.key === this.chosenTemplate);
+        const shelf = this.isFreeformKind
+            ? FREEFORM_TEMPLATES
+            : SURVEY_TEMPLATES;
+        const t = shelf.find((x) => x.key === this.chosenTemplate);
         return t ? t.name : '';
     }
 
@@ -234,7 +283,9 @@ export default class FinalCreationGallery extends LightningElement {
     handleTemplatePick(event) {
         this.chosenTemplate = event.currentTarget.dataset.key;
         this.errorMessage = '';
-        this.step = 'theme';
+        // Surveys are locked to one-at-a-time, so they skip straight to
+        // themes; a freeform picks any layout first (D5).
+        this.step = this.isFreeformKind ? 'layout' : 'theme';
     }
 
     handleCreateSurvey() {
@@ -418,10 +469,21 @@ export default class FinalCreationGallery extends LightningElement {
     }
     handleThemeSelect(e) {
         this.chosenThemeKey = e.detail.themeKey;
-        this.step = this.isSurveyKind ? 'surveyDetails' : 'details';
+        if (this.isSurveyKind) {
+            this.step = 'surveyDetails';
+        } else if (this.isFreeformKind) {
+            this.step = 'freeformDetails';
+        } else {
+            this.step = 'details';
+        }
     }
     handleBackFromTheme() {
         this.step = this.isSurveyKind ? 'templates' : 'layout';
+    }
+    /** A freeform came to the layout screen FROM its template shelf. */
+    handleBackFromLayout() {
+        this.step = this.isFreeformKind ? 'templates' : 'kind';
+        this.errorMessage = '';
     }
     handleBackToTheme() {
         this.step = 'theme';
@@ -492,6 +554,41 @@ export default class FinalCreationGallery extends LightningElement {
             });
     }
 
+    /** Freeform create: template + layout + theme + name, no object. */
+    handleCreateFreeform() {
+        if (this.isCreating) {
+            return;
+        }
+        this.isCreating = true;
+        this.errorMessage = '';
+        createFreeformFromTemplate({
+            templateKey: this.chosenTemplate || 'blank',
+            formName: this.formName.trim() || null,
+            themeName: this.chosenThemeKey || null,
+            layoutType: this.chosenLayout || null,
+            paneFlow: this.chosenPaneFlow || null
+        })
+            .then((res) => {
+                this.isCreating = false;
+                this.createdInfo = res;
+                this.step = 'done';
+                this.dispatchEvent(
+                    new CustomEvent('formcreated', {
+                        detail: {
+                            formId: res.formId,
+                            versionId: res.versionId
+                        }
+                    })
+                );
+            })
+            .catch((e) => {
+                this.isCreating = false;
+                this.errorMessage =
+                    (e && e.body && e.body.message) ||
+                    'Could not create the freeform.';
+            });
+    }
+
     handleClose() {
         this.dispatchEvent(new CustomEvent('close'));
     }
@@ -503,8 +600,11 @@ export default class FinalCreationGallery extends LightningElement {
         return this.createdInfo ? studioUrl(this.createdInfo.formId) : '#';
     }
     get doneTitle() {
-        return this.isSurveyKind
-            ? 'Your survey is ready'
+        if (this.isSurveyKind) {
+            return 'Your survey is ready';
+        }
+        return this.isFreeformKind
+            ? 'Your freeform is ready'
             : 'Your form is ready';
     }
 

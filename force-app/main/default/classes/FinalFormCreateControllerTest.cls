@@ -204,4 +204,131 @@ private class FinalFormCreateControllerTest {
             'Expected an AuraHandledException for input: ' + name + '/' + obj
         );
     }
+
+    // ---------------------------------------------------------- Freeform
+
+    @IsTest
+    static void createFreeform_hasNoObjectAnywhere() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createFreeformFromTemplate(
+            'blank',
+            'Partner application',
+            'nordic',
+            'stepper',
+            null
+        );
+        Test.stopTest();
+
+        Form__c form = [
+            SELECT Name, Form_Type__c, Primary_Context_Object__c, Status__c
+            FROM Form__c
+            WHERE Id = :(Id) res.get('formId')
+        ];
+        Assert.areEqual('Freeform', form.Form_Type__c, 'typed Freeform');
+        Assert.areEqual('Partner application', form.Name, 'named');
+        // The survey path writes a placeholder 'Contact' here to satisfy an
+        // old validation rule. Freeform must not: F2 reads this emptiness.
+        Assert.isNull(form.Primary_Context_Object__c, 'no placeholder object');
+
+        Form_Version__c version = [
+            SELECT Spec_JSON__c, Is_Active__c, Version_Number__c
+            FROM Form_Version__c
+            WHERE Id = :(Id) res.get('versionId')
+        ];
+        Assert.isTrue(version.Is_Active__c, 'draft is active');
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            version.Spec_JSON__c
+        );
+        Map<String, Object> formBlock = (Map<String, Object>) spec.get('form');
+        Assert.areEqual('freeform', formBlock.get('type'), 'spec type');
+        Assert.isFalse(
+            formBlock.containsKey('targetObject'),
+            'a freeform spec never names an object'
+        );
+        Assert.areEqual(
+            'freeform',
+            FinalFormTypes.fromSpec(spec),
+            'the type table agrees'
+        );
+        Map<String, Object> layout = (Map<String, Object>) spec.get('layout');
+        Assert.areEqual('stepper', layout.get('type'), 'chosen layout');
+    }
+
+    @IsTest
+    static void createFreeform_startsEmpty() {
+        Map<String, Object> res = FinalFormCreateController.createFreeformFromTemplate(
+            'blank',
+            null,
+            null,
+            null,
+            null
+        );
+        Form__c form = [
+            SELECT Name
+            FROM Form__c
+            WHERE Id = :(Id) res.get('formId')
+        ];
+        Assert.areEqual('Untitled Freeform', form.Name, 'default name');
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            [
+                SELECT Spec_JSON__c
+                FROM Form_Version__c
+                WHERE Id = :(Id) res.get('versionId')
+            ]
+            .Spec_JSON__c
+        );
+        Map<String, Object> layout = (Map<String, Object>) spec.get('layout');
+        Assert.areEqual('scroll', layout.get('type'), 'default layout');
+        List<Object> pages = (List<Object>) spec.get('pages');
+        Map<String, Object> section = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) pages[0])
+            .get('sections'))[0];
+        // Owner ruling: a blank freeform seeds nothing. Anything seeded is
+        // something every author has to delete.
+        Assert.areEqual(
+            0,
+            ((List<Object>) section.get('elements')).size(),
+            'no starter questions'
+        );
+    }
+
+    @IsTest
+    static void createFreeform_refusesNonsenseInput() {
+        // paneFlow belongs to splitHero alone
+        Boolean threwPaneFlow = false;
+        try {
+            FinalFormCreateController.createFreeformFromTemplate(
+                'blank',
+                'x',
+                null,
+                'scroll',
+                'oneAtATime'
+            );
+        } catch (AuraHandledException e) {
+            threwPaneFlow = true;
+        }
+        Assert.isTrue(threwPaneFlow, 'pane flow off splitHero is refused');
+
+        Boolean threwTemplate = false;
+        try {
+            FinalFormCreateController.createFreeformFromTemplate(
+                'partner-application',
+                'x',
+                null,
+                null,
+                null
+            );
+        } catch (AuraHandledException e) {
+            threwTemplate = true;
+        }
+        Assert.isTrue(
+            threwTemplate,
+            'an unbuilt template is refused, not silently blanked'
+        );
+
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Form__c WHERE Name = 'x'],
+            'nothing was left behind by either refusal'
+        );
+    }
 }

@@ -50,16 +50,22 @@ describe('kind-first creation flow', () => {
         }
     });
 
-    it('opens on the Form-or-Survey chooser', async () => {
+    it('opens on the kind chooser, now three kinds', async () => {
         const el = await mount();
         const cards = el.shadowRoot.querySelectorAll('.kind-card');
-        expect(cards.length).toBe(2);
+        // Freeform joined Form and Survey (FREEFORM_SPEC D5).
+        expect(cards.length).toBe(3);
+        expect(
+            [...cards].map((c) => c.querySelector('.kind-name').textContent)
+        ).toEqual(['Form', 'Survey', 'Freeform']);
         expect(el.shadowRoot.querySelector('.card-grid')).toBeNull();
     });
 
     it('Form goes to the layout gallery; Survey goes to templates', async () => {
         const el = await mount();
-        byText(el.shadowRoot, '.kind-card', 'Form').click();
+        [...el.shadowRoot.querySelectorAll('.kind-card')]
+            .find((c) => c.querySelector('.kind-name').textContent === 'Form')
+            .click();
         await flush();
         expect(el.shadowRoot.querySelector('.card-grid')).not.toBeNull();
 

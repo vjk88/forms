@@ -411,6 +411,168 @@ public with sharing class FinalFormCreateController {
         }
     }
 
+    /**
+     * The Freeform path's create (FREEFORM_SPEC D5): template + layout +
+     * theme + name, and NO object at any point.
+     *
+     * Freeform sits between the other two creators on purpose: its questions
+     * are unbound like a survey's, but it picks any layout like a form, and
+     * unlike the survey path it does NOT write a placeholder
+     * Primary_Context_Object__c - VR_Primary_Object_Required now skips
+     * Freeform, and F2's mapping page will read that field's emptiness as
+     * the truth it is.
+     *
+     * @param templateKey blank (F1 ships one; the catalog arrives in F3)
+     * @param formName    optional - the template carries a default
+     * @param themeName   optional builtin theme catalog key
+     * @param layoutType  any layout key; defaults to scroll
+     * @param paneFlow    splitHero-only presentation option
+     */
+    @AuraEnabled
+    public static Map<String, Object> createFreeformFromTemplate(
+        String templateKey,
+        String formName,
+        String themeName,
+        String layoutType,
+        String paneFlow
+    ) {
+        String key = String.isBlank(templateKey) ? 'blank' : templateKey;
+        if (key != 'blank') {
+            throw new AuraHandledException('Unknown freeform template.');
+        }
+        String layout = String.isBlank(layoutType) ? 'scroll' : layoutType;
+        // Same rule as createForm: pane flow belongs to splitHero alone, and
+        // a nonsense combination is a client bug worth refusing, not storing.
+        String resolvedPaneFlow = null;
+        if (String.isNotBlank(paneFlow)) {
+            if (layout != 'splitHero' || paneFlow != 'oneAtATime') {
+                throw new AuraHandledException('Invalid pane flow option.');
+            }
+            resolvedPaneFlow = paneFlow;
+        }
+        String name = String.isBlank(formName)
+            ? 'Untitled Freeform'
+            : formName.trim().abbreviate(80);
+
+        Savepoint sp = Database.setSavepoint();
+        try {
+            Form__c form = new Form__c(
+                Name = name,
+                Form_Type__c = FinalFormTypes.toPicklist(
+                    FinalFormTypes.FREEFORM
+                )
+            );
+            insert as user form;
+            Map<String, Object> spec = freeformSpec(
+                form.Id,
+                name,
+                layout,
+                resolvedPaneFlow,
+                themeName
+            );
+            Form_Version__c version = new Form_Version__c(
+                Form__c = form.Id,
+                Version_Number__c = 1,
+                Is_Active__c = true,
+                Spec_JSON__c = JSON.serialize(spec),
+                Engine_Version__c = 1
+            );
+            insert as user version;
+            return new Map<String, Object>{
+                'formId' => form.Id,
+                'versionId' => version.Id
+            };
+        } catch (AuraHandledException e) {
+            Database.rollback(sp);
+            throw e;
+        } catch (Exception e) {
+            Database.rollback(sp);
+            throw new AuraHandledException(
+                'Could not create the freeform: ' + e.getMessage()
+            );
+        }
+    }
+
+    /** The spec a brand-new Freeform opens with: a form-style layout and
+     *  header around survey-style unbound questions, and no targetObject. */
+    private static Map<String, Object> freeformSpec(
+        Id formId,
+        String name,
+        String layout,
+        String paneFlow,
+        String themeName
+    ) {
+        Map<String, Object> layoutOptions = new Map<String, Object>();
+        if (String.isNotBlank(paneFlow)) {
+            layoutOptions.put('paneFlow', paneFlow);
+        }
+        Map<String, Object> spec = new Map<String, Object>{
+            'specVersion' => 1,
+            'form' => new Map<String, Object>{
+                'id' => formId,
+                'name' => name,
+                'type' => FinalFormTypes.FREEFORM
+            },
+            'layout' => new Map<String, Object>{
+                'type' => layout,
+                'options' => layoutOptions,
+                'maxWidth' => 'medium',
+                'zonesDefault' => new Map<String, Object>{
+                    'arrangement' => 'single',
+                    'gap' => 'md'
+                }
+            },
+            'header' => new Map<String, Object>{
+                'style' => 'standard',
+                'arrangement' => 'stacked',
+                'title' => name
+            },
+            'settings' => new Map<String, Object>(),
+            'submit' => new Map<String, Object>{ 'label' => 'Submit' },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'pg_1',
+                    'name' => 'Questions',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec_1',
+                            'title' => name,
+                            'style' => 'card',
+                            'columns' => 1,
+                            'elements' => freeformStarterElements()
+                        }
+                    }
+                }
+            }
+        };
+        if (String.isNotBlank(themeName)) {
+            spec.put(
+                'theme',
+                new Map<String, Object>{
+                    'source' => 'builtin',
+                    'name' => themeName
+                }
+            );
+        }
+        return spec;
+    }
+
+    /**
+     * What the Blank freeform opens with.
+     *
+     * Use surveyQuestion(id, type, label, config, analytics) to build each
+     * one - Freeform passes null for analytics (no Topics, D4). Element ids
+     * must start with 'el_' and stay unique; they are the permanent identity
+     * an answer row stores.
+     */
+    private static List<Object> freeformStarterElements() {
+        // Owner ruling 2026-09-19: NOTHING. Same as the Blank survey.
+        // Anything seeded here is something every author has to delete,
+        // and a seeded element id outlives the template - it would show up
+        // in answer rows and reports for forms that never wanted it.
+        return new List<Object>();
+    }
+
     private class SurveyTemplate {
         String name;
         Map<String, Object> spec;
