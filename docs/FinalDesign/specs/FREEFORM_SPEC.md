@@ -622,15 +622,23 @@ Field types, picklist values, required destination fields, and the author's own 
 `Answer_Type__c` gives the type check a reliable input: an Email answer mapped to a numeric field is a
 publish error, not a runtime surprise.
 
-## Open for the F2 spec
+## Open for the F2 spec — ANSWERED
 
-- The Mapping page's screens, and whether Mapping sections replace the Connected object card (D8).
-- Record matching / de-duplication ("find or create a Contact by email") — duplicate rules make this
-  its own design round.
-- Whether a site guest user can queue asynchronous Apex here; platform events are the fallback (§7.6).
-- What the respondent sees while mapping is still pending, and on the thank-you screen.
-- Where a failed mapping is retried from, and who may retry it.
-- How F2.5 invitations supply the record a personalized link carries.
+Every question below was settled in the design session of 2026-09-20 and now lives in
+[FREEFORM_F2_MAPPING_SPEC.md](./FREEFORM_F2_MAPPING_SPEC.md), whose ledger continues this one
+at D29.
+
+| Was open                                                                                | Answer                                                                                                                                             |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Mapping page's screens; do Mapping sections replace the Connected object card (D8)? | A third Studio mode — Build \| Data \| Design (D29). The Connected object card stays exactly where it is                                           |
+| Record matching / de-duplication                                                        | In F2, not deferred (D31). No default on a match — the author is asked when the action is added (D32). More than one match fails the mapping (D33) |
+| Whether a site guest user can queue asynchronous Apex                                   | Still unknown, and now a named spike that runs **before** any runtime code (F2 spec §6.5). Platform events remain the documented fallback          |
+| What the respondent sees while mapping is pending                                       | Nothing. The thank-you screen, immediately, and never a word about a match — that silence is a security property (D34)                             |
+| Where a failed mapping is retried from, and who may retry it                            | The submission record, admins only, one at a time, under a row lock (D35)                                                                          |
+| How F2.5 invitations supply the record a personalized link carries                      | Out of scope for F2; the shape is reserved as `recordRef` → `link`                                                                                 |
+
+**D30 corrects D7.** D7 put Freeform Autofill in F2. It now ships in a separate slice _after_ F2,
+when Autofill moves out of the left rail into Data mode for all three form types.
 
 ## Glossary
 
