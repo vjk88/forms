@@ -2,7 +2,7 @@
 
 > **Status: DESIGN APPROVED, revised after review, no code written.** Approved section by section on
 > 2026-09-20 (D29–D37); a review round on 2026-09-21 found seven real problems and the owner ruled on
-> each (D38–D46). This document is the design as it now stands. It is not a build plan — the
+> each (D38–D47). This document is the design as it now stands. It is not a build plan — the
 > implementation plan comes next and lives in its own document.
 >
 > F2 is the reason Freeform exists — [FREEFORM_SPEC.md §1](./FREEFORM_SPEC.md). F1 shipped the
@@ -37,7 +37,7 @@ FREEFORM_SPEC F2 contract 2.
 ## 2. Decision ledger (owner rulings)
 
 Numbering continues FREEFORM_SPEC's ledger, which ends at D28. D29–D37 come from the design session of
-2026-09-20; D38–D46 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
+2026-09-20; D38–D47 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
 both rows stay and the earlier row says so.
 
 | #   | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Date       |
@@ -60,6 +60,7 @@ both rows stay and the earlier row says so.
 | D44 | **A skipped answer never writes to its field.** The assignment is left out, so nothing is ever blanked by a question someone didn't answer. A skipped or blank **match** value fails that step — we never search for a blank value, which would match every record that lacks one                                                                                                                                                                                                                                                                                  | 2026-09-21 |
 | D45 | **Keeping the match answer and the saved field value in step is the author's job, for now.** Nothing stops an author searching on one question and saving another into the same field. Tabled — DEFERRED #33                                                                                                                                                                                                                                                                                                                                                       | 2026-09-21 |
 | D46 | **Background-job capacity is measured, not assumed.** The trigger computes `Limits.getLimitQueueableJobs() - Limits.getQueueableJobs()` at the moment it queues, and every refusal states that real number — never a fixed 50. Other automation in the same transaction may already have used capacity, so even a single guest submission can find none left. **New submissions are never refused:** any that do not fit are saved as Failed, so the answers survive and Retry picks them up — refusing would roll back the respondent's answers (owner confirmed) | 2026-09-21 |
+| D47 | **A form may have at most 10 mapping steps.** Every step's writes, plus whatever triggers, flows and validation rules the org runs on those objects, share one set of limits inside a single job; ten leaves room for the org's own automation. An eleventh step is a publish blocker                                                                                                                                                                                                                                                                              | 2026-09-21 |
 
 ## 3. Where it lives — Data mode (D29)
 
@@ -406,6 +407,7 @@ it, which is why the refusal lives in `publishSpec`.
 - a Choice source whose stored values are not in the destination picklist's value set
 - an action on a setup object (User, Group, permission assignments and the like) — Salesforce refuses
   to write those in the same transaction as ordinary records
+- more than 10 steps (D47)
 
 **Warnings — publish proceeds, after the author confirms:**
 
@@ -482,6 +484,7 @@ fix and re-running — the way the F1 review round was.
 | 14  | a blank match value fails the step and runs no search                                                                                                                                                                  |
 | 15  | a mapping failure leaves the submission and every answer intact and readable                                                                                                                                           |
 | 16  | a new submission saved after other code has used up all capacity still commits with its answers, and lands as Failed with the capacity message                                                                         |
+| 17  | `publishSpec` refuses a mapping with 11 steps                                                                                                                                                                          |
 
 Tests 12 and 16 use up capacity deliberately — the test queues dummy jobs first — so they prove the
 trigger reads what is left rather than assuming 50.
@@ -500,27 +503,23 @@ proven against a real org configuration.
 - **Automatic retry** of any kind (D42).
 - **Recording uncaught failures on the submission** — they are left to Setup → Apex Jobs (D43).
 - **Platform events** — background jobs only (D41).
+- **Stopping Done → Ready for Retry.** Nothing prevents an admin setting a successful submission
+  to Ready for Retry, which would create every record a second time. Not guarded — it is a
+  deliberate admin act (owner, 2026-09-21: don't worry about it).
+- **A separate proof that a guest's submission can queue a background job.** The runtime slice
+  and the org walkthrough exercise it directly (owner, 2026-09-21).
 
 ## 11. Still open
 
-- **Prove a guest's submission can queue a background job** (M0). Expected to work — nothing in the
-  platform forbids it — but this project has no background Apex anywhere yet, so there is no
-  precedent of our own to lean on. A short proof in the org, before runtime code.
-- **A cap on steps per form.** Proposed: 10. Every step's writes, plus whatever triggers, flows and
-  validation rules the org runs on those objects, share one set of limits inside a single job.
-- **Stopping Done → Ready for Retry.** Nothing prevents an admin setting a successful submission to
-  Ready for Retry, which would create every record a second time. A validation rule would stop it.
-  Raised 2026-09-21, not decided.
 - **Whether the derived index (§5.3) is a third column or a bottom strip.** The column fits at 1440px;
   1280px is tight.
 
 ## 12. Build shape
 
-A proof, then eight slices, detailed in the implementation plan that follows this spec:
+Eight slices, detailed in the implementation plan that follows this spec:
 
 | Slice | What                                                                                               |
 | ----- | -------------------------------------------------------------------------------------------------- |
-| M0    | prove a guest's submission can queue a background job (§11)                                        |
 | M1    | schema — five fields, the status picklist, the custom permission, permission set grants            |
 | M2    | spec model + `FinalMappingValidator` inside `publishSpec` + blockers in the dialog (§7)            |
 | M3    | Data mode shell + Mapping section + the action list (§3, §5.1)                                     |
