@@ -2,7 +2,7 @@
 
 > **Status: DESIGN APPROVED, revised after review, no code written.** Approved section by section on
 > 2026-09-20 (D29–D37); a review round on 2026-09-21 found seven real problems and the owner ruled on
-> each (D38–D45). This document is the design as it now stands. It is not a build plan — the
+> each (D38–D46). This document is the design as it now stands. It is not a build plan — the
 > implementation plan comes next and lives in its own document.
 >
 > F2 is the reason Freeform exists — [FREEFORM_SPEC.md §1](./FREEFORM_SPEC.md). F1 shipped the
@@ -37,7 +37,7 @@ FREEFORM_SPEC F2 contract 2.
 ## 2. Decision ledger (owner rulings)
 
 Numbering continues FREEFORM_SPEC's ledger, which ends at D28. D29–D37 come from the design session of
-2026-09-20; D38–D45 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
+2026-09-20; D38–D46 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
 both rows stay and the earlier row says so.
 
 | #   | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Date       |
@@ -54,11 +54,12 @@ both rows stay and the earlier row says so.
 | D38 | **Mapping validation runs inside the real publish.** `FinalSpecController.publishSpec` validates the exact spec string it is about to store, as the person publishing, before anything is saved — the same place and the same way `FinalAutofillValidator.validateForPublish` already runs today. A blocker refuses the publish; so does a check that cannot finish. The dialog shows the same results, but the dialog is not the gate: an `@AuraEnabled` method can be called without it | 2026-09-21 |
 | D39 | **Standalone update is cut from F2.** Actions are create or find-or-create. Updating a record the server already holds (a personalized link's record, a record picked in a lookup) had one real use in F2 and it was the riskiest write in the feature. It returns when personalized links come to Freeform — DEFERRED #32                                                                                                                                                                | 2026-09-21 |
 | D40 | **Two submissions with the same match value at the same moment may both create a record — and preventing that is not ours to do.** The org's duplicate rules run on our inserts whether we ask or not; they are the admin's tool for this. We never save past them (no `allowSave`), and a duplicate-rule refusal lands as a Failed mapping with a readable message                                                                                                                       | 2026-09-21 |
-| D41 | **A trigger on `Form_Submission__c` starts every mapping run.** On insert of a submission whose version has mapping steps, and on a status change to Ready for Retry. The trigger only queues — one background job per submission; mapping is not bulkified. More than 50 in one transaction and the trigger refuses the whole batch, asking for 50 or fewer. Background jobs only; platform events are not used                                                                          | 2026-09-21 |
-| D42 | **Retry is a button and a status value.** The Retry button on the submission calls the mapping service directly and runs it on the spot. Setting the status to Ready for Retry — on one submission or up to 50 at a time — queues a run through the trigger. Only Failed and Ready for Retry are ever retried; Queued never is. No automatic retries                                                                                                                                      | 2026-09-21 |
+| D41 | **A trigger on `Form_Submission__c` starts every mapping run.** On insert of a submission whose version has mapping steps, and on a status change to Ready for Retry. The trigger only queues — one background job per submission; mapping is not bulkified. More than 50 in one transaction and the trigger refuses the whole batch, asking for 50 or fewer. Background jobs only; platform events are not used. _Revised by D46: capacity is measured, not assumed to be 50._           | 2026-09-21 |
+| D42 | **Retry is a button and a status value.** The Retry button on the submission calls the mapping service directly and runs it on the spot. Setting the status to Ready for Retry — on one submission or up to 50 at a time — queues a run through the trigger. Only Failed and Ready for Retry are ever retried; Queued never is. No automatic retries. _Revised by D46: the bulk limit is the save's remaining capacity, not a fixed 50._                                                  | 2026-09-21 |
 | D43 | **Caught failures are recorded; uncaught failures are not handled.** A caught failure sets the status to Failed with a message. An uncaught one rolls everything back, so the status stays where it was and the reason lives in Setup → Apex Jobs, not on the submission. An admin moves a stuck submission to Ready for Retry                                                                                                                                                            | 2026-09-21 |
 | D44 | **A skipped answer never writes to its field.** The assignment is left out, so nothing is ever blanked by a question someone didn't answer. A skipped or blank **match** value fails that step — we never search for a blank value, which would match every record that lacks one                                                                                                                                                                                                         | 2026-09-21 |
 | D45 | **Keeping the match answer and the saved field value in step is the author's job, for now.** Nothing stops an author searching on one question and saving another into the same field. Tabled — DEFERRED #33                                                                                                                                                                                                                                                                              | 2026-09-21 |
+| D46 | **Background-job capacity is measured, not assumed.** The trigger computes `Limits.getLimitQueueableJobs() - Limits.getQueueableJobs()` at the moment it queues, and every refusal states that real number — never a fixed 50. Other automation in the same transaction may already have used capacity, so even a single guest submission can find none left                                                                                                                              | 2026-09-21 |
 
 ## 3. Where it lives — Data mode (D29)
 
@@ -286,12 +287,34 @@ One trigger on `Form_Submission__c`, one job: decide which submissions need a ru
 - **After update** — queue a job for each submission whose status just **changed to** Ready for
   Retry. Nothing else on update does anything; the job's own status writes must not re-trigger it.
 
-**The 50 limit is counted, never hit.** Salesforce allows 50 background jobs to be queued per
-transaction, and going over is one of the errors Apex cannot catch — it kills the whole transaction,
-including a guest's submission. So before queueing anything, the trigger counts what it needs plus
-anything already queued in the transaction. Over the limit, it refuses every record in the batch with
-_Retry at most 50 submissions at a time_. A guest submission is always one record, so this only ever
-bites on a bulk retry or a data load.
+**Capacity is measured, never assumed, and never exceeded (D46).** Salesforce caps how many
+background jobs one transaction may queue, and going over is one of the errors Apex cannot catch — it
+kills the whole transaction, including a guest's submission. So the trigger computes what is actually
+left at the moment it queues:
+
+```apex
+Integer capacity = Limits.getLimitQueueableJobs() - Limits.getQueueableJobs();
+```
+
+Not a fixed 50. Other automation in the same transaction — another trigger, a flow, a managed package
+— may already have queued jobs, so capacity can be anything down to zero, **even when the trigger is
+looking at a single guest submission.**
+
+Capacity is read at the moment of queueing, in the after-insert and after-update steps — not earlier,
+because other triggers on this object can run in between and use some.
+
+When the trigger needs more than `capacity`:
+
+- **A bulk retry (status changed to Ready for Retry)** — the whole batch is refused, and the message
+  states the real number: _Only 12 more background jobs can be started in this save — retry 12 or
+  fewer submissions at a time._ At zero it says that, rather than asking for "0 or fewer": _No
+  background jobs can be started in this save — other automation has already used them. Retry in a
+  separate save._
+- **New submissions (insert)** — never refused. Refusing would roll back the respondent's answers,
+  which nothing in mapping is allowed to do. The trigger queues as many as capacity allows; any that
+  don't fit are set to **Failed**, by an update in the same transaction, with _The mapping could not
+  be started: no background-job capacity was left when this submission was saved. Retry it._ The
+  answers commit either way, and the Retry button picks them up.
 
 **If queueing throws a catchable error**, the submission is set to Failed with that message, so it is
 visible and retryable. The answers are never lost to it.
@@ -426,8 +449,9 @@ user mode), and the status is Failed or Ready for Retry. Then it calls `FinalMap
 directly — the run happens now, in the admin's transaction, and the reader shows the result. Hiding the
 button protects nothing on its own; the checks are in the method.
 
-**The status value.** Setting `Mapping_Status__c` to Ready for Retry — one record, or up to 50 at a time
-from a list view or a data load — queues a run for each through the trigger (§6.3).
+**The status value.** Setting `Mapping_Status__c` to Ready for Retry — one record, or as many as the
+save's remaining background-job capacity allows (50 when nothing else has used any), from a list view
+or a data load — queues a run for each through the trigger (§6.3).
 
 Both paths end in the same service under the same row lock, so a button press and a queued run cannot
 both succeed on one submission: whichever gets the lock second finds Done and stops.
@@ -440,23 +464,27 @@ recovered by setting it to Ready for Retry.
 Each of these fails when its guard is removed, and each will be proven that way — by reverting the
 fix and re-running — the way the F1 review round was.
 
-| #   | Test                                                                                                        |
-| --- | ----------------------------------------------------------------------------------------------------------- |
-| 1   | a record whose object is not in the published action list is refused by `FinalMappingWriter`                |
-| 2   | a field not named in the published action is refused, even on an allowed object                             |
-| 3   | two matches → nothing written, status Failed, message says ambiguous                                        |
-| 4   | a failed run keeps `Mapping_Attempts__c = 1` and carries a message                                          |
-| 5   | running the service twice for one submission creates one set of records                                     |
-| 6   | `recordRef` in step 2 resolves to the record step 1 created, and to the record it found                     |
-| 7   | `onMatch: "reuse"` writes nothing to the matched record                                                     |
-| 8   | `onMatch: "update"` writes only the fields flagged `writeOnMatch`, and never the match field                |
-| 9   | `publishSpec`, called directly with no dialog, refuses a find-or-create whose match question is unanswered  |
-| 10  | `publishSpec` refuses a field the publisher cannot write                                                    |
-| 11  | the Retry method refuses a caller without `Freeform_Retry_Mapping`, and refuses Queued and Done submissions |
-| 12  | setting Ready for Retry queues a run; 51 in one save refuses the whole batch with the message               |
-| 13  | a skipped answer leaves its destination field untouched on an update-on-match                               |
-| 14  | a blank match value fails the step and runs no search                                                       |
-| 15  | a mapping failure leaves the submission and every answer intact and readable                                |
+| #   | Test                                                                                                                                                                                                                   |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | a record whose object is not in the published action list is refused by `FinalMappingWriter`                                                                                                                           |
+| 2   | a field not named in the published action is refused, even on an allowed object                                                                                                                                        |
+| 3   | two matches → nothing written, status Failed, message says ambiguous                                                                                                                                                   |
+| 4   | a failed run keeps `Mapping_Attempts__c = 1` and carries a message                                                                                                                                                     |
+| 5   | running the service twice for one submission creates one set of records                                                                                                                                                |
+| 6   | `recordRef` in step 2 resolves to the record step 1 created, and to the record it found                                                                                                                                |
+| 7   | `onMatch: "reuse"` writes nothing to the matched record                                                                                                                                                                |
+| 8   | `onMatch: "update"` writes only the fields flagged `writeOnMatch`, and never the match field                                                                                                                           |
+| 9   | `publishSpec`, called directly with no dialog, refuses a find-or-create whose match question is unanswered                                                                                                             |
+| 10  | `publishSpec` refuses a field the publisher cannot write                                                                                                                                                               |
+| 11  | the Retry method refuses a caller without `Freeform_Retry_Mapping`, and refuses Queued and Done submissions                                                                                                            |
+| 12  | setting Ready for Retry queues a run; a bulk retry larger than the remaining capacity is refused, and the message states the real remaining number — tested with capacity already partly used, so the number is not 50 |
+| 13  | a skipped answer leaves its destination field untouched on an update-on-match                                                                                                                                          |
+| 14  | a blank match value fails the step and runs no search                                                                                                                                                                  |
+| 15  | a mapping failure leaves the submission and every answer intact and readable                                                                                                                                           |
+| 16  | a new submission saved after other code has used up all capacity still commits with its answers, and lands as Failed with the capacity message                                                                         |
+
+Tests 12 and 16 use up capacity deliberately — the test queues dummy jobs first — so they prove the
+trigger reads what is left rather than assuming 50.
 
 **Checked in the org walkthrough, not in Apex tests:** a duplicate rule blocking a create lands as
 Failed with a readable message. Apex tests cannot create duplicate rules, so this one can only be
@@ -480,6 +508,9 @@ proven against a real org configuration.
   precedent of our own to lean on. A short proof in the org, before runtime code.
 - **A cap on steps per form.** Proposed: 10. Every step's writes, plus whatever triggers, flows and
   validation rules the org runs on those objects, share one set of limits inside a single job.
+- **New submissions that find no capacity are saved as Failed, not refused** (section 6.3). Written in
+  because refusing would roll back the respondent's answers, and it follows the caught-failure rule —
+  but it was not ruled on explicitly. Confirm.
 - **Stopping Done → Ready for Retry.** Nothing prevents an admin setting a successful submission to
   Ready for Retry, which would create every record a second time. A validation rule would stop it.
   Raised 2026-09-21, not decided.
