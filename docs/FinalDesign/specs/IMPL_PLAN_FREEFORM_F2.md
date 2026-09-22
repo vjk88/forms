@@ -76,10 +76,19 @@ with this plan. Where they differ, this plan's "Decisions" section says why.
    or an order, or a file, not one value for one field.
 7. **A Choice answer going into a text field writes the option's label**, taken from the
    submission's own version. Into a picklist it writes the stored value, which must exist in the
-   picklist. `Options` answers go only to multi-select picklists.
+   picklist. `Options` answers go only to multi-select picklists. **One conversion serves every
+   path** — writing a field, searching for the record, and a filter row compared against an answer —
+   each against the field that value actually meets, which for a filter row is the field being
+   filtered. Writing the label while searching the value is how a form silently creates a duplicate
+   on every submission. Whether a missing value is fatal stays with the caller: an assignment skips
+   it, a match fails.
 8. **Build order is backend first:** schema → publish gate → runtime → reader → Studio screens. That
    way every guard is proven before any author can configure a mapping, and no half-working screen is
    ever deployed. The slice names still match the spec's M1–M8.
+9. **The conditions editor gets a filter-only mode.** The mapping screen reuses
+   `c/finalLookupFilter`, which also carries result-display fields, searchable fields and a
+   guest-search switch — none of which a mapping saves. A permission-shaped switch that does nothing
+   is worse than no switch. Lookups keep all of it; filter-only is opt-in.
 
 The full compatibility table (decision 7):
 
@@ -143,6 +152,7 @@ every LWC gets a `.js-meta.xml` with `<apiVersion>66.0</apiVersion>` and `<isExp
 | `lwc/finalPublishDialog/` (+ test)                                 | shows blockers, disables Publish while any exist                 |
 | `lwc/finalFormStudio/` (+ test)                                    | publish check shape; Data mode button and region                 |
 | `lwc/finalSubmissionReader/` (+ test)                              | mapping status, created records, Retry                           |
+| `lwc/finalLookupFilter/` (+ test)                                  | a filter-only mode, opt-in; lookups unchanged                    |
 | `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md`               | decisions 1, 2, 4–7 written back into the spec                   |
 
 ## Slice order and why
@@ -429,7 +439,12 @@ Push, open the PR, merge (end the PR body with the attribution line).
   - `Boolean isCompatible(String answerType, Schema.DisplayType t)`
   - `Boolean isTextLike(Schema.DisplayType t)`
   - `Object coerce(Object raw, Schema.DescribeFieldResult fd)` — throws `MappingValueException`
-  - `Object valueOf(Form_Submission_Answer__c a)` — null when blank or unparsed
+  - `Object valueOf(Form_Submission_Answer__c a)` — the stored value; null when blank or unparsed
+  - `Object answerValue(Form_Submission_Answer__c a, Map<String, Object> question, Schema.DescribeFieldResult fd)`
+    — **the one conversion**: the answer in the destination field's vocabulary, list shape preserved,
+    null when absent. Used by writes, by the match search, and by filter rows
+  - `Schema.DescribeFieldResult fieldAt(String objectApi, String path)` — the field a filter path
+    ends at, or null
   - `List<Map<String, Object>> actionsOf(Map<String, Object> spec)`
   - `List<Map<String, Object>> questionsInOrder(Map<String, Object> spec)`
   - `Map<String, Map<String, Object>> questionMap(Map<String, Object> spec)`
@@ -741,6 +756,91 @@ private class FinalMappingRulesTest {
         )
       )
     );
+  }
+
+  @IsTest
+  static void aChoiceConvertsToWhereverItIsGoing() {
+    // The bug this function exists to prevent: writing the label and
+    // searching the value, so every submission makes another record.
+    Map<String, Object> question = new Map<String, Object>{
+      'id' => 'el_tier',
+      'type' => 'field',
+      'label' => 'Tier',
+      'config' => new Map<String, Object>{
+        'inputType' => 'picklist',
+        'options' => new List<Object>{
+          new Map<String, Object>{
+            'value' => 'vip',
+            'label' => 'Priority customer'
+          }
+        }
+      }
+    };
+    Form_Submission_Answer__c a = new Form_Submission_Answer__c(
+      Element_Key__c = 'el_tier',
+      Answer_Type__c = 'Choice',
+      Text_Value__c = 'vip'
+    );
+
+    Assert.areEqual(
+      'Priority customer',
+      FinalMappingRules.answerValue(a, question, Contact.Title.getDescribe()),
+      'into a text field, the label'
+    );
+    Assert.areEqual(
+      'vip',
+      FinalMappingRules.answerValue(
+        a,
+        question,
+        Contact.LeadSource.getDescribe()
+      ),
+      'into a picklist, the stored value'
+    );
+  }
+
+  @IsTest
+  static void answerValueKeepsSeveralChoicesAsAList() {
+    Form_Submission_Answer__c a = new Form_Submission_Answer__c(
+      Answer_Type__c = 'Options',
+      Selected_Options_JSON__c = '["a","b"]'
+    );
+    Object v = FinalMappingRules.answerValue(
+      a,
+      new Map<String, Object>(),
+      Contact.LeadSource.getDescribe()
+    );
+    Assert.isTrue(
+      v instanceof List<Object>,
+      'an operator that wants a list gets one'
+    );
+  }
+
+  @IsTest
+  static void answerValueIsNullWhenTheAnswerIsAbsent() {
+    Assert.isNull(
+      FinalMappingRules.answerValue(null, null, Contact.Title.getDescribe())
+    );
+    Assert.isNull(
+      FinalMappingRules.answerValue(
+        new Form_Submission_Answer__c(Answer_Type__c = 'Text'),
+        null,
+        Contact.Title.getDescribe()
+      ),
+      'blank is absent; what that means is the caller’s business'
+    );
+  }
+
+  @IsTest
+  static void fieldAtWalksARelationshipPath() {
+    Assert.areEqual(
+      'Type',
+      FinalMappingRules.fieldAt('Contact', 'Account.Type').getName()
+    );
+    Assert.areEqual(
+      'LastName',
+      FinalMappingRules.fieldAt('Contact', 'LastName').getName()
+    );
+    Assert.isNull(FinalMappingRules.fieldAt('Contact', 'Nope.Nope'));
   }
 
   @IsTest
@@ -1087,6 +1187,89 @@ public with sharing class FinalMappingRules {
         return String.isBlank(a.Text_Value__c) ? null : a.Text_Value__c;
       }
     }
+  }
+
+  /**
+   * A stored answer as the DESTINATION field's vocabulary — the one
+   * conversion, used when writing a field, when searching for a record and
+   * when a filter row compares against an answer. Each caller passes the
+   * field that value is actually going up against: for a filter row that is
+   * the field being filtered, not the field being written.
+   *
+   * A choice goes into text as its label and into a picklist as its stored
+   * value. Writing one and searching the other is how a form quietly makes a
+   * duplicate on every submission.
+   *
+   * Shape is preserved: several choices stay a list, so an operator that
+   * wants a list still gets one. Null means the answer is absent; what that
+   * means is the caller's business — an assignment skips, a match fails.
+   */
+  public static Object answerValue(
+    Form_Submission_Answer__c a,
+    Map<String, Object> question,
+    Schema.DescribeFieldResult fd
+  ) {
+    if (a == null) {
+      return null;
+    }
+    if (a.Value_Unparsed__c == true) {
+      // The raw text is all there is; only a text field can take it.
+      return isTextLike(fd.getType()) && String.isNotBlank(a.Text_Value__c)
+        ? a.Text_Value__c
+        : null;
+    }
+    Object v = valueOf(a);
+    if (v == null) {
+      return null;
+    }
+    Boolean asLabel =
+      isTextLike(fd.getType()) &&
+      (a.Answer_Type__c == 'Choice' || a.Answer_Type__c == 'Options');
+    if (!asLabel) {
+      return v;
+    }
+    if (v instanceof List<Object>) {
+      List<String> labels = new List<String>();
+      for (Object o : (List<Object>) v) {
+        labels.add(optionLabel(question, String.valueOf(o)));
+      }
+      return labels;
+    }
+    return optionLabel(question, String.valueOf(v));
+  }
+
+  /**
+   * The field a filter path ends at ("Account.Type"), or null when the path
+   * does not resolve — the filter compiler refuses those itself, with a
+   * better message than we could give here.
+   */
+  public static Schema.DescribeFieldResult fieldAt(
+    String objectApi,
+    String path
+  ) {
+    if (String.isBlank(objectApi) || String.isBlank(path)) {
+      return null;
+    }
+    Schema.SObjectType t = Schema.getGlobalDescribe().get(objectApi);
+    List<String> parts = path.split('\\.');
+    for (Integer i = 0; t != null && i < parts.size(); i++) {
+      Boolean last = i == parts.size() - 1;
+      Map<String, Schema.SObjectField> fields = t.getDescribe().fields.getMap();
+      Schema.SObjectField f = fields.get(last ? parts[i] : parts[i] + 'Id');
+      if (f == null) {
+        f = fields.get(parts[i]);
+      }
+      if (f == null) {
+        return null;
+      }
+      Schema.DescribeFieldResult fd = f.getDescribe();
+      if (last) {
+        return fd;
+      }
+      List<Schema.SObjectType> refs = fd.getReferenceTo();
+      t = refs.isEmpty() ? null : refs[0];
+    }
+    return null;
   }
 
   public static List<Map<String, Object>> actionsOf(Map<String, Object> spec) {
@@ -2762,10 +2945,10 @@ Replace `get question()` and `get heading()` with:
 In `finalPublishDialog.html`, directly after `<p class="pd-question">{question}</p>`:
 
 ```html
-<template lwc:if="{hasBlockers}">
+<template lwc:if={hasBlockers}>
   <ul class="pd-blockers">
-    <template for:each="{blockerItems}" for:item="item">
-      <li key="{item.key}" class="pd-blocker">
+    <template for:each={blockerItems} for:item="item">
+      <li key={item.key} class="pd-blocker">
         <lightning-icon
           icon-name="utility:error"
           variant="error"
@@ -2784,10 +2967,10 @@ and give the Publish button `disabled={hasBlockers}`:
 
 ```html
 <lightning-button
-  label="{confirmLabel}"
+  label={confirmLabel}
   variant="brand"
-  disabled="{hasBlockers}"
-  onclick="{handlePublish}"
+  disabled={hasBlockers}
+  onclick={handlePublish}
 ></lightning-button>
 ```
 
@@ -3473,6 +3656,86 @@ private class FinalMappingServiceTest {
   }
 
   @IsTest
+  static void aChoiceIsSearchedTheWayItIsWritten() {
+    // Write the label, search the value, and every submission quietly makes
+    // another Contact. Both paths go through the one conversion now.
+    Map<String, Object> tier = new Map<String, Object>{
+      'id' => 'el_tier',
+      'type' => 'field',
+      'label' => 'Tier',
+      'required' => true,
+      'config' => new Map<String, Object>{
+        'inputType' => 'picklist',
+        'options' => new List<Object>{
+          new Map<String, Object>{
+            'value' => 'vip',
+            'label' => 'Priority customer'
+          }
+        }
+      }
+    };
+    Map<String, Object> action = new Map<String, Object>{
+      'id' => 'act_a',
+      'object' => 'Contact',
+      'operation' => 'findOrCreate',
+      'match' => new Map<String, Object>{
+        'field' => 'Title',
+        'source' => FinalMappingTestData.answer('el_tier'),
+        'filter' => FinalMappingTestData.anyNamedContact(),
+        'onMatch' => 'reuse'
+      },
+      'fields' => new List<Object>{
+        FinalMappingTestData.field(
+          'LastName',
+          FinalMappingTestData.answer('el_last')
+        ),
+        FinalMappingTestData.field(
+          'Title',
+          FinalMappingTestData.answer('el_tier')
+        )
+      }
+    };
+    FinalMappingTestData.publish(
+      FinalMappingTestData.spec(
+        new List<Object>{
+          FinalMappingTestData.question('el_last', 'text', 'Your surname'),
+          tier
+        },
+        new List<Object>{ action }
+      )
+    );
+
+    FinalMappingService.run(tierSubmission());
+    FinalMappingService.Result second = FinalMappingService.run(
+      tierSubmission()
+    );
+
+    Assert.areEqual('Done', second.status, second.message);
+    Assert.areEqual(
+      1,
+      [SELECT COUNT() FROM Contact WHERE Title = 'Priority customer'],
+      'the second submission found the first one’s Contact'
+    );
+  }
+
+  /** A submission whose tier answer is a stored choice value. */
+  private static Id tierSubmission() {
+    Id subId = FinalMappingTestData.submit(
+      new Map<String, String>{ 'el_last' => 'Jane', 'el_tier' => 'vip' }
+    );
+    update new Form_Submission_Answer__c(
+      Id = [
+        SELECT Id
+        FROM Form_Submission_Answer__c
+        WHERE Form_Submission__c = :subId AND Element_Key__c = 'el_tier'
+      ]
+      .Id,
+      Answer_Type__c = 'Choice'
+    );
+    return subId;
+  }
+
+  @IsTest
   static void aFailureLeavesTheSubmissionAndAnswers() {
     // Test 15.
     insert new List<Contact>{
@@ -3658,13 +3921,6 @@ public without sharing class FinalMappingService {
     Run run = new Run();
     run.questions = FinalMappingRules.questionMap(spec);
     run.answers = answersOf(sub.Id);
-    run.answerValues = new Map<String, Object>();
-    for (String key : run.answers.keySet()) {
-      run.answerValues.put(
-        key,
-        FinalMappingRules.valueOf(run.answers.get(key))
-      );
-    }
     run.writer = new FinalMappingWriter(actions);
 
     Integer index = 0;
@@ -3699,7 +3955,6 @@ public without sharing class FinalMappingService {
   private class Run {
     Map<String, Map<String, Object>> questions;
     Map<String, Form_Submission_Answer__c> answers;
-    Map<String, Object> answerValues;
     FinalMappingWriter writer;
     Map<String, Id> recordIds = new Map<String, Id>();
   }
@@ -3825,15 +4080,8 @@ public without sharing class FinalMappingService {
           '.'
       );
     }
-    Object v = FinalMappingRules.valueOf(a);
-    if (
-      v != null &&
-      a.Answer_Type__c == 'Choice' &&
-      FinalMappingRules.isTextLike(fd.getType())
-    ) {
-      return FinalMappingRules.optionLabel(q, String.valueOf(v));
-    }
-    return v;
+    // One conversion, against the field this value is going into.
+    return FinalMappingRules.answerValue(a, q, fd);
   }
 
   private static Id findOne(
@@ -3842,8 +4090,18 @@ public without sharing class FinalMappingService {
     Run run
   ) {
     Map<String, Object> src = FinalMappingRules.asMap(match.get('source'));
-    Object matchValue = FinalMappingRules.valueOf(
-      run.answers.get(String.valueOf(src.get('elementKey')))
+    Schema.SObjectField mf = d.fields.getMap()
+      .get(String.valueOf(match.get('field')));
+    if (mf == null) {
+      throw new StepException('the field it searches on no longer exists.');
+    }
+    String key = String.valueOf(src.get('elementKey'));
+    // The SAME conversion the write uses, against the field being searched:
+    // a choice written as a label must not be searched as its value.
+    Object matchValue = FinalMappingRules.answerValue(
+      run.answers.get(key),
+      run.questions.get(key),
+      mf.getDescribe()
     );
     if (matchValue == null) {
       // Never search for a blank value: it matches every record without one (D44).
@@ -3851,14 +4109,9 @@ public without sharing class FinalMappingService {
         'the answer used to find the record was left blank, so no search was run.'
       );
     }
-    Schema.SObjectField mf = d.fields.getMap()
-      .get(String.valueOf(match.get('field')));
-    if (mf == null) {
-      throw new StepException('the field it searches on no longer exists.');
-    }
     FinalLookupService.Compiled c = FinalLookupService.compile(
-      new Map<String, Object>{ 'filter' => match.get('filter') },
-      run.answerValues,
+      new Map<String, Object>{ 'filter' => resolvedFilter(match.get('filter'), d, run) },
+      new Map<String, Object>(),
       d.getName()
     );
     if (c.blocked || String.isBlank(c.whereClause)) {
@@ -3891,6 +4144,56 @@ public without sharing class FinalMappingService {
       );
     }
     return hits.isEmpty() ? null : hits[0].Id;
+  }
+
+  /**
+   * A copy of the filter with every `$field.` value already converted
+   * against the field that row filters on — which is not the field the
+   * answer would be written to. The shared compiler stays exactly as
+   * lookups use it; only the values it is handed change.
+   *
+   * A value that resolves to nothing is left as the token, so the compiler
+   * refuses the filter in its own words and the step fails rather than
+   * searching on a blank.
+   */
+  private static Object resolvedFilter(
+    Object filter,
+    Schema.DescribeSObjectResult d,
+    Run run
+  ) {
+    if (!(filter instanceof Map<String, Object>)) {
+      return filter;
+    }
+    Map<String, Object> copy = (Map<String, Object>) JSON.deserializeUntyped(
+      JSON.serialize(filter)
+    );
+    for (Object rowObj : FinalMappingRules.asList(copy.get('rows'))) {
+      Map<String, Object> row = FinalMappingRules.asMap(rowObj);
+      if (row == null || !(row.get('value') instanceof String)) {
+        continue;
+      }
+      String token = (String) row.get('value');
+      if (!token.startsWith('$field.')) {
+        continue;
+      }
+      Schema.DescribeFieldResult fd = FinalMappingRules.fieldAt(
+        d.getName(),
+        String.valueOf(row.get('fieldPath'))
+      );
+      if (fd == null) {
+        continue;
+      }
+      String key = token.substring(7);
+      Object converted = FinalMappingRules.answerValue(
+        run.answers.get(key),
+        run.questions.get(key),
+        fd
+      );
+      if (converted != null) {
+        row.put('value', converted);
+      }
+    }
+    return copy;
   }
 
   private static Map<String, Form_Submission_Answer__c> answersOf(
@@ -3948,7 +4251,7 @@ sf project deploy start --target-org revclouddev --source-dir force-app/main/def
 sf apex run test --target-org revclouddev --class-names FinalMappingServiceTest --result-format human --wait 10
 ```
 
-Expected: 12 pass. The trigger doesn't exist yet, so `submit()` leaves `Mapping_Status__c` blank and
+Expected: 13 pass. The trigger doesn't exist yet, so `submit()` leaves `Mapping_Status__c` blank and
 the first run returns "Nothing to run". **Therefore, until Task 8 lands, add this line at the end of
 `FinalMappingTestData.submit` before `return s.Id;`:**
 
@@ -4886,24 +5189,24 @@ Add fields and getters to the class:
 In `finalSubmissionReader.html`, directly after the closing `</div>` of `sr-head`:
 
 ```html
-<template lwc:if="{showMapping}">
+<template lwc:if={showMapping}>
   <div class="slds-p-horizontal_medium sr-mapping">
     <p class="sr-mapping-line">
       Records from this submission:
-      <span class="{mappingStatusClass}">{mapping.status}</span>
+      <span class={mappingStatusClass}>{mapping.status}</span>
     </p>
-    <template lwc:if="{mapping.message}">
+    <template lwc:if={mapping.message}>
       <p class="sr-mapping-message">{mapping.message}</p>
     </template>
-    <template lwc:if="{hasMappingRecords}">
+    <template lwc:if={hasMappingRecords}>
       <ul class="sr-mapping-records">
-        <template for:each="{mappingRecords}" for:item="rec">
-          <li key="{rec.key}">
+        <template for:each={mappingRecords} for:item="rec">
+          <li key={rec.key}>
             <button
               type="button"
               class="sr-file-open"
-              data-id="{rec.recordId}"
-              onclick="{handleOpenRecord}"
+              data-id={rec.recordId}
+              onclick={handleOpenRecord}
             >
               {rec.recordId}
             </button>
@@ -4911,15 +5214,15 @@ In `finalSubmissionReader.html`, directly after the closing `</div>` of `sr-head
         </template>
       </ul>
     </template>
-    <template lwc:if="{mapping.canRetry}">
+    <template lwc:if={mapping.canRetry}>
       <lightning-button
         class="sr-retry"
         label="Retry mapping"
-        onclick="{handleRetry}"
-        disabled="{retrying}"
+        onclick={handleRetry}
+        disabled={retrying}
       ></lightning-button>
     </template>
-    <template lwc:if="{retryError}">
+    <template lwc:if={retryError}>
       <p class="sr-error" role="alert">{retryError}</p>
     </template>
   </div>
@@ -5004,7 +5307,9 @@ git push -u origin feat/f2-m7-reader-retry
   - `setMatch(spec, actionId, patch) → spec` — patch of `{ field?, source?, filter? }`
   - `setOnMatch(spec, actionId, 'reuse' | 'update') → spec`
   - `setWriteOnMatch(spec, actionId, field, on) → spec`
-  - `answerIndex(spec) → Map<elementKey, Array<{ actionId, object, field, isMatch, step }>>`
+  - `answerIndex(spec) → Map<elementKey, Array<{ actionId, object, field, step, use }>>` where `use`
+    is `'value'` (fills the field), `'match'` (finds the record) or `'link'` (the record picked in
+    this question fills a relationship)
   - `actionState(actions, index) → 'ok' | 'incomplete' | 'broken'`
 
 - [ ] **Step 1: Write the failing tests**
@@ -5133,8 +5438,8 @@ describe('finalMappingModel', () => {
     spec = setFieldSource(spec, actionId, 'Email', answer('el_e'));
     const index = answerIndex(spec);
     expect(index.get('el_e')).toEqual([
-      { actionId, object: 'Contact', field: 'Email', isMatch: true, step: 1 },
-      { actionId, object: 'Contact', field: 'Email', isMatch: false, step: 1 }
+      { actionId, object: 'Contact', field: 'Email', use: 'match', step: 1 },
+      { actionId, object: 'Contact', field: 'Email', use: 'value', step: 1 }
     ]);
   });
 
@@ -5152,6 +5457,53 @@ describe('finalMappingModel', () => {
     expect(actionState(actionsOf(spec), 0)).toBe('incomplete');
     spec = setOnMatch(spec, actionId, 'reuse');
     expect(actionState(actionsOf(spec), 0)).toBe('ok');
+  });
+
+  it('a field with no source picked yet is unfinished, not fine', () => {
+    const created = addAction(base(), 'Contact', 'create');
+    // exactly what "Add a field" leaves behind
+    const spec = setFieldSource(created.spec, created.actionId, 'Email', null);
+    expect(actionState(actionsOf(spec), 0)).toBe('incomplete');
+  });
+
+  it('counts false and 0 as real fixed values', () => {
+    const created = addAction(base(), 'Contact', 'create');
+    let spec = setFieldSource(created.spec, created.actionId, 'DoNotCall', {
+      kind: 'literal',
+      value: false
+    });
+    expect(actionState(actionsOf(spec), 0)).toBe('ok');
+    spec = setFieldSource(created.spec, created.actionId, 'Level__c', {
+      kind: 'literal',
+      value: 0
+    });
+    expect(actionState(actionsOf(spec), 0)).toBe('ok');
+  });
+
+  it('an empty fixed value is unfinished', () => {
+    const created = addAction(base(), 'Contact', 'create');
+    const spec = setFieldSource(created.spec, created.actionId, 'Title', {
+      kind: 'literal',
+      value: ''
+    });
+    expect(actionState(actionsOf(spec), 0)).toBe('incomplete');
+  });
+
+  it('indexes the record picked in a lookup question as a link', () => {
+    const created = addAction(base(), 'Contact', 'create');
+    const spec = setFieldSource(created.spec, created.actionId, 'ReportsToId', {
+      kind: 'recordRef',
+      ref: 'answer:el_pick'
+    });
+    expect(answerIndex(spec).get('el_pick')).toEqual([
+      {
+        actionId: created.actionId,
+        object: 'Contact',
+        field: 'ReportsToId',
+        use: 'link',
+        step: 1
+      }
+    ]);
   });
 });
 ```
@@ -5339,23 +5691,57 @@ export function answerIndex(spec) {
       add(a.match.source.elementKey, {
         ...base,
         field: a.match.field,
-        isMatch: true
+        use: 'match'
       });
     }
     (a.fields || []).forEach((f) => {
-      if (f.source && f.source.kind === 'answer') {
-        add(f.source.elementKey, { ...base, field: f.field, isMatch: false });
+      if (!f.source) return;
+      if (f.source.kind === 'answer') {
+        add(f.source.elementKey, { ...base, field: f.field, use: 'value' });
+      } else if (
+        f.source.kind === 'recordRef' &&
+        typeof f.source.ref === 'string' &&
+        f.source.ref.startsWith('answer:')
+      ) {
+        // The record picked in a lookup question, filling a relationship.
+        // It IS used; without this it read as "Stored only".
+        add(f.source.ref.slice(7), { ...base, field: f.field, use: 'link' });
       }
     });
   });
   return index;
 }
 
+/**
+ * A source is usable, not merely present. `false` and `0` are perfectly
+ * good fixed values, so nothing here asks whether a value is truthy.
+ */
+function sourceUsable(source, earlier) {
+  if (!source) return false;
+  if (source.kind === 'answer') {
+    return typeof source.elementKey === 'string' && source.elementKey !== '';
+  }
+  if (source.kind === 'literal') {
+    return (
+      source.value !== null && source.value !== undefined && source.value !== ''
+    );
+  }
+  if (source.kind === 'recordRef') {
+    const ref = source.ref;
+    if (typeof ref !== 'string') return false;
+    if (ref.startsWith('action:')) return earlier.has(ref.slice(7));
+    if (ref.startsWith('answer:')) return ref.length > 'answer:'.length;
+    return false; // 'link' is refused at publish while F2 has nowhere to read it
+  }
+  return false;
+}
+
 export function actionState(actions, index) {
   const a = actions[index];
   if (!a) return 'broken';
   const earlier = new Set(actions.slice(0, index).map((x) => x.id));
-  const broken = (a.fields || []).some(
+  const fields = a.fields || [];
+  const broken = fields.some(
     (f) =>
       f.source &&
       f.source.kind === 'recordRef' &&
@@ -5364,12 +5750,15 @@ export function actionState(actions, index) {
       !earlier.has(f.source.ref.slice(7))
   );
   if (broken) return 'broken';
-  if (!(a.fields || []).length) return 'incomplete';
+  if (!fields.length) return 'incomplete';
+  // A field whose source was never picked — which is the state "Add a
+  // field" leaves behind — is unfinished, not fine.
+  if (fields.some((f) => !sourceUsable(f.source, earlier))) return 'incomplete';
   if (a.operation === 'findOrCreate') {
     const m = a.match || {};
     if (
       !m.field ||
-      !m.source ||
+      !sourceUsable(m.source, earlier) ||
       !m.onMatch ||
       !(m.filter && (m.filter.rows || []).length)
     ) {
@@ -5393,7 +5782,7 @@ export function actionState(actions, index) {
 - [ ] **Step 4: Run to verify they pass**
 
 Run: `npm run test:unit -- force-app/main/default/lwc/finalMappingModel`
-Expected: 10 pass.
+Expected: 14 pass.
 
 - [ ] **Step 5: Commit**
 
@@ -5763,13 +6152,13 @@ Next to `handleModeDesign()` (line 628):
 In `finalFormStudio.html`, between the Build and Design buttons inside `.st-modes`:
 
 ```html
-<template lwc:if="{showDataMode}">
+<template lwc:if={showDataMode}>
   <button
     type="button"
-    class="{dataClass}"
-    aria-pressed="{isDataPressed}"
-    disabled="{modeDisabled}"
-    onclick="{handleModeData}"
+    class={dataClass}
+    aria-pressed={isDataPressed}
+    disabled={modeDisabled}
+    onclick={handleModeData}
   >
     Data
   </button>
@@ -5779,14 +6168,14 @@ In `finalFormStudio.html`, between the Build and Design buttons inside `.st-mode
 And add a region directly before `<template lwc:elseif={isDesign}>` (line 288):
 
 ```html
-<template lwc:elseif="{isData}">
+<template lwc:elseif={isData}>
   <main class="st-stagearea st-stagearea--data">
     <c-final-data-mode
-      spec="{spec}"
-      form-id="{formId}"
-      read-only="{isReadOnly}"
-      is-public="{isPublic}"
-      onspecchange="{handleSpecChange}"
+      spec={spec}
+      form-id={formId}
+      read-only={isReadOnly}
+      is-public={isPublic}
+      onspecchange={handleSpecChange}
     ></c-final-data-mode>
   </main>
 </template>
@@ -5812,10 +6201,10 @@ And add a region directly before `<template lwc:elseif={isDesign}>` (line 288):
       <span class="dm-hint">Runs after each submission is saved</span>
     </nav>
     <c-final-mapping-editor
-      spec="{spec}"
-      read-only="{readOnly}"
-      is-public="{isPublic}"
-      onspecchange="{handleSpecChange}"
+      spec={spec}
+      read-only={readOnly}
+      is-public={isPublic}
+      onspecchange={handleSpecChange}
     ></c-final-mapping-editor>
   </div>
 </template>
@@ -5977,6 +6366,13 @@ const STATE_TEXT = {
   broken: 'Points at a missing step'
 };
 
+/** What this answer does on that record, in the author's words. */
+function describeUse(use) {
+  if (use.use === 'match') return 'used to find the record';
+  if (use.use === 'link') return `linked as ${use.field}`;
+  return use.field;
+}
+
 /**
  * finalMappingEditor — the Mapping page (FREEFORM_F2_MAPPING_SPEC section
  * 5): the steps in run order, the selected step, and where every answer
@@ -6107,7 +6503,7 @@ export default class FinalMappingEditor extends LightningElement {
           ? uses
               .map(
                 (u) =>
-                  `${labels.get(u.object) || u.object} · ${u.isMatch ? 'used to find the record' : u.field}`
+                  `${labels.get(u.object) || u.object} · ${describeUse(u)}`
               )
               .join(', ')
           : 'Stored only',
@@ -6208,26 +6604,26 @@ export default class FinalMappingEditor extends LightningElement {
       <p class="me-note">
         In this order. A record can only point at one created before it.
       </p>
-      <template for:each="{cards}" for:item="card">
+      <template for:each={cards} for:item="card">
         <div
-          key="{card.id}"
-          class="{card.cls}"
-          draggable="{card.draggable}"
-          data-index="{card.index}"
-          ondragstart="{handleDragStart}"
-          ondragover="{handleDragOver}"
-          ondrop="{handleDrop}"
+          key={card.id}
+          class={card.cls}
+          draggable={card.draggable}
+          data-index={card.index}
+          ondragstart={handleDragStart}
+          ondragover={handleDragOver}
+          ondrop={handleDrop}
         >
           <button
             type="button"
             class="me-card-main"
-            data-id="{card.id}"
-            aria-current="{card.ariaCurrent}"
-            onclick="{handleSelect}"
+            data-id={card.id}
+            aria-current={card.ariaCurrent}
+            onclick={handleSelect}
           >
             <span class="me-card-title">{card.title}</span>
             <span class="me-card-detail">{card.detail}</span>
-            <template lwc:if="{card.stateText}">
+            <template lwc:if={card.stateText}>
               <span class="me-card-state">{card.stateText}</span>
             </template>
           </button>
@@ -6237,62 +6633,62 @@ export default class FinalMappingEditor extends LightningElement {
               variant="bare"
               size="small"
               alternative-text="Move up"
-              data-index="{card.index}"
-              disabled="{card.upDisabled}"
-              onclick="{handleMoveUp}"
+              data-index={card.index}
+              disabled={card.upDisabled}
+              onclick={handleMoveUp}
             ></lightning-button-icon>
             <lightning-button-icon
               icon-name="utility:down"
               variant="bare"
               size="small"
               alternative-text="Move down"
-              data-index="{card.index}"
-              disabled="{card.downDisabled}"
-              onclick="{handleMoveDown}"
+              data-index={card.index}
+              disabled={card.downDisabled}
+              onclick={handleMoveDown}
             ></lightning-button-icon>
           </span>
         </div>
       </template>
 
-      <template lwc:if="{adding}">
+      <template lwc:if={adding}>
         <div class="me-add">
           <lightning-combobox
             label="Object"
             placeholder="Choose an object"
-            options="{objectOptions}"
-            value="{newObject}"
-            onchange="{handleObjectPick}"
+            options={objectOptions}
+            value={newObject}
+            onchange={handleObjectPick}
           ></lightning-combobox>
           <lightning-radio-group
             label="What this step does"
-            options="{operationOptions}"
-            value="{newOperation}"
+            options={operationOptions}
+            value={newOperation}
             type="button"
-            onchange="{handleOperationPick}"
+            onchange={handleOperationPick}
           ></lightning-radio-group>
           <div class="me-add-buttons">
             <lightning-button
               label="Cancel"
-              onclick="{handleCancelAdd}"
+              onclick={handleCancelAdd}
             ></lightning-button>
             <lightning-button
               label="Add record"
               variant="brand"
-              disabled="{addDisabled}"
-              onclick="{handleAdd}"
+              disabled={addDisabled}
+              onclick={handleAdd}
             ></lightning-button>
           </div>
         </div>
       </template>
-      <template lwc:elseif="{atCap}">
+      <template lwc:elseif={atCap}>
         <p class="me-note">A form can create at most 10 records.</p>
       </template>
       <template lwc:else>
         <button
           type="button"
           class="me-add-start"
-          disabled="{readOnly}"
-          onclick="{handleStartAdd}"
+          disabled={readOnly}
+          onclick={handleStartAdd}
         >
           <lightning-icon
             icon-name="utility:add"
@@ -6309,17 +6705,17 @@ export default class FinalMappingEditor extends LightningElement {
     </section>
 
     <section class="me-col me-detail" aria-label="Selected record">
-      <template lwc:if="{hasActions}">
+      <template lwc:if={hasActions}>
         <c-final-mapping-action
-          spec="{spec}"
-          action-id="{selectedIdOrFirst}"
-          objects="{objects}"
-          questions="{questions}"
-          compatibility="{compat}"
-          read-only="{readOnly}"
-          is-public="{isPublic}"
-          onspecchange="{handleActionChange}"
-          onactionremoved="{handleActionRemoved}"
+          spec={spec}
+          action-id={selectedIdOrFirst}
+          objects={objects}
+          questions={questions}
+          compatibility={compat}
+          read-only={readOnly}
+          is-public={isPublic}
+          onspecchange={handleActionChange}
+          onactionremoved={handleActionRemoved}
         ></c-final-mapping-action>
       </template>
       <template lwc:else>
@@ -6335,10 +6731,10 @@ export default class FinalMappingEditor extends LightningElement {
 
     <section class="me-col me-index" aria-label="Answers">
       <h2 class="me-heading">Answers</h2>
-      <template for:each="{indexRows}" for:item="row">
-        <div key="{row.key}" class="me-index-row">
+      <template for:each={indexRows} for:item="row">
+        <div key={row.key} class="me-index-row">
           <span class="me-index-label">{row.label}</span>
-          <span class="{row.cls}">{row.where}</span>
+          <span class={row.cls}>{row.where}</span>
         </div>
       </template>
       <p class="me-footer">
@@ -7141,7 +7537,7 @@ export default class FinalMappingAction extends LightningElement {
 
 ```html
 <template>
-  <template lwc:if="{action}">
+  <template lwc:if={action}>
     <div class="ma-head">
       <h2 class="ma-title">{objectLabel}</h2>
       <span class="ma-step">{stepText}</span>
@@ -7151,16 +7547,16 @@ export default class FinalMappingAction extends LightningElement {
         label="What this step does"
         variant="label-hidden"
         type="button"
-        options="{operationOptions}"
-        value="{operation}"
-        disabled="{readOnly}"
-        onchange="{handleOperation}"
+        options={operationOptions}
+        value={operation}
+        disabled={readOnly}
+        onchange={handleOperation}
       ></lightning-radio-group>
       <lightning-button-icon
         icon-name="utility:delete"
         alternative-text="Remove this record"
-        disabled="{readOnly}"
-        onclick="{handleRemoveStep}"
+        disabled={readOnly}
+        onclick={handleRemoveStep}
       ></lightning-button-icon>
     </div>
 
@@ -7175,11 +7571,11 @@ export default class FinalMappingAction extends LightningElement {
         </tr>
       </thead>
       <tbody>
-        <template for:each="{rows}" for:item="row">
-          <tr key="{row.key}" data-row="{row.key}" class="ma-row">
+        <template for:each={rows} for:item="row">
+          <tr key={row.key} data-row={row.key} class="ma-row">
             <td class="ma-td">
               {row.label}
-              <template lwc:if="{row.required}">
+              <template lwc:if={row.required}>
                 <abbr class="ma-required" title="Required">*</abbr>
               </template>
             </td>
@@ -7188,22 +7584,22 @@ export default class FinalMappingAction extends LightningElement {
                 label="Source"
                 variant="label-hidden"
                 placeholder="Choose a source"
-                data-field="{row.key}"
-                options="{row.options}"
-                value="{row.value}"
-                disabled="{readOnly}"
-                onchange="{handleSource}"
+                data-field={row.key}
+                options={row.options}
+                value={row.value}
+                disabled={readOnly}
+                onchange={handleSource}
               ></lightning-combobox>
-              <template lwc:if="{row.isLiteral}">
+              <template lwc:if={row.isLiteral}>
                 <lightning-input
                   label="Fixed value"
-                  data-field="{row.key}"
-                  value="{row.literal}"
-                  disabled="{readOnly}"
-                  onchange="{handleLiteral}"
+                  data-field={row.key}
+                  value={row.literal}
+                  disabled={readOnly}
+                  onchange={handleLiteral}
                 ></lightning-input>
               </template>
-              <template lwc:if="{row.why}">
+              <template lwc:if={row.why}>
                 <p class="ma-why">{row.why}</p>
               </template>
             </td>
@@ -7212,9 +7608,9 @@ export default class FinalMappingAction extends LightningElement {
                 icon-name="utility:close"
                 variant="bare"
                 alternative-text="Remove field"
-                data-field="{row.key}"
-                disabled="{readOnly}"
-                onclick="{handleRemoveField}"
+                data-field={row.key}
+                disabled={readOnly}
+                onclick={handleRemoveField}
               ></lightning-button-icon>
             </td>
           </tr>
@@ -7226,10 +7622,10 @@ export default class FinalMappingAction extends LightningElement {
       class="ma-add-field"
       label="Add a field"
       placeholder="Choose a field"
-      options="{unusedFieldOptions}"
-      value="{addingField}"
-      disabled="{readOnly}"
-      onchange="{handleAddField}"
+      options={unusedFieldOptions}
+      value={addingField}
+      disabled={readOnly}
+      onchange={handleAddField}
     ></lightning-combobox>
   </template>
 </template>
@@ -7335,14 +7731,18 @@ Run `uiux-flow-reviewer`, then merge.
 
 **Files:**
 
+- Modify: `lwc/finalLookupFilter/finalLookupFilter.js`, `.html` — a filter-only mode
+- Modify: `lwc/finalLookupFilter/__tests__/finalLookupFilter.test.js`
 - Modify: `lwc/finalMappingAction/finalMappingAction.js`, `.html`, `.css`
 - Test: `lwc/finalMappingAction/__tests__/finalMappingAction.test.js`
 
 **Interfaces:**
 
 - Consumes: `setMatch`, `setOnMatch`, `setWriteOnMatch` from `c/finalMappingModel`;
-  `<c-final-lookup-filter target-object value onlookupconfigchange>` whose `value` is a config
-  holding `filter`, and whose event `detail.value` is the next config.
+  `<c-final-lookup-filter target-object value filter-only onlookupconfigchange>` whose `value` is a
+  config holding `filter`, and whose event `detail.value` is the next config.
+- Produces: `c-final-lookup-filter` gains `@api filterOnly = false`. Lookups are unchanged by
+  default; filter-only hides the three controls that mean nothing to a mapping.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -7433,6 +7833,7 @@ describe('find or create', () => {
     await flush();
     const editor = el.shadowRoot.querySelector('c-final-lookup-filter');
     expect(editor.targetObject).toBe('Contact');
+    expect(editor.filterOnly).toBe(true); // no result-display, search or guest controls here
     const handler = jest.fn();
     el.addEventListener('specchange', handler);
     const rows = [{ fieldPath: 'LastName', operator: 'isNotBlank' }];
@@ -7453,7 +7854,72 @@ describe('find or create', () => {
 Run: `npm run test:unit -- force-app/main/default/lwc/finalMappingAction`
 Expected: FAIL — `.ma-question` not found.
 
-- [ ] **Step 3: Implement**
+- [ ] **Step 3: Give the lookup filter a filter-only mode**
+
+The mapping screen reuses `c/finalLookupFilter` for its conditions, but three of that component's
+controls mean nothing to a mapping and the mapping handler saves none of them: **Show in each
+result**, **Search these fields**, and **Let people filling this form anonymously search it**. The
+last one is the reason this can't wait — it reads as a permission switch, and on the mapping screen
+it changes nothing at all.
+
+Lookups keep every control. Filter-only is opt-in, so nothing that ships today moves.
+
+Add to `finalLookupFilter.js`, beside `@api targetObject`:
+
+```js
+    /**
+     * Conditions only. The mapping screen (F2) reuses this editor for a
+     * find-or-create search, where result display, searchable fields and
+     * guest search have no meaning — and a guest-search switch that does
+     * nothing is worse than no switch at all.
+     */
+    @api filterOnly = false;
+
+    get showLookupControls() {
+        return !this.filterOnly;
+    }
+```
+
+In `finalLookupFilter.html`, wrap the three controls and the field hint between them — everything
+from the first `<lightning-input label="Show in each result"` down to and including the guest
+checkbox — in:
+
+```html
+<template lwc:if={showLookupControls}>
+    ... the three lightning-inputs and the <p class="lf-hint"> between them, unchanged ...
+</template>
+```
+
+The conditions block (`.lf-conditions` with `c-final-rule-editor`) stays outside it, so the filter
+events are untouched.
+
+Add to `lwc/finalLookupFilter/__tests__/finalLookupFilter.test.js`, using that file's own mount
+helper:
+
+```js
+    it('hides the lookup-only controls in filter-only mode', async () => {
+        const el = mountFilter({ targetObject: 'Contact', filterOnly: true });
+        await flush();
+        const labels = [...el.shadowRoot.querySelectorAll('lightning-input')].map((i) => i.label);
+        expect(labels).not.toContain('Show in each result');
+        expect(labels).not.toContain('Search these fields');
+        expect(labels).not.toContain('Let people filling this form anonymously search it');
+        expect(el.shadowRoot.querySelector('c-final-rule-editor')).toBeTruthy();
+    });
+
+    it('a lookup still gets all of them', async () => {
+        const el = mountFilter({ targetObject: 'Contact' });
+        await flush();
+        const labels = [...el.shadowRoot.querySelectorAll('lightning-input')].map((i) => i.label);
+        expect(labels).toContain('Show in each result');
+        expect(labels).toContain('Let people filling this form anonymously search it');
+    });
+```
+
+Run: `npm run test:unit -- force-app/main/default/lwc/finalLookupFilter`
+Expected: both pass, and every test already in that file still passes — lookups are unchanged.
+
+- [ ] **Step 4: Implement the match block**
 
 In `finalMappingAction.js`, extend the import:
 
@@ -7562,31 +8028,31 @@ Extend `rows` so each row carries the overwrite and lock state — inside the `m
 In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table class="ma-table">`:
 
 ```html
-<template lwc:if="{isFindOrCreate}">
+<template lwc:if={isFindOrCreate}>
   <div class="ma-match">
     <h3 class="ma-subhead">Find an existing {objectLabel}</h3>
     <div class="ma-match-line">
       <lightning-combobox
         label="Where"
         placeholder="Choose a field"
-        options="{matchFieldOptions}"
-        value="{match.field}"
-        disabled="{readOnly}"
-        onchange="{handleMatchField}"
+        options={matchFieldOptions}
+        value={match.field}
+        disabled={readOnly}
+        onchange={handleMatchField}
       ></lightning-combobox>
       <lightning-combobox
         label="Matches the answer to"
         placeholder="Choose a question"
-        options="{matchSourceOptions}"
-        value="{matchSourceValue}"
-        disabled="{readOnly}"
-        onchange="{handleMatchSource}"
+        options={matchSourceOptions}
+        value={matchSourceValue}
+        disabled={readOnly}
+        onchange={handleMatchSource}
       ></lightning-combobox>
     </div>
     <c-final-lookup-filter
-      target-object="{objectApi}"
-      value="{filterConfig}"
-      onlookupconfigchange="{handleFilter}"
+      target-object={objectApi}
+      value={filterConfig}
+      onlookupconfigchange={handleFilter}
     ></c-final-lookup-filter>
     <p class="ma-note">
       A filter is required. Searching every {objectLabel} in the org is refused
@@ -7594,7 +8060,7 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
     </p>
   </div>
 
-  <template lwc:if="{matchUnanswered}">
+  <template lwc:if={matchUnanswered}>
     <div class="ma-question" role="group" aria-label="When we find one">
       <h3 class="ma-question-title">
         <lightning-icon
@@ -7604,7 +8070,7 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
         ></lightning-icon>
         When we find one, what should happen to it?
       </h3>
-      <template lwc:if="{isPublic}">
+      <template lwc:if={isPublic}>
         <p class="ma-question-why">
           This form is public. Anyone who guesses a real value reaches whatever
           you allow here, without signing in.
@@ -7615,8 +8081,8 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
           type="button"
           class="ma-choice"
           data-on-match="reuse"
-          disabled="{readOnly}"
-          onclick="{handleOnMatch}"
+          disabled={readOnly}
+          onclick={handleOnMatch}
         >
           <span class="ma-choice-title">Use it, leave it alone</span>
           <span class="ma-choice-detail">
@@ -7628,8 +8094,8 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
           type="button"
           class="ma-choice"
           data-on-match="update"
-          disabled="{readOnly}"
-          onclick="{handleOnMatch}"
+          disabled={readOnly}
+          onclick={handleOnMatch}
         >
           <span class="ma-choice-title">Update it with these answers</span>
           <span class="ma-choice-detail">
@@ -7646,8 +8112,8 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
       <button
         type="button"
         class="ma-link"
-        disabled="{readOnly}"
-        onclick="{handleChangeOnMatch}"
+        disabled={readOnly}
+        onclick={handleChangeOnMatch}
       >
         Change
       </button>
@@ -7659,7 +8125,7 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
 In the table header, add a column after "Gets its value from":
 
 ```html
-<template lwc:if="{showOverwrite}">
+<template lwc:if={showOverwrite}>
   <th scope="col" class="ma-th ma-th--narrow">Overwrite</th>
 </template>
 ```
@@ -7667,18 +8133,18 @@ In the table header, add a column after "Gets its value from":
 and in each row, after the source `<td>`:
 
 ```html
-<template lwc:if="{showOverwrite}">
+<template lwc:if={showOverwrite}>
   <td class="ma-td">
-    <template lwc:if="{row.showTick}">
+    <template lwc:if={row.showTick}>
       <lightning-input
         type="checkbox"
         label="Overwrite on a match"
         variant="label-hidden"
         data-overwrite
-        data-field="{row.key}"
-        checked="{row.overwrite}"
-        disabled="{readOnly}"
-        onchange="{handleOverwrite}"
+        data-field={row.key}
+        checked={row.overwrite}
+        disabled={readOnly}
+        onchange={handleOverwrite}
       ></lightning-input>
     </template>
   </td>
@@ -7688,7 +8154,7 @@ and in each row, after the source `<td>`:
 and inside the first `<td>` after the required marker:
 
 ```html
-<template lwc:if="{row.isMatchField}">
+<template lwc:if={row.isMatchField}>
   <span class="ma-lock">
     <lightning-icon icon-name="utility:lock" size="xx-small"></lightning-icon>
     used to match — never overwritten
@@ -7792,12 +8258,12 @@ Append to `finalMappingAction.css`:
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [ ] **Step 5: Run the tests**
 
 Run: `npm run test:unit -- force-app/main/default/lwc/finalMappingAction force-app/main/default/lwc/finalMappingModel`
 Expected: all pass.
 
-- [ ] **Step 5: Deploy and verify in the org**
+- [ ] **Step 6: Deploy and verify in the org**
 
 ```bash
 sf project deploy start --target-org revclouddev --source-dir force-app/main/default/lwc/finalMappingAction
@@ -7808,7 +8274,7 @@ sentence. Publish now → blocked ("choose what happens"). Answer "Update it" �
 appears, every tick off, Email locked. Tick Title → publish → the dialog warns that this public form
 overwrites Title. Clear the filter → publish blocked ("needs a filter").
 
-- [ ] **Step 6: Commit, PR, merge the M5 slice**
+- [ ] **Step 7: Commit, PR, merge the M5 slice**
 
 ```bash
 git checkout -b feat/f2-m5-find-or-create
@@ -7926,6 +8392,8 @@ on a `docs/f2-shipped` branch, PR, merge.
   Nothing is left pointing at the old shape.
 - `FinalPublishWarnings.isQuestion` and `FinalFormCreateController.isSystemTable` go from private to
   public. No behaviour changes.
+- `c/finalLookupFilter` gains `@api filterOnly`, defaulting to false. Every lookup that uses it today
+  renders exactly as it does now.
 - Nothing is deleted.
 
 ## Cleanup
