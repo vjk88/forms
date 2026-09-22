@@ -382,7 +382,19 @@ kept in alphabetical order with the existing blocks:
 `Mapping_Status__c`.
 
 In `Freeform_Submission_Admin.permissionset-meta.xml`, add the same five blocks, except
-`Mapping_Status__c` is `<editable>true</editable>` (that edit is the bulk-retry permission). Also add:
+`Mapping_Status__c` is `<editable>true</editable>` (that edit is the bulk-retry permission).
+
+**Field edit alone is not enough.** That set currently says `<allowEdit>false</allowEdit>` on
+`Form_Submission__c`, so nobody holding it can edit a submission at all and the bulk retry would be
+impossible. Change that one line to `<allowEdit>true</allowEdit>` in its `Form_Submission__c`
+`objectPermissions` block (the one that also carries `<viewAllRecords>true</viewAllRecords>`).
+
+Say plainly what that buys and costs: this set is how an admin retries mappings in bulk, and the
+price is that its holders can also edit submission records by hand. `allowCreate` and `allowDelete`
+stay false, the reader set is untouched, and the answer rows are a separate object that this set
+still only reads.
+
+Also add:
 
 ```xml
 <customPermissions>
@@ -455,7 +467,7 @@ Push, open the PR, merge (end the PR body with the attribution line).
   - `Map<String, Object> asMap(Object o)`, `List<Object> asList(Object o)` — never null for lists
   - `class MappingValueException extends Exception`
 
-- [ ] **Step 1: Make `isQuestion` public**
+- [ ] **Step 1: Make `isQuestion` public, and give the lookup compiler a public path resolver**
 
 In `classes/FinalPublishWarnings.cls`, change line 156:
 
@@ -467,6 +479,54 @@ to:
 
 ```apex
     public static Boolean isQuestion(Map<String, Object> el) {
+```
+
+In `classes/FinalLookupService.cls`, add beside `resolvePath` (which stays private and unchanged):
+
+```apex
+    /**
+     * The field a filter path ends at, as a describe. `resolvePath` already
+     * knows that a hop may be written as the field (`Customer__c`) or as the
+     * relationship (`Customer__r`, `Account`) and emits the relationship
+     * spelling; this walks that canonical path to the final field.
+     *
+     * Mapping needs it to convert an answer against the field a condition
+     * actually filters on. Rewriting the rule in a second place is how the
+     * two would quietly disagree about a custom relationship.
+     */
+    public static Schema.DescribeFieldResult fieldAt(
+        String objectName,
+        String path
+    ) {
+        String canonical = resolvePath(objectName, path);
+        if (canonical == null) {
+            return null;
+        }
+        List<String> parts = canonical.split('\\.');
+        Schema.SObjectType current = Schema.getGlobalDescribe().get(objectName);
+        for (Integer i = 0; current != null && i < parts.size(); i++) {
+            Map<String, Schema.SObjectField> fields = current.getDescribe()
+                .fields.getMap();
+            if (i == parts.size() - 1) {
+                Schema.SObjectField f = fields.get(parts[i].toLowerCase());
+                return f == null ? null : f.getDescribe();
+            }
+            Schema.SObjectType next = null;
+            for (Schema.SObjectField f : fields.values()) {
+                Schema.DescribeFieldResult d = f.getDescribe();
+                if (
+                    d.getType() == Schema.DisplayType.REFERENCE &&
+                    parts[i].equalsIgnoreCase(d.getRelationshipName())
+                ) {
+                    List<Schema.SObjectType> refs = d.getReferenceTo();
+                    next = refs.isEmpty() ? null : refs[0];
+                    break;
+                }
+            }
+            current = next;
+        }
+        return null;
+    }
 ```
 
 - [ ] **Step 2: Write the shared test fixture**
@@ -831,10 +891,21 @@ private class FinalMappingRulesTest {
   }
 
   @IsTest
-  static void fieldAtWalksARelationshipPath() {
+  static void fieldAtWalksAPathWrittenEitherWay() {
+    // A hop can be the field or the relationship. Both must land on the
+    // same field, or a filter passes publish and then converts nothing.
     Assert.areEqual(
       'Type',
       FinalMappingRules.fieldAt('Contact', 'Account.Type').getName()
+    );
+    Assert.areEqual(
+      'Type',
+      FinalMappingRules.fieldAt('Contact', 'AccountId.Type').getName()
+    );
+    Assert.areEqual(
+      'LastName',
+      FinalMappingRules.fieldAt('Contact', 'ReportsTo.LastName').getName(),
+      'a relationship name, not a field name'
     );
     Assert.areEqual(
       'LastName',
@@ -1247,29 +1318,11 @@ public with sharing class FinalMappingRules {
     String objectApi,
     String path
   ) {
-    if (String.isBlank(objectApi) || String.isBlank(path)) {
-      return null;
-    }
-    Schema.SObjectType t = Schema.getGlobalDescribe().get(objectApi);
-    List<String> parts = path.split('\\.');
-    for (Integer i = 0; t != null && i < parts.size(); i++) {
-      Boolean last = i == parts.size() - 1;
-      Map<String, Schema.SObjectField> fields = t.getDescribe().fields.getMap();
-      Schema.SObjectField f = fields.get(last ? parts[i] : parts[i] + 'Id');
-      if (f == null) {
-        f = fields.get(parts[i]);
-      }
-      if (f == null) {
-        return null;
-      }
-      Schema.DescribeFieldResult fd = f.getDescribe();
-      if (last) {
-        return fd;
-      }
-      List<Schema.SObjectType> refs = fd.getReferenceTo();
-      t = refs.isEmpty() ? null : refs[0];
-    }
-    return null;
+    // The lookup compiler's own resolver, so publish, the search and the
+    // filter all agree about what `Customer__r.Name` means. A hop can be
+    // written as the field or as the relationship, and only that code
+    // knows both spellings.
+    return FinalLookupService.fieldAt(objectApi, path);
   }
 
   public static List<Map<String, Object>> actionsOf(Map<String, Object> spec) {
@@ -3659,21 +3712,6 @@ private class FinalMappingServiceTest {
   static void aChoiceIsSearchedTheWayItIsWritten() {
     // Write the label, search the value, and every submission quietly makes
     // another Contact. Both paths go through the one conversion now.
-    Map<String, Object> tier = new Map<String, Object>{
-      'id' => 'el_tier',
-      'type' => 'field',
-      'label' => 'Tier',
-      'required' => true,
-      'config' => new Map<String, Object>{
-        'inputType' => 'picklist',
-        'options' => new List<Object>{
-          new Map<String, Object>{
-            'value' => 'vip',
-            'label' => 'Priority customer'
-          }
-        }
-      }
-    };
     Map<String, Object> action = new Map<String, Object>{
       'id' => 'act_a',
       'object' => 'Contact',
@@ -3699,7 +3737,7 @@ private class FinalMappingServiceTest {
       FinalMappingTestData.spec(
         new List<Object>{
           FinalMappingTestData.question('el_last', 'text', 'Your surname'),
-          tier
+          tierQuestion()
         },
         new List<Object>{ action }
       )
@@ -3718,10 +3756,80 @@ private class FinalMappingServiceTest {
     );
   }
 
+  @IsTest
+  static void aFilterConvertsAnAnswerInsideAnIsOneOfList() {
+    // "is one of" keeps its entries in `values`, which the compiler never
+    // resolves tokens inside. Unconverted, the search compares Title with
+    // the literal text "$field.el_tier", matches nothing, and quietly makes
+    // a second Contact.
+    Contact existing = new Contact(
+      LastName = 'Existing',
+      Email = 'jane@example.com',
+      Title = 'Priority customer'
+    );
+    insert existing;
+
+    Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+      'act_a',
+      'reuse'
+    );
+    ((Map<String, Object>) action.get('match'))
+      .put(
+        'filter',
+        new Map<String, Object>{
+          'logic' => 'all',
+          'rows' => new List<Object>{
+            new Map<String, Object>{
+              'fieldPath' => 'Title',
+              'operator' => 'in',
+              'values' => new List<Object>{ '$field.el_tier' }
+            }
+          }
+        }
+      );
+    FinalMappingTestData.publish(
+      FinalMappingTestData.spec(
+        new List<Object>{
+          FinalMappingTestData.question('el_last', 'text', 'Your surname'),
+          FinalMappingTestData.question('el_email', 'email', 'Work email'),
+          tierQuestion()
+        },
+        new List<Object>{ action }
+      )
+    );
+
+    FinalMappingService.Result r = FinalMappingService.run(tierSubmission());
+
+    Assert.areEqual('Done', r.status, r.message);
+    Assert.areEqual(1, [SELECT COUNT() FROM Contact], 'it found the one that exists');
+  }
+
+  private static Map<String, Object> tierQuestion() {
+    return new Map<String, Object>{
+      'id' => 'el_tier',
+      'type' => 'field',
+      'label' => 'Tier',
+      'required' => true,
+      'config' => new Map<String, Object>{
+        'inputType' => 'picklist',
+        'options' => new List<Object>{
+          new Map<String, Object>{
+            'value' => 'vip',
+            'label' => 'Priority customer'
+          }
+        }
+      }
+    };
+  }
+
   /** A submission whose tier answer is a stored choice value. */
   private static Id tierSubmission() {
     Id subId = FinalMappingTestData.submit(
-      new Map<String, String>{ 'el_last' => 'Jane', 'el_tier' => 'vip' }
+      new Map<String, String>{
+        'el_last' => 'Jane',
+        'el_email' => 'jane@example.com',
+        'el_tier' => 'vip'
+      }
     );
     update new Form_Submission_Answer__c(
       Id = [
@@ -4169,11 +4277,7 @@ public without sharing class FinalMappingService {
     );
     for (Object rowObj : FinalMappingRules.asList(copy.get('rows'))) {
       Map<String, Object> row = FinalMappingRules.asMap(rowObj);
-      if (row == null || !(row.get('value') instanceof String)) {
-        continue;
-      }
-      String token = (String) row.get('value');
-      if (!token.startsWith('$field.')) {
+      if (row == null) {
         continue;
       }
       Schema.DescribeFieldResult fd = FinalMappingRules.fieldAt(
@@ -4181,19 +4285,63 @@ public without sharing class FinalMappingService {
         String.valueOf(row.get('fieldPath'))
       );
       if (fd == null) {
+        continue; // the compiler refuses the path itself, in better words
+      }
+      // "is one of" / "includes" keep their entries in `values`, and the
+      // compiler never resolves tokens in there at all — so they are
+      // resolved here, keeping the list a list.
+      if (row.get('values') instanceof List<Object>) {
+        List<Object> resolved = new List<Object>();
+        Boolean unresolved = false;
+        for (Object entry : (List<Object>) row.get('values')) {
+          if (!isToken(entry)) {
+            resolved.add(entry);
+            continue;
+          }
+          Object converted = answerFor((String) entry, fd, run);
+          if (converted == null) {
+            unresolved = true;
+            break;
+          }
+          if (converted instanceof List<Object>) {
+            resolved.addAll((List<Object>) converted);
+          } else {
+            resolved.add(converted);
+          }
+        }
+        // A condition that cannot be resolved blocks the whole filter, the
+        // way the compiler does it — an empty list is how we say so. It
+        // never silently drops out and widens the search.
+        row.put('values', unresolved ? new List<Object>() : resolved);
         continue;
       }
-      String key = token.substring(7);
-      Object converted = FinalMappingRules.answerValue(
-        run.answers.get(key),
-        run.questions.get(key),
-        fd
-      );
-      if (converted != null) {
-        row.put('value', converted);
+      if (isToken(row.get('value'))) {
+        Object converted = answerFor((String) row.get('value'), fd, run);
+        if (converted != null) {
+          row.put('value', converted);
+        }
+        // left as the token when it resolves to nothing: the compiler then
+        // blocks the filter and the step fails, rather than searching blank
       }
     }
     return copy;
+  }
+
+  private static Boolean isToken(Object raw) {
+    return raw instanceof String && ((String) raw).startsWith('$field.');
+  }
+
+  private static Object answerFor(
+    String token,
+    Schema.DescribeFieldResult fd,
+    Run run
+  ) {
+    String key = token.substring(7);
+    return FinalMappingRules.answerValue(
+      run.answers.get(key),
+      run.questions.get(key),
+      fd
+    );
   }
 
   private static Map<String, Form_Submission_Answer__c> answersOf(
@@ -4251,7 +4399,7 @@ sf project deploy start --target-org revclouddev --source-dir force-app/main/def
 sf apex run test --target-org revclouddev --class-names FinalMappingServiceTest --result-format human --wait 10
 ```
 
-Expected: 13 pass. The trigger doesn't exist yet, so `submit()` leaves `Mapping_Status__c` blank and
+Expected: 14 pass. The trigger doesn't exist yet, so `submit()` leaves `Mapping_Status__c` blank and
 the first run returns "Nothing to run". **Therefore, until Task 8 lands, add this line at the end of
 `FinalMappingTestData.submit` before `return s.Id;`:**
 
@@ -4800,6 +4948,59 @@ private class FinalMappingRetryControllerTest {
     return u;
   }
 
+  /** Everything the admin set grants, on a plain licence. */
+  private static User admin() {
+    Profile minimum = [
+      SELECT Id
+      FROM Profile
+      WHERE Name = 'Minimum Access - Salesforce'
+    ];
+    User u = new User(
+      Alias = 'fadm',
+      Email = 'fadm@example.com',
+      EmailEncodingKey = 'UTF-8',
+      LastName = 'Freeform admin',
+      LanguageLocaleKey = 'en_US',
+      LocaleSidKey = 'en_US',
+      ProfileId = minimum.Id,
+      TimeZoneSidKey = 'America/Los_Angeles',
+      Username = 'fadm' + Crypto.getRandomInteger() + '@example.com'
+    );
+    insert u;
+    insert new PermissionSetAssignment(
+      AssigneeId = u.Id,
+      PermissionSetId = [
+        SELECT Id
+        FROM PermissionSet
+        WHERE Name = 'Freeform_Submission_Admin'
+      ]
+      .Id
+    );
+    return u;
+  }
+
+  @IsTest
+  static void theAdminSetReallyAllowsTheBulkRetryEdit() {
+    // Field-level edit is not enough on its own. Without object edit on
+    // Form_Submission__c nobody holding this set can set Ready for Retry,
+    // and the bulk path does not exist for anyone but a System
+    // Administrator.
+    Id subId = failedSubmission();
+    User u = admin();
+
+    System.runAs(u) {
+      update new Form_Submission__c(
+        Id = subId,
+        Mapping_Status__c = 'Ready for Retry'
+      );
+    }
+
+    Assert.areEqual(
+      'Ready for Retry',
+      FinalMappingTestData.reload(subId).Mapping_Status__c
+    );
+  }
+
   @IsTest
   static void withoutThePermissionTheMethodRefuses() {
     Id subId = failedSubmission();
@@ -4925,7 +5126,7 @@ sf project deploy start --target-org revclouddev --source-dir force-app/main/def
 sf apex run test --target-org revclouddev --class-names FinalMappingRetryControllerTest --result-format human --wait 10
 ```
 
-Expected: 3 pass.
+Expected: 5 pass.
 
 - [ ] **Step 5: Prove the permission check bites**
 
@@ -7144,6 +7345,20 @@ const FIELDS = [
     referenceTo: 'Contact'
   }
 ];
+const CASE_FIELDS = [
+  {
+    apiName: 'Subject',
+    label: 'Subject',
+    displayType: 'STRING',
+    required: false
+  },
+  {
+    apiName: 'Status',
+    label: 'Status',
+    displayType: 'PICKLIST',
+    required: false
+  }
+];
 const QUESTIONS = [
   {
     elementKey: 'el_e',
@@ -7274,6 +7489,62 @@ describe('c-final-mapping-action', () => {
     });
   });
 
+  it('drops a describe that lands after the author moved on', async () => {
+    // Two steps, two describes, finishing in the wrong order. Without the
+    // guard the Case step offers Contact's fields.
+    let landLate;
+    describeFields.mockReset();
+    describeFields
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            landLate = () => resolve(FIELDS);
+          })
+      )
+      .mockImplementationOnce(() => Promise.resolve(CASE_FIELDS));
+
+    const el = createElement('c-final-mapping-action', {
+      is: FinalMappingAction
+    });
+    Object.assign(el, {
+      spec: {
+        mapping: {
+          actions: [
+            {
+              id: 'act_1',
+              object: 'Contact',
+              operation: 'create',
+              fields: [{ field: 'LastName', source: null }]
+            },
+            {
+              id: 'act_2',
+              object: 'Case',
+              operation: 'create',
+              fields: [{ field: 'Subject', source: null }]
+            }
+          ]
+        }
+      },
+      actionId: 'act_1',
+      objects: [
+        { label: 'Contact', value: 'Contact' },
+        { label: 'Case', value: 'Case' }
+      ],
+      questions: QUESTIONS,
+      compatibility: COMPAT
+    });
+    document.body.appendChild(el);
+    el.actionId = 'act_2';
+    await flush();
+    landLate();
+    await flush();
+
+    const offered = el.shadowRoot
+      .querySelector('.ma-add-field')
+      .options.map((o) => o.value);
+    expect(offered).toEqual(['Status']);
+  });
+
   it('marks required fields', async () => {
     const el = mount(
       [
@@ -7357,12 +7628,21 @@ export default class FinalMappingAction extends LightningElement {
       return;
     }
     this._fieldsFor = objectApi;
+    // Nothing from the last object survives the switch, and a reply that
+    // arrives after the author has moved on is dropped: two describes can
+    // finish in either order, and the slower one would otherwise paint
+    // Contact's fields onto a Case step.
+    this.fields = [];
     describeFields({ objectApi })
       .then((data) => {
-        this.fields = data || [];
+        if (this.objectApi === objectApi) {
+          this.fields = data || [];
+        }
       })
       .catch(() => {
-        this.fields = [];
+        if (this.objectApi === objectApi) {
+          this.fields = [];
+        }
       });
   }
 
@@ -7893,12 +8173,28 @@ checkbox — in:
 The conditions block (`.lf-conditions` with `c-final-rule-editor`) stays outside it, so the filter
 events are untouched.
 
-Add to `lwc/finalLookupFilter/__tests__/finalLookupFilter.test.js`, using that file's own mount
-helper:
+That file's helper is `mount(value)`, which sets `targetObject` itself. Give it a second argument so
+the new tests can turn the mode on, leaving every existing call working:
+
+```js
+function mount(value, { filterOnly = false } = {}) {
+    describeLookupFields.mockResolvedValue(DESCRIBE);
+    const el = createElement('c-final-lookup-filter', {
+        is: FinalLookupFilter
+    });
+    el.targetObject = 'Contact';
+    el.filterOnly = filterOnly;
+    el.value = value || null;
+    document.body.appendChild(el);
+    return el;
+}
+```
+
+Then add:
 
 ```js
     it('hides the lookup-only controls in filter-only mode', async () => {
-        const el = mountFilter({ targetObject: 'Contact', filterOnly: true });
+        const el = mount(null, { filterOnly: true });
         await flush();
         const labels = [...el.shadowRoot.querySelectorAll('lightning-input')].map((i) => i.label);
         expect(labels).not.toContain('Show in each result');
@@ -7908,7 +8204,7 @@ helper:
     });
 
     it('a lookup still gets all of them', async () => {
-        const el = mountFilter({ targetObject: 'Contact' });
+        const el = mount(null);
         await flush();
         const labels = [...el.shadowRoot.querySelectorAll('lightning-input')].map((i) => i.label);
         expect(labels).toContain('Show in each result');
@@ -8052,6 +8348,7 @@ In `finalMappingAction.html`, insert between `</div>` of `ma-head` and `<table c
     <c-final-lookup-filter
       target-object={objectApi}
       value={filterConfig}
+      filter-only
       onlookupconfigchange={handleFilter}
     ></c-final-lookup-filter>
     <p class="ma-note">
@@ -8260,13 +8557,13 @@ Append to `finalMappingAction.css`:
 
 - [ ] **Step 5: Run the tests**
 
-Run: `npm run test:unit -- force-app/main/default/lwc/finalMappingAction force-app/main/default/lwc/finalMappingModel`
-Expected: all pass.
+Run: `npm run test:unit -- force-app/main/default/lwc/finalMappingAction force-app/main/default/lwc/finalMappingModel force-app/main/default/lwc/finalLookupFilter`
+Expected: all pass, the lookup filter's own existing tests included.
 
 - [ ] **Step 6: Deploy and verify in the org**
 
 ```bash
-sf project deploy start --target-org revclouddev --source-dir force-app/main/default/lwc/finalMappingAction
+sf project deploy start --target-org revclouddev --source-dir force-app/main/default/lwc/finalMappingAction --source-dir force-app/main/default/lwc/finalLookupFilter
 ```
 
 On a public Freeform: add a Find or create Contact step. The amber question shows with the public
@@ -8274,11 +8571,15 @@ sentence. Publish now → blocked ("choose what happens"). Answer "Update it" �
 appears, every tick off, Email locked. Tick Title → publish → the dialog warns that this public form
 overwrites Title. Clear the filter → publish blocked ("needs a filter").
 
+On the same screen, check the conditions editor shows **only** conditions: no "Show in each result", no
+"Search these fields", and no anonymous-search checkbox. Then open any form with a lookup question
+and confirm its filter still shows all three.
+
 - [ ] **Step 7: Commit, PR, merge the M5 slice**
 
 ```bash
 git checkout -b feat/f2-m5-find-or-create
-git add force-app/main/default/lwc/finalMappingAction
+git add force-app/main/default/lwc/finalMappingAction force-app/main/default/lwc/finalLookupFilter
 git commit -m "feat(freeform): F2 M5 - find or create, with the match question asked out loud"
 git push -u origin feat/f2-m5-find-or-create
 ```
@@ -8346,9 +8647,10 @@ Contact." Restore the rule to its previous setting afterwards.
 
 - [ ] **Step 7: Bulk retry**
 
-From a list view of Freeform Submissions, inline-edit two Failed submissions to **Ready for Retry**
-and save. Expected: both run and end **Done** or **Failed** with a reason; neither stays on Ready for
-Retry.
+**As a user who holds `Freeform_Submission_Admin` and is not a System Administrator** — a System
+Administrator would pass whatever the permission set says. From a list view of Freeform Submissions,
+inline-edit two Failed submissions to **Ready for Retry** and save. Expected: the edit is allowed,
+both run, and each ends **Done** or **Failed** with a reason; neither stays on Ready for Retry.
 
 - [ ] **Step 8: Record the results**
 
