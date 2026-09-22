@@ -1,8 +1,9 @@
 # Freeform F2 — mapping one submission onto several records
 
-> **Status: DESIGN APPROVED, no code written** (2026-09-20). This is the design the owner signed off
-> section by section in conversation; it is not a build plan. The implementation plan comes next and
-> lives in its own document.
+> **Status: DESIGN APPROVED, revised after review, no code written.** Approved section by section on
+> 2026-09-20 (D29–D37); a review round on 2026-09-21 found seven real problems and the owner ruled on
+> each (D38–D45). This document is the design as it now stands. It is not a build plan — the
+> implementation plan comes next and lives in its own document.
 >
 > F2 is the reason Freeform exists — [FREEFORM_SPEC.md §1](./FREEFORM_SPEC.md). F1 shipped the
 > scaffolding: a Freeform can be created, built, filled in, stored and read back, and every answer
@@ -28,26 +29,36 @@ Everything else in this document exists to make that safe: safe for the author w
 safe for the org whose data it writes, and safe for the respondent who never sees any of it.
 
 **What F2 does not change.** Answers are stored exactly as F1 stores them, through the same
-`insertFenced` path, in the same transaction, whether or not they are mapped anywhere. Mapping is a
-second thing that happens afterwards. If mapping never runs, the submission is still complete and
-still readable — see FREEFORM_SPEC F2 contract 2.
+`insertFenced` path, in the same transaction, whether or not they are mapped anywhere.
+`FinalSubmitService.runFreeform` is not touched at all. Mapping is a second thing that happens
+afterwards. If mapping never runs, the submission is still complete and still readable — see
+FREEFORM_SPEC F2 contract 2.
 
 ## 2. Decision ledger (owner rulings)
 
-Numbering continues FREEFORM_SPEC's ledger, which ends at D28. These are the rulings from the design
-session of 2026-09-20.
+Numbering continues FREEFORM_SPEC's ledger, which ends at D28. D29–D37 come from the design session of
+2026-09-20; D38–D45 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
+both rows stay and the earlier row says so.
 
-| #   | Ruling                                                                                                                                                                                                                                                                                                                                                                          | Date       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| D29 | **Mapping lives in a third Studio mode — Build \| Data \| Design.** Explicitly not the left rail ("it definitely shouldn't fit inside the left palette") and not the Settings drawer. Mapping is what a Freeform is for; it is not a setting on the form and it does not fit an inspector-width column                                                                          | 2026-09-20 |
-| D30 | **Autofill moves into Data mode too, for all three form types, in its own slice AFTER F2.** F2 ships Data mode with the Mapping section only. This _corrects D7_, which put Freeform Autofill in F2: Freeform Autofill now arrives with the migration slice. No regression — Freeform hides the Autofill rail tab today                                                         | 2026-09-20 |
-| D31 | **An action may create, update, or find-or-create by a matching field.** Record matching is in F2, not deferred to a later round                                                                                                                                                                                                                                                | 2026-09-20 |
-| D32 | **On a match, what may be written is opted into per action and per field — and there is no default.** Choosing find-or-create asks the question immediately; until it is answered the action is _incomplete_ and publish is refused. The field used to match is never overwritable                                                                                              | 2026-09-20 |
-| D33 | **More than one match fails the mapping.** Nothing is written, the submission records "the match was ambiguous", an admin retries after fixing the data. Never guess which of several people to overwrite                                                                                                                                                                       | 2026-09-20 |
-| D34 | **The server queues the mapping; the respondent never waits and is never told a match happened.** Submit stores the answers and returns the thank-you screen. No record id, no "we found you", nothing in any error message — otherwise the form becomes a tool for testing which email addresses exist in the org                                                              | 2026-09-20 |
-| D35 | **A failed mapping is retried from the submission record, by an admin, one at a time, under a row lock.** No automatic retries: almost every Salesforce mapping failure is deterministic, and retrying an unchanged failure just fails again                                                                                                                                    | 2026-09-20 |
-| D36 | **Mapping writes are guarded by a second fence whose allow-list is the published version's action list.** Mapping creates Accounts and Contacts, which have no business on `insertFenced`'s list, so it is a different guard with a per-form allow-list — checked per record and per field before any DML. Named after D28's lesson: a thing called a fence must actually check | 2026-09-20 |
-| D37 | **Publish returns blockers as well as warnings, and blockers refuse the publish.** `FinalPublishWarnings.forPublish` currently returns one advisory list; an action that cannot run is not advisory                                                                                                                                                                             | 2026-09-20 |
+| #   | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Date       |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D29 | **Mapping lives in a third Studio mode — Build \| Data \| Design.** Explicitly not the left rail ("it definitely shouldn't fit inside the left palette") and not the Settings drawer. Mapping is what a Freeform is for; it is not a setting on the form and it does not fit an inspector-width column                                                                                                                                                                                    | 2026-09-20 |
+| D30 | **Autofill moves into Data mode too, for all three form types, in its own slice AFTER F2.** F2 ships Data mode with the Mapping section only. This _corrects D7_, which put Freeform Autofill in F2: Freeform Autofill now arrives with the migration slice. No regression — Freeform hides the Autofill rail tab today                                                                                                                                                                   | 2026-09-20 |
+| D31 | **An action may create, update, or find-or-create by a matching field.** Record matching is in F2, not deferred to a later round. _Revised by D39: standalone update is cut._                                                                                                                                                                                                                                                                                                             | 2026-09-20 |
+| D32 | **On a match, what may be written is opted into per action and per field — and there is no default.** Choosing find-or-create asks the question immediately; until it is answered the action is _incomplete_ and publish is refused. The field used to match is never overwritable                                                                                                                                                                                                        | 2026-09-20 |
+| D33 | **More than one match fails the mapping.** Nothing is written, the submission records "the match was ambiguous", an admin retries after fixing the data. Never guess which of several people to overwrite                                                                                                                                                                                                                                                                                 | 2026-09-20 |
+| D34 | **The server queues the mapping; the respondent never waits and is never told a match happened.** Submit stores the answers and returns the thank-you screen. No record id, no "we found you", nothing in any error message — otherwise the form becomes a tool for testing which email addresses exist in the org                                                                                                                                                                        | 2026-09-20 |
+| D35 | **A failed mapping is retried from the submission record, by an admin, one at a time, under a row lock.** No automatic retries: almost every Salesforce mapping failure is deterministic, and retrying an unchanged failure just fails again. _Revised by D42: a bulk path via a status value is added._                                                                                                                                                                                  | 2026-09-20 |
+| D36 | **Mapping writes are guarded by a second fence whose allow-list is the published version's action list.** Mapping creates Accounts and Contacts, which have no business on `insertFenced`'s list, so it is a different guard with a per-form allow-list — checked per record and per field before any DML. Named after D28's lesson: a thing called a fence must actually check                                                                                                           | 2026-09-20 |
+| D37 | **Publish returns blockers as well as warnings, and blockers refuse the publish.** `FinalPublishWarnings.forPublish` currently returns one advisory list; an action that cannot run is not advisory. _Revised by D38: the refusal lives in the Apex publish itself, not in the dialog._                                                                                                                                                                                                   | 2026-09-20 |
+| D38 | **Mapping validation runs inside the real publish.** `FinalSpecController.publishSpec` validates the exact spec string it is about to store, as the person publishing, before anything is saved — the same place and the same way `FinalAutofillValidator.validateForPublish` already runs today. A blocker refuses the publish; so does a check that cannot finish. The dialog shows the same results, but the dialog is not the gate: an `@AuraEnabled` method can be called without it | 2026-09-21 |
+| D39 | **Standalone update is cut from F2.** Actions are create or find-or-create. Updating a record the server already holds (a personalized link's record, a record picked in a lookup) had one real use in F2 and it was the riskiest write in the feature. It returns when personalized links come to Freeform — DEFERRED #32                                                                                                                                                                | 2026-09-21 |
+| D40 | **Two submissions with the same match value at the same moment may both create a record — and preventing that is not ours to do.** The org's duplicate rules run on our inserts whether we ask or not; they are the admin's tool for this. We never save past them (no `allowSave`), and a duplicate-rule refusal lands as a Failed mapping with a readable message                                                                                                                       | 2026-09-21 |
+| D41 | **A trigger on `Form_Submission__c` starts every mapping run.** On insert of a submission whose version has mapping steps, and on a status change to Ready for Retry. The trigger only queues — one background job per submission; mapping is not bulkified. More than 50 in one transaction and the trigger refuses the whole batch, asking for 50 or fewer. Background jobs only; platform events are not used                                                                          | 2026-09-21 |
+| D42 | **Retry is a button and a status value.** The Retry button on the submission calls the mapping service directly and runs it on the spot. Setting the status to Ready for Retry — on one submission or up to 50 at a time — queues a run through the trigger. Only Failed and Ready for Retry are ever retried; Queued never is. No automatic retries                                                                                                                                      | 2026-09-21 |
+| D43 | **Caught failures are recorded; uncaught failures are not handled.** A caught failure sets the status to Failed with a message. An uncaught one rolls everything back, so the status stays where it was and the reason lives in Setup → Apex Jobs, not on the submission. An admin moves a stuck submission to Ready for Retry                                                                                                                                                            | 2026-09-21 |
+| D44 | **A skipped answer never writes to its field.** The assignment is left out, so nothing is ever blanked by a question someone didn't answer. A skipped or blank **match** value fails that step — we never search for a blank value, which would match every record that lacks one                                                                                                                                                                                                         | 2026-09-21 |
+| D45 | **Keeping the match answer and the saved field value in step is the author's job, for now.** Nothing stops an author searching on one question and saving another into the same field. Tabled — DEFERRED #33                                                                                                                                                                                                                                                                              | 2026-09-21 |
 
 ## 3. Where it lives — Data mode (D29)
 
@@ -80,7 +91,7 @@ concept and a form-level setting; it does not become a Mapping section.
 ## 4. The spec shape
 
 Mapping is action-owned and lives at the top of the spec (FREEFORM_SPEC F2 contract 1). Questions
-carry no mapping of their own.
+carry no mapping of their own. An action's `operation` is `create` or `findOrCreate` (D39).
 
 ```jsonc
 "mapping": {
@@ -128,11 +139,15 @@ Deleting and re-adding it breaks the mapping loudly, which is correct: that is a
 
 ### 4.3 `recordRef` has exactly three legal forms
 
-| `ref`                 | Means                                                             |
-| --------------------- | ----------------------------------------------------------------- |
-| `action:<id>`         | a record this submission created in an earlier action             |
-| `link`                | the record a personalized link carries (F2.5, `FinalLinkService`) |
-| `answer:<elementKey>` | a record the respondent picked in a lookup, bounded by its filter |
+A `recordRef` fills a lookup field — "this Contact's Account is the one from step 1". It never names a
+record to write to; with standalone update cut (D39), the only records F2 writes are ones it creates
+or finds itself.
+
+| `ref`                 | Means                                                                            |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `action:<id>`         | the record an earlier step **created or found**                                  |
+| `link`                | the record a personalized link carries (`FinalLinkService`)                      |
+| `answer:<elementKey>` | the record the respondent picked in a lookup, bounded by the lookup's own filter |
 
 All three are records **the server** identified. There is deliberately no fourth form in which the
 browser names a record id. This is D11/D18 expressed as a data shape rather than as a rule somebody
@@ -159,6 +174,26 @@ An action with `operation: "findOrCreate"` and no `onMatch` is **incomplete**, n
 refused, not warned. Unfinished and dangerous are different states and should not get the same
 treatment.
 
+This is update-**on-match**, part of find-or-create. It is not the standalone update D39 cut.
+
+### 4.5 Skipped and blank answers (D44)
+
+| The answer…                                     | What happens                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------------- |
+| was skipped, hidden by a rule, or is blank      | that field assignment is left out — the field is not touched     |
+| feeding `match.source` was skipped or is blank  | that step fails with a message; no search is run                 |
+| is stored unparsed and won't fit the field type | that step fails with a message naming the question and the field |
+
+"Skipped" is not an edge case in a Freeform. Rule-hidden answers are dropped from the payload before
+they reach the server (PR #269), so a mapping must expect missing answers routinely.
+
+The blank-match rule matters most. `WHERE Email = null` doesn't fail — it matches every Contact that
+has no email, which is either a false "ambiguous" or, worse, a single unrelated record treated as the
+respondent.
+
+A consequence worth warning about: a **required** destination field fed by an **optional** question
+fails its step whenever that question is skipped. Publish warns about it (§7).
+
 ## 5. The authoring UI
 
 Three columns. A full-page mockup is linked in the status header.
@@ -167,8 +202,8 @@ Three columns. A full-page mockup is linked in the status header.
 
 One card per action, in run order, drag to reorder. Each card shows the object, the operation, the
 field count, and its state: fine, incomplete (blocks publish), or carrying a warning. "Add a record"
-opens an object picker limited to objects the author can create — publish validates the author's own
-permissions anyway (§8), and filtering the list is kinder than failing at the end.
+opens an object picker limited to objects the author can create — both operations may create, and
+filtering the list is kinder than failing at publish.
 
 A footer states the bargain plainly: if any step fails none of the records are created, and the
 answers are kept regardless.
@@ -215,91 +250,144 @@ to speak Salesforce describe types against `Answer_Type__c`. Same module, so the
 
 ## 6. The runtime
 
-### 6.1 Transaction 1 — unchanged
+### 6.1 Submit — untouched
 
 `FinalSubmitService.runFreeform` stores the submission and its answers exactly as today, through
-`insertFenced`. Two additions:
-
-1. if the published version has `mapping.actions`, the submission is born with
-   `Mapping_Status__c = 'Queued'`;
-2. the mapping job is enqueued as the last act of the transaction.
-
-The respondent gets the thank-you screen immediately and learns nothing about records (D34).
+`insertFenced`, and does nothing about mapping. The respondent gets the thank-you screen immediately
+and learns nothing about records (D34). Everything below is started by the trigger.
 
 ### 6.2 New fields on `Form_Submission__c`
 
 It carries seven fields today. Five more:
 
-| Field                 | Type                 | Purpose                                       |
-| --------------------- | -------------------- | --------------------------------------------- |
-| `Mapping_Status__c`   | Picklist, restricted | Not needed / Queued / Running / Done / Failed |
-| `Mapping_Message__c`  | Long Text Area       | why it failed, in words an admin can act on   |
-| `Mapping_Attempts__c` | Number               | how many runs have been tried                 |
-| `Mapping_Run_At__c`   | Date/Time            | when the last run finished                    |
-| `Created_Records__c`  | Long Text Area       | JSON, action id → record id                   |
+| Field                 | Type                 | Purpose                                               |
+| --------------------- | -------------------- | ----------------------------------------------------- |
+| `Mapping_Status__c`   | Picklist, restricted | Not needed / Queued / Done / Failed / Ready for Retry |
+| `Mapping_Message__c`  | Long Text Area       | why it failed, in words an admin can act on           |
+| `Mapping_Attempts__c` | Number               | how many runs have been tried                         |
+| `Mapping_Run_At__c`   | Date/Time            | when the last run finished                            |
+| `Created_Records__c`  | Long Text Area       | JSON, action id → record id                           |
+
+There is **no Running value.** The status change and the work happen inside one transaction, so a
+"Running" status could never be seen by anyone — it would be committed and replaced in the same
+breath, or rolled back with everything else.
 
 `Created_Records__c` is **audit only** (D17). The duplicate guard is `Mapping_Status__c`, checked
 under a row lock.
 
-### 6.3 Transaction 2 — `FinalMappingRunner`
+### 6.3 The trigger (D41)
+
+One trigger on `Form_Submission__c`, one job: decide which submissions need a run, and queue them.
+
+- **Before insert** — read each submission's version (one query for the whole batch, in system mode,
+  because a guest cannot read `Form_Version__c`) and set `Mapping_Status__c` to Queued when the
+  version has mapping steps, Not needed when it has none.
+- **After insert** — queue a background job for each Queued submission.
+- **After update** — queue a job for each submission whose status just **changed to** Ready for
+  Retry. Nothing else on update does anything; the job's own status writes must not re-trigger it.
+
+**The 50 limit is counted, never hit.** Salesforce allows 50 background jobs to be queued per
+transaction, and going over is one of the errors Apex cannot catch — it kills the whole transaction,
+including a guest's submission. So before queueing anything, the trigger counts what it needs plus
+anything already queued in the transaction. Over the limit, it refuses every record in the batch with
+_Retry at most 50 submissions at a time_. A guest submission is always one record, so this only ever
+bites on a bulk retry or a data load.
+
+**If queueing throws a catchable error**, the submission is set to Failed with that message, so it is
+visible and retryable. The answers are never lost to it.
+
+**Mapping is not bulkified.** Each submission has its own version, its own steps, its own searches. A
+four-step form processed 200 at a time is 800 separate writes against a limit of 150. One job per
+submission is correct, not a compromise.
+
+### 6.4 The mapping service
+
+`FinalMappingService.run(Id submissionId)` — called by the background job and, directly, by the
+Retry button. The same code on both paths.
 
 ```
-1. SELECT … FROM Form_Submission__c WHERE Id = :id FOR UPDATE
-2. refuse unless status is Queued or Failed          ← this IS the replay guard
-3. status = Running, attempts++                      → DML
-4. savepoint                                          ← taken AFTER the status write
-5. read mapping from the submission's OWN version    ← D19, same rule as the reader
-6. walk actions in order, carrying Map<actionId, Id> so recordRef resolves
-7. failure → rollback(savepoint), THEN status = Failed + message
-   success → status = Done, Created_Records__c = the map, Mapping_Run_At__c = now
+1. lock the submission (SELECT … FOR UPDATE)
+2. refuse unless status is Queued, Failed or Ready for Retry     ← this IS the replay guard
+3. attempts++                                                    → DML
+4. savepoint                                                     ← after the attempts write
+5. read the mapping from the submission's OWN version            ← D19, same rule as the reader
+6. run the steps in order, carrying Map<actionId, Id> so recordRef resolves
+7. caught failure → rollback(savepoint), THEN status Failed + message
+   success       → status Done, Created_Records__c, Mapping_Run_At__c
 ```
 
-**Step 4's position is not stylistic.** Take the savepoint before step 3 and a rollback erases the
-attempt counter and the failure message along with the records — the submission would look like it
-never tried, which destroys exactly the evidence an admin needs. This has its own acceptance test
-(§9).
+**Why the savepoint sits after step 3:** a rollback to it keeps the attempt count. The failure message
+is written after the rollback, so it survives wherever the savepoint sits — the placement is about the
+counter, not the message.
+
+**After a rollback, never reuse the in-memory records.** Salesforce undoes the rows but leaves the Ids
+on the sObjects in memory, so they point at records that no longer exist. Step 7 writes status only.
+
+**It runs as whoever queued it.** For a new submission that is the guest user. Our writes are
+explicitly system mode so they go through; anything in the job that isn't explicitly system mode runs
+with a guest's record access. System mode is a setting on individual database calls, not a mode the
+job runs in.
 
 The savepoint is legitimate here in a way it was not in F1 (D17): everything it protects lives inside
-transaction 2, and the answers were committed in transaction 1, where no failure in here can reach
-them.
+this transaction, and the answers were committed by the submit, where nothing in here can reach them.
 
-### 6.4 The ambiguous match (D33)
+### 6.5 The ambiguous match (D33)
 
 More than one match is a failure, not a choice. Rollback, status Failed, message says the match was
-ambiguous and names the action. Nothing is written.
+ambiguous and names the step. Nothing is written.
 
-### 6.5 The transport, and the spike that decides it
+### 6.6 The org's duplicate rules (D40)
 
-The job is a Queueable. **Whether a site guest user can enqueue Apex is unverified**, and it is the
-one thing that can change the shape of the runtime. The documented fallback is a platform event
-published from transaction 1, with a trigger that runs the mapping as the automated process user.
+Our match is our own query, but it does not replace the org's duplicate rules — those run on every
+insert we make, whether we ask or not.
 
-This spike runs **before** any runtime code is written. Discovering it halfway through means
-rewriting the slice.
+- If a duplicate rule blocks a create, that step fails, the mapping is Failed, and the message says so
+  in words: _Salesforce's duplicate rules blocked creating this Contact_ — not a raw error code.
+- We never set `DuplicateRuleHeader.allowSave`. The org's rules outrank our form.
+- Two submissions with the same email in the same second can both find nothing and both create a
+  Contact. That is exactly what duplicate rules exist for, and configuring them is the admin's call.
 
-## 7. Publish (D37)
+### 6.7 Failures we don't handle (D43)
 
-`FinalPublishWarnings.forPublish(Id, String)` returns a `List<String>` today, all advisory. It grows
-into two lists, and `c/finalPublishDialog` grows a blockers block above the warnings with Publish
-disabled while any blocker exists.
+An uncaught exception — a limit exceeded inside a destination trigger or flow, typically — rolls back
+the whole run, including the attempt count and any status change. The submission stays on whatever
+status it had, and **the reason is not on the submission**; Setup → Apex Jobs lists the failed job and
+its error. An admin moves the submission to Ready for Retry once the cause is fixed.
 
-That is a change to a component that shipped on 2026-09-20 (PR #306). Saying so here so it is not
-discovered as a surprise during the build.
+## 7. Publish (D38)
+
+**The gate is `FinalSpecController.publishSpec`.** It gains a `FinalMappingValidator.validateForPublish`
+call beside the `FinalAutofillValidator.validateForPublish` call it already makes: same method, before
+anything is saved, on the same spec string that gets stored, running as the person publishing. Any
+blocker throws and the publish is refused. A check that cannot finish throws too — "couldn't check" is
+a refusal, never a pass.
+
+It must be one call, not "validate" followed by "publish": `publishSpec` already stores exactly the
+string it was handed, so what was checked is what gets saved.
+
+**The dialog shows the same results.** `FinalPublishWarnings.forPublish` runs the same validator
+without throwing and returns blockers beside the warnings; `c/finalPublishDialog` shows blockers above
+warnings and disables Publish while any exist. That is a change to a component that shipped on
+2026-09-20 (PR #306). But the dialog is display only — an `@AuraEnabled` method can be called without
+it, which is why the refusal lives in `publishSpec`.
 
 **Blockers — publish is refused:**
 
-- an action whose match question is unanswered (§4.4)
-- a required destination field with no source
-- a field the author cannot write — this check _is_ the access control (§8), so it runs in the
-  author's context against live describe data, never a cached list
+- a find-or-create whose match question is unanswered (§4.4)
+- a required destination field with no source at all
+- a field the publisher cannot write — this check _is_ the access control (§8), so it runs against live
+  describe data as the publisher, never a cached list
 - a find-or-create with no filter
 - a `recordRef` naming a later action, or one that no longer exists
 - an answer whose `Answer_Type__c` cannot survive the trip to the destination field type
 - a Choice source whose stored values are not in the destination picklist's value set
+- an action on a setup object (User, Group, permission assignments and the like) — Salesforce refuses
+  to write those in the same transaction as ordinary records
 
 **Warnings — publish proceeds, after the author confirms:**
 
 - a public form with any `onMatch: "update"` action, naming the object and every overwritable field
+- a required field, or a match, fed by an optional question — skipping it fails that step (§4.5)
 - the existing D12 / D20 warnings, unchanged
 
 ## 8. Permissions, and the bargain
@@ -308,101 +396,135 @@ A site guest user cannot create an Account. Running the mapping in `USER_MODE` t
 feature for the form type it exists to serve. So mapping writes in system mode, and the real access
 control moves to publish time:
 
-1. **the author may only map objects and fields they themselves can write** — checked at publish, in
-   the author's context (§7);
-2. **the published version is immutable**, so the action list cannot change under a running form;
+1. **the publisher may only map objects and fields they themselves can write** — checked inside
+   `publishSpec`, as the publisher (§7);
+2. **nothing edits a published version today** — publishing creates a new `Form_Version__c` and
+   deactivates the old one. That is how the code behaves, not a guard the database enforces; the
+   runtime reads whichever version the submission points at;
 3. **`FinalMappingWriter` checks every record and every field against that version's action list
    before any DML** and throws on anything else (D36).
 
 This is the same bargain as `insertFenced`: skip the permission check, replace it with an explicit
 list. The difference is that the list is per-form rather than hardcoded, which makes it more powerful
-and therefore more important to actually enforce — which is the whole of D28's lesson, applied on the
-way in this time rather than after a review catches it.
+and therefore more important to actually enforce — D28's lesson, applied on the way in this time.
 
-**Permission sets.** `Freeform_Submission_Reader` gains read on the five new fields;
-`Freeform_Submission_Admin` gains edit on `Mapping_Status__c` and `Mapping_Message__c` and is the
-permission that gates Retry (§ below). `Form_Builder_Admin` gains access to the new Apex classes —
-Apex class access is required and its absence is invisible, since nothing fails a build (FREEFORM_SPEC
-§5.4).
+**Permission sets.**
 
-### 8.1 Retry (D35)
+- `Freeform_Submission_Reader` — read on the five new fields.
+- `Freeform_Submission_Admin` — edit on `Mapping_Status__c` (that is the bulk-retry permission: it lets
+  an admin set Ready for Retry), the custom permission `Freeform_Retry_Mapping` (the Retry button's
+  permission), and class access to the retry controller.
+- `Form_Builder_Admin` — class access to the new publish-side classes. Apex class access is required
+  and its absence is invisible, since nothing fails a build (FREEFORM_SPEC §5.4).
 
-`c/finalSubmissionReader` grows a Retry mapping button that appears only when `Mapping_Status__c` is
-Failed, shows `Mapping_Message__c`, and is gated on `Freeform_Submission_Admin`. It re-enters
-`FinalMappingRunner` under the same row lock, so a retry cannot race a run already in flight. One
-submission at a time. No bulk retry, no automatic retry.
+### 8.1 Retry (D42)
+
+**The button.** `c/finalSubmissionReader` shows Retry mapping when the status is Failed or Ready for
+Retry, with `Mapping_Message__c` beside it. It calls an `@AuraEnabled` method that checks, **on the
+server**: the caller holds `Freeform_Retry_Mapping`, the caller can see this submission (queried in
+user mode), and the status is Failed or Ready for Retry. Then it calls `FinalMappingService.run`
+directly — the run happens now, in the admin's transaction, and the reader shows the result. Hiding the
+button protects nothing on its own; the checks are in the method.
+
+**The status value.** Setting `Mapping_Status__c` to Ready for Retry — one record, or up to 50 at a time
+from a list view or a data load — queues a run for each through the trigger (§6.3).
+
+Both paths end in the same service under the same row lock, so a button press and a queued run cannot
+both succeed on one submission: whichever gets the lock second finds Done and stops.
+
+Queued is never retried by either path. A submission stuck on Queued after an uncaught failure is
+recovered by setting it to Ready for Retry.
 
 ## 9. Acceptance tests
 
 Each of these fails when its guard is removed, and each will be proven that way — by reverting the
 fix and re-running — the way the F1 review round was.
 
-| #   | Test                                                                                           |
-| --- | ---------------------------------------------------------------------------------------------- |
-| 1   | a record whose object is not in the published action list is refused by `FinalMappingWriter`   |
-| 2   | a field not named in the published action is refused, even on an allowed object                |
-| 3   | two matches → nothing written, status Failed, message says ambiguous                           |
-| 4   | a failed run still has `Mapping_Attempts__c = 1` and a message (the §6.3 savepoint-order trap) |
-| 5   | running the job twice for one submission creates one set of records                            |
-| 6   | `recordRef` in action 2 resolves to the record action 1 created                                |
-| 7   | `onMatch: "reuse"` writes nothing to the matched record                                        |
-| 8   | `onMatch: "update"` writes only the fields flagged `writeOnMatch`, and never the match field   |
-| 9   | publish is refused for an action with no `onMatch`                                             |
-| 10  | publish is refused for a field the author cannot write                                         |
-| 11  | Retry appears only on Failed, and only with `Freeform_Submission_Admin`                        |
-| 12  | a mapping failure leaves the submission and every answer intact and readable                   |
+| #   | Test                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------- |
+| 1   | a record whose object is not in the published action list is refused by `FinalMappingWriter`                |
+| 2   | a field not named in the published action is refused, even on an allowed object                             |
+| 3   | two matches → nothing written, status Failed, message says ambiguous                                        |
+| 4   | a failed run keeps `Mapping_Attempts__c = 1` and carries a message                                          |
+| 5   | running the service twice for one submission creates one set of records                                     |
+| 6   | `recordRef` in step 2 resolves to the record step 1 created, and to the record it found                     |
+| 7   | `onMatch: "reuse"` writes nothing to the matched record                                                     |
+| 8   | `onMatch: "update"` writes only the fields flagged `writeOnMatch`, and never the match field                |
+| 9   | `publishSpec`, called directly with no dialog, refuses a find-or-create whose match question is unanswered  |
+| 10  | `publishSpec` refuses a field the publisher cannot write                                                    |
+| 11  | the Retry method refuses a caller without `Freeform_Retry_Mapping`, and refuses Queued and Done submissions |
+| 12  | setting Ready for Retry queues a run; 51 in one save refuses the whole batch with the message               |
+| 13  | a skipped answer leaves its destination field untouched on an update-on-match                               |
+| 14  | a blank match value fails the step and runs no search                                                       |
+| 15  | a mapping failure leaves the submission and every answer intact and readable                                |
+
+**Checked in the org walkthrough, not in Apex tests:** a duplicate rule blocking a create lands as
+Failed with a readable message. Apex tests cannot create duplicate rules, so this one can only be
+proven against a real org configuration.
 
 ## 10. Out of scope for F2
 
 - **Autofill** — moves into Data mode in its own slice afterwards, for all three types (D30).
-- **Bulk retry** from a list view (D35).
-- **Automatic retry** with backoff (D35).
-- **F2.5 invitations** — how a personalized link supplies `ref: "link"` is that phase's problem.
-- **Duplicate rules** — Salesforce's own matching/duplicate rules are not consulted; `match` is our
-  own query, bounded by the author's filter.
+- **Updating a record the server already holds** — cut (D39), DEFERRED #32.
+- **Keeping the match answer and the saved value in step** — the author's job for now (D45),
+  DEFERRED #33.
+- **Preventing duplicates across submissions** — the org's duplicate rules do that (D40).
+- **Automatic retry** of any kind (D42).
+- **Recording uncaught failures on the submission** — they are left to Setup → Apex Jobs (D43).
+- **Platform events** — background jobs only (D41).
 
 ## 11. Still open
 
-- Whether a site guest user can enqueue Apex (§6.5). Spike first, before runtime code.
-- Whether the derived index (§5.3) is a third column or a bottom strip. The column fits at 1440px;
+- **Prove a guest's submission can queue a background job** (M0). Expected to work — nothing in the
+  platform forbids it — but this project has no background Apex anywhere yet, so there is no
+  precedent of our own to lean on. A short proof in the org, before runtime code.
+- **A cap on steps per form.** Proposed: 10. Every step's writes, plus whatever triggers, flows and
+  validation rules the org runs on those objects, share one set of limits inside a single job.
+- **Stopping Done → Ready for Retry.** Nothing prevents an admin setting a successful submission to
+  Ready for Retry, which would create every record a second time. A validation rule would stop it.
+  Raised 2026-09-21, not decided.
+- **Whether the derived index (§5.3) is a third column or a bottom strip.** The column fits at 1440px;
   1280px is tight.
-- How many actions one form may have. There is a governor limit somewhere and nobody has found it
-  yet.
 
 ## 12. Build shape
 
-A spike, then eight slices, detailed in the implementation plan that follows this spec:
+A proof, then eight slices, detailed in the implementation plan that follows this spec:
 
-| Slice | What                                                                   |
-| ----- | ---------------------------------------------------------------------- |
-| M0    | the guest-enqueue spike (§6.5)                                         |
-| M1    | schema — five fields, the restricted picklist, permission set grants   |
-| M2    | spec model + publish validation, blockers and warnings (§4, §7)        |
-| M3    | Data mode shell + Mapping section + the action list (§3, §5.1)         |
-| M4    | the action editor, create-only: field table and source picker (§5.2)   |
-| M5    | find-or-create: match block, the match question, `writeOnMatch` (§4.4) |
-| M6    | the runtime: queue, runner, writer fence, status (§6)                  |
-| M7    | the reader: status, created records, retry (§8.1)                      |
-| M8    | org walkthrough — **starting with a site publish**, because a metadata |
-|       | deploy never reaches guests                                            |
+| Slice | What                                                                                               |
+| ----- | -------------------------------------------------------------------------------------------------- |
+| M0    | prove a guest's submission can queue a background job (§11)                                        |
+| M1    | schema — five fields, the status picklist, the custom permission, permission set grants            |
+| M2    | spec model + `FinalMappingValidator` inside `publishSpec` + blockers in the dialog (§7)            |
+| M3    | Data mode shell + Mapping section + the action list (§3, §5.1)                                     |
+| M4    | the action editor, create: field table and source picker (§5.2)                                    |
+| M5    | find-or-create: match block, the match question, `writeOnMatch`, skipped answers (§4.4–4.5)        |
+| M6    | the runtime: trigger, background job, `FinalMappingService`, `FinalMappingWriter` (§6)             |
+| M7    | the reader: status, message, created records, the Retry button and its method (§8.1)               |
+| M8    | org walkthrough — **starting with a site publish**, because a metadata deploy never reaches guests |
 
 ## Glossary
 
 Terms introduced by this document. FREEFORM_SPEC's glossary still applies.
 
-- **Action** — one record this form creates or updates. A Freeform that feeds four objects has four
-  actions.
+- **Action / step** — one record this form creates or finds. A Freeform that feeds four objects has
+  four.
 - **Find or create** — look for an existing record matching one field; use it if found, make a new
   one if not.
 - **Ambiguous match** — the search found more than one record, so there is no single right answer and
   we refuse to pick one.
-- **`recordRef`** — a field's value is another record, identified by the server rather than named by
-  the browser.
-- **Queueable** — Salesforce's way of saying "run this shortly, in its own transaction". The
-  respondent does not wait for it.
+- **`recordRef`** — a lookup field's value is another record, identified by the server rather than
+  named by the browser.
+- **Background job (Queueable)** — Salesforce's way of saying "run this shortly, in its own
+  transaction". The respondent does not wait for it.
+- **Trigger** — code Salesforce runs automatically whenever a record of an object is inserted or
+  updated, however it got there: a form, a list view, a data load.
 - **Row lock (`FOR UPDATE`)** — holding a record while you work on it so two runs cannot both decide
   they are the one doing the work.
 - **Blocker (at publish)** — something that makes the form unable to run, so publishing is refused
   rather than warned about.
 - **Describe** — asking Salesforce at runtime what an object's fields are and what types they have,
   instead of assuming.
+- **Duplicate rule** — an org's own setting that blocks or flags a new record resembling an existing
+  one. It applies to our inserts like anyone else's.
+- **Custom permission** — a named switch an admin grants through a permission set, which Apex can
+  check directly. Used here so the Retry method can ask "is this person allowed?" itself.
