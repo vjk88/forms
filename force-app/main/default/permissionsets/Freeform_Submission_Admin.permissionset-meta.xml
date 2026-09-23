@@ -3,16 +3,20 @@
     <fullName>Freeform_Submission_Admin</fullName>
     <label>Freeform Submission Admin</label>
     <description
-    >Read EVERY Freeform submission and its answers, without the builder. The unrestricted counterpart to Freeform Submission Reader: View All Records, no sharing needed. Assign only to people whose job is all submissions.</description>
+    >Every Freeform submission and its answers, without the builder: View All, plus retrying failed mappings (the Retry button, and setting Ready for Retry in bulk - which needs edit on submissions). Assign only to people whose job is all submissions.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <classAccesses>
         <apexClass>FinalSubmissionController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Freeform_Retry_Mapping</name>
+    </customPermissions>
     <objectPermissions>
         <allowCreate>false</allowCreate>
         <allowDelete>false</allowDelete>
-        <allowEdit>false</allowEdit>
+        <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>Form_Submission__c</object>
@@ -68,6 +72,31 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Form_Submission__c.Session_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Submission__c.Created_Records__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Submission__c.Mapping_Attempts__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Submission__c.Mapping_Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Submission__c.Mapping_Run_At__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form_Submission__c.Mapping_Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
