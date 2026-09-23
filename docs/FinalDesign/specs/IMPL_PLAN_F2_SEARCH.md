@@ -29,14 +29,14 @@ D49–D53 to it.
 
 ## Owner rulings (2026-09-23)
 
-| #   | Ruling                                                                                                                                                                                                                                                                      |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D49 | **A mapping filter row compares against a fixed value or an answer.** Columns: Field · Operator · Compare with · Value. Only answers whose type and single-value shape fit the row are offered.                                                                             |
-| D50 | **An author may type the WHERE clause instead of building rows** — a "Write the conditions" tab in the conditions dialog. Either-or per step; switching warns before discarding. Mapping search only. A deliberate exception to "never raw expressions" (visibility rules). |
-| D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, and always run as bound values.                                                                                                                                            |
-| D52 | **The searched field is pre-filled in the create list, and stays editable.** Softens D45.                                                                                                                                                                                   |
-| D53 | **One condition editor, Form Designer style, in a dialog, for all three screens** (visibility rules, lookup filters, mapping search). Each screen shows a one-line summary and an Edit button.                                                                              |
-| —   | **Answers are always bound values** (review bug). Nothing a respondent types is read as `$User.`, `$field.` or query text; fixed test-first in this work.                                                                                                                   |
+| #   | Ruling                                                                                                                                                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D49 | **A mapping filter row compares against a fixed value or an answer.** Columns: Field · Operator · Compare with · Value. Only answers whose type and single-value shape fit the row are offered.                                                                         |
+| D50 | **An author may type the WHERE clause instead of building rows** — an "Advanced search" tab in the conditions dialog. Either-or per step; switching warns before discarding. Mapping search only. A deliberate exception to "never raw expressions" (visibility rules). |
+| D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, and always run as bound values.                                                                                                                                        |
+| D52 | **The searched field is pre-filled in the create list, and stays editable.** Softens D45.                                                                                                                                                                               |
+| D53 | **One condition editor, Form Designer style, in a dialog, for all three screens** (visibility rules, lookup filters, mapping search). Each screen shows a one-line summary and an Edit button.                                                                          |
+| —   | **Answers are always bound values** (review bug). Nothing a respondent types is read as `$User.`, `$field.` or query text; fixed test-first in this work.                                                                                                               |
 
 ## Global constraints
 
@@ -119,17 +119,20 @@ D49–D53 to it.
     pre-filled row sets `match.prefillDeclined = true`, and nothing re-adds it until the search
     **field** changes (which clears the flag).
 13. **"Another record: … isn't a lookup field"** shows only while a row has no source.
+14. **Condition rows use the searched object's own fields only.** Related fields such as
+    `Account.Type` are reached through **Advanced search** (owner, 2026-09-23). Rows stay simple;
+    the server's `relationshipName` describe is left unused by the screen.
 
 ## File map
 
 **Create**
 
-| Path (under `force-app/main/default/`) | Responsibility                                               |
-| -------------------------------------- | ------------------------------------------------------------ |
-| `lwc/finalConditionsModal/` (+test)    | the dialog: draft, Save gate, Clear all, Build/Write tabs    |
-| `lwc/finalConditionsSummary/` (+test)  | one-line summary + Edit conditions                           |
-| `lwc/finalMappingSoql/` (+test)        | the Write tab: textarea, Insert answer, display-name mapping |
-| `classes/FinalMappingSoql.cls` (+Test) | parse a typed clause: guards, tokens → binds, no DML         |
+| Path (under `force-app/main/default/`) | Responsibility                                                             |
+| -------------------------------------- | -------------------------------------------------------------------------- |
+| `lwc/finalConditionsModal/` (+test)    | the dialog: draft, Save gate, Clear all, Conditions / Advanced search tabs |
+| `lwc/finalConditionsSummary/` (+test)  | one-line summary + Edit conditions                                         |
+| `lwc/finalMappingSoql/` (+test)        | the Advanced search tab: textarea, Insert answer, display-name mapping     |
+| `classes/FinalMappingSoql.cls` (+Test) | parse a typed clause: guards, tokens → binds, no DML                       |
 
 **Modify**
 
@@ -151,7 +154,7 @@ D49–D53 to it.
 | 1     | S1    | 1–2   | rulings, then the bug fix — later slices send more answers into search |
 | 2     | S2    | 3–5   | the new editor + dialog, on all three screens, same saved shapes       |
 | 3     | S3    | 6–7   | answers in mapping rows: publish check, then the Compare with column   |
-| 4     | S4    | 8–11  | the typed clause: parser, publish, runtime, Write tab                  |
+| 4     | S4    | 8–11  | the typed clause: parser, publish, runtime, Advanced search            |
 | 5     | S5    | 12    | the mapping step as branches; pre-fill; small fixes                    |
 | 6     | S6    | 13    | org walkthrough, signed in and as a guest                              |
 
@@ -244,7 +247,7 @@ typedValue, questions })`.
   met." / "Only records that meet these conditions can be picked." / "Only Contacts that meet these
   conditions are searched.").
 - Body: `c-final-rule-editor` bound to a **draft** (deep copy of `value`). When `allowTyped`, a
-  `lightning-tabset` "Build conditions" / "Write the conditions" around it (Task 11).
+  `lightning-tabset` "Conditions" / "Advanced search" around it (Task 11).
 - Footer (left to right, as the Form Designer): **Clear all** (empties the draft, stays open),
   **Cancel** (`close()` → `undefined`), **Save** (`close({ value, typed })`), brand, disabled while
   `problems.length`; the first problem shows beside it in `cm-problem`.
@@ -254,14 +257,14 @@ typedValue, questions })`.
 and a `lightning-button` **Edit conditions** (or **Add conditions** when empty). On click: `open(...)`;
 on a result, emits `conditionschange { value, typed }`. Summary text:
 
-| State      | Visibility                              | Filter / search                                    |
-| ---------- | --------------------------------------- | -------------------------------------------------- |
-| none       | "Always shown"                          | "No conditions"                                    |
-| all        | "Shown when all 2 conditions are met"   | "Only where all 2 conditions are met"              |
-| any        | "Shown when any of 2 conditions is met" | "Only where any of 2 conditions is met"            |
-| custom     | "Shown when 1 AND (2 OR 3)"             | "Only where 1 AND (2 OR 3)"                        |
-| typed      | —                                       | "Only where: " + first 80 characters of the clause |
-| hide rules | "Hidden when …" (same variants)         | —                                                  |
+| State      | Visibility                              | Filter / search                           |
+| ---------- | --------------------------------------- | ----------------------------------------- |
+| none       | "Always shown"                          | "No conditions"                           |
+| all        | "Shown when all 2 conditions are met"   | "Only where all 2 conditions are met"     |
+| any        | "Shown when any of 2 conditions is met" | "Only where any of 2 conditions is met"   |
+| custom     | "Shown when 1 AND (2 OR 3)"             | "Only where 1 AND (2 OR 3)"               |
+| typed      | —                                       | "Advanced search: " + first 80 characters |
+| hide rules | "Hidden when …" (same variants)         | —                                         |
 
 - [ ] Jest (the publish dialog's tests show how to mock `LightningModal.open`): Save returns the
       draft; Cancel returns nothing and the summary emits nothing; Clear all empties only the draft;
@@ -381,7 +384,7 @@ public with sharing class FinalMappingSoql {
 
 Rules, first failure wins:
 
-1. Blank → _"Write the conditions, or go back to building them."_
+1. Blank → _"Write the search, or go back to Conditions."_
 2. Over 4,000 → _"Keep the conditions under 4,000 characters."_
 3. One pass, tracking `'…'` with `\'` escapes. Outside quotes:
    - `;` → _"Remove the semicolon — this box takes one set of conditions."_
@@ -460,7 +463,7 @@ e.getMessage())`.
       fails naming the step; two matches still fail as ambiguous.
 - [ ] Deploy; run `FinalMappingServiceTest`, `FinalMappingTriggerTest`.
 
-### Task 11: The Write tab
+### Task 11: The Advanced search tab
 
 **Files:** `lwc/finalMappingSoql/*`, `lwc/finalConditionsModal/*`, `lwc/finalMappingModel/*`,
 `lwc/finalLookupFilter/*`, `lwc/finalMappingAction/*` (+ tests)
@@ -482,9 +485,9 @@ e.getMessage())`.
 - Hint: _"Checked when you publish, as you. Put each answer right after a field and a comparison,
   like Email = {Your email}."_
 
-**finalConditionsModal** — when `allowTyped`: tabs **Build conditions** / **Write the conditions**,
+**finalConditionsModal** — when `allowTyped`: tabs **Conditions** / **Advanced search**,
 starting on the saved mode. Leaving a tab whose content isn't empty asks via `LightningConfirm`:
-_"Switch to writing the conditions? The 2 conditions you built will be removed when you save."_ (and
+_"Switch to Advanced search? The 2 conditions you built will be removed when you save."_ (and
 the mirror). Save returns `{ value, typed: { mode, soql } }` for the tab that is open; the other half
 is dropped **only on Save**.
 
@@ -611,7 +614,7 @@ removed field is the search field. The writer's fence and the validator read onl
   2. Rows: `Last Name · Equals · An answer · Your surname`. Publish.
   3. Guest submits twice with the same email → second reuses the first.
   4. Guest surname `$User.Name` → a Contact with that literal surname; never the guest user's name.
-  5. Write tab: `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Switching asks first.
+  5. Advanced search: `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Switching asks first.
      Publish clean; guest submit behaves.
   6. `Title LIKE {Job title}` with answer `50%` matches only `50%`.
   7. `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x`, `{Not a question}` → each
