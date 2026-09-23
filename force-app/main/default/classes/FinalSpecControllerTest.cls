@@ -224,4 +224,70 @@ private class FinalSpecControllerTest {
             }
         }
     }
+
+    @IsTest
+    static void publishSpecRefusesAnUnfinishedMappingCalledDirectly() {
+        // Spec test 9: no dialog involved, and publish still refuses.
+        Map<String, Object> spec = FinalMappingTestData.spec(
+            FinalMappingTestData.standardQuestions(),
+            new List<Object>{
+                FinalMappingTestData.findOrCreateContact('act_a', null)
+            }
+        );
+        Form__c form = new Form__c(
+            Name = 'Gate test',
+            Form_Type__c = 'Freeform'
+        );
+        insert form;
+
+        Boolean refused = false;
+        try {
+            FinalSpecController.publishSpec(form.Id, JSON.serialize(spec));
+        } catch (AuraHandledException e) {
+            refused = true;
+            Assert.isTrue(
+                e.getMessage().contains('matching record is found'),
+                e.getMessage()
+            );
+        }
+
+        Assert.isTrue(
+            refused,
+            'no dialog was involved, and publish still refused'
+        );
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Form_Version__c WHERE Form__c = :form.Id],
+            'nothing was published'
+        );
+    }
+
+    @IsTest
+    static void publishSpecRefusesElevenSteps() {
+        // Spec test 17.
+        List<Object> actions = new List<Object>();
+        for (Integer i = 0; i < 11; i++) {
+            actions.add(FinalMappingTestData.createContact('act_' + i));
+        }
+        Form__c form = new Form__c(
+            Name = 'Cap test',
+            Form_Type__c = 'Freeform'
+        );
+        insert form;
+        String message = '';
+        try {
+            FinalSpecController.publishSpec(
+                form.Id,
+                JSON.serialize(
+                    FinalMappingTestData.spec(
+                        FinalMappingTestData.standardQuestions(),
+                        actions
+                    )
+                )
+            );
+        } catch (AuraHandledException e) {
+            message = e.getMessage();
+        }
+        Assert.isTrue(message.contains('at most 10'), message);
+    }
 }

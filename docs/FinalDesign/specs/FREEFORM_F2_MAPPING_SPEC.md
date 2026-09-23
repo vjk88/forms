@@ -115,7 +115,7 @@ carry no mapping of their own. An action's `operation` is `create` or `findOrCre
       "match": {
         "field":  "Email",
         "source": { "kind": "answer", "elementKey": "el_77aa31f2" },
-        "filter": { "logic": "all", "rules": [ /* same shape as lookup filters */ ] },
+        "filter": { "logic": "all", "rows": [ /* the lookup filter's own shape, compiled by FinalLookupService.compile */ ] },
         "onMatch": "reuse"
       },
       "fields": [
@@ -155,6 +155,8 @@ or finds itself.
 All three are records **the server** identified. There is deliberately no fourth form in which the
 browser names a record id. This is D11/D18 expressed as a data shape rather than as a rule somebody
 has to remember to enforce.
+
+In F2 `link` is a publish blocker: a Freeform submission stores no link record, so there is nothing to resolve it against. The shape stays reserved.
 
 A `ref` of `action:<id>` must name an **earlier** action. Forward references and references to
 deleted actions are publish blockers (§7).
@@ -244,12 +246,24 @@ edited in exactly one place. One writer, one truth.
 
 ### 5.4 One compatibility rule, not two
 
-`c/finalSurveyMapping` already owns answer-type/field-type compatibility and is genuinely imported by
-both `finalPropertyPanel` and `finalFormStudio` (verified, not inferred from its header comment). F2
-extends that module rather than starting a second one.
+The compatibility rule lives once, in Apex (`FinalMappingRules.COMPATIBLE`). The Studio fetches it,
+so the rule publish enforces and the rule the source picker shows are the same rule. One conversion
+(`FinalMappingRules.answerValue`) turns an answer into the destination field's vocabulary for every
+path — writing a field, searching for the record, and a filter condition — each against the field
+that value actually meets.
 
-It does need a new function: today's `compatInputTypes` speaks _form_ input types, and mapping needs
-to speak Salesforce describe types against `Answer_Type__c`. Same module, so the two cannot drift.
+| Answer type | May go into                               |
+| ----------- | ----------------------------------------- |
+| Text        | Text, Text Area                           |
+| Email       | Email, Text, Text Area                    |
+| Phone       | Phone, Text, Text Area                    |
+| URL         | URL, Text, Text Area                      |
+| Choice      | Picklist (value), Text, Text Area (label) |
+| Options     | Multi-select picklist                     |
+| Number      | Number, Currency, Percent                 |
+| Boolean     | Checkbox                                  |
+| Date        | Date                                      |
+| DateTime    | Date/Time                                 |
 
 ## 6. The runtime
 
@@ -406,6 +420,10 @@ it, which is why the refusal lives in `publishSpec`.
 - a `recordRef` naming a later action, or one that no longer exists
 - an answer whose `Answer_Type__c` cannot survive the trip to the destination field type
 - a Choice source whose stored values are not in the destination picklist's value set
+- a current-user value (`$User.`) in a match filter — the job runs as whoever queued it, often a
+  site guest
+- a `recordRef` of `link` (see 4.3)
+- a matrix, ranking or file question used as a source — its answer is not one value for one field
 - a lookup field that can point at more than one kind of record (D48)
 - an action on a setup object (User, Group, permission assignments and the like) — Salesforce refuses
   to write those in the same transaction as ordinary records
@@ -430,6 +448,8 @@ control moves to publish time:
    runtime reads whichever version the submission points at;
 3. **`FinalMappingWriter` checks every record and every field against that version's action list
    before any DML** and throws on anything else (D36).
+
+**Guests never see the mapping.** `FinalGuestController`'s projection removes `mapping` along with every other piece of binding vocabulary, so a public form does not ship its target objects, field names or search filter to the browser.
 
 This is the same bargain as `insertFenced`: skip the permission check, replace it with an explicit
 list. The difference is that the list is per-form rather than hardcoded, which makes it more powerful

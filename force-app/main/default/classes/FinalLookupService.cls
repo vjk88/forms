@@ -113,11 +113,7 @@ public inherited sharing class FinalLookupService {
 
         List<SObject> found;
         try {
-            found = Database.queryWithBinds(
-                soql,
-                binds,
-                AccessLevel.USER_MODE
-            );
+            found = Database.queryWithBinds(soql, binds, AccessLevel.USER_MODE);
         } catch (Exception e) {
             // A field the running user cannot read, or a path describe allowed
             // but the query refuses. Return nothing rather than leak a reason.
@@ -180,11 +176,13 @@ public inherited sharing class FinalLookupService {
             soql += ' AND (' + c.whereClause + ')';
         }
         try {
-            for (SObject rec : Database.queryWithBinds(
-                soql,
-                binds,
-                AccessLevel.USER_MODE
-            )) {
+            for (
+                SObject rec : Database.queryWithBinds(
+                    soql,
+                    binds,
+                    AccessLevel.USER_MODE
+                )
+            ) {
                 ok.add((Id) rec.get('Id'));
             }
         } catch (Exception e) {
@@ -237,7 +235,9 @@ public inherited sharing class FinalLookupService {
             if (safePath == null) {
                 out.blocked = true;
                 out.blockedReason =
-                    'Filter field "' + fieldPath + '" does not exist.';
+                    'Filter field "' +
+                    fieldPath +
+                    '" does not exist.';
                 return out;
             }
 
@@ -259,7 +259,10 @@ public inherited sharing class FinalLookupService {
             String clause = clauseFor(safePath, op, key);
             if (clause == null) {
                 out.blocked = true;
-                out.blockedReason = 'Filter operator "' + op + '" is not supported.';
+                out.blockedReason =
+                    'Filter operator "' +
+                    op +
+                    '" is not supported.';
                 return out;
             }
             if (op == 'like') {
@@ -358,9 +361,7 @@ public inherited sharing class FinalLookupService {
             return null;
         }
         if (s.startsWith('$field.')) {
-            Object v = answers == null
-                ? null
-                : answers.get(s.substring(7));
+            Object v = answers == null ? null : answers.get(s.substring(7));
             return isAbsent(v) ? null : v;
         }
         if (s.startsWith('$User.')) {
@@ -412,6 +413,50 @@ public inherited sharing class FinalLookupService {
      * as long as every hop is real and readable.
      */
     @TestVisible
+    /**
+     * The field a filter path ends at, as a describe. `resolvePath` already
+     * knows that a hop may be written as the field (`Customer__c`) or as the
+     * relationship (`Customer__r`, `Account`) and emits the relationship
+     * spelling; this walks that canonical path to the final field.
+     *
+     * Freeform mapping needs it to convert an answer against the field a
+     * condition actually filters on. Rewriting the rule in a second place is
+     * how the two would quietly disagree about a custom relationship.
+     */
+    public static Schema.DescribeFieldResult fieldAt(
+        String objectName,
+        String path
+    ) {
+        String canonical = resolvePath(objectName, path);
+        if (canonical == null) {
+            return null;
+        }
+        List<String> parts = canonical.split('\\.');
+        Schema.SObjectType current = Schema.getGlobalDescribe().get(objectName);
+        for (Integer i = 0; current != null && i < parts.size(); i++) {
+            Map<String, Schema.SObjectField> fields = current.getDescribe()
+                .fields.getMap();
+            if (i == parts.size() - 1) {
+                Schema.SObjectField f = fields.get(parts[i].toLowerCase());
+                return f == null ? null : f.getDescribe();
+            }
+            Schema.SObjectType next = null;
+            for (Schema.SObjectField f : fields.values()) {
+                Schema.DescribeFieldResult d = f.getDescribe();
+                if (
+                    d.getType() == Schema.DisplayType.REFERENCE &&
+                    parts[i].equalsIgnoreCase(d.getRelationshipName())
+                ) {
+                    List<Schema.SObjectType> refs = d.getReferenceTo();
+                    next = refs.isEmpty() ? null : refs[0];
+                    break;
+                }
+            }
+            current = next;
+        }
+        return null;
+    }
+
     private static String resolvePath(String objectName, String path) {
         if (String.isBlank(path)) {
             return null;
@@ -504,7 +549,9 @@ public inherited sharing class FinalLookupService {
 
     private static List<String> validPaths(Object raw, String objectName) {
         List<String> out = new List<String>();
-        for (Object o : asList(raw) == null ? new List<Object>() : asList(raw)) {
+        for (
+            Object o : asList(raw) == null ? new List<Object>() : asList(raw)
+        ) {
             if (o instanceof String) {
                 String safe = resolvePath(objectName, (String) o);
                 if (safe != null && !out.contains(safe)) {

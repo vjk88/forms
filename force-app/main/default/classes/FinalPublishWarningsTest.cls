@@ -87,11 +87,12 @@ private class FinalPublishWarningsTest {
             false
         );
         List<String> found = FinalPublishWarnings.forPublish(
-            formId,
-            JSON.serialize(
-                specOf(new List<Object>{ q('el_1', 'How many', 'number') })
+                formId,
+                JSON.serialize(
+                    specOf(new List<Object>{ q('el_1', 'How many', 'number') })
+                )
             )
-        );
+            .warnings;
         Assert.areEqual(1, found.size(), 'one warning');
         Assert.isTrue(found[0].contains('How many'), 'names the question');
         Assert.isTrue(found[0].contains('text'), 'says what it was');
@@ -106,11 +107,12 @@ private class FinalPublishWarningsTest {
             false
         );
         List<String> found = FinalPublishWarnings.forPublish(
-            formId,
-            JSON.serialize(
-                specOf(new List<Object>{ q('el_1', 'How many', 'number') })
+                formId,
+                JSON.serialize(
+                    specOf(new List<Object>{ q('el_1', 'How many', 'number') })
+                )
             )
-        );
+            .warnings;
         Assert.areEqual(
             0,
             found.size(),
@@ -129,11 +131,12 @@ private class FinalPublishWarningsTest {
             false
         );
         List<String> found = FinalPublishWarnings.forPublish(
-            formId,
-            JSON.serialize(
-                specOf(new List<Object>{ q('el_1', 'Keep me', 'text') })
+                formId,
+                JSON.serialize(
+                    specOf(new List<Object>{ q('el_1', 'Keep me', 'text') })
+                )
             )
-        );
+            .warnings;
         Assert.areEqual(1, found.size(), 'one warning');
         Assert.isTrue(found[0].contains('Delete me'), 'names the question');
         Assert.isTrue(
@@ -153,11 +156,12 @@ private class FinalPublishWarningsTest {
             false
         );
         List<String> found = FinalPublishWarnings.forPublish(
-            formId,
-            JSON.serialize(
-                specOf(new List<Object>{ q('el_1', 'Keep me', 'text') })
+                formId,
+                JSON.serialize(
+                    specOf(new List<Object>{ q('el_1', 'Keep me', 'text') })
+                )
             )
-        );
+            .warnings;
         Assert.areEqual(0, found.size(), 'nothing was lost');
     }
 
@@ -174,16 +178,17 @@ private class FinalPublishWarningsTest {
             'label' => 'Attach your CV'
         };
         List<String> found = FinalPublishWarnings.forPublish(
-            formId,
-            JSON.serialize(
-                specOf(
-                    new List<Object>{
-                        q('el_1', 'Anything', 'text'),
-                        fileQuestion
-                    }
+                formId,
+                JSON.serialize(
+                    specOf(
+                        new List<Object>{
+                            q('el_1', 'Anything', 'text'),
+                            fileQuestion
+                        }
+                    )
                 )
             )
-        );
+            .warnings;
         Assert.areEqual(1, found.size(), 'one warning');
         Assert.isTrue(found[0].contains('Attach your CV'), 'names it');
         Assert.isTrue(
@@ -200,20 +205,21 @@ private class FinalPublishWarningsTest {
             false
         );
         List<String> found = FinalPublishWarnings.forPublish(
-            formId,
-            JSON.serialize(
-                specOf(
-                    new List<Object>{
-                        q('el_1', 'Anything', 'text'),
-                        new Map<String, Object>{
-                            'id' => 'el_cv',
-                            'type' => 'file',
-                            'label' => 'Attach your CV'
+                formId,
+                JSON.serialize(
+                    specOf(
+                        new List<Object>{
+                            q('el_1', 'Anything', 'text'),
+                            new Map<String, Object>{
+                                'id' => 'el_cv',
+                                'type' => 'file',
+                                'label' => 'Attach your CV'
+                            }
                         }
-                    }
+                    )
                 )
             )
-        );
+            .warnings;
         Assert.areEqual(
             0,
             found.size(),
@@ -226,9 +232,12 @@ private class FinalPublishWarningsTest {
         form = new Form__c(Name = 'Brand new', Form_Type__c = 'Freeform');
         insert form;
         List<String> found = FinalPublishWarnings.forPublish(
-            form.Id,
-            JSON.serialize(new List<Object>{ q('el_1', 'Anything', 'text') })
-        );
+                form.Id,
+                JSON.serialize(
+                    new List<Object>{ q('el_1', 'Anything', 'text') }
+                )
+            )
+            .warnings;
         Assert.areEqual(0, found.size(), 'nothing is live to compare against');
     }
 
@@ -241,13 +250,39 @@ private class FinalPublishWarningsTest {
         );
         Assert.areEqual(
             0,
-            FinalPublishWarnings.forPublish(formId, 'not json').size(),
+            FinalPublishWarnings.forPublish(formId, 'not json').warnings.size(),
             'publish itself refuses bad specs, and says why'
         );
         Assert.areEqual(
             0,
-            FinalPublishWarnings.forPublish(null, '{}').size(),
+            FinalPublishWarnings.forPublish(null, '{}').warnings.size(),
             'no form, no warnings'
         );
+    }
+
+    @IsTest
+    static void mappingBlockersComeBackSeparately() {
+        Form__c form = new Form__c(
+            Name = 'Dialog test',
+            Form_Type__c = 'Freeform'
+        );
+        insert form;
+        FinalPublishWarnings.PublishCheck check = FinalPublishWarnings.forPublish(
+            form.Id,
+            JSON.serialize(
+                FinalMappingTestData.spec(
+                    FinalMappingTestData.standardQuestions(),
+                    new List<Object>{
+                        FinalMappingTestData.findOrCreateContact('act_a', null)
+                    }
+                )
+            )
+        );
+        Assert.areEqual(
+            1,
+            check.blockers.size(),
+            String.join(check.blockers, ' | ')
+        );
+        Assert.isTrue(check.blockers[0].contains('matching record is found'));
     }
 }
