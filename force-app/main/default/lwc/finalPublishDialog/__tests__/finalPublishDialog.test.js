@@ -162,3 +162,18 @@ describe('blockers', () => {
         expect(confirmButton(el).disabled).toBe(false);
     });
 });
+
+describe('blocked copy', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('does not promise a live update or say anyway while blocked', async () => {
+        const el = mount({ formName: 'F', blockers: ['a'], warnings: ['w'] });
+        await flush();
+        expect(el.shadowRoot.querySelector('.pd-note')).toBeNull();
+        expect(confirmButton(el).label).toBe('Publish');
+    });
+});

@@ -24,6 +24,19 @@ jest.mock(
     }
 );
 
+jest.mock(
+    '@salesforce/apex/FinalStudioController.describeFields',
+    () => ({
+        default: jest.fn(() =>
+            Promise.resolve([
+                { apiName: 'Email', label: 'Email' },
+                { apiName: 'LastName', label: 'Last Name' }
+            ])
+        )
+    }),
+    { virtual: true }
+);
+
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function mount(spec) {
@@ -153,5 +166,74 @@ describe('c-final-mapping-editor', () => {
                 (a) => a.id
             )
         ).toEqual(['act_2', 'act_1']);
+    });
+});
+
+describe('c-final-mapping-editor wording', () => {
+    beforeEach(() => {
+        describeQuestions.mockResolvedValue([
+            {
+                elementKey: 'el_n',
+                label: 'Your name',
+                answerType: 'Text',
+                skippable: false,
+                mappable: true
+            }
+        ]);
+    });
+    afterEach(() => {
+        while (document.body.firstChild)
+            document.body.removeChild(document.body.firstChild);
+    });
+
+    it('names fields by their label, never their API name', async () => {
+        const el = mount({
+            pages: [],
+            mapping: {
+                actions: [
+                    {
+                        id: 'act_1',
+                        object: 'Contact',
+                        operation: 'create',
+                        fields: [
+                            {
+                                field: 'LastName',
+                                source: { kind: 'answer', elementKey: 'el_n' }
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+        await flush();
+        await flush();
+        const row = el.shadowRoot.querySelector('.me-index-row').textContent;
+        expect(row).toContain('Contact · Last Name');
+        expect(row).not.toContain('LastName');
+    });
+
+    it('says 1 field, not 1 fields', async () => {
+        const el = mount({
+            pages: [],
+            mapping: {
+                actions: [
+                    {
+                        id: 'act_1',
+                        object: 'Contact',
+                        operation: 'create',
+                        fields: [
+                            {
+                                field: 'LastName',
+                                source: { kind: 'answer', elementKey: 'el_n' }
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('.me-card-detail').textContent).toBe(
+            'Create · 1 field'
+        );
     });
 });

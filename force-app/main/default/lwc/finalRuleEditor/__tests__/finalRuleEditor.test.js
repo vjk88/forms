@@ -392,3 +392,43 @@ describe('typed rule operators and value editors', () => {
         expect(el.shadowRoot.querySelector('.re-value')).toBeNull();
     });
 });
+
+describe('record-search wording', () => {
+    afterEach(() => {
+        while (document.body.firstChild)
+            document.body.removeChild(document.body.firstChild);
+    });
+
+    it('drops the show or hide choice and talks about records', async () => {
+        const el = mount({
+            forRecords: true,
+            value: {
+                action: 'show',
+                logic: 'all',
+                customLogic: null,
+                rules: [{ source: 'el_1', operator: 'equals', value: 'x' }]
+            }
+        });
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelector('.re-action')).toBeNull();
+        expect(el.shadowRoot.querySelector('.re-when').textContent).toBe(
+            'Only search records where'
+        );
+    });
+
+    it('explains an empty search in record terms', async () => {
+        const el = mount({ forRecords: true, value: null });
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelector('.re-empty').textContent).toContain(
+            'narrow which records are searched'
+        );
+    });
+
+    it('leaves question rules exactly as they were', async () => {
+        const el = mount({ value: null });
+        await Promise.resolve();
+        expect(el.shadowRoot.querySelector('.re-empty').textContent).toContain(
+            'show or hide'
+        );
+    });
+});

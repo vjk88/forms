@@ -38,7 +38,9 @@
             </ul>
         </template>
 
-        <p class="pd-note">The live form updates immediately.</p>
+        <template lwc:if={showLiveNote}>
+            <p class="pd-note">The live form updates immediately.</p>
+        </template>
     </lightning-modal-body>
 
     <lightning-modal-footer>

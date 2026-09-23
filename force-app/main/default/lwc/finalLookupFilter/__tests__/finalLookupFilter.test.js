@@ -242,6 +242,7 @@ describe('filter-only mode', () => {
             'Let people filling this form anonymously search it'
         );
         expect(ruleEditor(el)).toBeTruthy();
+        expect(ruleEditor(el).forRecords).toBe(true);
     });
 
     it('a lookup still gets all of them', async () => {

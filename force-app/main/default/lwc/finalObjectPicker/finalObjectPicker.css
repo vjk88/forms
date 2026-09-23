@@ -1,0 +1,77 @@
+:host {
+    display: block;
+}
+
+.op {
+    position: relative;
+}
+
+.op-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: #444;
+}
+
+.op-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 2rem;
+    padding: 0 0.625rem;
+    font: inherit;
+    font-size: 0.8125rem;
+    border: 1px solid #c9c9c9;
+    border-radius: 0.25rem;
+    background: #fff;
+}
+
+.op-input:focus {
+    outline: none;
+    border-color: #0b5cab;
+    box-shadow: 0 0 0 1px #0b5cab;
+}
+
+.op-list {
+    position: absolute;
+    z-index: 10;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.125rem;
+    max-height: 16rem;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #c9c9c9;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.op-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.375rem 0.625rem;
+    cursor: pointer;
+}
+
+.op-item--active {
+    background: #eaf3fb;
+}
+
+.op-item--on .op-item-label {
+    font-weight: 600;
+}
+
+.op-item-label {
+    font-size: 0.8125rem;
+}
+
+.op-item-api {
+    font-size: 0.6875rem;
+    color: #6b6b6b;
+}
+
+.op-empty {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.8125rem;
+    color: #6b6b6b;
+}
