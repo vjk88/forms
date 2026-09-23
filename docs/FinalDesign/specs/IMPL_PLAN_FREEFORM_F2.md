@@ -3491,7 +3491,7 @@ private class FinalMappingServiceTest {
 
     FinalMappingService.Result r = FinalMappingService.run(subId);
 
-    Assert.areEqual('Done', r.status, r.message);
+    Assert.areEqual('Done', r.status, 'message: ' + r.message);
     Contact c = [
       SELECT LastName, Email
       FROM Contact
@@ -3730,7 +3730,7 @@ private class FinalMappingServiceTest {
 
     FinalMappingService.Result r = FinalMappingService.run(subId);
 
-    Assert.areEqual('Done', r.status, r.message);
+    Assert.areEqual('Done', r.status, 'message: ' + r.message);
     Assert.areEqual(
       'Keep me',
       [SELECT Title FROM Contact WHERE Id = :existing.Id].Title
@@ -3801,7 +3801,7 @@ private class FinalMappingServiceTest {
       tierSubmission()
     );
 
-    Assert.areEqual('Done', second.status, second.message);
+    Assert.areEqual('Done', second.status, 'message: ' + second.message);
     Assert.areEqual(
       1,
       [SELECT COUNT() FROM Contact WHERE Title = 'Priority customer'],
@@ -3853,7 +3853,7 @@ private class FinalMappingServiceTest {
 
     FinalMappingService.Result r = FinalMappingService.run(tierSubmission());
 
-    Assert.areEqual('Done', r.status, r.message);
+    Assert.areEqual('Done', r.status, 'message: ' + r.message);
     Assert.areEqual(1, [SELECT COUNT() FROM Contact], 'it found the one that exists');
   }
 
@@ -4988,16 +4988,21 @@ private class FinalMappingRetryControllerTest {
       TimeZoneSidKey = 'America/Los_Angeles',
       Username = 'retry' + Crypto.getRandomInteger() + '@example.com'
     );
-    insert u;
-    insert new PermissionSetAssignment(
-      AssigneeId = u.Id,
-      PermissionSetId = [
-        SELECT Id
-        FROM PermissionSet
-        WHERE Name = 'Freeform_Submission_Reader'
-      ]
-      .Id
-    );
+    // Users and permission assignments are setup records; the tests also
+    // save forms and submissions. Salesforce refuses both in one transaction
+    // unless the setup half runs inside System.runAs.
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert u;
+      insert new PermissionSetAssignment(
+        AssigneeId = u.Id,
+        PermissionSetId = [
+          SELECT Id
+          FROM PermissionSet
+          WHERE Name = 'Freeform_Submission_Reader'
+        ]
+        .Id
+      );
+    }
     return u;
   }
 
@@ -5019,16 +5024,21 @@ private class FinalMappingRetryControllerTest {
       TimeZoneSidKey = 'America/Los_Angeles',
       Username = 'fadm' + Crypto.getRandomInteger() + '@example.com'
     );
-    insert u;
-    insert new PermissionSetAssignment(
-      AssigneeId = u.Id,
-      PermissionSetId = [
-        SELECT Id
-        FROM PermissionSet
-        WHERE Name = 'Freeform_Submission_Admin'
-      ]
-      .Id
-    );
+    // Users and permission assignments are setup records; the tests also
+    // save forms and submissions. Salesforce refuses both in one transaction
+    // unless the setup half runs inside System.runAs.
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert u;
+      insert new PermissionSetAssignment(
+        AssigneeId = u.Id,
+        PermissionSetId = [
+          SELECT Id
+          FROM PermissionSet
+          WHERE Name = 'Freeform_Submission_Admin'
+        ]
+        .Id
+      );
+    }
     return u;
   }
 
@@ -5096,21 +5106,23 @@ private class FinalMappingRetryControllerTest {
     Id subId = failedSubmission();
     // The running test user is a System Administrator; grant the
     // custom permission through the admin set.
-    insert new PermissionSetAssignment(
-      AssigneeId = UserInfo.getUserId(),
-      PermissionSetId = [
-        SELECT Id
-        FROM PermissionSet
-        WHERE Name = 'Freeform_Submission_Admin'
-      ]
-      .Id
-    );
     User me = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
+    System.runAs(me) {
+      insert new PermissionSetAssignment(
+        AssigneeId = me.Id,
+        PermissionSetId = [
+          SELECT Id
+          FROM PermissionSet
+          WHERE Name = 'Freeform_Submission_Admin'
+        ]
+        .Id
+      );
+    }
     FinalMappingService.Result r;
     System.runAs(me) {
       r = FinalMappingRetryController.retry(subId);
     }
-    Assert.areEqual('Done', r.status, r.message);
+    Assert.areEqual('Done', r.status, 'message: ' + r.message);
   }
 }
 ```
