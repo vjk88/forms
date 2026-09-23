@@ -231,4 +231,183 @@ private class FinalMappingRulesTest {
                 .size()
         );
     }
+
+    @IsTest
+    static void coerceHandlesEachKindOfField() {
+        Assert.areEqual(
+            12.5,
+            FinalMappingRules.coerce(
+                '12.5',
+                Account.AnnualRevenue.getDescribe()
+            )
+        );
+        Assert.areEqual(
+            40,
+            FinalMappingRules.coerce(
+                '40',
+                Account.NumberOfEmployees.getDescribe()
+            )
+        );
+        Assert.areEqual(
+            true,
+            FinalMappingRules.coerce('TRUE', Contact.DoNotCall.getDescribe())
+        );
+        Assert.areEqual(
+            false,
+            FinalMappingRules.coerce(false, Contact.DoNotCall.getDescribe())
+        );
+        Datetime dt = (Datetime) FinalMappingRules.coerce(
+            '2026-09-22T10:00:00.000Z',
+            Contact.LastCURequestDate.getDescribe()
+        );
+        Assert.areEqual(2026, dt.yearGmt());
+        Assert.areEqual(
+            'Web',
+            FinalMappingRules.coerce('Web', Contact.LeadSource.getDescribe())
+        );
+        Object ref = FinalMappingRules.coerce(
+            Account.SObjectType.getDescribe().getKeyPrefix() + '000000000001',
+            Contact.AccountId.getDescribe()
+        );
+        Assert.isTrue(ref instanceof Id, 'a lookup gets an Id');
+    }
+
+    @IsTest
+    static void coerceExplainsWhatDoesNotFit() {
+        Map<Object, Schema.DescribeFieldResult> cases = new Map<Object, Schema.DescribeFieldResult>{
+            'maybe' => Contact.DoNotCall.getDescribe(),
+            'abc' => Account.AnnualRevenue.getDescribe(),
+            'Not_A_Real_Lead_Source' => Contact.LeadSource.getDescribe(),
+            'anything' => Contact.MailingAddress.getDescribe()
+        };
+        for (Object raw : cases.keySet()) {
+            Schema.DescribeFieldResult fd = cases.get(raw);
+            try {
+                FinalMappingRules.coerce(raw, fd);
+                Assert.fail(fd.getName() + ' took ' + raw);
+            } catch (FinalMappingRules.MappingValueException e) {
+                Assert.isTrue(
+                    e.getMessage().contains(fd.getLabel()),
+                    'names the field: ' + e.getMessage()
+                );
+            }
+        }
+    }
+
+    @IsTest
+    static void valueOfReadsEachStorageColumn() {
+        Assert.areEqual(
+            true,
+            FinalMappingRules.valueOf(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'Boolean',
+                    Boolean_Value__c = true
+                )
+            )
+        );
+        Date d = Date.newInstance(2026, 9, 22);
+        Assert.areEqual(
+            d,
+            FinalMappingRules.valueOf(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'Date',
+                    Date_Value__c = d
+                )
+            )
+        );
+        Datetime now = Datetime.now();
+        Assert.areEqual(
+            now,
+            FinalMappingRules.valueOf(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'DateTime',
+                    DateTime_Value__c = now
+                )
+            )
+        );
+        Assert.isNull(
+            FinalMappingRules.valueOf(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'Options',
+                    Selected_Options_JSON__c = '[]'
+                )
+            ),
+            'no choices is no answer'
+        );
+        Assert.isNull(
+            FinalMappingRules.valueOf(
+                new Form_Submission_Answer__c(Answer_Type__c = 'Options')
+            )
+        );
+        Assert.isNull(FinalMappingRules.valueOf(null));
+        Assert.isFalse(
+            FinalMappingRules.isCompatible('Mystery', Schema.DisplayType.STRING)
+        );
+    }
+
+    @IsTest
+    static void labelsFallBackToTheValueNeverToBlank() {
+        Map<String, Object> q = new Map<String, Object>{
+            'config' => new Map<String, Object>{
+                'options' => new List<Object>{
+                    new Map<String, Object>{ 'value' => 'a', 'label' => '' },
+                    new Map<String, Object>{ 'value' => 'b', 'label' => 'Bee' }
+                }
+            }
+        };
+        Assert.areEqual(
+            'a',
+            FinalMappingRules.optionLabel(q, 'a'),
+            'blank label'
+        );
+        Assert.areEqual('Bee', FinalMappingRules.optionLabel(q, 'b'));
+        Assert.areEqual(
+            'zzz',
+            FinalMappingRules.optionLabel(q, 'zzz'),
+            'unknown value'
+        );
+        Assert.areEqual('x', FinalMappingRules.optionLabel(null, 'x'));
+        Assert.areEqual(
+            new List<String>{ 'a', 'b' },
+            FinalMappingRules.optionValues(q)
+        );
+
+        Object labels = FinalMappingRules.answerValue(
+            new Form_Submission_Answer__c(
+                Answer_Type__c = 'Options',
+                Selected_Options_JSON__c = '["b"]'
+            ),
+            q,
+            Contact.Title.getDescribe()
+        );
+        Assert.areEqual(
+            JSON.serialize(new List<String>{ 'Bee' }),
+            JSON.serialize(labels),
+            'several choices into text become their labels, still a list'
+        );
+    }
+
+    @IsTest
+    static void anUnparsedAnswerOnlyFitsText() {
+        Form_Submission_Answer__c raw = new Form_Submission_Answer__c(
+            Answer_Type__c = 'Number',
+            Value_Unparsed__c = true,
+            Text_Value__c = 'twelve-ish'
+        );
+        Assert.areEqual(
+            'twelve-ish',
+            FinalMappingRules.answerValue(
+                raw,
+                null,
+                Contact.Title.getDescribe()
+            )
+        );
+        Assert.isNull(
+            FinalMappingRules.answerValue(
+                raw,
+                null,
+                Account.AnnualRevenue.getDescribe()
+            )
+        );
+    }
 }
