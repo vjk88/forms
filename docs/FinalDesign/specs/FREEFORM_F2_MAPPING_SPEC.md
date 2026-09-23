@@ -61,7 +61,7 @@ both rows stay and the earlier row says so.
 | D45 | **Keeping the match answer and the saved field value in step is the author's job, for now.** Nothing stops an author searching on one question and saving another into the same field. Tabled — DEFERRED #33                                                                                                                                                                                                                                                                                                                                                       | 2026-09-21 |
 | D46 | **Background-job capacity is measured, not assumed.** The trigger computes `Limits.getLimitQueueableJobs() - Limits.getQueueableJobs()` at the moment it queues, and every refusal states that real number — never a fixed 50. Other automation in the same transaction may already have used capacity, so even a single guest submission can find none left. **New submissions are never refused:** any that do not fit are saved as Failed, so the answers survive and Retry picks them up — refusing would roll back the respondent's answers (owner confirmed) | 2026-09-21 |
 | D47 | **A form may have at most 10 mapping steps.** Every step's writes, plus whatever triggers, flows and validation rules the org runs on those objects, share one set of limits inside a single job; ten leaves room for the org's own automation. An eleventh step is a publish blocker                                                                                                                                                                                                                                                                              | 2026-09-21 |
-| D48 | **Task and Event are not supported as mapping targets.** Their "Name" and "Related To" fields can each point at several kinds of record, so a Task could never be linked to what the form just created. Rather than build for that, they are left out of the object list and refused at publish                                                                                                                                                                                                                                                                    | 2026-09-22 |
+| D48 | **Lookup fields that can point at more than one kind of record are not supported as mapping destinations.** A Task's "Name" and "Related To", or the Owner on a Case or Lead, can each point at several kinds of record, and there is no single target to offer the author. The objects themselves are fine — a form can still create a Task — but those fields are left out of the field list and refused at publish. (First ruled as "no Task or Event"; narrowed to the fields the same day.)                                                                   | 2026-09-22 |
 
 ## 3. Where it lives — Data mode (D29)
 
@@ -406,7 +406,7 @@ it, which is why the refusal lives in `publishSpec`.
 - a `recordRef` naming a later action, or one that no longer exists
 - an answer whose `Answer_Type__c` cannot survive the trip to the destination field type
 - a Choice source whose stored values are not in the destination picklist's value set
-- an action on Task or Event (D48)
+- a lookup field that can point at more than one kind of record (D48)
 - an action on a setup object (User, Group, permission assignments and the like) — Salesforce refuses
   to write those in the same transaction as ordinary records
 - more than 10 steps (D47)
@@ -502,7 +502,7 @@ proven against a real org configuration.
 - **Keeping the match answer and the saved value in step** — the author's job for now (D45),
   DEFERRED #33.
 - **Preventing duplicates across submissions** — the org's duplicate rules do that (D40).
-- **Task and Event** as mapping targets (D48).
+- **Lookup fields that can point at more than one kind of record** — a Task's Related To, a Case's Owner (D48).
 - **Automatic retry** of any kind (D42).
 - **Recording uncaught failures on the submission** — they are left to Setup → Apex Jobs (D43).
 - **Platform events** — background jobs only (D41).
