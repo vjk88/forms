@@ -1,267 +1,357 @@
-# IMPL_PLAN — F2 find-or-create search, rebuilt
+# IMPL_PLAN — Conditions editor rebuilt, and the F2 find-or-create search
 
-> **Status:** draft for owner review, 2026-09-23. No code yet.
+> **Status:** revision 2, draft for owner review, 2026-09-23. No code yet.
+> Rev 2: the owner asked for the Form Designer's condition editor style everywhere (in a dialog),
+> and a plan review found seven defects in rev 1 (the table at the end says where each was fixed).
 > **For agentic workers:** use superpowers:executing-plans, task by task. Checkboxes track steps.
 
-**Goal:** An author can build the find-or-create search out of form answers — in condition rows or
-in a WHERE clause they type — and the step reads as the two branches it really is: _if one is found_,
-_if none is found, create_.
+**Goal:** One clean condition editor — Form Designer style, in a dialog — for visibility rules,
+lookup filters and the mapping search. In the mapping search an author can compare with form
+answers, in rows or in a WHERE clause they type, and the step reads as its two branches: _if one is
+found_, _if none is found, create_.
 
 **Why (what the owner saw, 2026-09-23):**
 
-1. The main search could use an answer ("Email matches Your email") but the filter rows under it
-   could only take typed-in values. The runtime already understood answers in rows; the screen gave
-   no way to pick one.
-2. Under "When one is found, it's used as-is and nothing is written to it" sat a list of field
-   mappings. Nothing said those fields are only for the record created when **nothing** is found.
-3. Last Name → "A fixed value" showed _"Another record: Last Name isn't a lookup field."_ underneath,
-   which reads like an error. Custom logic `1 AND (2 OR 3)` over a single row wasn't flagged until
-   publish.
-4. From the plan review: a respondent who types `$User.Email` into an answer used by a filter row
-   gets it read as an instruction — the search compares against the site guest user's email.
+1. The Studio's condition editor is a stack of bare browser dropdowns. The Form Designer's
+   (`visibilityEditor`) was one row per condition with labelled columns — Source · Field · Operator ·
+   Value — in a dialog with Save / Cancel / Clear All. That is the look to copy.
+2. In the mapping search the main match could use an answer, but the filter rows couldn't. The
+   runtime already understood answers in rows; the screen offered no way to pick one.
+3. Under "When one is found, it's used as-is and nothing is written to it" sat the field list, which
+   is really for the record created when **nothing** is found. Nothing said so.
+4. Last Name → "A fixed value" showed _"Another record: Last Name isn't a lookup field."_ underneath.
+   Custom logic `1 AND (2 OR 3)` over one row wasn't flagged until publish.
+5. From the F2 plan review: a respondent who types `$User.Name` into an answer used by a filter row
+   has it read as an instruction.
 
-**Spec:** [FREEFORM_F2_MAPPING_SPEC.md](./FREEFORM_F2_MAPPING_SPEC.md). This plan adds rulings
-D49–D52 to it (Task 1).
+**Spec:** [FREEFORM_F2_MAPPING_SPEC.md](./FREEFORM_F2_MAPPING_SPEC.md). Task 1 adds rulings
+D49–D53 to it.
 
 ## Owner rulings (2026-09-23)
 
-| #   | Ruling                                                                                                                                                                                                                                           |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D49 | **A filter row compares against a fixed value or an answer.** Each row gets a "A fixed value / The answer to…" choice. Only answers whose type fits the row's field are offered.                                                                 |
-| D50 | **An author may type the WHERE clause instead of building rows.** Either-or per step, switching warns before discarding. Mapping search only — lookup questions keep rows. A deliberate exception to "never raw expressions" (visibility rules). |
-| D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, and always run as bound values — never pasted into the query text.                                                                              |
-| D52 | **The searched field is pre-filled in the create list, and stays editable.** Choosing "Email matches Your email" adds `Email ← Your email` to the new-record fields when Email isn't there yet. Softens D45.                                     |
-| —   | **Answers are always bound values** (the review bug). Nothing a respondent types is ever read as `$User.`, `$field.` or query text. Fixed in this same work, test first.                                                                         |
+| #   | Ruling                                                                                                                                                                                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D49 | **A mapping filter row compares against a fixed value or an answer.** Columns: Field · Operator · Compare with · Value. Only answers whose type and single-value shape fit the row are offered.                                                                             |
+| D50 | **An author may type the WHERE clause instead of building rows** — a "Write the conditions" tab in the conditions dialog. Either-or per step; switching warns before discarding. Mapping search only. A deliberate exception to "never raw expressions" (visibility rules). |
+| D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, and always run as bound values.                                                                                                                                            |
+| D52 | **The searched field is pre-filled in the create list, and stays editable.** Softens D45.                                                                                                                                                                                   |
+| D53 | **One condition editor, Form Designer style, in a dialog, for all three screens** (visibility rules, lookup filters, mapping search). Each screen shows a one-line summary and an Edit button.                                                                              |
+| —   | **Answers are always bound values** (review bug). Nothing a respondent types is read as `$User.`, `$field.` or query text; fixed test-first in this work.                                                                                                                   |
 
 ## Global constraints
 
-- API **66.0**; org **`revclouddev`**; Contact-only test data (Account inserts are blocked there).
-- `FinalLookupService.compile` behaviour is **unchanged for lookups**. Lookup questions get no WHERE box
-  and no answer rows beyond what they have today.
-- The typed clause is checked at publish **as the author** (`USER_MODE`) and run in the background
-  in `SYSTEM_MODE`, exactly like rows today.
-- CSS prefixes: `ma-` (action), `ms-` (new SOQL box), `re-` (rule editor).
+- API **66.0**; org **`revclouddev`**; Contact-only test data.
+- **Saved shapes don't change** for visibility rules (`{action, logic, customLogic, rules[]}`) or
+  lookup filters (`{logic, customLogic, rows[]}`). The runtime evaluators
+  (`finalExpressionEngine`, `FinalLookupService.compile`) are not touched, so every form already
+  published behaves exactly as before.
+- Lookup filters get the new look but **no answer comparisons** — comparing a lookup with another
+  answer is dependent lookups, which the owner is rebuilding themselves (DO NOT resurrect v1).
+- The typed clause is checked at publish as the author (`USER_MODE`), run in the background in
+  `SYSTEM_MODE`, like rows today.
+- Native first: `LightningModal` (already used by `finalPublishDialog`), `lightning-combobox`,
+  `lightning-input`, `lightning-tabset`, `LightningConfirm`.
+- CSS prefixes: `re-` (rule editor), `cm-` (conditions dialog), `cs-` (summary), `ms-` (typed box),
+  `ma-` (mapping step).
 - Copy: plain words, sentence case, no "please", no "successfully".
-- One branch per slice → PR → merge; deploy + click through, not just tests green; site publish before
-  any guest check.
+- One branch per slice → PR → merge; deploy + click through; uiux-flow-reviewer before merging the
+  UI slices; site publish before any guest check.
 
 ## Decisions this plan makes — review these
 
-1. **Spec shape.** Rows stay in `match.filter` exactly as today. The typed clause is
-   `match.soql` (string), and the mode is `match.filterMode: "soql"`. No `filterMode` = rows, so every
-   mapping already published keeps working with no migration.
-2. **Stored token = `{!<elementId>}`**, shown to the author as `{<question label>}`. Stored by id, so
-   renaming a question never breaks a clause; the box redraws with the new label. Two questions with
-   the same label show as `{Label}` and `{Label (2)}`, in form order.
-3. **An answer in a typed clause must sit right after a field and a comparison** —
-   `Email = {Your email}`, `CloseDate >= {Start date}`. That is how the runtime knows which field the
-   answer is compared with, so a choice is searched by its label or its value exactly as a write
-   would store it (F2 decision 7 — the duplicate-maker). Allowed comparisons: `=` `!=` `<>` `<` `<=`
-   `>` `>=` `LIKE`. `LIKE {x}` matches the answer exactly; wildcards can't be added around an answer.
-   Anywhere else, `{…}` is a publish blocker that says where to put it.
-4. **What a typed clause may not contain** (outside quoted text): `;`, `$`, a `:` that starts a bind
-   (`:name`, `: x`, `:(`) — `LAST_N_DAYS:30` and other date literals still work — and the words
-   `SELECT FROM LIMIT OFFSET ORDER GROUP HAVING FOR WITH USING UPDATE TYPEOF ALL`. So **no
-   sub-queries**: a clause filters the step's own object, with relationship paths like
-   `Account.Type = 'Customer'`. Keeps the Security Review story to "a WHERE on one object".
-5. **Maximum 4,000 characters** for a typed clause. A blocker past that.
-6. **Answers in rows are single-value only.** The "The answer to…" choice is offered for Equals, Not
-   equals, Contains, less/greater, At most, At least — not for Is one of / Includes, which keep a
-   typed list. (The runtime already handles answers in lists; the screen just doesn't offer it.)
-7. **Row answers that can be skipped warn, not block** — same wording and rule as the main search:
-   _"… which can be skipped. When it is, this step fails."_
-8. **The token-bug fix doesn't touch the shared compiler.** The mapping runtime hands the compiler
-   each answer through its `answers` map under a private key (`$field.__m0`), so the compiler returns
-   the value as-is and never re-reads it. Today it pastes the answer into `row.value`, where the
-   compiler reads it again.
-9. **"Another record: … isn't a lookup field" shows only while a row has no source.** Its job is to
-   explain why "Another record" isn't in the list; once a source is picked, it's noise.
-10. **Custom logic is checked as the author types** with the existing `evaluateCustomLogic`
-    (finalExpressionEngine). This is in the shared rule editor, so visibility rules get the same
-    warning — display only, nothing saved differently.
-11. **Pre-fill (D52) follows the search while untouched.** When the author changes the search
-    answer and the pre-filled row still points at the old one, it moves with it. If the author has
-    changed that row, it's left alone.
+1. **Three components, one job each.**
+   - `c/finalRuleEditor` — rebuilt in place as the Form Designer–style row grid. Same `@api` inputs
+     and the same `rulechange` event, so its callers barely change. It edits whatever `value` it is
+     given; it never opens anything.
+   - `c/finalConditionsModal` (new, `LightningModal`) — holds a **draft copy**, hosts the editor
+     (and, for the mapping, the typed tab), and returns the result only on **Save**. Cancel returns
+     nothing. So an unfinished edit can never reach the spec or publish.
+   - `c/finalConditionsSummary` (new) — the one line each screen shows: _"Shown when 2 conditions are
+     all met"_ / _"Searches Contacts where 1 condition is met"_ / _"No conditions — always shown"_,
+     plus **Edit conditions**. It opens the dialog and emits the saved value.
+2. **Columns per screen.**
+
+   | Screen                | Columns                                       |
+   | --------------------- | --------------------------------------------- |
+   | Visibility rules      | Source · Question or field · Operator · Value |
+   | Lookup filter         | Field · Operator · Value                      |
+   | Mapping search (rows) | Field · Operator · Compare with · Value       |
+
+   Visibility **Source** = "An answer" and — only when the form has record sources (surveys with a
+   record link) — "The linked record". That replaces today's two `<optgroup>`s inside one select.
+
+3. **Save is disabled until the draft is usable**, with the reason shown in the footer: a row missing
+   its field, operator or value; custom logic that names a missing row or doesn't close a bracket
+   (checked with the existing `evaluateCustomLogic`); in the typed tab, a `{name}` that isn't a
+   question. Lint warnings from `lintVisibility` still show, and don't block (as today).
+4. **Mapping spec shape.** Rows stay in `match.filter`. The typed clause is `match.soql` (string),
+   mode `match.filterMode: "soql"`. No `filterMode` = rows, so published mappings need no migration.
+5. **Stored token = `{!<elementId>}`**, shown as `{<question label>}`. Display names are made
+   collision-free (decision 6), so renaming a question never breaks a clause.
+6. **Display names.** Build one map per dialog open, in form order: a question's label if no other
+   name in the map equals it; otherwise `Label (2)`, `(3)`, … bumped until it equals **no** real label
+   and no name already given. A token whose question is gone gets `removed question 1`, `2`, … (same
+   bumping), each mapped to its own original id. Editing converts back through the same map, so a
+   round trip preserves every id — including removed ones.
+7. **An answer in a typed clause sits right after a field and a comparison** —
+   `Email = {Your email}`. The parser keeps that field **and** that comparison with the token. The
+   field tells the runtime how to convert a choice (label vs stored value — F2 decision 7). The
+   comparison matters for `LIKE`: the answer is escaped (`\` → `\\`, `%` → `\%`, `_` → `\_`) so it
+   matches as typed; a respondent's `%` is never a wildcard. Allowed: `=` `!=` `<>` `<` `<=` `>`
+   `>=` `LIKE`.
+8. **A typed clause may not contain** (outside quoted text): `;`, `$`, a `:` that starts a bind
+   (`:name`, `: x`, `:(` — `LAST_N_DAYS:30` still works), or the words
+   `SELECT FROM LIMIT OFFSET ORDER GROUP HAVING FOR WITH USING UPDATE TYPEOF ALL`. No sub-queries; a
+   clause filters the step's own object (relationship paths like `Account.Type` are fine). Max
+   4,000 characters.
+9. **Answers in rows and in typed clauses are single values only.** An answer qualifies when its
+   type is in the compatibility table for the field **and** it is not `Options` (several choices).
+   Operators: Equals / Not equals / Contains / less / greater / At most / At least — and Contains
+   only for text-like fields. The picker, the dialog and publish all apply the same three checks.
+10. **Skippable answers in conditions warn, not block** — _"… which can be skipped. When it is, this
+    step fails."_
+11. **The token-bug fix leaves the shared compiler alone.** The mapping runtime passes each converted
+    answer through the compiler's `answers` map under a private key (`$field.__m0`), so the compiler
+    returns it as-is. Today it pastes the answer into `row.value`, where the compiler reads it again.
+12. **Pre-fill (D52) runs only when the main search changes** — `setMatch` with a `field` or `source`
+    patch, never a filter edit. It adds `field ← search answer` marked `prefilled`. It follows a later
+    change of search answer while still `prefilled`; editing the row clears the mark. **Deleting** the
+    pre-filled row sets `match.prefillDeclined = true`, and nothing re-adds it until the search
+    **field** changes (which clears the flag).
+13. **"Another record: … isn't a lookup field"** shows only while a row has no source.
 
 ## File map
 
 **Create**
 
-| Path (under `force-app/main/default/`) | Responsibility                                                 |
-| -------------------------------------- | -------------------------------------------------------------- |
-| `classes/FinalMappingSoql.cls` (+Test) | parse a typed clause: guards, answer tokens → binds, no DML    |
-| `lwc/finalMappingSoql/`                | the typed-clause box: textarea, Insert answer, inline problems |
-| `lwc/finalMappingSoql/__tests__/`      | jest                                                           |
+| Path (under `force-app/main/default/`) | Responsibility                                               |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `lwc/finalConditionsModal/` (+test)    | the dialog: draft, Save gate, Clear all, Build/Write tabs    |
+| `lwc/finalConditionsSummary/` (+test)  | one-line summary + Edit conditions                           |
+| `lwc/finalMappingSoql/` (+test)        | the Write tab: textarea, Insert answer, display-name mapping |
+| `classes/FinalMappingSoql.cls` (+Test) | parse a typed clause: guards, tokens → binds, no DML         |
 
 **Modify**
 
-| Path                                                 | Change                                                                               |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `classes/FinalMappingService.cls` (+Test)            | token fix (decision 8); `findOne` runs the typed clause; query errors named per step |
-| `classes/FinalMappingValidator.cls` (+Test)          | row answers checked; typed clause parsed + test-run as the author                    |
-| `lwc/finalRuleEditor/` (+test)                       | opt-in `answerChoices`: per-row fixed/answer choice; custom-logic inline check       |
-| `lwc/finalLookupFilter/` (+test)                     | passes `answerChoices` through; nothing else                                         |
-| `lwc/finalMappingModel/` (+test)                     | `setFilterMode`, `setSoql`; D52 pre-fill in `setMatch`; `actionState` for soql mode  |
-| `lwc/finalMappingAction/` (+test)                    | mode switch, soql box, branch layout, answer choices, `why` fix                      |
-| `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md` | D49–D52, §4 shape, §5.2 layout, §7 new blockers                                      |
+| Path                                                 | Change                                                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- |
+| `lwc/finalRuleEditor/` (+test)                       | rebuilt as the columned grid; `columns` mode; opt-in answer comparisons   |
+| `lwc/finalPropertyPanel/` (+test)                    | Visibility group: summary + dialog instead of the inline editor           |
+| `lwc/finalLookupFilter/` (+test)                     | conditions: summary + dialog; `answerChoices` / `allowTyped` pass-through |
+| `lwc/finalMappingModel/` (+test)                     | `setFilterMode`, `setSoql`, pre-fill rules, index + state for filters     |
+| `lwc/finalMappingAction/` (+test)                    | branch layout, answer choices, `why` fix                                  |
+| `classes/FinalMappingService.cls` (+Test)            | token fix; typed clause at runtime; query errors named per step           |
+| `classes/FinalMappingValidator.cls` (+Test)          | row answers checked; typed clause parsed and test-run as the author       |
+| `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md` | D49–D53, §4 shape, §5.2 layout, §7 blockers                               |
 
 ## Slice order
 
-| Order | Slice | Tasks | Why here                                                             |
-| ----- | ----- | ----- | -------------------------------------------------------------------- |
-| 1     | S1    | 1–2   | the bug fix first — every later slice sends more answers into search |
-| 2     | S2    | 3–4   | answers in rows: backend check, then the screen                      |
-| 3     | S3    | 5–8   | the typed clause: parser, publish, runtime, screen                   |
-| 4     | S4    | 9     | branch layout, pre-fill, the two small screen fixes                  |
-| 5     | S5    | 10    | org walkthrough as a guest                                           |
+| Order | Slice | Tasks | Why here                                                               |
+| ----- | ----- | ----- | ---------------------------------------------------------------------- |
+| 1     | S1    | 1–2   | rulings, then the bug fix — later slices send more answers into search |
+| 2     | S2    | 3–5   | the new editor + dialog, on all three screens, same saved shapes       |
+| 3     | S3    | 6–7   | answers in mapping rows: publish check, then the Compare with column   |
+| 4     | S4    | 8–11  | the typed clause: parser, publish, runtime, Write tab                  |
+| 5     | S5    | 12    | the mapping step as branches; pre-fill; small fixes                    |
+| 6     | S6    | 13    | org walkthrough, signed in and as a guest                              |
 
 ---
 
-## S1 — Answers are always bound values
+## S1 — Rulings and the bug fix
 
 ### Task 1: Spec rulings
 
 **Files:** `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md`
 
-- [ ] Add D49–D52 to the §2 ledger (dated 2026-09-23), worded as in the rulings table above.
-- [ ] §4: add `filterMode` and `soql` to the `match` example and a short §4.6 "The typed clause"
-      (token form, decisions 3–5).
-- [ ] §5.2: replace the middle-column description with the branch layout from Task 9.
-- [ ] §7: add the new blockers and warnings from Tasks 3 and 6.
-- [ ] §10: strike "Keeping the match answer and the saved value in step" and point at D52.
+- [ ] Add D49–D53 to §2 (dated 2026-09-23), worded as above.
+- [ ] §4: `filterMode`, `soql`, `prefillDeclined`, `fields[].prefilled` in the `match` example;
+      new §4.6 "The typed clause" (decisions 5–8).
+- [ ] §5.2: the branch layout from Task 12 and the summary + dialog from Task 4.
+- [ ] §7: blockers and warnings from Tasks 6 and 9.
+- [ ] §10: strike "Keeping the match answer and the saved value in step"; point at D52.
 - [ ] Branch `docs/f2-search-rulings`, PR, merge.
 
-### Task 2: The fix
+### Task 2: Answers are always bound values
 
 **Files:** `classes/FinalMappingService.cls`, `classes/FinalMappingServiceTest.cls`
 
-- [ ] **Step 1: Failing tests** in `FinalMappingServiceTest`:
-  - `rowAnswerIsNeverReadAsAToken` — Contact step, find-or-create on Email, filter row
-    `LastName eq $field.<surname question>`. The respondent's surname answer is the text
-    `$User.Name`. A Contact exists with LastName `$User.Name` and the matching email.
-    Expect: **found** (status Done, no new Contact). Today the compiler swaps in the running user's
-    full name, finds nothing and creates a duplicate. (`$User.Name` because the compiler resolves
-    only Id, ProfileId, Email and Name.)
-  - `rowAnswerThatLooksLikeAFieldTokenIsLiteral` — same, answer text `$field.x`. Expect Done and the
-    literal matched; today the step fails with "A filter condition has no value yet".
-- [ ] **Step 2:** run them, see both fail.
-- [ ] **Step 3:** in `resolvedFilter`, stop writing converted answers into `row.value`. Instead:
-
-```apex
-// A per-run answers map for the compiler. The compiler returns what it finds
-// here as-is; it never re-reads it, so nothing a respondent typed can become
-// "$User." or "$field." (review finding, 2026-09-23).
-private class Resolved {
-  Object filter;
-  Map<String, Object> answers = new Map<String, Object>();
-}
-```
-
-`resolvedFilter` returns a `Resolved`. For a single-value row whose `value` is a token and whose
-answer converts to non-null: `key = '__m' + resolved.answers.size()`,
-`resolved.answers.put(key, converted)`, `row.put('value', '$field.' + key)`. A token that resolves
-to nothing is still left as it was, so the compiler blocks the filter and the step fails (unchanged).
-`values` lists are unchanged (the compiler never reads tokens inside them).
-`findOne` passes `r.answers` as the compiler's second argument instead of `new Map<String, Object>()`.
-
-- [ ] **Step 4:** both tests pass; run the whole `FinalMappingServiceTest` and `FinalLookupServiceTest`.
-- [ ] **Step 5:** deploy the class + test; branch `fix/f2-answers-bound`, PR, merge.
+- [ ] **Failing tests first:**
+  - `rowAnswerIsNeverReadAsAToken` — find-or-create Contact on Email; filter row
+    `LastName eq $field.<surname>`; the surname answer is `$User.Name`; a Contact exists with
+    LastName `$User.Name` and the matching email. Expect **found**, status Done, no new Contact.
+    Today the compiler swaps in the running user's full name and creates a duplicate.
+    (`$User.Name`: the compiler resolves only Id, ProfileId, Email and Name.)
+  - `rowAnswerThatLooksLikeAFieldTokenIsLiteral` — answer `$field.x`; expect the literal matched.
+    Today the step fails with "A filter condition has no value yet".
+- [ ] Run; both fail.
+- [ ] `resolvedFilter` returns a private `Resolved { Object filter; Map<String,Object> answers; }`.
+      For a single-value row whose token converts to non-null:
+      `key = '__m' + answers.size(); answers.put(key, converted); row.put('value', '$field.' + key);`.
+      A token that converts to nothing stays as it was (the compiler blocks; the step fails —
+      unchanged). `values` lists unchanged. `findOne` passes `r.answers` to `compile`.
+- [ ] Both pass; run `FinalMappingServiceTest` and `FinalLookupServiceTest` in full.
+- [ ] Deploy; branch `fix/f2-answers-bound`, PR, merge.
 
 ---
 
-## S2 — Answers in filter rows
+## S2 — The condition editor, Form Designer style
 
-### Task 3: Publish checks row answers
+### Task 3: `finalRuleEditor` rebuilt as a grid
+
+**Files:** `lwc/finalRuleEditor/finalRuleEditor.{html,js,css}`, `__tests__/finalRuleEditor.test.js`
+
+Copy the Form Designer's structure (`visibilityEditor.html` / `.css`) — technique, not its code
+paths: a header row shown once, one grid row per condition, `lightning-combobox` /
+`lightning-input` with `variant="label-hidden"`, a numbered first column, a bare delete icon, and
+**Add condition** (`lightning-button`, variant base, `utility:add`) under the rows.
+
+- New `@api columns` — `'visibility'` (default), `'lookup'`, `'mapping'` — picks the column set in
+  decision 2. `forRecords` is removed (its only caller, `finalLookupFilter`, switches to `columns`).
+- Top: `lightning-combobox` "Show when" / "Search records where" with _All conditions are met (AND)_,
+  _Any condition is met (OR)_, _Custom logic_. Custom logic: `lightning-input` with
+  `field-level-help` "Refer to each condition by its number. Use AND, OR and brackets." and, under
+  it, the inline problem (`re-logic-problem`, `role="status"`) from decision 3.
+- Grid: `grid-template-columns: 1.25rem repeat(N, minmax(0, 1fr)) auto` where N is 3 or 4; below
+  36rem of container width the Value cell wraps under the row (`container-type: inline-size` on the
+  root, with `width: 100%` — the flex-collapse gotcha).
+- Visibility **Source** column: "An answer" / "The linked record" (the latter only when
+  `recordSources.length`). Picking a source resets Field, Operator, Value.
+- Value controls keep today's typing rules (`VALUE_KIND`, `canDisplay`, operator lists by subtype),
+  rendered as `lightning-input` type number / date / datetime / text, or a Yes/No
+  `lightning-combobox`.
+- The "(not valid here)" preservation for saved operators and values stays.
+- `@api get problems()` — the Save-gate list from decision 3, as sentences, for the dialog.
+- Lint (`lintVisibility`) and the record hint render under the grid exactly as now.
+- Mapping-only pieces (the Compare with column) arrive in Task 7; with `columns="mapping"` before
+  then it renders as `lookup`.
+
+- [ ] Jest: every existing behaviour test ported to the new markup (operators by subtype, value
+      typing, "(not valid here)", lint, record hint, custom logic); header row once; column sets per
+      mode; Source switch resets the row; `problems` for missing field/operator/value, bad custom
+      logic (`1 AND (2 OR 3)` over one row) and clean for `1`.
+
+### Task 4: The dialog and the summary
+
+**Files:** `lwc/finalConditionsModal/*`, `lwc/finalConditionsSummary/*` (+ tests)
+
+**`finalConditionsModal extends LightningModal`** — opened with
+`FinalConditionsModal.open({ size: 'medium', label, description, columns, value, sources,
+recordSources, sourceIndex, hostRepeatSectionId, noun, extraOperators, answerChoices, allowTyped,
+typedValue, questions })`.
+
+- Header: `label` ("Visibility — Account description", "Filter — Account lookup",
+  "Find an existing Contact") and `description` ("Show this field only when the conditions below are
+  met." / "Only records that meet these conditions can be picked." / "Only Contacts that meet these
+  conditions are searched.").
+- Body: `c-final-rule-editor` bound to a **draft** (deep copy of `value`). When `allowTyped`, a
+  `lightning-tabset` "Build conditions" / "Write the conditions" around it (Task 11).
+- Footer (left to right, as the Form Designer): **Clear all** (empties the draft, stays open),
+  **Cancel** (`close()` → `undefined`), **Save** (`close({ value, typed })`), brand, disabled while
+  `problems.length`; the first problem shows beside it in `cm-problem`.
+- Nothing the dialog does touches the spec until Save.
+
+**`finalConditionsSummary`** — `@api` the same inputs plus `emptyText`, `summaryNoun`. Renders one line
+and a `lightning-button` **Edit conditions** (or **Add conditions** when empty). On click: `open(...)`;
+on a result, emits `conditionschange { value, typed }`. Summary text:
+
+| State      | Visibility                              | Filter / search                                    |
+| ---------- | --------------------------------------- | -------------------------------------------------- |
+| none       | "Always shown"                          | "No conditions"                                    |
+| all        | "Shown when all 2 conditions are met"   | "Only where all 2 conditions are met"              |
+| any        | "Shown when any of 2 conditions is met" | "Only where any of 2 conditions is met"            |
+| custom     | "Shown when 1 AND (2 OR 3)"             | "Only where 1 AND (2 OR 3)"                        |
+| typed      | —                                       | "Only where: " + first 80 characters of the clause |
+| hide rules | "Hidden when …" (same variants)         | —                                                  |
+
+- [ ] Jest (the publish dialog's tests show how to mock `LightningModal.open`): Save returns the
+      draft; Cancel returns nothing and the summary emits nothing; Clear all empties only the draft;
+      Save disabled with the problem shown; summary wording per row of the table.
+
+### Task 5: The three screens switch over
+
+**Files:** `lwc/finalPropertyPanel/*`, `lwc/finalLookupFilter/*` (+ tests)
+
+- **finalPropertyPanel** — the Visibility group renders `c-final-conditions-summary` with
+  `columns="visibility"` and today's inputs (`ruleSources`, `recordRuleSources`, `ruleIndex`,
+  `hostRepeatSectionId`, `ruleNoun`); `conditionschange` feeds the existing `handleRuleChange`
+  (same value shape, so nothing downstream changes).
+- **finalLookupFilter** — the conditions area becomes `c-final-conditions-summary`
+  `columns={conditionColumns}` (`'lookup'`, or `'mapping'` when `filterOnly`), translating to and
+  from the rule editor's vocabulary exactly as today (`ruleValue`, `_toRow`). New pass-throughs:
+  `@api answerChoices = []`, `@api allowTyped = false`, `@api typedValue`, `@api questions = []`;
+  the event gains `typed` (Task 11).
+- [ ] Jest: panel and lookup filter tests updated to open-and-save through the mocked dialog;
+      saved shapes identical to before for the same edits.
+- [ ] Deploy; click through visibility on a question, a section and a page, and a lookup filter, in
+      `/apex/FinalStudio`. Publish a form with each and confirm the runtime behaves as before.
+- [ ] uiux-flow-reviewer pass; branch `feat/conditions-editor`, PR, merge.
+
+---
+
+## S3 — Answers in mapping rows
+
+### Task 6: Publish checks row answers
 
 **Files:** `classes/FinalMappingValidator.cls`, `classes/FinalMappingValidatorTest.cls`
 
-In `checkMatch`, rows branch, after the `$User.` check and before the compile, for every row and
-for each token in `value` or in `values`:
+In `checkMatch` (rows mode), for each token in a row's `value` **or** `values`:
 
-| Condition                                                           | Result                                                                                    |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| token names no question on the form                                 | blocker: _"Step N (Contact)'s filter uses a question that's no longer on the form."_      |
-| question is matrix / ranking / file                                 | blocker: _"… "Q" gives more than one value, so a filter can't use it."_                   |
-| `FinalMappingRules.fieldAt` resolves and answer type doesn't fit it | blocker: _"… the answer to "Q" can't be compared with Field."_ (same compatibility table) |
-| question is skippable                                               | warning: _"… filters using "Q", which can be skipped. When it is, this step fails."_      |
+| Condition                                                                                                                | Result                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| no such question                                                                                                         | blocker: _"Step N (Contact)'s filter uses a question that's no longer on the form."_ |
+| matrix / ranking / file, or answer type `Options`                                                                        | blocker: _"… "Q" can hold more than one value, so a filter can't compare with it."_  |
+| `fieldAt` resolves and `isCompatible(answerType, field type)` is false                                                   | blocker: _"… the answer to "Q" can't be compared with Field."_                       |
+| operator is `like` and the field isn't text-like; or a list operator (`in`, `nin`, `includes`, `excludes`) holds a token | blocker: _"… "Q" can't be used with that comparison."_                               |
+| question is skippable                                                                                                    | warning: _"… filters using "Q", which can be skipped. When it is, this step fails."_ |
 
-- [ ] Tests: one per row of the table, plus "a compatible, required answer produces nothing".
-- [ ] Deploy, run `FinalMappingValidatorTest` + `FinalPublishWarningsTest`.
+- [ ] One test per row, plus "a compatible, required, single answer produces nothing".
+- [ ] Deploy; run validator + `FinalPublishWarningsTest`.
 
-### Task 4: The row choice on screen
+### Task 7: The Compare with column
 
-**Files:** `lwc/finalRuleEditor/*`, `lwc/finalLookupFilter/*`, `lwc/finalMappingAction/*` (+ tests)
+**Files:** `lwc/finalRuleEditor/*`, `lwc/finalMappingAction/*` (+ tests)
 
-**finalRuleEditor** — new opt-in `@api answerChoices` (default `null`: every current caller renders
-exactly as today).
+**finalRuleEditor** — `@api answerChoices = []` (never null). All answer behaviour is gated on
+`get answersOn() { return this.columns === 'mapping' && this.answerChoices.length > 0; }` — when
+off, `$field.` values render and change exactly as any other text (so visibility rules and lookups
+are untouched).
 
-- Shape: `[{ elementKey, label, fits: ['string','email', …] }]` — `fits` in the lowercase
-  display-type vocabulary `describeLookupFields` already uses for `sources[].type`.
-- In `rows`, per rule: `const fieldType = (this.sources.find(s => s.id === rule.source) || {}).type`;
-  `answerOptions = answerChoices.filter(a => a.fits.includes(fieldType))`;
-  `usesAnswer = typeof rule.value === 'string' && rule.value.startsWith('$field.')`;
-  `offerAnswer = Boolean(this.answerChoices) && SINGLE_VALUE.has(rule.operator) && answerOptions.length > 0`
-  where `SINGLE_VALUE = equals, notEquals, contains, greaterThan, lessThan, lte, gte`.
-- Markup, inside `r.needsValue`, before the existing value controls:
+When on, per row:
 
-```html
-<template lwc:if="{r.offerAnswer}">
-  <select
-    class="re-select re-value-kind"
-    aria-label="Compare with"
-    data-index="{r.index}"
-    onchange="{handleValueKind}"
-  >
-    <option value="fixed" selected="{r.fixedSelected}">A fixed value</option>
-    <option value="answer" selected="{r.answerSelected}">The answer to…</option>
-  </select>
-</template>
-<template lwc:if="{r.usesAnswer}">
-  <select
-    class="re-select re-value"
-    aria-label="Question"
-    data-index="{r.index}"
-    data-prop="value"
-    onchange="{handleRuleField}"
-  >
-    <!-- r.answerOptions, value = "$field.<elementKey>", plus a
-             "(question removed)" option when the saved key isn't offered -->
-  </select>
-</template>
-<template lwc:else> …existing bool / number / date / text controls… </template>
-```
+- `fieldType = (this.sources.find((s) => s.id === rule.source) || {}).type`
+- `fitting = answerChoices.filter((a) => a.fits.includes(fieldType))` — `answerChoices` arrive
+  already stripped of `Options` answers (decision 9).
+- `operatorAllowsAnswer = SCALAR_OPS.has(rule.operator) && (rule.operator !== 'contains' || TEXTLIKE.has(fieldType))`
+  where `SCALAR_OPS = equals, notEquals, contains, greaterThan, lessThan, lte, gte`.
+- **Compare with** cell: `lightning-combobox` "A fixed value" / "An answer" — "An answer" offered
+  only when `fitting.length && operatorAllowsAnswer`.
+- **Value** cell: the typed control, or a question `lightning-combobox` (value `$field.<key>`),
+  plus a "(question removed)" option when the saved key isn't in `fitting`, so opening never
+  rewrites a rule.
+- Changing Compare with → answer sets `$field.<first fitting>`; → fixed sets `''`. Changing the
+  operator or the field so the answer no longer qualifies clears the value to `''` visibly.
+- `problems` adds: "Condition N compares with an answer that can't be used there." for a token that
+  no longer qualifies.
 
-- `handleValueKind`: `answer` → `rule.value = '$field.' + first answerOption.elementKey`;
-  `fixed` → `rule.value = ''`. Emits as usual.
-- In `handleRuleField`, when `operator` changes to one outside `SINGLE_VALUE` and the value is a
-  token, clear it (a list operator never holds an answer — decision 6). When `source` changes and
-  the token's question doesn't fit the new field, clear it.
-- A token whose question isn't in `answerChoices` still shows, as "(question removed)", so opening
-  the editor never rewrites the saved rule (same rule as the existing "(not valid here)" operator).
+**finalMappingAction** — `get filterAnswerChoices()`: questions with `q.mappable` and
+`q.answerType !== 'Options'`, `fits = (compatibility[q.answerType] || []).map((t) => t.toLowerCase())`.
+Passed to `c-final-lookup-filter answer-choices`.
 
-**finalLookupFilter** — `@api answerChoices = null;` passed to `<c-final-rule-editor answer-choices={answerChoices}>`.
-`ruleValue` / `_toRow` already pass a `$field.` value straight through; no change.
-
-**finalMappingAction** — `get filterAnswerChoices()` from `questions` where `q.mappable`:
-`fits = (compatibility[q.answerType] || []).map(t => t.toLowerCase())`. Passed as
-`answer-choices={filterAnswerChoices}`.
-
-- [ ] Jest (`finalRuleEditor.test.js`): no `answerChoices` → no "Compare with" select (every
-      existing test untouched); with choices → only fitting questions listed; switching to answer
-      emits `$field.<key>`; changing operator to Is one of clears a token; a removed question shows
-      "(question removed)" and is not rewritten on render.
-- [ ] Jest (`finalMappingAction.test.js`): the filter receives choices filtered by compatibility.
-- [ ] Deploy the three components; branch `feat/f2-row-answers`, PR, merge.
+- [ ] Jest: gate off → no Compare with column and `$field.x` renders as plain text (visibility
+      regression test); gate on → only fitting, single-value answers; Contains offers answers only
+      for text fields; Is one of offers none; operator change clears a token; removed question shows
+      "(question removed)" untouched; `Options` questions never listed.
+- [ ] Deploy; branch `feat/f2-row-answers`, PR, merge.
 
 ---
 
-## S3 — The typed WHERE clause
+## S4 — The typed WHERE clause
 
-### Task 5: `FinalMappingSoql` — the parser
+### Task 8: `FinalMappingSoql` — the parser
 
 **Files:** `classes/FinalMappingSoql.cls`, `classes/FinalMappingSoqlTest.cls`
 
-Pure: no queries, no DML, no describe. Used by the validator (Task 6) and the runtime (Task 7).
+Pure: no queries, no DML, no describe.
 
 ```apex
 public with sharing class FinalMappingSoql {
@@ -269,56 +359,60 @@ public with sharing class FinalMappingSoql {
 
     public class Token {
         public String elementId;   // from {!el_x}
-        public String fieldPath;   // the field right before the comparison
+        public String fieldPath;   // the field before the comparison
+        public String operator;    // '=', '!=', '<>', '<', '<=', '>', '>=', 'LIKE' (upper-cased)
         public String bindName;    // m0, m1, …
     }
 
     public class Parsed {
-        public String whereClause;             // tokens replaced by :m0, :m1 …
+        public String whereClause;                 // tokens replaced by :m0, :m1 …
         public List<Token> tokens = new List<Token>();
-        public String problem;                 // null when usable; a sentence otherwise
+        public String problem;                     // null when usable
     }
 
     public static Parsed parse(String clause) { … }
+
+    /** For LIKE: the answer matches as typed (decision 7). */
+    public static String escapeLike(String s) {
+        return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_');
+    }
 }
 ```
 
-Rules, in order — the first failure sets `problem` and returns:
+Rules, first failure wins:
 
-1. Blank → _"Write the conditions, or switch back to building them."_
-2. Longer than 4,000 → _"Keep the clause under 4,000 characters."_
-3. Walk the text once, tracking whether we're inside `'…'` (with `\'` escapes). Outside quotes:
+1. Blank → _"Write the conditions, or go back to building them."_
+2. Over 4,000 → _"Keep the conditions under 4,000 characters."_
+3. One pass, tracking `'…'` with `\'` escapes. Outside quotes:
    - `;` → _"Remove the semicolon — this box takes one set of conditions."_
-   - `$` → _"`$` values like $User can't be used here. Insert an answer instead."_
-   - `:` followed by a letter, `_`, `(` or whitespace → _"Use Insert answer instead of a `:` value."_
-     (`LAST_N_DAYS:30` passes: a digit follows.)
-   - A banned word (decision 4) as a whole word, any case → _"`LIMIT` can't be used here — this box
-     takes only the conditions after WHERE."_ (the word named as typed).
-   - `{!` + `[A-Za-z0-9_]+` + `}` → a token. The text before it, trimmed, must end with
-     `<path> <op>` where path = `[A-Za-z_][A-Za-z0-9_.]*` and op is one of decision 3's. Otherwise
-     _"Put each answer right after a field and a comparison, like `Email = {Your email}`."_
-   - Any other `{` or `}` → _"Use Insert answer to add answers — braces can't be typed."_
+   - `$` → _"Values like $User can't be used here. Insert an answer instead."_
+   - `:` followed by a letter, `_`, `(` or whitespace → _"Use Insert answer instead of a : value."_
+   - a banned word (decision 8), whole word, any case → _"LIMIT can't be used here — this box takes
+     only the conditions after WHERE."_ (naming the word as typed)
+   - `{!` `[A-Za-z0-9_]+` `}` → a token; the trimmed text before it must end `<path> <op>`
+     (path `[A-Za-z_][A-Za-z0-9_.]*`, op from decision 7, case-insensitive `LIKE`), else
+     _"Put each answer right after a field and a comparison, like Email = {Your email}."_
+   - any other `{` or `}` → _"There's no question called "…". Use Insert answer."_ (the text
+     between the braces). This is how an unknown display name typed in the box (Task 11) is refused
+     at publish.
 4. Unclosed quote → _"A quoted value isn't closed."_
-5. Brackets that don't balance (outside quotes) → _"The brackets don't match."_
+5. Unbalanced brackets outside quotes → _"The brackets don't match."_
 
-- [ ] `FinalMappingSoqlTest`, one method per rule above, plus: two tokens get `m0` and `m1`; a token
-      inside quotes (`Name = '{!el_a}'`) stays literal text; `LAST_N_DAYS:30` passes;
-      `Name LIKE {!el_a}` gives fieldPath `Name`; `Account.Type = {!el_a}` gives `Account.Type`;
-      `Title = 'SELECT one'` passes (the word is inside quotes); `select` in any case is refused.
+- [ ] One test per rule, plus: two tokens → `m0`, `m1`; a token inside quotes stays text;
+      `LAST_N_DAYS:30` passes; `Name LIKE {!el_a}` → fieldPath `Name`, operator `LIKE`;
+      `Account.Type = {!el_a}` → `Account.Type`; `Title = 'SELECT one'` passes; `select` refused in
+      any case; `escapeLike` for `50%`, `a_b`, `c:\\x`.
 - [ ] Deploy; run.
 
-### Task 6: Publish checks the typed clause
+### Task 9: Publish checks the typed clause
 
 **Files:** `classes/FinalMappingValidator.cls`, `classes/FinalMappingValidatorTest.cls`
 
-In `checkMatch`, branch on `str(match.get('filterMode')) == 'soql'`:
+In `checkMatch`, when `filterMode == 'soql'` (rows branch skipped; any leftover rows ignored):
 
-1. `Parsed p = FinalMappingSoql.parse(str(match.get('soql')))`; `p.problem != null` → blocker
-   _"Step N (Contact)'s conditions: " + p.problem_. Stop.
-2. For each token: the question checks from Task 3's table (exists, not matrix/ranking/file, type
-   fits `fieldAt(object, fieldPath)`, skippable → warning). A `fieldPath` that doesn't resolve is
-   left to step 3, which names it in Salesforce's words.
-3. **Test-run as the author:**
+1. `parse`; a problem → blocker _"Step N (Contact)'s conditions: " + problem_. Stop.
+2. Per token: Task 6's question checks, with `LIKE` treated as `like` (text-like fields only).
+3. Test-run as the author:
 
 ```apex
 Map<String, Object> binds = new Map<String, Object>();
@@ -327,247 +421,232 @@ for (FinalMappingSoql.Token t : p.tokens) {
 }
 try {
     Database.queryWithBinds(
-        'SELECT Id FROM ' + d.getName() + ' WHERE ' + p.whereClause + ' LIMIT 0',
+        'SELECT Id FROM ' + d.getName() + ' WHERE ' + p.whereClause + ' LIMIT 0', // NOPMD — see Security Review note
         binds,
         AccessLevel.USER_MODE
     );
 } catch (Exception e) {
-    out.add(new Diagnostic(BLOCKER, id, null,
-        name + '’s conditions don’t run: ' + e.getMessage()));
+    out.add(new Diagnostic(BLOCKER, id, null, name + '’s conditions don’t run: ' + e.getMessage()));
 }
 ```
 
-`placeholderFor`: String/Email/Phone/URL/Picklist/TextArea → `'x'`, number types → `0`,
-Date → `Date.today()`, DateTime → `Datetime.now()`, Boolean → `false`, anything else `'x'`.
-`d.getName()` comes from describe, never from the spec. `LIMIT 0` returns no rows; `USER_MODE`
-means a field or object the author can't see is refused here, before it ever runs as system. 4. The rows branch is skipped in soql mode; rows in `match.filter` left over from before the switch
-are ignored (the screen clears them — Task 8 — but publish doesn't depend on that).
+`placeholderFor`: text-like/picklist → `'x'`; number types → `0`; Date → `Date.today()`;
+DateTime → `Datetime.now()`; Boolean → `false`; unresolved → `'x'` (the query then names the bad
+field). `d.getName()` comes from describe, never the spec.
 
-- [ ] Tests: each parse problem surfaces as a blocker; an unknown field
-      (`Nope__c = 'x'`) is a blocker quoting Salesforce; a token on a field its answer doesn't fit
-      is a blocker; a skippable token warns; a clean clause produces nothing; a clause on a field
-      the running user can't read (test user with a minimal permission set, fresh `runAs`) is a
-      blocker.
+- [ ] Tests: each parse problem is a blocker; `Nope__c = 'x'` is a blocker quoting Salesforce; an
+      unfitting or `Options` token is a blocker; `LIKE` on a number field is a blocker; skippable
+      token warns; a field the running user can't read (minimal permission set, fresh `runAs`) is a
+      blocker; a clean clause produces nothing.
 - [ ] Deploy; run validator + publish-warnings tests.
 
-### Task 7: The runtime runs the typed clause
+### Task 10: The runtime runs the typed clause
 
 **Files:** `classes/FinalMappingService.cls`, `classes/FinalMappingServiceTest.cls`
 
-In `findOne`, after the main match value is resolved:
+In `findOne`, when `filterMode == 'soql'`: parse (a problem → `StepException('its conditions can’t
+run: ' + problem)`); per token, `v = answerValue(answer, question, fieldAt(object, fieldPath))`;
+null → `StepException('the answer to "Q" was left blank, so no search was run.')`; if
+`operator == 'LIKE'`, `v = FinalMappingSoql.escapeLike(String.valueOf(v))`; `binds.put(bindName, v)`.
+The query is built as today (`… = :mappingMatchValue AND (<whereClause>) LIMIT 2`, `SYSTEM_MODE`,
+`// NOPMD`). Bind names `m*` can't collide with the compiler's `b*` or `mappingMatchValue`.
 
-```apex
-String whereClause;
-Map<String, Object> binds;
-if (match.get('filterMode') == 'soql') {
-    FinalMappingSoql.Parsed p = FinalMappingSoql.parse(String.valueOf(match.get('soql')));
-    if (p.problem != null) {
-        throw new StepException('its conditions can’t run: ' + p.problem);
-    }
-    binds = new Map<String, Object>();
-    for (FinalMappingSoql.Token t : p.tokens) {
-        Schema.DescribeFieldResult fd = FinalMappingRules.fieldAt(d.getName(), t.fieldPath);
-        Object v = fd == null ? null : FinalMappingRules.answerValue(
-            run.answers.get(t.elementId), run.questions.get(t.elementId), fd);
-        if (v == null) {
-            throw new StepException('the answer to "' + labelOf(run.questions.get(t.elementId)) +
-                '" was left blank, so no search was run.');
-        }
-        binds.put(t.bindName, v);
-    }
-    whereClause = p.whereClause;
-} else {
-    … today's compile path (with Task 2's answers map) …
-}
-binds.put('mappingMatchValue', matchValue);
-```
+`execute` gains `catch (QueryException e)` → `StepException(name + ': its search couldn’t run: ' +
+e.getMessage())`.
 
-The query string is built exactly as today (`SELECT Id … = :mappingMatchValue AND (…) LIMIT 2`,
-`SYSTEM_MODE`). Bind names `m0…` can't collide with the compiler's `b0…` or `mappingMatchValue`.
-
-Also in `execute`: add `catch (QueryException e)` → `StepException(name + ': its search couldn’t run: ' + e.getMessage())`
-— today a query error would reach `run()` without the step's name.
-
-- [ ] Tests: typed clause with one answer finds the right Contact; the same with a Choice answer
-      against a text field searches the **label** (decision 3); a skipped answer fails the step with
-      the "left blank" sentence and writes nothing; a clause that became invalid after publish
-      (hand-written spec naming a missing field) fails with "Step 1 (Contact): its search couldn't
-      run: …"; two matches still fail as ambiguous.
+- [ ] Tests: one-answer clause finds the right Contact; a Choice answer against a text field is
+      searched by its **label**; `Title LIKE {x}` with answer `50%` matches only `50%`, not `500`;
+      a skipped answer fails with "left blank" and writes nothing; a clause broken after publish
+      fails naming the step; two matches still fail as ambiguous.
 - [ ] Deploy; run `FinalMappingServiceTest`, `FinalMappingTriggerTest`.
 
-### Task 8: The box on screen
+### Task 11: The Write tab
 
-**Files:** `lwc/finalMappingSoql/*` (new), `lwc/finalMappingModel/*`, `lwc/finalMappingAction/*` (+ tests)
+**Files:** `lwc/finalMappingSoql/*`, `lwc/finalConditionsModal/*`, `lwc/finalMappingModel/*`,
+`lwc/finalLookupFilter/*`, `lwc/finalMappingAction/*` (+ tests)
+
+**finalMappingSoql** (`ms-`) — `@api value` (stored text), `@api questions`; emits `soqlchange`.
+
+- Exported pure functions: `displayNames(questions, storedText)` → `Map<id, name>` built per
+  decision 6 (including removed ids found in `storedText`); `toDisplay(stored, names)`;
+  `toStored(display, names)`. `toStored` swaps only exact `{name}` matches outside quotes;
+  anything else stays exactly as typed, so the parser refuses it at publish by name.
+- The names map is built **once per dialog open** and kept, so a question renamed mid-edit can't
+  shift it.
+- Native `<textarea class="ms-text">` (needs `selectionStart`), label "Conditions — the part after
+  WHERE", placeholder `LastName != null AND CreatedDate = LAST_N_DAYS:30`.
+- `lightning-combobox` **Insert answer**: mappable, non-`Options` questions; inserts `{name}` at the
+  cursor, then resets.
+- `@api get problems()`: blank, or any `{…}` outside quotes that isn't a known name →
+  "There's no question called "…". Use Insert answer." — the dialog's Save gate reads it.
+- Hint: _"Checked when you publish, as you. Put each answer right after a field and a comparison,
+  like Email = {Your email}."_
+
+**finalConditionsModal** — when `allowTyped`: tabs **Build conditions** / **Write the conditions**,
+starting on the saved mode. Leaving a tab whose content isn't empty asks via `LightningConfirm`:
+_"Switch to writing the conditions? The 2 conditions you built will be removed when you save."_ (and
+the mirror). Save returns `{ value, typed: { mode, soql } }` for the tab that is open; the other half
+is dropped **only on Save**.
 
 **finalMappingModel**
 
 ```js
-/** Either-or (D50). The other half is cleared, so a spec never carries both. */
-export function setFilterMode(spec, actionId, mode) {
+export function setFilterMode(spec, actionId, mode, soql) {
   return update(spec, actionId, (a) => {
     a.match = a.match || emptyMatch();
     if (mode === 'soql') {
       a.match.filterMode = 'soql';
-      a.match.soql = a.match.soql || '';
+      a.match.soql = soql || '';
       a.match.filter = { logic: 'all', rows: [] };
     } else {
       delete a.match.filterMode;
       delete a.match.soql;
-      a.match.filter = a.match.filter || { logic: 'all', rows: [] };
     }
   });
 }
-
-export function setSoql(spec, actionId, text) {
-  /* sets a.match.soql */
-}
 ```
 
-`actionState`: in soql mode the filter part is complete when `match.soql` is non-blank (the
-server judges the rest). `answerIndex`: tokens in `match.soql` count as `use: 'match'` so the answers
-index doesn't call them "Stored only".
+`actionState`: soql mode is complete when `match.soql` is non-blank. `answerIndex`: tokens in
+`match.soql` and `$field.` values in `match.filter.rows` (`value` and `values`) are recorded as
+`use: 'filter'`, so a question used only in a condition no longer shows "Stored only". The index
+labels `filter` as "used to narrow the search".
 
-**finalMappingSoql** (`ms-` classes)
+**finalLookupFilter / finalMappingAction** — `allowTyped` and `typedValue` flow to the summary;
+`conditionschange.typed` → `setFilterMode` + `setMatch({ filter })` in one emitted spec.
 
-- `@api value` (stored text with `{!id}`), `@api questions` (the same list the action has),
-  `@api readOnly`. Emits `soqlchange {value}` with stored text.
-- Displays `toDisplay(value)`: each `{!id}` outside quotes → `{Label}` (duplicates `{Label (2)}` in
-  form order; unknown id → `{removed question}`).
-- A native `<textarea class="ms-text">` (needs `selectionStart` for inserting at the cursor), label
-  "Conditions (the part after WHERE)", placeholder `LastName != null AND Title LIKE '%Manager%'`.
-- `lightning-combobox` "Insert answer": mappable questions; picking one inserts `{Label}` at the
-  cursor and resets the combobox.
-- On change: `toStored(text)`; any `{…}` outside quotes that isn't a known label → inline
-  `ms-problem` _"There's no question called "X". Use Insert answer."_ and **nothing is emitted**
-  until fixed (the box keeps the draft). Otherwise emit.
-- Hint under the box: _"Checked when you publish, as you. Answers are compared exactly as typed —
-  put each one right after a field, like `Email = {Your email}`."_
-- `toDisplay`/`toStored` are exported pure functions in the component's JS for jest.
-
-**finalMappingAction**
-
-- Above the filter: `lightning-radio-group` type button, options "Build with conditions" /
-  "Write the conditions", value from `match.filterMode`.
-- Switching when the side being left has content (rows present, or non-blank soql) asks first via
-  `LightningConfirm` (`lightning/confirm`): _"Switch to writing the conditions? The N conditions
-  you've built will be removed."_ / the mirror sentence. Cancel → radio snaps back.
-- Soql mode renders `<c-final-mapping-soql>`; rows mode renders the existing `c-final-lookup-filter`.
-- The "A filter is required…" note stays under both.
-
-- [ ] Jest: `toDisplay`/`toStored` round-trip incl. duplicate labels, quotes, removed questions;
-      unknown `{label}` shows the problem and doesn't emit; Insert answer inserts at the cursor;
-      mode switch with rows asks, cancel keeps rows, confirm clears them; `setFilterMode` clears the
-      other half; `actionState` soql complete/incomplete.
-- [ ] Deploy (Apex from Tasks 5–7 + LWCs); branch `feat/f2-typed-conditions`, PR, merge.
+- [ ] Jest: `displayNames` for labels `Name`, `Name`, `Name (2)` gives three distinct names that
+      each round-trip to their own id; two removed questions stay distinct; quotes untouched; an
+      unknown `{x}` is kept as typed and listed in `problems`; Insert answer at the cursor; tab switch
+      asks and Cancel keeps both; Save drops the other half; `answerIndex` for row and typed
+      references; `actionState` soql complete/incomplete.
+- [ ] Deploy (Tasks 8–11); branch `feat/f2-typed-conditions`, PR, merge.
 
 ---
 
-## S4 — The step reads as its branches
+## S5 — The step reads as its branches
 
-### Task 9: Layout, pre-fill, two small fixes
+### Task 12: Layout, pre-fill, small fixes
 
-**Files:** `lwc/finalMappingAction/*`, `lwc/finalMappingModel/*`, `lwc/finalRuleEditor/*` (+ tests)
-
-**Layout** (find or create):
+**Files:** `lwc/finalMappingAction/*`, `lwc/finalMappingModel/*` (+ tests)
 
 ```
 FIND AN EXISTING CONTACT
   Where [Email ▾]  matches the answer to [Your email ▾]
-  [Build with conditions | Write the conditions]
-  …rows or box…
+  Only where all 2 conditions are met            [Edit conditions]
   A filter is required. Searching every Contact in the org is refused when you publish.
 
 IF ONE IS FOUND
-  (unanswered)  the two choice cards, as today
-  (answered)    "Use it as-is. Nothing is written to it."  Change
-                or "Update the fields ticked 'Also update when found' below."  Change
+  (unanswered) the two choice cards, as today
+  (answered)   "Use it as-is. Nothing is written to it."  Change
+               "Update the fields ticked 'Also update when found' below."  Change
 
 IF NONE IS FOUND — CREATE A CONTACT WITH
   Field on Contact | Gets its value from | Also update when found (update mode only) | ×
 ```
 
-- `ma-branch` sections with `h3.ma-subhead` headings: "If one is found", and
-  "If none is found — create a {objectLabel} with". An "Always create" step shows one heading:
+- `ma-branch` sections, `h3.ma-subhead` headings. An Always create step shows only
   "Create a {objectLabel} with".
-- The overwrite column header becomes "Also update when found", so it reads as the one place the
-  table touches a found record.
-- Summaries lose "When one is found," (the heading says it).
-- Match-field row tag: "used to find the record — never overwritten" (lock icon stays).
-
-**Pre-fill (D52)** — in `finalMappingModel.setMatch`, after applying the patch:
+- Match-field row tag: "used to find the record — never overwritten".
+- **Pre-fill (decision 12)** in `finalMappingModel`:
 
 ```js
-const m = a.match;
-if (m.field && m.source && m.source.kind === 'answer') {
-  const row = a.fields.find((f) => f.field === m.field);
-  if (!row) {
-    a.fields.unshift({
-      field: m.field,
-      source: { ...m.source },
-      prefilled: true
-    });
-  } else if (row.prefilled && patch.source) {
-    row.source = { ...m.source }; // decision 11: follows while untouched
-  }
+export function setMatch(spec, actionId, patch) {
+  return update(spec, actionId, (a) => {
+    const fieldChanged = patch.field && patch.field !== (a.match || {}).field;
+    a.match = { ...(a.match || emptyMatch()), ...patch };
+    if (fieldChanged) {
+      // the old search field's untouched pre-fill goes; the author's own rows stay
+      a.fields = a.fields.filter(
+        (f) => !(f.prefilled && f.field !== a.match.field)
+      );
+      delete a.match.prefillDeclined;
+      const matched = a.fields.find((f) => f.field === a.match.field);
+      if (matched) delete matched.writeOnMatch;
+    }
+    if (!('field' in patch) && !('source' in patch)) return; // filter edits never pre-fill
+    const m = a.match;
+    if (
+      !m.field ||
+      !m.source ||
+      m.source.kind !== 'answer' ||
+      m.prefillDeclined
+    )
+      return;
+    const row = a.fields.find((f) => f.field === m.field);
+    if (!row)
+      a.fields.unshift({
+        field: m.field,
+        source: { ...m.source },
+        prefilled: true
+      });
+    else if (row.prefilled) row.source = { ...m.source };
+  });
 }
 ```
 
-`setFieldSource` deletes `prefilled` (the author has taken the row over). If `patch.field` changes
-to a different field, a still-`prefilled` row for the old field is removed; an edited one stays.
-`prefilled` is editor bookkeeping: the validator, writer and runtime ignore unknown keys, and
-`FinalMappingWriter`'s fence reads only `field` (checked).
+`setFieldSource` deletes `prefilled`. `removeField` sets `match.prefillDeclined = true` when the
+removed field is the search field. The writer's fence and the validator read only `field`,
+`source`, `writeOnMatch` (checked), so the new keys are inert at runtime.
 
-**`why` fix (decision 9)** — `why` is set only when `!entry.source` and the field isn't a lookup.
+- `why` (decision 13): set only when `!entry.source` and the field isn't a lookup.
 
-**Custom logic (decision 10)** — `finalRuleEditor`: `get logicProblem()` returns
-_"Check the logic: it names a condition that isn't there, or a bracket isn't closed."_ when
-`isCustomLogic` and `evaluateCustomLogic(customLogic, rules.map(() => true)) === null`; shown as
-`p.re-logic-problem` with `role="status"` under the expression box.
-
-- [ ] Jest: headings per operation; summaries; pre-fill added once, follows an untouched change,
-      stays after an edit, removed when the search field changes; `why` hidden once a source is
-      set; logic problem for `1 AND (2 OR 3)` over one rule and clear for `1`; every existing
-      `finalRuleEditor` visibility test still passes.
-- [ ] Deploy; then the uiux-flow-reviewer pass on the Data mode step before merging.
-- [ ] Branch `feat/f2-step-branches`, PR, merge.
+- [ ] Jest: headings per operation; summaries; pre-fill added on field+source, follows an untouched
+      source change, stays after an edit, **not re-added after deletion when a filter or the source
+      changes**, re-offered after the search field changes; `why` gone once a source is set.
+- [ ] Deploy; uiux-flow-reviewer pass; branch `feat/f2-step-branches`, PR, merge.
 
 ---
 
-## S5 — Org walkthrough
+## S6 — Org walkthrough
 
-### Task 10: As a guest, in `revclouddev`
+### Task 13: Signed in and as a guest, in `revclouddev`
 
-- [ ] Deploy everything; **publish the site**.
-- [ ] Reuse test form `a05hk000001aby9AAA` ("F2 Mapping QA (Claude)").
-  1. Step 1 find-or-create Contact by Email ← Work email. Expect the Email row pre-filled.
-     Rows mode: `Last Name equals` **the answer to** Your surname. Publish: one warning only if a
-     used question is optional.
-  2. Guest submits `walk2@example.com` / Walker twice → second reuses the first.
-  3. Guest submits a surname of `$User.Name` → a Contact with that literal surname is created
-     or found — never the guest user's name.
-  4. Switch step 1 to **Write the conditions**: confirm prompt appears; write
-     `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Publish clean.
-     Guest submit → found / created as expected.
-  5. Try `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x` → each is refused at
-     publish with its sentence.
-- [ ] Record results under "What actually shipped" in this doc; branch `docs/f2-search-shipped`.
+- [ ] Deploy all; **publish the site**.
+- [ ] Visibility: on a question, section and page, open the dialog, add two conditions, Save; Cancel
+      a third edit and confirm nothing changed; preview obeys the rules.
+- [ ] Lookup filter: add a condition in the dialog; the lookup still searches as before.
+- [ ] Mapping, test form `a05hk000001aby9AAA`:
+  1. Find-or-create Contact, Email ← Work email: the Email row appears pre-filled. Delete it, edit
+     the filter — it stays deleted.
+  2. Rows: `Last Name · Equals · An answer · Your surname`. Publish.
+  3. Guest submits twice with the same email → second reuses the first.
+  4. Guest surname `$User.Name` → a Contact with that literal surname; never the guest user's name.
+  5. Write tab: `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Switching asks first.
+     Publish clean; guest submit behaves.
+  6. `Title LIKE {Job title}` with answer `50%` matches only `50%`.
+  7. `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x`, `{Not a question}` → each
+     refused at publish with its sentence.
+- [ ] "What actually shipped" below; branch `docs/f2-search-shipped`.
 
 ## Orphan ledger
 
-- `FinalMappingService.resolvedFilter` changes its return type to the private `Resolved` class.
-  Its only caller is `findOne`.
-- `finalRuleEditor` gains `@api answerChoices` (default `null`) and a custom-logic hint. Visibility
-  rules and lookups render the same except the hint, which only appears on malformed logic.
-- `finalLookupFilter` gains `@api answerChoices` (default `null`); lookups don't pass it.
-- Spec actions may now carry `match.filterMode`, `match.soql` and `fields[].prefilled`. Every
-  published mapping without them behaves exactly as before.
+- `finalRuleEditor`: markup and CSS replaced; `@api forRecords` **removed** (only caller:
+  `finalLookupFilter`, switched to `columns`); new `@api columns`, `@api answerChoices`,
+  `@api get problems()`. Public event and value shapes unchanged.
+- `finalPropertyPanel` and `finalLookupFilter` stop embedding the editor directly; they embed
+  `finalConditionsSummary`.
+- `FinalMappingService.resolvedFilter` returns the private `Resolved`; only caller `findOne`.
+- New spec keys: `match.filterMode`, `match.soql`, `match.prefillDeclined`, `fields[].prefilled`.
+  Published mappings without them behave as before.
+- The legacy `visibilityEditor` is copied for technique only; it is not referenced or changed.
 - Nothing is deleted.
 
 ## Security Review note
 
-The typed clause is dynamic SOQL built from text an admin typed. The defence, to write up for the
-review: only a Form Builder admin can author it; it is parsed with a closed deny-list (no `;`, no
-binds, no sub-queries, no `$`, no clause keywords); it is test-run in `USER_MODE` at publish, so
-nothing the author can't see gets through; respondent input only ever enters as bind values; the
-object name comes from describe. Expect PMD `ApexSOQLInjection` on the two query sites — suppress
-them with a `// NOPMD` comment citing this section, not by weakening the rule.
+The typed clause is dynamic SOQL from text an admin typed. The defence: only a Form Builder admin
+authors it; it is parsed against a closed deny-list (no `;`, no binds, no sub-queries, no `$`, no
+clause keywords); it is test-run in `USER_MODE` at publish; respondent input only ever enters as
+bind values, LIKE-escaped where it matters; the object name comes from describe. The two query
+sites carry `// NOPMD` pointing here rather than weakening `ApexSOQLInjection`.
+
+## Plan review, round 1 — where each finding went
+
+| #   | Finding                                                    | Fixed in                                                                                                                                                                                   |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P1  | an invalid edit could leave the old clause to be published | the dialog holds a draft until Save (decision 1, Task 4); unknown `{names}` are saved as typed and refused by the parser (Tasks 8, 11) — the spec always equals what the author last saved |
+| P1  | the rule-editor change wasn't really opt-in                | `answerChoices = []`, every answer path gated on `answersOn` (Task 7)                                                                                                                      |
+| P2  | `LIKE` answers still acted as wildcards                    | tokens keep their comparison; `escapeLike` at runtime (decision 7, Tasks 8, 10)                                                                                                            |
+| P2  | display names could collide                                | collision-free names incl. removed questions, built once per open (decision 6, Task 11)                                                                                                    |
+| P2  | multi-select answers could appear under Equals             | `Options` excluded; operator + cardinality checked in picker, dialog and publish (decision 9, Tasks 6, 7)                                                                                  |
+| —   | pre-fill could undo a deletion                             | pre-fill only on field/source changes; `prefillDeclined` (decision 12, Task 12)                                                                                                            |
+| —   | the answers index missed filter references                 | `use: 'filter'` for rows and typed tokens (Task 11)                                                                                                                                        |
