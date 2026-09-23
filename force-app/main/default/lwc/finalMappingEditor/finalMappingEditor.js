@@ -2,6 +2,7 @@ import { LightningElement, api } from 'lwc';
 import listCreatableObjects from '@salesforce/apex/FinalMappingController.listCreatableObjects';
 import compatibility from '@salesforce/apex/FinalMappingController.compatibility';
 import describeQuestions from '@salesforce/apex/FinalMappingController.describeQuestions';
+import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import {
     MAX_STEPS,
     actionsOf,
@@ -16,11 +17,16 @@ const STATE_TEXT = {
     broken: 'Points at a missing step'
 };
 
-/** What this answer does on that record, in the author's words. */
-function describeUse(use) {
+/** What this answer does on that record, in the author's words — the
+ *  field's label, never its API name. */
+function describeUse(use, fieldLabel) {
     if (use.use === 'match') return 'used to find the record';
-    if (use.use === 'link') return `linked as ${use.field}`;
-    return use.field;
+    if (use.use === 'link') return `linked as ${fieldLabel}`;
+    return fieldLabel;
+}
+
+function plural(n, word) {
+    return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
 /**
@@ -42,6 +48,9 @@ export default class FinalMappingEditor extends LightningElement {
     _spec;
     _questionsFor;
     _dragFrom = null;
+    /** objectApi -> { apiName: label }, for the answers index. */
+    fieldLabels = {};
+    _labelsLoading = new Set();
 
     @api
     get spec() {
@@ -50,6 +59,40 @@ export default class FinalMappingEditor extends LightningElement {
     set spec(value) {
         this._spec = value;
         this._loadQuestions();
+        this._loadFieldLabels();
+    }
+
+    /** One describe per object the mapping uses, remembered. */
+    _loadFieldLabels() {
+        const needed = new Set(actionsOf(this._spec).map((a) => a.object));
+        needed.forEach((objectApi) => {
+            if (
+                !objectApi ||
+                this.fieldLabels[objectApi] ||
+                this._labelsLoading.has(objectApi)
+            ) {
+                return;
+            }
+            this._labelsLoading.add(objectApi);
+            Promise.resolve()
+                .then(() => describeFields({ objectApi }))
+                .then((rows) => {
+                    const labels = {};
+                    (rows || []).forEach((r) => {
+                        labels[r.apiName] = r.label;
+                    });
+                    this.fieldLabels = {
+                        ...this.fieldLabels,
+                        [objectApi]: labels
+                    };
+                })
+                .catch(() => {
+                    // Falls back to the API name; nothing else depends on it.
+                })
+                .finally(() => {
+                    this._labelsLoading.delete(objectApi);
+                });
+        });
     }
 
     /**
@@ -113,7 +156,7 @@ export default class FinalMappingEditor extends LightningElement {
                 id: a.id,
                 index: i,
                 title: `${i + 1}  ${labels.get(a.object) || a.object}`,
-                detail: `${a.operation === 'findOrCreate' ? 'Find or create' : 'Create'} · ${(a.fields || []).length} fields`,
+                detail: `${a.operation === 'findOrCreate' ? 'Find or create' : 'Create'} · ${plural((a.fields || []).length, 'field')}`,
                 stateText: STATE_TEXT[state] || '',
                 cls: `me-card${selected ? ' me-card--on' : ''}${state !== 'ok' ? ' me-card--warn' : ''}`,
                 ariaCurrent: selected ? 'true' : 'false',
@@ -157,7 +200,12 @@ export default class FinalMappingEditor extends LightningElement {
                     ? uses
                           .map(
                               (u) =>
-                                  `${labels.get(u.object) || u.object} · ${describeUse(u)}`
+                                  `${labels.get(u.object) || u.object} · ${describeUse(
+                                      u,
+                                      (this.fieldLabels[u.object] || {})[
+                                          u.field
+                                      ] || u.field
+                                  )}`
                           )
                           .join(', ')
                     : 'Stored only',

@@ -160,6 +160,21 @@ describe('finalMappingModel', () => {
         expect(actionState(actionsOf(spec), 0)).toBe('ok');
     });
 
+    it('a filter row still waiting for its value is unfinished', () => {
+        let { spec, actionId } = addAction(base(), 'Contact', 'findOrCreate');
+        spec = setMatch(spec, actionId, {
+            field: 'Email',
+            source: answer('el_e'),
+            filter: {
+                logic: 'all',
+                rows: [{ fieldPath: 'Id', operator: 'eq', value: '' }]
+            }
+        });
+        spec = setFieldSource(spec, actionId, 'LastName', answer('el_l'));
+        spec = setOnMatch(spec, actionId, 'reuse');
+        expect(actionState(actionsOf(spec), 0)).toBe('incomplete');
+    });
+
     it('a field with no source picked yet is unfinished, not fine', () => {
         const created = addAction(base(), 'Contact', 'create');
         // exactly what "Add a field" leaves behind

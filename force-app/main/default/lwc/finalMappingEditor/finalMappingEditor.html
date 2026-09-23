@@ -53,18 +53,17 @@
 
             <template lwc:if={adding}>
                 <div class="me-add">
-                    <lightning-combobox
+                    <c-final-object-picker
                         label="Object"
-                        placeholder="Choose an object"
-                        options={objectOptions}
+                        placeholder="Search objects"
+                        objects={objectOptions}
                         value={newObject}
-                        onchange={handleObjectPick}
-                    ></lightning-combobox>
+                        onpick={handleObjectPick}
+                    ></c-final-object-picker>
                     <lightning-radio-group
                         label="What this step does"
                         options={operationOptions}
                         value={newOperation}
-                        type="button"
                         onchange={handleOperationPick}
                     ></lightning-radio-group>
                     <div class="me-add-buttons">

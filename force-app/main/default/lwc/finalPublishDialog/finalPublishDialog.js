@@ -88,9 +88,17 @@ export default class FinalPublishDialog extends LightningModal {
         return `${count} things to know before publishing`;
     }
 
-    /** The affirmative names the act, not "OK" — it is not a dismissal. */
+    /** The affirmative names the act, not "OK" — it is not a dismissal.
+     *  "Anyway" only when there is something to publish past. */
     get confirmLabel() {
-        return this.hasWarnings ? 'Publish anyway' : 'Publish';
+        return this.hasWarnings && !this.hasBlockers
+            ? 'Publish anyway'
+            : 'Publish';
+    }
+
+    /** Nothing reaches the live form while something blocks the publish. */
+    get showLiveNote() {
+        return !this.hasBlockers;
     }
 
     handlePublish() {

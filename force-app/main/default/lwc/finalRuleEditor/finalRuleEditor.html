@@ -2,22 +2,24 @@
     <div class="re">
         <template lwc:if={hasRules}>
             <div class="re-head">
-                <select
-                    class="re-select re-action"
-                    aria-label="Show or hide"
-                    onchange={handleAction}
-                >
-                    <template for:each={actionOptions} for:item="o">
-                        <option
-                            key={o.value}
-                            value={o.value}
-                            selected={o.selected}
-                        >
-                            {o.label}
-                        </option>
-                    </template>
-                </select>
-                <span class="re-when">this {noun} when</span>
+                <template lwc:if={showAction}>
+                    <select
+                        class="re-select re-action"
+                        aria-label="Show or hide"
+                        onchange={handleAction}
+                    >
+                        <template for:each={actionOptions} for:item="o">
+                            <option
+                                key={o.value}
+                                value={o.value}
+                                selected={o.selected}
+                            >
+                                {o.label}
+                            </option>
+                        </template>
+                    </select>
+                </template>
+                <span class="re-when">{whenText}</span>
                 <select
                     class="re-select re-logic"
                     aria-label="Rule logic"

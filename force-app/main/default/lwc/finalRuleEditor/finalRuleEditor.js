@@ -145,6 +145,23 @@ export default class FinalRuleEditor extends LightningElement {
     /** What the rules govern, for copy: "field" | "section" | "page". */
     @api noun = 'field';
 
+    /**
+     * The rows choose RECORDS, not whether a question shows. Used by the
+     * Freeform mapping search: the Show/Hide choice means nothing there and
+     * is hidden, and the wording talks about which records are searched.
+     */
+    @api forRecords = false;
+
+    get showAction() {
+        return !this.forRecords;
+    }
+
+    get whenText() {
+        return this.forRecords
+            ? 'Only search records where'
+            : `this ${this.noun} when`;
+    }
+
     get hasRules() {
         return Boolean(
             this.value &&
@@ -154,6 +171,9 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     get emptyHint() {
+        if (this.forRecords) {
+            return 'No conditions yet. Add one to narrow which records are searched.';
+        }
         return `Always visible. Add a rule to show or hide this ${this.noun} based on another answer.`;
     }
 
@@ -254,7 +274,9 @@ export default class FinalRuleEditor extends LightningElement {
                 const found = extra.find((o) => o.value === v);
                 return found ? found.label : OPERATOR_LABELS.get(v);
             };
-            let operatorOptions = (allowed || OPERATOR_OPTIONS.map((o) => o.value))
+            let operatorOptions = (
+                allowed || OPERATOR_OPTIONS.map((o) => o.value)
+            )
                 .concat(extra.map((o) => o.value))
                 .map((v) => ({
                     value: v,

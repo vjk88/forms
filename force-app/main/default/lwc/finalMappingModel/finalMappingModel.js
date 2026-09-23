@@ -234,6 +234,20 @@ function sourceUsable(source, earlier) {
     return false;
 }
 
+const NO_VALUE_OPS = new Set(['isBlank', 'isNotBlank']);
+const MULTI_VALUE_OPS = new Set(['in', 'nin', 'includes', 'excludes']);
+
+/** A condition with a field, an operator and — unless the operator needs
+ *  none — a value. The same test publish applies, as a hint. */
+function filterRowComplete(row) {
+    if (!row || !row.fieldPath || !row.operator) return false;
+    if (NO_VALUE_OPS.has(row.operator)) return true;
+    if (MULTI_VALUE_OPS.has(row.operator)) {
+        return Array.isArray(row.values) && row.values.length > 0;
+    }
+    return row.value !== null && row.value !== undefined && row.value !== '';
+}
+
 export function actionState(actions, index) {
     const a = actions[index];
     if (!a) return 'broken';
@@ -259,7 +273,8 @@ export function actionState(actions, index) {
             !m.field ||
             !sourceUsable(m.source, earlier) ||
             !m.onMatch ||
-            !(m.filter && (m.filter.rows || []).length)
+            !(m.filter && (m.filter.rows || []).length) ||
+            !m.filter.rows.every(filterRowComplete)
         ) {
             return 'incomplete';
         }
