@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Mapping_Message__c</fullName>
+    <description
+    >Why the last mapping run failed, written for the admin who has to fix it: which step, which field, what Salesforce said. Empty after a run that succeeded. An uncaught failure writes nothing here - its reason is in Setup, Apex Jobs.</description>
+    <label>Mapping Message</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

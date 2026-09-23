@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Mapping_Status__c</fullName>
+    <description
+    >Where this submission's mapping run stands (FREEFORM_F2_MAPPING_SPEC 6.2). Set by the trigger on insert, by the mapping service after a run, and by an admin to Ready for Retry. There is no Running value: the status change and the work happen in one transaction, so it could never be seen. This field is the duplicate guard, checked under a row lock.</description>
+    <inlineHelpText
+    >Queued runs once, automatically. Failed shows why below. Set Ready for Retry to run it again.</inlineHelpText>
+    <label>Mapping Status</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Not needed</fullName>
+                <default>false</default>
+                <label>Not needed</label>
+            </value>
+            <value>
+                <fullName>Queued</fullName>
+                <default>false</default>
+                <label>Queued</label>
+            </value>
+            <value>
+                <fullName>Done</fullName>
+                <default>false</default>
+                <label>Done</label>
+            </value>
+            <value>
+                <fullName>Failed</fullName>
+                <default>false</default>
+                <label>Failed</label>
+            </value>
+            <value>
+                <fullName>Ready for Retry</fullName>
+                <default>false</default>
+                <label>Ready for Retry</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
