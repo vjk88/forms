@@ -8747,6 +8747,45 @@ on a `docs/f2-shipped` branch, PR, merge.
 
 ---
 
+## What actually shipped
+
+| Piece | What | PR |
+| --- | --- | --- |
+| M1 | Five status fields, the retry custom permission, permission set grants (admin set gains edit on submissions) | #318 |
+| M2 | `FinalMappingRules`, `FinalMappingValidator` inside `publishSpec`, blockers in the publish dialog, guest projection strips `mapping`, public `FinalLookupService.fieldAt` | #319 |
+| M6 | The trigger, the background job, `FinalMappingService`, `FinalMappingWriter` — capacity measured, never assumed | #320 |
+| M3–M5 | Data mode, the Mapping page, the step editor, find or create, filter-only conditions — built as one PR at the owner's request | #321 |
+| — | Six rough edges found while clicking through: searchable object picker (`c/finalObjectPicker`), record-search wording (`finalRuleEditor.forRecords`), labels in the answers index, "1 field", empty filter rows, radio layout, blocked-dialog copy | #322 |
+| M7 | **Not built.** The record-page status and Retry button are deferred by the owner | — |
+
+**Org walkthrough, 2026-09-23 (revclouddev), without Retry at the owner's request.** Test form
+`a05hk000001aby9AAA` ("F2 Mapping QA (Claude)"), public, published as v3 through the Studio. Its
+mapping: step 1 finds or creates a Contact by email (reuse, filter `LastName is not blank`), filling
+Last Name, Email and Title — Title from a choice question; step 2 creates an "Assistant (F2 QA)"
+Contact reporting to step 1's record.
+
+| # | Anonymous visitor submitted | Result |
+| --- | --- | --- |
+| 1 | Walker, `f2.walk.0923@example.com`, "Second choice" | Contact Walker created with Title **"Second choice"** (the label, not `option-2`); Assistant created reporting to Walker. Both created by the Site Guest User; job Completed, 0 errors |
+| 2 | "Changed", same email, "Third choice" | Walker found and **left untouched** (name and title unchanged); a second Assistant reporting to the **same** Walker |
+| 3 | Same email after a second Contact with it was added by hand | Answers saved (FS-00000408), visitor saw only the thank-you; **nothing written** — the ambiguous match refused to guess |
+
+Also proven: the guest page's spec response carries **no `mapping`** (no step ids, fields or filter);
+the visitor never sees a record id or match result; and **a site guest can start the background
+job** — the one question the design left open.
+
+Not checked, and why:
+
+- Mapping Status / Message values were inferred, not read: the admin user running the checks holds
+  neither Freeform permission set, so the new fields are invisible to it — which is the permission
+  model working. Assign `Freeform_Submission_Admin` to see them.
+- Duplicate rules (step 6) changes org configuration; left for the owner.
+- Retry (steps 5 and 7) — deferred with M7.
+
+Test records left in the org by request of nobody but kept for the owner to look at: Contacts
+`003hk000002SaYsAAK` (Walker), `003hk000002SaYtAAK` and `003hk000002SdjdAAC` (Assistant (F2 QA)),
+`003hk000002SXZOAA4` (Duplicate Walker (F2 QA)); submissions FS-00000406 to FS-00000408.
+
 ## Spec coverage
 
 | Spec requirement                                        | Task      |
