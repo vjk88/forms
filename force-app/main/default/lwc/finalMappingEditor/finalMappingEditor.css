@@ -1,0 +1,141 @@
+:host {
+    display: block;
+    flex-grow: 1;
+    min-height: 0;
+}
+.me-grid {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr) 20rem;
+    gap: 1rem;
+    padding: 1rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+.me-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #e3e3e3;
+    border-radius: 0.5rem;
+    padding: 0.875rem;
+}
+.me-heading {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.025rem;
+    text-transform: uppercase;
+    color: #6b6b6b;
+}
+.me-note,
+.me-footer {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #6b6b6b;
+}
+.me-footer {
+    margin-top: auto;
+    padding-top: 0.625rem;
+    border-top: 1px solid #e3e3e3;
+}
+.me-card {
+    display: flex;
+    align-items: flex-start;
+    border: 1px solid #e3e3e3;
+    border-radius: 0.375rem;
+}
+.me-card--on {
+    background: #eaf3fb;
+    border-color: #0b5cab;
+}
+.me-card--warn {
+    border-color: #f0c894;
+}
+.me-card-main {
+    flex-grow: 1;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 0.625rem 0.75rem;
+    cursor: pointer;
+}
+.me-card-title {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+.me-card-detail {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: #6b6b6b;
+}
+.me-card-state {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    color: #8a5300;
+}
+.me-card-moves {
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem;
+}
+.me-add-start {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    background: transparent;
+    border: 1px dashed #cfcfcf;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    color: #0b5cab;
+    cursor: pointer;
+}
+.me-add {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.625rem;
+    border: 1px solid #e3e3e3;
+    border-radius: 0.375rem;
+}
+.me-add-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+.me-empty {
+    margin: auto;
+    max-width: 26rem;
+    text-align: center;
+    color: #444;
+}
+.me-empty-title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+.me-index-row {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0.125rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.me-index-label {
+    font-size: 0.8125rem;
+}
+.me-index-where {
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: #6b6b6b;
+}
+.me-index-where--mapped {
+    color: #0b5cab;
+}

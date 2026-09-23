@@ -492,6 +492,24 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.mode === 'design';
     }
 
+    get isData() {
+        return this.mode === 'data';
+    }
+
+    /** Data mode is Freeform-only in F2; Form and Survey gain it when
+     *  Autofill moves in (FREEFORM_F2_MAPPING_SPEC D30). */
+    get showDataMode() {
+        return this.isFreeform;
+    }
+
+    get dataClass() {
+        return this.mode === 'data' ? 'st-mode on' : 'st-mode';
+    }
+
+    get isDataPressed() {
+        return String(this.mode === 'data');
+    }
+
     get availability() {
         return this.spec?.settings?.availability || {};
     }
@@ -631,6 +649,15 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         if (this.mode !== 'design') this.capturePreviewSession();
         this.mode = 'design';
+        this.settingsMenuOpen = false;
+    }
+
+    handleModeData() {
+        if (this.isReadOnly) {
+            return;
+        }
+        if (this.mode !== 'data') this.capturePreviewSession();
+        this.mode = 'data';
         this.settingsMenuOpen = false;
     }
 

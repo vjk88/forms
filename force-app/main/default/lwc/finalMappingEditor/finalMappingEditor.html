@@ -1,0 +1,149 @@
+<template>
+    <div class="me-grid">
+        <section class="me-col me-steps" aria-label="Records created">
+            <h2 class="me-heading">Records created</h2>
+            <p class="me-note">
+                In this order. A record can only point at one created before it.
+            </p>
+            <template for:each={cards} for:item="card">
+                <div
+                    key={card.id}
+                    class={card.cls}
+                    draggable={card.draggable}
+                    data-index={card.index}
+                    ondragstart={handleDragStart}
+                    ondragover={handleDragOver}
+                    ondrop={handleDrop}
+                >
+                    <button
+                        type="button"
+                        class="me-card-main"
+                        data-id={card.id}
+                        aria-current={card.ariaCurrent}
+                        onclick={handleSelect}
+                    >
+                        <span class="me-card-title">{card.title}</span>
+                        <span class="me-card-detail">{card.detail}</span>
+                        <template lwc:if={card.stateText}>
+                            <span class="me-card-state">{card.stateText}</span>
+                        </template>
+                    </button>
+                    <span class="me-card-moves">
+                        <lightning-button-icon
+                            icon-name="utility:up"
+                            variant="bare"
+                            size="small"
+                            alternative-text="Move up"
+                            data-index={card.index}
+                            disabled={card.upDisabled}
+                            onclick={handleMoveUp}
+                        ></lightning-button-icon>
+                        <lightning-button-icon
+                            icon-name="utility:down"
+                            variant="bare"
+                            size="small"
+                            alternative-text="Move down"
+                            data-index={card.index}
+                            disabled={card.downDisabled}
+                            onclick={handleMoveDown}
+                        ></lightning-button-icon>
+                    </span>
+                </div>
+            </template>
+
+            <template lwc:if={adding}>
+                <div class="me-add">
+                    <lightning-combobox
+                        label="Object"
+                        placeholder="Choose an object"
+                        options={objectOptions}
+                        value={newObject}
+                        onchange={handleObjectPick}
+                    ></lightning-combobox>
+                    <lightning-radio-group
+                        label="What this step does"
+                        options={operationOptions}
+                        value={newOperation}
+                        type="button"
+                        onchange={handleOperationPick}
+                    ></lightning-radio-group>
+                    <div class="me-add-buttons">
+                        <lightning-button
+                            label="Cancel"
+                            onclick={handleCancelAdd}
+                        ></lightning-button>
+                        <lightning-button
+                            label="Add record"
+                            variant="brand"
+                            disabled={addDisabled}
+                            onclick={handleAdd}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </template>
+            <template lwc:elseif={atCap}>
+                <p class="me-note">A form can create at most 10 records.</p>
+            </template>
+            <template lwc:else>
+                <button
+                    type="button"
+                    class="me-add-start"
+                    disabled={readOnly}
+                    onclick={handleStartAdd}
+                >
+                    <lightning-icon
+                        icon-name="utility:add"
+                        size="x-small"
+                    ></lightning-icon>
+                    Add a record
+                </button>
+            </template>
+
+            <p class="me-footer">
+                If any step fails, none of the records are created. The answers
+                are always kept.
+            </p>
+        </section>
+
+        <section class="me-col me-detail" aria-label="Selected record">
+            <template lwc:if={hasActions}>
+                <c-final-mapping-action
+                    spec={spec}
+                    action-id={selectedIdOrFirst}
+                    objects={objects}
+                    questions={questions}
+                    compatibility={compat}
+                    read-only={readOnly}
+                    is-public={isPublic}
+                    onspecchange={handleActionChange}
+                    onactionremoved={handleActionRemoved}
+                ></c-final-mapping-action>
+            </template>
+            <template lwc:else>
+                <div class="me-empty">
+                    <h2 class="me-empty-title">
+                        Send answers to Salesforce records
+                    </h2>
+                    <p>
+                        Add a record, then choose which answer fills each of its
+                        fields. Answers are stored either way.
+                    </p>
+                </div>
+            </template>
+        </section>
+
+        <section class="me-col me-index" aria-label="Answers">
+            <h2 class="me-heading">Answers</h2>
+            <template for:each={indexRows} for:item="row">
+                <div key={row.key} class="me-index-row">
+                    <span class="me-index-label">{row.label}</span>
+                    <span class={row.cls}>{row.where}</span>
+                </div>
+            </template>
+            <p class="me-footer">
+                Every answer is stored and readable on the submission, whether
+                or not it reaches a record.
+            </p>
+        </section>
+    </div>
+</template>
