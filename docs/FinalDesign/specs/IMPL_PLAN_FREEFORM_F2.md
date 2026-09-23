@@ -89,6 +89,10 @@ with this plan. Where they differ, this plan's "Decisions" section says why.
    `c/finalLookupFilter`, which also carries result-display fields, searchable fields and a
    guest-search switch — none of which a mapping saves. A permission-shaped switch that does nothing
    is worse than no switch. Lookups keep all of it; filter-only is opt-in.
+10. **Task and Event can't be mapped to at all (owner ruling, spec D48).** Their "Name" and
+    "Related To" fields can each point at several kinds of record, which the source picker can't
+    offer, so a Task could never be linked to what the form just created. They're left out of the
+    object list and refused at publish.
 
 The full compatibility table (decision 7):
 
@@ -446,7 +450,7 @@ Push, open the PR, merge (end the PR body with the attribution line).
 - Produces (used by every later Apex task):
   - constants `MAX_STEPS`, `OP_CREATE`, `OP_FIND_OR_CREATE`, `ON_MATCH_REUSE`, `ON_MATCH_UPDATE`,
     `STATUS_NOT_NEEDED`, `STATUS_QUEUED`, `STATUS_DONE`, `STATUS_FAILED`, `STATUS_READY_FOR_RETRY`,
-    `Set<String> RUNNABLE`, `Set<String> RETRYABLE`, `Set<String> SETUP_OBJECTS` (lower case),
+    `Set<String> RUNNABLE`, `Set<String> RETRYABLE`, `Set<String> SETUP_OBJECTS` (lower case), `Set<String> UNSUPPORTED_OBJECTS` (lower case: task, event),
     `Set<String> UNMAPPABLE_ELEMENT_TYPES`, `Map<String, Set<Schema.DisplayType>> COMPATIBLE`
   - `Boolean isCompatible(String answerType, Schema.DisplayType t)`
   - `Boolean isTextLike(Schema.DisplayType t)`
@@ -1028,6 +1032,16 @@ public with sharing class FinalMappingRules {
     'userpackagelicense',
     'userrole',
     'userterritory2association'
+  };
+
+  /**
+   * Objects a mapping can't write to by owner ruling (spec D48). Task and
+   * Event link to other records through fields that can point at several
+   * kinds of record, and the mapping can't offer those. Lower case.
+   */
+  public static final Set<String> UNSUPPORTED_OBJECTS = new Set<String>{
+    'task',
+    'event'
   };
 
   /**
@@ -1615,6 +1629,21 @@ private class FinalMappingValidatorTest {
   }
 
   @IsTest
+  static void taskAndEventBlock() {
+    for (String objectApi : new List<String>{ 'Task', 'Event' }) {
+      Map<String, Object> action = FinalMappingTestData.createContact('act_a');
+      action.put('object', objectApi);
+      Assert.isTrue(
+        anyContains(
+          blockers(check(new List<Object>{ action })),
+          'forms can’t create'
+        ),
+        objectApi + ' must be refused'
+      );
+    }
+  }
+
+  @IsTest
   static void aMissingFilterBlocks() {
     Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
       'act_a',
@@ -1996,6 +2025,19 @@ public with sharing class FinalMappingValidator {
             ': Salesforce can’t write ' +
             d.getLabelPlural() +
             ' together with ordinary records.'
+        )
+      );
+      return;
+    }
+    if (
+      FinalMappingRules.UNSUPPORTED_OBJECTS.contains(d.getName().toLowerCase())
+    ) {
+      out.add(
+        new Diagnostic(
+          BLOCKER,
+          id,
+          null,
+          name + ': forms can’t create ' + d.getLabelPlural() + '.'
         )
       );
       return;
@@ -2627,7 +2669,7 @@ sf project deploy start --target-org revclouddev --source-dir force-app/main/def
 sf apex run test --target-org revclouddev --class-names FinalMappingValidatorTest --result-format human --wait 10
 ```
 
-Expected: 14 pass. If `aRequiredFieldWithNoSourceBlocks` fails on the label, run
+Expected: 15 pass. If `aRequiredFieldWithNoSourceBlocks` fails on the label, run
 `System.debug(Contact.LastName.getDescribe().getLabel())` in anonymous Apex and use the org's label in
 the assertion — orgs can relabel standard fields.
 
@@ -6035,6 +6077,8 @@ private class FinalMappingControllerTest {
       names.contains('User'),
       'a setup object would fail every run'
     );
+    Assert.isFalse(names.contains('Task'), 'not supported (D48)');
+    Assert.isFalse(names.contains('Event'), 'not supported (D48)');
   }
 
   @IsTest
@@ -6127,7 +6171,8 @@ public with sharing class FinalMappingController {
           !d.isDeprecatedAndHidden() &&
           !d.isCustomSetting() &&
           !FinalFormCreateController.isSystemTable(d.getName()) &&
-          !FinalMappingRules.SETUP_OBJECTS.contains(d.getName().toLowerCase())
+          !FinalMappingRules.SETUP_OBJECTS.contains(d.getName().toLowerCase()) &&
+          !FinalMappingRules.UNSUPPORTED_OBJECTS.contains(d.getName().toLowerCase())
         ) {
           out.add(
             new Map<String, String>{

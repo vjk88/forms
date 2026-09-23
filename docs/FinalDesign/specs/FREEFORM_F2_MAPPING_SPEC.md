@@ -2,7 +2,7 @@
 
 > **Status: DESIGN APPROVED, revised after review, no code written.** Approved section by section on
 > 2026-09-20 (D29–D37); a review round on 2026-09-21 found seven real problems and the owner ruled on
-> each (D38–D47). This document is the design as it now stands. It is not a build plan — the
+> each (D38–D48). This document is the design as it now stands. It is not a build plan — the
 > implementation plan comes next and lives in its own document.
 >
 > F2 is the reason Freeform exists — [FREEFORM_SPEC.md §1](./FREEFORM_SPEC.md). F1 shipped the
@@ -23,7 +23,7 @@
 ## 1. What F2 is
 
 One person fills in one form. The org gets an Account, a Contact linked to it, a Partner Application
-linked to both, and a follow-up Task. That is the whole feature.
+linked to both. That is the whole feature.
 
 Everything else in this document exists to make that safe: safe for the author who configures it,
 safe for the org whose data it writes, and safe for the respondent who never sees any of it.
@@ -37,7 +37,7 @@ FREEFORM_SPEC F2 contract 2.
 ## 2. Decision ledger (owner rulings)
 
 Numbering continues FREEFORM_SPEC's ledger, which ends at D28. D29–D37 come from the design session of
-2026-09-20; D38–D47 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
+2026-09-20; D38–D48 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
 both rows stay and the earlier row says so.
 
 | #   | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Date       |
@@ -61,6 +61,7 @@ both rows stay and the earlier row says so.
 | D45 | **Keeping the match answer and the saved field value in step is the author's job, for now.** Nothing stops an author searching on one question and saving another into the same field. Tabled — DEFERRED #33                                                                                                                                                                                                                                                                                                                                                       | 2026-09-21 |
 | D46 | **Background-job capacity is measured, not assumed.** The trigger computes `Limits.getLimitQueueableJobs() - Limits.getQueueableJobs()` at the moment it queues, and every refusal states that real number — never a fixed 50. Other automation in the same transaction may already have used capacity, so even a single guest submission can find none left. **New submissions are never refused:** any that do not fit are saved as Failed, so the answers survive and Retry picks them up — refusing would roll back the respondent's answers (owner confirmed) | 2026-09-21 |
 | D47 | **A form may have at most 10 mapping steps.** Every step's writes, plus whatever triggers, flows and validation rules the org runs on those objects, share one set of limits inside a single job; ten leaves room for the org's own automation. An eleventh step is a publish blocker                                                                                                                                                                                                                                                                              | 2026-09-21 |
+| D48 | **Task and Event are not supported as mapping targets.** Their "Name" and "Related To" fields can each point at several kinds of record, so a Task could never be linked to what the form just created. Rather than build for that, they are left out of the object list and refused at publish                                                                                                                                                                                                                                                                    | 2026-09-22 |
 
 ## 3. Where it lives — Data mode (D29)
 
@@ -405,6 +406,7 @@ it, which is why the refusal lives in `publishSpec`.
 - a `recordRef` naming a later action, or one that no longer exists
 - an answer whose `Answer_Type__c` cannot survive the trip to the destination field type
 - a Choice source whose stored values are not in the destination picklist's value set
+- an action on Task or Event (D48)
 - an action on a setup object (User, Group, permission assignments and the like) — Salesforce refuses
   to write those in the same transaction as ordinary records
 - more than 10 steps (D47)
@@ -500,6 +502,7 @@ proven against a real org configuration.
 - **Keeping the match answer and the saved value in step** — the author's job for now (D45),
   DEFERRED #33.
 - **Preventing duplicates across submissions** — the org's duplicate rules do that (D40).
+- **Task and Event** as mapping targets (D48).
 - **Automatic retry** of any kind (D42).
 - **Recording uncaught failures on the submission** — they are left to Setup → Apex Jobs (D43).
 - **Platform events** — background jobs only (D41).
