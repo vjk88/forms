@@ -147,8 +147,14 @@ spec, since they are not mapping-only.
     Lookups that can point at several kinds of record (Task's Related To) are skipped, as today.
     _Supersedes rev 2's "own fields only" (owner reversed it after seeing the Form Designer)._
 15. **Current user (D55).**
-    - **Fields:** every User field the author can read, plus two named extras, **Profile name**
+    - **Fields:** every User field the author can **read**, plus two named extras, **Profile name**
       (`Profile.Name`) and **Role name** (`UserRole.Name`). Listed as "Current user › Title".
+      Described with `FinalLookupController.describeLookupFields('User', null)` — read-access based
+      (`isAccessible`), with types. **Not** `FinalStudioController.describeFields`: that one refuses
+      an object the author can't create and drops non-creatable fields, which is most of User.
+      (`describeLookupFields` lists filterable fields only, so long text areas aren't offered — a
+      rule comparing a long text area is rare, and the same list serves lookup filters, where
+      filterable is required.)
     - **Visibility — in the browser.** Stored as `user:<path>` (`user:Profile.Name`,
       `user:Department`). The viewer collects every `user:` path in the spec; if there are any and
       the viewer isn't a guest, it reads them **once** with
@@ -156,9 +162,16 @@ spec, since they are not mapping-only.
       (`userWireId` stays `undefined` — the wire stays idle — when the form has no user rules).
       `optionalFields`, so a field this user can't read comes back missing and counts as blank
       instead of failing the whole read. Role is blank for users with no role.
-    - **Guests:** `@salesforce/user/isGuest` → no read at all; every user value is blank. The rule
-      editor says so under a user row on a public form: _"People who aren't signed in have no
-      profile, role or user fields here — these values are blank for them."_
+    - **Types reach the viewer too.** The engine types comparisons through `ctx.getType(id)`, which
+      today knows only questions — so a user **date** compared "greater than January 1" would fall
+      through to number conversion and come out false. The viewer also wires
+      `getObjectInfo({ objectApiName: USER_OBJECT })` (same idle-unless-needed id trick) and answers
+      `getType('user:<path>')` from its `dataType` (Date → `date`, DateTime → `datetime`, numbers →
+      `number`, Boolean → `checkbox`, else text; `Profile.Name` / `UserRole.Name` → text).
+    - **Guests:** `@salesforce/user/isGuest` → no read at all, and user context is **unavailable**
+      (decision 18) — not blank. The rule editor says so under a user row on a public form:
+      _"People who aren't signed in have no user details, so this condition never counts as met
+      for them."_
     - **Lookup filters — on the server.** Stored as `$User.<path>` in the row value.
       `FinalLookupService` keeps its four fast paths (Id, ProfileId, Email, Name) and resolves any
       other path by describe-checking it against User (`Profile.Name`, `UserRole.Name`, or a User
@@ -172,8 +185,9 @@ spec, since they are not mapping-only.
     - **Mapping search:** unchanged — `$User` stays a publish blocker (F2 decision 4).
 16. **The linked record for Forms (D56).** A Form's linked record is the record it is **editing**
     (`existingRecordId`), which is always the form's `targetObject`. A Form in create mode has no
-    linked record, so linked-record rows are false there — the same as a Survey opened without a
-    record today, and the editor's existing hint covers it (worded for both types). Server guards
+    linked record, so its record context is **unavailable** (decision 18) — the same as a Survey
+    opened without a record today, and the editor's existing hint covers it (worded for both
+    types). Server guards
     stay: the record must be the form's object, and the person must be able to see it
     (`UserRecordAccess`). No authoring toggle is needed (EXPLICIT_RECORD_CONTEXT).
 17. **NOT (D57).** Grammar everywhere: numbers, AND, OR, NOT, brackets; NOT binds tightest.
@@ -182,7 +196,24 @@ spec, since they are not mapping-only.
 (NOT (…))` → 23, `NOT NOT …` refused. So `FinalLookupLogic` emits every NOT as `(NOT (x))`. The
     browser engine treats a blank answer the same way (NOT equals on a blank is true), so the three
     screens agree. Advanced search: when Salesforce's error contains `unexpected token: 'NOT'`,
-    publish adds _"Put NOT and what follows it in brackets: A AND (NOT B)."_
+    publish adds _"Put NOT and what follows it in brackets: A AND (NOT B)."_ NOT never reaches past
+    an **unavailable** context — decision 18.
+18. **Unavailable context is not the same as blank.** Today a linked-record condition with no record
+    is simply "false", which NOT would flip to true — so "Show when NOT (Record › Status = Closed)"
+    would show its question in create mode. The policy:
+    - **Unavailable** = the context isn't there: no linked record (create mode, Survey without a
+      record link), the verdicts or user values are **still loading**, the read **failed**, or the
+      viewer is a **guest** (user context). **Blank** = the record or user is there and the field is
+      empty — a real value, and NOT works on it normally.
+    - A rule set that has **any** condition on an unavailable context counts as **not met**, as a
+      whole, before `action` is applied — whatever the logic or NOT says. So a show-rule stays
+      hidden and a hide-rule doesn't hide, which is exactly what the editor's hints already promise
+      ("Without one, this is hidden" / "this HIDE rule never matches").
+    - The same function decides validation `when` gates: an unavailable context means the gate
+      doesn't apply.
+    - Engine contract: `ctx.isAvailable('record' | 'user')` → boolean; the viewer answers it from its
+      load state (`_ruleFacts` present and not failed; `_userValues` present and not a guest).
+      Answers are always available.
 
 ## File map
 
@@ -409,25 +440,36 @@ on a result, emits `conditionschange { value, typed }`. Summary text:
 **Files:** `lwc/finalFormStudio/*`, `lwc/finalRuleEditor/*`, `lwc/finalFormViewer/*`,
 `lwc/finalLookupFilter/*`, `classes/FinalLookupService.cls` (+ tests)
 
-- [ ] **Studio sources:** `describeFields({ objectApi: 'User' })` once per Studio session → Current
-      user fields `user:<apiName>` plus `user:Profile.Name` ("Profile name") and
-      `user:UserRole.Name` ("Role name"), both typed text. They join `ruleIndexMap` with their types,
+- [ ] **Studio sources:** `describeLookupFields({ objectApiName: 'User', relationshipName: null })`
+      once per Studio session (decision 15 — read access, not create) → Current user fields
+      `user:<path>` plus `user:Profile.Name` ("Profile name") and `user:UserRole.Name`
+      ("Role name"), both typed text. They join `ruleIndexMap` with their types,
       so operators and lint type them like any field.
 - [ ] **Rule editor:** visibility Source gains **Current user**; lookup Compare with gains
       **Current user** (a field picker whose value is `$User.<path>`), not offered when
       `allowGuest` is on. The public-form note under user rows (decision 15).
 - [ ] **Viewer:** `get userPaths()` collects `user:` sources across page/section/element visibility
       and validation `when` gates (same walk as `specHasRecordRules`). `userWireId = isGuest ||
-    !userPaths.length ? undefined : currentUserId`. `@wire(getRecord, { recordId: '$userWireId',
-    optionalFields: '$userFieldNames' })` → `_userValues` (reassigned, never mutated, so
-      visibility getters recompute). `getValue` returns `_userValues[path]` for `user:` ids, blank
-      for guests or missing fields. Until the read lands, user rows count as blank (the same
-      posture as record facts before they arrive).
+  !userPaths.length ? undefined : currentUserId`. `@wire(getRecord, { recordId: '$userWireId',
+  optionalFields: '$userFieldNames' })` → `_userValues` (reassigned, never mutated, so
+      visibility getters recompute). `getValue` returns `_userValues[path]` for `user:` ids (a
+      field missing from an `optionalFields` reply is **blank** — the user is there, the value
+      isn't readable). `getObjectInfo(User)` feeds `getType` for `user:` ids (decision 15).
+      `isAvailable('user')` is false for guests, while loading, and after a failed read
+      (decision 18).
 - [ ] **Lookup server:** `FinalLookupService.userValue` keeps its four fast paths; any other path is
       checked against User describe (or is `Profile.Name` / `UserRole.Name`), all such paths in a
       compile are read in one `SELECT … FROM User WHERE Id = :me WITH USER_MODE`. Guest running user + any `$User.` row → `blocked = true`, reason _"This filter needs a signed-in person."_
+- [ ] **Engine (decision 18):** `evaluateVisibility` checks `ctx.isAvailable` for every `record:`
+      and `user:` condition first; any unavailable → not met, then `action`. A ctx without
+      `isAvailable` (every caller today) treats both as available **except** record rows without
+      facts, which stay false as now — so nothing changes until the viewer opts in.
 - [ ] Tests: viewer makes no read when there are no user rules or the viewer is a guest; a
-      `Profile.Name equals` rule shows/hides; a missing optional field is blank; lookup filter on
+      `Profile.Name equals` rule shows/hides; a user **date** field "greater than 2026-01-01" and a
+      **datetime** "less than" compare as dates (fails today without the runtime type); a user
+      **number** and **checkbox** field; a missing optional field is blank and `NOT (x = 'a')` is
+      met on it; for a guest, `NOT (Profile name = Partner)` is **not** met (unavailable); while the
+      user read is loading and after it fails, a show-rule with NOT stays hidden; lookup filter on
       `$User.UserRole.Name` returns the right rows; guest request blocked; a `$User.` path that isn't
       a User field is blocked, not queried.
 
@@ -453,7 +495,11 @@ on a result, emits `conditionschange { value, typed }`. Summary text:
       rules are survey-only there, extend them the same way; if the Form link path has no record
       read at all, stop and report before building.
 - [ ] Tests: a Form editing a Contact shows a question only when `record:Title` equals X; the same
-      Form in create mode hides it; a record of the wrong object is refused; a user without access
+      Form in create mode hides it; **"Show when NOT (Title = X)" stays hidden in create mode, while
+      verdicts are loading, and after `getRecordContext` fails** — and shows on a record whose Title
+      is blank (blank ≠ unavailable); a hide-rule with NOT in create mode doesn't hide; a validation
+      `when` gate with a record condition doesn't apply in create mode; a record of the wrong object
+      is refused; a user without access
       to the record gets "Record not found."; Surveys unchanged.
 - [ ] EXPLICIT_RECORD_CONTEXT: a "Linked-record rules" section for Forms.
 
@@ -489,12 +535,17 @@ In `checkMatch` (rows mode), for each token in a row's `value` **or** `values`:
 
 **Files:** `lwc/finalRuleEditor/*`, `lwc/finalMappingAction/*` (+ tests)
 
-**finalRuleEditor** — `@api answerChoices = []` (never null). All answer behaviour is gated on
-`get answersOn() { return this.columns === 'mapping' && this.answerChoices.length > 0; }` — when
-off, `$field.` values render and change exactly as any other text (so visibility rules and lookups
-are untouched).
+**finalRuleEditor** — `@api answerChoices = []` (never null). Two separate gates:
 
-When on, per row:
+- **Reading** saved answers: `get answersOn() { return this.columns === 'mapping'; }`. On the
+  mapping screen a `$field.` value is **always** an answer — even when no eligible question is left —
+  so a removed question still shows "(question removed)" and still blocks Save. On every other screen
+  `$field.` is plain text, as today (visibility rules and lookups untouched).
+- **Offering** a new answer: "An answer" appears in Compare with only when `answersOn` and the row
+  has at least one fitting choice (below). No choices → the row can still hold and show an old token;
+  it just can't pick a new one.
+
+When `answersOn`, per row:
 
 - `fieldType = (this.sources.find((s) => s.id === rule.source) || {}).type`
 - `fitting = answerChoices.filter((a) => a.fits.includes(fieldType))` — `answerChoices` arrive
@@ -518,7 +569,9 @@ Passed to `c-final-lookup-filter answer-choices`.
 - [ ] Jest: gate off → no Compare with column and `$field.x` renders as plain text (visibility
       regression test); gate on → only fitting, single-value answers; Contains offers answers only
       for text fields; Is one of offers none; operator change clears a token; removed question shows
-      "(question removed)" untouched; `Options` questions never listed.
+      "(question removed)" untouched; `Options` questions never listed; **with `answerChoices = []`
+      on the mapping screen, a saved `$field.el_gone` still shows "(question removed)", offers no
+      "An answer" for new rows, and keeps Save disabled.**
 - [ ] Deploy; branch `feat/f2-row-answers`, PR, merge.
 
 ---
@@ -836,3 +889,12 @@ sites carry `// NOPMD` pointing here rather than weakening `ApexSOQLInjection`.
 | P2  | multi-select answers could appear under Equals             | `Options` excluded; operator + cardinality checked in picker, dialog and publish (decision 9, Tasks 6, 7)                                                                                  |
 | —   | pre-fill could undo a deletion                             | pre-fill only on field/source changes; `prefillDeclined` (decision 12, Task 12)                                                                                                            |
 | —   | the answers index missed filter references                 | `use: 'filter'` for rows and typed tokens (Task 11)                                                                                                                                        |
+
+## Plan review, round 2 (rev 3) — where each finding went
+
+| #   | Finding                                                                                                        | Fixed in                                                                                                                                                                         |
+| --- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Current user fields came from `describeFields`, which needs Create on User and drops non-creatable fields      | `describeLookupFields('User')`, read-access based (decision 15, Task 16)                                                                                                         |
+| 2   | user date/datetime comparisons fell through to number conversion — the viewer's `getType` only knows questions | `getObjectInfo(User)` feeds `getType` for `user:` ids; date, datetime, number and checkbox tests (decision 15, Task 16)                                                          |
+| 3   | NOT turned "no linked record" into true, showing questions in create mode                                      | **unavailable ≠ blank**: any condition on an unavailable context makes the rule set not met, before `action` — incl. loading, failed reads and guests (decision 18, Tasks 16–17) |
+| 4   | deleting the last eligible question switched `$field.` back to plain text                                      | reading gated on `columns === 'mapping'` alone; the choices count only gates offering (Task 7)                                                                                   |
