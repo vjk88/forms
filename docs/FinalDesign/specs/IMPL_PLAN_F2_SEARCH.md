@@ -1,6 +1,6 @@
 # IMPL_PLAN — Conditions editor rebuilt, and the F2 find-or-create search
 
-> **Status:** revision 3, draft for owner review, 2026-09-23. No code yet.
+> **Status:** revision 3 + review rounds 2–3, draft for owner review, 2026-09-23. No code yet.
 > Rev 2: the owner asked for the Form Designer's condition editor style everywhere (in a dialog),
 > and a plan review found seven defects in rev 1 (the table at the end says where each was fixed).
 > Rev 3: the Form Designer's **sources** too — related fields in one flat list, **Current user**
@@ -205,15 +205,27 @@ spec, since they are not mapping-only.
       record link), the verdicts or user values are **still loading**, the read **failed**, or the
       viewer is a **guest** (user context). **Blank** = the record or user is there and the field is
       empty — a real value, and NOT works on it normally.
-    - A rule set that has **any** condition on an unavailable context counts as **not met**, as a
-      whole, before `action` is applied — whatever the logic or NOT says. So a show-rule stays
-      hidden and a hide-rule doesn't hide, which is exactly what the editor's hints already promise
-      ("Without one, this is hidden" / "this HIDE rule never matches").
-    - The same function decides validation `when` gates: an unavailable context means the gate
-      doesn't apply.
-    - Engine contract: `ctx.isAvailable('record' | 'user')` → boolean; the viewer answers it from its
-      load state (`_ruleFacts` present and not failed; `_userValues` present and not a guest).
-      Answers are always available.
+    - **Three-valued logic.** A condition on an unavailable context is **unknown** — not true, not
+      false. Logic combines with the standard rules: `true OR unknown` = true, `false OR unknown` =
+      unknown, `true AND unknown` = unknown, `false AND unknown` = false, `NOT unknown` = unknown.
+      At the end, **unknown counts as not met**, and then `action` applies — so a show-rule stays
+      hidden and a hide-rule doesn't hide, as the editor's hints already promise.
+    - **Why this and not "any unavailable condition fails the whole rule":** for every rule that can
+      exist today (AND / OR / brackets, no NOT), three-valued logic with unknown → not met gives
+      **exactly** the result of today's "unavailable condition = false" — such formulas can only
+      get truer as a condition goes from false to true, so "true under every completion" equals
+      "true with unknown as false". "Answer = Yes OR Record › Title = Manager" still shows on Yes
+      with no record. NOT is the only thing that can tell the two apart, and NOT is new. **No
+      published rule changes; no versioning is needed.** Task 14 pins it with a table test.
+    - The same evaluation decides validation `when` gates (unknown → the gate doesn't apply).
+    - Engine contract: `ctx.isAvailable('record' | 'user')` → boolean. **Record** is available when
+      `_ruleFacts` has arrived for the current context and the read didn't fail. **User** is
+      available only when **both** the user values **and** the User type metadata have arrived and
+      neither failed, and the viewer isn't a guest (decision 15 — values without types would compare
+      dates as numbers). Answers are always available.
+    - `evaluateCustomLogic` keeps its public contract (`null` = malformed) for today's callers; the
+      three-valued version is a separate internal function whose "unknown" is a distinct value, so
+      "malformed" and "unknown" can never be confused.
 
 ## File map
 
@@ -450,26 +462,34 @@ on a result, emits `conditionschange { value, typed }`. Summary text:
       `allowGuest` is on. The public-form note under user rows (decision 15).
 - [ ] **Viewer:** `get userPaths()` collects `user:` sources across page/section/element visibility
       and validation `when` gates (same walk as `specHasRecordRules`). `userWireId = isGuest ||
-  !userPaths.length ? undefined : currentUserId`. `@wire(getRecord, { recordId: '$userWireId',
-  optionalFields: '$userFieldNames' })` → `_userValues` (reassigned, never mutated, so
+!userPaths.length ? undefined : currentUserId`. `@wire(getRecord, { recordId: '$userWireId',
+optionalFields: '$userFieldNames' })` → `_userValues` (reassigned, never mutated, so
       visibility getters recompute). `getValue` returns `_userValues[path]` for `user:` ids (a
       field missing from an `optionalFields` reply is **blank** — the user is there, the value
       isn't readable). `getObjectInfo(User)` feeds `getType` for `user:` ids (decision 15).
-      `isAvailable('user')` is false for guests, while loading, and after a failed read
-      (decision 18).
+      Readiness is one state, `_userCtx = 'idle' | 'loading' | 'ready' | 'failed'`: `ready` only
+      when **both** wires have delivered data; either wire's error → `failed` (and it stays failed
+      until the context changes). `isAvailable('user')` is true only in `ready` (decision 18).
 - [ ] **Lookup server:** `FinalLookupService.userValue` keeps its four fast paths; any other path is
       checked against User describe (or is `Profile.Name` / `UserRole.Name`), all such paths in a
       compile are read in one `SELECT … FROM User WHERE Id = :me WITH USER_MODE`. Guest running user + any `$User.` row → `blocked = true`, reason _"This filter needs a signed-in person."_
-- [ ] **Engine (decision 18):** `evaluateVisibility` checks `ctx.isAvailable` for every `record:`
-      and `user:` condition first; any unavailable → not met, then `action`. A ctx without
-      `isAvailable` (every caller today) treats both as available **except** record rows without
-      facts, which stay false as now — so nothing changes until the viewer opts in.
+- [ ] **Engine (decision 18):** each `record:` / `user:` condition whose context is unavailable
+      evaluates to **unknown**; ALL / ANY / custom logic (with NOT) combine three-valued; the result
+      maps unknown → not met, then `action`. A ctx without `isAvailable` keeps today's behaviour
+      exactly (record rows without facts are false).
+- [ ] **Compatibility table test (Task 14 file):** for every NOT-free expression shape in the
+      suite × every true/false/unavailable assignment, the new evaluator equals today's evaluator
+      run with unavailable = false — including "Answer = Yes OR Record › Title = Manager" with no
+      record (shown) and the same as a hide-rule (hidden).
 - [ ] Tests: viewer makes no read when there are no user rules or the viewer is a guest; a
       `Profile.Name equals` rule shows/hides; a user **date** field "greater than 2026-01-01" and a
       **datetime** "less than" compare as dates (fails today without the runtime type); a user
       **number** and **checkbox** field; a missing optional field is blank and `NOT (x = 'a')` is
-      met on it; for a guest, `NOT (Profile name = Partner)` is **not** met (unavailable); while the
-      user read is loading and after it fails, a show-rule with NOT stays hidden; lookup filter on
+      met on it; for a guest, `NOT (Profile name = Partner)` is **not** met (unavailable), while
+      `Answer = Yes OR NOT (Profile name = Partner)` **is** met on Yes; while the user read is
+      loading and after it fails, a show-rule with NOT stays hidden; **readiness in both orders**
+      (values then types, types then values) — a user-date rule is only evaluated once both are in;
+      **metadata failure** with values present → unavailable, not a number comparison; lookup filter on
       `$User.UserRole.Name` returns the right rows; guest request blocked; a `$User.` path that isn't
       a User field is blocked, not queried.
 
@@ -624,8 +644,8 @@ Rules, first failure wins:
      (path `[A-Za-z_][A-Za-z0-9_.]*`, op from decision 7, case-insensitive `LIKE`), else
      _"Put each answer right after a field and a comparison, like Email = {Your email}."_
    - any other `{` or `}` → _"There's no question called "…". Use Insert answer."_ (the text
-     between the braces). This is how an unknown display name typed in the box (Task 11) is refused
-     at publish.
+     between the braces). The dialog already blocks Save on these (Task 11); this refuses one that
+     arrives in an imported or hand-edited spec.
 4. Unclosed quote → _"A quoted value isn't closed."_
 5. Unbalanced brackets outside quotes → _"The brackets don't match."_
 
@@ -701,7 +721,8 @@ e.getMessage())`.
 - Exported pure functions: `displayNames(questions, storedText)` → `Map<id, name>` built per
   decision 6 (including removed ids found in `storedText`); `toDisplay(stored, names)`;
   `toStored(display, names)`. `toStored` swaps only exact `{name}` matches outside quotes;
-  anything else stays exactly as typed, so the parser refuses it at publish by name.
+  anything else stays exactly as typed in the draft and is listed in `problems`, which keeps Save
+  disabled (below).
 - The names map is built **once per dialog open** and kept, so a question renamed mid-edit can't
   shift it.
 - Native `<textarea class="ms-text">` (needs `selectionStart`), label "Conditions — the part after
@@ -838,20 +859,23 @@ removed field is the search field. The writer's fence and the validator read onl
 - [ ] Lookup filter: add a condition in the dialog; the lookup still searches as before.
 - [ ] Mapping, test form `a05hk000001aby9AAA`:
   1. Find-or-create Contact, Email ← Work email: the Email row appears pre-filled. Delete it, edit
-     the filter — it stays deleted.
+     the filter — it stays deleted. **Then add Email ← Work email back by hand** (without it, a new
+     Contact is created without the email and the reuse check below can't pass).
   2. Rows: `Last Name · Equals · An answer · Your surname`. Publish.
   3. Guest submits twice with the same email → second reuses the first.
   4. Guest surname `$User.Name` → a Contact with that literal surname; never the guest user's name.
   5. Advanced search: `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Switching asks first.
      Publish clean; guest submit behaves.
   6. `Title LIKE {Job title}` with answer `50%` matches only `50%`.
-  7. `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x`, `{Not a question}` → each
-     refused at publish with its sentence.
+  7. `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x` → each refused at publish
+     with its sentence. `{Not a question}` never gets that far: the dialog shows _"There's no
+     question called "Not a question". Use Insert answer."_ and **Save stays disabled**.
 - [ ] **Sources (S2b), signed in:** a NOT rule; "Account › Type" in a lookup filter; a visibility
       rule on Profile name and one on Role name (switch the test user's role to see it flip); a Form
       on `Final_P0_Test` with `c__existingRecordId` showing a question only for Contacts whose Title is X.
-- [ ] **Sources, as a guest:** the public form with a Profile-name rule — the rule treats the values as
-      blank; no user read appears in the network log.
+- [ ] **Sources, as a guest:** the public form with a Profile-name rule — user context is
+      **unavailable**, so the rule is not met (a show-rule stays hidden, even with NOT); no user read
+      appears in the network log.
 - [ ] "What actually shipped" below; branch `docs/f2-search-shipped`.
 
 ## Orphan ledger
@@ -880,21 +904,31 @@ sites carry `// NOPMD` pointing here rather than weakening `ApexSOQLInjection`.
 
 ## Plan review, round 1 — where each finding went
 
-| #   | Finding                                                    | Fixed in                                                                                                                                                                                   |
-| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| P1  | an invalid edit could leave the old clause to be published | the dialog holds a draft until Save (decision 1, Task 4); unknown `{names}` are saved as typed and refused by the parser (Tasks 8, 11) — the spec always equals what the author last saved |
-| P1  | the rule-editor change wasn't really opt-in                | `answerChoices = []`, every answer path gated on `answersOn` (Task 7)                                                                                                                      |
-| P2  | `LIKE` answers still acted as wildcards                    | tokens keep their comparison; `escapeLike` at runtime (decision 7, Tasks 8, 10)                                                                                                            |
-| P2  | display names could collide                                | collision-free names incl. removed questions, built once per open (decision 6, Task 11)                                                                                                    |
-| P2  | multi-select answers could appear under Equals             | `Options` excluded; operator + cardinality checked in picker, dialog and publish (decision 9, Tasks 6, 7)                                                                                  |
-| —   | pre-fill could undo a deletion                             | pre-fill only on field/source changes; `prefillDeclined` (decision 12, Task 12)                                                                                                            |
-| —   | the answers index missed filter references                 | `use: 'filter'` for rows and typed tokens (Task 11)                                                                                                                                        |
+| #   | Finding                                                    | Fixed in                                                                                                                                                                                                                                                                          |
+| --- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | an invalid edit could leave the old clause to be published | the dialog holds a draft until Save (decision 1, Task 4); an unknown `{name}` keeps **Save disabled** with its sentence (Task 11), so it never reaches the spec from the Studio; the parser still refuses one that arrives another way — an imported or hand-edited spec (Task 8) |
+| P1  | the rule-editor change wasn't really opt-in                | `answerChoices = []`, every answer path gated on `answersOn` (Task 7)                                                                                                                                                                                                             |
+| P2  | `LIKE` answers still acted as wildcards                    | tokens keep their comparison; `escapeLike` at runtime (decision 7, Tasks 8, 10)                                                                                                                                                                                                   |
+| P2  | display names could collide                                | collision-free names incl. removed questions, built once per open (decision 6, Task 11)                                                                                                                                                                                           |
+| P2  | multi-select answers could appear under Equals             | `Options` excluded; operator + cardinality checked in picker, dialog and publish (decision 9, Tasks 6, 7)                                                                                                                                                                         |
+| —   | pre-fill could undo a deletion                             | pre-fill only on field/source changes; `prefillDeclined` (decision 12, Task 12)                                                                                                                                                                                                   |
+| —   | the answers index missed filter references                 | `use: 'filter'` for rows and typed tokens (Task 11)                                                                                                                                                                                                                               |
 
 ## Plan review, round 2 (rev 3) — where each finding went
 
-| #   | Finding                                                                                                        | Fixed in                                                                                                                                                                         |
-| --- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Current user fields came from `describeFields`, which needs Create on User and drops non-creatable fields      | `describeLookupFields('User')`, read-access based (decision 15, Task 16)                                                                                                         |
-| 2   | user date/datetime comparisons fell through to number conversion — the viewer's `getType` only knows questions | `getObjectInfo(User)` feeds `getType` for `user:` ids; date, datetime, number and checkbox tests (decision 15, Task 16)                                                          |
-| 3   | NOT turned "no linked record" into true, showing questions in create mode                                      | **unavailable ≠ blank**: any condition on an unavailable context makes the rule set not met, before `action` — incl. loading, failed reads and guests (decision 18, Tasks 16–17) |
-| 4   | deleting the last eligible question switched `$field.` back to plain text                                      | reading gated on `columns === 'mapping'` alone; the choices count only gates offering (Task 7)                                                                                   |
+| #   | Finding                                                                                                        | Fixed in                                                                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 1   | Current user fields came from `describeFields`, which needs Create on User and drops non-creatable fields      | `describeLookupFields('User')`, read-access based (decision 15, Task 16)                                                |
+| 2   | user date/datetime comparisons fell through to number conversion — the viewer's `getType` only knows questions | `getObjectInfo(User)` feeds `getType` for `user:` ids; date, datetime, number and checkbox tests (decision 15, Task 16) |
+| 3   | NOT turned "no linked record" into true, showing questions in create mode                                      | **unavailable ≠ blank** (decision 18) — refined in round 3 to three-valued logic                                        |
+| 4   | deleting the last eligible question switched `$field.` back to plain text                                      | reading gated on `columns === 'mapping'` alone; the choices count only gates offering (Task 7)                          |
+
+## Plan review, round 3 — where each finding went
+
+| #   | Finding                                                                                                                         | Fixed in                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | "any unavailable condition fails the whole rule" changed existing OR rules (Answer = Yes OR a record condition, with no record) | three-valued logic, unknown → not met at the end; identical to today for every NOT-free rule, pinned by a table test; no versioning (decision 18, Task 16) |
+| 2   | user values could be "available" before their types arrived                                                                     | one readiness state: ready only when values **and** types are in, either error → failed; tests for both orders and metadata failure (decision 18, Task 16) |
+| 3   | walkthrough deleted the Email mapping, then expected reuse by email                                                             | Email re-added by hand before the reuse check (Task 13)                                                                                                    |
+| 4   | review table said unknown `{names}` are saved                                                                                   | aligned: Save stays disabled; the parser covers imported specs (review table, Tasks 8, 11, 13)                                                             |
+| 5   | guest walkthrough still said "blank"                                                                                            | now "unavailable, not met" (Task 13)                                                                                                                       |
