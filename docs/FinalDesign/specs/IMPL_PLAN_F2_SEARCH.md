@@ -1,8 +1,11 @@
 # IMPL_PLAN — Conditions editor rebuilt, and the F2 find-or-create search
 
-> **Status:** revision 2, draft for owner review, 2026-09-23. No code yet.
+> **Status:** revision 3, draft for owner review, 2026-09-23. No code yet.
 > Rev 2: the owner asked for the Form Designer's condition editor style everywhere (in a dialog),
 > and a plan review found seven defects in rev 1 (the table at the end says where each was fixed).
+> Rev 3: the Form Designer's **sources** too — related fields in one flat list, **Current user**
+> (any User field, plus Profile name and Role name), the **linked record for Forms** (the record
+> being edited), and **NOT** in custom logic (D54–D57, slice S2b).
 > **For agentic workers:** use superpowers:executing-plans, task by task. Checkboxes track steps.
 
 **Goal:** One clean condition editor — Form Designer style, in a dialog — for visibility rules,
@@ -23,9 +26,15 @@ found_, _if none is found, create_.
    Custom logic `1 AND (2 OR 3)` over one row wasn't flagged until publish.
 5. From the F2 plan review: a respondent who types `$User.Name` into an answer used by a filter row
    has it read as an instruction.
+6. The Form Designer's Source column offered the record (with related fields listed flat, like
+   "Account › Type"), Current User and User Profile. The rebuilt editor had none of that, and
+   linked-record rules only worked for Surveys — although a Form opened with `existingRecordId`
+   has a record too.
 
 **Spec:** [FREEFORM_F2_MAPPING_SPEC.md](./FREEFORM_F2_MAPPING_SPEC.md). Task 1 adds rulings
-D49–D53 to it.
+D49–D57 to it; D54–D57 also go into
+[EXPLICIT_RECORD_CONTEXT.md](./EXPLICIT_RECORD_CONTEXT.md) (linked records) and the visibility-rules
+spec, since they are not mapping-only.
 
 ## Owner rulings (2026-09-23)
 
@@ -36,17 +45,26 @@ D49–D53 to it.
 | D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, and always run as bound values.                                                                                                                                        |
 | D52 | **The searched field is pre-filled in the create list, and stays editable.** Softens D45.                                                                                                                                                                               |
 | D53 | **One condition editor, Form Designer style, in a dialog, for all three screens** (visibility rules, lookup filters, mapping search). Each screen shows a one-line summary and an Edit button.                                                                          |
+| D54 | **Related fields sit in the Field list, one level deep, flat** — "Account › Type" next to the object's own fields — on all three screens. Advanced search stays for anything rows can't say.                                                                            |
+| D55 | **Current user is a source**: any User field, plus Profile name and Role name. Visibility rules and lookup filters only; the mapping search keeps refusing it (it runs in the background as whoever submitted — usually the site guest).                                |
+| D56 | **The linked record works for Forms too**: the record a Form is editing (`existingRecordId`). No authoring toggle — editing is already switched on by that viewer input (EXPLICIT_RECORD_CONTEXT, 2026-09-09).                                                          |
+| D57 | **Custom logic accepts NOT**, and every query we build writes it as `(NOT (…))` — the only form Salesforce accepts after another condition (proven in `revclouddev` 2026-09-23). The Form Designer's specific logic messages are copied.                                |
 | —   | **Answers are always bound values** (review bug). Nothing a respondent types is read as `$User.`, `$field.` or query text; fixed test-first in this work.                                                                                                               |
 
 ## Global constraints
 
 - API **66.0**; org **`revclouddev`**; Contact-only test data.
-- **Saved shapes don't change** for visibility rules (`{action, logic, customLogic, rules[]}`) or
-  lookup filters (`{logic, customLogic, rows[]}`). The runtime evaluators
-  (`finalExpressionEngine`, `FinalLookupService.compile`) are not touched, so every form already
-  published behaves exactly as before.
-- Lookup filters get the new look but **no answer comparisons** — comparing a lookup with another
-  answer is dependent lookups, which the owner is rebuilding themselves (DO NOT resurrect v1).
+- **Saved shapes only grow.** Visibility rules (`{action, logic, customLogic, rules[]}`) and lookup
+  filters (`{logic, customLogic, rows[]}`) keep their shape. New things are additive: `user:<path>`
+  and `record:<Rel>.<Field>` sources, `$User.<path>` lookup values, `NOT` in `customLogic`. Every
+  rule saved today evaluates exactly as before; tests pin that.
+- Lookup filters get **no answer comparisons** — comparing a lookup with another answer is dependent
+  lookups, which the owner is rebuilding themselves (DO NOT resurrect v1).
+- **Rules evaluate where they already do:** visibility in the browser (linked-record rows as
+  server yes/no verdicts, never values); lookup filters and mapping search as one SOQL query each.
+  Nothing becomes several queries per rule.
+- **Current user values are the running user's own**, read once per page. The browser may use them
+  only for visibility (display); anything that searches records reads them on the server itself.
 - The typed clause is checked at publish as the author (`USER_MODE`), run in the background in
   `SYSTEM_MODE`, like rows today.
 - Native first: `LightningModal` (already used by `finalPublishDialog`), `lightning-combobox`,
@@ -71,18 +89,20 @@ D49–D53 to it.
      plus **Edit conditions**. It opens the dialog and emits the saved value.
 2. **Columns per screen.**
 
-   | Screen                | Columns                                       |
-   | --------------------- | --------------------------------------------- |
-   | Visibility rules      | Source · Question or field · Operator · Value |
-   | Lookup filter         | Field · Operator · Value                      |
-   | Mapping search (rows) | Field · Operator · Compare with · Value       |
+   | Screen                | Columns                                       | Source / Compare with offers                                                                                              |
+   | --------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+   | Visibility rules      | Source · Question or field · Operator · Value | Source: **An answer** · **The linked record** (Surveys with a connected object, and Forms — D56) · **Current user** (D55) |
+   | Lookup filter         | Field · Operator · Compare with · Value       | Compare with: **A fixed value** · **Current user** (not when the lookup allows anonymous search)                          |
+   | Mapping search (rows) | Field · Operator · Compare with · Value       | Compare with: **A fixed value** · **An answer**                                                                           |
 
-   Visibility **Source** = "An answer" and — only when the form has record sources (surveys with a
-   record link) — "The linked record". That replaces today's two `<optgroup>`s inside one select.
+   The Field column on the lookup and mapping screens, and under "The linked record", lists the
+   object's own fields and then related ones: "Account › Type" (D54). **Form Settings** from the
+   Form Designer is not carried over: an author building one form already knows its layout and type,
+   so a rule on it could never change.
 
 3. **Save is disabled until the draft is usable**, with the reason shown in the footer: a row missing
-   its field, operator or value; custom logic that names a missing row or doesn't close a bracket
-   (checked with the existing `evaluateCustomLogic`); in the typed tab, a `{name}` that isn't a
+   its field, operator or value; custom logic that fails the Form Designer's checks (copied from
+   `visibilityEditor.validateCustomLogic`, with NOT — decision 17); in the typed tab, a `{name}` that isn't a
    question. Lint warnings from `lintVisibility` still show, and don't block (as today).
 4. **Mapping spec shape.** Rows stay in `match.filter`. The typed clause is `match.soql` (string),
    mode `match.filterMode: "soql"`. No `filterMode` = rows, so published mappings need no migration.
@@ -119,9 +139,50 @@ D49–D53 to it.
     pre-filled row sets `match.prefillDeclined = true`, and nothing re-adds it until the search
     **field** changes (which clears the flag).
 13. **"Another record: … isn't a lookup field"** shows only while a row has no source.
-14. **Condition rows use the searched object's own fields only.** Related fields such as
-    `Account.Type` are reached through **Advanced search** (owner, 2026-09-23). Rows stay simple;
-    the server's `relationshipName` describe is left unused by the screen.
+14. **Related fields (D54), exactly like the Form Designer.** The Field list is the object's own
+    fields, then, for each single-target lookup, its target's filterable fields labelled
+    "Target › Field" and stored as `Rel.Field` (`Account.Type`). One level only. The describe comes
+    from `FinalLookupController.describeLookupFields(object, relationshipName)`, which already
+    supports this — one call per relationship, fetched **when the dialog opens**, not per render.
+    Lookups that can point at several kinds of record (Task's Related To) are skipped, as today.
+    _Supersedes rev 2's "own fields only" (owner reversed it after seeing the Form Designer)._
+15. **Current user (D55).**
+    - **Fields:** every User field the author can read, plus two named extras, **Profile name**
+      (`Profile.Name`) and **Role name** (`UserRole.Name`). Listed as "Current user › Title".
+    - **Visibility — in the browser.** Stored as `user:<path>` (`user:Profile.Name`,
+      `user:Department`). The viewer collects every `user:` path in the spec; if there are any and
+      the viewer isn't a guest, it reads them **once** with
+      `@wire(getRecord, { recordId: '$userWireId', optionalFields: ['User.' + path, …] })`
+      (`userWireId` stays `undefined` — the wire stays idle — when the form has no user rules).
+      `optionalFields`, so a field this user can't read comes back missing and counts as blank
+      instead of failing the whole read. Role is blank for users with no role.
+    - **Guests:** `@salesforce/user/isGuest` → no read at all; every user value is blank. The rule
+      editor says so under a user row on a public form: _"People who aren't signed in have no
+      profile, role or user fields here — these values are blank for them."_
+    - **Lookup filters — on the server.** Stored as `$User.<path>` in the row value.
+      `FinalLookupService` keeps its four fast paths (Id, ProfileId, Email, Name) and resolves any
+      other path by describe-checking it against User (`Profile.Name`, `UserRole.Name`, or a User
+      field) and reading all such paths in **one** `SELECT … FROM User WHERE Id = :me` `WITH USER_MODE`
+      per request. A guest request with a `$User.` row **blocks the filter** (no results) rather than
+      searching with the site guest's values. The Studio hides Current user when the lookup's
+      "anonymous search" switch is on.
+    - **It's display, not security** — the help text says: _"Hides this for tidiness. Anyone
+      determined can still see hidden questions in the page, so don't rely on it to keep things
+      private."_ Hidden answers are already dropped on submit (PR #269).
+    - **Mapping search:** unchanged — `$User` stays a publish blocker (F2 decision 4).
+16. **The linked record for Forms (D56).** A Form's linked record is the record it is **editing**
+    (`existingRecordId`), which is always the form's `targetObject`. A Form in create mode has no
+    linked record, so linked-record rows are false there — the same as a Survey opened without a
+    record today, and the editor's existing hint covers it (worded for both types). Server guards
+    stay: the record must be the form's object, and the person must be able to see it
+    (`UserRecordAccess`). No authoring toggle is needed (EXPLICIT_RECORD_CONTEXT).
+17. **NOT (D57).** Grammar everywhere: numbers, AND, OR, NOT, brackets; NOT binds tightest.
+    Verified in `revclouddev` on 30 Contacts: `NOT Title = 'Zzz'` → 30 (**includes the 11 blank
+    Titles**), `LastName != null AND NOT (…)` → _unexpected token: 'NOT'_, `LastName != null AND
+(NOT (…))` → 23, `NOT NOT …` refused. So `FinalLookupLogic` emits every NOT as `(NOT (x))`. The
+    browser engine treats a blank answer the same way (NOT equals on a blank is true), so the three
+    screens agree. Advanced search: when Salesforce's error contains `unexpected token: 'NOT'`,
+    publish adds _"Put NOT and what follows it in brackets: A AND (NOT B)."_
 
 ## File map
 
@@ -136,27 +197,36 @@ D49–D53 to it.
 
 **Modify**
 
-| Path                                                 | Change                                                                    |
-| ---------------------------------------------------- | ------------------------------------------------------------------------- |
-| `lwc/finalRuleEditor/` (+test)                       | rebuilt as the columned grid; `columns` mode; opt-in answer comparisons   |
-| `lwc/finalPropertyPanel/` (+test)                    | Visibility group: summary + dialog instead of the inline editor           |
-| `lwc/finalLookupFilter/` (+test)                     | conditions: summary + dialog; `answerChoices` / `allowTyped` pass-through |
-| `lwc/finalMappingModel/` (+test)                     | `setFilterMode`, `setSoql`, pre-fill rules, index + state for filters     |
-| `lwc/finalMappingAction/` (+test)                    | branch layout, answer choices, `why` fix                                  |
-| `classes/FinalMappingService.cls` (+Test)            | token fix; typed clause at runtime; query errors named per step           |
-| `classes/FinalMappingValidator.cls` (+Test)          | row answers checked; typed clause parsed and test-run as the author       |
-| `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md` | D49–D53, §4 shape, §5.2 layout, §7 blockers                               |
+| Path                                                 | Change                                                                                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `lwc/finalRuleEditor/` (+test)                       | rebuilt as the columned grid; `columns` mode; opt-in answer comparisons               |
+| `lwc/finalPropertyPanel/` (+test)                    | Visibility group: summary + dialog instead of the inline editor                       |
+| `lwc/finalLookupFilter/` (+test)                     | conditions: summary + dialog; `answerChoices` / `allowTyped` pass-through             |
+| `lwc/finalMappingModel/` (+test)                     | `setFilterMode`, `setSoql`, pre-fill rules, index + state for filters                 |
+| `lwc/finalMappingAction/` (+test)                    | branch layout, answer choices, `why` fix                                              |
+| `classes/FinalMappingService.cls` (+Test)            | token fix; typed clause at runtime; query errors named per step                       |
+| `classes/FinalMappingValidator.cls` (+Test)          | row answers checked; typed clause parsed and test-run as the author                   |
+| `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md` | D49–D57, §4 shape, §5.2 layout, §7 blockers                                           |
+| `lwc/finalExpressionEngine/` (+test)                 | NOT in `evaluateCustomLogic`; `validateCustomLogic` (Form Designer messages) exported |
+| `lwc/finalFormViewer/` (+test)                       | `user:` values via one `getRecord`; linked-record verdicts for Forms                  |
+| `lwc/finalFormStudio/` (+test)                       | record sources for Forms; user sources + related-field describes                      |
+| `classes/FinalLookupLogic.cls` (+Test)               | NOT, always emitted as `(NOT (…))`                                                    |
+| `classes/FinalLookupService.cls` (+Test)             | `$User.<any path>` read once server-side; guests blocked                              |
+| `classes/FinalSurveyObjectController.cls` (+Test)    | `getRecordContext` accepts Forms; verdicts follow `Rel.Field` paths                   |
+| `classes/FinalGuestContextService.cls` (+Test)       | same path-following for guest links; Forms if the link path reaches them              |
+| `docs/FinalDesign/specs/EXPLICIT_RECORD_CONTEXT.md`  | linked-record rules for Forms (D56)                                                   |
 
 ## Slice order
 
-| Order | Slice | Tasks | Why here                                                               |
-| ----- | ----- | ----- | ---------------------------------------------------------------------- |
-| 1     | S1    | 1–2   | rulings, then the bug fix — later slices send more answers into search |
-| 2     | S2    | 3–5   | the new editor + dialog, on all three screens, same saved shapes       |
-| 3     | S3    | 6–7   | answers in mapping rows: publish check, then the Compare with column   |
-| 4     | S4    | 8–11  | the typed clause: parser, publish, runtime, Advanced search            |
-| 5     | S5    | 12    | the mapping step as branches; pre-fill; small fixes                    |
-| 6     | S6    | 13    | org walkthrough, signed in and as a guest                              |
+| Order | Slice | Tasks | Why here                                                                |
+| ----- | ----- | ----- | ----------------------------------------------------------------------- |
+| 1     | S1    | 1–2   | rulings, then the bug fix — later slices send more answers into search  |
+| 2     | S2    | 3–5   | the new editor + dialog, on all three screens, same saved shapes        |
+| 3     | S2b   | 14–18 | the sources: related fields, NOT, Current user, linked record for Forms |
+| 4     | S3    | 6–7   | answers in mapping rows: publish check, then the Compare with column    |
+| 5     | S4    | 8–11  | the typed clause: parser, publish, runtime, Advanced search             |
+| 6     | S5    | 12    | the mapping step as branches; pre-fill; small fixes                     |
+| 7     | S6    | 13    | org walkthrough, signed in and as a guest                               |
 
 ---
 
@@ -166,7 +236,7 @@ D49–D53 to it.
 
 **Files:** `docs/FinalDesign/specs/FREEFORM_F2_MAPPING_SPEC.md`
 
-- [ ] Add D49–D53 to §2 (dated 2026-09-23), worded as above.
+- [ ] Add D49–D57 to §2 (dated 2026-09-23), worded as above; D54–D57 also in the visibility-rules spec.
 - [ ] §4: `filterMode`, `soql`, `prefillDeclined`, `fields[].prefilled` in the `match` example;
       new §4.6 "The typed clause" (decisions 5–8).
 - [ ] §5.2: the branch layout from Task 12 and the summary + dialog from Task 4.
@@ -288,6 +358,111 @@ on a result, emits `conditionschange { value, typed }`. Summary text:
 - [ ] Deploy; click through visibility on a question, a section and a page, and a lookup filter, in
       `/apex/FinalStudio`. Publish a form with each and confirm the runtime behaves as before.
 - [ ] uiux-flow-reviewer pass; branch `feat/conditions-editor`, PR, merge.
+
+---
+
+## S2b — The sources (runs third, after S2)
+
+### Task 14: NOT, and the Form Designer's logic messages
+
+**Files:** `lwc/finalExpressionEngine/*`, `classes/FinalLookupLogic.cls` (+ tests), `lwc/finalRuleEditor/*`
+
+- [ ] **Pin today first:** tests that every logic string accepted today (`1`, `1 AND 2`,
+      `1 AND (2 OR 3)`, `(1 OR 2) AND 3`) gives the same result in both evaluators after the change.
+- [ ] `finalExpressionEngine`: `evaluateCustomLogic` learns `NOT` (unary, binds tighter than AND);
+      new exported `validateCustomLogic(expr, count)` → `null` or a sentence, ported from
+      `visibilityEditor.validateCustomLogic` / `checkSyntax`: _"Condition 3 doesn't exist — you have 1
+      condition."_, _"Only condition numbers, AND, OR, NOT and brackets are allowed."_,
+      _"Unbalanced brackets."_, _"Unexpected "OR" in the logic."_, _"Condition 2 has no field.
+      Complete every condition to use custom logic."_
+- [ ] `FinalLookupLogic`: tokenizer and parser accept `NOT`; output wraps it as `(NOT (x))`.
+      Apex test builds the WHERE for `1 AND NOT 2` and **runs it** against Contacts (the proven
+      forms from decision 17), plus `NOT (1 OR 2)`, `NOT NOT 1` → `(NOT ((NOT (x))))` runs.
+- [ ] `finalRuleEditor` uses `validateCustomLogic` for its inline problem and the Save gate.
+- [ ] Both runtimes agree: a shared table of 12 expressions × answer patterns run through JS
+      and Apex (Apex via the compiled WHERE against fixture Contacts) gives identical results.
+
+### Task 15: Related fields in the Field list (D54)
+
+**Files:** `lwc/finalLookupFilter/*`, `lwc/finalFormStudio/*`, `lwc/finalRuleEditor/*`,
+`classes/FinalSurveyObjectController.cls`, `classes/FinalGuestContextService.cls` (+ tests)
+
+- [ ] **Lookup + mapping screens:** on dialog open, `finalLookupFilter` fetches
+      `describeLookupFields(object, null)` (as today) and then, for each returned relationship, one
+      `describeLookupFields(object, rel.name)`; the rule editor's `sources` become own fields, then
+      `"<rel.label> › <field.label>"` with id `Rel.Field` and the related field's type. Fetch once
+      per open; show the related part as soon as it arrives. Cap: the first 25 relationships by
+      label, with a hint that Advanced search reaches the rest (mapping only).
+- [ ] **Visibility, linked record:** `finalFormStudio.recordRuleSources` adds related fields the
+      same way, id `record:Rel.Field`.
+- [ ] **Server verdicts follow paths.** `FinalSurveyObjectController.ruleFacts` and
+      `FinalGuestContextService` resolve each `record:` path with `FinalLookupService.fieldAt`
+      (unknown → the row is false, as an unknown field is today), SELECT the path as written
+      (`Account.Type`), and read it with `rec.getSObject('Account')?.get('Type')`. Still one query,
+      spec-declared paths only, verdicts only. Tests: own field, related field, related record
+      absent (null lookup → blank), unknown path.
+- [ ] Mapping validator + runtime need nothing: `fieldAt` and `compile` already take paths (tests
+      pin it: a row on `ReportsTo.LastName` publishes and finds).
+
+### Task 16: Current user (D55)
+
+**Files:** `lwc/finalFormStudio/*`, `lwc/finalRuleEditor/*`, `lwc/finalFormViewer/*`,
+`lwc/finalLookupFilter/*`, `classes/FinalLookupService.cls` (+ tests)
+
+- [ ] **Studio sources:** `describeFields({ objectApi: 'User' })` once per Studio session → Current
+      user fields `user:<apiName>` plus `user:Profile.Name` ("Profile name") and
+      `user:UserRole.Name` ("Role name"), both typed text. They join `ruleIndexMap` with their types,
+      so operators and lint type them like any field.
+- [ ] **Rule editor:** visibility Source gains **Current user**; lookup Compare with gains
+      **Current user** (a field picker whose value is `$User.<path>`), not offered when
+      `allowGuest` is on. The public-form note under user rows (decision 15).
+- [ ] **Viewer:** `get userPaths()` collects `user:` sources across page/section/element visibility
+      and validation `when` gates (same walk as `specHasRecordRules`). `userWireId = isGuest ||
+    !userPaths.length ? undefined : currentUserId`. `@wire(getRecord, { recordId: '$userWireId',
+    optionalFields: '$userFieldNames' })` → `_userValues` (reassigned, never mutated, so
+      visibility getters recompute). `getValue` returns `_userValues[path]` for `user:` ids, blank
+      for guests or missing fields. Until the read lands, user rows count as blank (the same
+      posture as record facts before they arrive).
+- [ ] **Lookup server:** `FinalLookupService.userValue` keeps its four fast paths; any other path is
+      checked against User describe (or is `Profile.Name` / `UserRole.Name`), all such paths in a
+      compile are read in one `SELECT … FROM User WHERE Id = :me WITH USER_MODE`. Guest running user + any `$User.` row → `blocked = true`, reason _"This filter needs a signed-in person."_
+- [ ] Tests: viewer makes no read when there are no user rules or the viewer is a guest; a
+      `Profile.Name equals` rule shows/hides; a missing optional field is blank; lookup filter on
+      `$User.UserRole.Name` returns the right rows; guest request blocked; a `$User.` path that isn't
+      a User field is blocked, not queried.
+
+### Task 17: The linked record for Forms (D56)
+
+**Files:** `lwc/finalFormStudio/*`, `lwc/finalFormViewer/*`,
+`classes/FinalSurveyObjectController.cls`, `classes/FinalGuestController.cls` /
+`FinalGuestContextService.cls` (+ tests), `docs/FinalDesign/specs/EXPLICIT_RECORD_CONTEXT.md`
+
+- [ ] **Studio:** `recordRuleSources` returns fields when `isSurvey && objectApi` **or** the form
+      is an ordinary Form with a `targetObject`. The rule editor's hint is reworded for both:
+      _"Linked-record rules work when the form opens with a record — a Survey's record link, or the
+      record a Form is editing. Without one, this is hidden."_ (and the hide-rule variant).
+- [ ] **Viewer:** when a Form has a resolved edit target (`existingRecordId`) and
+      `specHasRecordRules(spec)`, call `getRecordContext` for **verdicts only** (the Form's values
+      already load through the edit path). Same exclusions as edit mode: never under `authoring`,
+      `preservePreview` or `delegateSubmit`.
+- [ ] **Server:** `load()` accepts `form.type` `survey` (as today) or an ordinary form; `prefill`
+      stays survey-only; errors reworded neutrally ("This form has no connected object."). The
+      object check and `UserRecordAccess` gate are unchanged.
+- [ ] **Guest links:** trace whether a Form's personal link reaches `FinalGuestContextService`
+      verdicts today (Forms' links fill answers — "links work for everyone", 2026-09-15). If record
+      rules are survey-only there, extend them the same way; if the Form link path has no record
+      read at all, stop and report before building.
+- [ ] Tests: a Form editing a Contact shows a question only when `record:Title` equals X; the same
+      Form in create mode hides it; a record of the wrong object is refused; a user without access
+      to the record gets "Record not found."; Surveys unchanged.
+- [ ] EXPLICIT_RECORD_CONTEXT: a "Linked-record rules" section for Forms.
+
+### Task 18: Ship S2b
+
+- [ ] Deploy; click through in `/apex/FinalStudio` and on `Final_P0_Test`
+      (`/lightning/n/Final_P0_Test?c__formId=…&c__existingRecordId=…`): a NOT rule, a related-field
+      rule, a Profile-name rule, a Role-name rule, a Form-linked-record rule.
+- [ ] uiux-flow-reviewer pass; branch `feat/conditions-sources`, PR, merge.
 
 ---
 
@@ -619,6 +794,11 @@ removed field is the search field. The writer's fence and the validator read onl
   6. `Title LIKE {Job title}` with answer `50%` matches only `50%`.
   7. `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x`, `{Not a question}` → each
      refused at publish with its sentence.
+- [ ] **Sources (S2b), signed in:** a NOT rule; "Account › Type" in a lookup filter; a visibility
+      rule on Profile name and one on Role name (switch the test user's role to see it flip); a Form
+      on `Final_P0_Test` with `c__existingRecordId` showing a question only for Contacts whose Title is X.
+- [ ] **Sources, as a guest:** the public form with a Profile-name rule — the rule treats the values as
+      blank; no user read appears in the network log.
 - [ ] "What actually shipped" below; branch `docs/f2-search-shipped`.
 
 ## Orphan ledger
@@ -632,6 +812,9 @@ removed field is the search field. The writer's fence and the validator read onl
 - New spec keys: `match.filterMode`, `match.soql`, `match.prefillDeclined`, `fields[].prefilled`.
   Published mappings without them behave as before.
 - The legacy `visibilityEditor` is copied for technique only; it is not referenced or changed.
+- `finalExpressionEngine` gains NOT and `validateCustomLogic`; `FinalLookupLogic` gains NOT. Logic accepted today evaluates identically (pinned in Task 14).
+- `FinalSurveyObjectController.getRecordContext` accepts ordinary Forms (verdicts only); its survey behaviour is unchanged.
+- `FinalLookupService.userValue` reads any User path server-side; its four fast paths are unchanged.
 - Nothing is deleted.
 
 ## Security Review note
