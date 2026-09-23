@@ -86,6 +86,17 @@
                 >
                     Build
                 </button>
+                <template lwc:if={showDataMode}>
+                    <button
+                        type="button"
+                        class={dataClass}
+                        aria-pressed={isDataPressed}
+                        disabled={modeDisabled}
+                        onclick={handleModeData}
+                    >
+                        Data
+                    </button>
+                </template>
                 <button
                     type="button"
                     class={designClass}
@@ -283,6 +294,17 @@
                             spec={viewSpec}
                         ></c-final-preview-stage>
                     </div>
+                </main>
+            </template>
+            <template lwc:elseif={isData}>
+                <main class="st-stagearea st-stagearea--data">
+                    <c-final-data-mode
+                        spec={spec}
+                        form-id={formId}
+                        read-only={isReadOnly}
+                        is-public={isPublic}
+                        onspecchange={handleSpecChange}
+                    ></c-final-data-mode>
                 </main>
             </template>
             <template lwc:elseif={isDesign}>

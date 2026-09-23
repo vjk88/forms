@@ -22,6 +22,21 @@ import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
+jest.mock(
+    '@salesforce/apex/FinalMappingController.listCreatableObjects',
+    () => ({ default: jest.fn(() => Promise.resolve([])) }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalMappingController.compatibility',
+    () => ({ default: jest.fn(() => Promise.resolve({})) }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalMappingController.describeQuestions',
+    () => ({ default: jest.fn(() => Promise.resolve([])) }),
+    { virtual: true }
+);
 jest.mock('lightning/confirm', () => ({
     __esModule: true,
     default: { open: jest.fn() }
@@ -2447,5 +2462,42 @@ describe('c-final-form-studio', () => {
         expect(
             element.shadowRoot.querySelector('[data-id="actions-trigger"]')
         ).not.toBeNull();
+    });
+});
+
+describe('Data mode', () => {
+    async function open(type) {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.form = { id: 'a0F1', name: 'Mapped', type };
+        loadStudio.mockResolvedValue({
+            name: 'Mapped',
+            specJson: JSON.stringify(spec),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await flush();
+        return el;
+    }
+    const modes = (el) => [...el.shadowRoot.querySelectorAll('.st-mode')];
+
+    it('is offered for a Freeform and opens the data surface', async () => {
+        const el = await open('freeform');
+        const data = modes(el).find((b) => b.textContent.trim() === 'Data');
+        expect(data).toBeTruthy();
+        data.click();
+        await flush();
+        expect(el.shadowRoot.querySelector('c-final-data-mode')).toBeTruthy();
+        expect(data.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('is not offered for a Form', async () => {
+        const el = await open('form');
+        expect(modes(el).map((b) => b.textContent.trim())).toEqual([
+            'Build',
+            'Design'
+        ]);
     });
 });

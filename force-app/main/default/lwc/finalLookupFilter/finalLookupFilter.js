@@ -49,6 +49,18 @@ export default class FinalLookupFilter extends LightningElement {
     /** The object this lookup searches. */
     @api targetObject;
 
+    /**
+     * Conditions only. The Freeform mapping screen reuses this editor for a
+     * find-or-create search, where result display, searchable fields and
+     * guest search have no meaning — and a guest-search switch that does
+     * nothing is worse than no switch at all. Lookups leave it off.
+     */
+    @api filterOnly = false;
+
+    get showLookupControls() {
+        return !this.filterOnly;
+    }
+
     @track fields = [];
     @track relationships = [];
     loading = false;

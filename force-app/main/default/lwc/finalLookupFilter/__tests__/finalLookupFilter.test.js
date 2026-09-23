@@ -10,8 +10,18 @@ jest.mock(
 
 const DESCRIBE = {
     fields: [
-        { path: 'AccountId', label: 'Account ID', type: 'reference', picklistValues: [] },
-        { path: 'LeadSource', label: 'Lead Source', type: 'picklist', picklistValues: ['Web', 'Phone'] },
+        {
+            path: 'AccountId',
+            label: 'Account ID',
+            type: 'reference',
+            picklistValues: []
+        },
+        {
+            path: 'LeadSource',
+            label: 'Lead Source',
+            type: 'picklist',
+            picklistValues: ['Web', 'Phone']
+        },
         { path: 'Title', label: 'Title', type: 'string', picklistValues: [] }
     ],
     relationships: [{ name: 'Account', label: 'Account', object: 'Account' }]
@@ -24,19 +34,19 @@ const flush = () =>
         .then(() => Promise.resolve())
         .then(() => Promise.resolve());
 
-function mount(value) {
+function mount(value, { filterOnly = false } = {}) {
     describeLookupFields.mockResolvedValue(DESCRIBE);
     const el = createElement('c-final-lookup-filter', {
         is: FinalLookupFilter
     });
     el.targetObject = 'Contact';
+    el.filterOnly = filterOnly;
     el.value = value || null;
     document.body.appendChild(el);
     return el;
 }
 
-const ruleEditor = (el) =>
-    el.shadowRoot.querySelector('c-final-rule-editor');
+const ruleEditor = (el) => el.shadowRoot.querySelector('c-final-rule-editor');
 
 describe('c-final-lookup-filter', () => {
     afterEach(() => {
@@ -96,8 +106,16 @@ describe('c-final-lookup-filter', () => {
                     value: {
                         logic: 'all',
                         rules: [
-                            { source: 'AccountId', operator: 'equals', value: 'x' },
-                            { source: 'Title', operator: 'contains', value: 'eng' },
+                            {
+                                source: 'AccountId',
+                                operator: 'equals',
+                                value: 'x'
+                            },
+                            {
+                                source: 'Title',
+                                operator: 'contains',
+                                value: 'eng'
+                            },
                             { source: 'Title', operator: 'isNotBlank' }
                         ]
                     }
@@ -199,6 +217,39 @@ describe('c-final-lookup-filter', () => {
         await flush();
         expect(el.shadowRoot.querySelector('.lf-error').textContent).toContain(
             'could not be read'
+        );
+    });
+});
+
+describe('filter-only mode', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    const labels = (el) =>
+        [...el.shadowRoot.querySelectorAll('lightning-input')].map(
+            (i) => i.label
+        );
+
+    it('hides the lookup-only controls', async () => {
+        const el = mount(null, { filterOnly: true });
+        await flush();
+        expect(labels(el)).not.toContain('Show in each result');
+        expect(labels(el)).not.toContain('Search these fields');
+        expect(labels(el)).not.toContain(
+            'Let people filling this form anonymously search it'
+        );
+        expect(ruleEditor(el)).toBeTruthy();
+    });
+
+    it('a lookup still gets all of them', async () => {
+        const el = mount(null);
+        await flush();
+        expect(labels(el)).toContain('Show in each result');
+        expect(labels(el)).toContain(
+            'Let people filling this form anonymously search it'
         );
     });
 });

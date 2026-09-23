@@ -651,6 +651,9 @@ public with sharing class FinalStudioController {
                 'apiName' => fd.getName(),
                 'label' => fd.getLabel(),
                 'inputType' => inputType,
+                // The describe type itself, so the mapping source picker can
+                // apply FinalMappingRules.COMPATIBLE exactly as publish does.
+                'displayType' => String.valueOf(fd.getType()),
                 // required at the DB = must be on the form (palette seeds
                 // these dimmed + ADDED at creation, IA §4)
                 'required' => !fd.isNillable() &&
@@ -686,7 +689,8 @@ public with sharing class FinalStudioController {
                     }
                     row.put('polymorphic', true);
                 } else {
-                    Schema.DescribeSObjectResult refDesc = refs[0].getDescribe();
+                    Schema.DescribeSObjectResult refDesc = refs[0]
+                        .getDescribe();
                     if (!refDesc.isAccessible()) {
                         continue;
                     }

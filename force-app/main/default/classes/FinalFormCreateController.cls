@@ -51,7 +51,7 @@ public with sharing class FinalFormCreateController {
      * bare suffixes — the bare check only applies to non-custom names so a
      * custom object whose label ends in "History" (…History__c) survives.
      */
-    private static Boolean isSystemTable(String name) {
+    public static Boolean isSystemTable(String name) {
         if (
             name.endsWith('__Share') ||
             name.endsWith('__History') ||
