@@ -89,10 +89,11 @@ with this plan. Where they differ, this plan's "Decisions" section says why.
    `c/finalLookupFilter`, which also carries result-display fields, searchable fields and a
    guest-search switch — none of which a mapping saves. A permission-shaped switch that does nothing
    is worse than no switch. Lookups keep all of it; filter-only is opt-in.
-10. **Task and Event can't be mapped to at all (owner ruling, spec D48).** Their "Name" and
-    "Related To" fields can each point at several kinds of record, which the source picker can't
-    offer, so a Task could never be linked to what the form just created. They're left out of the
-    object list and refused at publish.
+10. **Fields that can point at more than one kind of record aren't supported (owner ruling, spec
+    D48).** A Task's "Name" and "Related To", or the Owner on a Case or Lead, can each point at
+    several kinds of record, and the source picker can't offer those. The objects themselves are
+    fine — a form can still create a Task — but those fields are left out of the field list and
+    refused at publish.
 
 The full compatibility table (decision 7):
 
@@ -450,10 +451,11 @@ Push, open the PR, merge (end the PR body with the attribution line).
 - Produces (used by every later Apex task):
   - constants `MAX_STEPS`, `OP_CREATE`, `OP_FIND_OR_CREATE`, `ON_MATCH_REUSE`, `ON_MATCH_UPDATE`,
     `STATUS_NOT_NEEDED`, `STATUS_QUEUED`, `STATUS_DONE`, `STATUS_FAILED`, `STATUS_READY_FOR_RETRY`,
-    `Set<String> RUNNABLE`, `Set<String> RETRYABLE`, `Set<String> SETUP_OBJECTS` (lower case), `Set<String> UNSUPPORTED_OBJECTS` (lower case: task, event),
+    `Set<String> RUNNABLE`, `Set<String> RETRYABLE`, `Set<String> SETUP_OBJECTS` (lower case),
     `Set<String> UNMAPPABLE_ELEMENT_TYPES`, `Map<String, Set<Schema.DisplayType>> COMPATIBLE`
   - `Boolean isCompatible(String answerType, Schema.DisplayType t)`
   - `Boolean isTextLike(Schema.DisplayType t)`
+  - `Boolean isMultiTarget(Schema.DescribeFieldResult fd)` — a lookup that can point at more than one kind of record
   - `Object coerce(Object raw, Schema.DescribeFieldResult fd)` — throws `MappingValueException`
   - `Object valueOf(Form_Submission_Answer__c a)` — the stored value; null when blank or unparsed
   - `Object answerValue(Form_Submission_Answer__c a, Map<String, Object> question, Schema.DescribeFieldResult fd)`
@@ -1035,14 +1037,14 @@ public with sharing class FinalMappingRules {
   };
 
   /**
-   * Objects a mapping can't write to by owner ruling (spec D48). Task and
-   * Event link to other records through fields that can point at several
-   * kinds of record, and the mapping can't offer those. Lower case.
+   * A lookup that can point at more than one kind of record — a Task's
+   * Related To, a Case's Owner. Not supported as a mapping destination
+   * (spec D48): there is no way to offer the author a single target.
    */
-  public static final Set<String> UNSUPPORTED_OBJECTS = new Set<String>{
-    'task',
-    'event'
-  };
+  public static Boolean isMultiTarget(Schema.DescribeFieldResult fd) {
+    return fd.getType() == Schema.DisplayType.REFERENCE &&
+      fd.getReferenceTo().size() > 1;
+  }
 
   /**
    * Question types whose answer is not one value for one field: a grid,
@@ -1629,18 +1631,28 @@ private class FinalMappingValidatorTest {
   }
 
   @IsTest
-  static void taskAndEventBlock() {
-    for (String objectApi : new List<String>{ 'Task', 'Event' }) {
-      Map<String, Object> action = FinalMappingTestData.createContact('act_a');
-      action.put('object', objectApi);
-      Assert.isTrue(
-        anyContains(
-          blockers(check(new List<Object>{ action })),
-          'forms can’t create'
+  static void aFieldThatCanPointAtSeveralKindsOfRecordBlocks() {
+    // A Task is fine; its Related To is not (D48).
+    Map<String, Object> action = new Map<String, Object>{
+      'id' => 'act_a',
+      'object' => 'Task',
+      'operation' => 'create',
+      'fields' => new List<Object>{
+        FinalMappingTestData.field(
+          'Subject',
+          FinalMappingTestData.literal('Follow up')
         ),
-        objectApi + ' must be refused'
-      );
-    }
+        FinalMappingTestData.field(
+          'WhatId',
+          FinalMappingTestData.ref('action:act_x')
+        )
+      }
+    };
+    List<String> found = blockers(check(new List<Object>{ action }));
+    Assert.isTrue(
+      anyContains(found, 'more than one kind of record'),
+      String.join(found, ' | ')
+    );
   }
 
   @IsTest
@@ -2029,19 +2041,6 @@ public with sharing class FinalMappingValidator {
       );
       return;
     }
-    if (
-      FinalMappingRules.UNSUPPORTED_OBJECTS.contains(d.getName().toLowerCase())
-    ) {
-      out.add(
-        new Diagnostic(
-          BLOCKER,
-          id,
-          null,
-          name + ': forms can’t create ' + d.getLabelPlural() + '.'
-        )
-      );
-      return;
-    }
     String op = str(action.get('operation'));
     if (
       op != FinalMappingRules.OP_CREATE &&
@@ -2104,6 +2103,18 @@ public with sharing class FinalMappingValidator {
         continue;
       }
       Schema.DescribeFieldResult fd = sf.getDescribe();
+      if (FinalMappingRules.isMultiTarget(fd)) {
+        out.add(
+          new Diagnostic(
+            BLOCKER,
+            id,
+            fd.getName(),
+            name + ': ' + fd.getLabel() +
+              ' can point at more than one kind of record, and mappings don’t support that.'
+          )
+        );
+        continue;
+      }
       if (!assigned.add(fd.getName().toLowerCase())) {
         out.add(
           new Diagnostic(
@@ -6077,8 +6088,6 @@ private class FinalMappingControllerTest {
       names.contains('User'),
       'a setup object would fail every run'
     );
-    Assert.isFalse(names.contains('Task'), 'not supported (D48)');
-    Assert.isFalse(names.contains('Event'), 'not supported (D48)');
   }
 
   @IsTest
@@ -6171,8 +6180,7 @@ public with sharing class FinalMappingController {
           !d.isDeprecatedAndHidden() &&
           !d.isCustomSetting() &&
           !FinalFormCreateController.isSystemTable(d.getName()) &&
-          !FinalMappingRules.SETUP_OBJECTS.contains(d.getName().toLowerCase()) &&
-          !FinalMappingRules.UNSUPPORTED_OBJECTS.contains(d.getName().toLowerCase())
+          !FinalMappingRules.SETUP_OBJECTS.contains(d.getName().toLowerCase())
         ) {
           out.add(
             new Map<String, String>{
@@ -7590,6 +7598,26 @@ describe('c-final-mapping-action', () => {
     expect(offered).toEqual(['Status']);
   });
 
+  it('does not offer a field that can point at several kinds of record', async () => {
+    describeFields.mockReset();
+    describeFields.mockResolvedValue([
+      { apiName: 'Subject', label: 'Subject', displayType: 'STRING', required: false },
+      { apiName: 'WhatId', label: 'Related To', displayType: 'REFERENCE', polymorphic: true }
+    ]);
+    const el = createElement('c-final-mapping-action', { is: FinalMappingAction });
+    Object.assign(el, {
+      spec: { mapping: { actions: [{ id: 'act_1', object: 'Task', operation: 'create', fields: [] }] } },
+      actionId: 'act_1',
+      objects: [{ label: 'Task', value: 'Task' }],
+      questions: QUESTIONS,
+      compatibility: COMPAT
+    });
+    document.body.appendChild(el);
+    await flush();
+    const offered = el.shadowRoot.querySelector('.ma-add-field').options.map((o) => o.value);
+    expect(offered).toEqual(['Subject']);
+  });
+
   it('marks required fields', async () => {
     const el = mount(
       [
@@ -7800,8 +7828,10 @@ export default class FinalMappingAction extends LightningElement {
     const used = new Set(
       ((this.action && this.action.fields) || []).map((f) => f.field)
     );
+    // A lookup that can point at more than one kind of record is not
+    // offered at all (D48); publish refuses it too.
     return this.fields
-      .filter((f) => !used.has(f.apiName))
+      .filter((f) => !f.polymorphic && !used.has(f.apiName))
       .map((f) => ({ label: f.label, value: f.apiName }));
   }
 
