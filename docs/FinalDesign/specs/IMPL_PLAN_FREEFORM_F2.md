@@ -8782,7 +8782,7 @@ Not checked, and why:
 - Duplicate rules (step 6) changes org configuration; left for the owner.
 - Retry (steps 5 and 7) — deferred with M7.
 
-Test records left in the org by request of nobody but kept for the owner to look at: Contacts
+Test records left in the org for the owner to look at: Contacts
 `003hk000002SaYsAAK` (Walker), `003hk000002SaYtAAK` and `003hk000002SdjdAAC` (Assistant (F2 QA)),
 `003hk000002SXZOAA4` (Duplicate Walker (F2 QA)); submissions FS-00000406 to FS-00000408.
 
