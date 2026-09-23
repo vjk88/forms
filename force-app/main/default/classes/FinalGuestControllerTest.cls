@@ -459,4 +459,25 @@ private class FinalGuestControllerTest {
             'a real submit (empty honeypot) still inserts'
         );
     }
+
+    @IsTest
+    static void theMappingNeverReachesAGuest() {
+        // contactSpec() ends with '}'; splice a mapping in before it.
+        String spec =
+            contactSpec().removeEnd('}') +
+            ',"mapping":{"actions":[{"id":"act_secret","object":"Contact",' +
+            '"operation":"create","fields":[]}]}}';
+        Form__c f = makeForm('Published', 'Public_Guest', true, spec);
+
+        String json = FinalGuestController.getGuestSpec(f.Id);
+
+        Assert.isFalse(
+            json.contains('"mapping"'),
+            'the mapping leaked to a guest'
+        );
+        Assert.isFalse(
+            json.contains('act_secret'),
+            'a step id leaked to a guest'
+        );
+    }
 }

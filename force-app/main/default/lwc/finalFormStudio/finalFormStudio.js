@@ -2691,17 +2691,22 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      * the whole feature off and read as reassurance. The console is the only
      * place that difference can show without nagging the author.
      */
-    async _publishWarnings() {
+    async _publishCheck() {
         try {
             const found = await publishWarnings({
                 formId: this.formId,
                 specJson: JSON.stringify(this.spec)
             });
-            return found || [];
+            return {
+                blockers: (found && found.blockers) || [],
+                warnings: (found && found.warnings) || []
+            };
         } catch (e) {
+            // publishSpec is the gate (F2 D38), so a failed check only costs
+            // the author the preview of what publish would refuse.
             // eslint-disable-next-line no-console
             console.error('Publish warnings unavailable:', e);
-            return [];
+            return { blockers: [], warnings: [] };
         }
     }
 
@@ -2718,7 +2723,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 // question with answers being removed, or file questions on a
                 // form open to people who cannot upload (FREEFORM_SPEC 6.3).
                 // They never block - the author is told, then decides.
-                const warnings = await this._publishWarnings();
+                const { blockers, warnings } = await this._publishCheck();
                 // Publish is the one confirmation in this app whose CONTENT
                 // varies: the others are fixed sentences, this one carries
                 // nought to N consequences and D26 promises a fourth the day
@@ -2731,8 +2736,13 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 // publish always asks the same way.
                 const ok = await FinalPublishDialog.open({
                     size: 'small',
-                    label: warnings.length ? 'Publish anyway?' : 'Publish form',
+                    label: blockers.length
+                        ? 'Can’t publish yet'
+                        : warnings.length
+                          ? 'Publish anyway?'
+                          : 'Publish form',
                     formName: this.formName,
+                    blockers,
                     warnings
                 });
                 if (!ok) return;

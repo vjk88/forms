@@ -4,6 +4,23 @@
     <lightning-modal-body>
         <p class="pd-question">{question}</p>
 
+        <template lwc:if={hasBlockers}>
+            <ul class="pd-blockers">
+                <template for:each={blockerItems} for:item="item">
+                    <li key={item.key} class="pd-blocker">
+                        <lightning-icon
+                            icon-name="utility:error"
+                            variant="error"
+                            size="x-small"
+                            alternative-text="Must fix"
+                            class="pd-blocker-icon"
+                        ></lightning-icon>
+                        <span class="pd-blocker-text">{item.text}</span>
+                    </li>
+                </template>
+            </ul>
+        </template>
+
         <template lwc:if={hasWarnings}>
             <ul class="pd-warnings">
                 <template for:each={consequences} for:item="item">
@@ -33,6 +50,7 @@
         <lightning-button
             label={confirmLabel}
             variant="brand"
+            disabled={hasBlockers}
             onclick={handlePublish}
         ></lightning-button>
     </lightning-modal-footer>

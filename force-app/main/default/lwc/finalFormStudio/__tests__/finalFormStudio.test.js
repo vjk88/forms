@@ -2080,7 +2080,9 @@ describe('c-final-form-studio', () => {
             discardDraft.mockReset().mockResolvedValue();
             LightningConfirm.open.mockReset().mockResolvedValue(true);
             FinalPublishDialog.open.mockReset().mockResolvedValue(true);
-            publishWarnings.mockReset().mockResolvedValue([]);
+            publishWarnings
+                .mockReset()
+                .mockResolvedValue({ blockers: [], warnings: [] });
         });
 
         it('serializes saves and never acknowledges newer edits with an older response', async () => {
@@ -2303,10 +2305,13 @@ describe('c-final-form-studio', () => {
         });
 
         it('hands consequences to the dialog that can list them', async () => {
-            publishWarnings.mockResolvedValue([
-                'You are removing "Phone number", which already has answers.',
-                '"File Upload" cannot accept files from people who are not signed in.'
-            ]);
+            publishWarnings.mockResolvedValue({
+                blockers: [],
+                warnings: [
+                    'You are removing "Phone number", which already has answers.',
+                    '"File Upload" cannot accept files from people who are not signed in.'
+                ]
+            });
             const element = await ready();
             publish(element);
             await micro(12);
@@ -2321,8 +2326,27 @@ describe('c-final-form-studio', () => {
             expect(publishSpec).toHaveBeenCalledTimes(1);
         });
 
+        it('passes blockers to the dialog', async () => {
+            publishWarnings.mockResolvedValue({
+                blockers: ['Step 1 (Contact) has no operation.'],
+                warnings: []
+            });
+            const element = await ready();
+            publish(element);
+            await micro(12);
+
+            const opened = FinalPublishDialog.open.mock.calls[0][0];
+            expect(opened.label).toBe('Can’t publish yet');
+            expect(opened.blockers).toEqual([
+                'Step 1 (Contact) has no operation.'
+            ]);
+        });
+
         it('publishes nothing when the consequences dialog is cancelled', async () => {
-            publishWarnings.mockResolvedValue(['a consequence']);
+            publishWarnings.mockResolvedValue({
+                blockers: [],
+                warnings: ['a consequence']
+            });
             FinalPublishDialog.open.mockResolvedValue(false);
             const element = await ready();
             publish(element);

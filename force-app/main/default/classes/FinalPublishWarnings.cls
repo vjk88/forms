@@ -10,22 +10,35 @@
  * the version currently live, and against what has already been stored.
  */
 public with sharing class FinalPublishWarnings {
+    /** What the publish dialog shows: what refuses, then what to know. */
+    public class PublishCheck {
+        @AuraEnabled
+        public List<String> blockers = new List<String>();
+        @AuraEnabled
+        public List<String> warnings = new List<String>();
+    }
+
     /**
      * @param formId  the form about to be published
      * @param specJson the draft being published
-     * @return plain sentences, in the order an author should read them
+     * @return blockers (publishing will be refused) and warnings (plain
+     *         sentences, in the order an author should read them)
      */
     @AuraEnabled
-    public static List<String> forPublish(Id formId, String specJson) {
+    public static PublishCheck forPublish(Id formId, String specJson) {
+        PublishCheck check = new PublishCheck();
         List<String> warnings = new List<String>();
         if (formId == null || String.isBlank(specJson)) {
-            return warnings;
+            check.warnings = warnings;
+            return check;
         }
         Map<String, Object> draft;
         try {
             draft = (Map<String, Object>) JSON.deserializeUntyped(specJson);
         } catch (Exception e) {
-            return warnings; // publish itself will refuse it, and say why
+            // publish itself will refuse it, and say why
+            check.warnings = warnings;
+            return check;
         }
 
         Map<String, Map<String, Object>> newQuestions = questionsOf(draft);
@@ -107,7 +120,29 @@ public with sharing class FinalPublishWarnings {
                 );
             }
         }
-        return warnings;
+
+        // Mapping (FREEFORM_F2_MAPPING_SPEC section 7): the same validator
+        // publishSpec runs, without throwing, so the author sees it first.
+        try {
+            for (
+                FinalMappingValidator.Diagnostic d : FinalMappingValidator.validate(
+                    draft,
+                    formId
+                )
+            ) {
+                if (d.severity == FinalMappingValidator.BLOCKER) {
+                    check.blockers.add(d.message);
+                } else {
+                    warnings.add(d.message);
+                }
+            }
+        } catch (Exception e) {
+            check.blockers.add(
+                'The mapping couldn’t be checked. Publishing will be refused until it can be.'
+            );
+        }
+        check.warnings = warnings;
+        return check;
     }
 
     /** Every question in a spec, by element id. Content blocks are skipped. */
@@ -153,7 +188,7 @@ public with sharing class FinalPublishWarnings {
         'spacer'
     };
 
-    private static Boolean isQuestion(Map<String, Object> el) {
+    public static Boolean isQuestion(Map<String, Object> el) {
         Object t = el.get('type');
         String type = t instanceof String ? (String) t : '';
         return !BLOCK_TYPES.contains(type) && type != 'file';

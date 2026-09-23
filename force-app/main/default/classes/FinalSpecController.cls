@@ -95,6 +95,11 @@ public with sharing class FinalSpecController {
         // Server-side Autofill validation (IMPL_PLAN_AUTOFILL_RULES §9)
         FinalAutofillValidator.validateForPublish(formId, spec);
 
+        // Mapping validation (FREEFORM_F2_MAPPING_SPEC D38). This is the gate:
+        // the dialog only shows the same results, and an @AuraEnabled method
+        // can be called without the dialog.
+        FinalMappingValidator.validateForPublish(formId, spec);
+
         Savepoint sp = Database.setSavepoint();
         try {
             List<AggregateResult> maxRows = [

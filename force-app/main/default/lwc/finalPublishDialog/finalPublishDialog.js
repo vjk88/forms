@@ -30,12 +30,32 @@ export default class FinalPublishDialog extends LightningModal {
     /** Plain sentences from FinalPublishWarnings; may be empty. */
     @api warnings = [];
 
+    /**
+     * Reasons publishing will be refused; may be empty. While any exist,
+     * Publish is off. The server refuses them anyway (FinalSpecController
+     * runs the same checks) — this only says so before the author tries.
+     */
+    @api blockers = [];
+
+    get hasBlockers() {
+        return Boolean(this.blockers && this.blockers.length);
+    }
+
+    get blockerItems() {
+        return (this.blockers || []).map((text, i) => ({
+            key: `b${i}`,
+            text
+        }));
+    }
+
     get hasWarnings() {
         return Boolean(this.warnings && this.warnings.length);
     }
 
     get question() {
-        return `Publish "${this.formName}"?`;
+        return this.hasBlockers
+            ? `"${this.formName}" can’t be published yet.`
+            : `Publish "${this.formName}"?`;
     }
 
     /**
@@ -51,6 +71,13 @@ export default class FinalPublishDialog extends LightningModal {
     }
 
     get heading() {
+        const blocked = this.blockers ? this.blockers.length : 0;
+        if (blocked === 1) {
+            return 'Fix this before publishing';
+        }
+        if (blocked > 1) {
+            return `Fix ${blocked} things before publishing`;
+        }
         const count = this.warnings ? this.warnings.length : 0;
         if (count === 0) {
             return 'Publish form';

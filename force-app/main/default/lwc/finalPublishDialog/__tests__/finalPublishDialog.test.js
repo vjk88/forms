@@ -13,12 +13,17 @@ import FinalPublishDialog from 'c/finalPublishDialog';
  */
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-function mount({ formName = 'Untitled Freeform', warnings = [] } = {}) {
+function mount({
+    formName = 'Untitled Freeform',
+    warnings = [],
+    blockers = []
+} = {}) {
     const el = createElement('c-final-publish-dialog', {
         is: FinalPublishDialog
     });
     el.formName = formName;
     el.warnings = warnings;
+    el.blockers = blockers;
     document.body.appendChild(el);
     return el;
 }
@@ -120,5 +125,40 @@ describe('c-final-publish-dialog', () => {
             .find((b) => b.label === 'Cancel')
             .click();
         expect(closed).toEqual([true, false]);
+    });
+});
+
+describe('blockers', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('lists blockers and disables Publish', async () => {
+        const el = mount({
+            formName: 'Partner application',
+            blockers: [
+                'Step 2 (Contact): choose what happens when a matching record is found.'
+            ],
+            warnings: ['A warning']
+        });
+        await flush();
+        const blockers = el.shadowRoot.querySelectorAll('.pd-blocker');
+        expect(blockers).toHaveLength(1);
+        expect(blockers[0].textContent).toContain('matching record is found');
+        expect(confirmButton(el).disabled).toBe(true);
+    });
+
+    it('says what is wrong in the heading', async () => {
+        const el = mount({ formName: 'F', blockers: ['a', 'b'] });
+        await flush();
+        expect(heading(el)).toBe('Fix 2 things before publishing');
+    });
+
+    it('keeps Publish enabled with warnings only', async () => {
+        const el = mount({ formName: 'F', warnings: ['w'] });
+        await flush();
+        expect(confirmButton(el).disabled).toBe(false);
     });
 });

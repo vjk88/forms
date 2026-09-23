@@ -377,6 +377,9 @@ public without sharing class FinalGuestController {
      * theme tokens, header, and completion copy all stay.
      */
     private static void projectForGuest(Map<String, Object> spec) {
+        // Which objects and fields a form writes, and how it searches for
+        // records, are never a guest's business (F2 plan, decision 2).
+        spec.remove('mapping');
         Map<String, Object> form = asMap(spec.get('form'));
         if (form != null) {
             form.remove('targetObject');
