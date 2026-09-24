@@ -322,3 +322,86 @@ describe('typed conditions (D50)', () => {
         ).toBe('ok');
     });
 });
+
+describe('pre-filling the searched field (decision 12)', () => {
+    const step = () => ({
+        ...base(),
+        mapping: {
+            actions: [
+                {
+                    id: 'act_a',
+                    object: 'Contact',
+                    operation: 'findOrCreate',
+                    match: { filter: { logic: 'all', rows: [] } },
+                    fields: [{ field: 'LastName', source: answer('el_n') }]
+                }
+            ]
+        }
+    });
+    const fieldsOf = (spec) => actionsOf(spec)[0].fields;
+    const pickEmail = (spec) =>
+        setMatch(setMatch(spec, 'act_a', { field: 'Email' }), 'act_a', {
+            source: answer('el_e')
+        });
+
+    it('adds the searched field, fed by its answer, once both are chosen', () => {
+        const spec = setMatch(step(), 'act_a', { field: 'Email' });
+        expect(fieldsOf(spec).map((x) => x.field)).toEqual(['LastName']);
+        const done = setMatch(spec, 'act_a', { source: answer('el_e') });
+        expect(fieldsOf(done)[0]).toEqual({
+            field: 'Email',
+            source: answer('el_e'),
+            prefilled: true
+        });
+    });
+
+    it('follows a source change while untouched', () => {
+        const spec = setMatch(pickEmail(step()), 'act_a', {
+            source: answer('el_x')
+        });
+        expect(fieldsOf(spec)[0].source).toEqual(answer('el_x'));
+    });
+
+    it('stays as the author set it once edited', () => {
+        let spec = setFieldSource(pickEmail(step()), 'act_a', 'Email', {
+            kind: 'literal',
+            value: 'x@y.z'
+        });
+        expect(fieldsOf(spec)[0].prefilled).toBeUndefined();
+        spec = setMatch(spec, 'act_a', { source: answer('el_x') });
+        expect(fieldsOf(spec)[0].source).toEqual({
+            kind: 'literal',
+            value: 'x@y.z'
+        });
+    });
+
+    it('is not re-added after deletion when the filter or source changes', () => {
+        let spec = removeField(pickEmail(step()), 'act_a', 'Email');
+        spec = setMatch(spec, 'act_a', {
+            filter: {
+                logic: 'all',
+                rows: [{ fieldPath: 'Title', operator: 'eq', value: 'x' }]
+            }
+        });
+        spec = setMatch(spec, 'act_a', { source: answer('el_x') });
+        expect(fieldsOf(spec).map((x) => x.field)).toEqual(['LastName']);
+    });
+
+    it('is offered again when the search field changes', () => {
+        let spec = removeField(pickEmail(step()), 'act_a', 'Email');
+        spec = setMatch(spec, 'act_a', { field: 'Phone' });
+        expect(fieldsOf(spec)[0]).toEqual({
+            field: 'Phone',
+            source: answer('el_e'),
+            prefilled: true
+        });
+    });
+
+    it('drops the old untouched pre-fill when the search field changes', () => {
+        const spec = setMatch(pickEmail(step()), 'act_a', { field: 'Phone' });
+        expect(fieldsOf(spec).map((x) => x.field)).toEqual([
+            'Phone',
+            'LastName'
+        ]);
+    });
+});

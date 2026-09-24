@@ -109,6 +109,7 @@ export function setFieldSource(spec, actionId, field, source) {
         const existing = a.fields.find((f) => f.field === field);
         if (existing) {
             existing.source = source;
+            delete existing.prefilled; // the author's choice now, not ours
         } else {
             a.fields.push({ field, source });
         }
@@ -118,17 +119,58 @@ export function setFieldSource(spec, actionId, field, source) {
 export function removeField(spec, actionId, field) {
     return update(spec, actionId, (a) => {
         a.fields = a.fields.filter((f) => f.field !== field);
+        // Deleting the searched field's row is a decision: never re-add it.
+        if (a.match && a.match.field === field) {
+            a.match.prefillDeclined = true;
+        }
     });
 }
 
+/**
+ * The searched field is pre-filled in the create list from the answer it
+ * is searched by (decision 12, D52) — a new record should carry the value it
+ * was looked up by. The row stays editable: once the author changes it,
+ * it's theirs; once they delete it, it stays deleted.
+ */
 export function setMatch(spec, actionId, patch) {
     return update(spec, actionId, (a) => {
+        const fieldChanged =
+            patch.field && patch.field !== (a.match || {}).field;
         a.match = { ...(a.match || emptyMatch()), ...patch };
-        if (patch.field) {
-            const matched = a.fields.find((f) => f.field === patch.field);
+        if (fieldChanged) {
+            // The old search field's untouched pre-fill goes; the author's
+            // own rows stay.
+            a.fields = a.fields.filter(
+                (f) => !(f.prefilled && f.field !== a.match.field)
+            );
+            delete a.match.prefillDeclined;
+            const matched = a.fields.find((f) => f.field === a.match.field);
             if (matched) {
                 delete matched.writeOnMatch;
             }
+        }
+        // Filter edits never pre-fill.
+        if (!('field' in patch) && !('source' in patch)) {
+            return;
+        }
+        const m = a.match;
+        if (
+            !m.field ||
+            !m.source ||
+            m.source.kind !== 'answer' ||
+            m.prefillDeclined
+        ) {
+            return;
+        }
+        const row = a.fields.find((f) => f.field === m.field);
+        if (!row) {
+            a.fields.unshift({
+                field: m.field,
+                source: { ...m.source },
+                prefilled: true
+            });
+        } else if (row.prefilled) {
+            row.source = { ...m.source };
         }
     });
 }
