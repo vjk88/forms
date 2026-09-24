@@ -4,62 +4,94 @@
     display: block;
 }
 
-.ta {
+/* SLDS styling hooks, with the SLDS values as fallbacks. */
+:host {
+    --ta-border: var(--slds-g-color-border-2, var(--ta-border));
+    --ta-surface: var(--slds-g-color-neutral-base-100, #fff);
+    --ta-brand: var(--slds-g-color-brand-base-50, var(--ta-brand));
+    --ta-error: var(--slds-g-color-error-base-40, var(--ta-error));
+    --ta-weak: var(--slds-g-color-neutral-base-50, #747474);
+    --ta-rule: var(--slds-g-color-border-1, var(--ta-rule));
+    --ta-active: var(--slds-g-color-brand-base-95, var(--ta-active));
+}
+
+/* The box, its magnifier and its dropdown: the dropdown hangs off the box,
+   not off the label or the error line. */
+.ta-box {
     position: relative;
+}
+
+/* A magnifier, so it reads as a search next to the row's pickers. */
+.ta-icon {
+    position: absolute;
+    right: 0.625rem;
+    top: 1rem;
+    transform: translateY(-50%);
+    line-height: 0;
+    pointer-events: none;
+    --slds-c-icon-color-foreground-default: var(--ta-weak);
 }
 
 .ta-label {
     display: block;
     margin-bottom: 0.25rem;
     font-size: 0.75rem;
-    color: #444;
+    color: var(--slds-g-color-neutral-base-30, #444);
 }
 
 .ta-input {
     width: 100%;
     box-sizing: border-box;
     height: 2rem;
-    padding: 0 0.625rem;
+    padding: 0 1.75rem 0 0.625rem;
     font: inherit;
     font-size: 0.8125rem;
-    border: 1px solid #c9c9c9;
+    border: 1px solid var(--ta-border);
     border-radius: 0.25rem;
-    background: #fff;
+    background: var(--ta-surface);
 }
 
 .ta-input:focus {
     outline: none;
-    border-color: #0b5cab;
-    box-shadow: 0 0 0 1px #0b5cab;
+    border-color: var(--ta-brand);
+    box-shadow: 0 0 0 1px var(--ta-brand);
 }
 
 .ta-input--error,
 .ta-input--error:focus {
-    border-color: #ba0517;
-    box-shadow: 0 0 0 1px #ba0517;
+    border-color: var(--ta-error);
+    box-shadow: 0 0 0 1px var(--ta-error);
 }
 
 .ta-error {
     font-size: 0.75rem;
-    color: #ba0517;
+    color: var(--ta-error);
 }
 
 .ta-error:empty {
     display: none;
 }
 
-.ta-list {
+/* The dropdown: the options, then any note (nothing matches, cut short). */
+.ta-pop {
     position: absolute;
     z-index: 10;
-    top: 2.125rem;
+    top: calc(100% + 0.125rem);
     left: 0;
     right: 0;
-    max-height: 16rem;
-    overflow-y: auto;
-    background: #fff;
-    border: 1px solid #c9c9c9;
+    background: var(--ta-surface);
+    border: 1px solid var(--ta-border);
     border-radius: 0.25rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.ta-list {
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.ta-note:empty {
+    display: none;
 }
 
 .ta-item {
@@ -70,7 +102,7 @@
 }
 
 .ta-item--active {
-    background: #eaf3fb;
+    background: var(--ta-active);
 }
 
 .ta-item--on .ta-item-label {
@@ -78,31 +110,35 @@
 }
 
 .ta-item--back {
-    border-bottom: 1px solid #e5e5e5;
-    color: #0b5cab;
+    border-bottom: 1px solid var(--ta-rule);
+    color: var(--ta-brand);
 }
 
 .ta-item-label {
     font-size: 0.8125rem;
 }
 
+.ta-chevron-back {
+    margin-right: 0.25rem;
+}
+
 .ta-chevron {
     margin-left: 0.25rem;
-    color: #6b6b6b;
+    color: var(--ta-weak);
 }
 
 .ta-item-meta {
     font-size: 0.6875rem;
-    color: #6b6b6b;
+    color: var(--ta-weak);
 }
 
 .ta-empty,
 .ta-hint {
     padding: 0.5rem 0.625rem;
     font-size: 0.75rem;
-    color: #6b6b6b;
+    color: var(--ta-weak);
 }
 
 .ta-hint {
-    border-top: 1px solid #e5e5e5;
+    border-top: 1px solid var(--ta-rule);
 }

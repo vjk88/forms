@@ -1,61 +1,97 @@
 <template>
     <div class="ta">
         <label class={labelClass} for="ta-input">{label}</label>
-        <input
-            id="ta-input"
-            class={inputClass}
-            type="text"
-            role="combobox"
-            autocomplete="off"
-            aria-autocomplete="list"
-            aria-controls="ta-list"
-            aria-expanded={expanded}
-            aria-activedescendant={activeId}
-            aria-invalid={invalid}
-            aria-describedby="ta-error"
-            value={query}
-            placeholder={placeholder}
-            disabled={disabled}
-            oninput={handleInput}
-            onfocus={handleFocus}
-            onblur={handleBlur}
-            onkeydown={handleKeydown}
-        />
-        <template lwc:if={open}>
-            <div class="ta-list" id="ta-list" role="listbox" aria-label={label}>
-                <template for:each={options} for:item="o">
+        <div class="ta-box">
+            <input
+                id="ta-input"
+                class={inputClass}
+                type="text"
+                role="combobox"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="ta-list"
+                aria-expanded={expanded}
+                aria-activedescendant={activeId}
+                aria-invalid={invalid}
+                aria-describedby="ta-note ta-error"
+                value={query}
+                placeholder={placeholder}
+                disabled={disabled}
+                oninput={handleInput}
+                onfocus={handleFocus}
+                onblur={handleBlur}
+                onkeydown={handleKeydown}
+            />
+            <span class="ta-icon" aria-hidden="true">
+                <lightning-icon
+                    icon-name="utility:search"
+                    size="xx-small"
+                ></lightning-icon>
+            </span>
+            <template lwc:if={open}>
+                <div class="ta-pop">
                     <div
-                        key={o.key}
-                        id={o.id}
-                        class={o.cls}
-                        role="option"
-                        aria-selected={o.selected}
-                        data-value={o.value}
-                        data-kind={o.kind}
-                        onmousedown={handlePick}
+                        class="ta-list"
+                        id="ta-list"
+                        role="listbox"
+                        aria-label={label}
                     >
-                        <span class="ta-item-label">
-                            {o.label}
-                            <template lwc:if={o.isGroup}>
-                                <span class="ta-chevron" aria-hidden="true"
-                                    >›</span
-                                >
-                            </template>
-                        </span>
-                        <template lwc:if={o.meta}>
-                            <span class="ta-item-meta">{o.meta}</span>
+                        <template for:each={options} for:item="o">
+                            <div
+                                key={o.key}
+                                id={o.id}
+                                class={o.cls}
+                                role="option"
+                                aria-selected={o.selected}
+                                data-value={o.value}
+                                data-kind={o.kind}
+                                onmousedown={handlePick}
+                            >
+                                <span class="ta-item-label">
+                                    <template lwc:if={o.isBack}>
+                                        <span
+                                            class="ta-chevron-back"
+                                            aria-hidden="true"
+                                            >‹</span
+                                        >
+                                    </template>
+                                    {o.label}
+                                    <template lwc:if={o.isGroup}>
+                                        <span
+                                            class="ta-chevron"
+                                            aria-hidden="true"
+                                            >›</span
+                                        >
+                                    </template>
+                                </span>
+                                <template lwc:if={o.meta}>
+                                    <span class="ta-item-meta">{o.meta}</span>
+                                </template>
+                                <template lwc:if={o.isGroup}>
+                                    <span class="slds-assistive-text"
+                                        >, related record, press Right Arrow to
+                                        open</span
+                                    >
+                                </template>
+                            </div>
                         </template>
                     </div>
-                </template>
-                <template lwc:if={hasOptions}></template>
-                <template lwc:else>
-                    <div class="ta-empty">{emptyText}</div>
-                </template>
-                <template lwc:if={hint}>
-                    <div class="ta-hint">{hint}</div>
-                </template>
-            </div>
-        </template>
+                    <!-- Outside the listbox: only options belong in there. -->
+                    <div class="ta-note" id="ta-note" aria-live="polite">
+                        <template lwc:if={hasOptions}></template>
+                        <template lwc:else>
+                            <div class="ta-empty">{emptyText}</div>
+                        </template>
+                        <template lwc:if={overflowText}>
+                            <div class="ta-hint">{overflowText}</div>
+                        </template>
+                        <template lwc:if={hint}>
+                            <div class="ta-hint">{hint}</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
         <div class="ta-error" id="ta-error" aria-live="polite">
             {errorMessage}
         </div>

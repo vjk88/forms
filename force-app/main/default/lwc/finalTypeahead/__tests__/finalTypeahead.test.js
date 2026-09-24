@@ -89,7 +89,7 @@ describe('c-final-typeahead', () => {
     it('the back row stays on top and says back', async () => {
         const el = mount({
             items: [
-                { value: '__back', label: '‹ Back', kind: 'back' },
+                { value: '__back', label: 'Back to all fields', kind: 'back' },
                 { value: 'Owner.Email', label: 'Owner › Email' }
             ]
         });
@@ -97,7 +97,7 @@ describe('c-final-typeahead', () => {
         el.addEventListener('back', () => backs.push(true));
         type(el, 'zzz');
         await flush();
-        expect(shown(el)).toEqual(['‹ Back']);
+        expect(shown(el)).toEqual(['‹Back to all fields']);
         el.shadowRoot
             .querySelector('[data-kind="back"]')
             .dispatchEvent(new CustomEvent('mousedown'));
@@ -129,5 +129,75 @@ describe('c-final-typeahead', () => {
         expect(el.shadowRoot.querySelector('label').className).toContain(
             'slds-assistive-text'
         );
+    });
+
+    it('Escape closes an open list without closing a dialog around it', async () => {
+        const el = mount();
+        const outer = jest.fn();
+        document.body.addEventListener('keydown', outer);
+        input(el).dispatchEvent(new CustomEvent('focus'));
+        await flush();
+        const esc = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+            composed: true
+        });
+        input(el).dispatchEvent(esc);
+        await flush();
+        expect(shown(el)).toEqual([]);
+        expect(outer).not.toHaveBeenCalled();
+        // a closed list lets Escape through, so the dialog can close
+        input(el).dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+                composed: true
+            })
+        );
+        expect(outer).toHaveBeenCalledTimes(1);
+        document.body.removeEventListener('keydown', outer);
+    });
+
+    it('a click keeps focus in the box, and closing says so', async () => {
+        const el = mount();
+        const closed = jest.fn();
+        el.addEventListener('close', closed);
+        input(el).dispatchEvent(new CustomEvent('focus'));
+        await flush();
+        const down = new CustomEvent('mousedown', { cancelable: true });
+        el.shadowRoot.querySelector('.ta-item').dispatchEvent(down);
+        expect(down.defaultPrevented).toBe(true);
+        expect(closed).toHaveBeenCalledTimes(1);
+    });
+
+    it('says when the list is cut short', async () => {
+        const many = Array.from({ length: 60 }, (_, i) => ({
+            value: `F${i}`,
+            label: `Field ${i}`
+        }));
+        const el = mount({ items: many });
+        input(el).dispatchEvent(new CustomEvent('focus'));
+        await flush();
+        expect(shown(el)).toHaveLength(50);
+        expect(el.shadowRoot.querySelector('.ta-note').textContent).toContain(
+            'Showing 50 of 60'
+        );
+    });
+
+    it('Left Arrow in an empty box goes back', async () => {
+        const el = mount({
+            items: [
+                { value: '__back', label: 'Back to all fields', kind: 'back' },
+                { value: 'Owner.Email', label: 'Owner › Email' }
+            ]
+        });
+        const back = jest.fn();
+        el.addEventListener('back', back);
+        input(el).dispatchEvent(new CustomEvent('focus'));
+        await flush();
+        input(el).dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowLeft' })
+        );
+        expect(back).toHaveBeenCalledTimes(1);
     });
 });

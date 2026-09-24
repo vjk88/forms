@@ -225,6 +225,10 @@ export default class FinalFieldPicker extends LightningElement {
         if (!objectApi) {
             return;
         }
+        if (show) {
+            // Go there at once; "Loading…" shows until its fields arrive.
+            this.level = rel;
+        }
         try {
             const [root, out] = await Promise.all([
                 describe(objectApi, null),
@@ -241,10 +245,10 @@ export default class FinalFieldPicker extends LightningElement {
                     fields: out.fields || []
                 }
             };
-            if (show) {
-                this.level = rel;
-            }
         } catch {
+            if (this.level === rel) {
+                this.level = null;
+            }
             this.loadError = 'Those related fields couldn’t be read.';
         }
     }
@@ -266,7 +270,7 @@ export default class FinalFieldPicker extends LightningElement {
     get items() {
         if (this.level) {
             return [
-                { value: '__back', label: '‹ Back', kind: 'back' },
+                { value: '__back', label: 'Back to all fields', kind: 'back' },
                 ...this._relatedItems(this.level, false)
             ];
         }
@@ -294,7 +298,11 @@ export default class FinalFieldPicker extends LightningElement {
     }
 
     get hint() {
-        if (this.level || !this.root) {
+        if (this.level) {
+            const group = this.related[this.level];
+            return group ? `${group.label} fields. Left Arrow goes back.` : '';
+        }
+        if (!this.root) {
             return '';
         }
         const hasGroups = (this.root.relationships || []).length > 0;
@@ -320,6 +328,20 @@ export default class FinalFieldPicker extends LightningElement {
         return [...(this.extraItems || []), ...own, ...opened];
     }
 
+    /** What the list says when it has nothing to show. */
+    get emptyText() {
+        if (this.loadError) {
+            return this.loadError;
+        }
+        if (!this.root) {
+            return 'Loading fields…';
+        }
+        if (this.level && !this.related[this.level]) {
+            return 'Loading related fields…';
+        }
+        return 'No fields match';
+    }
+
     get placeholderText() {
         return this.loadError || this.placeholder;
     }
@@ -330,6 +352,12 @@ export default class FinalFieldPicker extends LightningElement {
     }
 
     handleBack(event) {
+        event.stopPropagation();
+        this.level = null;
+    }
+
+    /** Reopening the list starts from the object's own fields. */
+    handleClose(event) {
         event.stopPropagation();
         this.level = null;
     }

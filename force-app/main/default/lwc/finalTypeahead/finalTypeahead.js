@@ -16,7 +16,8 @@ const MAX_RESULTS = 50;
  *   searchOnly — listed only while the author is typing
  *
  * Emits `pick` {value, label} for an item, `opengroup` {value} for a group,
- * `back` for the back row. The owner keeps the value and the items.
+ * `back` for the back row (also Left Arrow in an empty box), `close` when
+ * the list closes. The owner keeps the value and the items.
  *
  * Also speaks the lightning-* error API — setCustomValidity, reportValidity,
  * focus — so the condition editor treats it like any other control.
@@ -125,6 +126,11 @@ export default class FinalTypeahead extends LightningElement {
     }
 
     get matches() {
+        return this._found.slice(0, MAX_RESULTS);
+    }
+
+    /** Everything that matches, before the list is cut to MAX_RESULTS. */
+    get _found() {
         const q = (this.query || '').toLowerCase().trim();
         const chosenLabel = this._labelFor(this._value).toLowerCase();
         // Showing the chosen label in the box must not narrow the list to it.
@@ -154,7 +160,15 @@ export default class FinalTypeahead extends LightningElement {
             };
             found.sort((x, y) => rank(x) - rank(y));
         }
-        return found.slice(0, MAX_RESULTS);
+        return found;
+    }
+
+    /** Said when the list is cut short, so nothing is silently out of reach. */
+    get overflowText() {
+        const total = this._found.length;
+        return total > MAX_RESULTS
+            ? `Showing ${MAX_RESULTS} of ${total}. Type to narrow.`
+            : '';
     }
 
     get options() {
@@ -165,6 +179,7 @@ export default class FinalTypeahead extends LightningElement {
                 key: `${o.kind || 'item'}:${o.value}`,
                 id: `ta-${i}`,
                 isGroup: o.kind === 'group',
+                isBack: o.kind === 'back',
                 selected: on ? 'true' : 'false',
                 cls:
                     'ta-item' +
@@ -204,9 +219,26 @@ export default class FinalTypeahead extends LightningElement {
         // Let a mousedown pick land before the list closes.
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         this._blurTimer = setTimeout(() => {
-            this.open = false;
             this.query = this._labelFor(this._value);
+            this._close();
         }, 150);
+    }
+
+    _close() {
+        if (this.open) {
+            this.open = false;
+            this.dispatchEvent(new CustomEvent('close'));
+        }
+    }
+
+    renderedCallback() {
+        // Arrowing past the bottom of the box keeps the active row in view.
+        const active = this.open
+            ? this.template.querySelector('.ta-item--active')
+            : null;
+        if (active && typeof active.scrollIntoView === 'function') {
+            active.scrollIntoView({ block: 'nearest' });
+        }
     }
 
     handleKeydown(event) {
@@ -228,17 +260,33 @@ export default class FinalTypeahead extends LightningElement {
         ) {
             event.preventDefault();
             this._act(active);
+        } else if (
+            event.key === 'ArrowLeft' &&
+            !this.query &&
+            this.open &&
+            this.matches.some((o) => o.kind === 'back')
+        ) {
+            event.preventDefault();
+            this._act(this.matches.find((o) => o.kind === 'back'));
         } else if (event.key === 'Enter') {
             event.preventDefault();
             if (this.open && active) {
                 this._act(active);
             }
-        } else if (event.key === 'Escape') {
-            this.open = false;
+        } else if (event.key === 'Escape' && this.open) {
+            // Closing the list must not also close a dialog around it (and
+            // lose its unapplied edits). A closed list lets Escape through.
+            event.preventDefault();
+            event.stopPropagation();
+            this.query = this._labelFor(this._value);
+            this._close();
         }
     }
 
     handlePick(event) {
+        // Keep focus in the box: a click on "Account ›" opens its fields in
+        // place instead of blurring the box and closing the list.
+        event.preventDefault();
         const { value, kind } = event.currentTarget.dataset;
         const hit = (this._items || []).find(
             (o) => String(o.value) === value && (o.kind || '') === (kind || '')
@@ -265,7 +313,7 @@ export default class FinalTypeahead extends LightningElement {
         }
         this._value = item.value;
         this.query = item.label;
-        this.open = false;
+        this._close();
         this.dispatchEvent(
             new CustomEvent('pick', {
                 detail: { value: item.value, label: item.label }
