@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { lintVisibility, validateCustomLogic } from 'c/finalExpressionEngine';
+import { typeForPath } from 'c/finalFieldPicker';
 
 /**
  * finalRuleEditor — the condition editor, laid out the way the Form
@@ -128,6 +129,9 @@ function kindOf(source, chosen) {
     if (typeof source === 'string' && source.startsWith('record:')) {
         return 'record';
     }
+    if (typeof source === 'string' && source.startsWith('user:')) {
+        return 'user';
+    }
     if (typeof source === 'string' && source !== '') {
         return 'answer';
     }
@@ -137,12 +141,49 @@ function kindOf(source, chosen) {
 const isBlankValue = (v) => v === '' || v === null || v === undefined;
 
 /**
+ * Current user (D55): any User field, plus the two an admin reaches for
+ * first. Profile.Name and UserRole.Name are paths the picker must not treat
+ * as relationships to open.
+ */
+export const USER_EXTRAS = [
+    { value: 'user:Profile.Name', label: 'Profile name', type: 'string' },
+    { value: 'user:UserRole.Name', label: 'Role name', type: 'string' }
+];
+
+/** The same two, as a lookup filter's compare-with value (read server-side). */
+export const USER_VALUE_EXTRAS = USER_EXTRAS.map((x) => ({
+    ...x,
+    value: `$User.${x.value.slice(5)}`
+}));
+
+/** Salesforce display types → this editor's subtypes (operators, value controls). */
+const DISPLAY_TO_SUBTYPE = {
+    string: 'text',
+    textarea: 'textarea',
+    email: 'email',
+    phone: 'phone',
+    url: 'url',
+    picklist: 'picklist',
+    boolean: 'checkbox',
+    double: 'number',
+    currency: 'number',
+    percent: 'number',
+    integer: 'number',
+    long: 'number',
+    date: 'date',
+    datetime: 'datetime'
+};
+
+/**
  * What a saved-but-gone source is called. A question's id means nothing to
  * an author, so it's "Removed question"; a field path does, so it stays.
  */
 export function removedLabel(source, isVisibility) {
     if (source.startsWith('record:')) {
         return `Removed field (${source.slice(7)})`;
+    }
+    if (source.startsWith('user:')) {
+        return `Current user › ${source.slice(5)}`;
     }
     return isVisibility ? 'Removed question' : `${source} (not available)`;
 }
@@ -213,10 +254,50 @@ export default class FinalRuleEditor extends LightningElement {
         return !this.columns || this.columns === 'visibility';
     }
 
+    /**
+     * Lookup filters may compare with the signed-in person's own details
+     * (D55) — not when the lookup allows anonymous search, where "current
+     * user" would be the site guest. The server reads the value itself.
+     */
+    @api allowCurrentUser = false;
+
+    get userValueExtras() {
+        return USER_VALUE_EXTRAS;
+    }
+
+    /** What a record screen's value can be compared with. */
+    get compareOptions() {
+        const out = [{ value: 'fixed', label: 'A fixed value' }];
+        if (this.columns === 'lookup' && this.allowCurrentUser) {
+            out.push({ value: 'user', label: 'Current user' });
+        }
+        return out;
+    }
+
+    /** One choice is no choice: the column only shows with two or more. */
+    get showCompare() {
+        return !this.isVisibility && this.compareOptions.length > 1;
+    }
+
+    /** Where a row's value comes from; an unset row keeps its chosen kind. */
+    _compareOf(rule, i) {
+        if (typeof rule.value === 'string' && rule.value.startsWith('$User.')) {
+            return 'user';
+        }
+        return isBlankValue(rule.value) && this._compare[i]
+            ? this._compare[i]
+            : 'fixed';
+    }
+
+    /** Compare-with choice per unset row, index-aligned with the rules. */
+    _compare = [];
+
     get headers() {
-        return (COLUMN_SETS[this.columns] || COLUMN_SETS.visibility).map(
-            (label) => ({ key: label, label })
-        );
+        let labels = COLUMN_SETS[this.columns] || COLUMN_SETS.visibility;
+        if (this.showCompare) {
+            labels = ['Field', 'Operator', 'Compare with', 'Value'];
+        }
+        return labels.map((label) => ({ key: label, label }));
     }
 
     /** The field column's heading, repeated above each field when stacked. */
@@ -225,7 +306,9 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     get gridClass() {
-        return this.isVisibility ? 're-grid re-grid--4' : 're-grid re-grid--3';
+        return this.isVisibility || this.showCompare
+            ? 're-grid re-grid--4'
+            : 're-grid re-grid--3';
     }
 
     get rules() {
@@ -289,8 +372,43 @@ export default class FinalRuleEditor extends LightningElement {
     get sourceKindOptions() {
         return [
             { value: 'answer', label: 'An answer' },
-            { value: 'record', label: 'Linked record' }
+            { value: 'record', label: 'Linked record' },
+            { value: 'user', label: 'Current user' }
         ];
+    }
+
+    _kindOptions(kind) {
+        return this.sourceKindOptions.filter(
+            (o) =>
+                o.value !== 'record' ||
+                this.hasRecordSources ||
+                kind === 'record'
+        );
+    }
+
+    /** Whether the form is public — user conditions say what that means. */
+    @api isPublic = false;
+
+    /** Current user's field types, as this editor's subtypes, by source. */
+    _userTypes = {};
+
+    get userHint() {
+        const hasUser = this.rules.some(
+            (r) => typeof r.source === 'string' && r.source.startsWith('user:')
+        );
+        if (!hasUser) {
+            return '';
+        }
+        const guests = this.isPublic
+            ? 'People who aren’t signed in have no user details, so this ' +
+              'condition never counts as met for them. '
+            : '';
+        return (
+            guests +
+            'This tidies what people see; anyone determined can still find ' +
+            'hidden questions in the page, so don’t rely on it to keep ' +
+            'things private.'
+        );
     }
 
     get hasRecordSources() {
@@ -321,6 +439,9 @@ export default class FinalRuleEditor extends LightningElement {
     /** The source's granular subtype, or null when it has none we can type on
      *  (a `record:` row, or an element the index doesn't carry). */
     _subtype(source) {
+        if (typeof source === 'string' && source.startsWith('user:')) {
+            return this._userTypes[source] || null;
+        }
         const meta =
             this.sourceIndex && this.sourceIndex.get
                 ? this.sourceIndex.get(source)
@@ -425,7 +546,22 @@ export default class FinalRuleEditor extends LightningElement {
                     message:
                         this._valueKind(rule.source) === 'bool'
                             ? 'Choose Yes or No.'
-                            : 'Enter a value, or use “Is blank”.'
+                            : this._compareOf(rule, i) === 'user'
+                              ? 'Choose a user field.'
+                              : 'Enter a value, or use “Is blank”.'
+                });
+            } else if (
+                this.columns === 'lookup' &&
+                !this.allowCurrentUser &&
+                this._compareOf(rule, i) === 'user'
+            ) {
+                // Anonymous search was switched on after this was set up.
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message:
+                        'Current user can’t be used while people who aren’t ' +
+                        'signed in can search this lookup.'
                 });
             }
         });
@@ -519,7 +655,37 @@ export default class FinalRuleEditor extends LightningElement {
      * control turns red, is marked invalid and says its message to a screen
      * reader. Only the native datetime input needs the text line instead.
      */
+    /** Saved user conditions learn their field types from User's describe. */
+    _resolveUserTypes() {
+        const missing = this.rules
+            .map((r) => r.source)
+            .filter(
+                (s) =>
+                    typeof s === 'string' &&
+                    s.startsWith('user:') &&
+                    !(s in this._userTypes) &&
+                    !(this._askedTypes || new Set()).has(s)
+            );
+        if (!missing.length) {
+            return;
+        }
+        this._askedTypes = new Set([...(this._askedTypes || []), ...missing]);
+        missing.forEach((source) => {
+            const extra = USER_EXTRAS.find((x) => x.value === source);
+            const pending = extra
+                ? Promise.resolve(extra.type)
+                : typeForPath('User', source.slice(5));
+            pending.then((type) => {
+                this._userTypes = {
+                    ...this._userTypes,
+                    [source]: DISPLAY_TO_SUBTYPE[type] || null
+                };
+            });
+        });
+    }
+
     renderedCallback() {
+        this._resolveUserTypes();
         this.template.querySelectorAll('[data-control]').forEach((node) => {
             if (
                 typeof node.setCustomValidity !== 'function' ||
@@ -564,15 +730,30 @@ export default class FinalRuleEditor extends LightningElement {
         return this.rules.map((rule, i) => {
             const kind = kindOf(rule.source, this._kinds[i]);
             const valueKind = this._valueKind(rule.source);
-            const pickerObject = this.isVisibility
-                ? kind === 'record'
-                    ? this.recordObject
-                    : null
-                : this.fieldObject;
+            let pickerObject = this.fieldObject;
+            if (this.isVisibility) {
+                pickerObject =
+                    kind === 'record'
+                        ? this.recordObject
+                        : kind === 'user'
+                          ? 'User'
+                          : null;
+            }
             return {
                 usePicker: Boolean(pickerObject),
                 pickerObject,
-                pickerPrefix: kind === 'record' ? 'record:' : '',
+                pickerPrefix:
+                    kind === 'record'
+                        ? 'record:'
+                        : kind === 'user'
+                          ? 'user:'
+                          : '',
+                pickerExtras: kind === 'user' ? USER_EXTRAS : [],
+                showCompare: this.showCompare,
+                compareKind: this._compareOf(rule, i),
+                compareOptions: this.compareOptions,
+                compareLabel: `Condition ${i + 1}: compare with`,
+                valueIsUser: this._compareOf(rule, i) === 'user',
                 key: `rule_${i}`,
                 index: i,
                 number: i + 1,
@@ -589,10 +770,7 @@ export default class FinalRuleEditor extends LightningElement {
                 isDateTime: valueKind === 'datetime',
                 isText: valueKind === 'text',
                 boolOptions: this._boolOptions(rule.value),
-                sourceKindOptions:
-                    this.hasRecordSources || kind === 'record'
-                        ? this.sourceKindOptions
-                        : this.sourceKindOptions.slice(0, 1),
+                sourceKindOptions: this._kindOptions(kind),
                 fieldOptions: this._fieldOptions(rule, kind),
                 operatorOptions: this._operatorOptions(rule),
                 fieldProblem: messageFor(i, 'field'),
@@ -693,6 +871,7 @@ export default class FinalRuleEditor extends LightningElement {
         const next = this._next();
         next.rules.splice(i, 1);
         this._kinds.splice(i, 1);
+        this._compare.splice(i, 1);
         const shifted = new Set();
         this._touched.forEach((key) => {
             const [row, control] = key.split(':');
@@ -736,6 +915,21 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     /** Switching a row between an answer and the linked record starts it over. */
+    /** Switching what the value comes from empties it: nothing is guessed. */
+    handleCompareKind(event) {
+        const i = Number(event.currentTarget.dataset.index);
+        const kind = this._eventValue(event);
+        const next = this._next();
+        const rule = next.rules[i];
+        if (!rule || this._compareOf(rule, i) === kind) {
+            return;
+        }
+        this._compare[i] = kind;
+        rule.value = '';
+        this._focusNext = `[data-index="${i}"][data-control="value"]`;
+        this._emit(next);
+    }
+
     handleSourceKind(event) {
         const i = Number(event.currentTarget.dataset.index);
         const kind = this._eventValue(event);
@@ -762,6 +956,20 @@ export default class FinalRuleEditor extends LightningElement {
         this._touched.add(`${i}:${control}`);
         const prop = control === 'field' ? 'source' : control;
         rule[prop] = this._eventValue(event);
+        // A user field's type arrives with the pick; record it before the
+        // operator and value are checked against it below.
+        if (
+            prop === 'source' &&
+            typeof rule.source === 'string' &&
+            rule.source.startsWith('user:') &&
+            event.detail &&
+            event.detail.type
+        ) {
+            this._userTypes = {
+                ...this._userTypes,
+                [rule.source]: DISPLAY_TO_SUBTYPE[event.detail.type] || null
+            };
+        }
         if (prop === 'operator' && NO_VALUE.has(rule.operator)) {
             rule.value = null;
         }

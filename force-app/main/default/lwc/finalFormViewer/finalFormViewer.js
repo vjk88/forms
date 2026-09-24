@@ -1,6 +1,10 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
-import { notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
+import { getRecord, notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
+import USER_ID from '@salesforce/user/Id';
+import IS_GUEST from '@salesforce/user/isGuest';
+import USER_OBJECT from '@salesforce/schema/User';
 import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -59,6 +63,50 @@ function specHasMappings(spec) {
 
 /** SO-3: any record-sourced rule row anywhere a rules config can live —
  *  page/section/element visibility plus validation `when` gates. */
+/**
+ * D55: every Current user field a rule reads — page, section and element
+ * visibility plus validation `when` gates — as paths ('Title',
+ * 'Profile.Name'), sorted and de-duplicated.
+ */
+function collectUserPaths(pages) {
+    const paths = new Set();
+    const scan = (config) => {
+        for (const r of (config && config.rules) || []) {
+            if (typeof r.source === 'string' && r.source.startsWith('user:')) {
+                paths.add(r.source.slice(5));
+            }
+        }
+    };
+    for (const page of pages || []) {
+        scan(page.visibility);
+        for (const sec of page.sections || []) {
+            scan(sec.visibility);
+            for (const el of sec.elements || []) {
+                scan(el.visibility);
+                for (const v of el.validation || []) {
+                    scan(v.when);
+                }
+            }
+        }
+    }
+    return [...paths].sort();
+}
+
+/** A field from a getRecord reply, one hop deep ('Profile.Name'). */
+function readUserField(record, path) {
+    const [first, second] = path.split('.');
+    const field = record.fields && record.fields[first];
+    if (!field) {
+        return undefined; // not readable: optionalFields left it out
+    }
+    if (!second) {
+        return field.value;
+    }
+    const parent = field.value;
+    const inner = parent && parent.fields && parent.fields[second];
+    return inner ? inner.value : null; // no role → blank, not unreadable
+}
+
 function specHasRecordRules(spec) {
     const inConfig = (config) =>
         (config && config.rules ? config.rules : []).some(
@@ -861,6 +909,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 }
             }
         }
+        // D55: the Current user fields any rule reads, so the viewer asks for
+        // exactly those — and nothing at all when there are none.
+        const userPaths = collectUserPaths(effectivePages);
+        if (userPaths.join('|') !== this._userPaths.join('|')) {
+            this._userPaths = userPaths;
+            this._userValues = null;
+            this._userTypes = null;
+            this._userFailed = false;
+        }
         this.model = {
             // RAW (may be undefined): pageFrame falls back to medium for the
             // carded panel, while bleed layouts keep their locked column
@@ -1509,8 +1566,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     _ruleCtx() {
         return {
-            getValue: (id) => this.answers[id],
-            getType: (id) => this._ruleTypeIndex.get(id),
+            getValue: (id) => {
+                if (typeof id === 'string' && id.startsWith('user:')) {
+                    return this._userValue(id.slice(5));
+                }
+                return this.answers[id];
+            },
+            getType: (id) => {
+                if (typeof id === 'string' && id.startsWith('user:')) {
+                    const types = this._userTypes || {};
+                    return types[id.slice(5)] || 'field';
+                }
+                return this._ruleTypeIndex.get(id);
+            },
             // SO-3: server-frozen record-rule verdicts (null = no context)
             getRecordFacts: () => this._ruleFacts,
             // Decision 18: a condition on details that aren't here — no linked
@@ -1524,7 +1592,79 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (kind === 'record') {
             return this._ruleFacts !== null;
         }
+        if (kind === 'user') {
+            // Values AND their types, or a date would compare as a number;
+            // never for a guest, who has no user details (decision 18).
+            return (
+                !IS_GUEST &&
+                !this._userFailed &&
+                this._userValues !== null &&
+                this._userTypes !== null
+            );
+        }
         return true;
+    }
+
+    /** A field this person couldn't read is blank: the user is there. */
+    _userValue(path) {
+        const v = this._userValues ? this._userValues[path] : undefined;
+        return v === undefined ? null : v;
+    }
+
+    // ---- Current user (D55) ----
+
+    /** Current user fields the rules read: 'Title', 'Profile.Name', … */
+    _userPaths = [];
+    /** { path: value } once read; null until then. */
+    _userValues = null;
+    /** { path: 'date' | 'datetime' | 'field' } once described; null until then. */
+    _userTypes = null;
+    _userFailed = false;
+
+    /** Idle (undefined) unless a signed-in person's form has user rules. */
+    get userWireId() {
+        return !IS_GUEST && this._userPaths.length ? USER_ID : undefined;
+    }
+
+    get userFieldNames() {
+        return this._userPaths.map((p) => `User.${p}`);
+    }
+
+    get userObjectApi() {
+        return this.userWireId ? USER_OBJECT : undefined;
+    }
+
+    // optionalFields: a field this person can't read comes back missing — a
+    // blank — instead of failing the whole read.
+    @wire(getRecord, {
+        recordId: '$userWireId',
+        optionalFields: '$userFieldNames'
+    })
+    wiredUser({ data, error }) {
+        if (data) {
+            const values = {};
+            for (const path of this._userPaths) {
+                values[path] = readUserField(data, path);
+            }
+            this._userValues = values;
+        } else if (error) {
+            this._userFailed = true;
+        }
+    }
+
+    @wire(getObjectInfo, { objectApiName: '$userObjectApi' })
+    wiredUserInfo({ data, error }) {
+        if (data) {
+            const types = {};
+            for (const path of this._userPaths) {
+                const field = path.includes('.') ? null : data.fields[path];
+                const t = field ? String(field.dataType).toLowerCase() : '';
+                types[path] = t === 'date' || t === 'datetime' ? t : 'field';
+            }
+            this._userTypes = types;
+        } else if (error) {
+            this._userFailed = true;
+        }
     }
 
     /** The nav renders VISIBLE pages only — rules filter all three levels

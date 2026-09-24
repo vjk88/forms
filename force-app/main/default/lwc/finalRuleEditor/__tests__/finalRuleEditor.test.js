@@ -582,7 +582,8 @@ describe('the Source column (visibility)', () => {
         const el = mount({ value: config([rule('el_1', 'equals', 'x')]) });
         await flush();
         expect(control(el, 0, 'kind').options.map((o) => o.value)).toEqual([
-            'answer'
+            'answer',
+            'user'
         ]);
 
         const el2 = mount({
@@ -592,7 +593,8 @@ describe('the Source column (visibility)', () => {
         await flush();
         expect(control(el2, 0, 'kind').options.map((o) => o.value)).toEqual([
             'answer',
-            'record'
+            'record',
+            'user'
         ]);
     });
 
@@ -650,5 +652,123 @@ describe('record-search screens', () => {
         });
         await flush();
         expect(el.problems[0].message).toBe('Choose a field.');
+    });
+});
+
+describe('Current user as a source (D55)', () => {
+    it('is always offered on visibility screens', async () => {
+        const el = mount({ value: config([rule('el_1', 'equals', 'x')]) });
+        await flush();
+        expect(control(el, 0, 'kind').options.map((o) => o.value)).toEqual([
+            'answer',
+            'user'
+        ]);
+    });
+
+    it('searches User’s fields, with Profile name and Role name first', async () => {
+        const el = mount({
+            value: config([rule('user:Profile.Name', 'equals', 'Admin')])
+        });
+        await flush();
+        const picker = control(el, 0, 'field');
+        expect(picker.tagName).toBe('C-FINAL-FIELD-PICKER');
+        expect(picker.objectApi).toBe('User');
+        expect(picker.prefix).toBe('user:');
+        expect(picker.extraItems.map((x) => x.label)).toEqual([
+            'Profile name',
+            'Role name'
+        ]);
+        expect(control(el, 0, 'kind').value).toBe('user');
+    });
+
+    it('types a picked user field, so a date gets date controls', async () => {
+        const el = mount({ value: config([rule('', 'equals', '')]) });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'kind'), 'user');
+        el.value = changes[0];
+        await flush();
+        control(el, 0, 'field').dispatchEvent(
+            new CustomEvent('fieldchange', {
+                detail: {
+                    value: 'user:LastLoginDate',
+                    label: 'Last Login',
+                    type: 'datetime'
+                }
+            })
+        );
+        el.value = changes[1];
+        await flush();
+        expect(control(el, 0, 'value').type).toBe('datetime-local');
+    });
+
+    it('says what user conditions mean, and what they mean for guests', async () => {
+        const el = mount({
+            isPublic: true,
+            value: config([rule('user:Profile.Name', 'equals', 'Admin')])
+        });
+        await flush();
+        const hint = el.shadowRoot.querySelector('.re-user-hint').textContent;
+        expect(hint).toContain('aren’t signed in');
+        expect(hint).toContain('don’t rely on it to keep things private');
+    });
+
+    it('lint doesn’t call a user field "not found"', async () => {
+        const el = mount({
+            value: config([rule('user:Title', 'equals', 'Manager')])
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('.re-lint')).toBeNull();
+    });
+});
+
+describe('Compare with → Current user on lookup filters (D55)', () => {
+    it('adds the column only when current user is allowed', async () => {
+        const off = mount({
+            columns: 'lookup',
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        expect(control(off, 0, 'compare')).toBeNull();
+
+        const on = mount({
+            columns: 'lookup',
+            allowCurrentUser: true,
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        const heads = [...on.shadowRoot.querySelectorAll('.re-col')].map((n) =>
+            n.textContent.trim()
+        );
+        expect(heads).toEqual(['Field', 'Operator', 'Compare with', 'Value']);
+        expect(control(on, 0, 'compare').value).toBe('fixed');
+    });
+
+    it('choosing Current user empties the value and offers User’s fields', async () => {
+        const el = mount({
+            columns: 'lookup',
+            allowCurrentUser: true,
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'compare'), 'user');
+        expect(changes[0].rules[0].value).toBe('');
+        el.value = changes[0];
+        await flush();
+        const picker = control(el, 0, 'value');
+        expect(picker.tagName).toBe('C-FINAL-FIELD-PICKER');
+        expect(picker.prefix).toBe('$User.');
+        expect(el.problems[0].message).toBe('Choose a user field.');
+    });
+
+    it('flags a saved user comparison once anonymous search is on', async () => {
+        const el = mount({
+            columns: 'lookup',
+            allowCurrentUser: false,
+            value: config([rule('el_1', 'equals', '$User.Profile.Name')])
+        });
+        await flush();
+        expect(el.problems[0].message).toContain('aren’t signed in');
     });
 });

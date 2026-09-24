@@ -400,6 +400,83 @@ private class FinalLookupServiceTest {
         }
     }
 
+    // ------------------------------------------------ current user (D55)
+
+    @isTest
+    static void comparesWithTheCurrentUsersProfileAndFields() {
+        User me = [
+            SELECT Alias, Profile.Name
+            FROM User
+            WHERE Id = :UserInfo.getUserId()
+        ];
+        insert new List<Contact>{
+            new Contact(LastName = 'Principal A', Title = me.Profile.Name),
+            new Contact(LastName = 'Principal B', Title = me.Alias),
+            new Contact(LastName = 'Principal C', Title = 'Someone else')
+        };
+        for (
+            String token : new List<String>{
+                '$User.Profile.Name',
+                '$User.Alias'
+            }
+        ) {
+            List<FinalLookupService.Row> found = FinalLookupService.search(
+                cfg('Contact', new List<Object>{ row('Title', 'eq', token) }),
+                'Principal',
+                new Map<String, Object>()
+            );
+            System.assertEquals(1, found.size(), token);
+        }
+    }
+
+    @isTest
+    static void aUserPathThatIsNotAUserFieldBlocksWithoutAQuery() {
+        Integer before = Limits.getQueries();
+        FinalLookupService.Compiled c = FinalLookupService.compile(
+            cfg(
+                'Contact',
+                new List<Object>{ row('Title', 'eq', '$User.No_Such_Field__c') }
+            ),
+            new Map<String, Object>(),
+            'Contact'
+        );
+        System.assert(c.blocked, 'no value → the filter blocks');
+        System.assertEquals(
+            before,
+            Limits.getQueries(),
+            'and User was never read'
+        );
+    }
+
+    @isTest
+    static void aGuestNeverSearchesWithTheSiteGuestsDetails() {
+        List<User> guests = [
+            SELECT Id
+            FROM User
+            WHERE UserType = 'Guest' AND IsActive = TRUE
+            LIMIT 1
+        ];
+        if (guests.isEmpty()) {
+            return; // no site in this org: nothing to prove
+        }
+        FinalLookupService.Compiled c;
+        System.runAs(guests[0]) {
+            c = FinalLookupService.compile(
+                cfg(
+                    'Contact',
+                    new List<Object>{ row('Title', 'eq', '$User.Name') }
+                ),
+                new Map<String, Object>(),
+                'Contact'
+            );
+        }
+        System.assert(c.blocked);
+        System.assertEquals(
+            'This filter needs a signed-in person.',
+            c.blockedReason
+        );
+    }
+
     @isTest
     static void malformedLogicBlocksTheWholeFilter() {
         FinalLookupService.Compiled c = FinalLookupService.compile(

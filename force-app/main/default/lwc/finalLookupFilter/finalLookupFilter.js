@@ -65,6 +65,11 @@ export default class FinalLookupFilter extends LightningElement {
     @api dialogLabel;
 
     /** Which screen the shared condition editor lays itself out for. */
+    /** Current user only for signed-in searches: a guest would be the site guest. */
+    get allowCurrentUserCompare() {
+        return !this.filterOnly && !this.allowGuest;
+    }
+
     get conditionColumns() {
         return this.filterOnly ? 'mapping' : 'lookup';
     }

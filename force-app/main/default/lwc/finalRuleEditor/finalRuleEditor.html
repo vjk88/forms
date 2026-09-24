@@ -76,6 +76,7 @@
                                     placeholder="Search fields"
                                     object-api={r.pickerObject}
                                     prefix={r.pickerPrefix}
+                                    extra-items={r.pickerExtras}
                                     value={r.source}
                                     data-index={r.index}
                                     data-control="field"
@@ -112,12 +113,47 @@
                             ></lightning-combobox>
                         </div>
 
+                        <template lwc:if={r.showCompare}>
+                            <div class="re-cell">
+                                <template lwc:if={r.needsValue}>
+                                    <span
+                                        class="re-cell-label"
+                                        aria-hidden="true"
+                                        >Compare with</span
+                                    >
+                                    <lightning-combobox
+                                        label={r.compareLabel}
+                                        variant="label-hidden"
+                                        options={r.compareOptions}
+                                        value={r.compareKind}
+                                        data-index={r.index}
+                                        data-control="compare"
+                                        onchange={handleCompareKind}
+                                    ></lightning-combobox>
+                                </template>
+                            </div>
+                        </template>
+
                         <div class="re-cell" data-problem={r.valueProblem}>
                             <template lwc:if={r.needsValue}>
                                 <span class="re-cell-label" aria-hidden="true"
                                     >Value</span
                                 >
-                                <template lwc:if={r.isBool}>
+                                <template lwc:if={r.valueIsUser}>
+                                    <c-final-field-picker
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Search user fields"
+                                        object-api="User"
+                                        prefix="$User."
+                                        extra-items={userValueExtras}
+                                        value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
+                                        onfieldchange={handleRuleField}
+                                    ></c-final-field-picker>
+                                </template>
+                                <template lwc:elseif={r.isBool}>
                                     <lightning-combobox
                                         label={r.valueLabel}
                                         variant="label-hidden"
@@ -213,6 +249,9 @@
             </template>
             <template lwc:if={recordHint}>
                 <p class="re-record-hint">{recordHint}</p>
+            </template>
+            <template lwc:if={userHint}>
+                <p class="re-record-hint re-user-hint">{userHint}</p>
             </template>
         </template>
         <template lwc:else>

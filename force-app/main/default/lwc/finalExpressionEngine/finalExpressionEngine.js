@@ -528,8 +528,9 @@ export function lintVisibility(config, elementIndex, hostRepeatSectionId) {
         }
         // SO-3 record rows: no element to index, no repeater scoping, and
         // type coercion is the SERVER's describe-driven job — operator
-        // validity (above) is the whole lint.
-        if (isRecordRule(rule)) {
+        // validity (above) is the whole lint. Current-user rows (D55) have no
+        // element either; their types come from User's own describe.
+        if (isRecordRule(rule) || isUserRule(rule)) {
             return;
         }
         const meta = elementIndex && elementIndex.get(rule.source);
