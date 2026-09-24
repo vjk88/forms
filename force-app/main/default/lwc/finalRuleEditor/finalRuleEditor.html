@@ -139,7 +139,19 @@
                                 <span class="re-cell-label" aria-hidden="true"
                                     >Value</span
                                 >
-                                <template lwc:if={r.valueIsUser}>
+                                <template lwc:if={r.valueIsAnswer}>
+                                    <lightning-combobox
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Choose a question…"
+                                        options={r.answerOptions}
+                                        value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
+                                        onchange={handleRuleField}
+                                    ></lightning-combobox>
+                                </template>
+                                <template lwc:elseif={r.valueIsUser}>
                                     <c-final-field-picker
                                         label={r.valueLabel}
                                         variant="label-hidden"

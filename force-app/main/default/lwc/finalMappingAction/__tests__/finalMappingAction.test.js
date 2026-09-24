@@ -422,4 +422,42 @@ describe('find or create', () => {
                 .rows
         ).toEqual(rows);
     });
+
+    it('hands the filter every question, with what each can compare with', async () => {
+        const el = mount(
+            foc(
+                {
+                    field: 'Email',
+                    source: { kind: 'answer', elementKey: 'el_e' },
+                    filter: { logic: 'all', rows: [] }
+                },
+                []
+            ),
+            'act_1'
+        );
+        el.questions = [
+            ...QUESTIONS,
+            {
+                elementKey: 'el_o',
+                label: 'Pick several',
+                answerType: 'Options',
+                mappable: true
+            }
+        ];
+        await flush();
+        const filter = el.shadowRoot.querySelector('c-final-lookup-filter');
+        expect(filter.answerChoices).toEqual([
+            {
+                key: 'el_e',
+                label: 'Work email',
+                fits: ['email', 'string', 'textarea']
+            },
+            {
+                key: 'el_n',
+                label: 'Your surname',
+                fits: ['string', 'textarea']
+            },
+            { key: 'el_o', label: 'Pick several', fits: [] }
+        ]);
+    });
 });

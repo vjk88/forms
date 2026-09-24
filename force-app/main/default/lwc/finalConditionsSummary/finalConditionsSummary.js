@@ -44,7 +44,8 @@ export function describeCondition(
     rule,
     labels = new Map(),
     types = new Map(),
-    isVisibility = true
+    isVisibility = true,
+    answersOn = false
 ) {
     const source = (rule && rule.source) || '';
     let subject = labels.get(source) || '';
@@ -68,6 +69,15 @@ export function describeCondition(
         (raw === 'true' || raw === 'false')
     ) {
         shown = raw === 'true' ? 'Yes' : 'No';
+    } else if (
+        answersOn &&
+        typeof raw === 'string' &&
+        raw.startsWith('$field.')
+    ) {
+        // On the mapping screen a $field. value is a question's answer.
+        shown = labels.has(raw)
+            ? `the answer to “${labels.get(raw)}”`
+            : 'the answer to a removed question';
     } else if (typeof raw === 'string' && raw.startsWith('$User.')) {
         shown = labels.get(raw) || `Current user › ${raw.slice(6)}`;
     } else if (LIST_OPERATORS.has(rule.operator)) {
@@ -101,6 +111,8 @@ export default class FinalConditionsSummary extends LightningElement {
     @api isPublic = false;
     /** Lookup filters: may compare with the signed-in person (D55). */
     @api allowCurrentUser = false;
+    /** Mapping screen: the questions a row may compare with (Task 7). */
+    @api answerChoices = [];
     @api recordObject;
     /** The dialog's title and sentence. */
     @api label;
@@ -154,6 +166,9 @@ export default class FinalConditionsSummary extends LightningElement {
         const map = new Map(Object.entries(this._pathLabels));
         [...(this.sources || []), ...(this.recordSources || [])].forEach((s) =>
             map.set(s.id, s.label)
+        );
+        (this.answerChoices || []).forEach((a) =>
+            map.set(`$field.${a.key}`, a.label)
         );
         return map;
     }
@@ -239,7 +254,13 @@ export default class FinalConditionsSummary extends LightningElement {
         return this.rules.slice(0, MAX_SHOWN).map((rule, i) => ({
             key: `c${i}`,
             number: i + 1,
-            text: describeCondition(rule, labels, types, this.isVisibility)
+            text: describeCondition(
+                rule,
+                labels,
+                types,
+                this.isVisibility,
+                this.columns === 'mapping'
+            )
         }));
     }
 
@@ -283,6 +304,7 @@ export default class FinalConditionsSummary extends LightningElement {
                 fieldObject: this.fieldObject,
                 isPublic: this.isPublic,
                 allowCurrentUser: this.allowCurrentUser,
+                answerChoices: this.answerChoices,
                 recordObject: this.recordObject,
                 startWithRow: !this.hasRules
             });

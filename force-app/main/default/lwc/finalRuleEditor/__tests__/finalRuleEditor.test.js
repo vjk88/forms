@@ -772,3 +772,146 @@ describe('Compare with → Current user on lookup filters (D55)', () => {
         expect(el.problems[0].message).toContain('aren’t signed in');
     });
 });
+
+describe('Compare with An answer (mapping screen, Task 7)', () => {
+    const FIELDS = [
+        { id: 'LastName', label: 'Last Name', type: 'string' },
+        { id: 'NumberOfEmployees', label: 'Employees', type: 'integer' },
+        { id: 'Type', label: 'Type', type: 'picklist' }
+    ];
+    const CHOICES = [
+        {
+            key: 'el_last',
+            label: 'Your last name',
+            fits: ['string', 'picklist']
+        },
+        { key: 'el_size', label: 'Team size', fits: ['integer', 'double'] },
+        { key: 'el_many', label: 'Pick several', fits: [] }
+    ];
+    const mountMapping = (rules, props = {}) =>
+        mount({
+            columns: 'mapping',
+            sources: FIELDS,
+            sourceIndex: undefined,
+            answerChoices: CHOICES,
+            value: config(rules),
+            ...props
+        });
+    const compareValues = (el, i) =>
+        control(el, i, 'compare').options.map((o) => o.value);
+    const answerLabels = (el, i) =>
+        control(el, i, 'value').options.map((o) => o.label);
+
+    it('is off on visibility: $field. stays plain text, no Compare with', async () => {
+        const el = mount({
+            answerChoices: CHOICES,
+            value: config([rule('el_1', 'equals', '$field.el_last')])
+        });
+        await flush();
+        expect(control(el, 0, 'compare')).toBeNull();
+        expect(control(el, 0, 'value').tagName).toBe('LIGHTNING-INPUT');
+        expect(control(el, 0, 'value').value).toBe('$field.el_last');
+        expect(el.problems).toEqual([]);
+    });
+
+    it('offers only fitting, single-value answers', async () => {
+        const el = mountMapping([rule('LastName', 'equals', '$field.el_last')]);
+        await flush();
+        expect(compareValues(el, 0)).toEqual(['fixed', 'answer']);
+        expect(control(el, 0, 'compare').value).toBe('answer');
+        expect(answerLabels(el, 0)).toEqual(['Your last name']);
+        expect(el.problems).toEqual([]);
+    });
+
+    it('Contains offers answers only for text fields; Is one of offers none', async () => {
+        const el = mountMapping([
+            rule('LastName', 'contains', ''),
+            rule('Type', 'contains', ''),
+            rule('LastName', 'in', '')
+        ]);
+        await flush();
+        expect(compareValues(el, 0)).toEqual(['fixed', 'answer']);
+        expect(compareValues(el, 1)).toEqual(['fixed']);
+        expect(compareValues(el, 2)).toEqual(['fixed']);
+    });
+
+    it('choosing An answer picks nothing, focuses the picker and asks for a question', async () => {
+        const el = mountMapping([rule('LastName', 'equals', 'Smith')]);
+        await flush();
+        const changes = listen(el);
+        const focused = [];
+        const spy = jest
+            .spyOn(HTMLElement.prototype, 'focus')
+            .mockImplementation(function () {
+                focused.push(this);
+            });
+        change(control(el, 0, 'compare'), 'answer');
+        expect(changes[0].rules[0].value).toBe('');
+        el.value = changes[0];
+        await flush();
+        await flush();
+        const picker = control(el, 0, 'value');
+        expect(picker.tagName).toBe('LIGHTNING-COMBOBOX');
+        expect(picker.placeholder).toBe('Choose a question…');
+        expect(focused).toContain(picker);
+        spy.mockRestore();
+        expect(el.problems.map((p) => p.message)).toEqual([
+            'Choose a question.'
+        ]);
+    });
+
+    it('an operator change that rules the answer out keeps it, marked', async () => {
+        const el = mountMapping([rule('LastName', 'equals', '$field.el_last')]);
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'operator'), 'in');
+        expect(changes[0].rules[0].value).toBe('$field.el_last');
+        el.value = changes[0];
+        await flush();
+        expect(answerLabels(el, 0)).toEqual([
+            'Your last name (Can’t be used with this comparison)'
+        ]);
+        expect(el.problems[0].message).toBe(
+            'This question can’t be used with this comparison.'
+        );
+    });
+
+    it('a removed question shows as removed, untouched', async () => {
+        const el = mountMapping([rule('LastName', 'equals', '$field.el_gone')]);
+        await flush();
+        expect(control(el, 0, 'value').value).toBe('$field.el_gone');
+        expect(answerLabels(el, 0)).toContain('(Question removed)');
+        expect(el.problems[0].message).toBe('Question removed.');
+    });
+
+    it('a question whose type no longer fits says so', async () => {
+        const el = mountMapping([
+            rule('NumberOfEmployees', 'equals', '$field.el_last')
+        ]);
+        await flush();
+        expect(answerLabels(el, 0)).toContain(
+            'Your last name (Question type is incompatible)'
+        );
+        expect(el.problems[0].message).toBe('Question type is incompatible.');
+    });
+
+    it('never lists a question that holds several values', async () => {
+        const el = mountMapping([rule('Type', 'equals', '$field.el_last')]);
+        await flush();
+        expect(answerLabels(el, 0)).not.toContain('Pick several');
+    });
+
+    it('with no questions, a saved answer still shows removed, blocks, and nothing new is offered', async () => {
+        const el = mountMapping(
+            [
+                rule('LastName', 'equals', '$field.el_gone'),
+                rule('LastName', 'equals', '')
+            ],
+            { answerChoices: [] }
+        );
+        await flush();
+        expect(answerLabels(el, 0)).toEqual(['(Question removed)']);
+        expect(compareValues(el, 1)).toEqual(['fixed']);
+        expect(el.reportProblems().message).toBe('Question removed.');
+    });
+});

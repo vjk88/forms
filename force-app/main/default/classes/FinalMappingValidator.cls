@@ -522,6 +522,7 @@ public with sharing class FinalMappingValidator {
                 )
             );
         } else {
+            checkRowAnswers(filter, d, name, id, ctx, out);
             FinalLookupService.Compiled c = FinalLookupService.compile(
                 new Map<String, Object>{ 'filter' => filter },
                 ctx.placeholders,
@@ -539,6 +540,145 @@ public with sharing class FinalMappingValidator {
             }
         }
         return matchField;
+    }
+
+    private static final Set<String> LIST_OPERATORS = new Set<String>{
+        'in',
+        'nin',
+        'includes',
+        'excludes'
+    };
+
+    /**
+     * D49: a filter row may compare with an answer. The answer must still be
+     * on the form, hold one value (not a grid, an order, a file or several
+     * choices — decision 9), fit the field the row filters on, and suit the
+     * comparison: never a list operator, and "contains" only on text.
+     */
+    private static void checkRowAnswers(
+        Map<String, Object> filter,
+        Schema.DescribeSObjectResult d,
+        String name,
+        String id,
+        Context ctx,
+        List<Diagnostic> out
+    ) {
+        for (Object rowObj : FinalMappingRules.asList(filter.get('rows'))) {
+            Map<String, Object> row = FinalMappingRules.asMap(rowObj);
+            if (row == null) {
+                continue;
+            }
+            String path = str(row.get('fieldPath'));
+            String op = str(row.get('operator'));
+            Schema.DescribeFieldResult rowField = path == null
+                ? null
+                : FinalMappingRules.fieldAt(d.getName(), path);
+            List<String> keys = new List<String>();
+            Boolean inList = false;
+            if (isAnswerToken(row.get('value'))) {
+                keys.add(((String) row.get('value')).substring(7));
+            }
+            for (Object entry : FinalMappingRules.asList(row.get('values'))) {
+                if (isAnswerToken(entry)) {
+                    keys.add(((String) entry).substring(7));
+                    inList = true;
+                }
+            }
+            for (String key : keys) {
+                Map<String, Object> q = ctx.questions.get(key);
+                if (q == null) {
+                    out.add(
+                        new Diagnostic(
+                            BLOCKER,
+                            id,
+                            path,
+                            name +
+                            '’s filter uses a question that’s no longer on the form.'
+                        )
+                    );
+                    continue;
+                }
+                String answerType = FinalSubmitService.answerTypeOf(q);
+                String qLabel = String.valueOf(q.get('label'));
+                if (
+                    FinalMappingRules.UNMAPPABLE_ELEMENT_TYPES.contains(
+                        str(q.get('type'))
+                    ) || answerType == 'Options'
+                ) {
+                    out.add(
+                        new Diagnostic(
+                            BLOCKER,
+                            id,
+                            path,
+                            name +
+                                ': "' +
+                                qLabel +
+                                '" can hold more than one value, so a filter can’t compare with it.'
+                        )
+                    );
+                    continue;
+                }
+                if (
+                    rowField != null &&
+                    !FinalMappingRules.isCompatible(
+                        answerType,
+                        rowField.getType()
+                    )
+                ) {
+                    out.add(
+                        new Diagnostic(
+                            BLOCKER,
+                            id,
+                            path,
+                            name +
+                                ': the answer to "' +
+                                qLabel +
+                                '" can’t be compared with ' +
+                                rowField.getLabel() +
+                                '.'
+                        )
+                    );
+                    continue;
+                }
+                if (
+                    inList ||
+                    LIST_OPERATORS.contains(op) ||
+                    (op == 'like' &&
+                    rowField != null &&
+                    !FinalMappingRules.isTextLike(rowField.getType()))
+                ) {
+                    out.add(
+                        new Diagnostic(
+                            BLOCKER,
+                            id,
+                            path,
+                            name +
+                                ': "' +
+                                qLabel +
+                                '" can’t be used with that comparison.'
+                        )
+                    );
+                    continue;
+                }
+                if (ctx.skippable.contains(key)) {
+                    out.add(
+                        new Diagnostic(
+                            WARNING,
+                            id,
+                            path,
+                            name +
+                                ' filters using "' +
+                                qLabel +
+                                '", which can be skipped. When it is, this step fails.'
+                        )
+                    );
+                }
+            }
+        }
+    }
+
+    private static Boolean isAnswerToken(Object raw) {
+        return raw instanceof String && ((String) raw).startsWith('$field.');
     }
 
     private static void checkSource(

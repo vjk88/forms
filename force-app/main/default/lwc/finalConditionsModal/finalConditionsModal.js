@@ -32,6 +32,8 @@ export default class FinalConditionsModal extends LightningModal {
     @api fieldObject;
     @api isPublic = false;
     @api allowCurrentUser = false;
+    /** Mapping screen: the questions a row may compare with (Task 7). */
+    @api answerChoices = [];
     @api recordObject;
 
     draft = null;

@@ -787,4 +787,153 @@ private class FinalMappingValidatorTest {
             'anyone could overwrite Title on a matched Contact'
         );
     }
+
+    // ------------------------------------------- answers in filter rows (D49)
+
+    /** Find-or-create by email, filtered by one row that compares with an answer. */
+    private static List<FinalMappingValidator.Diagnostic> checkRow(
+        List<Object> questions,
+        Map<String, Object> filterRow
+    ) {
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        ((Map<String, Object>) action.get('match'))
+            .put(
+                'filter',
+                new Map<String, Object>{
+                    'logic' => 'all',
+                    'rows' => new List<Object>{ filterRow }
+                }
+            );
+        return FinalMappingValidator.validate(
+            FinalMappingTestData.spec(questions, new List<Object>{ action }),
+            null
+        );
+    }
+
+    private static Map<String, Object> filterRow(
+        String field,
+        String op,
+        String key
+    ) {
+        return new Map<String, Object>{
+            'fieldPath' => field,
+            'operator' => op,
+            'value' => '$field.' + key
+        };
+    }
+
+    private static List<Object> questionsPlus(Map<String, Object> extra) {
+        List<Object> out = FinalMappingTestData.standardQuestions();
+        out.add(extra);
+        return out;
+    }
+
+    private static List<String> warnings(
+        List<FinalMappingValidator.Diagnostic> found
+    ) {
+        List<String> out = new List<String>();
+        for (FinalMappingValidator.Diagnostic d : found) {
+            if (d.severity == 'warning') {
+                out.add(d.message);
+            }
+        }
+        return out;
+    }
+
+    @IsTest
+    static void aFittingRequiredAnswerInARowIsFine() {
+        List<FinalMappingValidator.Diagnostic> found = checkRow(
+            FinalMappingTestData.standardQuestions(),
+            filterRow('LastName', 'eq', 'el_last')
+        );
+        Assert.areEqual(new List<String>(), blockers(found));
+        Assert.areEqual(new List<String>(), warnings(found));
+    }
+
+    @IsTest
+    static void aRowAnswerThatIsGoneBlocks() {
+        List<String> found = blockers(
+            checkRow(
+                FinalMappingTestData.standardQuestions(),
+                filterRow('LastName', 'eq', 'el_gone')
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, 'no longer on the form'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void aSeveralValueAnswerInARowBlocks() {
+        Map<String, Object> many = new Map<String, Object>{
+            'id' => 'el_many',
+            'type' => 'imageChoice',
+            'label' => 'Pick several',
+            'required' => true,
+            'config' => new Map<String, Object>{ 'multiple' => true }
+        };
+        List<String> found = blockers(
+            checkRow(questionsPlus(many), filterRow('Title', 'eq', 'el_many'))
+        );
+        Assert.isTrue(
+            anyContains(found, 'more than one value'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void aRowAnswerThatDoesNotFitTheFieldBlocks() {
+        Map<String, Object> age = FinalMappingTestData.question(
+            'el_age',
+            'number',
+            'Age'
+        );
+        age.put('type', 'number');
+        List<String> found = blockers(
+            checkRow(questionsPlus(age), filterRow('LastName', 'eq', 'el_age'))
+        );
+        Assert.isTrue(
+            anyContains(found, 'can’t be compared with'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void aRowAnswerUnderAListComparisonBlocks() {
+        Map<String, Object> row = new Map<String, Object>{
+            'fieldPath' => 'LastName',
+            'operator' => 'in',
+            'values' => new List<Object>{ '$field.el_last' }
+        };
+        List<String> found = blockers(
+            checkRow(FinalMappingTestData.standardQuestions(), row)
+        );
+        Assert.isTrue(
+            anyContains(found, 'with that comparison'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void aSkippableRowAnswerWarns() {
+        Map<String, Object> nick = FinalMappingTestData.question(
+            'el_nick',
+            'text',
+            'Nickname'
+        );
+        nick.put('required', false);
+        List<FinalMappingValidator.Diagnostic> found = checkRow(
+            questionsPlus(nick),
+            filterRow('LastName', 'eq', 'el_nick')
+        );
+        Assert.areEqual(new List<String>(), blockers(found));
+        Assert.isTrue(
+            anyContains(warnings(found), 'can be skipped'),
+            String.valueOf(warnings(found))
+        );
+    }
 }
