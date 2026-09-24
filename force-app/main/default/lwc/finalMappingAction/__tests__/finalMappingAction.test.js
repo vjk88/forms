@@ -390,7 +390,7 @@ describe('find or create', () => {
         expect(
             el.shadowRoot.querySelector('[data-row="Email"] .ma-lock')
                 .textContent
-        ).toContain('never overwritten');
+        ).toContain('never updated');
     });
 
     it('passes the filter to the lookup filter editor and takes its changes', async () => {
@@ -506,7 +506,7 @@ describe('the step reads as its branches (S5)', () => {
         ]);
         expect(
             el.shadowRoot.querySelector('.ma-match-summary').textContent
-        ).toContain('Use it as-is. Nothing is written to it.');
+        ).toContain('It’s used as-is. Nothing is written to it.');
     });
 
     it('update mode names the column it relies on', async () => {
@@ -514,7 +514,9 @@ describe('the step reads as its branches (S5)', () => {
         await flush();
         expect(
             el.shadowRoot.querySelector('.ma-match-summary').textContent
-        ).toContain('Update the fields ticked “Also update when found” below.');
+        ).toContain(
+            'It’s updated with the fields ticked under “Also update when found”. None are ticked yet'
+        );
         const heads = [...el.shadowRoot.querySelectorAll('.ma-th')].map((n) =>
             n.textContent.trim()
         );
@@ -542,5 +544,40 @@ describe('the step reads as its branches (S5)', () => {
         expect(
             el.shadowRoot.querySelector('[data-row="Email"] .ma-why')
         ).toBeNull();
+    });
+
+    it('the searched field, filled in for the author, says so', async () => {
+        const step = findStep('reuse');
+        step.fields = [
+            {
+                field: 'Email',
+                source: { kind: 'answer', elementKey: 'el_e' },
+                prefilled: true
+            }
+        ];
+        const el = mount([step], 'act_1');
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('[data-row="Email"] .ma-prefilled')
+                .textContent
+        ).toContain('Filled in from your search.');
+    });
+
+    it('uses an before a vowel', async () => {
+        describeFields.mockResolvedValue([]);
+        const el = mount(
+            [
+                {
+                    id: 'act_1',
+                    object: 'Account',
+                    operation: 'create',
+                    fields: []
+                }
+            ],
+            'act_1'
+        );
+        el.objects = [{ label: 'Account', value: 'Account' }];
+        await flush();
+        expect(headings(el)).toEqual(['Create an Account with']);
     });
 });

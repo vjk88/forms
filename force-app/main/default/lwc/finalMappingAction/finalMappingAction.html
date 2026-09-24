@@ -66,16 +66,16 @@
                     <div
                         class="ma-question"
                         role="group"
-                        aria-label="When we find one"
+                        aria-label="When we find one, what should happen to it?"
                     >
-                        <h3 class="ma-question-title">
+                        <p class="ma-question-title">
                             <lightning-icon
                                 icon-name="utility:warning"
                                 variant="warning"
                                 size="x-small"
                             ></lightning-icon>
                             When we find one, what should happen to it?
-                        </h3>
+                        </p>
                         <template lwc:if={isPublic}>
                             <p class="ma-question-why">
                                 This form is public. Anyone who guesses a real
@@ -110,8 +110,8 @@
                                     >Update it with these answers</span
                                 >
                                 <span class="ma-choice-detail">
-                                    You then pick each field that may be
-                                    overwritten. Every one starts off.
+                                    You then tick each field to update. Every
+                                    one starts off.
                                 </span>
                             </button>
                         </div>
@@ -126,7 +126,9 @@
                             disabled={readOnly}
                             onclick={handleChangeOnMatch}
                         >
-                            Change
+                            Change<span class="slds-assistive-text">
+                                what happens when one is found</span
+                            >
                         </button>
                     </p>
                 </template>
@@ -168,8 +170,7 @@
                                             icon-name="utility:lock"
                                             size="xx-small"
                                         ></lightning-icon>
-                                        used to find the record — never
-                                        overwritten
+                                        used to find the record — never updated
                                     </span>
                                 </template>
                             </td>
@@ -195,6 +196,11 @@
                                 </template>
                                 <template lwc:if={row.why}>
                                     <p class="ma-why">{row.why}</p>
+                                </template>
+                                <template lwc:if={row.prefilledNote}>
+                                    <p class="ma-why ma-prefilled">
+                                        {row.prefilledNote}
+                                    </p>
                                 </template>
                             </td>
                             <template lwc:if={showOverwrite}>

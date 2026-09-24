@@ -12,6 +12,11 @@ import {
     setFilterMode
 } from 'c/finalMappingModel';
 
+/** "a Contact", "an Account". */
+function withArticle(label) {
+    return `${/^[aeiou]/i.test(label || '') ? 'an' : 'a'} ${label}`;
+}
+
 /**
  * finalMappingAction — one step of a mapping (FREEFORM_F2_MAPPING_SPEC
  * 5.2). The source picker offers only what fits: answers whose type the
@@ -133,7 +138,12 @@ export default class FinalMappingAction extends LightningElement {
                     this.isFindOrCreate && entry.field === this.match.field,
                 showTick:
                     this.showOverwrite && entry.field !== this.match.field,
-                overwrite: entry.writeOnMatch === true
+                overwrite: entry.writeOnMatch === true,
+                // Added for the author when they chose what to search by
+                // (decision 12); the note goes once they change the row.
+                prefilledNote: entry.prefilled
+                    ? 'Filled in from your search. Change or remove it.'
+                    : ''
             };
         });
     }
@@ -258,16 +268,22 @@ export default class FinalMappingAction extends LightningElement {
     }
 
     get matchSummary() {
-        return this.onMatch === 'update'
-            ? 'Update the fields ticked “Also update when found” below.'
-            : 'Use it as-is. Nothing is written to it.';
+        if (this.onMatch !== 'update') {
+            return 'It’s used as-is. Nothing is written to it.';
+        }
+        const ticked = ((this.action && this.action.fields) || []).some(
+            (f) => f.writeOnMatch === true && f.field !== this.match.field
+        );
+        return ticked
+            ? 'It’s updated with the fields ticked under “Also update when found”.'
+            : 'It’s updated with the fields ticked under “Also update when found”. None are ticked yet, so nothing changes.';
     }
 
     /** The create list's heading: the branch it is, on a find-or-create step. */
     get createHeading() {
         return this.isFindOrCreate
-            ? `If none is found, create a ${this.objectLabel} with`
-            : `Create a ${this.objectLabel} with`;
+            ? `If none is found, create ${withArticle(this.objectLabel)} with`
+            : `Create ${withArticle(this.objectLabel)} with`;
     }
 
     get showOverwrite() {

@@ -151,7 +151,7 @@
 
 /* Each branch of a step — find, if found, create — reads as its own part. */
 .ma-branch + .ma-branch {
-    margin-top: 1.25rem;
-    padding-top: 1rem;
+    margin-top: var(--slds-g-spacing-5, 1.25rem);
+    padding-top: var(--slds-g-spacing-4, 1rem);
     border-top: 1px solid var(--slds-g-color-border-1, #e5e5e5);
 }
