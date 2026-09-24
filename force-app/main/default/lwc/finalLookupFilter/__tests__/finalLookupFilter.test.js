@@ -46,7 +46,10 @@ function mount(value, { filterOnly = false } = {}) {
     return el;
 }
 
-const ruleEditor = (el) => el.shadowRoot.querySelector('c-final-rule-editor');
+// The conditions now live behind a summary + dialog (D53); the summary is
+// what this component talks to, in the rule editor's vocabulary.
+const ruleEditor = (el) =>
+    el.shadowRoot.querySelector('c-final-conditions-summary');
 
 describe('c-final-lookup-filter', () => {
     afterEach(() => {
@@ -101,7 +104,7 @@ describe('c-final-lookup-filter', () => {
             heard.push(e.detail.value)
         );
         ruleEditor(el).dispatchEvent(
-            new CustomEvent('rulechange', {
+            new CustomEvent('conditionschange', {
                 detail: {
                     value: {
                         logic: 'all',
@@ -138,7 +141,7 @@ describe('c-final-lookup-filter', () => {
             heard.push(e.detail.value)
         );
         ruleEditor(el).dispatchEvent(
-            new CustomEvent('rulechange', {
+            new CustomEvent('conditionschange', {
                 detail: {
                     value: {
                         logic: 'all',
@@ -242,7 +245,10 @@ describe('filter-only mode', () => {
             'Let people filling this form anonymously search it'
         );
         expect(ruleEditor(el)).toBeTruthy();
-        expect(ruleEditor(el).forRecords).toBe(true);
+        expect(ruleEditor(el).columns).toBe('mapping');
+        expect(ruleEditor(el).description).toBe(
+            'Only records that meet these conditions are searched.'
+        );
     });
 
     it('a lookup still gets all of them', async () => {

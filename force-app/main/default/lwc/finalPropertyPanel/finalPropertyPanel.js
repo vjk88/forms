@@ -1247,6 +1247,19 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.isField ? 'field' : 'block';
     }
 
+    /** The conditions dialog's title and sentence (Form Designer wording). */
+    get visibilityDialogLabel() {
+        return `Visibility — ${this.title}`;
+    }
+
+    get lookupFilterDialogLabel() {
+        return `Filter — ${this.title}`;
+    }
+
+    get visibilityDialogDescription() {
+        return `Choose when this ${this.ruleNoun} shows.`;
+    }
+
     /** `required` stays the Behavior control's entry — checks list the rest. */
     get extraValidation() {
         return (this.n.validation || []).filter((v) => v.type !== 'required');

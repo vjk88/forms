@@ -1,0 +1,30 @@
+<template>
+    <div class="cs">
+        <template lwc:if={hasRules}>
+            <p class="cs-heading">{heading}</p>
+            <ol class="cs-rules">
+                <template for:each={items} for:item="item">
+                    <li key={item.key} class="cs-rule">
+                        <span class="cs-num">{item.number}</span>
+                        <span class="cs-text">{item.text}</span>
+                    </li>
+                </template>
+            </ol>
+            <template lwc:if={moreText}>
+                <p class="cs-more">{moreText}</p>
+            </template>
+            <template lwc:if={logicText}>
+                <p class="cs-logic">{logicText}</p>
+            </template>
+        </template>
+        <template lwc:else>
+            <p class="cs-empty">{emptyText}</p>
+        </template>
+        <lightning-button
+            class="cs-edit"
+            label={buttonLabel}
+            disabled={disabled}
+            onclick={handleEdit}
+        ></lightning-button>
+    </div>
+</template>

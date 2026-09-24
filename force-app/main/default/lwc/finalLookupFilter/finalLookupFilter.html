@@ -33,14 +33,17 @@
         </template>
 
         <div class="lf-conditions">
-            <c-final-rule-editor
+            <c-final-conditions-summary
                 value={ruleValue}
-                for-records={filterOnly}
+                columns={conditionColumns}
                 sources={sources}
                 noun="field"
                 extra-operators={extraOperators}
-                onrulechange={handleRuleChange}
-            ></c-final-rule-editor>
+                label={dialogLabel}
+                description={dialogDescription}
+                disabled={loading}
+                onconditionschange={handleRuleChange}
+            ></c-final-conditions-summary>
         </div>
     </div>
 </template>

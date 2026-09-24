@@ -30,97 +30,335 @@ function mount(props = {}) {
 
 const flush = () => Promise.resolve();
 
-describe('c-final-rule-editor', () => {
-    afterEach(() => {
-        while (document.body.firstChild) {
-            document.body.removeChild(document.body.firstChild);
-        }
-    });
+/** A row's control: 'kind' | 'field' | 'operator' | 'value'. */
+const control = (el, index, name) =>
+    el.shadowRoot.querySelector(
+        `[data-index="${index}"][data-control="${name}"]`
+    );
 
-    it('empty state hints, + Add rule mints the §7 default config', async () => {
+/** The problem showing under a control ( '' when none). */
+const problemOn = (el, index, name) =>
+    control(el, index, name).closest('.re-cell').dataset.problem || '';
+
+/** Every problem currently showing, in order. */
+const shownProblems = (el) =>
+    [...el.shadowRoot.querySelectorAll('[data-problem]')]
+        .map((n) => n.dataset.problem)
+        .filter(Boolean);
+
+/** A lightning-* change carries its value in detail; a native one in target. */
+function change(node, value) {
+    if (node.tagName === 'INPUT') {
+        node.value = value;
+        node.dispatchEvent(new CustomEvent('change'));
+    } else {
+        node.dispatchEvent(new CustomEvent('change', { detail: { value } }));
+    }
+}
+
+const rule = (source, operator, value) => ({ source, operator, value });
+
+const config = (rules, extra = {}) => ({
+    action: 'show',
+    logic: 'all',
+    customLogic: null,
+    rules,
+    ...extra
+});
+
+function listen(el) {
+    const changes = [];
+    el.addEventListener('rulechange', (e) => changes.push(e.detail.value));
+    return changes;
+}
+
+afterEach(() => {
+    while (document.body.firstChild) {
+        document.body.removeChild(document.body.firstChild);
+    }
+});
+
+describe('c-final-rule-editor', () => {
+    it('empty state says the thing is always shown; Add condition asks for a field', async () => {
         const el = mount({ value: null });
         await flush();
         expect(el.shadowRoot.querySelector('.re-empty').textContent).toContain(
-            'Always visible'
+            'always shown'
         );
-        const changes = [];
-        el.addEventListener('rulechange', (e) => changes.push(e.detail));
+        const changes = listen(el);
         el.shadowRoot.querySelector('.re-add').click();
-        expect(changes).toEqual([
-            {
-                value: {
-                    action: 'show',
-                    logic: 'all',
-                    customLogic: null,
-                    rules: [{ source: 'el_1', operator: 'equals', value: '' }]
-                }
-            }
+        // Nothing is chosen for the author: the new row's field is empty.
+        expect(changes).toEqual([config([rule('', 'equals', '')])]);
+    });
+
+    it('lays conditions out as one row each under column headings shown once', async () => {
+        const el = mount({
+            value: config([
+                rule('el_1', 'equals', 'Ann'),
+                rule('el_2', 'isBlank', null)
+            ])
+        });
+        await flush();
+        const heads = [...el.shadowRoot.querySelectorAll('.re-col')].map((n) =>
+            n.textContent.trim()
+        );
+        expect(heads).toEqual([
+            'Source',
+            'Question or field',
+            'Operator',
+            'Value'
         ]);
+        expect(el.shadowRoot.querySelectorAll('.re-head')).toHaveLength(1);
+        const nums = [...el.shadowRoot.querySelectorAll('.re-num')]
+            .map((n) => n.textContent.trim())
+            .filter(Boolean);
+        expect(nums).toEqual(['1', '2']);
     });
 
-    it('edits emit the FULL next config; isBlank drops the value input AND the value', async () => {
+    it('edits emit the FULL next config; isBlank drops the value control AND the value', async () => {
+        const el = mount({ value: config([rule('el_1', 'equals', 'Yes')]) });
+        await flush();
+        expect(control(el, 0, 'value')).not.toBeNull();
+
+        const changes = listen(el);
+        change(control(el, 0, 'operator'), 'isBlank');
+        expect(changes[0].rules[0]).toEqual(rule('el_1', 'isBlank', null));
+
+        el.value = changes[0];
+        await flush();
+        expect(control(el, 0, 'value')).toBeNull();
+    });
+
+    it('removing the last condition emits null (back to always shown)', async () => {
         const el = mount({
-            value: {
-                action: 'show',
-                logic: 'all',
-                customLogic: null,
-                rules: [{ source: 'el_1', operator: 'equals', value: 'Yes' }]
-            }
+            value: config([rule('el_1', 'isBlank', null)], { action: 'hide' })
         });
         await flush();
-        expect(el.shadowRoot.querySelector('.re-value')).not.toBeNull();
-
-        const changes = [];
-        el.addEventListener('rulechange', (e) => changes.push(e.detail));
-        const operator = el.shadowRoot.querySelector('.re-operator');
-        operator.value = 'isBlank';
-        operator.dispatchEvent(new CustomEvent('change'));
-        expect(changes[0].value.rules[0]).toEqual({
-            source: 'el_1',
-            operator: 'isBlank',
-            value: null
-        });
-
-        el.value = changes[0].value;
-        await flush();
-        expect(el.shadowRoot.querySelector('.re-value')).toBeNull();
+        const changes = listen(el);
+        el.shadowRoot.querySelector('.re-del').click();
+        expect(changes).toEqual([null]);
     });
 
-    it('removing the last rule emits null (back to always-visible)', async () => {
+    it('Show / Hide and the logic are dropdowns; the logic label follows the action', async () => {
         const el = mount({
-            value: {
-                action: 'hide',
-                logic: 'all',
-                customLogic: null,
-                rules: [{ source: 'el_1', operator: 'isBlank', value: null }]
-            }
+            value: config([rule('el_1', 'equals', 'x')], { action: 'hide' })
         });
         await flush();
-        const changes = [];
-        el.addEventListener('rulechange', (e) => changes.push(e.detail));
-        el.shadowRoot.querySelector('.re-x').click();
-        expect(changes).toEqual([{ value: null }]);
+        expect(el.shadowRoot.querySelector('.re-logic').label).toBe(
+            'Hide when'
+        );
+        const changes = listen(el);
+        change(el.shadowRoot.querySelector('.re-action'), 'show');
+        change(el.shadowRoot.querySelector('.re-logic'), 'any');
+        expect(changes[0].action).toBe('show');
+        expect(changes[1].logic).toBe('any');
     });
 
-    it('custom logic shows its input; the engine lint reports malformed expressions and bad scoping', async () => {
+    it('lint from the runtime engine still shows, as a warning', async () => {
         const el = mount({
             sourceIndex: makeIndex([
                 ['el_1', { type: 'field', repeatSectionId: null }],
                 ['el_2', { type: 'field', repeatSectionId: 'sec_rep' }]
             ]),
             hostRepeatSectionId: null,
-            value: {
-                action: 'show',
-                logic: 'custom',
-                customLogic: '1 AND (',
-                rules: [{ source: 'el_2', operator: 'equals', value: 'x' }]
-            }
+            value: config([rule('el_2', 'equals', 'x')])
         });
         await flush();
-        expect(el.shadowRoot.querySelector('.re-custom')).not.toBeNull();
-        const problems = el.shadowRoot.querySelector('.re-problems');
-        expect(problems.textContent).toContain('malformed');
-        expect(problems.textContent).toContain('repeatable section');
+        expect(el.shadowRoot.querySelector('.re-lint').textContent).toContain(
+            'repeatable section'
+        );
+    });
+
+    it('lint doesn’t repeat what the row already says, and numbers conditions', async () => {
+        // an unfinished row is "choose a field", not "not found"
+        const el = mount({ value: config([rule('', 'equals', '')]) });
+        await flush();
+        expect(el.shadowRoot.querySelector('.re-lint')).toBeNull();
+
+        // a field that has really gone is still reported
+        const gone = mount({ value: config([rule('el_gone', 'equals', 'x')]) });
+        await flush();
+        expect(
+            gone.shadowRoot.querySelector('.re-lint').textContent.trim()
+        ).toBe('Condition 1: source element not found.');
+    });
+});
+
+describe('problems beside their controls', () => {
+    it('lists every problem with its row and control', async () => {
+        const el = mount({
+            value: config([rule('', 'equals', ''), rule('el_1', 'equals', '')])
+        });
+        await flush();
+        expect(el.problems).toEqual([
+            {
+                rowIndex: 0,
+                control: 'field',
+                message: 'Choose a question or field.'
+            },
+            {
+                rowIndex: 0,
+                control: 'value',
+                message: 'Enter a value, or use “Is blank”.'
+            },
+            {
+                rowIndex: 1,
+                control: 'value',
+                message: 'Enter a value, or use “Is blank”.'
+            }
+        ]);
+    });
+
+    it('a fresh empty row shows nothing until it is used or Apply is tried', async () => {
+        const el = mount({ value: config([rule('', 'equals', '')]) });
+        await flush();
+        expect(shownProblems(el)).toEqual([]);
+
+        const first = el.reportProblems();
+        await flush();
+        expect(first).toEqual({
+            rowIndex: 0,
+            control: 'field',
+            message: 'Choose a question or field.'
+        });
+        expect(shownProblems(el)).toEqual([
+            'Choose a question or field.',
+            'Enter a value, or use “Is blank”.'
+        ]);
+    });
+
+    it('a problem is judged per control: picking a field doesn’t redden the value', async () => {
+        const el = mount({ value: config([rule('', 'equals', '')]) });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'field'), 'el_1');
+        el.value = changes[0];
+        await flush();
+        expect(shownProblems(el)).toEqual([]);
+
+        change(control(el, 0, 'value'), '');
+        el.value = changes[1];
+        await flush();
+        expect(problemOn(el, 0, 'value')).toBe(
+            'Enter a value, or use “Is blank”.'
+        );
+    });
+
+    it('focusProblem puts the cursor on that control', async () => {
+        const el = mount({ value: config([rule('el_1', 'equals', '')]) });
+        await flush();
+        const target = control(el, 0, 'value');
+        target.focus = jest.fn();
+        el.focusProblem(el.reportProblems());
+        expect(target.focus).toHaveBeenCalled();
+    });
+
+    it('reset forgets what was touched', async () => {
+        const el = mount({ value: config([rule('', 'equals', '')]) });
+        await flush();
+        el.reportProblems();
+        await flush();
+        expect(shownProblems(el).length).toBeGreaterThan(0);
+        el.reset();
+        el.value = config([rule('', 'equals', '')]);
+        await flush();
+        expect(shownProblems(el)).toEqual([]);
+    });
+
+    it('knows which rows were added and never used', async () => {
+        const el = mount({
+            value: config([
+                rule('el_1', 'equals', 'x'),
+                rule('', 'equals', ''),
+                rule('', 'equals', '')
+            ])
+        });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 2, 'operator'), 'isBlank');
+        el.value = changes[0];
+        await flush();
+        expect(el.untouchedBlankRows()).toEqual([1]);
+    });
+
+    it('labels every control with its condition number', async () => {
+        const el = mount({
+            value: config([
+                rule('el_1', 'equals', 'x'),
+                rule('el_2', 'equals', 'y')
+            ])
+        });
+        await flush();
+        expect(control(el, 1, 'field').label).toBe(
+            'Condition 2: question or field'
+        );
+        expect(control(el, 1, 'operator').label).toBe('Condition 2: operator');
+        expect(control(el, 1, 'value').label).toBe('Condition 2: value');
+        const del = el.shadowRoot.querySelectorAll('.re-del')[1];
+        expect(del.alternativeText).toBe('Remove condition 2');
+    });
+
+    it.each([
+        [
+            '1 AND (2 OR 3)',
+            'Condition 3 doesn’t exist — you have 2 conditions.'
+        ],
+        ['1 AND (2', 'A bracket isn’t closed.'],
+        ['1 AND', 'The logic is incomplete'],
+        [
+            '1 XOR 2',
+            'Only condition numbers, AND, OR and brackets are allowed.'
+        ],
+        ['', 'Enter the logic using condition numbers']
+    ])('custom logic %p explains itself', async (expr, message) => {
+        const el = mount({
+            value: config(
+                [rule('el_1', 'equals', 'a'), rule('el_2', 'equals', 'b')],
+                { logic: 'custom', customLogic: expr }
+            )
+        });
+        await flush();
+        const logic = el.problems.find((p) => p.control === 'logic');
+        expect(logic.message).toContain(message);
+        el.reportProblems();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.re-custom-wrap').dataset.problem
+        ).toContain(message);
+    });
+
+    it('judges typed logic when the author leaves the box, not mid-word', async () => {
+        const el = mount({
+            value: config(
+                [rule('el_1', 'equals', 'a'), rule('el_2', 'equals', 'b')],
+                { logic: 'custom', customLogic: '1 AND (' }
+            )
+        });
+        await flush();
+        const box = el.shadowRoot.querySelector('.re-custom');
+        box.dispatchEvent(
+            new CustomEvent('change', { detail: { value: '1 AND (' } })
+        );
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.re-custom-wrap').dataset.problem
+        ).toBeFalsy();
+        box.dispatchEvent(new CustomEvent('blur'));
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.re-custom-wrap').dataset.problem
+        ).toContain('The logic is incomplete');
+    });
+
+    it('custom logic that fits the conditions is no problem', async () => {
+        const el = mount({
+            value: config(
+                [rule('el_1', 'equals', 'a'), rule('el_2', 'equals', 'b')],
+                { logic: 'custom', customLogic: '(1 or 2)' }
+            )
+        });
+        await flush();
+        expect(el.problems).toEqual([]);
     });
 });
 
@@ -137,33 +375,24 @@ const TYPED = [
 ];
 
 function typedMount(rules, extra = {}) {
-    const el = createElement('c-final-rule-editor', { is: FinalRuleEditor });
-    Object.assign(
-        el,
-        {
-            sources: TYPED,
-            sourceIndex: makeIndex([
-                ['f_text', { type: 'field', inputType: 'text' }],
-                ['f_num', { type: 'field', inputType: 'number' }],
-                ['f_check', { type: 'field', inputType: 'checkbox' }],
-                ['f_date', { type: 'date', inputType: 'date' }],
-                ['f_dt', { type: 'datetime', inputType: 'datetime' }],
-                ['f_pick', { type: 'field', inputType: 'picklist' }],
-                ['f_file', { type: 'field', inputType: 'file' }]
-            ]),
-            noun: 'field',
-            value: { action: 'show', logic: 'all', customLogic: null, rules }
-        },
-        extra
-    );
-    document.body.appendChild(el);
-    return el;
+    return mount({
+        sources: TYPED,
+        sourceIndex: makeIndex([
+            ['f_text', { type: 'field', inputType: 'text' }],
+            ['f_num', { type: 'field', inputType: 'number' }],
+            ['f_check', { type: 'field', inputType: 'checkbox' }],
+            ['f_date', { type: 'date', inputType: 'date' }],
+            ['f_dt', { type: 'datetime', inputType: 'datetime' }],
+            ['f_pick', { type: 'field', inputType: 'picklist' }],
+            ['f_file', { type: 'field', inputType: 'file' }]
+        ]),
+        value: config(rules),
+        ...extra
+    });
 }
 
-const ops = (el) =>
-    [...el.shadowRoot.querySelectorAll('.re-operator option')].map(
-        (o) => o.value
-    );
+const ops = (el, i = 0) =>
+    control(el, i, 'operator').options.map((o) => o.value);
 
 const ALL_OPS = [
     'equals',
@@ -176,16 +405,8 @@ const ALL_OPS = [
 ];
 
 describe('typed rule operators and value editors', () => {
-    afterEach(() => {
-        while (document.body.firstChild) {
-            document.body.removeChild(document.body.firstChild);
-        }
-    });
-
     it('offers ordered comparisons and a numeric input for a number source', async () => {
-        const el = typedMount([
-            { source: 'f_num', operator: 'equals', value: '30' }
-        ]);
+        const el = typedMount([rule('f_num', 'equals', '30')]);
         await flush();
         expect(ops(el)).toEqual([
             'equals',
@@ -195,138 +416,119 @@ describe('typed rule operators and value editors', () => {
             'isBlank',
             'isNotBlank'
         ]);
-        expect(el.shadowRoot.querySelector('.re-value').type).toBe('number');
+        expect(control(el, 0, 'value').type).toBe('number');
     });
 
     it('KEEPS contains for picklist sources (owner ruling) and drops gt/lt', async () => {
-        const el = typedMount([
-            { source: 'f_pick', operator: 'equals', value: 'Employed' }
-        ]);
+        const el = typedMount([rule('f_pick', 'equals', 'Employed')]);
         await flush();
         expect(ops(el)).toContain('contains');
         expect(ops(el)).not.toContain('greaterThan');
         expect(ops(el)).not.toContain('lessThan');
         // the option dropdown is DEFERRED — value stays a plain text input
-        const input = el.shadowRoot.querySelector('.re-value');
-        expect(input.tagName).toBe('INPUT');
+        const input = control(el, 0, 'value');
         expect(input.type).toBe('text');
         expect(input.value).toBe('Employed');
     });
 
-    it('renders a Yes/No selector for a checkbox source and omits blank ops', async () => {
-        const el = typedMount([
-            { source: 'f_check', operator: 'equals', value: 'true' }
-        ]);
+    it('renders a Yes/No choice for a checkbox source and omits blank ops', async () => {
+        const el = typedMount([rule('f_check', 'equals', 'true')]);
         await flush();
         expect(ops(el)).toEqual(['equals', 'notEquals']);
-        const select = el.shadowRoot.querySelector('select.re-value');
-        expect(select).not.toBeNull();
-        const opts = [...select.querySelectorAll('option')];
-        expect(opts.map((o) => o.value)).toEqual(['', 'true', 'false']);
-        expect(opts.map((o) => o.textContent.trim())).toEqual([
-            'Choose Yes or No',
-            'Yes',
-            'No'
+        const yesNo = control(el, 0, 'value');
+        expect(yesNo.tagName).toBe('LIGHTNING-COMBOBOX');
+        expect(yesNo.options).toEqual([
+            { value: 'true', label: 'Yes' },
+            { value: 'false', label: 'No' }
         ]);
         // "true" matches the engine's String(actual) === String(rule.value)
-        expect(select.value).toBe('true');
+        expect(yesNo.value).toBe('true');
     });
 
-    it('renders date and datetime pickers', async () => {
-        const el = typedMount([
-            { source: 'f_date', operator: 'greaterThan', value: '2026-09-06' }
-        ]);
+    it('renders date and datetime pickers; datetime keeps its stored format', async () => {
+        const el = typedMount([rule('f_date', 'greaterThan', '2026-09-06')]);
         await flush();
-        expect(el.shadowRoot.querySelector('.re-value').type).toBe('date');
+        expect(control(el, 0, 'value').type).toBe('date');
 
-        const el2 = typedMount([
-            { source: 'f_dt', operator: 'lessThan', value: '' }
-        ]);
+        const el2 = typedMount([rule('f_dt', 'lessThan', '')]);
         await flush();
-        expect(el2.shadowRoot.querySelector('.re-value').type).toBe(
-            'datetime-local'
-        );
+        const dt = control(el2, 0, 'value');
+        expect(dt.tagName).toBe('INPUT');
+        expect(dt.type).toBe('datetime-local');
     });
 
     it('leaves unknown subtypes and record: sources fully untyped', async () => {
-        const el = typedMount([
-            { source: 'f_file', operator: 'equals', value: '' }
-        ]);
+        const el = typedMount([rule('f_file', 'equals', '')]);
         await flush();
         expect(ops(el)).toEqual(ALL_OPS);
 
-        const el2 = typedMount(
-            [{ source: 'record:Status__c', operator: 'contains', value: 'x' }],
-            { recordSources: [{ id: 'record:Status__c', label: 'Status' }] }
-        );
+        const el2 = typedMount([rule('record:Status__c', 'contains', 'x')], {
+            recordSources: [{ id: 'record:Status__c', label: 'Status' }]
+        });
         await flush();
         expect(ops(el2)).toEqual(ALL_OPS);
-        expect(el2.shadowRoot.querySelector('.re-value').type).toBe('text');
+        expect(control(el2, 0, 'value').type).toBe('text');
+        expect(control(el2, 0, 'kind').value).toBe('record');
     });
 
     it('keeps a saved-but-now-invalid operator visible instead of silently rewriting it', async () => {
         // greaterThan on a picklist: authored before typing existed
-        const el = typedMount([
-            { source: 'f_pick', operator: 'greaterThan', value: 'x' }
-        ]);
+        const el = typedMount([rule('f_pick', 'greaterThan', 'x')]);
         await flush();
-        const chosen = [
-            ...el.shadowRoot.querySelectorAll('.re-operator option')
-        ].find((o) => o.selected);
-        expect(chosen.value).toBe('greaterThan');
-        expect(chosen.textContent).toContain('not valid here');
+        const op = control(el, 0, 'operator');
+        expect(op.value).toBe('greaterThan');
+        expect(
+            op.options.find((o) => o.value === 'greaterThan').label
+        ).toContain('not valid here');
+    });
+
+    it('keeps a saved source that is no longer offered visible', async () => {
+        const el = typedMount([rule('f_gone', 'equals', 'x')]);
+        await flush();
+        const field = control(el, 0, 'field');
+        expect(field.value).toBe('f_gone');
+        expect(field.options.find((o) => o.value === 'f_gone').label).toContain(
+            'Removed question'
+        );
     });
 
     it('repointing the source repairs a stranded operator and value', async () => {
-        const el = typedMount([
-            { source: 'f_text', operator: 'contains', value: 'Bob' }
-        ]);
+        const el = typedMount([rule('f_text', 'contains', 'Bob')]);
         await flush();
-        const changes = [];
-        el.addEventListener('rulechange', (e) => changes.push(e.detail.value));
-        const src = el.shadowRoot.querySelector('.re-source');
-        src.value = 'f_check';
-        src.dispatchEvent(new CustomEvent('change'));
+        const changes = listen(el);
+        change(control(el, 0, 'field'), 'f_check');
         // contains is not offered for checkbox -> equals; "Bob" cannot be shown
-        // by a Yes/No select -> cleared rather than left invisibly wrong
-        expect(changes[0].rules[0]).toEqual({
-            source: 'f_check',
-            operator: 'equals',
-            value: ''
-        });
+        // by a Yes/No choice -> cleared rather than left invisibly wrong
+        expect(changes[0].rules[0]).toEqual(rule('f_check', 'equals', ''));
         el.value = changes[0];
         await flush();
-        const value = el.shadowRoot.querySelector('.re-value');
-        expect(value.value).toBe('');
-        expect(value.selectedOptions[0].textContent).toContain(
-            'Choose Yes or No'
-        );
+        expect(control(el, 0, 'value').value).toBe('');
     });
 
     it.each(['', null, undefined, false, 'false', true, 'true', 'legacy'])(
         'shows the stored checkbox value honestly: %s',
         async (stored) => {
-            const el = typedMount([
-                { source: 'f_check', operator: 'equals', value: stored }
-            ]);
-            const changes = [];
-            el.addEventListener('rulechange', (e) =>
-                changes.push(e.detail.value)
-            );
+            const el = typedMount([rule('f_check', 'equals', stored)]);
+            const changes = listen(el);
             await flush();
-            const select = el.shadowRoot.querySelector('.re-value');
-            expect(select.value).toBe(String(stored ?? ''));
+            const yesNo = control(el, 0, 'value');
+            expect(yesNo.value).toBe(String(stored ?? ''));
             expect(changes).toEqual([]);
-            select.value = 'false';
-            select.dispatchEvent(new CustomEvent('change'));
+            change(yesNo, 'false');
             expect(changes[0].rules[0].value).toBe('false');
             el.value = changes[0];
             await flush();
-            expect(el.shadowRoot.querySelector('.re-value').value).toBe(
-                'false'
-            );
+            expect(control(el, 0, 'value').value).toBe('false');
         }
     );
+
+    it('keeps a saved Yes/No value it can’t show, marked, rather than rewriting it', async () => {
+        const el = typedMount([rule('f_check', 'equals', 'legacy')]);
+        await flush();
+        const yesNo = control(el, 0, 'value');
+        expect(yesNo.value).toBe('legacy');
+        expect(yesNo.options[0].label).toContain('not valid here');
+    });
 
     it.each([
         ['f_date', '2026-09-06T12:30', ''],
@@ -347,88 +549,106 @@ describe('typed rule operators and value editors', () => {
     ])(
         'repointing to %s with %s stores and displays %s',
         async (source, stored, expected) => {
-            const el = typedMount([
-                { source: 'f_text', operator: 'equals', value: stored }
-            ]);
+            const el = typedMount([rule('f_text', 'equals', stored)]);
             await flush();
-            const changes = [];
-            el.addEventListener('rulechange', (e) =>
-                changes.push(e.detail.value)
-            );
-            const select = el.shadowRoot.querySelector('.re-source');
-            select.value = source;
-            select.dispatchEvent(new CustomEvent('change'));
+            const changes = listen(el);
+            change(control(el, 0, 'field'), source);
             expect(changes[0].rules[0].value).toBe(expected);
             el.value = changes[0];
             await flush();
-            expect(el.shadowRoot.querySelector('.re-value').value).toBe(
-                expected
-            );
+            expect(control(el, 0, 'value').value).toBe(expected);
         }
     );
 
     it('repointing to a compatible subtype keeps the value', async () => {
-        const el = typedMount([
-            { source: 'f_text', operator: 'equals', value: '42' }
-        ]);
+        const el = typedMount([rule('f_text', 'equals', '42')]);
         await flush();
-        const changes = [];
-        el.addEventListener('rulechange', (e) => changes.push(e.detail.value));
-        const src = el.shadowRoot.querySelector('.re-source');
-        src.value = 'f_num';
-        src.dispatchEvent(new CustomEvent('change'));
-        expect(changes[0].rules[0]).toEqual({
-            source: 'f_num',
-            operator: 'equals',
-            value: '42'
-        });
+        const changes = listen(el);
+        change(control(el, 0, 'field'), 'f_num');
+        expect(changes[0].rules[0]).toEqual(rule('f_num', 'equals', '42'));
     });
 
     it('still omits the value control for blank operators', async () => {
-        const el = typedMount([
-            { source: 'f_num', operator: 'isBlank', value: null }
-        ]);
+        const el = typedMount([rule('f_num', 'isBlank', null)]);
         await flush();
-        expect(el.shadowRoot.querySelector('.re-value')).toBeNull();
+        expect(control(el, 0, 'value')).toBeNull();
     });
 });
 
-describe('record-search wording', () => {
-    afterEach(() => {
-        while (document.body.firstChild)
-            document.body.removeChild(document.body.firstChild);
+describe('the Source column (visibility)', () => {
+    const RECORD = [{ id: 'record:Status__c', label: 'Status' }];
+
+    it('offers the linked record only when the form has one', async () => {
+        const el = mount({ value: config([rule('el_1', 'equals', 'x')]) });
+        await flush();
+        expect(control(el, 0, 'kind').options.map((o) => o.value)).toEqual([
+            'answer'
+        ]);
+
+        const el2 = mount({
+            recordSources: RECORD,
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        expect(control(el2, 0, 'kind').options.map((o) => o.value)).toEqual([
+            'answer',
+            'record'
+        ]);
     });
 
-    it('drops the show or hide choice and talks about records', async () => {
+    it('switching Source starts the row over and lists that source’s fields', async () => {
         const el = mount({
-            forRecords: true,
-            value: {
-                action: 'show',
-                logic: 'all',
-                customLogic: null,
-                rules: [{ source: 'el_1', operator: 'equals', value: 'x' }]
-            }
+            recordSources: RECORD,
+            value: config([rule('el_1', 'contains', 'x')])
         });
-        await Promise.resolve();
-        expect(el.shadowRoot.querySelector('.re-action')).toBeNull();
-        expect(el.shadowRoot.querySelector('.re-when').textContent).toBe(
-            'Only search records where'
-        );
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'kind'), 'record');
+        expect(changes[0].rules[0]).toEqual(rule('', 'equals', ''));
+        el.value = changes[0];
+        await flush();
+        expect(control(el, 0, 'kind').value).toBe('record');
+        expect(control(el, 0, 'field').options.map((o) => o.value)).toEqual([
+            'record:Status__c'
+        ]);
     });
+});
+
+describe('record-search screens', () => {
+    it.each(['lookup', 'mapping'])(
+        '%s drops Show / Hide and the Source column',
+        async (columns) => {
+            const el = mount({
+                columns,
+                value: config([rule('el_1', 'equals', 'x')])
+            });
+            await flush();
+            expect(el.shadowRoot.querySelector('.re-action')).toBeNull();
+            expect(el.shadowRoot.querySelector('.re-logic').label).toBe(
+                'Search records where'
+            );
+            expect(control(el, 0, 'kind')).toBeNull();
+            const heads = [...el.shadowRoot.querySelectorAll('.re-col')].map(
+                (n) => n.textContent.trim()
+            );
+            expect(heads).toEqual(['Field', 'Operator', 'Value']);
+        }
+    );
 
     it('explains an empty search in record terms', async () => {
-        const el = mount({ forRecords: true, value: null });
-        await Promise.resolve();
+        const el = mount({ columns: 'lookup', value: null });
+        await flush();
         expect(el.shadowRoot.querySelector('.re-empty').textContent).toContain(
             'narrow which records are searched'
         );
     });
 
-    it('leaves question rules exactly as they were', async () => {
-        const el = mount({ value: null });
-        await Promise.resolve();
-        expect(el.shadowRoot.querySelector('.re-empty').textContent).toContain(
-            'show or hide'
-        );
+    it('asks for a field, not a question, on a record screen', async () => {
+        const el = mount({
+            columns: 'mapping',
+            value: config([rule('', 'isBlank', null)])
+        });
+        await flush();
+        expect(el.problems[0].message).toBe('Choose a field.');
     });
 });

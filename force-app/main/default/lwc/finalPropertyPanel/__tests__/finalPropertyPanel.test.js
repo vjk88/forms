@@ -351,16 +351,33 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(adds[0].field.apiName).toBe('Email');
     });
 
-    it('visibility group renders on every inspector (rule editor present)', async () => {
+    it('visibility group renders on every inspector (conditions summary present)', async () => {
         const el = mount({
             kind: 'page',
             node: { id: 'pg_1', name: 'Details', sections: [] },
             ruleSources: [{ id: 'el_1', label: 'Email' }]
         });
         await flush();
-        expect(
-            el.shadowRoot.querySelector('c-final-rule-editor')
-        ).not.toBeNull();
+        const summary = el.shadowRoot.querySelector(
+            'c-final-conditions-summary'
+        );
+        expect(summary).not.toBeNull();
+        expect(summary.label).toBe('Visibility — Details');
+        expect(summary.description).toBe('Choose when this page shows.');
+
+        // an applied dialog becomes the node's visibility, unchanged in shape
+        const applied = {
+            action: 'show',
+            logic: 'all',
+            customLogic: null,
+            rules: [{ source: 'el_1', operator: 'isBlank', value: null }]
+        };
+        const props = [];
+        el.addEventListener('propchange', (e) => props.push(e.detail));
+        summary.dispatchEvent(
+            new CustomEvent('conditionschange', { detail: { value: applied } })
+        );
+        expect(props).toEqual([{ patch: { visibility: applied } }]);
         const events = [];
         el.addEventListener('propchange', (e) => events.push(e.detail));
         const name = el.shadowRoot.querySelector('[data-prop="pagename"]');
@@ -452,7 +469,10 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             const el = mount({
                 kind: 'element',
                 bindingObjectApi: 'Task',
-                node: refNode({ polymorphic: true, renderAs: 'Filtered_Search' })
+                node: refNode({
+                    polymorphic: true,
+                    renderAs: 'Filtered_Search'
+                })
             });
             await flush();
             expect(

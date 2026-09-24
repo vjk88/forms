@@ -61,6 +61,20 @@ export default class FinalLookupFilter extends LightningElement {
         return !this.filterOnly;
     }
 
+    /** The conditions dialog's title; the mapping screen names its object. */
+    @api dialogLabel;
+
+    /** Which screen the shared condition editor lays itself out for. */
+    get conditionColumns() {
+        return this.filterOnly ? 'mapping' : 'lookup';
+    }
+
+    get dialogDescription() {
+        return this.filterOnly
+            ? 'Only records that meet these conditions are searched.'
+            : 'Only records that meet these conditions can be picked.';
+    }
+
     @track fields = [];
     @track relationships = [];
     loading = false;

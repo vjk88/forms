@@ -1,17 +1,23 @@
 import { LightningElement, api } from 'lwc';
-import { lintVisibility } from 'c/finalExpressionEngine';
+import { lintVisibility, validateCustomLogic } from 'c/finalExpressionEngine';
 
 /**
- * finalRuleEditor — the declarative visibility editor (schema §7, P3
- * slice 5). Lightning-record-page pattern (owner ruling: never raw
- * expressions): action (Show/Hide) + logic (All/Any/Custom) + rule rows of
- * source · operator · value. Renders ON the properties panel — the Logic
- * rail is only the aggregate index that jumps here.
+ * finalRuleEditor — the condition editor, laid out the way the Form
+ * Designer's was (IMPL_PLAN_F2_SEARCH decision 1, D53): one row per
+ * condition, labelled columns shown once, Salesforce dropdowns, the logic
+ * choice on top and "Add condition" underneath. Owner ruling still stands:
+ * never raw expressions — rows of source · operator · value.
  *
  * DUMB view: emits the FULL next config as `rulechange` {value} on every
- * edit (null when rules are removed entirely); the studio owns the spec.
- * Lint runs the SAME engine the runtime evaluates with (lintVisibility) —
- * build-time and runtime can never disagree.
+ * edit (null when the last condition is removed); whoever hosts it owns the
+ * value. The conditions dialog hosts it over a draft, so nothing here reaches
+ * a form until the author applies.
+ *
+ * Problems (a row missing its field, operator or value; logic that can't
+ * run) are listed by `problems` and shown under the control that needs
+ * fixing — once that row has been touched, or after `reportProblems()`.
+ * Lint runs the SAME engine the runtime evaluates with (lintVisibility), and
+ * only warns.
  *
  * re- prefixed classes (LEX leak rule).
  */
@@ -78,8 +84,8 @@ const OPERATORS_BY_TYPE = {
 };
 
 /** Value control per subtype. Picklist deliberately stays 'text' — the option
- *  dropdown is DEFERRED (ledger #29) because a native select cannot represent
- *  a stored value that is missing from its options. */
+ *  dropdown is DEFERRED (ledger #29) because a control cannot represent a
+ *  stored value that is missing from its options. */
 const VALUE_KIND = {
     checkbox: 'bool',
     number: 'number',
@@ -89,11 +95,11 @@ const VALUE_KIND = {
 
 const BOOL_VALUES = new Set(['true', 'false']);
 
-/** Can the typed control for `kind` actually DISPLAY `value`? A native
- *  number/date input and a Yes/No select cannot represent values
- *  outside their domain, which would leave the visible control disagreeing
- *  with the stored rule — the same silent-divergence trap that deferred the
- *  picklist dropdown. Where we cannot show it, we clear it deliberately. */
+/** Can the typed control for `kind` actually DISPLAY `value`? A number/date
+ *  input and a Yes/No choice cannot represent values outside their domain,
+ *  which would leave the visible control disagreeing with the stored rule —
+ *  the same silent-divergence trap that deferred the picklist dropdown. Where
+ *  we cannot show it, we clear it deliberately. */
 function canDisplay(kind, value) {
     if (value === '' || value === null || value === undefined) {
         return true;
@@ -115,6 +121,40 @@ function canDisplay(kind, value) {
     return true;
 }
 
+/** Which Source a saved row belongs to. `record:` is the linked record;
+ *  anything else set is an answer. An unset row keeps the kind its author
+ *  chose (tracked beside the rows, since an empty source says nothing). */
+function kindOf(source, chosen) {
+    if (typeof source === 'string' && source.startsWith('record:')) {
+        return 'record';
+    }
+    if (typeof source === 'string' && source !== '') {
+        return 'answer';
+    }
+    return chosen || 'answer';
+}
+
+const isBlankValue = (v) => v === '' || v === null || v === undefined;
+
+/**
+ * What a saved-but-gone source is called. A question's id means nothing to
+ * an author, so it's "Removed question"; a field path does, so it stays.
+ */
+export function removedLabel(source, isVisibility) {
+    if (source.startsWith('record:')) {
+        return `Removed field (${source.slice(7)})`;
+    }
+    return isVisibility ? 'Removed question' : `${source} (not available)`;
+}
+
+const COLUMN_SETS = {
+    visibility: ['Source', 'Question or field', 'Operator', 'Value'],
+    lookup: ['Field', 'Operator', 'Value'],
+    // The Compare with column arrives with answers in mapping rows (Task 7);
+    // until then the mapping search reads exactly like a lookup filter.
+    mapping: ['Field', 'Operator', 'Value']
+};
+
 export default class FinalRuleEditor extends LightningElement {
     /** The visibility config (§7) or null/undefined = always visible. */
     @api value;
@@ -126,14 +166,11 @@ export default class FinalRuleEditor extends LightningElement {
      */
     @api extraOperators;
 
-    /** Word for a row's left-hand side. Visibility rules pick a question;
-     *  a lookup filter picks a field on the object being searched. */
-    @api sourceLabel;
     /** Pickable source elements: [{id, label}] — scoped by the studio
      *  (repeater elements never offered outside their section, §7). */
     @api sources = [];
     /** SO-3 record-field sources ([{id: 'record:Api', label}]) — non-empty
-     *  only for surveys with a connected object; adds the second optgroup. */
+     *  only when the form has a linked record; adds "The linked record". */
     @api recordSources = [];
     /** Map(id → {type, inputType, repeatSectionId}). `type` is the engine's
      *  lint key (collapsed, matching the runtime's own index); `inputType` is
@@ -146,80 +183,105 @@ export default class FinalRuleEditor extends LightningElement {
     @api noun = 'field';
 
     /**
-     * The rows choose RECORDS, not whether a question shows. Used by the
-     * Freeform mapping search: the Show/Hide choice means nothing there and
-     * is hidden, and the wording talks about which records are searched.
+     * Which screen this is: 'visibility' (the default — Show/Hide a part of
+     * the form), 'lookup' (which records a lookup offers) or 'mapping' (which
+     * records a find-or-create step searches). Picks the column set and the
+     * wording (IMPL_PLAN_F2_SEARCH decision 2).
      */
-    @api forRecords = false;
+    @api columns = 'visibility';
 
-    get showAction() {
-        return !this.forRecords;
+    /** The Source each unset row was given, index-aligned with the rules. */
+    _kinds = [];
+    /** Controls the author has used, as "row:control"; their problems show. */
+    _touched = new Set();
+    /** A selector to focus after the next render (add / remove). */
+    _focusNext = null;
+    _logicTouched = false;
+    /** After reportProblems(): every problem shows. */
+    _showAll = false;
+
+    get isVisibility() {
+        return !this.columns || this.columns === 'visibility';
     }
 
-    get whenText() {
-        return this.forRecords
-            ? 'Only search records where'
-            : `this ${this.noun} when`;
-    }
-
-    get hasRules() {
-        return Boolean(
-            this.value &&
-            Array.isArray(this.value.rules) &&
-            this.value.rules.length
+    get headers() {
+        return (COLUMN_SETS[this.columns] || COLUMN_SETS.visibility).map(
+            (label) => ({ key: label, label })
         );
     }
 
+    /** The field column's heading, repeated above each field when stacked. */
+    get fieldHeader() {
+        return this.isVisibility ? 'Question or field' : 'Field';
+    }
+
+    get gridClass() {
+        return this.isVisibility ? 're-grid re-grid--4' : 're-grid re-grid--3';
+    }
+
+    get rules() {
+        return (
+            (this.value &&
+                Array.isArray(this.value.rules) &&
+                this.value.rules) ||
+            []
+        );
+    }
+
+    get hasRules() {
+        return this.rules.length > 0;
+    }
+
     get emptyHint() {
-        if (this.forRecords) {
+        if (!this.isVisibility) {
             return 'No conditions yet. Add one to narrow which records are searched.';
         }
-        return `Always visible. Add a rule to show or hide this ${this.noun} based on another answer.`;
+        return `No conditions yet — this ${this.noun} is always shown. Add a condition to make it conditional.`;
+    }
+
+    get action() {
+        return (this.value && this.value.action) || 'show';
     }
 
     get actionOptions() {
-        const action = (this.value && this.value.action) || 'show';
         return [
-            {
-                value: 'show',
-                label: 'Show',
-                selected: action === 'show' ? true : undefined
-            },
-            {
-                value: 'hide',
-                label: 'Hide',
-                selected: action === 'hide' ? true : undefined
-            }
+            { value: 'show', label: 'Show' },
+            { value: 'hide', label: 'Hide' }
         ];
     }
 
+    get logic() {
+        return (this.value && this.value.logic) || 'all';
+    }
+
+    get logicLabel() {
+        if (!this.isVisibility) {
+            return 'Search records where';
+        }
+        return this.action === 'hide' ? 'Hide when' : 'Show when';
+    }
+
     get logicOptions() {
-        const logic = (this.value && this.value.logic) || 'all';
         return [
-            {
-                value: 'all',
-                label: 'ALL rules match',
-                selected: logic === 'all' ? true : undefined
-            },
-            {
-                value: 'any',
-                label: 'ANY rule matches',
-                selected: logic === 'any' ? true : undefined
-            },
-            {
-                value: 'custom',
-                label: 'Custom logic…',
-                selected: logic === 'custom' ? true : undefined
-            }
+            { value: 'all', label: 'All conditions are met (AND)' },
+            { value: 'any', label: 'Any condition is met (OR)' },
+            { value: 'custom', label: 'Custom logic' }
         ];
     }
 
     get isCustomLogic() {
-        return Boolean(this.value && this.value.logic === 'custom');
+        return this.logic === 'custom';
     }
 
     get customLogic() {
         return (this.value && this.value.customLogic) || '';
+    }
+
+    get sourceKindOptions() {
+        return [
+            { value: 'answer', label: 'An answer' },
+            { value: 'record', label: 'Linked record' }
+        ];
     }
 
     get hasRecordSources() {
@@ -231,22 +293,20 @@ export default class FinalRuleEditor extends LightningElement {
      *  record link a hide-rule never matches — content it was supposed to
      *  suppress stays VISIBLE. */
     get recordHint() {
-        const rules = (this.value && this.value.rules) || [];
-        const hasRecord = rules.some(
+        const hasRecord = this.rules.some(
             (r) =>
                 typeof r.source === 'string' && r.source.startsWith('record:')
         );
         if (!hasRecord) {
             return '';
         }
-        const action = (this.value && this.value.action) || 'show';
-        return action === 'hide'
-            ? 'Record rules only work when the survey opens from a record ' +
-                  'link. Without one, this HIDE rule never matches — the ' +
-                  'content stays visible. If it must stay private, use a ' +
-                  'Show rule instead.'
-            : 'Record rules only work when the survey opens from a record ' +
-                  'link. Without one, this content stays hidden.';
+        return this.action === 'hide'
+            ? 'Conditions on the linked record only work when the form opens ' +
+                  'with a record. Without one, this Hide never happens — the ' +
+                  'content stays visible. If it must stay private, use Show ' +
+                  'instead.'
+            : 'Conditions on the linked record only work when the form opens ' +
+                  'with a record. Without one, this stays hidden.';
     }
 
     /** The source's granular subtype, or null when it has none we can type on
@@ -263,108 +323,320 @@ export default class FinalRuleEditor extends LightningElement {
         return VALUE_KIND[this._subtype(source)] || 'text';
     }
 
-    get rows() {
-        const rules = (this.value && this.value.rules) || [];
-        return rules.map((rule, i) => {
-            const allowed = OPERATORS_BY_TYPE[this._subtype(rule.source)];
-            const extra = Array.isArray(this.extraOperators)
-                ? this.extraOperators
-                : [];
-            const labelFor = (v) => {
-                const found = extra.find((o) => o.value === v);
-                return found ? found.label : OPERATOR_LABELS.get(v);
-            };
-            let operatorOptions = (
-                allowed || OPERATOR_OPTIONS.map((o) => o.value)
-            )
-                .concat(extra.map((o) => o.value))
-                .map((v) => ({
-                    value: v,
-                    label: labelFor(v),
-                    selected: v === rule.operator ? true : undefined
-                }));
-            // A saved rule may hold an operator this subtype no longer offers
-            // (authored before typing, or the source was repointed). Show it
-            // rather than let the select silently resolve to its first option
-            // and rewrite the rule on the next unrelated edit.
-            if (rule.operator && !operatorOptions.some((o) => o.selected)) {
-                operatorOptions = [
-                    ...operatorOptions,
-                    {
-                        value: rule.operator,
-                        label: `${
-                            labelFor(rule.operator) || rule.operator
-                        } (not valid here)`,
-                        selected: true
-                    }
-                ];
+    _extra() {
+        return Array.isArray(this.extraOperators) ? this.extraOperators : [];
+    }
+
+    _operatorLabel(v) {
+        const found = this._extra().find((o) => o.value === v);
+        return found ? found.label : OPERATOR_LABELS.get(v);
+    }
+
+    _operatorOptions(rule) {
+        const allowed = OPERATORS_BY_TYPE[this._subtype(rule.source)];
+        let options = (allowed || OPERATOR_OPTIONS.map((o) => o.value))
+            .concat(this._extra().map((o) => o.value))
+            .map((v) => ({ value: v, label: this._operatorLabel(v) }));
+        // A saved rule may hold an operator this subtype no longer offers
+        // (authored before typing, or the source was repointed). Show it
+        // rather than let the control resolve to nothing and rewrite the rule
+        // on the next unrelated edit.
+        if (rule.operator && !options.some((o) => o.value === rule.operator)) {
+            options = [
+                ...options,
+                {
+                    value: rule.operator,
+                    label: `${
+                        this._operatorLabel(rule.operator) || rule.operator
+                    } (not valid here)`
+                }
+            ];
+        }
+        return options;
+    }
+
+    _fieldOptions(rule, kind) {
+        const list =
+            kind === 'record' ? this.recordSources || [] : this.sources || [];
+        const options = list.map((s) => ({ value: s.id, label: s.label }));
+        // A saved source that is no longer offered stays visible and selected,
+        // so opening the editor never changes a rule by itself.
+        if (rule.source && !options.some((o) => o.value === rule.source)) {
+            options.push({
+                value: rule.source,
+                label: removedLabel(rule.source, this.isVisibility)
+            });
+        }
+        return options;
+    }
+
+    _boolOptions(value) {
+        return [
+            // Preserve an invalid saved value visibly, just as we do for saved
+            // operators; opening the editor must not alter it.
+            ...(!canDisplay('bool', value)
+                ? [{ value: String(value), label: `${value} (not valid here)` }]
+                : []),
+            { value: 'true', label: 'Yes' },
+            { value: 'false', label: 'No' }
+        ];
+    }
+
+    /**
+     * Every problem that stops these conditions being applied, whether or not
+     * it is showing yet: [{ rowIndex, control, message }]. `control` is
+     * 'field' | 'operator' | 'value' | 'logic' (rowIndex null for logic).
+     */
+    @api
+    get problems() {
+        const out = [];
+        this.rules.forEach((rule, i) => {
+            if (!rule.source) {
+                out.push({
+                    rowIndex: i,
+                    control: 'field',
+                    message: this.isVisibility
+                        ? 'Choose a question or field.'
+                        : 'Choose a field.'
+                });
             }
-            const kind = this._valueKind(rule.source);
+            if (!rule.operator) {
+                out.push({
+                    rowIndex: i,
+                    control: 'operator',
+                    message: 'Choose an operator.'
+                });
+            } else if (
+                !NO_VALUE.has(rule.operator) &&
+                isBlankValue(rule.value)
+            ) {
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message:
+                        this._valueKind(rule.source) === 'bool'
+                            ? 'Choose Yes or No.'
+                            : 'Enter a value, or use “Is blank”.'
+                });
+            }
+        });
+        if (this.isCustomLogic && this.hasRules) {
+            const message = validateCustomLogic(
+                this.customLogic,
+                this.rules.length
+            );
+            if (message) {
+                out.push({ rowIndex: null, control: 'logic', message });
+            }
+        }
+        return out;
+    }
+
+    /** Show every problem, and return the first (or null when there are none). */
+    @api
+    reportProblems() {
+        this._showAll = true;
+        const all = this.problems;
+        return all.length ? all[0] : null;
+    }
+
+    /** Forget what has been touched — for Clear all, which starts over. */
+    @api
+    reset() {
+        this._kinds = [];
+        this._touched = new Set();
+        this._logicTouched = false;
+        this._showAll = false;
+    }
+
+    /**
+     * Indexes of rows the author added and never used: no field, no value,
+     * nothing touched. Apply drops them rather than refusing over them.
+     */
+    @api
+    untouchedBlankRows() {
+        const out = [];
+        this.rules.forEach((rule, i) => {
+            const touched = [...this._touched].some((k) =>
+                k.startsWith(`${i}:`)
+            );
+            if (!touched && !rule.source && isBlankValue(rule.value)) {
+                out.push(i);
+            }
+        });
+        return out;
+    }
+
+    /** Put the cursor on a problem's control. */
+    @api
+    focusProblem(problem) {
+        if (!problem) {
+            return;
+        }
+        const selector =
+            problem.control === 'logic'
+                ? '[data-control="logic"]'
+                : `[data-index="${problem.rowIndex}"][data-control="${problem.control}"]`;
+        const target = this.template.querySelector(selector);
+        if (target && typeof target.focus === 'function') {
+            target.focus();
+        }
+    }
+
+    _visible(problem) {
+        if (this._showAll) {
+            return true;
+        }
+        // Per control, not per row: picking a field must not turn the value
+        // red before the author has even reached it.
+        return problem.control === 'logic'
+            ? this._logicTouched
+            : this._touched.has(`${problem.rowIndex}:${problem.control}`);
+    }
+
+    /** The shown message for one control, or ''. */
+    _shownMessage(rowIndex, control) {
+        const p = this.problems.find(
+            (x) =>
+                x.rowIndex === rowIndex &&
+                x.control === control &&
+                this._visible(x)
+        );
+        return p ? p.message : '';
+    }
+
+    /**
+     * Problems go on the controls themselves (setCustomValidity), so the
+     * control turns red, is marked invalid and says its message to a screen
+     * reader. Only the native datetime input needs the text line instead.
+     */
+    renderedCallback() {
+        this.template.querySelectorAll('[data-control]').forEach((node) => {
+            if (
+                typeof node.setCustomValidity !== 'function' ||
+                node.tagName === 'INPUT' ||
+                node.dataset.control === 'kind'
+            ) {
+                return;
+            }
+            const message =
+                node.dataset.control === 'logic'
+                    ? this.logicProblem
+                    : this._shownMessage(
+                          Number(node.dataset.index),
+                          node.dataset.control
+                      );
+            const wasShown = node.dataset.reported === '1';
+            if (!message && !wasShown) {
+                return;
+            }
+            node.setCustomValidity(message);
+            node.reportValidity();
+            node.dataset.reported = message ? '1' : '';
+        });
+        if (this._focusNext) {
+            const target = this.template.querySelector(this._focusNext);
+            this._focusNext = null;
+            if (target && typeof target.focus === 'function') {
+                target.focus();
+            }
+        }
+    }
+
+    get logicProblem() {
+        const p = this.problems.find(
+            (x) => x.control === 'logic' && this._visible(x)
+        );
+        return p ? p.message : '';
+    }
+
+    get rows() {
+        const messageFor = (i, control) => this._shownMessage(i, control);
+        return this.rules.map((rule, i) => {
+            const kind = kindOf(rule.source, this._kinds[i]);
+            const valueKind = this._valueKind(rule.source);
             return {
                 key: `rule_${i}`,
                 index: i,
                 number: i + 1,
-                needsValue: !NO_VALUE.has(rule.operator),
-                // raw <input> stamps literal "undefined" for a missing value —
+                kind,
+                source: rule.source || '',
+                operator: rule.operator || '',
+                // lightning inputs stamp "undefined" for a missing value —
                 // ''-guard (0/false stay: they're real comparison values)
-                value: rule.value == null ? '' : rule.value,
-                isBool: kind === 'bool',
-                isNumber: kind === 'number',
-                isDate: kind === 'date',
-                isDateTime: kind === 'datetime',
-                boolOptions: [
-                    {
-                        value: '',
-                        label: 'Choose Yes or No'
-                    },
-                    // Preserve an invalid saved value visibly, just as we do
-                    // for saved operators; opening the editor must not alter it.
-                    ...(!canDisplay('bool', rule.value)
-                        ? [
-                              {
-                                  value: String(rule.value),
-                                  label: `${rule.value} (not valid here)`
-                              }
-                          ]
-                        : []),
-                    { value: 'true', label: 'Yes' },
-                    { value: 'false', label: 'No' }
-                ].map((o) => ({
-                    ...o,
-                    selected:
-                        o.value === String(rule.value ?? '') ? true : undefined
-                })),
-                sourceOptions: (this.sources || []).map((s) => ({
-                    value: s.id,
-                    label: s.label,
-                    selected: s.id === rule.source ? true : undefined
-                })),
-                recordOptions: (this.recordSources || []).map((s) => ({
-                    value: s.id,
-                    label: s.label,
-                    selected: s.id === rule.source ? true : undefined
-                })),
-                operatorOptions
+                value: rule.value == null ? '' : String(rule.value),
+                needsValue: !NO_VALUE.has(rule.operator),
+                isBool: valueKind === 'bool',
+                isNumber: valueKind === 'number',
+                isDate: valueKind === 'date',
+                isDateTime: valueKind === 'datetime',
+                isText: valueKind === 'text',
+                boolOptions: this._boolOptions(rule.value),
+                sourceKindOptions:
+                    this.hasRecordSources || kind === 'record'
+                        ? this.sourceKindOptions
+                        : this.sourceKindOptions.slice(0, 1),
+                fieldOptions: this._fieldOptions(rule, kind),
+                operatorOptions: this._operatorOptions(rule),
+                fieldProblem: messageFor(i, 'field'),
+                operatorProblem: messageFor(i, 'operator'),
+                valueProblem: messageFor(i, 'value'),
+                // Every row's controls say which condition they belong to;
+                // "Field" four times over tells a screen reader nothing.
+                kindLabel: `Condition ${i + 1}: source`,
+                fieldLabel: `Condition ${i + 1}: ${
+                    this.isVisibility ? 'question or field' : 'field'
+                }`,
+                operatorLabel: `Condition ${i + 1}: operator`,
+                valueLabel: `Condition ${i + 1}: value`,
+                removeLabel: `Remove condition ${i + 1}`,
+                valueInvalid: messageFor(i, 'value') ? 'true' : undefined
             };
         });
     }
 
-    get problems() {
+    /**
+     * The runtime engine's lint, minus what `problems` already says beside
+     * the control: an empty row isn't "not found", it's unfinished, and
+     * logic that can't run is explained under the logic box.
+     */
+    get lintWarnings() {
         if (!this.hasRules || !this.sourceIndex) {
             return [];
         }
+        const hasLogicProblem = this.problems.some(
+            (p) => p.control === 'logic'
+        );
         return lintVisibility(
             this.value,
             this.sourceIndex,
             this.hostRepeatSectionId || null
-        );
+        )
+            .filter((message) => {
+                if (message.startsWith('The custom logic')) {
+                    return !hasLogicProblem;
+                }
+                const n = /^Rule (\d+):/.exec(message);
+                const rule = n ? this.rules[Number(n[1]) - 1] : null;
+                if (!rule) {
+                    return true;
+                }
+                if (message.includes('source element not found')) {
+                    return Boolean(rule.source);
+                }
+                if (message.includes('needs a numeric value')) {
+                    return !isBlankValue(rule.value);
+                }
+                return true;
+            })
+            .map((message) => message.replace(/^Rule (\d+)/, 'Condition $1'));
     }
 
-    get hasProblems() {
-        return this.problems.length > 0;
+    get hasLintWarnings() {
+        return this.lintWarnings.length > 0;
     }
 
-    // ---- intents (full-config emission; the studio owns the spec) ----
+    // ---- intents (full-config emission; the host owns the value) ----
 
     _emit(next) {
         this.dispatchEvent(
@@ -378,14 +650,24 @@ export default class FinalRuleEditor extends LightningElement {
             : { action: 'show', logic: 'all', customLogic: null, rules: [] };
     }
 
+    /** The value a change event carries: lightning-* in detail, native in target. */
+    _eventValue(event) {
+        return event.detail && event.detail.value !== undefined
+            ? event.detail.value
+            : event.target.value;
+    }
+
     handleAddRule() {
         const next = this._next();
-        const first = (this.sources || [])[0];
-        next.rules.push({
-            source: first ? first.id : '',
-            operator: 'equals',
-            value: ''
-        });
+        next.rules = next.rules || [];
+        // Nothing is chosen for the author: an empty row asks for its field.
+        next.rules.push({ source: '', operator: 'equals', value: '' });
+        const added = next.rules.length - 1;
+        this._kinds[added] = 'answer';
+        // Straight to the new row's first choice.
+        this._focusNext = `[data-index="${added}"][data-control="${
+            this.isVisibility ? 'kind' : 'field'
+        }"]`;
         this._emit(next);
     }
 
@@ -393,18 +675,32 @@ export default class FinalRuleEditor extends LightningElement {
         const i = Number(event.currentTarget.dataset.index);
         const next = this._next();
         next.rules.splice(i, 1);
+        this._kinds.splice(i, 1);
+        const shifted = new Set();
+        this._touched.forEach((key) => {
+            const [row, control] = key.split(':');
+            const n = Number(row);
+            if (n !== i) {
+                shifted.add(`${n > i ? n - 1 : n}:${control}`);
+            }
+        });
+        this._touched = shifted;
+        // The button that was clicked is gone; land somewhere that still is.
+        this._focusNext = next.rules.length
+            ? `.re-del[data-index="${Math.min(i, next.rules.length - 1)}"]`
+            : '.re-add';
         this._emit(next.rules.length ? next : null);
     }
 
     handleAction(event) {
         const next = this._next();
-        next.action = event.target.value;
+        next.action = this._eventValue(event);
         this._emit(next);
     }
 
     handleLogic(event) {
         const next = this._next();
-        next.logic = event.target.value;
+        next.logic = this._eventValue(event);
         if (next.logic !== 'custom') {
             next.customLogic = null;
         }
@@ -413,18 +709,42 @@ export default class FinalRuleEditor extends LightningElement {
 
     handleCustomLogic(event) {
         const next = this._next();
-        next.customLogic = event.target.value;
+        next.customLogic = this._eventValue(event);
+        this._emit(next);
+    }
+
+    /** Logic is judged when the author leaves the box, not mid-word. */
+    handleLogicBlur() {
+        this._logicTouched = true;
+    }
+
+    /** Switching a row between an answer and the linked record starts it over. */
+    handleSourceKind(event) {
+        const i = Number(event.currentTarget.dataset.index);
+        const kind = this._eventValue(event);
+        const next = this._next();
+        const rule = next.rules[i];
+        if (!rule || kindOf(rule.source, this._kinds[i]) === kind) {
+            return;
+        }
+        this._kinds[i] = kind;
+        rule.source = '';
+        rule.operator = 'equals';
+        rule.value = '';
         this._emit(next);
     }
 
     handleRuleField(event) {
-        const { index, prop } = event.currentTarget.dataset;
+        const { index, control } = event.currentTarget.dataset;
+        const i = Number(index);
         const next = this._next();
-        const rule = next.rules[Number(index)];
+        const rule = next.rules[i];
         if (!rule) {
             return;
         }
-        rule[prop] = event.target.value;
+        this._touched.add(`${i}:${control}`);
+        const prop = control === 'field' ? 'source' : control;
+        rule[prop] = this._eventValue(event);
         if (prop === 'operator' && NO_VALUE.has(rule.operator)) {
             rule.value = null;
         }
