@@ -1,8 +1,11 @@
 # Freeform F2 — mapping one submission onto several records
 
-> **Status: DESIGN APPROVED, revised after review, no code written.** Approved section by section on
+> **Status: DESIGN APPROVED; F2 shipped 2026-09-23 (PRs #318–#322) except the Retry slice (M7,
+> deferred); the D49–D57 search redesign is being built.** Approved section by section on
 > 2026-09-20 (D29–D37); a review round on 2026-09-21 found seven real problems and the owner ruled on
-> each (D38–D48). This document is the design as it now stands. It is not a build plan — the
+> each (D38–D48). On 2026-09-23 the owner redesigned the search screen and the condition editor
+> (D49–D57; build plan [IMPL_PLAN_F2_SEARCH.md](./IMPL_PLAN_F2_SEARCH.md)). This document is the
+> design as it now stands. It is not a build plan — the
 > implementation plan comes next and lives in its own document.
 >
 > F2 is the reason Freeform exists — [FREEFORM_SPEC.md §1](./FREEFORM_SPEC.md). F1 shipped the
@@ -37,11 +40,12 @@ FREEFORM_SPEC F2 contract 2.
 ## 2. Decision ledger (owner rulings)
 
 Numbering continues FREEFORM_SPEC's ledger, which ends at D28. D29–D37 come from the design session of
-2026-09-20; D38–D48 from the review round of 2026-09-21. Where a later ruling revises an earlier one,
+2026-09-20; D38–D48 from the review round of 2026-09-21; D49–D57 from the search redesign of
+2026-09-23 (D53–D57 also govern visibility rules and lookup filters). Where a later ruling revises an earlier one,
 both rows stay and the earlier row says so.
 
 | #   | Ruling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Date       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | --- | --------------------------------------------------------------------------------------------- | ---------- | --- | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | D29 | **Mapping lives in a third Studio mode — Build \| Data \| Design.** Explicitly not the left rail ("it definitely shouldn't fit inside the left palette") and not the Settings drawer. Mapping is what a Freeform is for; it is not a setting on the form and it does not fit an inspector-width column                                                                                                                                                                                                                                                             | 2026-09-20 |
 | D30 | **Autofill moves into Data mode too, for all three form types, in its own slice AFTER F2.** F2 ships Data mode with the Mapping section only. This _corrects D7_, which put Freeform Autofill in F2: Freeform Autofill now arrives with the migration slice. No regression — Freeform hides the Autofill rail tab today                                                                                                                                                                                                                                            | 2026-09-20 |
 | D31 | **An action may create, update, or find-or-create by a matching field.** Record matching is in F2, not deferred to a later round. _Revised by D39: standalone update is cut._                                                                                                                                                                                                                                                                                                                                                                                      | 2026-09-20 |
@@ -62,6 +66,7 @@ both rows stay and the earlier row says so.
 | D46 | **Background-job capacity is measured, not assumed.** The trigger computes `Limits.getLimitQueueableJobs() - Limits.getQueueableJobs()` at the moment it queues, and every refusal states that real number — never a fixed 50. Other automation in the same transaction may already have used capacity, so even a single guest submission can find none left. **New submissions are never refused:** any that do not fit are saved as Failed, so the answers survive and Retry picks them up — refusing would roll back the respondent's answers (owner confirmed) | 2026-09-21 |
 | D47 | **A form may have at most 10 mapping steps.** Every step's writes, plus whatever triggers, flows and validation rules the org runs on those objects, share one set of limits inside a single job; ten leaves room for the org's own automation. An eleventh step is a publish blocker                                                                                                                                                                                                                                                                              | 2026-09-21 |
 | D48 | **Lookup fields that can point at more than one kind of record are not supported as mapping destinations.** A Task's "Name" and "Related To", or the Owner on a Case or Lead, can each point at several kinds of record, and there is no single target to offer the author. The objects themselves are fine — a form can still create a Task — but those fields are left out of the field list and refused at publish. (First ruled as "no Task or Event"; narrowed to the fields the same day.)                                                                   | 2026-09-22 |
+| D49 | **A search filter row compares against a fixed value or an answer.** Columns: Field · Operator · Compare with · Value. Only single-value answers whose type fits the row's field are offered, and the author always picks one — nothing is chosen for them.                                                                                                                                                                                                                                                                                                        | 2026-09-23 |     | D50 | **An author may type the WHERE clause instead of building rows**, in an **Advanced (SOQL)** tab of the conditions dialog. Either-or per step; both drafts are kept while exploring and the replacement is confirmed once, on Apply. Mapping search only. A deliberate exception to "never raw expressions" (visibility rules). | 2026-09-23 |     | D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, stored as `{!<elementId>}`, and always run as bound values — never pasted into query text. **Check conditions** runs the publish check on demand. | 2026-09-23 |     | D52 | **The searched field is pre-filled in the create list, and stays editable.** Choosing "Email matches Your email" adds `Email ← Your email` when Email isn't there yet; deleting that row sticks until the search field changes. Softens D45. | 2026-09-23 |     | D53 | **One condition editor, Form Designer style, in a dialog**, for visibility rules, lookup filters and the mapping search. Each screen spells the conditions out and offers **Edit conditions**; the dialog's button is **Apply conditions**, and problems show beside the control that needs fixing. | 2026-09-23 |     | D54 | **Related fields sit in the Field list, one level deep** — "Account › Type" — found by a searchable picker that loads each relationship on demand. No cap. | 2026-09-23 |     | D55 | **Current user is a condition source**: any User field, plus Profile name and Role name. Visibility rules and lookup filters only; the mapping search keeps refusing `$User` (it runs as whoever submitted — usually the site guest). | 2026-09-23 |     | D56 | **The linked record works for Forms too**: the record a Form is editing (`existingRecordId`). | 2026-09-23 |     | D57 | **Custom logic accepts NOT**; every query we build writes it as `(NOT (…))`. A condition whose record or user details aren't available is _unknown_, combined three-valued, and unknown counts as not met — so no published rule changes and NOT can't reveal a question in create mode. | 2026-09-23 |
 
 ## 3. Where it lives — Data mode (D29)
 
@@ -115,12 +120,15 @@ carry no mapping of their own. An action's `operation` is `create` or `findOrCre
       "match": {
         "field":  "Email",
         "source": { "kind": "answer", "elementKey": "el_77aa31f2" },
-        "filter": { "logic": "all", "rows": [ /* the lookup filter's own shape, compiled by FinalLookupService.compile */ ] },
+        "filter": { "logic": "all", "rows": [ /* the lookup filter's own shape, compiled by FinalLookupService.compile;
+                                                 a row value "$field.<elementKey>" compares with an answer (D49) */ ] },
+        // or, instead of rows (D50):  "filterMode": "soql", "soql": "Title = {!el_5d1e0c9a} AND CreatedDate = LAST_N_DAYS:30"
         "onMatch": "reuse"
+        // "prefillDeclined": true  — set when the author deletes the pre-filled search row (D52)
       },
       "fields": [
         { "field": "LastName",  "source": { "kind": "answer",    "elementKey": "el_c1d90b23" } },
-        { "field": "Email",     "source": { "kind": "answer",    "elementKey": "el_77aa31f2" } },
+        { "field": "Email",     "source": { "kind": "answer",    "elementKey": "el_77aa31f2" }, "prefilled": true },
         { "field": "AccountId", "source": { "kind": "recordRef", "ref": "action:act_9f3c21a8" } }
       ]
     }
@@ -199,6 +207,25 @@ respondent.
 A consequence worth warning about: a **required** destination field fed by an **optional** question
 fails its step whenever that question is skipped. Publish warns about it (§7).
 
+### 4.6 The typed clause — Advanced (SOQL) (D50, D51)
+
+`match.filterMode: "soql"` replaces the filter rows with `match.soql`: the part of a SOQL query after
+`WHERE`, on the step's own object. It still runs as
+`SELECT Id FROM <object> WHERE <match field> = :value AND (<clause>) LIMIT 2`.
+
+- **Answers** are stored as `{!<elementId>}` and shown to the author as `{<question label>}`. Each
+  must sit right after a field and a comparison (`Email = {Your email}`); the runtime converts the
+  answer against that field (label or stored value, F2 decision 7) and binds it — never pastes it.
+  After `LIKE`, `%`, `_` and `\` in the answer are escaped, so it matches as typed.
+- **Refused, outside quoted text:** `;`, `$`, a `:` that starts a bind (`LAST_N_DAYS:30` is fine),
+  and the words `SELECT FROM LIMIT OFFSET ORDER GROUP HAVING FOR WITH USING UPDATE TYPEOF ALL` — so
+  no sub-queries. At most 4,000 characters. NOT must be bracketed after another condition:
+  `A AND (NOT B)` (Salesforce refuses `A AND NOT B`).
+- Checked at publish, and on demand by **Check conditions**, by test-running
+  `SELECT Id … WHERE <clause> LIMIT 0` **as the author** (`USER_MODE`). Run in the background in
+  system mode, like rows.
+- `filterMode` absent = rows, so every mapping published before D50 is unchanged.
+
 ## 5. The authoring UI
 
 Three columns. A full-page mockup is linked in the status header.
@@ -216,11 +243,26 @@ answers are kept regardless.
 ### 5.2 Middle — the selected action
 
 Order on screen: the match block, then the match question, then the fields. The match settings come
-first because they change what the fields _mean_.
+first because they change what the fields _mean_. _Revised 2026-09-23 (D52–D53):_ the step is laid
+out as its branches —
+
+```
+FIND AN EXISTING CONTACT
+  Where [Email ▾] matches the answer to [Your email ▾]
+  Only records where:  1  Title equals "Manager"   [Edit conditions]
+IF ONE IS FOUND
+  Use it as-is. Nothing is written to it.   Change
+IF NONE IS FOUND — CREATE A CONTACT WITH
+  Field on Contact | Gets its value from | Also update when found (update only) | ×
+```
+
+An Always create step shows only "Create a Contact with". The searched field is pre-filled in the
+create list (D52).
 
 - **The match block** names the field, the answer it is compared against, and the filter. A filter is
   mandatory — "any record of this object" is already refused at publish for lookups, and matching is
-  a search by another name.
+  a search by another name. The filter is edited in the shared conditions dialog (D53): rows with
+  Compare with a fixed value or an answer (D49), or the Advanced (SOQL) tab (D50).
 - **The match question** (§4.4) is amber and unmissable, and on a public form it says why in one
   sentence: _anyone who guesses a real email address reaches whatever you allow here, without signing
   in._ Answering `reuse` collapses it to a quiet line. Answering `update` reveals the per-field
@@ -428,11 +470,17 @@ it, which is why the refusal lives in `publishSpec`.
 - an action on a setup object (User, Group, permission assignments and the like) — Salesforce refuses
   to write those in the same transaction as ordinary records
 - more than 10 steps (D47)
+- a filter row or typed-clause answer that is gone, is a multi-value question (matrix, ranking, file,
+  several choices), doesn't fit the field it's compared with, or is used with a list comparison or
+  with LIKE on a non-text field (D49, D51)
+- an Advanced (SOQL) clause that the parser refuses (§4.6), or that doesn't run when tested as the
+  publisher — Salesforce's own message is shown
 
 **Warnings — publish proceeds, after the author confirms:**
 
 - a public form with any `onMatch: "update"` action, naming the object and every overwritable field
 - a required field, or a match, fed by an optional question — skipping it fails that step (§4.5)
+- a filter row or typed clause that compares with an optional question — skipping it fails that step
 - the existing D12 / D20 warnings, unchanged
 
 ## 8. Permissions, and the bargain
@@ -519,7 +567,7 @@ proven against a real org configuration.
 
 - **Autofill** — moves into Data mode in its own slice afterwards, for all three types (D30).
 - **Updating a record the server already holds** — cut (D39), DEFERRED #32.
-- **Keeping the match answer and the saved value in step** — the author's job for now (D45),
+- ~~**Keeping the match answer and the saved value in step** — the author's job for now (D45),~~ — softened by D52 (the searched field is pre-filled),
   DEFERRED #33.
 - **Preventing duplicates across submissions** — the org's duplicate rules do that (D40).
 - **Lookup fields that can point at more than one kind of record** — a Task's Related To, a Case's Owner (D48).
