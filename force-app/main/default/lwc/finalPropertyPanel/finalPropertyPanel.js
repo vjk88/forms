@@ -186,6 +186,8 @@ export default class FinalPropertyPanel extends LightningElement {
     @api recordRuleSources = [];
     /** The linked record's object, for its searchable field picker. */
     @api recordRuleObject;
+    /** Whether the form is public (Current user conditions explain guests). */
+    @api formIsPublic = false;
     /** Map(id → {type, repeatSectionId}) — the rule editor's lint index. */
     @api ruleIndex;
     /** The repeat section this node lives inside, or null (lint scoping). */

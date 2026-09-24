@@ -217,6 +217,28 @@ public inherited sharing class FinalLookupService {
 
         List<String> pieces = new List<String>();
         Integer b = 0;
+        // Current user values (D55): a guest has none worth searching with —
+        // "current user" would be the site guest — so such a filter finds
+        // nothing. Everyone else's are read in one query up front.
+        Set<String> userPaths = new Set<String>();
+        Boolean readsUser = false;
+        for (Object rowObj : rows) {
+            Map<String, Object> r = asMap(rowObj);
+            String p = r == null ? null : userPathOf(r.get('value'));
+            if (p != null) {
+                readsUser = true;
+                if (!FAST_USER_FIELDS.contains(p)) {
+                    userPaths.add(p);
+                }
+            }
+        }
+        if (readsUser && UserInfo.getUserType() == 'Guest') {
+            out.blocked = true;
+            out.blockedReason = 'This filter needs a signed-in person.';
+            return out;
+        }
+        loadUserValues(userPaths);
+
         for (Object rowObj : rows) {
             Map<String, Object> row = asMap(rowObj);
             if (row == null) {
@@ -370,6 +392,80 @@ public inherited sharing class FinalLookupService {
         return s;
     }
 
+    /** Read once per transaction: path ('Title', 'Profile.Name') → value. */
+    private static Map<String, Object> userValues = new Map<String, Object>();
+
+    /** Answered from UserInfo without a query. */
+    private static final Set<String> FAST_USER_FIELDS = new Set<String>{
+        'Id',
+        'ProfileId',
+        'Email',
+        'Name'
+    };
+
+    private static String userPathOf(Object raw) {
+        return raw instanceof String && ((String) raw).startsWith('$User.')
+            ? ((String) raw).substring(6)
+            : null;
+    }
+
+    /**
+     * D55: any User field, or one hop (Profile.Name, UserRole.Name), read in
+     * ONE query as the running user. A path that isn't a readable User field
+     * is never queried — its row then has no value and blocks the filter.
+     */
+    private static void loadUserValues(Set<String> paths) {
+        Map<String, String> canonicalByPath = new Map<String, String>();
+        for (String p : paths) {
+            if (userValues.containsKey(p)) {
+                continue;
+            }
+            String canonical = resolvePath('User', p);
+            Schema.DescribeFieldResult d = canonical == null
+                ? null
+                : fieldAt('User', canonical);
+            if (
+                canonical != null &&
+                canonical.countMatches('.') <= 1 &&
+                d != null &&
+                d.isAccessible()
+            ) {
+                canonicalByPath.put(p, canonical);
+            }
+        }
+        if (canonicalByPath.isEmpty()) {
+            return;
+        }
+        List<SObject> me = Database.queryWithBinds(
+            'SELECT ' +
+                String.join(
+                    new List<String>(new Set<String>(canonicalByPath.values())),
+                    ', '
+                ) +
+                ' FROM User WHERE Id = :me',
+            new Map<String, Object>{ 'me' => UserInfo.getUserId() },
+            AccessLevel.USER_MODE
+        );
+        if (me.isEmpty()) {
+            return;
+        }
+        for (String p : canonicalByPath.keySet()) {
+            String canonical = canonicalByPath.get(p);
+            Integer dot = canonical.indexOf('.');
+            SObject holder = dot < 0
+                ? me[0]
+                : me[0].getSObject(canonical.substring(0, dot));
+            userValues.put(
+                p,
+                holder == null
+                    ? null
+                    : holder.get(
+                          dot < 0 ? canonical : canonical.substring(dot + 1)
+                      )
+            );
+        }
+    }
+
     private static Object userValue(String field) {
         switch on field {
             when 'Id' {
@@ -385,9 +481,9 @@ public inherited sharing class FinalLookupService {
                 return UserInfo.getName();
             }
             when else {
-                // Anything else needs a real query; keep the surface small
-                // rather than open a hole nobody asked for.
-                return null;
+                // Read by loadUserValues, which checked the path against
+                // User's describe first; anything it refused is null.
+                return userValues.get(field);
             }
         }
     }

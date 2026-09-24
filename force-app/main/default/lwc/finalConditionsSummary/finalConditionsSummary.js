@@ -1,6 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import FinalConditionsModal from 'c/finalConditionsModal';
-import { removedLabel } from 'c/finalRuleEditor';
+import { removedLabel, USER_EXTRAS } from 'c/finalRuleEditor';
 import { labelForPath } from 'c/finalFieldPicker';
 
 /**
@@ -68,6 +68,8 @@ export function describeCondition(
         (raw === 'true' || raw === 'false')
     ) {
         shown = raw === 'true' ? 'Yes' : 'No';
+    } else if (typeof raw === 'string' && raw.startsWith('$User.')) {
+        shown = labels.get(raw) || `Current user › ${raw.slice(6)}`;
     } else if (LIST_OPERATORS.has(rule.operator)) {
         const items = Array.isArray(raw)
             ? raw
@@ -95,6 +97,10 @@ export default class FinalConditionsSummary extends LightningElement {
     @api extraOperators;
     /** The objects the field picker searches — see c/finalRuleEditor. */
     @api fieldObject;
+    /** Whether the form is public — user conditions say what that means. */
+    @api isPublic = false;
+    /** Lookup filters: may compare with the signed-in person (D55). */
+    @api allowCurrentUser = false;
     @api recordObject;
     /** The dialog's title and sentence. */
     @api label;
@@ -161,8 +167,13 @@ export default class FinalConditionsSummary extends LightningElement {
 
     renderedCallback() {
         const wanted = this.rules
-            .map((r) => r.source || '')
-            .filter((s) => s.includes('.') && !s.startsWith('user:'));
+            .flatMap((r) => [
+                r.source || '',
+                typeof r.value === 'string' && r.value.startsWith('$User.')
+                    ? `user:${r.value.slice(6)}`
+                    : ''
+            ])
+            .filter((s) => s.includes('.') || s.startsWith('user:'));
         const key = wanted.join('|');
         if (!wanted.length || key === this._labelledFor) {
             return;
@@ -170,6 +181,17 @@ export default class FinalConditionsSummary extends LightningElement {
         this._labelledFor = key;
         Promise.all(
             wanted.map((source) => {
+                if (source.startsWith('user:')) {
+                    const extra = USER_EXTRAS.find((x) => x.value === source);
+                    const named = extra
+                        ? Promise.resolve(extra.label)
+                        : labelForPath('User', source.slice(5));
+                    // one label, keyed both ways: a user: source and a $User. value
+                    return named.then((label) => [
+                        source,
+                        `Current user › ${label}`
+                    ]);
+                }
                 const isRecord = source.startsWith('record:');
                 const objectApi = isRecord
                     ? this.recordObject
@@ -181,7 +203,13 @@ export default class FinalConditionsSummary extends LightningElement {
                 ]);
             })
         ).then((pairs) => {
-            this._pathLabels = Object.fromEntries(pairs);
+            const labels = Object.fromEntries(pairs);
+            Object.keys(labels)
+                .filter((k) => k.startsWith('user:'))
+                .forEach((k) => {
+                    labels[`$User.${k.slice(5)}`] = labels[k];
+                });
+            this._pathLabels = labels;
         });
     }
 
@@ -246,6 +274,8 @@ export default class FinalConditionsSummary extends LightningElement {
                 noun: this.noun,
                 extraOperators: this.extraOperators,
                 fieldObject: this.fieldObject,
+                isPublic: this.isPublic,
+                allowCurrentUser: this.allowCurrentUser,
                 recordObject: this.recordObject,
                 startWithRow: !this.hasRules
             });

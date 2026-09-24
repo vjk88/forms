@@ -79,6 +79,27 @@ export async function labelForPath(objectApi, path) {
     }
 }
 
+/**
+ * A field's Salesforce type, lower case ('date', 'double', …), from the
+ * session's describes — own fields and one hop. Null when it isn't there.
+ */
+export async function typeForPath(objectApi, path) {
+    if (!objectApi || !path) {
+        return null;
+    }
+    try {
+        const dot = path.indexOf('.');
+        const list = await describe(
+            objectApi,
+            dot < 0 ? null : path.slice(0, dot)
+        );
+        const hit = (list.fields || []).find((f) => f.path === path);
+        return hit ? hit.type : null;
+    } catch {
+        return null;
+    }
+}
+
 export default class FinalFieldPicker extends LightningElement {
     @api label = 'Field';
     @api variant;

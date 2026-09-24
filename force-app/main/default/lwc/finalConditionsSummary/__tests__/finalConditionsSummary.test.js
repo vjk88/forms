@@ -253,3 +253,30 @@ describe('c-final-conditions-summary', () => {
         );
     });
 });
+
+describe('current user in words', () => {
+    it('reads a $User value and a user: source as Current user', () => {
+        const labels = new Map([
+            ['$User.Profile.Name', 'Current user › Profile name'],
+            ['user:UserRole.Name', 'Current user › Role name']
+        ]);
+        expect(
+            describeCondition(
+                rule('Title', 'equals', '$User.Profile.Name'),
+                labels,
+                new Map(),
+                false
+            )
+        ).toBe('Title (not available) equals Current user › Profile name');
+        expect(
+            describeCondition(
+                rule('user:UserRole.Name', 'equals', 'Sales'),
+                labels
+            )
+        ).toBe('Current user › Role name equals “Sales”');
+        // before its label loads, still never an id or "removed"
+        expect(
+            describeCondition(rule('user:Title', 'isBlank'), new Map())
+        ).toBe('Current user › Title is blank');
+    });
+});

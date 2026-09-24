@@ -30,6 +30,8 @@ export default class FinalConditionsModal extends LightningModal {
     @api noun = 'field';
     @api extraOperators;
     @api fieldObject;
+    @api isPublic = false;
+    @api allowCurrentUser = false;
     @api recordObject;
 
     draft = null;

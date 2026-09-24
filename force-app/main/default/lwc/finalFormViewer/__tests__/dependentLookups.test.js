@@ -296,13 +296,17 @@ describe('c-final-form-viewer — reference default and the form-level override'
         // "Default" for a reference field can only mean the standard lookup:
         // that IS what the schema says the field is.
         const el = await mountWith(specWithRenderAs(null));
-        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
+        expect(
+            deepQuery(el.shadowRoot, 'lightning-input-field')
+        ).not.toBeNull();
         expect(lookupOf(el)).toBeNull();
     });
 
     it('Default is explicit about the same thing', async () => {
         const el = await mountWith(specWithRenderAs('Default'));
-        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
+        expect(
+            deepQuery(el.shadowRoot, 'lightning-input-field')
+        ).not.toBeNull();
         expect(lookupOf(el)).toBeNull();
     });
 
@@ -323,7 +327,9 @@ describe('c-final-form-viewer — reference default and the form-level override'
         const spec = specWithRenderAs('Default');
         spec.settings.fieldDefaults = { reference: 'Filtered_Search' };
         const el = await mountWith(spec);
-        expect(deepQuery(el.shadowRoot, 'lightning-input-field')).not.toBeNull();
+        expect(
+            deepQuery(el.shadowRoot, 'lightning-input-field')
+        ).not.toBeNull();
         expect(lookupOf(el)).toBeNull();
     });
 
