@@ -1,6 +1,6 @@
 # IMPL_PLAN — Conditions editor rebuilt, and the F2 find-or-create search
 
-> **Status:** revision 3 + review rounds 2–3, draft for owner review, 2026-09-23. No code yet.
+> **Status:** revision 3 + review rounds 2–4, draft for owner review, 2026-09-23. No code yet.
 > Rev 2: the owner asked for the Form Designer's condition editor style everywhere (in a dialog),
 > and a plan review found seven defects in rev 1 (the table at the end says where each was fixed).
 > Rev 3: the Form Designer's **sources** too — related fields in one flat list, **Current user**
@@ -41,11 +41,11 @@ spec, since they are not mapping-only.
 | #   | Ruling                                                                                                                                                                                                                                                                  |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D49 | **A mapping filter row compares against a fixed value or an answer.** Columns: Field · Operator · Compare with · Value. Only answers whose type and single-value shape fit the row are offered.                                                                         |
-| D50 | **An author may type the WHERE clause instead of building rows** — an "Advanced search" tab in the conditions dialog. Either-or per step; switching warns before discarding. Mapping search only. A deliberate exception to "never raw expressions" (visibility rules). |
+| D50 | **An author may type the WHERE clause instead of building rows** — an "Advanced (SOQL)" tab in the conditions dialog. Either-or per step; switching warns before discarding. Mapping search only. A deliberate exception to "never raw expressions" (visibility rules). |
 | D51 | **Answers go into a typed clause through an Insert answer button** as a readable `{Your email}`, and always run as bound values.                                                                                                                                        |
 | D52 | **The searched field is pre-filled in the create list, and stays editable.** Softens D45.                                                                                                                                                                               |
 | D53 | **One condition editor, Form Designer style, in a dialog, for all three screens** (visibility rules, lookup filters, mapping search). Each screen shows a one-line summary and an Edit button.                                                                          |
-| D54 | **Related fields sit in the Field list, one level deep, flat** — "Account › Type" next to the object's own fields — on all three screens. Advanced search stays for anything rows can't say.                                                                            |
+| D54 | **Related fields sit in the Field list, one level deep, flat** — "Account › Type" next to the object's own fields — on all three screens. Advanced (SOQL) stays for anything rows can't say.                                                                            |
 | D55 | **Current user is a source**: any User field, plus Profile name and Role name. Visibility rules and lookup filters only; the mapping search keeps refusing it (it runs in the background as whoever submitted — usually the site guest).                                |
 | D56 | **The linked record works for Forms too**: the record a Form is editing (`existingRecordId`). No authoring toggle — editing is already switched on by that viewer input (EXPLICIT_RECORD_CONTEXT, 2026-09-09).                                                          |
 | D57 | **Custom logic accepts NOT**, and every query we build writes it as `(NOT (…))` — the only form Salesforce accepts after another condition (proven in `revclouddev` 2026-09-23). The Form Designer's specific logic messages are copied.                                |
@@ -82,11 +82,13 @@ spec, since they are not mapping-only.
      and the same `rulechange` event, so its callers barely change. It edits whatever `value` it is
      given; it never opens anything.
    - `c/finalConditionsModal` (new, `LightningModal`) — holds a **draft copy**, hosts the editor
-     (and, for the mapping, the typed tab), and returns the result only on **Save**. Cancel returns
+     (and, for the mapping, the typed tab), and returns the result only on **Apply conditions**. Cancel returns
      nothing. So an unfinished edit can never reach the spec or publish.
-   - `c/finalConditionsSummary` (new) — the one line each screen shows: _"Shown when 2 conditions are
-     all met"_ / _"Searches Contacts where 1 condition is met"_ / _"No conditions — always shown"_,
-     plus **Edit conditions**. It opens the dialog and emits the saved value.
+   - `c/finalConditionsSummary` (new) — what each screen shows: the conditions **spelled out**, one
+     per line, as the old Form Builder did (`propertyPanel.visibilityDisplay`), plus **Edit
+     conditions** (decision 19). It opens the dialog and emits the applied value.
+   - `c/finalFieldPicker` (new) — the searchable field chooser used in the Field column (decision
+     20). Operators and other short lists stay ordinary `lightning-combobox`.
 2. **Columns per screen.**
 
    | Screen                | Columns                                       | Source / Compare with offers                                                                                              |
@@ -100,10 +102,20 @@ spec, since they are not mapping-only.
    Form Designer is not carried over: an author building one form already knows its layout and type,
    so a rule on it could never change.
 
-3. **Save is disabled until the draft is usable**, with the reason shown in the footer: a row missing
-   its field, operator or value; custom logic that fails the Form Designer's checks (copied from
-   `visibilityEditor.validateCustomLogic`, with NOT — decision 17); in the typed tab, a `{name}` that isn't a
-   question. Lint warnings from `lintVisibility` still show, and don't block (as today).
+3. **Problems show beside the control that needs fixing.** The button is **Apply conditions** (not
+   "Save" — it doesn't save or publish the form). What counts as a problem: a row missing its
+   field, operator or value; an answer that was removed or no longer fits; custom logic that fails
+   the Form Designer's checks (copied from `visibilityEditor.validateCustomLogic`, with NOT —
+   decision 17); in the Advanced (SOQL) tab, a `{name}` that isn't a question.
+   - Each problem appears **under its own control** — the row's field, operator or value
+     (`setCustomValidity` + `reportValidity` on the `lightning-*` input, or a `re-row-problem` line
+     for the answer picker), the logic box, or the SOQL box.
+   - A row shows its problems once it has been touched, or after an Apply attempt — a freshly
+     added empty row isn't shouted at.
+   - **Apply conditions stays clickable.** With problems, clicking it marks every problem, focuses
+     the first one, and keeps the dialog open (the Form Designer's own `handleSave` pattern). The
+     footer then says _"3 conditions need attention"_ with a **Go to first** link.
+   - Lint warnings from `lintVisibility` still show, and don't block (as today).
 4. **Mapping spec shape.** Rows stay in `match.filter`. The typed clause is `match.soql` (string),
    mode `match.filterMode: "soql"`. No `filterMode` = rows, so published mappings need no migration.
 5. **Stored token = `{!<elementId>}`**, shown as `{<question label>}`. Display names are made
@@ -143,8 +155,10 @@ spec, since they are not mapping-only.
     fields, then, for each single-target lookup, its target's filterable fields labelled
     "Target › Field" and stored as `Rel.Field` (`Account.Type`). One level only. The describe comes
     from `FinalLookupController.describeLookupFields(object, relationshipName)`, which already
-    supports this — one call per relationship, fetched **when the dialog opens**, not per render.
-    Lookups that can point at several kinds of record (Task's Related To) are skipped, as today.
+    supports this — one call per relationship, fetched **on demand** when the author opens that
+    relationship in the searchable field picker, and cached for the session (decision 20). Every
+    relationship is listed; none is capped away. Lookups that can point at several kinds of record
+    (Task's Related To) are skipped, as today.
     _Supersedes rev 2's "own fields only" (owner reversed it after seeing the Form Designer)._
 15. **Current user (D55).**
     - **Fields:** every User field the author can **read**, plus two named extras, **Profile name**
@@ -195,7 +209,7 @@ spec, since they are not mapping-only.
     Titles**), `LastName != null AND NOT (…)` → _unexpected token: 'NOT'_, `LastName != null AND
 (NOT (…))` → 23, `NOT NOT …` refused. So `FinalLookupLogic` emits every NOT as `(NOT (x))`. The
     browser engine treats a blank answer the same way (NOT equals on a blank is true), so the three
-    screens agree. Advanced search: when Salesforce's error contains `unexpected token: 'NOT'`,
+    screens agree. Advanced (SOQL): when Salesforce's error contains `unexpected token: 'NOT'`,
     publish adds _"Put NOT and what follows it in brackets: A AND (NOT B)."_ NOT never reaches past
     an **unavailable** context — decision 18.
 18. **Unavailable context is not the same as blank.** Today a linked-record condition with no record
@@ -226,17 +240,80 @@ spec, since they are not mapping-only.
     - `evaluateCustomLogic` keeps its public contract (`null` = malformed) for today's callers; the
       three-valued version is a separate internal function whose "unknown" is a distinct value, so
       "malformed" and "unknown" can never be confused.
+19. **Summaries spell the conditions out** (the old Form Builder's `visibilityDisplay`, improved):
+
+    ```
+    VISIBILITY RULES
+    SHOW WHEN CUSTOM LOGIC IS MET:
+    1  Account › Industry equals "Technology"
+    2  Current user › Profile name equals "Admin"
+    3  Contact email is blank
+    Logic: 1 AND (2 OR 3)
+    [Edit conditions]
+    ```
+
+    - One line per condition, **numbered** so the logic line means something; **labels, not API
+      names** (the old one showed `AssetId`); operators in words; the value quoted; answers as
+      `the answer to "Your email"`; user fields as `Current user › Role name`.
+    - Heading by logic: _Show when ALL are met_ / _ANY is met_ / _custom logic is met_ (and _Hide
+      when …_ for hide rules; _Only records where …_ on lookup and mapping screens).
+    - More than 5 conditions: the first 5, then _"+ 3 more"_. The logic line always shows.
+    - Advanced (SOQL): _"Advanced (SOQL):"_ and the clause in its display form (`{Your email}`), up
+      to 3 lines, then an ellipsis.
+    - Style from the old panel: each line a light block with a 2px brand-colour left border
+      (`cs-rule`), the heading in small caps.
+
+20. **A searchable field picker, with related fields on demand.** `lightning-combobox` has no
+    type-to-search, so a list of own fields plus every related field would be a long scroll.
+    - `c/finalFieldPicker` reuses `finalObjectPicker`'s type-to-search behaviour (the picker Data
+      mode already uses for objects: type to filter, arrows move, Enter picks, Escape closes). The
+      shared part moves into `c/finalTypeahead`; `finalObjectPicker` becomes a thin wrapper around it,
+      with its public API unchanged.
+    - **Matches** label, API name, or relationship name. Each option shows the label
+      (`Account › Industry`) and the API path underneath in small grey text (`Account.Industry`).
+    - **Related fields load on demand, and every relationship is reachable** — no cap. The list shows
+      own fields, then one entry per single-target lookup: _"Account ›"_. Choosing it (or pressing
+      → on it) loads that object's fields with `describeLookupFields(object, relationship)` and shows
+      them in place; _"‹ Back"_ returns. Typing a relationship's name surfaces its entry.
+    - **Cached for the editing session**, in one module-level map keyed by object + relationship, so
+      reopening the dialog or another row never re-fetches.
+    - Once a relationship's fields are loaded, typing matches them too (so "Industry" finds
+      "Account › Industry"). Before that, a line under the results says _"Fields on related records
+      appear when you open them (›)."_
+21. **Advanced (SOQL) gives feedback while you look at it, and switching is free.**
+    - The tab is named **Advanced (SOQL)** — SOQL is Salesforce's query language, and the name says
+      what you're opening.
+    - **Check conditions** button under the box runs the **same server check publish runs** (Task 9)
+      and shows the result right there: _"These conditions run."_ or the problems. It's a new
+      `@AuraEnabled FinalMappingController.checkConditions(specJson, actionId, soql)` that calls the
+      validator's typed-clause path for that one step, as the author (`USER_MODE`), and returns its
+      diagnostics. Nothing is saved.
+    - **Both drafts are kept** while you switch tabs. Switching never asks.
+    - An **inline notice** on the open tab, only when the other tab has content: _"Applying uses
+      Advanced (SOQL). The 2 conditions you built will be removed."_ (and the mirror).
+    - **Apply conditions confirms the replacement** — the one question, asked once, only when
+      something would be discarded (`LightningConfirm`: _"Replace the 2 built conditions with the
+      Advanced (SOQL) conditions?"_).
+22. **Choosing an answer is explicit.** Picking _An answer_ in Compare with sets the value to empty,
+    shows a _"Choose a question…"_ picker and moves focus to it. Compatibility narrows the list; it
+    never picks for the author. Until a question is chosen, the row has a problem (decision 3). A
+    saved answer that no longer qualifies says why:
+    - the question is gone → _"Question removed."_
+    - the question exists but its type no longer fits this field → _"Question type is incompatible."_
+    - it can't be used with this comparison → _"This question can't be used with this comparison."_
 
 ## File map
 
 **Create**
 
-| Path (under `force-app/main/default/`) | Responsibility                                                             |
-| -------------------------------------- | -------------------------------------------------------------------------- |
-| `lwc/finalConditionsModal/` (+test)    | the dialog: draft, Save gate, Clear all, Conditions / Advanced search tabs |
-| `lwc/finalConditionsSummary/` (+test)  | one-line summary + Edit conditions                                         |
-| `lwc/finalMappingSoql/` (+test)        | the Advanced search tab: textarea, Insert answer, display-name mapping     |
-| `classes/FinalMappingSoql.cls` (+Test) | parse a typed clause: guards, tokens → binds, no DML                       |
+| Path (under `force-app/main/default/`) | Responsibility                                                              |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| `lwc/finalConditionsModal/` (+test)    | the dialog: draft, Apply gate, Clear all, Conditions / Advanced (SOQL) tabs |
+| `lwc/finalConditionsSummary/` (+test)  | conditions spelled out, numbered + Edit conditions (decision 19)            |
+| `lwc/finalMappingSoql/` (+test)        | the Advanced (SOQL) tab: textarea, Insert answer, display-name mapping      |
+| `classes/FinalMappingSoql.cls` (+Test) | parse a typed clause: guards, tokens → binds, no DML                        |
+| `lwc/finalTypeahead/` (+test)          | the shared type-to-search list, moved out of `finalObjectPicker`            |
+| `lwc/finalFieldPicker/` (+test)        | searchable fields, related fields on demand, session cache (decision 20)    |
 
 **Modify**
 
@@ -245,6 +322,8 @@ spec, since they are not mapping-only.
 | `lwc/finalRuleEditor/` (+test)                       | rebuilt as the columned grid; `columns` mode; opt-in answer comparisons               |
 | `lwc/finalPropertyPanel/` (+test)                    | Visibility group: summary + dialog instead of the inline editor                       |
 | `lwc/finalLookupFilter/` (+test)                     | conditions: summary + dialog; `answerChoices` / `allowTyped` pass-through             |
+| `lwc/finalObjectPicker/` (+test)                     | becomes a thin wrapper over `finalTypeahead`; public API unchanged                    |
+| `classes/FinalMappingController.cls` (+Test)         | `checkConditions` — the publish check for one step's Advanced (SOQL), on demand       |
 | `lwc/finalMappingModel/` (+test)                     | `setFilterMode`, `setSoql`, pre-fill rules, index + state for filters                 |
 | `lwc/finalMappingAction/` (+test)                    | branch layout, answer choices, `why` fix                                              |
 | `classes/FinalMappingService.cls` (+Test)            | token fix; typed clause at runtime; query errors named per step                       |
@@ -267,7 +346,7 @@ spec, since they are not mapping-only.
 | 2     | S2    | 3–5   | the new editor + dialog, on all three screens, same saved shapes        |
 | 3     | S2b   | 14–18 | the sources: related fields, NOT, Current user, linked record for Forms |
 | 4     | S3    | 6–7   | answers in mapping rows: publish check, then the Compare with column    |
-| 5     | S4    | 8–11  | the typed clause: parser, publish, runtime, Advanced search             |
+| 5     | S4    | 8–11  | the typed clause: parser, publish, runtime, Advanced (SOQL)             |
 | 6     | S5    | 12    | the mapping step as branches; pre-fill; small fixes                     |
 | 7     | S6    | 13    | org walkthrough, signed in and as a guest                               |
 
@@ -332,11 +411,16 @@ paths: a header row shown once, one grid row per condition, `lightning-combobox`
   root, with `width: 100%` — the flex-collapse gotcha).
 - Visibility **Source** column: "An answer" / "The linked record" (the latter only when
   `recordSources.length`). Picking a source resets Field, Operator, Value.
+- The **Field / Question or field** column is `c-final-field-picker` (decision 20, built in Task 15;
+  until then it takes a flat list). Operator stays a `lightning-combobox`.
 - Value controls keep today's typing rules (`VALUE_KIND`, `canDisplay`, operator lists by subtype),
   rendered as `lightning-input` type number / date / datetime / text, or a Yes/No
   `lightning-combobox`.
 - The "(not valid here)" preservation for saved operators and values stays.
-- `@api get problems()` — the Save-gate list from decision 3, as sentences, for the dialog.
+- `@api get problems()` → `[{ rowIndex, control: 'field'|'operator'|'value'|'answer'|'logic', message }]`
+  (decision 3). `@api reportProblems()` marks every one on its control and returns the first;
+  `@api focusProblem(i)` focuses a problem's control. Rows track `touched` so a new empty row
+  shows nothing until it's been used or Apply was tried.
 - Lint (`lintVisibility`) and the record hint render under the grid exactly as now.
 - Mapping-only pieces (the Compare with column) arrive in Task 7; with `columns="mapping"` before
   then it renders as `lookup`.
@@ -344,7 +428,8 @@ paths: a header row shown once, one grid row per condition, `lightning-combobox`
 - [ ] Jest: every existing behaviour test ported to the new markup (operators by subtype, value
       typing, "(not valid here)", lint, record hint, custom logic); header row once; column sets per
       mode; Source switch resets the row; `problems` for missing field/operator/value, bad custom
-      logic (`1 AND (2 OR 3)` over one row) and clean for `1`.
+      logic (`1 AND (2 OR 3)` over one row) and clean for `1`; a new empty row shows no error until
+      touched; `reportProblems()` puts each message under its own control and returns the first.
 
 ### Task 4: The dialog and the summary
 
@@ -360,28 +445,35 @@ typedValue, questions })`.
   met." / "Only records that meet these conditions can be picked." / "Only Contacts that meet these
   conditions are searched.").
 - Body: `c-final-rule-editor` bound to a **draft** (deep copy of `value`). When `allowTyped`, a
-  `lightning-tabset` "Conditions" / "Advanced search" around it (Task 11).
+  `lightning-tabset` "Conditions" / "Advanced (SOQL)" around it (Task 11).
 - Footer (left to right, as the Form Designer): **Clear all** (empties the draft, stays open),
-  **Cancel** (`close()` → `undefined`), **Save** (`close({ value, typed })`), brand, disabled while
-  `problems.length`; the first problem shows beside it in `cm-problem`.
-- Nothing the dialog does touches the spec until Save.
+  **Cancel** (`close()` → `undefined`), **Apply conditions** (brand; decision 3). Apply with no
+  problems → `close({ value, typed })` (after the replacement question in decision 21, if any).
+  Apply with problems → `reportProblems()`, focus the first, and show `cm-attention`:
+  _"3 conditions need attention"_ + **Go to first** (a base `lightning-button` calling
+  `focusProblem(0)`). The count updates as problems are fixed and the line disappears at zero.
+- Nothing the dialog does touches the spec until Apply.
 
-**`finalConditionsSummary`** — `@api` the same inputs plus `emptyText`, `summaryNoun`. Renders one line
-and a `lightning-button` **Edit conditions** (or **Add conditions** when empty). On click: `open(...)`;
-on a result, emits `conditionschange { value, typed }`. Summary text:
+**`finalConditionsSummary`** — `@api` the same inputs plus `objectLabel` (for "Only records where").
+Renders decision 19's spelled-out list and a `lightning-button` **Edit conditions** (or **Add
+conditions** when there are none; _"Always shown"_ / _"No conditions"_ above it). On click:
+`open(...)`; on a result, emits `conditionschange { value, typed }`.
 
-| State      | Visibility                              | Filter / search                           |
-| ---------- | --------------------------------------- | ----------------------------------------- |
-| none       | "Always shown"                          | "No conditions"                           |
-| all        | "Shown when all 2 conditions are met"   | "Only where all 2 conditions are met"     |
-| any        | "Shown when any of 2 conditions is met" | "Only where any of 2 conditions is met"   |
-| custom     | "Shown when 1 AND (2 OR 3)"             | "Only where 1 AND (2 OR 3)"               |
-| typed      | —                                       | "Advanced search: " + first 80 characters |
-| hide rules | "Hidden when …" (same variants)         | —                                         |
+- Condition text comes from one exported pure function, `describeCondition(rule, labels)` in
+  `finalConditionsSummary.js` — `labels` maps ids and paths to labels (the same `sources` the
+  dialog gets) — so the summary and any future screen word conditions the same way.
+- Operators in words, matching the editor's operator labels (`equals`, `does not equal`,
+  `contains`, `is greater than`, `is at most`, `is one of`, `is blank`, …); values quoted; list
+  values joined with commas; `$field.x` → `the answer to "Q"`; `$User.x` → `Current user › Label`;
+  a missing label falls back to the API path rather than blank.
 
-- [ ] Jest (the publish dialog's tests show how to mock `LightningModal.open`): Save returns the
+- [ ] Jest (the publish dialog's tests show how to mock `LightningModal.open`): Apply returns the
       draft; Cancel returns nothing and the summary emits nothing; Clear all empties only the draft;
-      Save disabled with the problem shown; summary wording per row of the table.
+      Apply with 3 problems keeps the dialog open, focuses the first, shows "3 conditions need
+      attention", and Go to first refocuses it; the count drops as rows are fixed. Summary: every
+      heading variant (all / any / custom / hide / lookup / mapping / Advanced (SOQL)); numbering;
+      labels not API names; `+ 3 more` after 5; answers, user and related fields worded;
+      `describeCondition` for every operator.
 
 ### Task 5: The three screens switch over
 
@@ -421,23 +513,42 @@ on a result, emits `conditionschange { value, typed }`. Summary text:
 - [ ] `FinalLookupLogic`: tokenizer and parser accept `NOT`; output wraps it as `(NOT (x))`.
       Apex test builds the WHERE for `1 AND NOT 2` and **runs it** against Contacts (the proven
       forms from decision 17), plus `NOT (1 OR 2)`, `NOT NOT 1` → `(NOT ((NOT (x))))` runs.
-- [ ] `finalRuleEditor` uses `validateCustomLogic` for its inline problem and the Save gate.
+- [ ] `finalRuleEditor` uses `validateCustomLogic` for its inline problem and the Apply gate.
 - [ ] Both runtimes agree: a shared table of 12 expressions × answer patterns run through JS
       and Apex (Apex via the compiled WHERE against fixture Contacts) gives identical results.
 
 ### Task 15: Related fields in the Field list (D54)
 
-**Files:** `lwc/finalLookupFilter/*`, `lwc/finalFormStudio/*`, `lwc/finalRuleEditor/*`,
+**Files:** `lwc/finalTypeahead/*` (new), `lwc/finalFieldPicker/*` (new), `lwc/finalObjectPicker/*`,
+`lwc/finalLookupFilter/*`, `lwc/finalFormStudio/*`, `lwc/finalRuleEditor/*`,
 `classes/FinalSurveyObjectController.cls`, `classes/FinalGuestContextService.cls` (+ tests)
 
-- [ ] **Lookup + mapping screens:** on dialog open, `finalLookupFilter` fetches
-      `describeLookupFields(object, null)` (as today) and then, for each returned relationship, one
-      `describeLookupFields(object, rel.name)`; the rule editor's `sources` become own fields, then
-      `"<rel.label> › <field.label>"` with id `Rel.Field` and the related field's type. Fetch once
-      per open; show the related part as soon as it arrives. Cap: the first 25 relationships by
-      label, with a hint that Advanced search reaches the rest (mapping only).
-- [ ] **Visibility, linked record:** `finalFormStudio.recordRuleSources` adds related fields the
-      same way, id `record:Rel.Field`.
+- [ ] **`finalTypeahead`** — move `finalObjectPicker`'s search box, matching, result list and keys
+      (↑ ↓ Enter Escape) into it, generalised to `items: [{ value, label, meta, searchText, kind }]`
+      (`meta` = the small grey second line; `kind: 'group'` = a "Account ›" entry). Emits `pick` and
+      `open-group`. `finalObjectPicker` keeps its `@api` and events and renders `c-final-typeahead`;
+      its existing tests pass unchanged.
+- [ ] **`finalFieldPicker`** — `@api objectApi`, `@api prefix` (`''`, `record:` or `user:`),
+      `@api value`, `@api extraItems` (Profile name / Role name for users). Loads
+      `describeLookupFields(objectApi, null)` → own fields (`meta` = API name) + one group entry per
+      single-target relationship (`Account ›`, `meta` = `Account → Account`). Picking a group, or →
+      on it, calls `describeLookupFields(objectApi, rel)` and shows `‹ Back` + that object's fields
+      as `Account › Industry` (`meta` = `Account.Industry`). **No cap** — every relationship is
+      listed. Search matches label, API name and relationship name; fields of opened relationships
+      join the search. Hint under the results until a relationship is opened: _"Fields on related
+      records appear when you open them (›)."_ Emits `fieldchange { value: prefix + path, label, type }`.
+- [ ] **Session cache** — a module-level `Map` in `finalFieldPicker.js` keyed
+      `objectApi|relationship` holding the describe promise, shared by every picker instance, so
+      reopening the dialog or another row never re-fetches. Failed reads are dropped from the cache
+      so a retry can succeed.
+- [ ] **Where it's used:** the lookup and mapping Field column (`prefix ''`), visibility's linked
+      record (`record:`, object = the form's object), visibility's Current user and the lookup's
+      Compare with → Current user (`user:` / `$User.`, object `User`, extra items Profile name and
+      Role name). A saved path whose relationship hasn't been opened yet still shows its label: the
+      picker opens that one relationship on load.
+- [ ] Jest: typing matches label / API / relationship; group opens and Back returns; keyboard; a
+      second picker on the same object makes no second server call; a failed load retries; a saved
+      `Account.Industry` value shows "Account › Industry" on open; `finalObjectPicker` tests unchanged.
 - [ ] **Server verdicts follow paths.** `FinalSurveyObjectController.ruleFacts` and
       `FinalGuestContextService` resolve each `record:` path with `FinalLookupService.fieldAt`
       (unknown → the row is false, as an unknown field is today), SELECT the path as written
@@ -559,7 +670,7 @@ In `checkMatch` (rows mode), for each token in a row's `value` **or** `values`:
 
 - **Reading** saved answers: `get answersOn() { return this.columns === 'mapping'; }`. On the
   mapping screen a `$field.` value is **always** an answer — even when no eligible question is left —
-  so a removed question still shows "(question removed)" and still blocks Save. On every other screen
+  so a removed question still shows "(question removed)" and still needs fixing before Apply. On every other screen
   `$field.` is plain text, as today (visibility rules and lookups untouched).
 - **Offering** a new answer: "An answer" appears in Compare with only when `answersOn` and the row
   has at least one fitting choice (below). No choices → the row can still hold and show an old token;
@@ -574,13 +685,18 @@ When `answersOn`, per row:
   where `SCALAR_OPS = equals, notEquals, contains, greaterThan, lessThan, lte, gte`.
 - **Compare with** cell: `lightning-combobox` "A fixed value" / "An answer" — "An answer" offered
   only when `fitting.length && operatorAllowsAnswer`.
-- **Value** cell: the typed control, or a question `lightning-combobox` (value `$field.<key>`),
-  plus a "(question removed)" option when the saved key isn't in `fitting`, so opening never
-  rewrites a rule.
-- Changing Compare with → answer sets `$field.<first fitting>`; → fixed sets `''`. Changing the
-  operator or the field so the answer no longer qualifies clears the value to `''` visibly.
-- `problems` adds: "Condition N compares with an answer that can't be used there." for a token that
-  no longer qualifies.
+- **Value** cell: the typed control, or a question `lightning-combobox` (value `$field.<key>`,
+  placeholder _"Choose a question…"_), so opening never rewrites a rule. A saved key that isn't in
+  `fitting` stays selected as an extra option labelled by why (decision 22): _"(Question removed)"_
+  when no question on the form has that id, _"(Question type is incompatible)"_ when it exists but
+  its type doesn't fit this field, _"(Can't be used with this comparison)"_ when only the operator
+  rules it out.
+- Choosing **An answer** in Compare with sets the value to `''` and moves focus to the _Choose a
+  question…_ picker — nothing is chosen for the author (decision 22). → **A fixed value** sets `''`.
+  Changing the operator or field so a chosen answer no longer qualifies keeps it, marked with the
+  reason above, rather than clearing it silently.
+- `problems` adds, on the row's `answer` control: _"Choose a question."_ (empty), or the reason
+  sentence from decision 22.
 
 **finalMappingAction** — `get filterAnswerChoices()`: questions with `q.mappable` and
 `q.answerType !== 'Options'`, `fits = (compatibility[q.answerType] || []).map((t) => t.toLowerCase())`.
@@ -588,10 +704,13 @@ Passed to `c-final-lookup-filter answer-choices`.
 
 - [ ] Jest: gate off → no Compare with column and `$field.x` renders as plain text (visibility
       regression test); gate on → only fitting, single-value answers; Contains offers answers only
-      for text fields; Is one of offers none; operator change clears a token; removed question shows
-      "(question removed)" untouched; `Options` questions never listed; **with `answerChoices = []`
-      on the mapping screen, a saved `$field.el_gone` still shows "(question removed)", offers no
-      "An answer" for new rows, and keeps Save disabled.**
+      for text fields; Is one of offers none; choosing An answer leaves the value empty, focuses the
+      question picker and reports "Choose a question." until one is picked; an operator change that
+      rules a chosen answer out keeps it and marks "(Can't be used with this comparison)"; a removed
+      question shows "(Question removed)" untouched; a question whose type changed shows
+      "(Question type is incompatible)"; `Options` questions never listed; **with
+      `answerChoices = []` on the mapping screen, a saved `$field.el_gone` still shows
+      "(Question removed)", offers no "An answer" for new rows, and stops Apply.**
 - [ ] Deploy; branch `feat/f2-row-answers`, PR, merge.
 
 ---
@@ -644,7 +763,7 @@ Rules, first failure wins:
      (path `[A-Za-z_][A-Za-z0-9_.]*`, op from decision 7, case-insensitive `LIKE`), else
      _"Put each answer right after a field and a comparison, like Email = {Your email}."_
    - any other `{` or `}` → _"There's no question called "…". Use Insert answer."_ (the text
-     between the braces). The dialog already blocks Save on these (Task 11); this refuses one that
+     between the braces). The dialog already stops Apply on these (Task 11); this refuses one that
      arrives in an imported or hand-edited spec.
 4. Unclosed quote → _"A quoted value isn't closed."_
 5. Unbalanced brackets outside quotes → _"The brackets don't match."_
@@ -661,7 +780,7 @@ Rules, first failure wins:
 
 In `checkMatch`, when `filterMode == 'soql'` (rows branch skipped; any leftover rows ignored):
 
-1. `parse`; a problem → blocker _"Step N (Contact)'s conditions: " + problem_. Stop.
+1. `parse`; a problem → blocker _"Step N (Contact)'s conditions: " + problem_. Stop. (Every diagnostic from this path carries `field = 'conditions'` so `checkConditions` can pick them out — Task 11.)
 2. Per token: Task 6's question checks, with `LIKE` treated as `like` (text-like fields only).
 3. Test-run as the author:
 
@@ -677,7 +796,7 @@ try {
         AccessLevel.USER_MODE
     );
 } catch (Exception e) {
-    out.add(new Diagnostic(BLOCKER, id, null, name + '’s conditions don’t run: ' + e.getMessage()));
+    out.add(new Diagnostic(BLOCKER, id, 'conditions', name + '’s conditions don’t run: ' + e.getMessage()));
 }
 ```
 
@@ -711,9 +830,9 @@ e.getMessage())`.
       fails naming the step; two matches still fail as ambiguous.
 - [ ] Deploy; run `FinalMappingServiceTest`, `FinalMappingTriggerTest`.
 
-### Task 11: The Advanced search tab
+### Task 11: The Advanced (SOQL) tab
 
-**Files:** `lwc/finalMappingSoql/*`, `lwc/finalConditionsModal/*`, `lwc/finalMappingModel/*`,
+**Files:** `lwc/finalMappingSoql/*`, `classes/FinalMappingController.cls` (+Test), `lwc/finalConditionsModal/*`, `lwc/finalMappingModel/*`,
 `lwc/finalLookupFilter/*`, `lwc/finalMappingAction/*` (+ tests)
 
 **finalMappingSoql** (`ms-`) — `@api value` (stored text), `@api questions`; emits `soqlchange`.
@@ -721,8 +840,8 @@ e.getMessage())`.
 - Exported pure functions: `displayNames(questions, storedText)` → `Map<id, name>` built per
   decision 6 (including removed ids found in `storedText`); `toDisplay(stored, names)`;
   `toStored(display, names)`. `toStored` swaps only exact `{name}` matches outside quotes;
-  anything else stays exactly as typed in the draft and is listed in `problems`, which keeps Save
-  disabled (below).
+  anything else stays exactly as typed in the draft and is listed in `problems`, which stops Apply
+  (below).
 - The names map is built **once per dialog open** and kept, so a question renamed mid-edit can't
   shift it.
 - Native `<textarea class="ms-text">` (needs `selectionStart`), label "Conditions — the part after
@@ -730,15 +849,37 @@ e.getMessage())`.
 - `lightning-combobox` **Insert answer**: mappable, non-`Options` questions; inserts `{name}` at the
   cursor, then resets.
 - `@api get problems()`: blank, or any `{…}` outside quotes that isn't a known name →
-  "There's no question called "…". Use Insert answer." — the dialog's Save gate reads it.
-- Hint: _"Checked when you publish, as you. Put each answer right after a field and a comparison,
-  like Email = {Your email}."_
+  "There's no question called "…". Use Insert answer." — the dialog's Apply gate reads it.
+- Hint: _"Put each answer right after a field and a comparison, like Email = {Your email}. Check
+  conditions runs the same check publishing does."_
+- **Check conditions** (`lightning-button`, neutral) under the box (decision 21). Disabled while the
+  box has a local problem (unknown `{name}`), since the server would only repeat it. On click:
+  `toStored(text)` → `checkConditions({ specJson, actionId, soql })` → shows `ms-check` beneath:
+  a success line _"These conditions run."_ (`utility:success`) or each diagnostic as its own line
+  (`utility:error` for blockers, `utility:warning` for warnings). Any edit to the box clears the
+  result, so a stale "These conditions run." is never shown. A spinner while it runs; a failed call
+  says _"The check couldn't run. Try again."_
 
-**finalConditionsModal** — when `allowTyped`: tabs **Conditions** / **Advanced search**,
-starting on the saved mode. Leaving a tab whose content isn't empty asks via `LightningConfirm`:
-_"Switch to Advanced search? The 2 conditions you built will be removed when you save."_ (and
-the mirror). Save returns `{ value, typed: { mode, soql } }` for the tab that is open; the other half
-is dropped **only on Save**.
+**`FinalMappingController.checkConditions(String specJson, String actionId, String soql)`** —
+`@AuraEnabled`, `with sharing`, guests refused. Parses `specJson`, puts `soql` and
+`filterMode: 'soql'` on that action's `match` in memory, runs `FinalMappingValidator.validate`
+for the spec, and returns the diagnostics whose `actionId` matches and that come from the
+conditions (the typed-clause path — Task 9 tags them `field = 'conditions'`). Nothing is written.
+Apex tests: a clean clause → empty list; `Nope__c = 1` → the Salesforce message; an unfitting
+`{token}` → blocker; skippable token → warning; guest → refused; an `actionId` not in the spec →
+_"That step isn't in this form."_
+
+**finalConditionsModal** — when `allowTyped`: tabs **Conditions** / **Advanced (SOQL)**, starting
+on the saved mode (decision 21).
+
+- Each tab keeps its **own draft**; switching tabs never asks and never discards.
+- When the other tab has content, the open tab shows an inline notice (`cm-replace`, an SLDS
+  scoped notification): _"Applying uses Advanced (SOQL). The 2 conditions you built will be
+  removed."_ / _"Applying uses the built conditions. The Advanced (SOQL) text will be removed."_
+- **Apply conditions** applies the **open** tab. If the other tab has content, it asks once
+  (`LightningConfirm`): _"Replace the 2 built conditions with the Advanced (SOQL) conditions?"_ /
+  the mirror. Cancel there keeps the dialog open with both drafts. Confirm →
+  `close({ value, typed: { mode, soql } })`, and only then is the other half dropped.
 
 **finalMappingModel**
 
@@ -768,8 +909,11 @@ labels `filter` as "used to narrow the search".
 
 - [ ] Jest: `displayNames` for labels `Name`, `Name`, `Name (2)` gives three distinct names that
       each round-trip to their own id; two removed questions stay distinct; quotes untouched; an
-      unknown `{x}` is kept as typed and listed in `problems`; Insert answer at the cursor; tab switch
-      asks and Cancel keeps both; Save drops the other half; `answerIndex` for row and typed
+      unknown `{x}` is kept as typed and listed in `problems`; Insert answer at the cursor; switching
+      tabs keeps both drafts and asks nothing; the replace notice appears only when the other tab has
+      content; Apply asks once when it would discard, Cancel keeps both, Confirm drops the other
+      half; Check conditions shows success / blockers / warnings, clears on the next edit, is
+      disabled with an unknown name, and handles a failed call; `answerIndex` for row and typed
       references; `actionState` soql complete/incomplete.
 - [ ] Deploy (Tasks 8–11); branch `feat/f2-typed-conditions`, PR, merge.
 
@@ -784,7 +928,9 @@ labels `filter` as "used to narrow the search".
 ```
 FIND AN EXISTING CONTACT
   Where [Email ▾]  matches the answer to [Your email ▾]
-  Only where all 2 conditions are met            [Edit conditions]
+  Only records where:
+  1  Title equals "Manager"
+  2  Last Name equals the answer to "Your surname"          [Edit conditions]
   A filter is required. Searching every Contact in the org is refused when you publish.
 
 IF ONE IS FOUND
@@ -854,7 +1000,9 @@ removed field is the search field. The writer's fence and the validator read onl
 ### Task 13: Signed in and as a guest, in `revclouddev`
 
 - [ ] Deploy all; **publish the site**.
-- [ ] Visibility: on a question, section and page, open the dialog, add two conditions, Save; Cancel
+- [ ] Visibility: on a question, section and page, open the dialog, add two conditions, Apply — the
+      panel lists both, numbered, in words. Add a row and leave it empty, press Apply: the error sits
+      under that row's control, the footer says "1 condition needs attention", Go to first focuses it. Cancel
       a third edit and confirm nothing changed; preview obeys the rules.
 - [ ] Lookup filter: add a condition in the dialog; the lookup still searches as before.
 - [ ] Mapping, test form `a05hk000001aby9AAA`:
@@ -864,12 +1012,14 @@ removed field is the search field. The writer's fence and the validator read onl
   2. Rows: `Last Name · Equals · An answer · Your surname`. Publish.
   3. Guest submits twice with the same email → second reuses the first.
   4. Guest surname `$User.Name` → a Contact with that literal surname; never the guest user's name.
-  5. Advanced search: `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Switching asks first.
+  5. Advanced (SOQL): `LastName = {Your surname} AND CreatedDate = LAST_N_DAYS:30`. Switching tabs keeps
+     both drafts; the replace notice shows; **Check conditions** says "These conditions run."; Apply asks
+     once before replacing the rows.
      Publish clean; guest submit behaves.
   6. `Title LIKE {Job title}` with answer `50%` matches only `50%`.
   7. `LastName = 'x'; DELETE`, `LIMIT 5`, `Nope__c = 1`, `Email = :x` → each refused at publish
      with its sentence. `{Not a question}` never gets that far: the dialog shows _"There's no
-     question called "Not a question". Use Insert answer."_ and **Save stays disabled**.
+     question called "Not a question". Use Insert answer."_ and **Apply is refused, with the problem shown under the box**.
 - [ ] **Sources (S2b), signed in:** a NOT rule; "Account › Type" in a lookup filter; a visibility
       rule on Profile name and one on Role name (switch the test user's role to see it flip); a Form
       on `Final_P0_Test` with `c__existingRecordId` showing a question only for Contacts whose Title is X.
@@ -932,3 +1082,13 @@ sites carry `// NOPMD` pointing here rather than weakening `ApexSOQLInjection`.
 | 3   | walkthrough deleted the Email mapping, then expected reuse by email                                                             | Email re-added by hand before the reuse check (Task 13)                                                                                                    |
 | 4   | review table said unknown `{names}` are saved                                                                                   | aligned: Save stays disabled; the parser covers imported specs (review table, Tasks 8, 11, 13)                                                             |
 | 5   | guest walkthrough still said "blank"                                                                                            | now "unavailable, not met" (Task 13)                                                                                                                       |
+
+## Plan review, round 4 (owner) — where each point went
+
+| #   | Point                                                                                                               | Fixed in                                                                                                                                                                                                                                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | choosing "An answer" silently picked the first fitting question                                                     | value left empty, "Choose a question…" focused, a problem until chosen (decision 22, Task 7)                                                                                                                                                                   |
+| 2   | one flat combobox of own + related fields would be enormous and unsearchable; the 25-relationship cap was arbitrary | `finalFieldPicker` on a shared `finalTypeahead` (from `finalObjectPicker`): search by label, API name or relationship; `Account › Industry` with the API path underneath; every relationship listed and loaded on demand; session cache (decision 20, Task 15) |
+| 3   | summaries only counted conditions                                                                                   | each condition spelled out, numbered, in labels, with the logic line — the old Form Builder's panel, improved (decision 19, Task 4)                                                                                                                            |
+| 4   | Advanced search only got query feedback at publish; switching tabs was disruptive                                   | named **Advanced (SOQL)**; **Check conditions** runs the publish check on demand; both drafts kept; inline replace notice; one confirmation on Apply (decision 21, Task 11)                                                                                    |
+| 5   | one footer sentence for all problems                                                                                | errors under the control that needs fixing; "3 conditions need attention" + Go to first; **Apply conditions** instead of Save; "Question removed" vs "Question type is incompatible" (decisions 3, 22; Tasks 3, 4, 7)                                          |
