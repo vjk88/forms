@@ -1,0 +1,91 @@
+<template>
+    <div class="ms">
+        <p class="ms-intro">
+            SOQL is Salesforce’s query language. Type only the filter — the
+            conditions after WHERE.
+        </p>
+        <div class="ms-bar">
+            <label class="ms-label" for="ms-text"
+                >Conditions — the part after WHERE</label
+            >
+            <lightning-combobox
+                class="ms-insert"
+                label="Insert answer"
+                variant="label-hidden"
+                placeholder={insertPlaceholder}
+                options={answerOptions}
+                disabled={noAnswerOptions}
+                onchange={handleInsert}
+            ></lightning-combobox>
+        </div>
+        <!-- Native on purpose: Insert answer needs the cursor position. -->
+        <textarea
+            id="ms-text"
+            class={textClass}
+            rows="6"
+            spellcheck="false"
+            placeholder="LastName != null AND CreatedDate = LAST_N_DAYS:30"
+            aria-describedby="ms-hint ms-problems"
+            aria-invalid={invalid}
+            oninput={handleInput}
+        ></textarea>
+        <div class="ms-problems" id="ms-problems" role="status">
+            <template lwc:if={hasShownProblems}>
+                <template for:each={shownProblems} for:item="p">
+                    <p key={p.key} class="ms-problem">{p.text}</p>
+                </template>
+            </template>
+        </div>
+        <p class="ms-hint" id="ms-hint">{hint}</p>
+
+        <div class="ms-check-row">
+            <lightning-button
+                label="Check conditions"
+                disabled={checkDisabled}
+                onclick={handleCheck}
+            ></lightning-button>
+            <template lwc:if={checking}>
+                <lightning-spinner
+                    size="small"
+                    alternative-text="Checking"
+                    class="ms-spinner"
+                ></lightning-spinner>
+            </template>
+        </div>
+        <div class="ms-check" role="status">
+            <template lwc:if={checkedClean}>
+                <p class="ms-line ms-line--ok">
+                    <lightning-icon
+                        icon-name="utility:success"
+                        size="x-small"
+                        variant="success"
+                        alternative-text="Success"
+                    ></lightning-icon>
+                    <span>These conditions run.</span>
+                </p>
+            </template>
+            <template for:each={checkedLines} for:item="d">
+                <p key={d.key} class="ms-line">
+                    <lightning-icon
+                        icon-name={d.icon}
+                        size="x-small"
+                        variant={d.variant}
+                        alternative-text={d.alt}
+                    ></lightning-icon>
+                    <span>{d.message}</span>
+                </p>
+            </template>
+            <template lwc:if={checkFailed}>
+                <p class="ms-line">
+                    <lightning-icon
+                        icon-name="utility:error"
+                        size="x-small"
+                        variant="error"
+                        alternative-text="Error"
+                    ></lightning-icon>
+                    <span>The check couldn’t run. Try again.</span>
+                </p>
+            </template>
+        </div>
+    </div>
+</template>

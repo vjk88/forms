@@ -492,6 +492,12 @@ public with sharing class FinalMappingValidator {
             );
         }
 
+        if (str(match.get('filterMode')) == FILTER_MODE_SOQL) {
+            // Typed conditions replace the rows; leftover rows are ignored.
+            checkTypedConditions(match, d, id, name, ctx, out);
+            return matchField;
+        }
+
         Map<String, Object> filter = FinalMappingRules.asMap(
             match.get('filter')
         );
@@ -584,95 +590,231 @@ public with sharing class FinalMappingValidator {
                     inList = true;
                 }
             }
+            Boolean badComparison =
+                inList ||
+                LIST_OPERATORS.contains(op) ||
+                (op == 'like' &&
+                rowField != null &&
+                !FinalMappingRules.isTextLike(rowField.getType()));
             for (String key : keys) {
-                Map<String, Object> q = ctx.questions.get(key);
-                if (q == null) {
-                    out.add(
-                        new Diagnostic(
-                            BLOCKER,
-                            id,
-                            path,
-                            name +
-                            '’s filter uses a question that’s no longer on the form.'
-                        )
-                    );
-                    continue;
-                }
-                String answerType = FinalSubmitService.answerTypeOf(q);
-                String qLabel = String.valueOf(q.get('label'));
-                if (
-                    FinalMappingRules.UNMAPPABLE_ELEMENT_TYPES.contains(
-                        str(q.get('type'))
-                    ) || answerType == 'Options'
-                ) {
-                    out.add(
-                        new Diagnostic(
-                            BLOCKER,
-                            id,
-                            path,
-                            name +
-                                ': "' +
-                                qLabel +
-                                '" can hold more than one value, so a filter can’t compare with it.'
-                        )
-                    );
-                    continue;
-                }
-                if (
-                    rowField != null &&
-                    !FinalMappingRules.isCompatible(
-                        answerType,
-                        rowField.getType()
-                    )
-                ) {
-                    out.add(
-                        new Diagnostic(
-                            BLOCKER,
-                            id,
-                            path,
-                            name +
-                                ': the answer to "' +
-                                qLabel +
-                                '" can’t be compared with ' +
-                                rowField.getLabel() +
-                                '.'
-                        )
-                    );
-                    continue;
-                }
-                if (
-                    inList ||
-                    LIST_OPERATORS.contains(op) ||
-                    (op == 'like' &&
-                    rowField != null &&
-                    !FinalMappingRules.isTextLike(rowField.getType()))
-                ) {
-                    out.add(
-                        new Diagnostic(
-                            BLOCKER,
-                            id,
-                            path,
-                            name +
-                                ': "' +
-                                qLabel +
-                                '" can’t be used with that comparison.'
-                        )
-                    );
-                    continue;
-                }
-                if (ctx.skippable.contains(key)) {
-                    out.add(
-                        new Diagnostic(
-                            WARNING,
-                            id,
-                            path,
-                            name +
-                                ' filters using "' +
-                                qLabel +
-                                '", which can be skipped. When it is, this step fails.'
-                        )
-                    );
-                }
+                checkAnswer(
+                    key,
+                    rowField,
+                    badComparison,
+                    path,
+                    '’s filter',
+                    id,
+                    name,
+                    ctx,
+                    out
+                );
+            }
+        }
+    }
+
+    /**
+     * One answer a search compares with (D49, D51): still on the form, one
+     * value (not a grid, an order, a file or several choices — decision 9),
+     * fits the field, suits the comparison. A skippable one only warns.
+     * `part` names the part of the step, for the missing-question message.
+     */
+    private static void checkAnswer(
+        String key,
+        Schema.DescribeFieldResult field,
+        Boolean badComparison,
+        String diagnosticField,
+        String part,
+        String id,
+        String name,
+        Context ctx,
+        List<Diagnostic> out
+    ) {
+        Map<String, Object> q = ctx.questions.get(key);
+        if (q == null) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    diagnosticField,
+                    name +
+                        part +
+                        ' uses a question that’s no longer on the form.'
+                )
+            );
+            return;
+        }
+        String answerType = FinalSubmitService.answerTypeOf(q);
+        String qLabel = String.valueOf(q.get('label'));
+        if (
+            FinalMappingRules.UNMAPPABLE_ELEMENT_TYPES.contains(
+                str(q.get('type'))
+            ) || answerType == 'Options'
+        ) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    diagnosticField,
+                    name +
+                        ': "' +
+                        qLabel +
+                        '" can hold more than one value, so a filter can’t compare with it.'
+                )
+            );
+            return;
+        }
+        if (
+            field != null &&
+            !FinalMappingRules.isCompatible(answerType, field.getType())
+        ) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    diagnosticField,
+                    name +
+                        ': the answer to "' +
+                        qLabel +
+                        '" can’t be compared with ' +
+                        field.getLabel() +
+                        '.'
+                )
+            );
+            return;
+        }
+        if (badComparison) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    diagnosticField,
+                    name +
+                        ': "' +
+                        qLabel +
+                        '" can’t be used with that comparison.'
+                )
+            );
+            return;
+        }
+        if (ctx.skippable.contains(key)) {
+            out.add(
+                new Diagnostic(
+                    WARNING,
+                    id,
+                    diagnosticField,
+                    name +
+                        ' filters using "' +
+                        qLabel +
+                        '", which can be skipped. When it is, this step fails.'
+                )
+            );
+        }
+    }
+
+    /** Diagnostics from typed conditions carry this, so checkConditions can pick them out. */
+    public static final String CONDITIONS_FIELD = 'conditions';
+    public static final String FILTER_MODE_SOQL = 'soql';
+
+    /**
+     * D50: conditions the author typed. Parsed (FinalMappingSoql), each
+     * answer checked like a row's, then test-run as the author with
+     * placeholder values — so a bad field, a field they can't read, or
+     * anything else Salesforce refuses is caught now, in Salesforce's words.
+     */
+    private static void checkTypedConditions(
+        Map<String, Object> match,
+        Schema.DescribeSObjectResult d,
+        String id,
+        String name,
+        Context ctx,
+        List<Diagnostic> out
+    ) {
+        FinalMappingSoql.Parsed p = FinalMappingSoql.parse(
+            str(match.get('soql'))
+        );
+        if (p.problem != null) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    CONDITIONS_FIELD,
+                    name + '’s conditions: ' + p.problem
+                )
+            );
+            return;
+        }
+        Map<String, Object> binds = new Map<String, Object>();
+        for (FinalMappingSoql.Token t : p.tokens) {
+            Schema.DescribeFieldResult f = FinalMappingRules.fieldAt(
+                d.getName(),
+                t.fieldPath
+            );
+            checkAnswer(
+                t.elementId,
+                f,
+                t.operator == 'LIKE' &&
+                    f != null &&
+                    !FinalMappingRules.isTextLike(f.getType()),
+                CONDITIONS_FIELD,
+                '’s conditions',
+                id,
+                name,
+                ctx,
+                out
+            );
+            binds.put(t.bindName, placeholderFor(f));
+        }
+        try {
+            // The object name comes from describe; the conditions were
+            // parsed above (no second statement, no binds of the author's
+            // own, no sub-query) and run as the author, in USER_MODE.
+            Database.queryWithBinds(
+                'SELECT Id FROM ' + // NOPMD — see FinalMappingSoql (typed conditions, D50)
+                    d.getName() +
+                    ' WHERE ' +
+                    p.whereClause +
+                    ' LIMIT 0',
+                binds,
+                AccessLevel.USER_MODE
+            );
+        } catch (Exception e) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    CONDITIONS_FIELD,
+                    name + '’s conditions don’t run: ' + e.getMessage()
+                )
+            );
+        }
+    }
+
+    /** A value of the field's type, so a test run can bind it. */
+    private static Object placeholderFor(Schema.DescribeFieldResult f) {
+        if (f == null) {
+            return 'x'; // the query then names the field it can't find
+        }
+        switch on f.getType() {
+            when DOUBLE, CURRENCY, PERCENT, INTEGER, LONG {
+                return 0;
+            }
+            when DATE {
+                return Date.today();
+            }
+            when DATETIME {
+                return Datetime.now();
+            }
+            when TIME {
+                return Time.newInstance(0, 0, 0, 0);
+            }
+            when BOOLEAN {
+                return false;
+            }
+            when ID, REFERENCE {
+                return '000000000000000AAA';
+            }
+            when else {
+                return 'x';
             }
         }
     }

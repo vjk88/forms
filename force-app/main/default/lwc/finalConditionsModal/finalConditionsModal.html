@@ -6,22 +6,81 @@
     </lightning-modal-header>
 
     <lightning-modal-body>
-        <c-final-rule-editor
-            value={draft}
-            columns={columns}
-            sources={sources}
-            record-sources={recordSources}
-            source-index={sourceIndex}
-            host-repeat-section-id={hostRepeatSectionId}
-            noun={noun}
-            extra-operators={extraOperators}
-            field-object={fieldObject}
-            is-public={isPublic}
-            allow-current-user={allowCurrentUser}
-            answer-choices={answerChoices}
-            record-object={recordObject}
-            onrulechange={handleDraft}
-        ></c-final-rule-editor>
+        <template lwc:if={allowTyped}>
+            <lightning-tabset active-tab-value={activeTab}>
+                <lightning-tab
+                    label="Conditions"
+                    value="conditions"
+                    onactive={handleTab}
+                >
+                    <div role="status" class="cm-replace-region">
+                        <template lwc:if={replaceTypedNotice}>
+                            <div
+                                class="slds-scoped-notification slds-theme_warning cm-replace"
+                            >
+                                {replaceTypedNotice}
+                            </div>
+                        </template>
+                    </div>
+                    <c-final-rule-editor
+                        value={draft}
+                        columns={columns}
+                        sources={sources}
+                        record-sources={recordSources}
+                        source-index={sourceIndex}
+                        host-repeat-section-id={hostRepeatSectionId}
+                        noun={noun}
+                        extra-operators={extraOperators}
+                        field-object={fieldObject}
+                        is-public={isPublic}
+                        allow-current-user={allowCurrentUser}
+                        answer-choices={answerChoices}
+                        record-object={recordObject}
+                        onrulechange={handleDraft}
+                    ></c-final-rule-editor>
+                </lightning-tab>
+                <lightning-tab
+                    label="Advanced (SOQL)"
+                    value="soql"
+                    onactive={handleTab}
+                >
+                    <div role="status" class="cm-replace-region">
+                        <template lwc:if={replaceBuiltNotice}>
+                            <div
+                                class="slds-scoped-notification slds-theme_warning cm-replace"
+                            >
+                                {replaceBuiltNotice}
+                            </div>
+                        </template>
+                    </div>
+                    <c-final-mapping-soql
+                        value={soqlDraft}
+                        questions={typedQuestions}
+                        spec={typedSpec}
+                        action-id={typedActionId}
+                        onsoqlchange={handleSoql}
+                    ></c-final-mapping-soql>
+                </lightning-tab>
+            </lightning-tabset>
+        </template>
+        <template lwc:else>
+            <c-final-rule-editor
+                value={draft}
+                columns={columns}
+                sources={sources}
+                record-sources={recordSources}
+                source-index={sourceIndex}
+                host-repeat-section-id={hostRepeatSectionId}
+                noun={noun}
+                extra-operators={extraOperators}
+                field-object={fieldObject}
+                is-public={isPublic}
+                allow-current-user={allowCurrentUser}
+                answer-choices={answerChoices}
+                record-object={recordObject}
+                onrulechange={handleDraft}
+            ></c-final-rule-editor>
+        </template>
     </lightning-modal-body>
 
     <lightning-modal-footer>
@@ -32,11 +91,13 @@
                 <template lwc:if={showAttention}>
                     <p class="cm-attention">
                         <span>{attentionText}</span>
-                        <lightning-button
-                            variant="base"
-                            label="Go to first"
-                            onclick={handleGoToFirst}
-                        ></lightning-button>
+                        <template lwc:if={showGoToFirst}>
+                            <lightning-button
+                                variant="base"
+                                label="Go to first"
+                                onclick={handleGoToFirst}
+                            ></lightning-button>
+                        </template>
                     </p>
                 </template>
             </div>

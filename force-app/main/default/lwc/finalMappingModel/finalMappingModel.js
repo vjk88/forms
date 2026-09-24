@@ -133,6 +133,56 @@ export function setMatch(spec, actionId, patch) {
     });
 }
 
+/**
+ * Built conditions or typed ones (D50) — one or the other per step. Typed
+ * mode keeps its text in `match.soql` and empties the rows; going back to
+ * built conditions drops the text. Callers set the new rows themselves.
+ */
+export function setFilterMode(spec, actionId, mode, soql) {
+    return update(spec, actionId, (a) => {
+        a.match = a.match || emptyMatch();
+        if (mode === 'soql') {
+            a.match.filterMode = 'soql';
+            a.match.soql = soql || '';
+            a.match.filter = { logic: 'all', rows: [] };
+        } else {
+            delete a.match.filterMode;
+            delete a.match.soql;
+        }
+    });
+}
+
+/** Question ids a typed clause names, as {!el_x} outside quoted text. */
+export function soqlTokenIds(text) {
+    const out = [];
+    let inQuote = false;
+    const s = String(text || '');
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQuote) {
+            if (c === '\\') {
+                i++;
+            } else if (c === "'") {
+                inQuote = false;
+            }
+            continue;
+        }
+        if (c === "'") {
+            inQuote = true;
+            continue;
+        }
+        if (c === '{' && s[i + 1] === '!') {
+            const close = s.indexOf('}', i);
+            const id = close < 0 ? '' : s.slice(i + 2, close);
+            if (/^[A-Za-z0-9_]+$/.test(id)) {
+                out.push(id);
+                i = close;
+            }
+        }
+    }
+    return out;
+}
+
 export function setOnMatch(spec, actionId, onMatch) {
     return update(spec, actionId, (a) => {
         a.match = { ...(a.match || emptyMatch()), onMatch };
@@ -180,6 +230,25 @@ export function answerIndex(spec) {
                 use: 'match'
             });
         }
+        // Answers that narrow the search: in built rows or typed conditions.
+        const m = a.match || {};
+        const filterKeys = new Set();
+        if (m.filterMode === 'soql') {
+            soqlTokenIds(m.soql).forEach((k) => filterKeys.add(k));
+        } else {
+            ((m.filter && m.filter.rows) || []).forEach((row) => {
+                [row && row.value, ...((row && row.values) || [])].forEach(
+                    (v) => {
+                        if (typeof v === 'string' && v.startsWith('$field.')) {
+                            filterKeys.add(v.slice(7));
+                        }
+                    }
+                );
+            });
+        }
+        filterKeys.forEach((key) =>
+            add(key, { ...base, field: null, use: 'filter' })
+        );
         (a.fields || []).forEach((f) => {
             if (!f.source) return;
             if (f.source.kind === 'answer') {
@@ -269,12 +338,16 @@ export function actionState(actions, index) {
         return 'incomplete';
     if (a.operation === 'findOrCreate') {
         const m = a.match || {};
+        const typed = m.filterMode === 'soql';
+        const filterDone = typed
+            ? typeof m.soql === 'string' && m.soql.trim() !== ''
+            : Boolean(m.filter && (m.filter.rows || []).length) &&
+              m.filter.rows.every(filterRowComplete);
         if (
             !m.field ||
             !sourceUsable(m.source, earlier) ||
             !m.onMatch ||
-            !(m.filter && (m.filter.rows || []).length) ||
-            !m.filter.rows.every(filterRowComplete)
+            !filterDone
         ) {
             return 'incomplete';
         }
