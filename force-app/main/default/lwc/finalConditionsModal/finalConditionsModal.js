@@ -175,6 +175,11 @@ export default class FinalConditionsModal extends LightningModal {
         return n === 1 ? `${rows} needs attention` : `${rows} need attention`;
     }
 
+    /** One box on the typed tab: focus already lands on it. */
+    get showGoToFirst() {
+        return !this.onTyped;
+    }
+
     get showAttention() {
         if (this.onTyped) {
             return Boolean(this.typedAttention);
@@ -252,7 +257,8 @@ export default class FinalConditionsModal extends LightningModal {
     async _applyTyped() {
         const box = this.template.querySelector('c-final-mapping-soql');
         if (!this.soqlDraft.trim()) {
-            this.typedAttention = 'Write the search, or go back to Conditions.';
+            this.typedAttention =
+                'Write the conditions, or go back to the Conditions tab.';
             if (box) box.focus();
             return;
         }

@@ -1,7 +1,10 @@
 <template>
     <div class="cs">
         <template lwc:if={isTyped}>
-            <p class="cs-heading">Only records where (Advanced SOQL):</p>
+            <p class="cs-heading">
+                Only records where:
+                <span class="slds-badge cs-badge">Advanced (SOQL)</span>
+            </p>
             <pre class="cs-typed">{typedText}</pre>
         </template>
         <template lwc:if={showRules}>

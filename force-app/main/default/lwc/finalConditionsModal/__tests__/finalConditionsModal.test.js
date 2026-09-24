@@ -337,6 +337,6 @@ describe('the Advanced (SOQL) tab (D50)', () => {
         expect(closed).toEqual([]);
         expect(
             el.shadowRoot.querySelector('.cm-attention').textContent
-        ).toContain('Write the search, or go back to Conditions.');
+        ).toContain('Write the conditions, or go back to the Conditions tab.');
     });
 });

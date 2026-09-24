@@ -120,6 +120,62 @@ export function toStored(display, names) {
     });
 }
 
+/** The text inside each quoted value ('…'), escapes kept as typed. */
+function quotedValues(text) {
+    const s = String(text || '');
+    const out = [];
+    let current = null;
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (current === null) {
+            if (c === "'") {
+                current = '';
+            }
+            continue;
+        }
+        if (c === '\\' && i + 1 < s.length) {
+            current += c + s[i + 1];
+            i++;
+        } else if (c === "'") {
+            out.push(current);
+            current = null;
+        } else {
+            current += c;
+        }
+    }
+    return out;
+}
+
+/**
+ * Everything the box can see is wrong itself, as the sentences that stop
+ * Apply (the server checks the rest):
+ * - a {name} that isn't a question;
+ * - a question that was deleted since this was written;
+ * - an answer inside quotes, which would be searched as those words.
+ */
+export function boxProblems(display, names, questionIds) {
+    const out = unknownNames(display, names);
+    const live = new Set(questionIds || []);
+    const nameToId = new Map([...names].map(([id, name]) => [name, id]));
+    eachBrace(display, (inner) => {
+        if (nameToId.has(inner) && !live.has(nameToId.get(inner))) {
+            out.push(
+                `The question for {${inner}} was deleted. Insert a different answer.`
+            );
+        }
+    });
+    const known = new Set(names.values());
+    quotedValues(display).forEach((value) => {
+        const m = /^\{(.+)\}$/.exec(value.trim());
+        if (m && known.has(m[1])) {
+            out.push(
+                `Remove the quotes around {${m[1]}}. Answers are quoted for you.`
+            );
+        }
+    });
+    return out;
+}
+
 /** {Name}s that aren't a question, as the sentences that stop Apply. */
 export function unknownNames(display, names) {
     const known = new Set(names.values());
@@ -172,6 +228,9 @@ export default class FinalMappingSoql extends LightningElement {
             return;
         }
         this._stored = stored;
+        // A result is about the text it checked (Clear all comes this way).
+        this.checked = null;
+        this.checkFailed = false;
         // Before connecting, the questions may not have arrived yet (a
         // parent sets its attributes in any order): names wait for them.
         if (this._names) {
@@ -200,7 +259,11 @@ export default class FinalMappingSoql extends LightningElement {
     /** Problems the box can see itself (the server checks the rest). */
     @api
     get problems() {
-        return unknownNames(this.display, this._names || new Map());
+        return boxProblems(
+            this.display,
+            this._names || new Map(),
+            (this._questions || []).map((q) => q.elementKey)
+        );
     }
 
     /** Show the box's own problems, and say whether there were none. */
@@ -240,6 +303,28 @@ export default class FinalMappingSoql extends LightningElement {
 
     get hasShownProblems() {
         return this.shownProblems.length > 0;
+    }
+
+    get textClass() {
+        return this.hasShownProblems
+            ? 'slds-textarea ms-text ms-text--error'
+            : 'slds-textarea ms-text';
+    }
+
+    get invalid() {
+        return this.hasShownProblems ? 'true' : 'false';
+    }
+
+    get hasAnswerOptions() {
+        return this.answerOptions.length > 0;
+    }
+
+    get insertPlaceholder() {
+        return this.hasAnswerOptions ? 'Insert answer' : 'No answers to insert';
+    }
+
+    get noAnswerOptions() {
+        return !this.hasAnswerOptions;
     }
 
     get answerOptions() {
@@ -285,6 +370,9 @@ export default class FinalMappingSoql extends LightningElement {
     }
 
     handleInput(event) {
+        // Problems show as they are typed, so a greyed-out Check conditions
+        // always has its reason beside it.
+        this._showProblems = true;
         this._setDisplay(event.target.value);
     }
 
@@ -304,13 +392,16 @@ export default class FinalMappingSoql extends LightningElement {
                     ? box.selectionEnd
                     : at;
             const token = `{${name}}`;
-            this._setDisplay(
-                this.display.slice(0, at) + token + this.display.slice(end)
-            );
-            if (box) {
-                box.value = this.display;
+            if (box && typeof box.setRangeText === 'function') {
+                // setRangeText keeps the browser's undo (Ctrl+Z) working.
                 box.focus();
-                box.setSelectionRange(at + token.length, at + token.length);
+                box.setRangeText(token, at, end, 'end');
+                this._showProblems = true;
+                this._setDisplay(box.value);
+            } else {
+                this._setDisplay(
+                    this.display.slice(0, at) + token + this.display.slice(end)
+                );
             }
         }
         if (picker) {

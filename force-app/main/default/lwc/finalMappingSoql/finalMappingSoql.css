@@ -61,3 +61,14 @@
     margin-top: 0.5rem;
     font-size: 0.8125rem;
 }
+
+.ms-intro {
+    margin-bottom: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.ms-text--error,
+.ms-text--error:focus {
+    border-color: var(--slds-g-color-error-base-40, #ba0517);
+    box-shadow: 0 0 0 1px var(--slds-g-color-error-base-40, #ba0517);
+}

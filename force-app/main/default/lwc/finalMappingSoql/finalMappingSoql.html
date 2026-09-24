@@ -1,5 +1,9 @@
 <template>
     <div class="ms">
+        <p class="ms-intro">
+            SOQL is Salesforce’s query language. Type only the filter — the
+            conditions after WHERE.
+        </p>
         <div class="ms-bar">
             <label class="ms-label" for="ms-text"
                 >Conditions — the part after WHERE</label
@@ -8,19 +12,21 @@
                 class="ms-insert"
                 label="Insert answer"
                 variant="label-hidden"
-                placeholder="Insert answer"
+                placeholder={insertPlaceholder}
                 options={answerOptions}
+                disabled={noAnswerOptions}
                 onchange={handleInsert}
             ></lightning-combobox>
         </div>
         <!-- Native on purpose: Insert answer needs the cursor position. -->
         <textarea
             id="ms-text"
-            class="slds-textarea ms-text"
+            class={textClass}
             rows="6"
             spellcheck="false"
             placeholder="LastName != null AND CreatedDate = LAST_N_DAYS:30"
             aria-describedby="ms-hint ms-problems"
+            aria-invalid={invalid}
             oninput={handleInput}
         ></textarea>
         <div class="ms-problems" id="ms-problems" role="status">

@@ -7,11 +7,11 @@ private class FinalMappingSoqlTest {
     @IsTest
     static void blankAsksForTheSearch() {
         Assert.areEqual(
-            'Write the search, or go back to Conditions.',
+            'Write the conditions, or go back to the Conditions tab.',
             problemOf('   ')
         );
         Assert.areEqual(
-            'Write the search, or go back to Conditions.',
+            'Write the conditions, or go back to the Conditions tab.',
             problemOf(null)
         );
     }

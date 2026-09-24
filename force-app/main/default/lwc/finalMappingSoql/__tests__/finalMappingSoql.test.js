@@ -3,7 +3,8 @@ import FinalMappingSoql, {
     displayNames,
     toDisplay,
     toStored,
-    unknownNames
+    unknownNames,
+    boxProblems
 } from 'c/finalMappingSoql';
 import checkConditions from '@salesforce/apex/FinalMappingController.checkConditions';
 
@@ -99,6 +100,28 @@ describe('display names (decision 6)', () => {
     });
 });
 
+describe('what the box itself refuses', () => {
+    const ids = QUESTIONS.map((q) => q.elementKey);
+
+    it('an answer inside quotes would be searched as words', () => {
+        const names = displayNames(QUESTIONS, '');
+        expect(boxProblems("Email = '{Name}'", names, ids)).toEqual([
+            'Remove the quotes around {Name}. Answers are quoted for you.'
+        ]);
+        expect(boxProblems("Title = '{not a question}'", names, ids)).toEqual(
+            []
+        );
+    });
+
+    it('a deleted question stops Apply here, not only at publish', () => {
+        const stored = 'Email = {!el_gone}';
+        const names = displayNames(QUESTIONS, stored);
+        expect(boxProblems(toDisplay(stored, names), names, ids)).toEqual([
+            'The question for {removed question 1} was deleted. Insert a different answer.'
+        ]);
+    });
+});
+
 describe('c-final-mapping-soql', () => {
     it('names answers even when the text arrives before the questions', async () => {
         const el = createElement('c-final-mapping-soql', {
@@ -152,6 +175,11 @@ describe('c-final-mapping-soql', () => {
         type(el, 'Email = {Nope}');
         await flush();
         expect(checkButton(el).disabled).toBe(true);
+        // the reason shows while typing, beside the box
+        expect(
+            el.shadowRoot.querySelector('.ms-problem').textContent
+        ).toContain('no question called "Nope"');
+        expect(box(el).getAttribute('aria-invalid')).toBe('true');
         expect(el.problems).toHaveLength(1);
         expect(el.reportValidity()).toBe(false);
     });
