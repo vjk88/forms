@@ -184,6 +184,8 @@ export default class FinalPropertyPanel extends LightningElement {
     /** SO-3 record-field sources ([{id: 'record:Api', label}]) — surveys
      *  with a connected object; empty everywhere else. */
     @api recordRuleSources = [];
+    /** The linked record's object, for its searchable field picker. */
+    @api recordRuleObject;
     /** Map(id → {type, repeatSectionId}) — the rule editor's lint index. */
     @api ruleIndex;
     /** The repeat section this node lives inside, or null (lint scoping). */

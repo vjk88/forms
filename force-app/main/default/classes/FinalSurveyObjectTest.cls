@@ -429,6 +429,22 @@ private class FinalSurveyObjectTest {
                     'source' => 'record:No_Such_Field__c',
                     'operator' => 'equals',
                     'value' => 'x'
+                },
+                // D54: one hop through a lookup, spelled either way
+                new Map<String, Object>{
+                    'source' => 'record:CreatedBy.Name',
+                    'operator' => 'equals',
+                    'value' => UserInfo.getName()
+                },
+                new Map<String, Object>{
+                    'source' => 'record:CreatedById.IsActive',
+                    'operator' => 'equals',
+                    'value' => 'true'
+                },
+                new Map<String, Object>{
+                    'source' => 'record:CreatedBy.No_Such_Field__c',
+                    'operator' => 'isBlank',
+                    'value' => null
                 }
             }
         };
@@ -520,6 +536,21 @@ private class FinalSurveyObjectTest {
             false,
             facts.get('record:No_Such_Field__c|equals|x'),
             'vanished field fails safe'
+        );
+        System.assertEquals(
+            true,
+            facts.get('record:CreatedBy.Name|equals|' + UserInfo.getName()),
+            'a related field is read through its lookup'
+        );
+        System.assertEquals(
+            true,
+            facts.get('record:CreatedById.IsActive|equals|true'),
+            'the hop may be written as the field'
+        );
+        System.assertEquals(
+            false,
+            facts.get('record:CreatedBy.No_Such_Field__c|isBlank|'),
+            'a related field that doesn’t exist fails safe'
         );
         Map<String, Object> prefill = (Map<String, Object>) res.get('prefill');
         System.assertEquals(

@@ -1,6 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import FinalConditionsModal from 'c/finalConditionsModal';
 import { removedLabel } from 'c/finalRuleEditor';
+import { labelForPath } from 'c/finalFieldPicker';
 
 /**
  * What a screen shows of its conditions (IMPL_PLAN_F2_SEARCH decision 19):
@@ -92,6 +93,9 @@ export default class FinalConditionsSummary extends LightningElement {
     @api hostRepeatSectionId;
     @api noun = 'field';
     @api extraOperators;
+    /** The objects the field picker searches — see c/finalRuleEditor. */
+    @api fieldObject;
+    @api recordObject;
     /** The dialog's title and sentence. */
     @api label;
     @api description;
@@ -141,11 +145,44 @@ export default class FinalConditionsSummary extends LightningElement {
     }
 
     get _labels() {
-        const map = new Map();
+        const map = new Map(Object.entries(this._pathLabels));
         [...(this.sources || []), ...(this.recordSources || [])].forEach((s) =>
             map.set(s.id, s.label)
         );
         return map;
+    }
+
+    /**
+     * Labels for related fields ("Account › Industry"), which aren't in
+     * `sources`: looked up through the field picker's session cache.
+     */
+    _pathLabels = {};
+    _labelledFor = '';
+
+    renderedCallback() {
+        const wanted = this.rules
+            .map((r) => r.source || '')
+            .filter((s) => s.includes('.') && !s.startsWith('user:'));
+        const key = wanted.join('|');
+        if (!wanted.length || key === this._labelledFor) {
+            return;
+        }
+        this._labelledFor = key;
+        Promise.all(
+            wanted.map((source) => {
+                const isRecord = source.startsWith('record:');
+                const objectApi = isRecord
+                    ? this.recordObject
+                    : this.fieldObject;
+                const path = isRecord ? source.slice(7) : source;
+                return labelForPath(objectApi, path).then((label) => [
+                    source,
+                    label
+                ]);
+            })
+        ).then((pairs) => {
+            this._pathLabels = Object.fromEntries(pairs);
+        });
     }
 
     get _types() {
@@ -208,6 +245,8 @@ export default class FinalConditionsSummary extends LightningElement {
                 hostRepeatSectionId: this.hostRepeatSectionId,
                 noun: this.noun,
                 extraOperators: this.extraOperators,
+                fieldObject: this.fieldObject,
+                recordObject: this.recordObject,
                 startWithRow: !this.hasRules
             });
         } finally {

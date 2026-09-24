@@ -19,10 +19,13 @@ function mount(props = {}) {
     return el;
 }
 
-const input = (el) => el.shadowRoot.querySelector('.op-input');
+// The typing and matching live in c/finalTypeahead now; step into it.
+const inner = (el) =>
+    el.shadowRoot.querySelector('c-final-typeahead').shadowRoot;
+const input = (el) => inner(el).querySelector('.ta-input');
 const shown = (el) =>
-    [...el.shadowRoot.querySelectorAll('.op-item-label')].map(
-        (n) => n.textContent
+    [...inner(el).querySelectorAll('.ta-item-label')].map((n) =>
+        n.textContent.trim()
     );
 
 function type(el, text) {
@@ -64,7 +67,7 @@ describe('c-final-object-picker', () => {
         const el = mount();
         type(el, 'zzz');
         await flush();
-        expect(el.shadowRoot.querySelector('.op-empty').textContent).toBe(
+        expect(inner(el).querySelector('.ta-empty').textContent).toBe(
             'No objects match'
         );
     });
@@ -75,7 +78,7 @@ describe('c-final-object-picker', () => {
         el.addEventListener('pick', handler);
         type(el, 'cont');
         await flush();
-        el.shadowRoot
+        inner(el)
             .querySelector('[data-value="Contact"]')
             .dispatchEvent(new CustomEvent('mousedown'));
         expect(handler.mock.calls[0][0].detail).toEqual({

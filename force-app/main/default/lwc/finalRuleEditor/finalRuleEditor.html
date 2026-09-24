@@ -69,16 +69,31 @@
                             <span class="re-cell-label" aria-hidden="true"
                                 >{fieldHeader}</span
                             >
-                            <lightning-combobox
-                                label={r.fieldLabel}
-                                variant="label-hidden"
-                                placeholder="Select field"
-                                options={r.fieldOptions}
-                                value={r.source}
-                                data-index={r.index}
-                                data-control="field"
-                                onchange={handleRuleField}
-                            ></lightning-combobox>
+                            <template lwc:if={r.usePicker}>
+                                <c-final-field-picker
+                                    label={r.fieldLabel}
+                                    variant="label-hidden"
+                                    placeholder="Search fields"
+                                    object-api={r.pickerObject}
+                                    prefix={r.pickerPrefix}
+                                    value={r.source}
+                                    data-index={r.index}
+                                    data-control="field"
+                                    onfieldchange={handleRuleField}
+                                ></c-final-field-picker>
+                            </template>
+                            <template lwc:else>
+                                <lightning-combobox
+                                    label={r.fieldLabel}
+                                    variant="label-hidden"
+                                    placeholder="Select field"
+                                    options={r.fieldOptions}
+                                    value={r.source}
+                                    data-index={r.index}
+                                    data-control="field"
+                                    onchange={handleRuleField}
+                                ></lightning-combobox>
+                            </template>
                         </div>
 
                         <div class="re-cell" data-problem={r.operatorProblem}>

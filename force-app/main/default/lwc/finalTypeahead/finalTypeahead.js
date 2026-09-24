@@ -1,0 +1,279 @@
+import { LightningElement, api } from 'lwc';
+
+const MAX_RESULTS = 50;
+
+/**
+ * finalTypeahead — pick one item by typing part of its name. Moved out of
+ * finalObjectPicker (same look, same matching, same keys: arrows move,
+ * Enter picks, Escape closes) so the conditions' field picker can share it
+ * (IMPL_PLAN_F2_SEARCH decision 20). A lightning-combobox can't search, and
+ * an object's fields plus its related records are far too many to scroll.
+ *
+ * Items: [{ value, label, meta?, searchText?, kind? }]
+ *   meta       — the small grey second line (an API name or path)
+ *   searchText — extra words that match (e.g. a relationship name)
+ *   kind       — 'group' opens a level ("Account ›"); 'back' returns
+ *   searchOnly — listed only while the author is typing
+ *
+ * Emits `pick` {value, label} for an item, `opengroup` {value} for a group,
+ * `back` for the back row. The owner keeps the value and the items.
+ *
+ * Also speaks the lightning-* error API — setCustomValidity, reportValidity,
+ * focus — so the condition editor treats it like any other control.
+ * ta- prefixed classes (LEX leak rule).
+ */
+export default class FinalTypeahead extends LightningElement {
+    _items = [];
+
+    @api
+    get items() {
+        return this._items;
+    }
+    set items(next) {
+        this._items = next || [];
+        if (!this.open) {
+            this.query = this._labelFor(this._value);
+        }
+    }
+
+    @api label = '';
+    /** 'label-hidden' keeps the label for screen readers only. */
+    @api variant;
+    @api placeholder = 'Search';
+    @api disabled = false;
+    /** Shown when nothing matches. */
+    @api emptyText = 'Nothing matches';
+    /** A line under the results, e.g. how to reach more. */
+    @api hint = '';
+    _valueLabel = '';
+
+    /** Text to show for a value that isn't among the items (yet). It often
+     *  arrives after the value (a related field's label loads later). */
+    @api
+    get valueLabel() {
+        return this._valueLabel;
+    }
+    set valueLabel(next) {
+        this._valueLabel = next || '';
+        if (!this.open) {
+            this.query = this._labelFor(this._value);
+        }
+    }
+
+    query = '';
+    open = false;
+    activeIndex = 0;
+    errorMessage = '';
+    _pendingError = '';
+    _value = '';
+    _blurTimer;
+
+    @api
+    get value() {
+        return this._value;
+    }
+    set value(next) {
+        this._value = next || '';
+        this.query = this._labelFor(this._value);
+    }
+
+    // ---- the lightning-* control contract ----
+
+    @api
+    setCustomValidity(message) {
+        this._pendingError = message || '';
+    }
+
+    @api
+    reportValidity() {
+        this.errorMessage = this._pendingError;
+        return !this.errorMessage;
+    }
+
+    @api
+    focus() {
+        const box = this.template.querySelector('.ta-input');
+        if (box) {
+            box.focus();
+        }
+    }
+
+    // ---- view ----
+
+    get labelClass() {
+        return this.variant === 'label-hidden'
+            ? 'ta-label slds-assistive-text'
+            : 'ta-label';
+    }
+
+    get inputClass() {
+        return this.errorMessage ? 'ta-input ta-input--error' : 'ta-input';
+    }
+
+    get invalid() {
+        return this.errorMessage ? 'true' : 'false';
+    }
+
+    _labelFor(value) {
+        if (!value) {
+            return '';
+        }
+        const hit = (this._items || []).find(
+            (o) => o.value === value && o.kind !== 'group'
+        );
+        return hit ? hit.label : this._valueLabel || value;
+    }
+
+    get matches() {
+        const q = (this.query || '').toLowerCase().trim();
+        const chosenLabel = this._labelFor(this._value).toLowerCase();
+        // Showing the chosen label in the box must not narrow the list to it.
+        const filtering = q && q !== chosenLabel;
+        const items = this._items || [];
+        const found = items.filter((o) => {
+            if (o.kind === 'back') {
+                return true;
+            }
+            if (!filtering) {
+                // search-only items (fields of an opened relationship) join
+                // a search without lengthening the plain list
+                return !o.searchOnly;
+            }
+            return (
+                o.label.toLowerCase().includes(q) ||
+                String(o.value).toLowerCase().includes(q) ||
+                (o.searchText || '').toLowerCase().includes(q)
+            );
+        });
+        if (filtering) {
+            // Names that START with what was typed come first: "cont" puts
+            // Contact above Account Contact Role. The back row stays first.
+            const rank = (o) => {
+                if (o.kind === 'back') return -1;
+                return o.label.toLowerCase().startsWith(q) ? 0 : 1;
+            };
+            found.sort((x, y) => rank(x) - rank(y));
+        }
+        return found.slice(0, MAX_RESULTS);
+    }
+
+    get options() {
+        return this.matches.map((o, i) => {
+            const on = o.value === this._value && !o.kind;
+            return {
+                ...o,
+                key: `${o.kind || 'item'}:${o.value}`,
+                id: `ta-${i}`,
+                isGroup: o.kind === 'group',
+                selected: on ? 'true' : 'false',
+                cls:
+                    'ta-item' +
+                    (o.kind ? ` ta-item--${o.kind}` : '') +
+                    (i === this.activeIndex ? ' ta-item--active' : '') +
+                    (on ? ' ta-item--on' : '')
+            };
+        });
+    }
+
+    get hasOptions() {
+        return this.matches.length > 0;
+    }
+
+    get expanded() {
+        return String(this.open);
+    }
+
+    get activeId() {
+        return this.open && this.hasOptions ? `ta-${this.activeIndex}` : null;
+    }
+
+    // ---- intents ----
+
+    handleInput(event) {
+        this.query = event.target.value;
+        this.open = true;
+        this.activeIndex = 0;
+    }
+
+    handleFocus() {
+        clearTimeout(this._blurTimer);
+        this.open = true;
+    }
+
+    handleBlur() {
+        // Let a mousedown pick land before the list closes.
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._blurTimer = setTimeout(() => {
+            this.open = false;
+            this.query = this._labelFor(this._value);
+        }, 150);
+    }
+
+    handleKeydown(event) {
+        const count = this.matches.length;
+        const active = this.matches[this.activeIndex];
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.open = true;
+            this.activeIndex = count ? (this.activeIndex + 1) % count : 0;
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            this.activeIndex = count
+                ? (this.activeIndex - 1 + count) % count
+                : 0;
+        } else if (
+            event.key === 'ArrowRight' &&
+            active &&
+            active.kind === 'group'
+        ) {
+            event.preventDefault();
+            this._act(active);
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            if (this.open && active) {
+                this._act(active);
+            }
+        } else if (event.key === 'Escape') {
+            this.open = false;
+        }
+    }
+
+    handlePick(event) {
+        const { value, kind } = event.currentTarget.dataset;
+        const hit = (this._items || []).find(
+            (o) => String(o.value) === value && (o.kind || '') === (kind || '')
+        );
+        if (hit) {
+            this._act(hit);
+        }
+    }
+
+    _act(item) {
+        if (item.kind === 'group') {
+            this.query = '';
+            this.activeIndex = 0;
+            this.dispatchEvent(
+                new CustomEvent('opengroup', { detail: { value: item.value } })
+            );
+            return;
+        }
+        if (item.kind === 'back') {
+            this.query = '';
+            this.activeIndex = 0;
+            this.dispatchEvent(new CustomEvent('back'));
+            return;
+        }
+        this._value = item.value;
+        this.query = item.label;
+        this.open = false;
+        this.dispatchEvent(
+            new CustomEvent('pick', {
+                detail: { value: item.value, label: item.label }
+            })
+        );
+    }
+
+    disconnectedCallback() {
+        clearTimeout(this._blurTimer);
+    }
+}

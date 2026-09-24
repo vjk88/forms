@@ -190,6 +190,15 @@ export default class FinalRuleEditor extends LightningElement {
      */
     @api columns = 'visibility';
 
+    /**
+     * The object whose fields the Field column searches (lookup and mapping
+     * screens), and the linked record's object (visibility). With one, the
+     * column is the searchable field picker with related fields (D54);
+     * without, it's a plain list of `sources` / `recordSources`.
+     */
+    @api fieldObject;
+    @api recordObject;
+
     /** The Source each unset row was given, index-aligned with the rules. */
     _kinds = [];
     /** Controls the author has used, as "row:control"; their problems show. */
@@ -555,7 +564,15 @@ export default class FinalRuleEditor extends LightningElement {
         return this.rules.map((rule, i) => {
             const kind = kindOf(rule.source, this._kinds[i]);
             const valueKind = this._valueKind(rule.source);
+            const pickerObject = this.isVisibility
+                ? kind === 'record'
+                    ? this.recordObject
+                    : null
+                : this.fieldObject;
             return {
+                usePicker: Boolean(pickerObject),
+                pickerObject,
+                pickerPrefix: kind === 'record' ? 'record:' : '',
                 key: `rule_${i}`,
                 index: i,
                 number: i + 1,
