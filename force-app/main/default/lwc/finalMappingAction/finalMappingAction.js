@@ -289,6 +289,10 @@ export default class FinalMappingAction extends LightningElement {
         return this.match.source && this.match.source.elementKey;
     }
 
+    get filterDialogLabel() {
+        return `Find an existing ${this.objectLabel}`;
+    }
+
     /** finalLookupFilter speaks whole lookup configs; hand it one holding our filter. */
     get filterConfig() {
         return { filter: this.match.filter || { logic: 'all', rows: [] } };

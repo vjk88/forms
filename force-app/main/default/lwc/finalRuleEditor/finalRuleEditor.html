@@ -1,217 +1,197 @@
 <template>
     <div class="re">
         <template lwc:if={hasRules}>
-            <div class="re-head">
-                <template lwc:if={showAction}>
-                    <select
-                        class="re-select re-action"
-                        aria-label="Show or hide"
+            <div class="re-top">
+                <template lwc:if={isVisibility}>
+                    <lightning-combobox
+                        class="re-action"
+                        label="Action"
+                        options={actionOptions}
+                        value={action}
                         onchange={handleAction}
-                    >
-                        <template for:each={actionOptions} for:item="o">
-                            <option
-                                key={o.value}
-                                value={o.value}
-                                selected={o.selected}
-                            >
-                                {o.label}
-                            </option>
-                        </template>
-                    </select>
+                    ></lightning-combobox>
                 </template>
-                <span class="re-when">{whenText}</span>
-                <select
-                    class="re-select re-logic"
-                    aria-label="Rule logic"
+                <lightning-combobox
+                    class="re-logic"
+                    label={logicLabel}
+                    options={logicOptions}
+                    value={logic}
                     onchange={handleLogic}
-                >
-                    <template for:each={logicOptions} for:item="o">
-                        <option
-                            key={o.value}
-                            value={o.value}
-                            selected={o.selected}
-                        >
-                            {o.label}
-                        </option>
-                    </template>
-                </select>
+                ></lightning-combobox>
             </div>
 
             <template lwc:if={isCustomLogic}>
-                <input
-                    type="text"
-                    class="re-custom"
-                    placeholder="1 AND (2 OR 3)"
-                    aria-label="Custom logic expression"
-                    value={customLogic}
-                    onchange={handleCustomLogic}
-                />
+                <div class="re-custom-wrap" data-problem={logicProblem}>
+                    <lightning-input
+                        class="re-custom"
+                        label="Custom logic"
+                        placeholder="1 AND (2 OR 3)"
+                        field-level-help="Refer to each condition by its number. Use AND, OR and brackets."
+                        value={customLogic}
+                        data-control="logic"
+                        onchange={handleCustomLogic}
+                        onblur={handleLogicBlur}
+                    ></lightning-input>
+                </div>
             </template>
 
-            <ul class="re-rules">
+            <div class={gridClass} role="list">
+                <div class="re-row re-head" aria-hidden="true">
+                    <span class="re-num"></span>
+                    <template for:each={headers} for:item="h">
+                        <span key={h.key} class="re-col">{h.label}</span>
+                    </template>
+                    <span></span>
+                </div>
+
                 <template for:each={rows} for:item="r">
-                    <li key={r.key} class="re-rule">
+                    <div key={r.key} class="re-row" role="listitem">
                         <span class="re-num">{r.number}</span>
-                        <div class="re-rule-fields">
-                            <select
-                                class="re-select re-source"
-                                aria-label="Source question"
-                                data-index={r.index}
-                                data-prop="source"
-                                onchange={handleRuleField}
-                            >
-                                <template lwc:if={hasRecordSources}>
-                                    <optgroup label="Answers">
-                                        <template
-                                            for:each={r.sourceOptions}
-                                            for:item="o"
-                                        >
-                                            <option
-                                                key={o.value}
-                                                value={o.value}
-                                                selected={o.selected}
-                                            >
-                                                {o.label}
-                                            </option>
-                                        </template>
-                                    </optgroup>
-                                    <optgroup label="Record fields">
-                                        <template
-                                            for:each={r.recordOptions}
-                                            for:item="o"
-                                        >
-                                            <option
-                                                key={o.value}
-                                                value={o.value}
-                                                selected={o.selected}
-                                            >
-                                                {o.label}
-                                            </option>
-                                        </template>
-                                    </optgroup>
-                                </template>
-                                <template lwc:else>
-                                    <template
-                                        for:each={r.sourceOptions}
-                                        for:item="o"
-                                    >
-                                        <option
-                                            key={o.value}
-                                            value={o.value}
-                                            selected={o.selected}
-                                        >
-                                            {o.label}
-                                        </option>
-                                    </template>
-                                </template>
-                            </select>
-                            <select
-                                class="re-select re-operator"
-                                aria-label="Operator"
-                                data-index={r.index}
-                                data-prop="operator"
-                                onchange={handleRuleField}
-                            >
-                                <template
-                                    for:each={r.operatorOptions}
-                                    for:item="o"
+
+                        <template lwc:if={isVisibility}>
+                            <div class="re-cell">
+                                <span class="re-cell-label" aria-hidden="true"
+                                    >Source</span
                                 >
-                                    <option
-                                        key={o.value}
-                                        value={o.value}
-                                        selected={o.selected}
-                                    >
-                                        {o.label}
-                                    </option>
-                                </template>
-                            </select>
+                                <lightning-combobox
+                                    label={r.kindLabel}
+                                    variant="label-hidden"
+                                    options={r.sourceKindOptions}
+                                    value={r.kind}
+                                    data-index={r.index}
+                                    data-control="kind"
+                                    onchange={handleSourceKind}
+                                ></lightning-combobox>
+                            </div>
+                        </template>
+
+                        <div class="re-cell" data-problem={r.fieldProblem}>
+                            <span class="re-cell-label" aria-hidden="true"
+                                >{fieldHeader}</span
+                            >
+                            <lightning-combobox
+                                label={r.fieldLabel}
+                                variant="label-hidden"
+                                placeholder="Select field"
+                                options={r.fieldOptions}
+                                value={r.source}
+                                data-index={r.index}
+                                data-control="field"
+                                onchange={handleRuleField}
+                            ></lightning-combobox>
+                        </div>
+
+                        <div class="re-cell" data-problem={r.operatorProblem}>
+                            <span class="re-cell-label" aria-hidden="true"
+                                >Operator</span
+                            >
+                            <lightning-combobox
+                                label={r.operatorLabel}
+                                variant="label-hidden"
+                                placeholder="Operator"
+                                options={r.operatorOptions}
+                                value={r.operator}
+                                data-index={r.index}
+                                data-control="operator"
+                                onchange={handleRuleField}
+                            ></lightning-combobox>
+                        </div>
+
+                        <div class="re-cell" data-problem={r.valueProblem}>
                             <template lwc:if={r.needsValue}>
+                                <span class="re-cell-label" aria-hidden="true"
+                                    >Value</span
+                                >
                                 <template lwc:if={r.isBool}>
-                                    <select
-                                        class="re-select re-value"
-                                        aria-label="Comparison value"
+                                    <lightning-combobox
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Choose Yes or No"
+                                        options={r.boolOptions}
+                                        value={r.value}
                                         data-index={r.index}
-                                        data-prop="value"
+                                        data-control="value"
                                         onchange={handleRuleField}
-                                    >
-                                        <template
-                                            for:each={r.boolOptions}
-                                            for:item="b"
-                                        >
-                                            <option
-                                                key={b.value}
-                                                value={b.value}
-                                                selected={b.selected}
-                                            >
-                                                {b.label}
-                                            </option>
-                                        </template>
-                                    </select>
+                                    ></lightning-combobox>
                                 </template>
                                 <template lwc:elseif={r.isNumber}>
-                                    <input
+                                    <lightning-input
                                         type="number"
-                                        class="re-value"
-                                        placeholder="Value"
-                                        aria-label="Comparison value"
-                                        data-index={r.index}
-                                        data-prop="value"
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Enter value"
+                                        step="any"
                                         value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
                                         onchange={handleRuleField}
-                                    />
+                                    ></lightning-input>
                                 </template>
                                 <template lwc:elseif={r.isDate}>
-                                    <input
+                                    <lightning-input
                                         type="date"
-                                        class="re-value"
-                                        aria-label="Comparison value"
-                                        data-index={r.index}
-                                        data-prop="value"
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
                                         value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
                                         onchange={handleRuleField}
-                                    />
+                                    ></lightning-input>
                                 </template>
                                 <template lwc:elseif={r.isDateTime}>
+                                    <!-- Native on purpose: lightning-input's
+                                         datetime stores an ISO timestamp,
+                                         which would change what saved rules
+                                         hold. It can't take a custom
+                                         validity message, so its problem is
+                                         the one written out as text. -->
                                     <input
                                         type="datetime-local"
-                                        class="re-value"
-                                        aria-label="Comparison value"
-                                        data-index={r.index}
-                                        data-prop="value"
+                                        class="slds-input re-native"
+                                        aria-label={r.valueLabel}
+                                        aria-invalid={r.valueInvalid}
                                         value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
                                         onchange={handleRuleField}
                                     />
+                                    <template lwc:if={r.valueProblem}>
+                                        <p class="re-problem">
+                                            {r.valueProblem}
+                                        </p>
+                                    </template>
                                 </template>
                                 <template lwc:else>
-                                    <input
+                                    <lightning-input
                                         type="text"
-                                        class="re-value"
-                                        placeholder="Value"
-                                        aria-label="Comparison value"
-                                        data-index={r.index}
-                                        data-prop="value"
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Enter value"
                                         value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
                                         onchange={handleRuleField}
-                                    />
+                                    ></lightning-input>
                                 </template>
                             </template>
                         </div>
-                        <button
-                            type="button"
-                            class="re-x"
-                            title="Remove this rule"
+
+                        <lightning-button-icon
+                            class="re-del"
+                            icon-name="utility:delete"
+                            variant="bare"
+                            alternative-text={r.removeLabel}
+                            title={r.removeLabel}
                             data-index={r.index}
                             onclick={handleRemoveRule}
-                        >
-                            ×
-                        </button>
-                    </li>
+                        ></lightning-button-icon>
+                    </div>
                 </template>
-            </ul>
+            </div>
 
-            <template lwc:if={hasProblems}>
-                <ul class="re-problems" role="alert">
-                    <template for:each={problems} for:item="p">
+            <template lwc:if={hasLintWarnings}>
+                <ul class="re-lint" role="status">
+                    <template for:each={lintWarnings} for:item="p">
                         <li key={p}>{p}</li>
                     </template>
                 </ul>
@@ -224,8 +204,12 @@
             <p class="re-empty">{emptyHint}</p>
         </template>
 
-        <button type="button" class="re-add" onclick={handleAddRule}>
-            + Add rule
-        </button>
+        <lightning-button
+            class="re-add"
+            variant="base"
+            label="Add condition"
+            icon-name="utility:add"
+            onclick={handleAddRule}
+        ></lightning-button>
     </div>
 </template>

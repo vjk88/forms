@@ -1,0 +1,27 @@
+@import 'c/finalStudioStyles';
+
+.cm-description {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--c-studio-text-weak);
+}
+
+.cm-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.cm-spacer {
+    flex: 1;
+}
+
+.cm-attention {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--c-studio-error);
+}

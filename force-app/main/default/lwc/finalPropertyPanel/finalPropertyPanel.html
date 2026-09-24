@@ -487,6 +487,7 @@
                         <c-final-lookup-filter
                             target-object={lookupTargetObject}
                             value={lookupConfigValue}
+                            dialog-label={lookupFilterDialogLabel}
                             onlookupconfigchange={handleLookupConfigChange}
                         ></c-final-lookup-filter>
                     </div>
@@ -1220,15 +1221,18 @@
              on the properties; the Logic rail is just the index) -->
         <div class="pp-group">
             <h4 class="pp-grouptitle">Visibility</h4>
-            <c-final-rule-editor
+            <c-final-conditions-summary
                 value={n.visibility}
+                columns="visibility"
                 sources={ruleSources}
                 record-sources={recordRuleSources}
                 source-index={ruleIndex}
                 host-repeat-section-id={hostRepeatSectionId}
                 noun={ruleNoun}
-                onrulechange={handleRuleChange}
-            ></c-final-rule-editor>
+                label={visibilityDialogLabel}
+                description={visibilityDialogDescription}
+                onconditionschange={handleRuleChange}
+            ></c-final-conditions-summary>
         </div>
     </div>
 </template>

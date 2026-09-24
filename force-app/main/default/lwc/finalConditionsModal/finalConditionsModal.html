@@ -1,0 +1,55 @@
+<template>
+    <lightning-modal-header label={label}>
+        <template lwc:if={description}>
+            <p class="cm-description">{description}</p>
+        </template>
+    </lightning-modal-header>
+
+    <lightning-modal-body>
+        <c-final-rule-editor
+            value={draft}
+            columns={columns}
+            sources={sources}
+            record-sources={recordSources}
+            source-index={sourceIndex}
+            host-repeat-section-id={hostRepeatSectionId}
+            noun={noun}
+            extra-operators={extraOperators}
+            onrulechange={handleDraft}
+        ></c-final-rule-editor>
+    </lightning-modal-body>
+
+    <lightning-modal-footer>
+        <div class="cm-footer">
+            <!-- Always rendered, so a screen reader hears the count when it
+                 appears (a live region that arrives already filled isn't read). -->
+            <div class="cm-attention-region" role="status">
+                <template lwc:if={showAttention}>
+                    <p class="cm-attention">
+                        <span>{attentionText}</span>
+                        <lightning-button
+                            variant="base"
+                            label="Go to first"
+                            onclick={handleGoToFirst}
+                        ></lightning-button>
+                    </p>
+                </template>
+            </div>
+            <span class="cm-spacer"></span>
+            <lightning-button
+                label="Clear all"
+                disabled={clearDisabled}
+                onclick={handleClear}
+            ></lightning-button>
+            <lightning-button
+                label="Cancel"
+                onclick={handleCancel}
+            ></lightning-button>
+            <lightning-button
+                label="Apply conditions"
+                variant="brand"
+                onclick={handleApply}
+            ></lightning-button>
+        </div>
+    </lightning-modal-footer>
+</template>

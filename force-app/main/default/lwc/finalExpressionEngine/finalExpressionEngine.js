@@ -213,6 +213,82 @@ export function evaluateCustomLogic(expr, results) {
 }
 
 /**
+ * Why a custom-logic expression can't be used, as a sentence — or null when
+ * it can. Ported from the Form Designer's editor (visibilityEditor
+ * validateCustomLogic / checkSyntax) for its specific messages; it accepts
+ * exactly the grammar evaluateCustomLogic runs, so nothing it passes can
+ * then fail at runtime.
+ */
+export function validateCustomLogic(expr, count) {
+    const raw = typeof expr === 'string' ? expr.trim() : '';
+    if (!raw) {
+        return 'Enter the logic using condition numbers, like 1 AND (2 OR 3).';
+    }
+    const upper = raw.toUpperCase();
+    const tokens = upper.match(/\d+|AND|OR|\(|\)/g) || [];
+    if (tokens.join('') !== upper.replace(/\s+/g, '')) {
+        return 'Only condition numbers, AND, OR and brackets are allowed.';
+    }
+    for (const t of tokens) {
+        if (/^\d+$/.test(t)) {
+            const n = Number(t);
+            if (n < 1 || n > count) {
+                return `Condition ${n} doesn’t exist — you have ${count} condition${
+                    count === 1 ? '' : 's'
+                }.`;
+            }
+        }
+    }
+    let i = 0;
+    const fail = (message) => {
+        throw new Error(message);
+    };
+    const incomplete =
+        'The logic is incomplete — check that each AND and OR has a condition on both sides.';
+    function parseAtom() {
+        if (tokens[i] === '(') {
+            i += 1;
+            parseOr();
+            if (tokens[i] !== ')') {
+                fail('A bracket isn’t closed.');
+            }
+            i += 1;
+            return;
+        }
+        if (tokens[i] !== undefined && /^\d+$/.test(tokens[i])) {
+            i += 1;
+            return;
+        }
+        fail(incomplete);
+    }
+    function parseAnd() {
+        parseAtom();
+        while (tokens[i] === 'AND') {
+            i += 1;
+            parseAtom();
+        }
+    }
+    function parseOr() {
+        parseAnd();
+        while (tokens[i] === 'OR') {
+            i += 1;
+            parseAnd();
+        }
+    }
+    try {
+        parseOr();
+    } catch (e) {
+        return e.message;
+    }
+    if (i < tokens.length) {
+        return tokens[i] === ')'
+            ? 'There’s a closing bracket with no opening one.'
+            : `Unexpected "${tokens[i]}" in the logic.`;
+    }
+    return null;
+}
+
+/**
  * Visibility config (§7) → is the thing VISIBLE?
  * No config / no rules → visible. action 'hide' inverts a match.
  */
