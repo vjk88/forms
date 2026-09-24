@@ -85,3 +85,19 @@ This is the task-specific file set. The workspace also contains unrelated change
 - `force-app/main/default/lwc/finalFormViewer/__tests__/recordRules.test.js`
 - `force-app/main/default/lwc/finalFormViewer/finalFormViewer.js`
 - `force-app/main/default/lwc/finalFormViewer/finalFormViewer.js-meta.xml`
+
+## Linked-record rules for Forms (D56, 2026-09-23)
+
+A Form's **linked record** is the record it edits (`existingRecordId`). Visibility rules on
+`record:<Field>` — or one hop, `record:Account.Type` — are judged on the server by
+`FinalSurveyObjectController.getRecordContext`, which now accepts ordinary Forms as well as Surveys:
+verdicts only (a Form's values already load through the edit path, so its prefill is empty), the same
+object check and `UserRecordAccess` gate. Freeform has no object and is refused.
+
+- The viewer asks only when the Form is editing a record and the spec has record rules; never under
+  authoring, preview or delegated submit (`_requiresEditRecord`).
+- In create mode, while the verdicts load, or if the read fails, record conditions are **unknown**
+  and count as not met (IMPL_PLAN_F2_SEARCH decision 18) — so `NOT` can't reveal a question.
+- A Form opened from a **personal link** already gets verdicts for the link's record through
+  `FinalLinkService` / `FinalGuestContextService`; for a guest (who can't edit) that is the only
+  record there is.

@@ -28,7 +28,7 @@ public with sharing class FinalSurveyObjectController {
         Id recordId
     ) {
         Ctx ctx = load(versionId, formId, recordId);
-        return prefillValues(ctx);
+        return ctx.isSurvey ? prefillValues(ctx) : new Map<String, Object>();
     }
 
     /**
@@ -44,7 +44,11 @@ public with sharing class FinalSurveyObjectController {
     ) {
         Ctx ctx = load(versionId, formId, recordId);
         return new Map<String, Object>{
-            'prefill' => prefillValues(ctx),
+            // prefill is a Survey idea; a Form's values load through its
+            // own edit path, so it only needs the verdicts (D56)
+            'prefill' => ctx.isSurvey
+                ? prefillValues(ctx)
+                : new Map<String, Object>(),
             'ruleFacts' => ruleFacts(ctx)
         };
     }
@@ -55,12 +59,13 @@ public with sharing class FinalSurveyObjectController {
         Map<String, Object> spec;
         String targetObject;
         Id recordId;
+        Boolean isSurvey;
     }
 
     /** Load + validate the survey, then the ROW-level record gate. */
     private static Ctx load(Id versionId, Id formId, Id recordId) {
         if ((versionId == null && formId == null) || recordId == null) {
-            throw new AuraHandledException('A survey and record are required.');
+            throw new AuraHandledException('A form and a record are required.');
         }
         List<Form_Version__c> versions = versionId != null
             ? [
@@ -93,13 +98,12 @@ public with sharing class FinalSurveyObjectController {
         ctx.targetObject = formNode == null
             ? null
             : (String) formNode.get('targetObject');
-        if (
-            !(formType instanceof String) ||
-            (String) formType != 'survey' ||
-            String.isBlank(ctx.targetObject)
-        ) {
+        // A Survey's record link, or the record an ordinary Form edits (D56).
+        // Freeform has no object, so no linked record.
+        ctx.isSurvey = formType == 'survey';
+        if (formType == 'freeform' || String.isBlank(ctx.targetObject)) {
             throw new AuraHandledException(
-                'This survey has no connected object.'
+                'This form has no connected object.'
             );
         }
         if (
@@ -107,7 +111,7 @@ public with sharing class FinalSurveyObjectController {
             Schema.getGlobalDescribe().get(ctx.targetObject.toLowerCase())
         ) {
             throw new AuraHandledException(
-                'That record does not belong to this survey\'s object.'
+                'That record does not belong to this form\'s object.'
             );
         }
         // ROW-level gate: raw-recordId links must never let a runner probe

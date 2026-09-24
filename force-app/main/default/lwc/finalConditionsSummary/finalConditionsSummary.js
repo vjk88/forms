@@ -173,7 +173,14 @@ export default class FinalConditionsSummary extends LightningElement {
                     ? `user:${r.value.slice(6)}`
                     : ''
             ])
-            .filter((s) => s.includes('.') || s.startsWith('user:'));
+            .filter(
+                (s) =>
+                    s.includes('.') ||
+                    s.startsWith('user:') ||
+                    // a Form's linked record has no pre-loaded field list
+                    (s.startsWith('record:') &&
+                        !(this.recordSources || []).some((r) => r.id === s))
+            );
         const key = wanted.join('|');
         if (!wanted.length || key === this._labelledFor) {
             return;
