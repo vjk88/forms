@@ -706,4 +706,63 @@ private class FinalMappingServiceTest {
             Assert.isTrue(r.message.contains('search filter'), r.message);
         }
     }
+
+    /**
+     * Find-or-create by email, narrowed to Contacts whose LastName equals the
+     * surname answer — the filter row compares with an answer (D49).
+     */
+    private static Map<String, Object> findBySurname() {
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        ((Map<String, Object>) action.get('match'))
+            .put(
+                'filter',
+                new Map<String, Object>{
+                    'logic' => 'all',
+                    'rows' => new List<Object>{
+                        new Map<String, Object>{
+                            'fieldPath' => 'LastName',
+                            'operator' => 'eq',
+                            'value' => '$field.el_last'
+                        }
+                    }
+                }
+            );
+        return action;
+    }
+
+    private static void assertFoundNotCreated(String surname) {
+        insert new Contact(LastName = surname, Email = 'typed@example.com');
+        Id subId = arrange(
+            new List<Object>{ findBySurname() },
+            new Map<String, String>{
+                'el_last' => surname,
+                'el_email' => 'typed@example.com',
+                'el_title' => 'CTO'
+            }
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM Contact WHERE Email = 'typed@example.com'],
+            'the Contact with that literal surname was found, not duplicated'
+        );
+    }
+
+    @IsTest
+    static void rowAnswerIsNeverReadAsAToken() {
+        // A respondent typed "$User.Name". It must be searched as that text,
+        // not swapped for the running user's name.
+        assertFoundNotCreated('$User.Name');
+    }
+
+    @IsTest
+    static void rowAnswerThatLooksLikeAFieldTokenIsLiteral() {
+        assertFoundNotCreated('$field.x');
+    }
 }

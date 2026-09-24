@@ -308,11 +308,10 @@ public without sharing class FinalMappingService {
                 'the answer used to find the record was left blank, so no search was run.'
             );
         }
+        Resolved r = resolvedFilter(match.get('filter'), d, run);
         FinalLookupService.Compiled c = FinalLookupService.compile(
-            new Map<String, Object>{
-                'filter' => resolvedFilter(match.get('filter'), d, run)
-            },
-            new Map<String, Object>(),
+            new Map<String, Object>{ 'filter' => r.filter },
+            r.answers,
             d.getName()
         );
         if (c.blocked || String.isBlank(c.whereClause)) {
@@ -348,6 +347,18 @@ public without sharing class FinalMappingService {
     }
 
     /**
+     * The filter the compiler is handed, and the answers its `$field.` tokens
+     * point at. A converted answer never goes into the row itself: the
+     * compiler reads a row's value as a possible `$User.` or `$field.` token,
+     * so a respondent who typed "$User.Name" would be searched as the running
+     * user's name. From the answers map it comes back as-is.
+     */
+    private class Resolved {
+        Object filter;
+        Map<String, Object> answers = new Map<String, Object>();
+    }
+
+    /**
      * A copy of the filter with every `$field.` value already converted
      * against the field that row filters on — which is not the field the
      * answer would be written to. The shared compiler stays exactly as
@@ -357,17 +368,20 @@ public without sharing class FinalMappingService {
      * refuses the filter in its own words and the step fails rather than
      * searching on a blank.
      */
-    private static Object resolvedFilter(
+    private static Resolved resolvedFilter(
         Object filter,
         Schema.DescribeSObjectResult d,
         Run run
     ) {
+        Resolved out = new Resolved();
+        out.filter = filter;
         if (!(filter instanceof Map<String, Object>)) {
-            return filter;
+            return out;
         }
         Map<String, Object> copy = (Map<String, Object>) JSON.deserializeUntyped(
             JSON.serialize(filter)
         );
+        out.filter = copy;
         for (Object rowObj : FinalMappingRules.asList(copy.get('rows'))) {
             Map<String, Object> row = FinalMappingRules.asMap(rowObj);
             if (row == null) {
@@ -415,13 +429,17 @@ public without sharing class FinalMappingService {
                     run
                 );
                 if (converted != null) {
-                    row.put('value', converted);
+                    // A private key: `__m…` can't be an element id, so it never
+                    // collides with a real question.
+                    String key = '__m' + out.answers.size();
+                    out.answers.put(key, converted);
+                    row.put('value', '$field.' + key);
                 }
                 // left as the token when it resolves to nothing: the compiler then
                 // blocks the filter and the step fails, rather than searching blank
             }
         }
-        return copy;
+        return out;
     }
 
     private static Boolean isToken(Object raw) {
