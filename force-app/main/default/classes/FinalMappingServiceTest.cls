@@ -765,4 +765,172 @@ private class FinalMappingServiceTest {
     static void rowAnswerThatLooksLikeAFieldTokenIsLiteral() {
         assertFoundNotCreated('$field.x');
     }
+
+    // ------------------------------------------- typed conditions (D50, Task 10)
+
+    /** Find-or-create by email, narrowed by conditions the author typed. */
+    private static Map<String, Object> typed(String soql) {
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        Map<String, Object> match = (Map<String, Object>) action.get('match');
+        match.put('filterMode', 'soql');
+        match.put('soql', soql);
+        return action;
+    }
+
+    @IsTest
+    static void typedConditionsFindTheRightRecord() {
+        insert new List<Contact>{
+            new Contact(LastName = 'Jane', Email = 'jane@example.com'),
+            new Contact(LastName = 'Other', Email = 'jane@example.com')
+        };
+        Id subId = arrange(
+            new List<Object>{ typed('LastName = {!el_last}') },
+            jane()
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Assert.areEqual(
+            2,
+            [SELECT COUNT() FROM Contact WHERE Email = 'jane@example.com'],
+            'Jane was found, nothing was created'
+        );
+    }
+
+    @IsTest
+    static void aTypedChoiceIsSearchedByItsLabel() {
+        insert new Contact(
+            LastName = 'Jane',
+            Email = 'jane@example.com',
+            Title = 'Priority customer'
+        );
+        List<Object> questions = FinalMappingTestData.standardQuestions();
+        questions.add(tierQuestion());
+        FinalMappingTestData.publish(
+            FinalMappingTestData.spec(
+                questions,
+                new List<Object>{ typed('Title = {!el_tier}') }
+            )
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(
+            tierSubmission()
+        );
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM Contact WHERE Email = 'jane@example.com'],
+            'found by the label, not searched as "vip"'
+        );
+    }
+
+    @IsTest
+    static void aTypedLikeAnswerMatchesAsTyped() {
+        // Unescaped, "50%" would also match "500" and the step would fail
+        // as ambiguous. Escaped, it finds only the Contact titled "50%".
+        insert new List<Contact>{
+            new Contact(
+                LastName = 'A',
+                Email = 'jane@example.com',
+                Title = '50%'
+            ),
+            new Contact(
+                LastName = 'B',
+                Email = 'jane@example.com',
+                Title = '500'
+            )
+        };
+        Id subId = arrange(
+            new List<Object>{ typed('Title LIKE {!el_title}') },
+            new Map<String, String>{
+                'el_last' => 'Jane',
+                'el_email' => 'jane@example.com',
+                'el_title' => '50%'
+            }
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Assert.areEqual(
+            2,
+            [SELECT COUNT() FROM Contact WHERE Email = 'jane@example.com']
+        );
+    }
+
+    @IsTest
+    static void aSkippedTypedAnswerFailsWithoutSearching() {
+        Id subId = arrange(
+            new List<Object>{ typed('Title = {!el_title}') },
+            new Map<String, String>{
+                'el_last' => 'Jane',
+                'el_email' => 'jane@example.com',
+                'el_title' => null
+            }
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Failed', r.status);
+        Assert.isTrue(r.message.contains('was left blank'), r.message);
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE Email = 'jane@example.com']
+        );
+    }
+
+    @IsTest
+    static void typedConditionsBrokenAfterPublishFailTheStep() {
+        Id subId = arrange(
+            new List<Object>{ typed('Nope__c = {!el_last}') },
+            jane()
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Failed', r.status);
+        Assert.isTrue(r.message.startsWith('Step 1 (Contact)'), r.message);
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE Email = 'jane@example.com']
+        );
+    }
+
+    @IsTest
+    static void typedConditionsThatDoNotParseFailTheStep() {
+        Id subId = arrange(
+            new List<Object>{ typed('LastName = \'a\'; DELETE') },
+            jane()
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Failed', r.status);
+        Assert.isTrue(
+            r.message.contains('its conditions can’t run'),
+            r.message
+        );
+    }
+
+    @IsTest
+    static void typedConditionsWithTwoMatchesStillWriteNothing() {
+        insert new List<Contact>{
+            new Contact(LastName = 'Jane', Email = 'jane@example.com'),
+            new Contact(LastName = 'Jane', Email = 'jane@example.com')
+        };
+        Id subId = arrange(
+            new List<Object>{ typed('LastName = {!el_last}') },
+            jane()
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Failed', r.status);
+        Assert.isTrue(r.message.contains('more than one'), r.message);
+    }
 }

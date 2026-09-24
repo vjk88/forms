@@ -1,5 +1,16 @@
 import { createElement } from 'lwc';
 import FinalConditionsModal from 'c/finalConditionsModal';
+import LightningConfirm from 'lightning/confirm';
+
+jest.mock('lightning/confirm', () => ({
+    __esModule: true,
+    default: { open: jest.fn() }
+}));
+jest.mock(
+    '@salesforce/apex/FinalMappingController.checkConditions',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
 
 /**
  * The dialog edits a draft: nothing leaves it until Apply conditions, and
@@ -196,5 +207,136 @@ describe('c-final-conditions-modal', () => {
         const region = el.shadowRoot.querySelector('.cm-attention-region');
         expect(region.getAttribute('role')).toBe('status');
         expect(region.textContent.trim()).toBe('');
+    });
+});
+
+describe('the Advanced (SOQL) tab (D50)', () => {
+    const TYPED_CONTEXT = {
+        spec: {},
+        actionId: 'act_a',
+        questions: [
+            {
+                elementKey: 'el_n',
+                label: 'Surname',
+                answerType: 'Text',
+                mappable: true
+            }
+        ]
+    };
+    const openTyped = (value, typed) =>
+        mount(value, {
+            columns: 'mapping',
+            allowTyped: true,
+            typedValue: typed,
+            typedContext: TYPED_CONTEXT
+        });
+    const tabset = (el) => el.shadowRoot.querySelector('lightning-tabset');
+    const soqlBox = (el) => el.shadowRoot.querySelector('c-final-mapping-soql');
+    const notice = (el) =>
+        [...el.shadowRoot.querySelectorAll('.cm-replace')].map((n) =>
+            n.textContent.trim()
+        );
+    async function goTo(el, value) {
+        const tab = [...el.shadowRoot.querySelectorAll('lightning-tab')].find(
+            (t) => t.value === value
+        );
+        tab.dispatchEvent(new CustomEvent('active'));
+        await flush();
+    }
+    function typeSoql(el, text) {
+        soqlBox(el).dispatchEvent(
+            new CustomEvent('soqlchange', { detail: { value: text } })
+        );
+    }
+
+    afterEach(() => jest.clearAllMocks());
+
+    it('opens on the saved mode', async () => {
+        const { el } = openTyped(null, { mode: 'soql', soql: 'Title = null' });
+        await flush();
+        expect(tabset(el).activeTabValue).toBe('soql');
+        expect(soqlBox(el).value).toBe('Title = null');
+    });
+
+    it('keeps both drafts across tab switches and asks nothing', async () => {
+        const { el } = openTyped(good, { mode: 'rows', soql: '' });
+        await flush();
+        await goTo(el, 'soql');
+        typeSoql(el, 'Title = null');
+        await goTo(el, 'conditions');
+        await goTo(el, 'soql');
+        expect(soqlBox(el).value).toBe('Title = null');
+        expect(editor(el).value).toEqual(good);
+        expect(LightningConfirm.open).not.toHaveBeenCalled();
+    });
+
+    it('warns of a replacement only when the other tab has content', async () => {
+        const { el } = openTyped(null, { mode: 'rows', soql: '' });
+        await flush();
+        await goTo(el, 'soql');
+        expect(notice(el)).toEqual([]);
+        const second = openTyped(good, { mode: 'rows', soql: '' }).el;
+        await flush();
+        await goTo(second, 'soql');
+        expect(notice(second)).toContain(
+            'Applying uses Advanced (SOQL). The 1 condition you built will be removed.'
+        );
+    });
+
+    it('Apply asks once before dropping built conditions; Cancel keeps both', async () => {
+        LightningConfirm.open.mockResolvedValue(false);
+        const { el, closed } = openTyped(good, { mode: 'rows', soql: '' });
+        await flush();
+        await goTo(el, 'soql');
+        typeSoql(el, 'Title = null');
+        await flush();
+        button(el, 'Apply conditions').click();
+        await flush();
+        expect(LightningConfirm.open).toHaveBeenCalledTimes(1);
+        expect(closed).toEqual([]);
+        expect(editor(el).value).toEqual(good);
+    });
+
+    it('Confirm applies the typed conditions and drops the built ones', async () => {
+        LightningConfirm.open.mockResolvedValue(true);
+        const { el, closed } = openTyped(good, { mode: 'rows', soql: '' });
+        await flush();
+        await goTo(el, 'soql');
+        typeSoql(el, 'Title = null');
+        await flush();
+        button(el, 'Apply conditions').click();
+        await flush();
+        expect(closed).toEqual([
+            { value: null, typed: { mode: 'soql', soql: 'Title = null' } }
+        ]);
+    });
+
+    it('built conditions over typed text ask the mirror question', async () => {
+        LightningConfirm.open.mockResolvedValue(true);
+        const { el, closed } = openTyped(good, {
+            mode: 'soql',
+            soql: 'Title = null'
+        });
+        await flush();
+        await goTo(el, 'conditions');
+        button(el, 'Apply conditions').click();
+        await flush();
+        expect(LightningConfirm.open.mock.calls[0][0].message).toBe(
+            'Replace the Advanced (SOQL) conditions with the built conditions?'
+        );
+        expect(closed).toEqual([
+            { value: good, typed: { mode: 'rows', soql: '' } }
+        ]);
+    });
+
+    it('an empty typed tab says what to do instead of applying', async () => {
+        const { el, closed } = openTyped(null, { mode: 'soql', soql: '' });
+        await flush();
+        button(el, 'Apply conditions').click();
+        await flush();
+        expect(closed).toEqual([]);
+        expect(
+            el.shadowRoot.querySelector('.cm-attention').textContent
+        ).toContain('Write the search, or go back to Conditions.');
     });
 });

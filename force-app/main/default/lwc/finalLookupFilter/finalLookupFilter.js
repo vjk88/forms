@@ -58,6 +58,10 @@ export default class FinalLookupFilter extends LightningElement {
     @api filterOnly = false;
     /** Mapping screen: the questions a row may compare with (Task 7). */
     @api answerChoices = [];
+    /** Mapping search: the Advanced (SOQL) tab (D50) — see c/finalConditionsModal. */
+    @api allowTyped = false;
+    @api typedValue;
+    @api typedContext;
 
     get showLookupControls() {
         return !this.filterOnly;
@@ -169,7 +173,7 @@ export default class FinalLookupFilter extends LightningElement {
                   rows: (next.rules || []).map((rule) => this._toRow(rule))
               }
             : null;
-        this._emit({ ...(this._value || {}), filter });
+        this._emit({ ...(this._value || {}), filter }, event.detail.typed);
     }
 
     _toRow(rule) {
@@ -240,11 +244,12 @@ export default class FinalLookupFilter extends LightningElement {
         return 'For example: ' + sample.join(', ');
     }
 
-    _emit(value) {
+    /** `typed` rides along only from the dialog: { mode, soql }. */
+    _emit(value, typed) {
         this._value = value;
         this.dispatchEvent(
             new CustomEvent('lookupconfigchange', {
-                detail: { value }
+                detail: typed ? { value, typed } : { value }
             })
         );
     }

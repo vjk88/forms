@@ -936,4 +936,188 @@ private class FinalMappingValidatorTest {
             String.valueOf(warnings(found))
         );
     }
+
+    // ------------------------------------------- typed conditions (D50, Task 9)
+
+    private static List<FinalMappingValidator.Diagnostic> checkTyped(
+        List<Object> questions,
+        String soql
+    ) {
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        Map<String, Object> match = (Map<String, Object>) action.get('match');
+        match.put('filterMode', 'soql');
+        match.put('soql', soql);
+        return FinalMappingValidator.validate(
+            FinalMappingTestData.spec(questions, new List<Object>{ action }),
+            null
+        );
+    }
+
+    private static List<String> conditionBlockers(
+        List<FinalMappingValidator.Diagnostic> found
+    ) {
+        List<String> out = new List<String>();
+        for (FinalMappingValidator.Diagnostic d : found) {
+            if (d.severity == 'blocker' && d.field == 'conditions') {
+                out.add(d.message);
+            }
+        }
+        return out;
+    }
+
+    @IsTest
+    static void cleanTypedConditionsProduceNothing() {
+        List<FinalMappingValidator.Diagnostic> found = checkTyped(
+            FinalMappingTestData.standardQuestions(),
+            'LastName = {!el_last} AND CreatedDate = LAST_N_DAYS:30'
+        );
+        Assert.areEqual(new List<String>(), blockers(found));
+        Assert.areEqual(new List<String>(), warnings(found));
+    }
+
+    @IsTest
+    static void aTypedConditionThatDoesNotParseBlocks() {
+        List<String> found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'LastName = \'a\'; DELETE'
+            )
+        );
+        Assert.areEqual(1, found.size(), String.valueOf(found));
+        Assert.isTrue(
+            found[0]
+                .startsWith(
+                    'Step 1 (Contact)’s conditions: Remove the semicolon'
+                )
+        );
+    }
+
+    @IsTest
+    static void aTypedConditionSalesforceRefusesBlocksInItsWords() {
+        List<String> found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'Nope__c = \'x\''
+            )
+        );
+        Assert.isTrue(anyContains(found, 'don’t run'), String.valueOf(found));
+        Assert.isTrue(anyContains(found, 'Nope__c'), String.valueOf(found));
+    }
+
+    @IsTest
+    static void anUnfittingTypedAnswerBlocks() {
+        List<String> found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'Birthdate = {!el_last}'
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, 'can’t be compared with'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void aSeveralValueTypedAnswerBlocks() {
+        Map<String, Object> many = new Map<String, Object>{
+            'id' => 'el_many',
+            'type' => 'imageChoice',
+            'label' => 'Pick several',
+            'required' => true,
+            'config' => new Map<String, Object>{ 'multiple' => true }
+        };
+        List<String> found = conditionBlockers(
+            checkTyped(questionsPlus(many), 'Title = {!el_many}')
+        );
+        Assert.isTrue(
+            anyContains(found, 'more than one value'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void likeOnANonTextFieldBlocks() {
+        Map<String, Object> bday = FinalMappingTestData.question(
+            'el_bd',
+            'date',
+            'Birthday'
+        );
+        List<String> found = conditionBlockers(
+            checkTyped(questionsPlus(bday), 'Birthdate LIKE {!el_bd}')
+        );
+        Assert.isTrue(
+            anyContains(found, 'with that comparison'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void aSkippableTypedAnswerWarns() {
+        Map<String, Object> nick = FinalMappingTestData.question(
+            'el_nick',
+            'text',
+            'Nickname'
+        );
+        nick.put('required', false);
+        List<FinalMappingValidator.Diagnostic> found = checkTyped(
+            questionsPlus(nick),
+            'LastName = {!el_nick}'
+        );
+        Assert.areEqual(new List<String>(), conditionBlockers(found));
+        Assert.isTrue(
+            anyContains(warnings(found), 'can be skipped'),
+            String.valueOf(warnings(found))
+        );
+    }
+
+    @IsTest
+    static void typedConditionsRunAsThePublisher() {
+        Profile minimum = [
+            SELECT Id
+            FROM Profile
+            WHERE Name = 'Minimum Access - Salesforce'
+        ];
+        User noAccess = new User(
+            Alias = 'nosoql',
+            Email = 'nosoql@example.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'No typed access',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = minimum.Id,
+            TimeZoneSidKey = 'America/Los_Angeles',
+            Username = 'nosoql' + Crypto.getRandomInteger() + '@example.com'
+        );
+        insert noAccess;
+        // May create Contacts, but has no access to Title.
+        PermissionSet contactsOnly = new PermissionSet(
+            Name = 'NoTitle' + Crypto.getRandomInteger().toString().remove('-'),
+            Label = 'Contacts without Title'
+        );
+        insert contactsOnly;
+        insert new ObjectPermissions(
+            ParentId = contactsOnly.Id,
+            SobjectType = 'Contact',
+            PermissionsRead = true,
+            PermissionsCreate = true
+        );
+        insert new PermissionSetAssignment(
+            AssigneeId = noAccess.Id,
+            PermissionSetId = contactsOnly.Id
+        );
+        List<String> found;
+        System.runAs(noAccess) {
+            found = conditionBlockers(
+                checkTyped(
+                    FinalMappingTestData.standardQuestions(),
+                    'Title = \'x\''
+                )
+            );
+        }
+        Assert.isTrue(anyContains(found, 'don’t run'), String.valueOf(found));
+    }
 }

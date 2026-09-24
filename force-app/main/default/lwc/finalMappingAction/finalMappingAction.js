@@ -8,7 +8,8 @@ import {
     removeAction,
     setMatch,
     setOnMatch,
-    setWriteOnMatch
+    setWriteOnMatch,
+    setFilterMode
 } from 'c/finalMappingModel';
 
 /**
@@ -330,11 +331,39 @@ export default class FinalMappingAction extends LightningElement {
         );
     }
 
+    /** The saved typed conditions, for the dialog and the summary. */
+    get typedFilter() {
+        return {
+            mode: this.match.filterMode === 'soql' ? 'soql' : 'rows',
+            soql: this.match.soql || ''
+        };
+    }
+
+    /** What the Advanced (SOQL) tab needs: the form, the step, the questions. */
+    get typedContext() {
+        return {
+            spec: this.spec,
+            actionId: this.actionId,
+            questions: this.questions || []
+        };
+    }
+
     handleFilter(event) {
         event.stopPropagation();
         const next = event.detail.value || {};
+        const typed = event.detail.typed;
+        if (typed && typed.mode === 'soql') {
+            this._emit(
+                setFilterMode(this.spec, this.actionId, 'soql', typed.soql)
+            );
+            return;
+        }
+        // Built conditions, in one emitted spec: typed text (if any) dropped.
+        const spec = typed
+            ? setFilterMode(this.spec, this.actionId, 'rows')
+            : this.spec;
         this._emit(
-            setMatch(this.spec, this.actionId, {
+            setMatch(spec, this.actionId, {
                 filter: next.filter || { logic: 'all', rows: [] }
             })
         );

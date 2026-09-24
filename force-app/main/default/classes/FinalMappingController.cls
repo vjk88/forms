@@ -88,6 +88,63 @@ public with sharing class FinalMappingController {
         return out;
     }
 
+    /**
+     * Check conditions (IMPL_PLAN_F2_SEARCH Task 11, decision 21): the same
+     * check publishing runs on typed conditions, on the text in the dialog,
+     * before anything is applied. Nothing is written. Only what the typed
+     * clause says about this step comes back.
+     */
+    @AuraEnabled
+    public static List<FinalMappingValidator.Diagnostic> checkConditions(
+        String specJson,
+        String actionId,
+        String soql
+    ) {
+        if (Auth.CommunitiesUtil.isGuestUser()) {
+            throw FinalMappingRules.refusal('Sign in to check conditions.');
+        }
+        Map<String, Object> spec;
+        try {
+            spec = (Map<String, Object>) JSON.deserializeUntyped(specJson);
+        } catch (Exception e) {
+            throw FinalMappingRules.refusal('The form couldn’t be read.');
+        }
+        Map<String, Object> action = null;
+        for (Map<String, Object> a : FinalMappingRules.actionsOf(spec)) {
+            if (a.get('id') == actionId) {
+                action = a;
+            }
+        }
+        if (action == null) {
+            throw FinalMappingRules.refusal('That step isn’t in this form.');
+        }
+        Map<String, Object> match = FinalMappingRules.asMap(
+            action.get('match')
+        );
+        if (match == null) {
+            match = new Map<String, Object>();
+            action.put('match', match);
+        }
+        match.put('filterMode', FinalMappingValidator.FILTER_MODE_SOQL);
+        match.put('soql', soql);
+
+        List<FinalMappingValidator.Diagnostic> out = new List<FinalMappingValidator.Diagnostic>();
+        for (
+            FinalMappingValidator.Diagnostic d : FinalMappingValidator.validate(
+                spec,
+                null
+            )
+        ) {
+            if (
+                d.actionId == actionId &&
+                d.field == FinalMappingValidator.CONDITIONS_FIELD
+            ) {
+                out.add(d);
+            }
+        }
+        return out;
+    }
+
     private class ByLabel implements System.Comparator<Map<String, String>> {
         public Integer compare(Map<String, String> a, Map<String, String> b) {
             return a.get('label').compareTo(b.get('label'));

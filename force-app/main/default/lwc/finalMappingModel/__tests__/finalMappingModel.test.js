@@ -11,7 +11,9 @@ import {
     setOnMatch,
     setWriteOnMatch,
     answerIndex,
-    actionState
+    actionState,
+    setFilterMode,
+    soqlTokenIds
 } from 'c/finalMappingModel';
 
 const base = () => ({ specVersion: 1, pages: [] });
@@ -230,5 +232,93 @@ describe('finalMappingModel', () => {
                 step: 1
             }
         ]);
+    });
+});
+
+describe('typed conditions (D50)', () => {
+    const findStep = (match) => ({
+        id: 'act_a',
+        object: 'Contact',
+        operation: 'findOrCreate',
+        match: {
+            field: 'Email',
+            source: answer('el_e'),
+            onMatch: 'reuse',
+            filter: { logic: 'all', rows: [] },
+            ...match
+        },
+        fields: [{ field: 'LastName', source: answer('el_n') }]
+    });
+    const specWith = (action) => ({
+        ...base(),
+        mapping: { actions: [action] }
+    });
+
+    it('setFilterMode switches to typed text and back', () => {
+        let spec = specWith(
+            findStep({
+                filter: {
+                    logic: 'all',
+                    rows: [{ fieldPath: 'Title', operator: 'eq', value: 'x' }]
+                }
+            })
+        );
+        spec = setFilterMode(spec, 'act_a', 'soql', 'LastName = {!el_n}');
+        let m = actionsOf(spec)[0].match;
+        expect(m.filterMode).toBe('soql');
+        expect(m.soql).toBe('LastName = {!el_n}');
+        expect(m.filter.rows).toEqual([]);
+        spec = setFilterMode(spec, 'act_a', 'rows');
+        m = actionsOf(spec)[0].match;
+        expect(m.filterMode).toBeUndefined();
+        expect(m.soql).toBeUndefined();
+    });
+
+    it('reads token ids outside quoted text only', () => {
+        expect(
+            soqlTokenIds("A = {!el_a} AND B = '{!el_b}' OR C = {!el_c}")
+        ).toEqual(['el_a', 'el_c']);
+    });
+
+    it('answerIndex marks answers that narrow the search, typed or built', () => {
+        const typed = answerIndex(
+            specWith(findStep({ filterMode: 'soql', soql: 'Title = {!el_t}' }))
+        );
+        expect(typed.get('el_t')[0].use).toBe('filter');
+        const rows = answerIndex(
+            specWith(
+                findStep({
+                    filter: {
+                        logic: 'all',
+                        rows: [
+                            {
+                                fieldPath: 'Title',
+                                operator: 'eq',
+                                value: '$field.el_t'
+                            },
+                            {
+                                fieldPath: 'Dept',
+                                operator: 'in',
+                                values: ['$field.el_d']
+                            }
+                        ]
+                    }
+                })
+            )
+        );
+        expect(rows.get('el_t')[0].use).toBe('filter');
+        expect(rows.get('el_d')[0].use).toBe('filter');
+    });
+
+    it('a typed step is complete only with text', () => {
+        expect(
+            actionState([findStep({ filterMode: 'soql', soql: '  ' })], 0)
+        ).toBe('incomplete');
+        expect(
+            actionState(
+                [findStep({ filterMode: 'soql', soql: 'Title = {!el_t}' })],
+                0
+            )
+        ).toBe('ok');
     });
 });

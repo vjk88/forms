@@ -6,22 +6,79 @@
     </lightning-modal-header>
 
     <lightning-modal-body>
-        <c-final-rule-editor
-            value={draft}
-            columns={columns}
-            sources={sources}
-            record-sources={recordSources}
-            source-index={sourceIndex}
-            host-repeat-section-id={hostRepeatSectionId}
-            noun={noun}
-            extra-operators={extraOperators}
-            field-object={fieldObject}
-            is-public={isPublic}
-            allow-current-user={allowCurrentUser}
-            answer-choices={answerChoices}
-            record-object={recordObject}
-            onrulechange={handleDraft}
-        ></c-final-rule-editor>
+        <template lwc:if={allowTyped}>
+            <lightning-tabset active-tab-value={activeTab}>
+                <lightning-tab
+                    label="Conditions"
+                    value="conditions"
+                    onactive={handleTab}
+                >
+                    <template lwc:if={replaceTypedNotice}>
+                        <div
+                            class="slds-scoped-notification slds-theme_warning cm-replace"
+                            role="status"
+                        >
+                            {replaceTypedNotice}
+                        </div>
+                    </template>
+                    <c-final-rule-editor
+                        value={draft}
+                        columns={columns}
+                        sources={sources}
+                        record-sources={recordSources}
+                        source-index={sourceIndex}
+                        host-repeat-section-id={hostRepeatSectionId}
+                        noun={noun}
+                        extra-operators={extraOperators}
+                        field-object={fieldObject}
+                        is-public={isPublic}
+                        allow-current-user={allowCurrentUser}
+                        answer-choices={answerChoices}
+                        record-object={recordObject}
+                        onrulechange={handleDraft}
+                    ></c-final-rule-editor>
+                </lightning-tab>
+                <lightning-tab
+                    label="Advanced (SOQL)"
+                    value="soql"
+                    onactive={handleTab}
+                >
+                    <template lwc:if={replaceBuiltNotice}>
+                        <div
+                            class="slds-scoped-notification slds-theme_warning cm-replace"
+                            role="status"
+                        >
+                            {replaceBuiltNotice}
+                        </div>
+                    </template>
+                    <c-final-mapping-soql
+                        value={soqlDraft}
+                        questions={typedQuestions}
+                        spec={typedSpec}
+                        action-id={typedActionId}
+                        onsoqlchange={handleSoql}
+                    ></c-final-mapping-soql>
+                </lightning-tab>
+            </lightning-tabset>
+        </template>
+        <template lwc:else>
+            <c-final-rule-editor
+                value={draft}
+                columns={columns}
+                sources={sources}
+                record-sources={recordSources}
+                source-index={sourceIndex}
+                host-repeat-section-id={hostRepeatSectionId}
+                noun={noun}
+                extra-operators={extraOperators}
+                field-object={fieldObject}
+                is-public={isPublic}
+                allow-current-user={allowCurrentUser}
+                answer-choices={answerChoices}
+                record-object={recordObject}
+                onrulechange={handleDraft}
+            ></c-final-rule-editor>
+        </template>
     </lightning-modal-body>
 
     <lightning-modal-footer>

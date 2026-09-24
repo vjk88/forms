@@ -1,6 +1,10 @@
 <template>
     <div class="cs">
-        <template lwc:if={hasRules}>
+        <template lwc:if={isTyped}>
+            <p class="cs-heading">Only records where (Advanced SOQL):</p>
+            <pre class="cs-typed">{typedText}</pre>
+        </template>
+        <template lwc:if={showRules}>
             <p class="cs-heading">{heading}</p>
             <ol class="cs-rules">
                 <template for:each={items} for:item="item">
@@ -17,7 +21,7 @@
                 <p class="cs-logic">{logicText}</p>
             </template>
         </template>
-        <template lwc:else>
+        <template lwc:if={showEmpty}>
             <p class="cs-empty">{emptyText}</p>
         </template>
         <lightning-button

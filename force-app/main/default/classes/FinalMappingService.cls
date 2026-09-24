@@ -140,6 +140,12 @@ public without sharing class FinalMappingService {
                 throw new StepException(name + ': ' + e.getMessage());
             } catch (FinalMappingWriter.FenceException e) {
                 throw new StepException(name + ': ' + e.getMessage());
+            } catch (QueryException e) {
+                // Typed conditions that broke after publishing (a field
+                // deleted, a value Salesforce now refuses).
+                throw new StepException(
+                    name + ': its search couldn’t run: ' + e.getMessage()
+                );
             }
         }
         return run.recordIds;
@@ -308,19 +314,29 @@ public without sharing class FinalMappingService {
                 'the answer used to find the record was left blank, so no search was run.'
             );
         }
-        Resolved r = resolvedFilter(match.get('filter'), d, run);
-        FinalLookupService.Compiled c = FinalLookupService.compile(
-            new Map<String, Object>{ 'filter' => r.filter },
-            r.answers,
-            d.getName()
-        );
-        if (c.blocked || String.isBlank(c.whereClause)) {
-            throw new StepException(
-                'its search filter couldn’t be applied' +
-                (c.blockedReason == null ? '.' : ': ' + c.blockedReason)
+        String whereClause;
+        Map<String, Object> binds;
+        if (match.get('filterMode') == FinalMappingValidator.FILTER_MODE_SOQL) {
+            FinalMappingSoql.Parsed p = typedConditions(match, d, run);
+            whereClause = p.whereClause;
+            binds = typedBinds(p, d, run);
+        } else {
+            Resolved r = resolvedFilter(match.get('filter'), d, run);
+            FinalLookupService.Compiled c = FinalLookupService.compile(
+                new Map<String, Object>{ 'filter' => r.filter },
+                r.answers,
+                d.getName()
             );
+            if (c.blocked || String.isBlank(c.whereClause)) {
+                throw new StepException(
+                    'its search filter couldn’t be applied' +
+                    (c.blockedReason == null ? '.' : ': ' + c.blockedReason)
+                );
+            }
+            whereClause = c.whereClause;
+            binds = new Map<String, Object>(c.binds);
         }
-        Map<String, Object> binds = new Map<String, Object>(c.binds);
+        // m* (typed), b* (compiled) and mappingMatchValue never collide.
         binds.put('mappingMatchValue', matchValue);
         String soql =
             'SELECT Id FROM ' +
@@ -329,7 +345,7 @@ public without sharing class FinalMappingService {
             mf.getDescribe().getName() +
             ' = :mappingMatchValue' +
             ' AND (' +
-            c.whereClause +
+            whereClause + // NOPMD — typed conditions: parsed by FinalMappingSoql, checked as the author at publish (D50)
             ') LIMIT 2';
         List<SObject> hits = Database.queryWithBinds(
             soql,
@@ -344,6 +360,68 @@ public without sharing class FinalMappingService {
             );
         }
         return hits.isEmpty() ? null : hits[0].Id;
+    }
+
+    /** Typed conditions (D50), parsed again here: a spec is never trusted. */
+    private static FinalMappingSoql.Parsed typedConditions(
+        Map<String, Object> match,
+        Schema.DescribeSObjectResult d,
+        Run run
+    ) {
+        Object raw = match.get('soql');
+        FinalMappingSoql.Parsed p = FinalMappingSoql.parse(
+            raw instanceof String ? (String) raw : null
+        );
+        if (p.problem != null) {
+            throw new StepException('its conditions can’t run: ' + p.problem);
+        }
+        return p;
+    }
+
+    /**
+     * Each answer in typed conditions, converted against the field it sits
+     * next to (a choice searched the way it is written) and bound — never
+     * spliced into the query. Under LIKE it matches as typed: a respondent’s
+     * % or _ is not a wildcard.
+     */
+    private static Map<String, Object> typedBinds(
+        FinalMappingSoql.Parsed p,
+        Schema.DescribeSObjectResult d,
+        Run run
+    ) {
+        Map<String, Object> binds = new Map<String, Object>();
+        for (FinalMappingSoql.Token t : p.tokens) {
+            Schema.DescribeFieldResult fd = FinalMappingRules.fieldAt(
+                d.getName(),
+                t.fieldPath
+            );
+            if (fd == null) {
+                throw new StepException(
+                    'its conditions can’t run: ' +
+                        t.fieldPath +
+                        ' no longer exists.'
+                );
+            }
+            Map<String, Object> q = run.questions.get(t.elementId);
+            Object v = FinalMappingRules.answerValue(
+                run.answers.get(t.elementId),
+                q,
+                fd
+            );
+            if (v == null) {
+                // Never search on a blank: it matches every record without one (D44).
+                throw new StepException(
+                    'the answer to "' +
+                        labelOf(q) +
+                        '" was left blank, so no search was run.'
+                );
+            }
+            if (t.operator == 'LIKE') {
+                v = FinalMappingSoql.escapeLike(String.valueOf(v));
+            }
+            binds.put(t.bindName, v);
+        }
+        return binds;
     }
 
     /**
