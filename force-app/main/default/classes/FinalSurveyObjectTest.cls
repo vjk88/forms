@@ -693,4 +693,107 @@ private class FinalSurveyObjectTest {
             'unanswered mapped question never clears the field'
         );
     }
+
+    /** A spec of the given type, one element gated on record:Title. */
+    private static Form_Version__c versionOfType(String type, String target) {
+        Map<String, Object> spec = new Map<String, Object>{
+            'form' => new Map<String, Object>{
+                'type' => type,
+                'targetObject' => target
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'p1',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec_main',
+                            'elements' => new List<Object>{
+                                new Map<String, Object>{
+                                    'id' => 'el_gated',
+                                    'type' => 'field',
+                                    'label' => 'Gated',
+                                    'visibility' => new Map<String, Object>{
+                                        'action' => 'show',
+                                        'logic' => 'all',
+                                        'rules' => new List<Object>{
+                                            new Map<String, Object>{
+                                                'source' => 'record:Title',
+                                                'operator' => 'equals',
+                                                'value' => 'Manager'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Form__c form = type == 'freeform'
+            ? new Form__c(Name = 'Edit ' + type, Form_Type__c = 'Freeform')
+            : new Form__c(
+                  Name = 'Edit ' + type,
+                  Form_Type__c = 'Form',
+                  Primary_Context_Object__c = target
+              );
+        insert form;
+        Form_Version__c v = new Form_Version__c(
+            Form__c = form.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Spec_JSON__c = JSON.serialize(spec)
+        );
+        insert v;
+        return v;
+    }
+
+    /** D56: a Form's linked record is the record it edits — verdicts only. */
+    @isTest
+    static void aFormEditingARecordGetsVerdictsNotPrefill() {
+        Form_Version__c v = versionOfType('form', 'Contact');
+        Contact manager = new Contact(LastName = 'Edited', Title = 'Manager');
+        insert manager;
+        Map<String, Object> res = FinalSurveyObjectController.getRecordContext(
+            v.Id,
+            null,
+            manager.Id
+        );
+        Map<String, Object> facts = (Map<String, Object>) res.get('ruleFacts');
+        System.assertEquals(true, facts.get('record:Title|equals|Manager'));
+        System.assertEquals(
+            0,
+            ((Map<String, Object>) res.get('prefill')).size(),
+            'a Form loads its values through its own edit path'
+        );
+    }
+
+    @isTest
+    static void aFormRefusesARecordOfAnotherObject() {
+        Form_Version__c v = versionOfType('form', 'Contact');
+        Job_Application__c other = new Job_Application__c(
+            Applicant_Name__c = 'Not a Contact'
+        );
+        insert other;
+        try {
+            FinalSurveyObjectController.getRecordContext(v.Id, null, other.Id);
+            System.assert(false, 'expected a refusal');
+        } catch (AuraHandledException e) {
+            // refused (its text is only readable in tests after setMessage)
+            System.assertNotEquals(null, e);
+        }
+    }
+
+    @isTest
+    static void freeformHasNoLinkedRecord() {
+        Form_Version__c v = versionOfType('freeform', null);
+        Contact c = new Contact(LastName = 'Anyone');
+        insert c;
+        try {
+            FinalSurveyObjectController.getRecordContext(v.Id, null, c.Id);
+            System.assert(false, 'expected a refusal');
+        } catch (AuraHandledException e) {
+            System.assertNotEquals(null, e);
+        }
+    }
 }

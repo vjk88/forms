@@ -411,8 +411,13 @@ export default class FinalRuleEditor extends LightningElement {
         );
     }
 
+    /** The linked record is offered when there's one to read: its fields
+     *  listed (Surveys) or its object known (any form with a record, D56). */
     get hasRecordSources() {
-        return Boolean(this.recordSources && this.recordSources.length);
+        return Boolean(
+            (this.recordSources && this.recordSources.length) ||
+            this.recordObject
+        );
     }
 
     /** SO-3 no-context posture, spelled out where the author writes the

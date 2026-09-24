@@ -1181,8 +1181,16 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     /** The linked record's object whenever record fields are offered. */
+    /**
+     * The linked record's object, whenever the form can have one: a Survey
+     * with a connected object, or an ordinary Form — the record it edits
+     * (D56). Freeform has no object.
+     */
     get recordRuleObject() {
-        return this.recordRuleSources.length ? this.objectApi : null;
+        if (this.isSurvey) {
+            return this.recordRuleSources.length ? this.objectApi : null;
+        }
+        return !this.isFreeform && this.objectApi ? this.objectApi : null;
     }
 
     /** SO-3: record fields the rule editor may offer as sources (surveys

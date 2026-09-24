@@ -350,6 +350,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  DECLARED (reactive) — visibility getters recompute when facts land;
      *  null = no record context, record rows read "no match". */
     _ruleFacts = null;
+    /** Whether _ruleFacts came from an injected (guest/link/preview) context. */
+    _factsInjected = false;
 
     _inlineSpec;
     _urlFormId;
@@ -1053,6 +1055,30 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     // match" exactly like a plain no-context link
                 });
         }
+        // D56: a Form's linked record is the record it edits. Its conditions
+        // are judged on the server — verdicts only; the values already load
+        // through the edit path. Until they arrive, or if the read fails,
+        // they're unknown, so nothing shows that shouldn't (decision 18).
+        // _requiresEditRecord already refuses authoring and previews.
+        if (
+            this._editRecordId &&
+            this._requiresEditRecord(spec) &&
+            specHasRecordRules(spec)
+        ) {
+            getRecordContext({
+                versionId: this.effectiveVersionId || null,
+                formId: this.effectiveFormId || null,
+                recordId: this._editRecordId
+            })
+                .then((res) => {
+                    if (seq === this._applySeq && this.isConnected) {
+                        this._ruleFacts = (res && res.ruleFacts) || {};
+                    }
+                })
+                .catch(() => {
+                    // stays unavailable: the conditions count as not met
+                });
+        }
         // SO-4 guest path: re-seed any injected record context. The guest host
         // owns the Apex fetch (the viewer never calls survey-object Apex on a
         // delegated submit); it feeds verdicts + opted prefill in via the
@@ -1451,11 +1477,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // "Clear test data" sets recordContext to null, and this returned early,
         // leaving the test values sitting in the preview.
         if (!ctx) {
-            this._ruleFacts = null;
+            // Only verdicts that CAME from an injected context: a Form's own
+            // linked-record verdicts (D56) may already be here, and this runs
+            // again when the edited record finishes loading.
+            if (this._factsInjected) {
+                this._ruleFacts = null;
+                this._factsInjected = false;
+            }
             this._clearInjectedAutofill();
             return;
         }
         this._ruleFacts = ctx.ruleFacts || null;
+        this._factsInjected = true;
         const values = ctx.prefill || {};
         const merged = { ...this.answers };
         let any = false;
