@@ -7,13 +7,15 @@
  * slot with the SOQL fragment already compiled for that filter row.
  *
  * The two must agree on what is well-formed, so the grammar is deliberately
- * identical: numbers, AND, OR, parentheses, nothing else. Malformed input
+ * identical: numbers, AND, OR, NOT, parentheses, nothing else. Malformed input
  * returns null and the caller blocks the filter — it never falls back to
  * something permissive.
  *
- * No precedence surprises: AND binds tighter than OR, exactly as the JS does,
- * and every combination is parenthesised on the way out so SOQL cannot
- * re-interpret it.
+ * No precedence surprises: NOT binds tightest, then AND, then OR, exactly as
+ * the JS does, and every combination is parenthesised on the way out so SOQL
+ * cannot re-interpret it. NOT in particular is always written `(NOT (x))`:
+ * Salesforce refuses `A AND NOT B` and accepts `A AND (NOT (B))` (proven in
+ * revclouddev, 2026-09-23).
  */
 public inherited sharing class FinalLookupLogic {
     private List<String> tokens;
@@ -46,13 +48,14 @@ public inherited sharing class FinalLookupLogic {
     }
 
     /**
-     * Split into numbers, AND, OR and parentheses. Anything else at all makes
+     * Split into numbers, AND, OR, NOT and parentheses. Anything else at all makes
      * the whole expression malformed — we compare the rejoined tokens against
      * the whitespace-stripped input, so a stray character cannot slip past.
      */
     private static List<String> tokenize(String expr) {
         List<String> out = new List<String>();
-        Matcher m = Pattern.compile('(?i)\\(|\\)|\\d+|AND|OR').matcher(expr);
+        Matcher m = Pattern.compile('(?i)\\(|\\)|\\d+|AND|OR|NOT')
+            .matcher(expr);
         String rebuilt = '';
         while (m.find()) {
             out.add(m.group());
@@ -90,6 +93,11 @@ public inherited sharing class FinalLookupLogic {
         String t = peek();
         if (t == null) {
             return null;
+        }
+        if ('NOT'.equalsIgnoreCase(t)) {
+            pos++;
+            String negated = parseAtom();
+            return negated == null ? null : '(NOT (' + negated + '))';
         }
         if (t == '(') {
             pos++;

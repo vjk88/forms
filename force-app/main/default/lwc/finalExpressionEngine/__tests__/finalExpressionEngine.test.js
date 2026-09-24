@@ -4,7 +4,9 @@ import {
     evaluateCustomLogic,
     validateEntry,
     validateElement,
-    lintVisibility
+    lintVisibility,
+    validateCustomLogic,
+    UNKNOWN
 } from 'c/finalExpressionEngine';
 
 const ctx = (values, types = {}) => ({
@@ -440,5 +442,173 @@ describe('record rules (SO-3)', () => {
         expect(problems).toEqual([]);
         expect(isRecordRule({ source: 'record:X' })).toBe(true);
         expect(isRecordRule({ source: 'el_x' })).toBe(false);
+    });
+});
+
+// ---- NOT and three-valued conditions (IMPL_PLAN_F2_SEARCH decision 18) ----
+
+describe('custom logic with NOT', () => {
+    it.each([
+        ['NOT 1', [true], false],
+        ['NOT 1', [false], true],
+        ['1 AND NOT 2', [true, false], true],
+        ['NOT 1 AND 2', [false, true], true], // NOT binds tighter than AND
+        ['NOT (1 OR 2)', [false, false], true],
+        ['not not 1', [true], true]
+    ])('%s over %p is %p', (expr, results, expected) => {
+        expect(evaluateCustomLogic(expr, results)).toBe(expected);
+    });
+
+    it('checks NOT like the rest of the grammar', () => {
+        expect(validateCustomLogic('1 AND NOT 2', 2)).toBeNull();
+        expect(validateCustomLogic('NOT', 1)).toContain('incomplete');
+        expect(validateCustomLogic('1 NOT 2', 2)).toContain('Unexpected');
+        expect(validateCustomLogic('1 XOR 2', 2)).toBe(
+            'Only condition numbers, AND, OR, NOT and brackets are allowed.'
+        );
+    });
+});
+
+describe('unavailable context is unknown, not false', () => {
+    const facts = { 'record:Title|equals|Manager': true };
+    const withContext = (available, values = {}) => ({
+        getValue: (id) => values[id],
+        getType: () => 'field',
+        getRecordFacts: () => (available ? facts : null),
+        isAvailable: (kind) => (kind === 'record' ? available : true)
+    });
+    const answer = (value) => ({
+        source: 'el_1',
+        operator: 'equals',
+        value
+    });
+    const record = {
+        source: 'record:Title',
+        operator: 'equals',
+        value: 'Manager'
+    };
+    const show = (rules, logic = 'all', customLogic = null) => ({
+        action: 'show',
+        logic,
+        customLogic,
+        rules
+    });
+
+    it('NOT can’t reveal a question when there is no record', () => {
+        const rule = show([record], 'custom', 'NOT 1');
+        expect(evaluateVisibility(rule, withContext(false))).toBe(false);
+        expect(
+            evaluateVisibility({ ...rule, action: 'hide' }, withContext(false))
+        ).toBe(true); // a Hide that can't be judged never hides
+    });
+
+    it('an answer can still decide an OR on its own', () => {
+        const rule = show([answer('Yes'), record], 'any');
+        expect(
+            evaluateVisibility(rule, withContext(false, { el_1: 'Yes' }))
+        ).toBe(true);
+        expect(
+            evaluateVisibility(rule, withContext(false, { el_1: 'No' }))
+        ).toBe(false);
+        expect(
+            evaluateVisibility(
+                show([answer('Yes'), record], 'custom', '1 OR NOT 2'),
+                withContext(false, { el_1: 'Yes' })
+            )
+        ).toBe(true);
+    });
+
+    it('with the record there, NOT works normally', () => {
+        expect(
+            evaluateVisibility(
+                show([record], 'custom', 'NOT 1'),
+                withContext(true)
+            )
+        ).toBe(false);
+    });
+
+    it('user conditions are unknown while user details are unavailable', () => {
+        const user = {
+            source: 'user:Profile.Name',
+            operator: 'equals',
+            value: 'Partner'
+        };
+        const c = {
+            getValue: () => 'Partner',
+            getType: () => 'field',
+            isAvailable: (kind) => kind !== 'user'
+        };
+        expect(evaluateVisibility(show([user], 'custom', 'NOT 1'), c)).toBe(
+            false
+        );
+    });
+
+    // Every rule saved before decision 18 has no NOT. For those, three-valued
+    // logic with "unknown counts as not met" must equal the old evaluator,
+    // which read an unavailable record condition as false. Checked over
+    // every shape and every true / false / unavailable assignment.
+    it('changes nothing for any rule without NOT', () => {
+        const shapes = [
+            ['all', null, 2],
+            ['any', null, 2],
+            ['custom', '1 AND 2', 2],
+            ['custom', '1 OR 2', 2],
+            ['custom', '1 AND (2 OR 3)', 3],
+            ['custom', '(1 OR 2) AND 3', 3],
+            ['custom', '1 OR 2 AND 3', 3]
+        ];
+        const states = ['yes', 'no', 'unavailable'];
+        for (const [logic, customLogic, n] of shapes) {
+            const combos = states.length ** n;
+            for (let k = 0; k < combos; k++) {
+                const pick = Array.from(
+                    { length: n },
+                    (_, i) => states[Math.floor(k / states.length ** i) % 3]
+                );
+                // answers carry yes/no; an "unavailable" slot is a record row
+                const rules = pick.map((state, i) => {
+                    if (state === 'unavailable') {
+                        return {
+                            source: 'record:Title',
+                            operator: 'equals',
+                            value: 'Manager'
+                        };
+                    }
+                    return {
+                        source: `el_${i}`,
+                        operator: 'equals',
+                        value: 'Yes'
+                    };
+                });
+                const values = {};
+                pick.forEach((state, i) => {
+                    values[`el_${i}`] = state === 'yes' ? 'Yes' : 'No';
+                });
+                for (const action of ['show', 'hide']) {
+                    const config = { action, logic, customLogic, rules };
+                    const now = evaluateVisibility(
+                        config,
+                        withContext(false, values)
+                    );
+                    // the old reading: no isAvailable, no facts → record rows false
+                    const before = evaluateVisibility(config, {
+                        getValue: (id) => values[id],
+                        getType: () => 'field',
+                        getRecordFacts: () => null
+                    });
+                    expect({ logic, customLogic, pick, action, now }).toEqual({
+                        logic,
+                        customLogic,
+                        pick,
+                        action,
+                        now: before
+                    });
+                }
+            }
+        }
+    });
+
+    it('exports UNKNOWN for callers that need to name it', () => {
+        expect(UNKNOWN).toBe('unknown');
     });
 });

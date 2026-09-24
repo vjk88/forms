@@ -1512,8 +1512,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             getValue: (id) => this.answers[id],
             getType: (id) => this._ruleTypeIndex.get(id),
             // SO-3: server-frozen record-rule verdicts (null = no context)
-            getRecordFacts: () => this._ruleFacts
+            getRecordFacts: () => this._ruleFacts,
+            // Decision 18: a condition on details that aren't here — no linked
+            // record, still loading, a failed read — is unknown, not false,
+            // so NOT can't turn "no record" into "show".
+            isAvailable: (kind) => this._contextAvailable(kind)
         };
+    }
+
+    _contextAvailable(kind) {
+        if (kind === 'record') {
+            return this._ruleFacts !== null;
+        }
+        return true;
     }
 
     /** The nav renders VISIBLE pages only — rules filter all three levels
