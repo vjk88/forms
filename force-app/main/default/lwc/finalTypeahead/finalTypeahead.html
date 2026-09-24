@@ -1,0 +1,63 @@
+<template>
+    <div class="ta">
+        <label class={labelClass} for="ta-input">{label}</label>
+        <input
+            id="ta-input"
+            class={inputClass}
+            type="text"
+            role="combobox"
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-controls="ta-list"
+            aria-expanded={expanded}
+            aria-activedescendant={activeId}
+            aria-invalid={invalid}
+            aria-describedby="ta-error"
+            value={query}
+            placeholder={placeholder}
+            disabled={disabled}
+            oninput={handleInput}
+            onfocus={handleFocus}
+            onblur={handleBlur}
+            onkeydown={handleKeydown}
+        />
+        <template lwc:if={open}>
+            <div class="ta-list" id="ta-list" role="listbox" aria-label={label}>
+                <template for:each={options} for:item="o">
+                    <div
+                        key={o.key}
+                        id={o.id}
+                        class={o.cls}
+                        role="option"
+                        aria-selected={o.selected}
+                        data-value={o.value}
+                        data-kind={o.kind}
+                        onmousedown={handlePick}
+                    >
+                        <span class="ta-item-label">
+                            {o.label}
+                            <template lwc:if={o.isGroup}>
+                                <span class="ta-chevron" aria-hidden="true"
+                                    >›</span
+                                >
+                            </template>
+                        </span>
+                        <template lwc:if={o.meta}>
+                            <span class="ta-item-meta">{o.meta}</span>
+                        </template>
+                    </div>
+                </template>
+                <template lwc:if={hasOptions}></template>
+                <template lwc:else>
+                    <div class="ta-empty">{emptyText}</div>
+                </template>
+                <template lwc:if={hint}>
+                    <div class="ta-hint">{hint}</div>
+                </template>
+            </div>
+        </template>
+        <div class="ta-error" id="ta-error" aria-live="polite">
+            {errorMessage}
+        </div>
+    </div>
+</template>

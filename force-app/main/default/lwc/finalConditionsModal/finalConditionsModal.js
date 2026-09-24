@@ -29,6 +29,8 @@ export default class FinalConditionsModal extends LightningModal {
     @api hostRepeatSectionId;
     @api noun = 'field';
     @api extraOperators;
+    @api fieldObject;
+    @api recordObject;
 
     draft = null;
     /** Set after an Apply that found problems; tracks what's left. */

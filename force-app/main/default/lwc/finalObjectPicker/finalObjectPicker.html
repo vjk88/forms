@@ -1,45 +1,11 @@
 <template>
-    <div class="op">
-        <label class="op-label" for="op-input">{label}</label>
-        <input
-            id="op-input"
-            class="op-input"
-            type="text"
-            role="combobox"
-            autocomplete="off"
-            aria-autocomplete="list"
-            aria-controls="op-list"
-            aria-expanded={expanded}
-            aria-activedescendant={activeId}
-            value={query}
-            placeholder={placeholder}
-            disabled={disabled}
-            oninput={handleInput}
-            onfocus={handleFocus}
-            onblur={handleBlur}
-            onkeydown={handleKeydown}
-        />
-        <template lwc:if={open}>
-            <div class="op-list" id="op-list" role="listbox" aria-label={label}>
-                <template for:each={options} for:item="o">
-                    <div
-                        key={o.value}
-                        id={o.id}
-                        class={o.cls}
-                        role="option"
-                        aria-selected={o.selected}
-                        data-value={o.value}
-                        onmousedown={handlePick}
-                    >
-                        <span class="op-item-label">{o.label}</span>
-                        <span class="op-item-api">{o.value}</span>
-                    </div>
-                </template>
-                <template lwc:if={hasOptions}></template>
-                <template lwc:else>
-                    <div class="op-empty">No objects match</div>
-                </template>
-            </div>
-        </template>
-    </div>
+    <c-final-typeahead
+        label={label}
+        placeholder={placeholder}
+        disabled={disabled}
+        items={items}
+        value={value}
+        empty-text="No objects match"
+        onpick={handlePick}
+    ></c-final-typeahead>
 </template>

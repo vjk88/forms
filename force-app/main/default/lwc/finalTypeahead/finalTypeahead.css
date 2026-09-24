@@ -1,0 +1,108 @@
+/* Sized and coloured like a lightning-combobox, so it sits in a row of them
+   without standing out. */
+:host {
+    display: block;
+}
+
+.ta {
+    position: relative;
+}
+
+.ta-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: #444;
+}
+
+.ta-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 2rem;
+    padding: 0 0.625rem;
+    font: inherit;
+    font-size: 0.8125rem;
+    border: 1px solid #c9c9c9;
+    border-radius: 0.25rem;
+    background: #fff;
+}
+
+.ta-input:focus {
+    outline: none;
+    border-color: #0b5cab;
+    box-shadow: 0 0 0 1px #0b5cab;
+}
+
+.ta-input--error,
+.ta-input--error:focus {
+    border-color: #ba0517;
+    box-shadow: 0 0 0 1px #ba0517;
+}
+
+.ta-error {
+    font-size: 0.75rem;
+    color: #ba0517;
+}
+
+.ta-error:empty {
+    display: none;
+}
+
+.ta-list {
+    position: absolute;
+    z-index: 10;
+    top: 2.125rem;
+    left: 0;
+    right: 0;
+    max-height: 16rem;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #c9c9c9;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.ta-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.375rem 0.625rem;
+    cursor: pointer;
+}
+
+.ta-item--active {
+    background: #eaf3fb;
+}
+
+.ta-item--on .ta-item-label {
+    font-weight: 600;
+}
+
+.ta-item--back {
+    border-bottom: 1px solid #e5e5e5;
+    color: #0b5cab;
+}
+
+.ta-item-label {
+    font-size: 0.8125rem;
+}
+
+.ta-chevron {
+    margin-left: 0.25rem;
+    color: #6b6b6b;
+}
+
+.ta-item-meta {
+    font-size: 0.6875rem;
+    color: #6b6b6b;
+}
+
+.ta-empty,
+.ta-hint {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    color: #6b6b6b;
+}
+
+.ta-hint {
+    border-top: 1px solid #e5e5e5;
+}

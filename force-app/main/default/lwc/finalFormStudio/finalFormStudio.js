@@ -1180,6 +1180,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return out;
     }
 
+    /** The linked record's object whenever record fields are offered. */
+    get recordRuleObject() {
+        return this.recordRuleSources.length ? this.objectApi : null;
+    }
+
     /** SO-3: record fields the rule editor may offer as sources (surveys
      *  with a connected object only) — the same describe roster mapping
      *  uses, so the two rosters can never disagree. */

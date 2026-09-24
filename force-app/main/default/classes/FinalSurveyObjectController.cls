@@ -193,20 +193,49 @@ public with sharing class FinalSurveyObjectController {
      * the author's branching logic runs the same for every runner (the
      * ROW-level gate in load() already proved the runner may see the record).
      */
+    /**
+     * A `record:` row's field in SELECT spelling — its own (`Title`) or one
+     * hop through a lookup (`Account.Type`, D54) — or null when it doesn't
+     * resolve, or goes deeper than one hop. Shared with the guest path so
+     * both read the same fields the same way.
+     */
+    public static String recordRulePath(String targetObject, String source) {
+        String canonical = FinalLookupService.canonicalPath(
+            targetObject,
+            source.substring(7)
+        );
+        return canonical == null ||
+            canonical.countMatches('.') > 1
+            ? null
+            : canonical;
+    }
+
+    /** The value at a path on a queried record; a missing related record is blank. */
+    public static Object valueAt(SObject rec, String canonical) {
+        if (rec == null || canonical == null) {
+            return null;
+        }
+        Integer dot = canonical.indexOf('.');
+        if (dot < 0) {
+            return rec.get(canonical);
+        }
+        SObject parent = rec.getSObject(canonical.substring(0, dot));
+        return parent == null ? null : parent.get(canonical.substring(dot + 1));
+    }
+
     private static Map<String, Boolean> ruleFacts(Ctx ctx) {
         List<Map<String, Object>> rows = recordRuleRows(ctx.spec);
         if (rows.isEmpty()) {
             return new Map<String, Boolean>();
         }
-        Schema.SObjectType t = Schema.getGlobalDescribe()
-            .get(ctx.targetObject.toLowerCase());
-        Map<String, Schema.SObjectField> fieldMap = t.getDescribe()
-            .fields.getMap();
         Set<String> fields = new Set<String>();
         for (Map<String, Object> row : rows) {
-            String field = ((String) row.get('source')).substring(7);
-            if (fieldMap.containsKey(field.toLowerCase())) {
-                fields.add(field);
+            String path = recordRulePath(
+                ctx.targetObject,
+                (String) row.get('source')
+            );
+            if (path != null) {
+                fields.add(path);
             }
         }
         SObject rec = null;
@@ -227,22 +256,19 @@ public with sharing class FinalSurveyObjectController {
         Map<String, Boolean> out = new Map<String, Boolean>();
         for (Map<String, Object> row : rows) {
             String source = (String) row.get('source');
-            String field = source.substring(7);
             String operator = (String) row.get('operator');
             Object value = row.get('value');
             String key = factKey(source, operator, value);
-            Schema.SObjectField fTok = fieldMap.get(field.toLowerCase());
-            Object actual = (rec == null ||
-                fTok == null)
-                ? null
-                : rec.get(field);
+            String path = recordRulePath(ctx.targetObject, source);
             out.put(
                 key,
                 rowMatches(
                     operator,
-                    actual,
+                    valueAt(rec, path),
                     value,
-                    fTok == null ? null : fTok.getDescribe()
+                    path == null
+                        ? null
+                        : FinalLookupService.fieldAt(ctx.targetObject, path)
                 )
             );
         }

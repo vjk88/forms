@@ -99,9 +99,14 @@ public without sharing class FinalGuestContextService {
         // ONE query: rule fields + survey prefill fields + guest-allowed autofill fields, spec-declared only.
         Set<String> fields = new Set<String>();
         for (Map<String, Object> row : ruleRows) {
-            String f = ((String) row.get('source')).substring(7);
-            if (fieldMap.containsKey(f.toLowerCase())) {
-                fields.add(f);
+            // own field or one hop (Account.Type), resolved the same way as
+            // the signed-in path
+            String path = FinalSurveyObjectController.recordRulePath(
+                targetObject,
+                (String) row.get('source')
+            );
+            if (path != null) {
+                fields.add(path);
             }
         }
         for (String f : prefillFields.values()) {
@@ -139,7 +144,6 @@ public without sharing class FinalGuestContextService {
         Map<String, Boolean> ruleFacts = new Map<String, Boolean>();
         for (Map<String, Object> row : ruleRows) {
             String source = (String) row.get('source');
-            String field = source.substring(7);
             String operator = (String) row.get('operator');
             Object value = row.get('value');
             String key = FinalSurveyObjectController.factKey(
@@ -147,18 +151,19 @@ public without sharing class FinalGuestContextService {
                 operator,
                 value
             );
-            Schema.SObjectField fTok = fieldMap.get(field.toLowerCase());
-            Object actual = (rec == null ||
-                fTok == null)
-                ? null
-                : rec.get(field);
+            String path = FinalSurveyObjectController.recordRulePath(
+                targetObject,
+                source
+            );
             ruleFacts.put(
                 key,
                 FinalSurveyObjectController.rowMatches(
                     operator,
-                    actual,
+                    FinalSurveyObjectController.valueAt(rec, path),
                     value,
-                    fTok == null ? null : fTok.getDescribe()
+                    path == null
+                        ? null
+                        : FinalLookupService.fieldAt(targetObject, path)
                 )
             );
         }

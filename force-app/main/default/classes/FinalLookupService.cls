@@ -457,6 +457,15 @@ public inherited sharing class FinalLookupService {
         return null;
     }
 
+    /**
+     * A field path in its canonical SELECT spelling (`Account.Type`), or
+     * null when any hop isn't real. Linked-record conditions use it so they
+     * accept exactly the paths lookup filters do.
+     */
+    public static String canonicalPath(String objectName, String path) {
+        return resolvePath(objectName, path);
+    }
+
     private static String resolvePath(String objectName, String path) {
         if (String.isBlank(path)) {
             return null;
