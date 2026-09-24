@@ -56,6 +56,8 @@ export default class FinalLookupFilter extends LightningElement {
      * nothing is worse than no switch at all. Lookups leave it off.
      */
     @api filterOnly = false;
+    /** Mapping screen: the questions a row may compare with (Task 7). */
+    @api answerChoices = [];
 
     get showLookupControls() {
         return !this.filterOnly;

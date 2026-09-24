@@ -45,6 +45,36 @@ afterEach(() => {
 });
 
 describe('describeCondition', () => {
+    it('names the answer a mapping row compares with, or says it is gone', () => {
+        const labels = new Map([['$field.el_n', 'Your surname']]);
+        expect(
+            describeCondition(
+                {
+                    source: 'LastName',
+                    operator: 'equals',
+                    value: '$field.el_n'
+                },
+                new Map([...labels, ['LastName', 'Last Name']]),
+                new Map(),
+                false,
+                true
+            )
+        ).toBe('Last Name equals the answer to “Your surname”');
+        expect(
+            describeCondition(
+                {
+                    source: 'LastName',
+                    operator: 'equals',
+                    value: '$field.el_x'
+                },
+                new Map([['LastName', 'Last Name']]),
+                new Map(),
+                false,
+                true
+            )
+        ).toBe('Last Name equals the answer to a removed question');
+    });
+
     const labels = new Map([
         ['el_1', 'Contact email'],
         ['record:Industry', 'Industry']

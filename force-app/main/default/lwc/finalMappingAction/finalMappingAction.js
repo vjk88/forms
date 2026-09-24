@@ -289,6 +289,24 @@ export default class FinalMappingAction extends LightningElement {
         return this.match.source && this.match.source.elementKey;
     }
 
+    /**
+     * The questions a filter row may compare with (IMPL_PLAN_F2_SEARCH Task 7).
+     * Every question is listed so a saved one can say why it no longer fits;
+     * one that holds several values fits nothing (decision 9).
+     */
+    get filterAnswerChoices() {
+        return (this.questions || []).map((q) => ({
+            key: q.elementKey,
+            label: q.label,
+            fits:
+                q.mappable && q.answerType !== 'Options'
+                    ? (this.compatibility[q.answerType] || []).map((t) =>
+                          String(t).toLowerCase()
+                      )
+                    : []
+        }));
+    }
+
     get filterDialogLabel() {
         return `Find an existing ${this.objectLabel}`;
     }

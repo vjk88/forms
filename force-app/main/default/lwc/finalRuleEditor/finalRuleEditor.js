@@ -140,6 +140,36 @@ function kindOf(source, chosen) {
 
 const isBlankValue = (v) => v === '' || v === null || v === undefined;
 
+/** Comparisons one answer can stand in for (Task 7): never a list. */
+const ANSWER_OPERATORS = new Set([
+    'equals',
+    'notEquals',
+    'contains',
+    'greaterThan',
+    'lessThan',
+    'lte',
+    'gte'
+]);
+/** Field types Contains works on (matches FinalMappingRules.isTextLike). */
+const TEXT_LIKE = new Set(['string', 'textarea', 'email', 'phone', 'url']);
+const ANSWER_PREFIX = '$field.';
+
+/** Why a saved answer can't be used, in the picker and beside it (decision 22). */
+const ANSWER_REASONS = {
+    removed: {
+        option: '(Question removed)',
+        problem: 'Question removed.'
+    },
+    incompatible: {
+        option: '(Question type is incompatible)',
+        problem: 'Question type is incompatible.'
+    },
+    operator: {
+        option: '(Can’t be used with this comparison)',
+        problem: 'This question can’t be used with this comparison.'
+    }
+};
+
 /**
  * Current user (D55): any User field, plus the two an admin reaches for
  * first. Profile.Name and UserRole.Name are paths the picker must not treat
@@ -191,8 +221,7 @@ export function removedLabel(source, isVisibility) {
 const COLUMN_SETS = {
     visibility: ['Source', 'Question or field', 'Operator', 'Value'],
     lookup: ['Field', 'Operator', 'Value'],
-    // The Compare with column arrives with answers in mapping rows (Task 7);
-    // until then the mapping search reads exactly like a lookup filter.
+    // Gains Compare with (a fixed value or An answer) once a question fits.
     mapping: ['Field', 'Operator', 'Value']
 };
 
@@ -261,6 +290,134 @@ export default class FinalRuleEditor extends LightningElement {
      */
     @api allowCurrentUser = false;
 
+    /**
+     * Mapping screen: the form's questions a row may compare with —
+     * [{ key, label, fits: [lower-case field types] }]. A question that holds
+     * several values arrives with no fits (decision 9). Never null.
+     */
+    _answerChoices = [];
+    @api
+    get answerChoices() {
+        return this._answerChoices;
+    }
+    set answerChoices(next) {
+        this._answerChoices = Array.isArray(next) ? next : [];
+    }
+
+    /**
+     * On the mapping screen a `$field.` value is always an answer, even when
+     * no question is left to offer, so a removed one still shows and still
+     * needs fixing. Everywhere else it stays plain text.
+     */
+    get answersOn() {
+        return this.columns === 'mapping';
+    }
+
+    /** Field types learned from picks and describes, by source path. */
+    _fieldTypes = {};
+
+    _fieldType(source) {
+        if (!source) {
+            return null;
+        }
+        if (this._fieldTypes[source]) {
+            return this._fieldTypes[source];
+        }
+        const listed = (this.sources || []).find((s) => s.id === source);
+        return (listed && listed.type) || null;
+    }
+
+    _answerKey(rule) {
+        return this.answersOn &&
+            typeof rule.value === 'string' &&
+            rule.value.startsWith(ANSWER_PREFIX)
+            ? rule.value.slice(ANSWER_PREFIX.length)
+            : null;
+    }
+
+    _operatorTakesAnswer(rule) {
+        return (
+            ANSWER_OPERATORS.has(rule.operator) &&
+            (rule.operator !== 'contains' ||
+                TEXT_LIKE.has(this._fieldType(rule.source)))
+        );
+    }
+
+    /** The questions this row could compare with right now. */
+    _fittingAnswers(rule) {
+        const type = this._fieldType(rule.source);
+        if (!type || !this._operatorTakesAnswer(rule)) {
+            return [];
+        }
+        return this._answerChoices.filter((a) => (a.fits || []).includes(type));
+    }
+
+    /** Why a chosen answer can't be used, or null when it can. */
+    _answerReason(rule) {
+        const key = this._answerKey(rule);
+        if (!key) {
+            return null;
+        }
+        const choice = this._answerChoices.find((a) => a.key === key);
+        if (!choice) {
+            return 'removed';
+        }
+        const type = this._fieldType(rule.source);
+        // A field whose type hasn't loaded yet is judged when it has.
+        if (type && !(choice.fits || []).includes(type)) {
+            return 'incompatible';
+        }
+        if (type && !this._operatorTakesAnswer(rule)) {
+            return 'operator';
+        }
+        return null;
+    }
+
+    _answerOptions(rule) {
+        const options = this._fittingAnswers(rule).map((a) => ({
+            value: ANSWER_PREFIX + a.key,
+            label: a.label
+        }));
+        const key = this._answerKey(rule);
+        if (key && !options.some((o) => o.value === rule.value)) {
+            // Kept and selected, saying why, so opening never rewrites a rule.
+            const choice = this._answerChoices.find((a) => a.key === key);
+            const reason =
+                ANSWER_REASONS[this._answerReason(rule) || 'removed'];
+            options.push({
+                value: rule.value,
+                label: choice
+                    ? `${choice.label} ${reason.option}`
+                    : reason.option
+            });
+        }
+        return options;
+    }
+
+    /** Saved rows learn their field's type from the object's describe. */
+    _resolveFieldTypes() {
+        if (!this.answersOn || !this.fieldObject) {
+            return;
+        }
+        this._askedFieldTypes = this._askedFieldTypes || new Set();
+        this.rules
+            .map((r) => r.source)
+            .filter(
+                (s) => s && !this._fieldType(s) && !this._askedFieldTypes.has(s)
+            )
+            .forEach((source) => {
+                this._askedFieldTypes.add(source);
+                typeForPath(this.fieldObject, source).then((type) => {
+                    if (type) {
+                        this._fieldTypes = {
+                            ...this._fieldTypes,
+                            [source]: type
+                        };
+                    }
+                });
+            });
+    }
+
     get userValueExtras() {
         return USER_VALUE_EXTRAS;
     }
@@ -274,15 +431,41 @@ export default class FinalRuleEditor extends LightningElement {
         return out;
     }
 
+    /** One row's choices: An answer only where a question fits (Task 7). */
+    _compareOptionsFor(rule, i) {
+        const out = this.compareOptions;
+        if (
+            this.answersOn &&
+            (this._fittingAnswers(rule).length ||
+                this._compareOf(rule, i) === 'answer')
+        ) {
+            return [...out, { value: 'answer', label: 'An answer' }];
+        }
+        return out;
+    }
+
     /** One choice is no choice: the column only shows with two or more. */
     get showCompare() {
-        return !this.isVisibility && this.compareOptions.length > 1;
+        if (this.isVisibility) {
+            return false;
+        }
+        if (
+            this.answersOn &&
+            (this._answerChoices.some((a) => (a.fits || []).length) ||
+                this.rules.some((r) => this._answerKey(r)))
+        ) {
+            return true;
+        }
+        return this.compareOptions.length > 1;
     }
 
     /** Where a row's value comes from; an unset row keeps its chosen kind. */
     _compareOf(rule, i) {
         if (typeof rule.value === 'string' && rule.value.startsWith('$User.')) {
             return 'user';
+        }
+        if (this._answerKey(rule)) {
+            return 'answer';
         }
         return isBlankValue(rule.value) && this._compare[i]
             ? this._compare[i]
@@ -549,11 +732,22 @@ export default class FinalRuleEditor extends LightningElement {
                     rowIndex: i,
                     control: 'value',
                     message:
-                        this._valueKind(rule.source) === 'bool'
-                            ? 'Choose Yes or No.'
-                            : this._compareOf(rule, i) === 'user'
-                              ? 'Choose a user field.'
-                              : 'Enter a value, or use “Is blank”.'
+                        this._compareOf(rule, i) === 'answer'
+                            ? 'Choose a question.'
+                            : this._valueKind(rule.source) === 'bool'
+                              ? 'Choose Yes or No.'
+                              : this._compareOf(rule, i) === 'user'
+                                ? 'Choose a user field.'
+                                : 'Enter a value, or use “Is blank”.'
+                });
+            } else if (
+                !NO_VALUE.has(rule.operator) &&
+                this._answerReason(rule)
+            ) {
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message: ANSWER_REASONS[this._answerReason(rule)].problem
                 });
             } else if (
                 this.columns === 'lookup' &&
@@ -691,6 +885,7 @@ export default class FinalRuleEditor extends LightningElement {
 
     renderedCallback() {
         this._resolveUserTypes();
+        this._resolveFieldTypes();
         this.template.querySelectorAll('[data-control]').forEach((node) => {
             if (
                 typeof node.setCustomValidity !== 'function' ||
@@ -756,7 +951,9 @@ export default class FinalRuleEditor extends LightningElement {
                 pickerExtras: kind === 'user' ? USER_EXTRAS : [],
                 showCompare: this.showCompare,
                 compareKind: this._compareOf(rule, i),
-                compareOptions: this.compareOptions,
+                compareOptions: this._compareOptionsFor(rule, i),
+                valueIsAnswer: this._compareOf(rule, i) === 'answer',
+                answerOptions: this._answerOptions(rule),
                 compareLabel: `Condition ${i + 1}: compare with`,
                 valueIsUser: this._compareOf(rule, i) === 'user',
                 key: `rule_${i}`,
@@ -930,6 +1127,7 @@ export default class FinalRuleEditor extends LightningElement {
             return;
         }
         this._compare[i] = kind;
+        // Nothing is chosen for the author: An answer asks for its question.
         rule.value = '';
         this._focusNext = `[data-index="${i}"][data-control="value"]`;
         this._emit(next);
@@ -963,6 +1161,12 @@ export default class FinalRuleEditor extends LightningElement {
         rule[prop] = this._eventValue(event);
         // A user field's type arrives with the pick; record it before the
         // operator and value are checked against it below.
+        if (prop === 'source' && event.detail && event.detail.type) {
+            this._fieldTypes = {
+                ...this._fieldTypes,
+                [rule.source]: event.detail.type
+            };
+        }
         if (
             prop === 'source' &&
             typeof rule.source === 'string' &&
@@ -989,6 +1193,8 @@ export default class FinalRuleEditor extends LightningElement {
             }
             if (NO_VALUE.has(rule.operator)) {
                 rule.value = null;
+            } else if (this._answerKey(rule)) {
+                // A chosen answer is kept and, if it no longer fits, marked.
             } else if (!canDisplay(this._valueKind(rule.source), rule.value)) {
                 rule.value = '';
             }
