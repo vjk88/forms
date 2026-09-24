@@ -307,7 +307,7 @@ describe('problems beside their controls', () => {
         ['1 AND', 'The logic is incomplete'],
         [
             '1 XOR 2',
-            'Only condition numbers, AND, OR and brackets are allowed.'
+            'Only condition numbers, AND, OR, NOT and brackets are allowed.'
         ],
         ['', 'Enter the logic using condition numbers']
     ])('custom logic %p explains itself', async (expr, message) => {

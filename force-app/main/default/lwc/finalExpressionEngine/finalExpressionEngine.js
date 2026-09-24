@@ -157,43 +157,77 @@ export function ruleMatches(rule, ctx) {
 }
 
 /**
- * Custom logic: "1 AND (2 OR 3)" over 1-based rule indexes. Tiny recursive-
- * descent parser; malformed logic → null (caller fails safe).
+ * A condition whose record or user details aren't available — no linked
+ * record, still loading, a failed read, a guest's user details
+ * (IMPL_PLAN_F2_SEARCH decision 18). Not true, not false: unknown.
  */
-export function evaluateCustomLogic(expr, results) {
-    if (typeof expr !== 'string' || !expr.trim()) {
-        return null;
+export const UNKNOWN = 'unknown';
+
+const MALFORMED = Symbol('malformed');
+
+/** Three-valued AND / OR / NOT: unknown stays unknown unless the other side decides. */
+function and3(a, b) {
+    if (a === false || b === false) {
+        return false;
     }
-    const tokens = expr.match(/\(|\)|\d+|AND|OR/gi);
+    return a === true && b === true ? true : UNKNOWN;
+}
+
+function or3(a, b) {
+    if (a === true || b === true) {
+        return true;
+    }
+    return a === false && b === false ? false : UNKNOWN;
+}
+
+function not3(a) {
+    return a === UNKNOWN ? UNKNOWN : !a;
+}
+
+/**
+ * "1 AND (NOT 2 OR 3)" over 1-based results that are true, false or
+ * UNKNOWN. NOT binds tightest, then AND, then OR. MALFORMED when the
+ * expression doesn't parse or names a condition that isn't there.
+ */
+function evaluateLogic3(expr, results) {
+    if (typeof expr !== 'string' || !expr.trim()) {
+        return MALFORMED;
+    }
+    const tokens = expr.match(/\(|\)|\d+|AND|OR|NOT/gi);
     if (!tokens || tokens.join('') !== expr.replace(/\s+/g, '')) {
-        return null;
+        return MALFORMED;
     }
     let pos = 0;
-    function parseExpr() {
-        let left = parseTerm();
-        while (left !== null && /^or$/i.test(tokens[pos] || '')) {
+    function parseOr() {
+        let left = parseAnd();
+        while (left !== MALFORMED && /^or$/i.test(tokens[pos] || '')) {
             pos += 1;
-            const right = parseTerm();
-            left = right === null ? null : left || right;
+            const right = parseAnd();
+            left = right === MALFORMED ? MALFORMED : or3(left, right);
         }
         return left;
     }
-    function parseTerm() {
+    function parseAnd() {
         let left = parseAtom();
-        while (left !== null && /^and$/i.test(tokens[pos] || '')) {
+        while (left !== MALFORMED && /^and$/i.test(tokens[pos] || '')) {
             pos += 1;
             const right = parseAtom();
-            left = right === null ? null : left && right;
+            left = right === MALFORMED ? MALFORMED : and3(left, right);
         }
         return left;
     }
     function parseAtom() {
         const t = tokens[pos];
+        if (/^not$/i.test(t || '')) {
+            pos += 1;
+            const inner = parseAtom();
+            return inner === MALFORMED ? MALFORMED : not3(inner);
+        }
         if (t === '(') {
             pos += 1;
-            const inner = parseExpr();
+            const inner = parseOr();
             if (tokens[pos] !== ')') {
-                return null;
+                return MALFORMED;
             }
             pos += 1;
             return inner;
@@ -202,14 +236,24 @@ export function evaluateCustomLogic(expr, results) {
             pos += 1;
             const idx = Number(t) - 1;
             if (idx < 0 || idx >= results.length) {
-                return null;
+                return MALFORMED;
             }
             return results[idx];
         }
-        return null;
+        return MALFORMED;
     }
-    const out = parseExpr();
-    return pos === tokens.length ? out : null;
+    const out = parseOr();
+    return pos === tokens.length ? out : MALFORMED;
+}
+
+/**
+ * Custom logic: "1 AND (2 OR NOT 3)" over 1-based boolean rule results.
+ * Malformed logic → null (caller fails safe). The two-valued face of
+ * evaluateLogic3, kept for its existing callers.
+ */
+export function evaluateCustomLogic(expr, results) {
+    const out = evaluateLogic3(expr, results);
+    return out === MALFORMED ? null : out;
 }
 
 /**
@@ -225,9 +269,9 @@ export function validateCustomLogic(expr, count) {
         return 'Enter the logic using condition numbers, like 1 AND (2 OR 3).';
     }
     const upper = raw.toUpperCase();
-    const tokens = upper.match(/\d+|AND|OR|\(|\)/g) || [];
+    const tokens = upper.match(/\d+|AND|OR|NOT|\(|\)/g) || [];
     if (tokens.join('') !== upper.replace(/\s+/g, '')) {
-        return 'Only condition numbers, AND, OR and brackets are allowed.';
+        return 'Only condition numbers, AND, OR, NOT and brackets are allowed.';
     }
     for (const t of tokens) {
         if (/^\d+$/.test(t)) {
@@ -246,6 +290,11 @@ export function validateCustomLogic(expr, count) {
     const incomplete =
         'The logic is incomplete — check that each AND and OR has a condition on both sides.';
     function parseAtom() {
+        if (tokens[i] === 'NOT') {
+            i += 1;
+            parseAtom();
+            return;
+        }
         if (tokens[i] === '(') {
             i += 1;
             parseOr();
@@ -292,20 +341,61 @@ export function validateCustomLogic(expr, count) {
  * Visibility config (§7) → is the thing VISIBLE?
  * No config / no rules → visible. action 'hide' inverts a match.
  */
+/** A row read from the signed-in user rather than an answer or the record. */
+export function isUserRule(rule) {
+    return Boolean(
+        rule &&
+        typeof rule.source === 'string' &&
+        rule.source.startsWith('user:')
+    );
+}
+
+/**
+ * One condition, three-valued: UNKNOWN when it reads a context that isn't
+ * available. A ctx without `isAvailable` (every caller before decision 18)
+ * treats every context as available, so it evaluates exactly as it did.
+ */
+function ruleResult(rule, ctx) {
+    if (ctx && typeof ctx.isAvailable === 'function') {
+        if (isRecordRule(rule) && !ctx.isAvailable('record')) {
+            return UNKNOWN;
+        }
+        if (isUserRule(rule) && !ctx.isAvailable('user')) {
+            return UNKNOWN;
+        }
+    }
+    return ruleMatches(rule, ctx);
+}
+
+/**
+ * Were these conditions met? Three-valued throughout (decision 18): a
+ * condition on unavailable details is UNKNOWN, logic combines it the
+ * standard way, and UNKNOWN at the end counts as not met. For every rule
+ * without NOT this is exactly the old "unavailable = false" — such rules
+ * only get truer as a condition goes from false to true — so nothing
+ * published changes. NOT is what can tell them apart, and NOT is new.
+ */
+function conditionsMet(config, ctx) {
+    const results = config.rules.map((r) => ruleResult(r, ctx));
+    let out;
+    if (config.logic === 'any') {
+        out = results.reduce(or3, false);
+    } else if (config.logic === 'custom') {
+        out = evaluateLogic3(config.customLogic, results);
+        if (out === MALFORMED) {
+            return false; // malformed → fail safe
+        }
+    } else {
+        out = results.reduce(and3, true); // 'all' is the default
+    }
+    return out === true;
+}
+
 export function evaluateVisibility(config, ctx) {
     if (!config || !Array.isArray(config.rules) || config.rules.length === 0) {
         return true;
     }
-    const results = config.rules.map((r) => ruleMatches(r, ctx));
-    let matched;
-    if (config.logic === 'any') {
-        matched = results.some(Boolean);
-    } else if (config.logic === 'custom') {
-        const custom = evaluateCustomLogic(config.customLogic, results);
-        matched = custom === null ? false : custom; // malformed → fail safe
-    } else {
-        matched = results.every(Boolean); // 'all' is the default
-    }
+    const matched = conditionsMet(config, ctx);
     return config.action === 'hide' ? !matched : matched;
 }
 

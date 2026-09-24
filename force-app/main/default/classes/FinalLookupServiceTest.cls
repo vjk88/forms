@@ -108,10 +108,12 @@ private class FinalLookupServiceTest {
         setup();
         // The same hop, spelled as the relationship and as the field. Authors
         // disagree about which is natural, so both must resolve.
-        for (String path : new List<String>{
-            'ReportsTo.LastName',
-            'ReportsToId.LastName'
-        }) {
+        for (
+            String path : new List<String>{
+                'ReportsTo.LastName',
+                'ReportsToId.LastName'
+            }
+        ) {
             Map<String, Object> c = cfg(
                 'Contact',
                 new List<Object>{ row(path, 'eq', 'Zimmerman') }
@@ -285,7 +287,9 @@ private class FinalLookupServiceTest {
         Set<Id> ok = FinalLookupService.verify(
             cfg(
                 'Contact',
-                new List<Object>{ row('ReportsToId', 'eq', '$field.el_missing') }
+                new List<Object>{
+                    row('ReportsToId', 'eq', '$field.el_missing')
+                }
             ),
             new Set<Id>{ (Id) ids.get('a') },
             new Map<String, Object>()
@@ -314,16 +318,80 @@ private class FinalLookupServiceTest {
     }
 
     @isTest
+    static void notIsAlwaysWrittenInItsOwnBrackets() {
+        // Salesforce refuses "A AND NOT B" but accepts "A AND (NOT (B))"
+        // (proven in revclouddev 2026-09-23), so every NOT is bracketed.
+        List<String> pieces = new List<String>{ 'A = 1', 'B = 2', 'C = 3' };
+        System.assertEquals(
+            '(A = 1 AND (NOT (B = 2)))',
+            FinalLookupLogic.combine('1 AND NOT 2', pieces)
+        );
+        System.assertEquals(
+            '(NOT ((A = 1 OR B = 2)))',
+            FinalLookupLogic.combine('NOT (1 OR 2)', pieces)
+        );
+        System.assertEquals(
+            '(NOT ((NOT (A = 1))))',
+            FinalLookupLogic.combine('not not 1', pieces)
+        );
+        // NOT binds tighter than AND: NOT 1 AND 2 is (NOT 1) AND 2
+        System.assertEquals(
+            '((NOT (A = 1)) AND B = 2)',
+            FinalLookupLogic.combine('NOT 1 AND 2', pieces)
+        );
+    }
+
+    @isTest
+    static void notClausesRunAsSoql() {
+        insert new List<Contact>{
+            new Contact(LastName = 'Keep', Title = 'Manager'),
+            new Contact(LastName = 'Drop', Title = 'Intern'),
+            new Contact(LastName = 'Blank')
+        };
+        List<String> pieces = new List<String>{
+            'LastName != null',
+            'Title = \'Intern\''
+        };
+        for (
+            String expr : new List<String>{
+                '1 AND NOT 2',
+                'NOT (2)',
+                'NOT NOT 1',
+                '1 AND (NOT 2 OR NOT 1)'
+            }
+        ) {
+            String whereClause = FinalLookupLogic.combine(expr, pieces);
+            Assert.isNotNull(whereClause, expr);
+            List<Contact> rows = Database.query(
+                'SELECT LastName FROM Contact WHERE ' + whereClause
+            );
+            Assert.isFalse(rows.isEmpty(), expr + ' ran and matched');
+        }
+        // NOT includes blanks: the Contact with no Title is not an Intern
+        List<Contact> notIntern = Database.query(
+            'SELECT LastName FROM Contact WHERE ' +
+                FinalLookupLogic.combine('NOT 2', pieces) +
+                ' ORDER BY LastName'
+        );
+        Assert.areEqual(2, notIntern.size());
+    }
+
+    @isTest
     static void malformedLogicReturnsNullSoTheCallerCanBlock() {
         List<String> pieces = new List<String>{ 'A = 1', 'B = 2' };
-        for (String bad : new List<String>{
-            '1 AND (2',
-            '1 AND 9',
-            '1 AND DELETE',
-            '',
-            '1 2',
-            'AND 1'
-        }) {
+        for (
+            String bad : new List<String>{
+                '1 AND (2',
+                '1 AND 9',
+                '1 AND DELETE',
+                '',
+                '1 2',
+                'AND 1',
+                'NOT',
+                '1 NOT 2',
+                '1 AND NOT'
+            }
+        ) {
             System.assertEquals(
                 null,
                 FinalLookupLogic.combine(bad, pieces),
