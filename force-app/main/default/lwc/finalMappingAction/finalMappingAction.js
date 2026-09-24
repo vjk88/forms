@@ -123,9 +123,12 @@ export default class FinalMappingAction extends LightningElement {
                     entry.source && entry.source.kind === 'literal'
                         ? entry.source.value
                         : '',
-                why: isLookup
-                    ? ''
-                    : `Another record: ${f.label} isn’t a lookup field.`,
+                // Why "Another record" isn't offered — only while nothing
+                // is picked (decision 13).
+                why:
+                    entry.source || isLookup
+                        ? ''
+                        : `Another record: ${f.label} isn’t a lookup field.`,
                 isMatchField:
                     this.isFindOrCreate && entry.field === this.match.field,
                 showTick:
@@ -256,8 +259,15 @@ export default class FinalMappingAction extends LightningElement {
 
     get matchSummary() {
         return this.onMatch === 'update'
-            ? 'When one is found, the fields ticked below are overwritten.'
-            : 'When one is found, it’s used as-is and nothing is written to it.';
+            ? 'Update the fields ticked “Also update when found” below.'
+            : 'Use it as-is. Nothing is written to it.';
+    }
+
+    /** The create list's heading: the branch it is, on a find-or-create step. */
+    get createHeading() {
+        return this.isFindOrCreate
+            ? `If none is found, create a ${this.objectLabel} with`
+            : `Create a ${this.objectLabel} with`;
     }
 
     get showOverwrite() {

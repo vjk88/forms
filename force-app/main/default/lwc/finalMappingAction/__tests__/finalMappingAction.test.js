@@ -461,3 +461,86 @@ describe('find or create', () => {
         ]);
     });
 });
+
+describe('the step reads as its branches (S5)', () => {
+    const headings = (el) =>
+        [...el.shadowRoot.querySelectorAll('.ma-subhead')].map((n) =>
+            n.textContent.trim()
+        );
+    const findStep = (onMatch) => ({
+        id: 'act_1',
+        object: 'Contact',
+        operation: 'findOrCreate',
+        match: {
+            field: 'Email',
+            source: { kind: 'answer', elementKey: 'el_e' },
+            filter: { logic: 'all', rows: [] },
+            ...(onMatch ? { onMatch } : {})
+        },
+        fields: [{ field: 'LastName', source: null }]
+    });
+
+    it('an Always create step shows only its create list', async () => {
+        const el = mount(
+            [
+                {
+                    id: 'act_1',
+                    object: 'Contact',
+                    operation: 'create',
+                    fields: []
+                }
+            ],
+            'act_1'
+        );
+        await flush();
+        expect(headings(el)).toEqual(['Create a Contact with']);
+    });
+
+    it('a find-or-create step reads find / if found / if none', async () => {
+        const el = mount([findStep('reuse')], 'act_1');
+        await flush();
+        expect(headings(el)).toEqual([
+            'Find an existing Contact',
+            'If one is found',
+            'If none is found, create a Contact with'
+        ]);
+        expect(
+            el.shadowRoot.querySelector('.ma-match-summary').textContent
+        ).toContain('Use it as-is. Nothing is written to it.');
+    });
+
+    it('update mode names the column it relies on', async () => {
+        const el = mount([findStep('update')], 'act_1');
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.ma-match-summary').textContent
+        ).toContain('Update the fields ticked “Also update when found” below.');
+        const heads = [...el.shadowRoot.querySelectorAll('.ma-th')].map((n) =>
+            n.textContent.trim()
+        );
+        expect(heads).toContain('Also update when found');
+    });
+
+    it('says why Another record is missing only until a source is picked', async () => {
+        const el = mount(
+            [
+                {
+                    id: 'act_1',
+                    object: 'Contact',
+                    operation: 'create',
+                    fields: [
+                        {
+                            field: 'Email',
+                            source: { kind: 'answer', elementKey: 'el_e' }
+                        }
+                    ]
+                }
+            ],
+            'act_1'
+        );
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('[data-row="Email"] .ma-why')
+        ).toBeNull();
+    });
+});

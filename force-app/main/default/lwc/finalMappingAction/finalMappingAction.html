@@ -23,7 +23,7 @@
         </div>
 
         <template lwc:if={isFindOrCreate}>
-            <div class="ma-match">
+            <section class="ma-branch ma-match">
                 <h3 class="ma-subhead">Find an existing {objectLabel}</h3>
                 <div class="ma-match-line">
                     <lightning-combobox
@@ -58,175 +58,185 @@
                     A filter is required. Searching every {objectLabel} in the
                     org is refused when you publish.
                 </p>
-            </div>
+            </section>
 
-            <template lwc:if={matchUnanswered}>
-                <div
-                    class="ma-question"
-                    role="group"
-                    aria-label="When we find one"
-                >
-                    <h3 class="ma-question-title">
-                        <lightning-icon
-                            icon-name="utility:warning"
-                            variant="warning"
-                            size="x-small"
-                        ></lightning-icon>
-                        When we find one, what should happen to it?
-                    </h3>
-                    <template lwc:if={isPublic}>
-                        <p class="ma-question-why">
-                            This form is public. Anyone who guesses a real value
-                            reaches whatever you allow here, without signing in.
-                        </p>
-                    </template>
-                    <div class="ma-question-choices">
-                        <button
-                            type="button"
-                            class="ma-choice"
-                            data-on-match="reuse"
-                            disabled={readOnly}
-                            onclick={handleOnMatch}
-                        >
-                            <span class="ma-choice-title"
-                                >Use it, leave it alone</span
-                            >
-                            <span class="ma-choice-detail">
-                                No duplicate is made and later records point at
-                                it. Nothing is written to it.
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            class="ma-choice"
-                            data-on-match="update"
-                            disabled={readOnly}
-                            onclick={handleOnMatch}
-                        >
-                            <span class="ma-choice-title"
-                                >Update it with these answers</span
-                            >
-                            <span class="ma-choice-detail">
-                                You then pick each field that may be
-                                overwritten. Every one starts off.
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </template>
-            <template lwc:else>
-                <p class="ma-match-summary">
-                    {matchSummary}
-                    <button
-                        type="button"
-                        class="ma-link"
-                        disabled={readOnly}
-                        onclick={handleChangeOnMatch}
+            <section class="ma-branch">
+                <h3 class="ma-subhead">If one is found</h3>
+                <template lwc:if={matchUnanswered}>
+                    <div
+                        class="ma-question"
+                        role="group"
+                        aria-label="When we find one"
                     >
-                        Change
-                    </button>
-                </p>
-            </template>
+                        <h3 class="ma-question-title">
+                            <lightning-icon
+                                icon-name="utility:warning"
+                                variant="warning"
+                                size="x-small"
+                            ></lightning-icon>
+                            When we find one, what should happen to it?
+                        </h3>
+                        <template lwc:if={isPublic}>
+                            <p class="ma-question-why">
+                                This form is public. Anyone who guesses a real
+                                value reaches whatever you allow here, without
+                                signing in.
+                            </p>
+                        </template>
+                        <div class="ma-question-choices">
+                            <button
+                                type="button"
+                                class="ma-choice"
+                                data-on-match="reuse"
+                                disabled={readOnly}
+                                onclick={handleOnMatch}
+                            >
+                                <span class="ma-choice-title"
+                                    >Use it, leave it alone</span
+                                >
+                                <span class="ma-choice-detail">
+                                    No duplicate is made and later records point
+                                    at it. Nothing is written to it.
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                class="ma-choice"
+                                data-on-match="update"
+                                disabled={readOnly}
+                                onclick={handleOnMatch}
+                            >
+                                <span class="ma-choice-title"
+                                    >Update it with these answers</span
+                                >
+                                <span class="ma-choice-detail">
+                                    You then pick each field that may be
+                                    overwritten. Every one starts off.
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <template lwc:else>
+                    <p class="ma-match-summary">
+                        {matchSummary}
+                        <button
+                            type="button"
+                            class="ma-link"
+                            disabled={readOnly}
+                            onclick={handleChangeOnMatch}
+                        >
+                            Change
+                        </button>
+                    </p>
+                </template>
+            </section>
         </template>
 
-        <table class="ma-table">
-            <thead>
-                <tr>
-                    <th scope="col" class="ma-th">Field on {objectLabel}</th>
-                    <th scope="col" class="ma-th">Gets its value from</th>
-                    <template lwc:if={showOverwrite}>
-                        <th scope="col" class="ma-th ma-th--narrow">
-                            Overwrite
+        <section class="ma-branch">
+            <h3 class="ma-subhead">{createHeading}</h3>
+            <table class="ma-table">
+                <thead>
+                    <tr>
+                        <th scope="col" class="ma-th">
+                            Field on {objectLabel}
                         </th>
-                    </template>
-                    <th scope="col" class="ma-th ma-th--narrow">
-                        <span class="slds-assistive-text">Remove</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <template for:each={rows} for:item="row">
-                    <tr key={row.key} data-row={row.key} class="ma-row">
-                        <td class="ma-td">
-                            {row.label}
-                            <template lwc:if={row.required}>
-                                <abbr class="ma-required" title="Required"
-                                    >*</abbr
-                                >
-                            </template>
-                            <template lwc:if={row.isMatchField}>
-                                <span class="ma-lock">
-                                    <lightning-icon
-                                        icon-name="utility:lock"
-                                        size="xx-small"
-                                    ></lightning-icon>
-                                    used to match — never overwritten
-                                </span>
-                            </template>
-                        </td>
-                        <td class="ma-td">
-                            <lightning-combobox
-                                label="Source"
-                                variant="label-hidden"
-                                placeholder="Choose a source"
-                                data-field={row.key}
-                                options={row.options}
-                                value={row.value}
-                                disabled={readOnly}
-                                onchange={handleSource}
-                            ></lightning-combobox>
-                            <template lwc:if={row.isLiteral}>
-                                <lightning-input
-                                    label="Fixed value"
-                                    data-field={row.key}
-                                    value={row.literal}
-                                    disabled={readOnly}
-                                    onchange={handleLiteral}
-                                ></lightning-input>
-                            </template>
-                            <template lwc:if={row.why}>
-                                <p class="ma-why">{row.why}</p>
-                            </template>
-                        </td>
+                        <th scope="col" class="ma-th">Gets its value from</th>
                         <template lwc:if={showOverwrite}>
+                            <th scope="col" class="ma-th ma-th--narrow">
+                                Also update when found
+                            </th>
+                        </template>
+                        <th scope="col" class="ma-th ma-th--narrow">
+                            <span class="slds-assistive-text">Remove</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={rows} for:item="row">
+                        <tr key={row.key} data-row={row.key} class="ma-row">
                             <td class="ma-td">
-                                <template lwc:if={row.showTick}>
-                                    <lightning-input
-                                        type="checkbox"
-                                        label="Overwrite on a match"
-                                        variant="label-hidden"
-                                        data-overwrite
-                                        data-field={row.key}
-                                        checked={row.overwrite}
-                                        disabled={readOnly}
-                                        onchange={handleOverwrite}
-                                    ></lightning-input>
+                                {row.label}
+                                <template lwc:if={row.required}>
+                                    <abbr class="ma-required" title="Required"
+                                        >*</abbr
+                                    >
+                                </template>
+                                <template lwc:if={row.isMatchField}>
+                                    <span class="ma-lock">
+                                        <lightning-icon
+                                            icon-name="utility:lock"
+                                            size="xx-small"
+                                        ></lightning-icon>
+                                        used to find the record — never
+                                        overwritten
+                                    </span>
                                 </template>
                             </td>
-                        </template>
-                        <td class="ma-td">
-                            <lightning-button-icon
-                                icon-name="utility:close"
-                                variant="bare"
-                                alternative-text="Remove field"
-                                data-field={row.key}
-                                disabled={readOnly}
-                                onclick={handleRemoveField}
-                            ></lightning-button-icon>
-                        </td>
-                    </tr>
-                </template>
-            </tbody>
-        </table>
+                            <td class="ma-td">
+                                <lightning-combobox
+                                    label="Source"
+                                    variant="label-hidden"
+                                    placeholder="Choose a source"
+                                    data-field={row.key}
+                                    options={row.options}
+                                    value={row.value}
+                                    disabled={readOnly}
+                                    onchange={handleSource}
+                                ></lightning-combobox>
+                                <template lwc:if={row.isLiteral}>
+                                    <lightning-input
+                                        label="Fixed value"
+                                        data-field={row.key}
+                                        value={row.literal}
+                                        disabled={readOnly}
+                                        onchange={handleLiteral}
+                                    ></lightning-input>
+                                </template>
+                                <template lwc:if={row.why}>
+                                    <p class="ma-why">{row.why}</p>
+                                </template>
+                            </td>
+                            <template lwc:if={showOverwrite}>
+                                <td class="ma-td">
+                                    <template lwc:if={row.showTick}>
+                                        <lightning-input
+                                            type="checkbox"
+                                            label="Also update when found"
+                                            variant="label-hidden"
+                                            data-overwrite
+                                            data-field={row.key}
+                                            checked={row.overwrite}
+                                            disabled={readOnly}
+                                            onchange={handleOverwrite}
+                                        ></lightning-input>
+                                    </template>
+                                </td>
+                            </template>
+                            <td class="ma-td">
+                                <lightning-button-icon
+                                    icon-name="utility:close"
+                                    variant="bare"
+                                    alternative-text="Remove field"
+                                    data-field={row.key}
+                                    disabled={readOnly}
+                                    onclick={handleRemoveField}
+                                ></lightning-button-icon>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
 
-        <lightning-combobox
-            class="ma-add-field"
-            label="Add a field"
-            placeholder="Choose a field"
-            options={unusedFieldOptions}
-            value={addingField}
-            disabled={readOnly}
-            onchange={handleAddField}
-        ></lightning-combobox>
+            <lightning-combobox
+                class="ma-add-field"
+                label="Add a field"
+                placeholder="Choose a field"
+                options={unusedFieldOptions}
+                value={addingField}
+                disabled={readOnly}
+                onchange={handleAddField}
+            ></lightning-combobox>
+        </section>
     </template>
 </template>
