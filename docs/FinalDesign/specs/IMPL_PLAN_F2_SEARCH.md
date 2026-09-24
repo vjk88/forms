@@ -1092,3 +1092,38 @@ sites carry `// NOPMD` pointing here rather than weakening `ApexSOQLInjection`.
 | 3   | summaries only counted conditions                                                                                   | each condition spelled out, numbered, in labels, with the logic line — the old Form Builder's panel, improved (decision 19, Task 4)                                                                                                                            |
 | 4   | Advanced search only got query feedback at publish; switching tabs was disruptive                                   | named **Advanced (SOQL)**; **Check conditions** runs the publish check on demand; both drafts kept; inline replace notice; one confirmation on Apply (decision 21, Task 11)                                                                                    |
 | 5   | one footer sentence for all problems                                                                                | errors under the control that needs fixing; "3 conditions need attention" + Go to first; **Apply conditions** instead of Save; "Question removed" vs "Question type is incompatible" (decisions 3, 22; Tasks 3, 4, 7)                                          |
+
+## What actually shipped (2026-09-24)
+
+Every slice shipped, was merged, deployed to `revclouddev` and checked there.
+
+| Slice | PRs                          | What landed                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1    | #332, #333, #334             | Rulings D49–D57 in the spec; answers are always bound values (a respondent's `$User.Name` is searched as that text).                                                                                                                                                                                                                                                                                         |
+| S2    | #335                         | One conditions editor, Form Designer style, in a dialog, on all three screens; summaries spelled out and numbered; errors beside their controls; "N conditions need attention" + Go to first.                                                                                                                                                                                                                |
+| S2b   | #336, #337, #338, #339, #340 | NOT in custom logic (written `(NOT (…))` in SOQL) with three-valued logic in the browser; related fields ("Account › Type") in a shared searchable `finalTypeahead` / `finalFieldPicker`; Current user (any User field + Profile name + Role name); the linked record for Forms (`existingRecordId`); review fixes (Escape keeps the dialog open, a click opens a relationship in place, "Showing 50 of N"). |
+| S3    | #341                         | Mapping filter rows compare with **An answer**; nothing is chosen for the author; a saved answer that no longer fits is kept and says why; publish checks removed / several-value / incompatible / wrong-comparison answers and warns on skippable ones.                                                                                                                                                     |
+| S4    | #342                         | **Advanced (SOQL)** tab: `FinalMappingSoql` parser, publish check that test-runs the clause as the author, runtime that binds answers and LIKE-escapes them, `checkConditions` for **Check conditions**; review fixes (quoted answers and deleted questions stop Apply, problems show while typing, undo kept).                                                                                              |
+| S5    | #343                         | The step reads as Find / If one is found / If none is found, create …; the searched field is pre-filled (editable, stays deleted); "Also update when found"; review fixes (a/an, heading levels, a note on the pre-filled row).                                                                                                                                                                              |
+
+**Differences from the plan**
+
+- `answerChoices` lists **every** question; ones that hold several values arrive with `fits: []`. A saved multi-value answer therefore says "Question type is incompatible" rather than "Question removed".
+- The typed box's blank message is _"Write the conditions, or go back to the Conditions tab."_ (Apex parser and dialog), after design review.
+- The typed box also refuses, before Apply: an answer inside quotes (it would be searched as those words) and a question deleted since the clause was written. The plan only had unknown names.
+- The typed box builds its names when it appears and again when the question list arrives, until the author edits — the dialog can hand over the saved text before the questions (found in the org walkthrough; Insert answer did nothing).
+- Not taken from review: a "Discard your changes?" prompt on Cancel / Esc / Clear all — the built tab doesn't ask either, and Cancel returning nothing is the dialog's contract.
+
+**Org walkthrough (S6, `revclouddev`, form `a05hk000001aby9AAA`)**
+
+- Publish refused each bad clause with its sentence: `; DELETE`, `LIMIT 5`, `Nope__c = 1` (Salesforce's own message), `Email = :x`, `{Not a question}`.
+- Published `LastName = {Your answer} AND CreatedDate = LAST_N_DAYS:30` (version `a04hk000000ocJpAAI`), then the TestSite.
+- Guest, surname F2Walk: created the Contact. Same surname and email again: the step **found that Contact** (same id) and wrote nothing to it.
+- Guest surname `$User.Name`: saved as that literal text.
+- Studio: the Advanced (SOQL) tab, replace notice, Insert answer (`{Your answer}` at the cursor) and Check conditions (skippable warning; "No such column 'Nope\_\_c'…") all worked; dialog cancelled.
+- Earlier slices were checked in the org as they shipped (visibility dialog errors, "Account › Account Type" in the field picker, a Profile-name rule showing and hiding a question, Linked record offered on a Contact Form).
+
+**Not walked in the org this time** (covered by tests that run in the org or in jest):
+`Title LIKE {…}` with `50%` (Apex `aTypedLikeAnswerMatchesAsTyped`, real SOQL); a choice searched by its label (Apex); the guest Profile-name rule staying hidden (jest `userConditionsGuest`); a Role change flipping a rule.
+
+The QA form's unpublished v4 draft was left as it was; its previous versions are backed up outside the repo.
