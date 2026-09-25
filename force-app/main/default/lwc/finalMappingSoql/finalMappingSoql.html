@@ -36,6 +36,11 @@
                 </template>
             </template>
         </div>
+        <template lwc:if={hasSkippableNotes}>
+            <template for:each={skippableNotes} for:item="n">
+                <p key={n.key} class="ms-hint ms-skip-note">{n.text}</p>
+            </template>
+        </template>
         <p class="ms-hint" id="ms-hint">{hint}</p>
 
         <div class="ms-check-row">

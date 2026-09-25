@@ -268,6 +268,15 @@ findings outrank items here: builder-canvas keyboard operability (now built; see
 belongs above the matrix ring in §4.1, and its Studio contrast fix is the same
 refactor as §4.3's chrome-accent unification.
 
+### 4.0 Typography — one font, one casing, one scale across the app (owner 2026-09-24)
+
+Owner, on the Data mode mapping screen: font sizes and types are "not cohesive at all" — uppercase
+11px section headers next to 13px sentence-case labels, a 16px step title, and a table column
+header wrapping onto four lines. **Tabled for an app-wide pass, not a per-screen fix:** clean up
+font types, casing and sizes across the whole app (Studio chrome, Build / Data / Design modes,
+dialogs, runtime) against one type scale. Needs a short spec (the scale, where uppercase is
+allowed if anywhere) before any CSS changes.
+
 ### 4.1 Accessibility — the sharpest items
 
 PRODUCT.md commits to **WCAG 2.1 AA** on the guest-facing runtime, so these are promise-breaking,

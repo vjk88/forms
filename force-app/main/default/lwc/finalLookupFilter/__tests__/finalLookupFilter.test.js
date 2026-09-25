@@ -247,7 +247,7 @@ describe('filter-only mode', () => {
         expect(ruleEditor(el)).toBeTruthy();
         expect(ruleEditor(el).columns).toBe('mapping');
         expect(ruleEditor(el).description).toBe(
-            'Only records that meet these conditions are searched.'
+            'The record that meets these conditions is the one found.'
         );
     });
 

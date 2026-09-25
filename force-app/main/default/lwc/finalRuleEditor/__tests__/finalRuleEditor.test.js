@@ -952,4 +952,26 @@ describe('record screens type the value box by field (round 1 #7)', () => {
         expect(control(el, 0, 'value').value).toBe('TODAY');
         expect(control(el, 1, 'value').type).toBe('text');
     });
+
+    it('an answer that can be skipped gets a note beside it', async () => {
+        const el = mount({
+            columns: 'mapping',
+            sourceIndex: undefined,
+            sources: [{ id: 'LastName', label: 'Last Name', type: 'string' }],
+            answerChoices: [
+                {
+                    key: 'el_n',
+                    label: 'Nickname',
+                    skippable: true,
+                    fits: ['string']
+                }
+            ],
+            value: config([rule('LastName', 'equals', '$field.el_n')])
+        });
+        await flush();
+        const note = el.shadowRoot.querySelector('.re-answer-note');
+        expect(note.textContent).toContain('“Nickname” can be skipped');
+        // a note, not a problem: Apply still works
+        expect(el.problems).toEqual([]);
+    });
 });

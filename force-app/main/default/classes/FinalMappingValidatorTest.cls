@@ -118,17 +118,81 @@ private class FinalMappingValidatorTest {
     }
 
     @IsTest
-    static void aMissingFilterBlocks() {
+    static void aSearchWithNoAnswerBlocks() {
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        Map<String, Object> match = (Map<String, Object>) action.get('match');
+        match.remove('field');
+        match.remove('source');
+        // conditions, but none compares with an answer
+        match.put(
+            'filter',
+            new Map<String, Object>{
+                'logic' => 'all',
+                'rows' => new List<Object>{
+                    new Map<String, Object>{
+                        'fieldPath' => 'Title',
+                        'operator' => 'eq',
+                        'value' => 'CEO'
+                    }
+                }
+            }
+        );
+        Assert.isTrue(
+            anyContains(
+                blockers(check(new List<Object>{ action })),
+                'must search by at least one answer'
+            )
+        );
+        match.remove('filter');
+        Assert.isTrue(
+            anyContains(
+                blockers(check(new List<Object>{ action })),
+                'must search by at least one answer'
+            )
+        );
+    }
+
+    @IsTest
+    static void aSearchThatIsItsConditionsPublishes() {
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        Map<String, Object> match = (Map<String, Object>) action.get('match');
+        match.remove('field');
+        match.remove('source');
+        match.put(
+            'filter',
+            new Map<String, Object>{
+                'logic' => 'all',
+                'rows' => new List<Object>{
+                    new Map<String, Object>{
+                        'fieldPath' => 'Email',
+                        'operator' => 'eq',
+                        'value' => '$field.el_email'
+                    }
+                }
+            }
+        );
+        Assert.areEqual(
+            new List<String>(),
+            blockers(check(new List<Object>{ action }))
+        );
+    }
+
+    @IsTest
+    static void anOlderWhereMatchesAloneStillPublishes() {
         Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
             'act_a',
             'reuse'
         );
         ((Map<String, Object>) action.get('match')).remove('filter');
-        Assert.isTrue(
-            anyContains(
-                blockers(check(new List<Object>{ action })),
-                'needs a filter'
-            )
+        Assert.areEqual(
+            new List<String>(),
+            blockers(check(new List<Object>{ action }))
         );
     }
 
@@ -244,7 +308,7 @@ private class FinalMappingValidatorTest {
     }
 
     @IsTest
-    static void overwritingTheMatchFieldBlocks() {
+    static void theFieldSearchedByMayBeUpdated() {
         Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
             'act_a',
             'update'
@@ -255,11 +319,9 @@ private class FinalMappingValidatorTest {
                 f.put('writeOnMatch', true);
             }
         }
-        Assert.isTrue(
-            anyContains(
-                blockers(check(new List<Object>{ action })),
-                'the field used to find the record'
-            )
+        Assert.areEqual(
+            new List<String>(),
+            blockers(check(new List<Object>{ action }))
         );
     }
 
@@ -649,7 +711,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'search with a question that is gone',
             new List<Object>{ a },
-            'searches using a question'
+            'uses a question that’s no longer on the form'
         );
 
         a = FinalMappingTestData.findOrCreateContact('act_a', 'reuse');
@@ -680,7 +742,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'a filter that will not compile',
             new List<Object>{ a },
-            'filter:'
+            'search:'
         );
 
         a = FinalMappingTestData.findOrCreateContact('act_a', 'reuse');
@@ -919,7 +981,7 @@ private class FinalMappingValidatorTest {
     }
 
     @IsTest
-    static void aSkippableRowAnswerWarns() {
+    static void aSkippableRowAnswerBlocks() {
         Map<String, Object> nick = FinalMappingTestData.question(
             'el_nick',
             'text',
@@ -930,10 +992,12 @@ private class FinalMappingValidatorTest {
             questionsPlus(nick),
             filterRow('LastName', 'eq', 'el_nick')
         );
-        Assert.areEqual(new List<String>(), blockers(found));
         Assert.isTrue(
-            anyContains(warnings(found), 'can be skipped'),
-            String.valueOf(warnings(found))
+            anyContains(
+                blockers(found),
+                '“Nickname” is used to find the Contact, so it must always be answered'
+            ),
+            String.valueOf(blockers(found))
         );
     }
 
@@ -1059,7 +1123,7 @@ private class FinalMappingValidatorTest {
     }
 
     @IsTest
-    static void aSkippableTypedAnswerWarns() {
+    static void aSkippableTypedAnswerBlocks() {
         Map<String, Object> nick = FinalMappingTestData.question(
             'el_nick',
             'text',
@@ -1070,10 +1134,9 @@ private class FinalMappingValidatorTest {
             questionsPlus(nick),
             'LastName = {!el_nick}'
         );
-        Assert.areEqual(new List<String>(), conditionBlockers(found));
         Assert.isTrue(
-            anyContains(warnings(found), 'can be skipped'),
-            String.valueOf(warnings(found))
+            anyContains(conditionBlockers(found), 'must always be answered'),
+            String.valueOf(conditionBlockers(found))
         );
     }
 

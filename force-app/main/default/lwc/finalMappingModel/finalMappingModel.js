@@ -23,9 +23,83 @@ function update(spec, actionId, fn) {
     const action = next.mapping.actions.find((a) => a.id === actionId);
     if (action) {
         action.fields = action.fields || [];
+        if (action.match) {
+            action.match = foldMatch(action.match);
+        }
         fn(action);
     }
     return next;
+}
+
+/**
+ * A find-or-create search is its conditions (round 1 #4). Steps saved
+ * before then also had a separate "Where [field] matches the answer to
+ * [question]"; that pair becomes the first condition — a row
+ * `field equals the answer`, or `Field = {!question} AND (…)` in front of
+ * typed conditions. Pure: returns a new match. Anything already folded, or
+ * with nothing to fold, comes back as it was (minus the empty keys).
+ */
+export function foldMatch(match) {
+    if (!match) {
+        return match;
+    }
+    const m = JSON.parse(JSON.stringify(match));
+    const key =
+        m.source && m.source.kind === 'answer' ? m.source.elementKey : null;
+    const field = m.field;
+    delete m.field;
+    delete m.source;
+    delete m.prefillDeclined;
+    if (!field || !key) {
+        return m;
+    }
+    if (m.filterMode === 'soql') {
+        const rest = (m.soql || '').trim();
+        m.soql = rest
+            ? `${field} = {!${key}} AND (${rest})`
+            : `${field} = {!${key}}`;
+        return m;
+    }
+    const filter = m.filter || { logic: 'all', rows: [] };
+    const rows = filter.rows || [];
+    const row = { fieldPath: field, operator: 'eq', value: `$field.${key}` };
+    let customLogic = filter.customLogic || null;
+    if (filter.logic === 'custom' && customLogic) {
+        // The new condition is 1: renumber, and it must hold alongside the rest.
+        customLogic = `1 AND (${customLogic.replace(/\d+/g, (n) =>
+            String(Number(n) + 1)
+        )})`;
+    }
+    const logic =
+        rows.length && filter.logic === 'any' ? 'custom' : filter.logic;
+    if (rows.length && filter.logic === 'any') {
+        const rest = rows.map((_, i) => String(i + 2)).join(' OR ');
+        customLogic = `1 AND (${rest})`;
+    }
+    m.filter = {
+        ...filter,
+        logic: logic || 'all',
+        customLogic,
+        rows: [row, ...rows]
+    };
+    return m;
+}
+
+/** Question ids a search compares with: built rows or typed conditions. */
+export function searchAnswerIds(match) {
+    const m = foldMatch(match) || {};
+    if (m.filterMode === 'soql') {
+        return soqlTokenIds(m.soql);
+    }
+    const out = [];
+    ((m.filter && m.filter.rows) || []).forEach((row) => {
+        [row && row.value, ...((row && row.values) || [])].forEach((v) => {
+            if (typeof v === 'string' && v.startsWith('$field.')) {
+                out.push(v.slice(7));
+            }
+        });
+    });
+    return out;
 }
 
 /** Same shape and randomness as the Studio's element ids. */
@@ -40,7 +114,7 @@ function mintActionId() {
 }
 
 function emptyMatch() {
-    return { field: null, source: null, filter: { logic: 'all', rows: [] } };
+    return { filter: { logic: 'all', rows: [] } };
 }
 
 export function addAction(spec, objectApi, operation = 'create') {
@@ -109,7 +183,7 @@ export function setFieldSource(spec, actionId, field, source) {
         const existing = a.fields.find((f) => f.field === field);
         if (existing) {
             existing.source = source;
-            delete existing.prefilled; // the author's choice now, not ours
+            delete existing.prefilled; // an old automatic row is now the author's
         } else {
             a.fields.push({ field, source });
         }
@@ -119,59 +193,12 @@ export function setFieldSource(spec, actionId, field, source) {
 export function removeField(spec, actionId, field) {
     return update(spec, actionId, (a) => {
         a.fields = a.fields.filter((f) => f.field !== field);
-        // Deleting the searched field's row is a decision: never re-add it.
-        if (a.match && a.match.field === field) {
-            a.match.prefillDeclined = true;
-        }
     });
 }
 
-/**
- * The searched field is pre-filled in the create list from the answer it
- * is searched by (decision 12, D52) — a new record should carry the value it
- * was looked up by. The row stays editable: once the author changes it,
- * it's theirs; once they delete it, it stays deleted.
- */
 export function setMatch(spec, actionId, patch) {
     return update(spec, actionId, (a) => {
-        const fieldChanged =
-            patch.field && patch.field !== (a.match || {}).field;
         a.match = { ...(a.match || emptyMatch()), ...patch };
-        if (fieldChanged) {
-            // The old search field's untouched pre-fill goes; the author's
-            // own rows stay.
-            a.fields = a.fields.filter(
-                (f) => !(f.prefilled && f.field !== a.match.field)
-            );
-            delete a.match.prefillDeclined;
-            const matched = a.fields.find((f) => f.field === a.match.field);
-            if (matched) {
-                delete matched.writeOnMatch;
-            }
-        }
-        // Filter edits never pre-fill.
-        if (!('field' in patch) && !('source' in patch)) {
-            return;
-        }
-        const m = a.match;
-        if (
-            !m.field ||
-            !m.source ||
-            m.source.kind !== 'answer' ||
-            m.prefillDeclined
-        ) {
-            return;
-        }
-        const row = a.fields.find((f) => f.field === m.field);
-        if (!row) {
-            a.fields.unshift({
-                field: m.field,
-                source: { ...m.source },
-                prefilled: true
-            });
-        } else if (row.prefilled) {
-            row.source = { ...m.source };
-        }
     });
 }
 
@@ -234,14 +261,10 @@ export function setOnMatch(spec, actionId, onMatch) {
     });
 }
 
-/** The match field can never be overwritten: you don't overwrite what you searched by. */
+/** Tick or untick "Also update when found" for one field (update mode only). */
 export function setWriteOnMatch(spec, actionId, field, on) {
     return update(spec, actionId, (a) => {
-        if (
-            !a.match ||
-            a.match.onMatch !== 'update' ||
-            a.match.field === field
-        ) {
+        if (!a.match || a.match.onMatch !== 'update') {
             return;
         }
         const f = a.fields.find((x) => x.field === field);
@@ -265,15 +288,9 @@ export function answerIndex(spec) {
     };
     actionsOf(spec).forEach((a, i) => {
         const base = { actionId: a.id, object: a.object, step: i + 1 };
-        if (a.match && a.match.source && a.match.source.kind === 'answer') {
-            add(a.match.source.elementKey, {
-                ...base,
-                field: a.match.field,
-                use: 'match'
-            });
-        }
+
         // Answers that narrow the search: in built rows or typed conditions.
-        const m = a.match || {};
+        const m = foldMatch(a.match) || {};
         const filterKeys = new Set();
         if (m.filterMode === 'soql') {
             soqlTokenIds(m.soql).forEach((k) => filterKeys.add(k));
@@ -359,7 +376,11 @@ function filterRowComplete(row) {
     return row.value !== null && row.value !== undefined && row.value !== '';
 }
 
-export function actionState(actions, index) {
+/**
+ * `skippable` (optional): ids of questions someone may skip. A search that
+ * uses one can't be published (D59), so the step isn't finished either.
+ */
+export function actionState(actions, index, skippable) {
     const a = actions[index];
     if (!a) return 'broken';
     const earlier = new Set(actions.slice(0, index).map((x) => x.id));
@@ -379,18 +400,17 @@ export function actionState(actions, index) {
     if (fields.some((f) => !sourceUsable(f.source, earlier)))
         return 'incomplete';
     if (a.operation === 'findOrCreate') {
-        const m = a.match || {};
+        const m = foldMatch(a.match) || {};
         const typed = m.filterMode === 'soql';
         const filterDone = typed
             ? typeof m.soql === 'string' && m.soql.trim() !== ''
             : Boolean(m.filter && (m.filter.rows || []).length) &&
               m.filter.rows.every(filterRowComplete);
-        if (
-            !m.field ||
-            !sourceUsable(m.source, earlier) ||
-            !m.onMatch ||
-            !filterDone
-        ) {
+        const answers = searchAnswerIds(m);
+        if (!m.onMatch || !filterDone || !answers.length) {
+            return 'incomplete';
+        }
+        if (skippable && answers.some((id) => skippable.has(id))) {
             return 'incomplete';
         }
     }

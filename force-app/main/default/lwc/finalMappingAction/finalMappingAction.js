@@ -9,7 +9,9 @@ import {
     setMatch,
     setOnMatch,
     setWriteOnMatch,
-    setFilterMode
+    setFilterMode,
+    foldMatch,
+    searchAnswerIds
 } from 'c/finalMappingModel';
 
 /** "a Contact", "an Account". */
@@ -134,16 +136,8 @@ export default class FinalMappingAction extends LightningElement {
                     entry.source || isLookup
                         ? ''
                         : `Another record: ${f.label} isn’t a lookup field.`,
-                isMatchField:
-                    this.isFindOrCreate && entry.field === this.match.field,
-                showTick:
-                    this.showOverwrite && entry.field !== this.match.field,
-                overwrite: entry.writeOnMatch === true,
-                // Added for the author when they chose what to search by
-                // (decision 12); the note goes once they change the row.
-                prefilledNote: entry.prefilled
-                    ? 'Filled in from your search. Change or remove it.'
-                    : ''
+                showTick: this.showOverwrite,
+                overwrite: entry.writeOnMatch === true
             };
         });
     }
@@ -255,8 +249,9 @@ export default class FinalMappingAction extends LightningElement {
         );
     }
 
+    /** The search as it now reads: older steps' Where/Matches folded in. */
     get match() {
-        return (this.action && this.action.match) || {};
+        return foldMatch((this.action && this.action.match) || {}) || {};
     }
 
     get onMatch() {
@@ -272,11 +267,47 @@ export default class FinalMappingAction extends LightningElement {
             return 'It’s used as-is. Nothing is written to it.';
         }
         const ticked = ((this.action && this.action.fields) || []).some(
-            (f) => f.writeOnMatch === true && f.field !== this.match.field
+            (f) => f.writeOnMatch === true
         );
         return ticked
             ? 'It’s updated with the fields ticked under “Also update when found”.'
             : 'It’s updated with the fields ticked under “Also update when found”. None are ticked yet, so nothing changes.';
+    }
+
+    /**
+     * What stops this search being published, said on the step itself —
+     * so "Not finished" always has its reason beside it.
+     */
+    get searchNotes() {
+        if (!this.isFindOrCreate) {
+            return [];
+        }
+        const m = this.match;
+        const hasConditions =
+            m.filterMode === 'soql'
+                ? Boolean((m.soql || '').trim())
+                : Boolean(m.filter && (m.filter.rows || []).length);
+        const answers = searchAnswerIds(m);
+        const out = [];
+        if (hasConditions && !answers.length) {
+            out.push({
+                key: 'no-answer',
+                text: 'Add a condition that compares with an answer, like Email equals the answer to “Your email”.'
+            });
+        }
+        (this.questions || [])
+            .filter((q) => q.skippable && answers.includes(q.elementKey))
+            .forEach((q) =>
+                out.push({
+                    key: `skip-${q.elementKey}`,
+                    text: `“${q.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
+                })
+            );
+        return out;
+    }
+
+    get hasSearchNotes() {
+        return this.searchNotes.length > 0;
     }
 
     /** The create list's heading: the branch it is, on a find-or-create step. */
@@ -290,32 +321,6 @@ export default class FinalMappingAction extends LightningElement {
         return this.isFindOrCreate && this.onMatch === 'update';
     }
 
-    /** Text-like fields: what you can meaningfully search by in v1. */
-    get matchFieldOptions() {
-        const searchable = new Set(['STRING', 'EMAIL', 'PHONE', 'URL']);
-        return this.fields
-            .filter((f) => searchable.has(f.displayType))
-            .map((f) => ({ label: f.label, value: f.apiName }));
-    }
-
-    get matchSourceOptions() {
-        const f = this.fields.find((x) => x.apiName === this.match.field);
-        if (!f) return [];
-        return (this.questions || [])
-            .filter(
-                (q) =>
-                    q.mappable &&
-                    (this.compatibility[q.answerType] || []).includes(
-                        f.displayType
-                    )
-            )
-            .map((q) => ({ label: q.label, value: q.elementKey }));
-    }
-
-    get matchSourceValue() {
-        return this.match.source && this.match.source.elementKey;
-    }
-
     /**
      * The questions a filter row may compare with (IMPL_PLAN_F2_SEARCH Task 7).
      * Every question is listed so a saved one can say why it no longer fits;
@@ -325,6 +330,8 @@ export default class FinalMappingAction extends LightningElement {
         return (this.questions || []).map((q) => ({
             key: q.elementKey,
             label: q.label,
+            // "Can be skipped" — publishing refuses it in a search.
+            skippable: Boolean(q.skippable),
             fits:
                 q.mappable && q.answerType !== 'Options'
                     ? (this.compatibility[q.answerType] || []).map((t) =>
@@ -341,20 +348,6 @@ export default class FinalMappingAction extends LightningElement {
     /** finalLookupFilter speaks whole lookup configs; hand it one holding our filter. */
     get filterConfig() {
         return { filter: this.match.filter || { logic: 'all', rows: [] } };
-    }
-
-    handleMatchField(event) {
-        this._emit(
-            setMatch(this.spec, this.actionId, { field: event.detail.value })
-        );
-    }
-
-    handleMatchSource(event) {
-        this._emit(
-            setMatch(this.spec, this.actionId, {
-                source: { kind: 'answer', elementKey: event.detail.value }
-            })
-        );
     }
 
     /** The saved typed conditions, for the dialog and the summary. */

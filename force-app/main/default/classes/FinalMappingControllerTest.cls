@@ -124,7 +124,7 @@ private class FinalMappingControllerTest {
     }
 
     @IsTest
-    static void aSkippableAnswerIsAWarning() {
+    static void aSkippableAnswerIsABlocker() {
         List<Object> questions = FinalMappingTestData.standardQuestions();
         Map<String, Object> nick = FinalMappingTestData.question(
             'el_nick',
@@ -138,7 +138,11 @@ private class FinalMappingControllerTest {
             'LastName = {!el_nick}'
         );
         Assert.areEqual(1, found.size(), String.valueOf(found));
-        Assert.areEqual('warning', found[0].severity);
+        Assert.areEqual('blocker', found[0].severity);
+        Assert.isTrue(
+            found[0].message.contains('must always be answered'),
+            found[0].message
+        );
     }
 
     @IsTest

@@ -82,7 +82,7 @@ export default class FinalLookupFilter extends LightningElement {
 
     get dialogDescription() {
         return this.filterOnly
-            ? 'Only records that meet these conditions are searched.'
+            ? 'The record that meets these conditions is the one found.'
             : 'Only records that meet these conditions can be picked.';
     }
 

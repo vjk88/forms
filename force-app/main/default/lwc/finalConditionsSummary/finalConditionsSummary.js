@@ -173,10 +173,29 @@ export default class FinalConditionsSummary extends LightningElement {
     }
 
     get emptyText() {
+        if (this.isMapping) {
+            return 'No conditions yet. Add at least one that compares with an answer, like Email equals the answer to “Your email”.';
+        }
         return this.isVisibility ? 'Always shown' : 'No conditions';
     }
 
+    get isMapping() {
+        return this.columns === 'mapping';
+    }
+
     get heading() {
+        if (this.isMapping) {
+            // The step already says "Find an existing Contact where" — only
+            // how several conditions combine is left to say.
+            if (this.rules.length === 1) {
+                return '';
+            }
+            const how = (this.value && this.value.logic) || 'all';
+            if (how === 'any') {
+                return 'Any of these:';
+            }
+            return how === 'custom' ? 'Matching this logic:' : 'All of these:';
+        }
         const lead = this.isVisibility
             ? this.value && this.value.action === 'hide'
                 ? 'Hide when'
@@ -323,6 +342,8 @@ export default class FinalConditionsSummary extends LightningElement {
         return this.rules.slice(0, MAX_SHOWN).map((rule, i) => ({
             key: `c${i}`,
             number: i + 1,
+            // One condition needs no number: nothing refers to it.
+            showNumber: this.rules.length > 1,
             text: describeCondition(
                 rule,
                 labels,
@@ -342,7 +363,9 @@ export default class FinalConditionsSummary extends LightningElement {
         return this.value &&
             this.value.logic === 'custom' &&
             this.value.customLogic
-            ? `Logic: ${this.value.customLogic}`
+            ? this.isMapping
+                ? this.value.customLogic
+                : `Logic: ${this.value.customLogic}`
             : '';
     }
 

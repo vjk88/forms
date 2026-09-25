@@ -301,6 +301,28 @@ export default class FinalMappingSoql extends LightningElement {
         );
     }
 
+    /** Answers in the text whose question can be skipped (round 1 #5). */
+    get skippableNotes() {
+        const ids = new Set();
+        const names = this._names || new Map();
+        const byName = new Map([...names].map(([id, name]) => [name, id]));
+        eachBrace(this.display, (inner) => {
+            if (byName.has(inner)) {
+                ids.add(byName.get(inner));
+            }
+        });
+        return (this._questions || [])
+            .filter((q) => q.skippable && ids.has(q.elementKey))
+            .map((q) => ({
+                key: q.elementKey,
+                text: `“${names.get(q.elementKey) || q.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
+            }));
+    }
+
+    get hasSkippableNotes() {
+        return this.skippableNotes.length > 0;
+    }
+
     get hasShownProblems() {
         return this.shownProblems.length > 0;
     }

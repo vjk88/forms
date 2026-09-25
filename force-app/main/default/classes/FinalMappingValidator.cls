@@ -132,6 +132,8 @@ public with sharing class FinalMappingValidator {
         Set<String> skippable;
         Boolean isPublic;
         Map<String, Object> placeholders;
+        /** The object the step being checked searches, for its sentences. */
+        String objectLabel;
         /** Steps seen so far, id → object API name: the only legal action refs. */
         Map<String, String> earlier = new Map<String, String>();
     }
@@ -296,18 +298,6 @@ public with sharing class FinalMappingValidator {
                                 ' to overwrite a found record, but this step doesn’t update found records.'
                         )
                     );
-                } else if (fd.getName().equalsIgnoreCase(matchField)) {
-                    out.add(
-                        new Diagnostic(
-                            BLOCKER,
-                            id,
-                            fd.getName(),
-                            name +
-                                ' can’t overwrite ' +
-                                fd.getLabel() +
-                                ' — it’s the field used to find the record.'
-                        )
-                    );
                 } else if (!fd.isUpdateable()) {
                     out.add(
                         new Diagnostic(
@@ -416,134 +406,140 @@ public with sharing class FinalMappingValidator {
             );
         }
 
-        String fieldApi = str(match.get('field'));
-        Schema.SObjectField mf = fieldApi == null
-            ? null
-            : fieldMap.get(fieldApi);
+        ctx.objectLabel = d.getLabel();
+        Set<String> answerKeys = new Set<String>();
         String matchField = null;
-        if (mf == null) {
-            out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    fieldApi,
-                    name + ' searches on a field that doesn’t exist.'
-                )
+
+        // Steps saved before round 1 had a separate "Where [field] matches the
+        // answer to [question]". It still runs, as a condition like any other.
+        String fieldApi = str(match.get('field'));
+        if (fieldApi != null) {
+            Schema.SObjectField mf = fieldMap.get(fieldApi);
+            if (mf == null) {
+                out.add(
+                    new Diagnostic(
+                        BLOCKER,
+                        id,
+                        fieldApi,
+                        name + ' searches on a field that doesn’t exist.'
+                    )
+                );
+            } else if (!mf.getDescribe().isFilterable()) {
+                out.add(
+                    new Diagnostic(
+                        BLOCKER,
+                        id,
+                        fieldApi,
+                        name +
+                            ' searches on ' +
+                            mf.getDescribe().getLabel() +
+                            ', which Salesforce can’t search by.'
+                    )
+                );
+            } else {
+                matchField = mf.getDescribe().getName();
+            }
+            Map<String, Object> src = FinalMappingRules.asMap(
+                match.get('source')
             );
-        } else if (!mf.getDescribe().isFilterable()) {
-            out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
+            String key = src == null ? null : str(src.get('elementKey'));
+            if (
+                src == null ||
+                str(src.get('kind')) != 'answer' ||
+                key == null
+            ) {
+                out.add(
+                    new Diagnostic(
+                        BLOCKER,
+                        id,
+                        fieldApi,
+                        name +
+                        ' searches using a question that isn’t on this form.'
+                    )
+                );
+            } else {
+                answerKeys.add(key);
+                checkAnswer(
+                    key,
+                    mf == null ? null : mf.getDescribe(),
+                    false,
                     fieldApi,
-                    name +
-                        ' searches on ' +
-                        mf.getDescribe().getLabel() +
-                        ', which Salesforce can’t search by.'
-                )
-            );
-        } else {
-            matchField = mf.getDescribe().getName();
+                    '',
+                    id,
+                    name,
+                    ctx,
+                    out
+                );
+            }
         }
 
-        Map<String, Object> src = FinalMappingRules.asMap(match.get('source'));
-        String key = src == null ? null : str(src.get('elementKey'));
-        Map<String, Object> q = key == null ? null : ctx.questions.get(key);
-        if (src == null || str(src.get('kind')) != 'answer' || q == null) {
-            out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    fieldApi,
-                    name + ' searches using a question that isn’t on this form.'
-                )
-            );
-        } else if (
-            mf != null &&
-            !FinalMappingRules.isCompatible(
-                FinalSubmitService.answerTypeOf(q),
-                mf.getDescribe().getType()
-            )
-        ) {
-            out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    fieldApi,
-                    name +
-                        ': the answer to "' +
-                        q.get('label') +
-                        '" can’t be compared with ' +
-                        mf.getDescribe().getLabel() +
-                        '.'
-                )
-            );
-        } else if (ctx.skippable.contains(key)) {
-            out.add(
-                new Diagnostic(
-                    WARNING,
-                    id,
-                    fieldApi,
-                    name +
-                        ' searches using "' +
-                        q.get('label') +
-                        '", which can be skipped. When it is, this step fails.'
-                )
-            );
-        }
-
-        if (str(match.get('filterMode')) == FILTER_MODE_SOQL) {
+        Boolean typed = str(match.get('filterMode')) == FILTER_MODE_SOQL;
+        if (typed) {
             // Typed conditions replace the rows; leftover rows are ignored.
-            checkTypedConditions(match, d, id, name, ctx, out);
-            return matchField;
-        }
-
-        Map<String, Object> filter = FinalMappingRules.asMap(
-            match.get('filter')
-        );
-        if (
-            filter == null ||
-            FinalMappingRules.asList(filter.get('rows')).isEmpty()
-        ) {
-            out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    null,
-                    name +
-                        ' needs a filter. Searching every ' +
-                        d.getLabel() +
-                        ' in the org isn’t allowed.'
-                )
+            Set<String> tokens = checkTypedConditions(
+                match,
+                d,
+                id,
+                name,
+                ctx,
+                out
             );
-        } else if (JSON.serialize(filter).contains('$User.')) {
-            out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    null,
-                    name +
-                        ' uses the current user in its filter. This step runs in the ' +
-                        'background, where the current user is whoever submitted — often a site guest.'
-                )
-            );
+            if (tokens == null) {
+                return matchField; // already refused, in its own words
+            }
+            answerKeys.addAll(tokens);
         } else {
-            checkRowAnswers(filter, d, name, id, ctx, out);
-            FinalLookupService.Compiled c = FinalLookupService.compile(
-                new Map<String, Object>{ 'filter' => filter },
-                ctx.placeholders,
-                d.getName()
+            Map<String, Object> filter = FinalMappingRules.asMap(
+                match.get('filter')
             );
-            if (c.blocked) {
+            Boolean hasRows =
+                filter != null &&
+                !FinalMappingRules.asList(filter.get('rows')).isEmpty();
+            if (hasRows && JSON.serialize(filter).contains('$User.')) {
                 out.add(
                     new Diagnostic(
                         BLOCKER,
                         id,
                         null,
-                        name + '’s filter: ' + c.blockedReason
+                        name +
+                            ' uses the current user in its search. This step runs in the ' +
+                            'background, where the current user is whoever submitted — often a site guest.'
                     )
                 );
+            } else if (hasRows) {
+                answerKeys.addAll(
+                    checkRowAnswers(filter, d, name, id, ctx, out)
+                );
+                FinalLookupService.Compiled c = FinalLookupService.compile(
+                    new Map<String, Object>{ 'filter' => filter },
+                    ctx.placeholders,
+                    d.getName()
+                );
+                if (c.blocked) {
+                    out.add(
+                        new Diagnostic(
+                            BLOCKER,
+                            id,
+                            null,
+                            name + '’s search: ' + c.blockedReason
+                        )
+                    );
+                }
             }
+        }
+
+        // A search that compares with no answer finds the same records for
+        // every submission — it isn't looking anyone up (round 1 #5).
+        if (answerKeys.isEmpty()) {
+            out.add(
+                new Diagnostic(
+                    BLOCKER,
+                    id,
+                    typed ? CONDITIONS_FIELD : null,
+                    name +
+                    ' must search by at least one answer. Add a condition that compares with a question, like Email equals the answer to “Your email”.'
+                )
+            );
         }
         return matchField;
     }
@@ -561,7 +557,7 @@ public with sharing class FinalMappingValidator {
      * choices — decision 9), fit the field the row filters on, and suit the
      * comparison: never a list operator, and "contains" only on text.
      */
-    private static void checkRowAnswers(
+    private static Set<String> checkRowAnswers(
         Map<String, Object> filter,
         Schema.DescribeSObjectResult d,
         String name,
@@ -569,6 +565,7 @@ public with sharing class FinalMappingValidator {
         Context ctx,
         List<Diagnostic> out
     ) {
+        Set<String> seen = new Set<String>();
         for (Object rowObj : FinalMappingRules.asList(filter.get('rows'))) {
             Map<String, Object> row = FinalMappingRules.asMap(rowObj);
             if (row == null) {
@@ -597,12 +594,13 @@ public with sharing class FinalMappingValidator {
                 rowField != null &&
                 !FinalMappingRules.isTextLike(rowField.getType()));
             for (String key : keys) {
+                seen.add(key);
                 checkAnswer(
                     key,
                     rowField,
                     badComparison,
                     path,
-                    '’s filter',
+                    '’s search',
                     id,
                     name,
                     ctx,
@@ -610,12 +608,14 @@ public with sharing class FinalMappingValidator {
                 );
             }
         }
+        return seen;
     }
 
     /**
      * One answer a search compares with (D49, D51): still on the form, one
      * value (not a grid, an order, a file or several choices — decision 9),
-     * fits the field, suits the comparison. A skippable one only warns.
+     * fits the field, suits the comparison — and is always answered: a
+     * question someone may skip can't be searched by (round 1 #5).
      * `part` names the part of the step, for the missing-question message.
      */
     private static void checkAnswer(
@@ -699,13 +699,15 @@ public with sharing class FinalMappingValidator {
         if (ctx.skippable.contains(key)) {
             out.add(
                 new Diagnostic(
-                    WARNING,
+                    BLOCKER,
                     id,
                     diagnosticField,
                     name +
-                        ' filters using "' +
+                        ': “' +
                         qLabel +
-                        '", which can be skipped. When it is, this step fails.'
+                        '” is used to find the ' +
+                        (ctx.objectLabel == null ? 'record' : ctx.objectLabel) +
+                        ', so it must always be answered. Make it required (and not hidden by a rule), or take it out of the search.'
                 )
             );
         }
@@ -721,7 +723,7 @@ public with sharing class FinalMappingValidator {
      * placeholder values — so a bad field, a field they can't read, or
      * anything else Salesforce refuses is caught now, in Salesforce's words.
      */
-    private static void checkTypedConditions(
+    private static Set<String> checkTypedConditions(
         Map<String, Object> match,
         Schema.DescribeSObjectResult d,
         String id,
@@ -741,10 +743,12 @@ public with sharing class FinalMappingValidator {
                     name + '’s conditions: ' + p.problem
                 )
             );
-            return;
+            return null;
         }
+        Set<String> seen = new Set<String>();
         Map<String, Object> binds = new Map<String, Object>();
         for (FinalMappingSoql.Token t : p.tokens) {
+            seen.add(t.elementId);
             Schema.DescribeFieldResult f = FinalMappingRules.fieldAt(
                 d.getName(),
                 t.fieldPath
@@ -787,6 +791,7 @@ public with sharing class FinalMappingValidator {
                 )
             );
         }
+        return seen;
     }
 
     /** A value of the field's type, so a test run can bind it. */
