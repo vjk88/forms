@@ -11,6 +11,8 @@ export default class FinalDataMode extends LightningElement {
     @api formId;
     @api readOnly = false;
     @api isPublic = false;
+    /** The step to open (from the publish dialog's Go there). */
+    @api focusAction;
 
     get stepCountLabel() {
         const n = actionsOf(this.spec).length;

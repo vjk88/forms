@@ -16,7 +16,8 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 function mount({
     formName = 'Untitled Freeform',
     warnings = [],
-    blockers = []
+    blockers = [],
+    items = []
 } = {}) {
     const el = createElement('c-final-publish-dialog', {
         is: FinalPublishDialog
@@ -24,12 +25,13 @@ function mount({
     el.formName = formName;
     el.warnings = warnings;
     el.blockers = blockers;
+    el.items = items;
     document.body.appendChild(el);
     return el;
 }
 
 const rows = (el) =>
-    [...el.shadowRoot.querySelectorAll('.pd-warning-text')].map((n) =>
+    [...el.shadowRoot.querySelectorAll('.pd-line-text')].map((n) =>
         n.textContent.trim()
     );
 
@@ -91,7 +93,7 @@ describe('c-final-publish-dialog', () => {
         const el = mount();
         await flush();
 
-        expect(el.shadowRoot.querySelector('.pd-warnings')).toBeNull();
+        expect(el.shadowRoot.querySelector('.pd-group')).toBeNull();
         expect(heading(el)).toBe('Publish form');
         expect(confirmButton(el).label).toBe('Publish');
         // the note is always true, so it stays
@@ -144,7 +146,7 @@ describe('blockers', () => {
             warnings: ['A warning']
         });
         await flush();
-        const blockers = el.shadowRoot.querySelectorAll('.pd-blocker');
+        const blockers = el.shadowRoot.querySelectorAll('.pd-line--blocker');
         expect(blockers).toHaveLength(1);
         expect(blockers[0].textContent).toContain('matching record is found');
         expect(confirmButton(el).disabled).toBe(true);
@@ -175,5 +177,185 @@ describe('blocked copy', () => {
         await flush();
         expect(el.shadowRoot.querySelector('.pd-note')).toBeNull();
         expect(confirmButton(el).label).toBe('Publish');
+    });
+});
+
+describe('placed where they are fixed (round 2)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    const ITEMS = [
+        {
+            severity: 'warning',
+            area: 'data',
+            actionId: 'act_1',
+            step: 'Step 1 · Account',
+            section: 'Create an Account with',
+            text: '“Your answer” can be skipped, but it fills Account Name…',
+            questionKey: 'el_a',
+            elementLabel: 'Your answer',
+            questionUse: 'fills Account Name, which Salesforce requires'
+        },
+        {
+            severity: 'blocker',
+            area: 'data',
+            actionId: 'act_2',
+            step: 'Step 2 · Contact',
+            section: 'Find an existing Contact where',
+            text: 'No condition compares with an answer.'
+        },
+        {
+            severity: 'blocker',
+            area: 'data',
+            actionId: 'act_3',
+            step: 'Step 3 · Contact',
+            section: 'Find an existing Contact where',
+            text: '“Your answer” can be skipped, but it’s used to find the Contact…',
+            questionKey: 'el_a',
+            elementLabel: 'Your answer',
+            questionUse: 'finds the Contact'
+        },
+        {
+            severity: 'warning',
+            area: 'build',
+            elementId: 'el_p',
+            elementLabel: 'Phone',
+            text: 'Answers already collected for "Phone" are stored as text.'
+        }
+    ];
+
+    const spans = (node) =>
+        [...node.querySelectorAll(':scope > span')]
+            .map((n) => n.textContent.trim())
+            .join(' ');
+    const groups = (el) =>
+        [...el.shadowRoot.querySelectorAll('.pd-group')].map((g) => ({
+            where: g.querySelector('.pd-where')
+                ? spans(g.querySelector('.pd-where'))
+                : '',
+            lead: g.querySelector('.pd-lead')
+                ? g.querySelector('.pd-lead').textContent.trim()
+                : '',
+            lines: [...g.querySelectorAll('.pd-line-text')].map(spans)
+        }));
+
+    it('says each thing once, under the place it is fixed', async () => {
+        const el = mount({ formName: 'F', items: ITEMS });
+        await flush();
+        expect(groups(el)).toEqual([
+            {
+                where: 'Build “Your answer”',
+                lead: 'Can be skipped, but these steps need it. Make it required.',
+                lines: [
+                    'Step 3 · Contact finds the Contact',
+                    'Step 1 · Account fills Account Name, which Salesforce requires'
+                ]
+            },
+            {
+                where: 'Data Mapping · Step 2 · Contact',
+                lead: '',
+                lines: [
+                    'Find an existing Contact where No condition compares with an answer.'
+                ]
+            },
+            {
+                where: 'Build “Phone”',
+                lead: '',
+                lines: [
+                    'Answers already collected for "Phone" are stored as text.'
+                ]
+            }
+        ]);
+        // the skippable question is one thing to fix, however many steps use it
+        expect(heading(el)).toBe('Fix 2 things before publishing');
+        expect(confirmButton(el).disabled).toBe(true);
+    });
+
+    it('Go there closes with where to take the author', async () => {
+        const el = mount({ formName: 'F', items: ITEMS });
+        const closed = [];
+        el.addEventListener('close', (e) => closed.push(e.detail));
+        await flush();
+        const go = [
+            ...el.shadowRoot.querySelectorAll('lightning-button')
+        ].filter((b) => b.label === 'Go there');
+        expect(go.map((b) => b.title)).toEqual([
+            'Go to “Your answer”',
+            'Go to Mapping · Step 2 · Contact',
+            'Go to “Phone”'
+        ]);
+        go[1].click();
+        expect(closed).toEqual([
+            {
+                goTo: {
+                    mode: 'data',
+                    actionId: 'act_2',
+                    section: 'Find an existing Contact where'
+                }
+            }
+        ]);
+    });
+
+    it('names why a question can go unanswered, and goes where that is fixed', async () => {
+        const el = mount({
+            formName: 'F',
+            items: [
+                {
+                    severity: 'blocker',
+                    area: 'data',
+                    actionId: 'act_3',
+                    step: 'Step 3 · Contact',
+                    text: 'x',
+                    questionKey: 'el_a',
+                    elementLabel: 'Your answer',
+                    questionUse: 'finds the Contact',
+                    questionWhy:
+                        'is on the section “Extras”, which a rule can hide',
+                    questionFix:
+                        'Remove that section’s rule, or compare with something else.',
+                    fixKind: 'section',
+                    fixId: 'sec_2'
+                },
+                {
+                    severity: 'blocker',
+                    area: 'data',
+                    actionId: 'act_3',
+                    step: 'Step 3 · Contact',
+                    text: 'x again',
+                    questionKey: 'el_a',
+                    elementLabel: 'Your answer',
+                    questionUse: 'finds the Contact'
+                }
+            ]
+        });
+        const closed = [];
+        el.addEventListener('close', (e) => closed.push(e.detail));
+        await flush();
+        expect(el.shadowRoot.querySelector('.pd-lead').textContent).toBe(
+            'Is on the section “Extras”, which a rule can hide, but this step needs it. Remove that section’s rule, or compare with something else.'
+        );
+        // two conditions using the same answer on one step: one line
+        expect(el.shadowRoot.querySelectorAll('.pd-line')).toHaveLength(1);
+        el.shadowRoot.querySelector('lightning-button[data-key]').click();
+        expect(closed).toEqual([
+            { goTo: { mode: 'build', kind: 'section', id: 'sec_2' } }
+        ]);
+    });
+
+    it('says there is more to know under what must be fixed', async () => {
+        const el = mount({
+            formName: 'F',
+            items: [
+                { severity: 'blocker', area: 'data', actionId: 'a', text: 'b' },
+                { severity: 'warning', area: 'build', text: 'w' }
+            ]
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('.pd-question').textContent).toBe(
+            '"F" can’t be published yet. There’s also 1 thing to know.'
+        );
     });
 });

@@ -416,6 +416,27 @@ export default class FinalMappingAction extends LightningElement {
         );
     }
 
+    /**
+     * Scrolls to a part of the step by its heading ("If one is found"), or
+     * to the step itself, and puts focus there (the publish dialog's Go
+     * there).
+     */
+    @api
+    reveal(section) {
+        const headings = [
+            ...this.template.querySelectorAll('.ma-subhead, .ma-title')
+        ];
+        const target =
+            headings.find((h) => section && h.textContent.trim() === section) ||
+            this.template.querySelector('.ma-title');
+        if (target) {
+            if (typeof target.scrollIntoView === 'function') {
+                target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
+            target.focus();
+        }
+    }
+
     _emit(spec) {
         this.dispatchEvent(new CustomEvent('specchange', { detail: { spec } }));
     }

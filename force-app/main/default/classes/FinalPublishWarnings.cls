@@ -16,6 +16,58 @@ public with sharing class FinalPublishWarnings {
         public List<String> blockers = new List<String>();
         @AuraEnabled
         public List<String> warnings = new List<String>();
+        /** The same, each placed where the author fixes it (the dialog groups them). */
+        @AuraEnabled
+        public List<Item> items = new List<Item>();
+    }
+
+    /** One thing to fix or know, and where it lives in the Studio. */
+    public class Item {
+        /** 'blocker' (publish is refused) or 'warning'. */
+        @AuraEnabled
+        public String severity;
+        /** The Studio tab it's on: 'build' or 'data'. */
+        @AuraEnabled
+        public String area;
+        /** Data: the mapping step, "Step 2 · Contact", and the part of it. */
+        @AuraEnabled
+        public String actionId;
+        @AuraEnabled
+        public String step;
+        @AuraEnabled
+        public String section;
+        /** Build: the question it's about, when it's still on the form. */
+        @AuraEnabled
+        public String elementId;
+        @AuraEnabled
+        public String elementLabel;
+        /** The sentence itself, without the where. */
+        @AuraEnabled
+        public String text;
+        /** A question several steps rely on: said once, with every use. */
+        @AuraEnabled
+        public String questionKey;
+        @AuraEnabled
+        public String questionUse;
+        /** For such a question: why, the fix, and where it's made. */
+        @AuraEnabled
+        public String questionWhy;
+        @AuraEnabled
+        public String questionFix;
+        @AuraEnabled
+        public String fixKind;
+        @AuraEnabled
+        public String fixId;
+    }
+
+    private static Item buildItem(String text, String elementId, String label) {
+        Item i = new Item();
+        i.severity = FinalMappingValidator.WARNING;
+        i.area = 'build';
+        i.text = text;
+        i.elementId = elementId;
+        i.elementLabel = label;
+        return i;
     }
 
     /**
@@ -77,14 +129,21 @@ public with sharing class FinalPublishWarnings {
             if (was == now) {
                 continue;
             }
-            warnings.add(
+            String text =
                 'Answers already collected for "' +
-                    labelOf(liveQuestions.get(elementId), elementId) +
-                    '" are stored as ' +
-                    was.toLowerCase() +
-                    '. New answers will be stored as ' +
-                    now.toLowerCase() +
-                    ', so reports will show this question in two places.'
+                labelOf(liveQuestions.get(elementId), elementId) +
+                '" are stored as ' +
+                was.toLowerCase() +
+                '. New answers will be stored as ' +
+                now.toLowerCase() +
+                ', so reports will show this question in two places.';
+            warnings.add(text);
+            check.items.add(
+                buildItem(
+                    text,
+                    elementId,
+                    labelOf(newQuestions.get(elementId), elementId)
+                )
             );
         }
 
@@ -97,13 +156,14 @@ public with sharing class FinalPublishWarnings {
             if (!answered.contains(elementId)) {
                 continue;
             }
-            warnings.add(
+            String text =
                 'You are removing "' +
-                    labelOf(liveQuestions.get(elementId), elementId) +
-                    '", which already has answers. They stay on their' +
-                    ' submissions, but adding the question back later counts' +
-                    ' as a different question.'
-            );
+                labelOf(liveQuestions.get(elementId), elementId) +
+                '", which already has answers. They stay on their' +
+                ' submissions, but adding the question back later counts' +
+                ' as a different question.';
+            warnings.add(text);
+            check.items.add(buildItem(text, null, null));
         }
 
         // 3. Public access + file questions. Guests cannot upload yet (D20),
@@ -112,12 +172,13 @@ public with sharing class FinalPublishWarnings {
         if (isPublic(formId)) {
             List<String> fileQuestions = fileQuestionLabels(draft);
             if (!fileQuestions.isEmpty()) {
-                warnings.add(
+                String text =
                     '"' +
-                        String.join(fileQuestions, '", "') +
-                        '" cannot accept files from people who are not' +
-                        ' signed in. They will see an error when they submit.'
-                );
+                    String.join(fileQuestions, '", "') +
+                    '" cannot accept files from people who are not' +
+                    ' signed in. They will see an error when they submit.';
+                warnings.add(text);
+                check.items.add(buildItem(text, null, null));
             }
         }
 
@@ -135,11 +196,30 @@ public with sharing class FinalPublishWarnings {
                 } else {
                     warnings.add(d.message);
                 }
+                Item i = new Item();
+                i.severity = d.severity;
+                i.area = 'data';
+                i.actionId = d.actionId;
+                i.step = d.step;
+                i.section = d.section;
+                i.text = d.text;
+                i.questionKey = d.questionKey;
+                i.elementLabel = d.questionLabel;
+                i.questionUse = d.questionUse;
+                i.questionWhy = d.questionWhy;
+                i.questionFix = d.questionFix;
+                i.fixKind = d.fixKind;
+                i.fixId = d.fixId;
+                check.items.add(i);
             }
         } catch (Exception e) {
-            check.blockers.add(
-                'The mapping couldn’t be checked. Publishing will be refused until it can be.'
-            );
+            String text = 'The mapping couldn’t be checked. Publishing will be refused until it can be.';
+            check.blockers.add(text);
+            Item i = new Item();
+            i.severity = FinalMappingValidator.BLOCKER;
+            i.area = 'data';
+            i.text = text;
+            check.items.add(i);
         }
         check.warnings = warnings;
         return check;

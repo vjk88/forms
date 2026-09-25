@@ -47,7 +47,12 @@
                         onchange={handleMode}
                     ></lightning-radio-group>
                 </template>
-                <template lwc:if={onTyped}>
+                <template lwc:if={loading}>
+                    <p class="lf-hint lf-loading" role="status">
+                        Loading fields…
+                    </p>
+                </template>
+                <template lwc:elseif={onTyped}>
                     <c-final-mapping-soql
                         value={typedSoql}
                         questions={typedQuestions}

@@ -283,6 +283,32 @@ private class FinalPublishWarningsTest {
             check.blockers.size(),
             String.join(check.blockers, ' | ')
         );
-        Assert.isTrue(check.blockers[0].contains('matching record is found'));
+        Assert.isTrue(check.blockers[0].contains('Choose what happens to it'));
+    }
+
+    @IsTest
+    static void eachFindingSaysWhereItIsFixed() {
+        Form__c form = new Form__c(Name = 'Placed', Form_Type__c = 'Freeform');
+        insert form;
+        FinalPublishWarnings.PublishCheck check = FinalPublishWarnings.forPublish(
+            form.Id,
+            JSON.serialize(
+                FinalMappingTestData.spec(
+                    FinalMappingTestData.standardQuestions(),
+                    new List<Object>{
+                        FinalMappingTestData.findOrCreateContact('act_a', null)
+                    }
+                )
+            )
+        );
+        Assert.areEqual(1, check.items.size(), JSON.serialize(check.items));
+        FinalPublishWarnings.Item i = check.items[0];
+        Assert.areEqual('blocker', i.severity);
+        Assert.areEqual('data', i.area);
+        Assert.areEqual('act_a', i.actionId);
+        Assert.areEqual('Step 1 · Contact', i.step);
+        Assert.areEqual('If one is found', i.section);
+        // the sentence alone: the dialog shows the step above it
+        Assert.isTrue(i.text.startsWith('Choose what happens to it'), i.text);
     }
 }

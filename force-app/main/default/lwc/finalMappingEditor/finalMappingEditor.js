@@ -52,6 +52,36 @@ export default class FinalMappingEditor extends LightningElement {
     fieldLabels = {};
     _labelsLoading = new Set();
 
+    /** { actionId, n }: open that step (the publish dialog's Go there). */
+    @api
+    get focusAction() {
+        return this._focusAction;
+    }
+    set focusAction(value) {
+        this._focusAction = value;
+        if (value && value.actionId) {
+            this.selectedId = value.actionId;
+            this._reveal = value;
+        }
+    }
+    _focusAction;
+    /** A Go there not yet shown: scrolled to and focused after render. */
+    _reveal = null;
+
+    renderedCallback() {
+        if (!this._reveal) {
+            return;
+        }
+        const step = this.template.querySelector('c-final-mapping-action');
+        if (step && step.actionId === this._reveal.actionId) {
+            const section = this._reveal.section;
+            this._reveal = null;
+            // The step draws its parts on its own render; wait for it.
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            requestAnimationFrame(() => step.reveal(section));
+        }
+    }
+
     @api
     get spec() {
         return this._spec;

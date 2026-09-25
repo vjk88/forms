@@ -165,8 +165,8 @@ const ANSWER_REASONS = {
         problem: 'Question type is incompatible.'
     },
     operator: {
-        option: '(Can’t be used with this comparison)',
-        problem: 'This question can’t be used with this comparison.'
+        option: '(Can’t be used with this operator)',
+        problem: 'This question can’t be used with this operator.'
     }
 };
 
@@ -380,7 +380,7 @@ export default class FinalRuleEditor extends LightningElement {
             ? this._answerChoices.find((a) => a.key === key)
             : null;
         return choice && choice.skippable
-            ? `“${choice.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
+            ? `“${choice.label}” can be skipped. Make it required (and not hidden by a rule), or compare with something else.`
             : '';
     }
 

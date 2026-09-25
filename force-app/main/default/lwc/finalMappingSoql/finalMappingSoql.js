@@ -315,7 +315,7 @@ export default class FinalMappingSoql extends LightningElement {
             .filter((q) => q.skippable && ids.has(q.elementKey))
             .map((q) => ({
                 key: q.elementKey,
-                text: `“${names.get(q.elementKey) || q.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
+                text: `“${names.get(q.elementKey) || q.label}” can be skipped. Make it required (and not hidden by a rule), or compare with something else.`
             }));
     }
 
@@ -371,7 +371,7 @@ export default class FinalMappingSoql extends LightningElement {
     get checkedLines() {
         return (this.checked || []).map((d, i) => ({
             key: `c${i}`,
-            message: d.message,
+            message: d.text || d.message,
             icon:
                 d.severity === 'warning' ? 'utility:warning' : 'utility:error',
             variant: d.severity === 'warning' ? 'warning' : 'error',
