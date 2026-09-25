@@ -19,8 +19,26 @@ public with sharing class FinalMappingValidator {
         public String actionId;
         @AuraEnabled
         public String field;
+        /** The whole sentence, step and section included (publish refusals). */
         @AuraEnabled
         public String message;
+        /** Where it is, as the Studio shows it: "Step 2 · Contact". */
+        @AuraEnabled
+        public String step;
+        /** The part of the step, by its heading: "Find an existing Contact where". */
+        @AuraEnabled
+        public String section;
+        /** The sentence alone, for a place that already shows the step. */
+        @AuraEnabled
+        public String text;
+        /** A question the problem is about, so the same one is said once. */
+        @AuraEnabled
+        public String questionKey;
+        @AuraEnabled
+        public String questionLabel;
+        /** What this step uses that question for: "finds the Contact". */
+        @AuraEnabled
+        public String questionUse;
 
         public Diagnostic(
             String severity,
@@ -32,7 +50,40 @@ public with sharing class FinalMappingValidator {
             this.actionId = actionId;
             this.field = field;
             this.message = message;
+            this.text = message;
         }
+
+        public Diagnostic about(String key, String label, String use) {
+            this.questionKey = key;
+            this.questionLabel = label;
+            this.questionUse = use;
+            return this;
+        }
+    }
+
+    /** One problem in the step being checked, placed by its step and section. */
+    private static Diagnostic at(
+        String severity,
+        String actionId,
+        String field,
+        Context ctx,
+        String section,
+        String text
+    ) {
+        Diagnostic d = new Diagnostic(severity, actionId, field, text);
+        d.step = ctx.stepLabel;
+        d.section = section;
+        d.message =
+            ctx.stepLabel +
+            (section == null ? '' : ', “' + section + '”') +
+            ': ' +
+            text;
+        return d;
+    }
+
+    /** The object a step searches, for its sentences. */
+    private static String d0(Context ctx) {
+        return ctx.objectLabel == null ? 'record' : ctx.objectLabel;
     }
 
     /** Throws on the first blocker. "Couldn't check" is a refusal too (D38). */
@@ -98,14 +149,20 @@ public with sharing class FinalMappingValidator {
         for (Object o : raw) {
             index++;
             Map<String, Object> action = FinalMappingRules.asMap(o);
-            String name = 'Step ' + index;
+            ctx.stepLabel = 'Step ' + index;
+            ctx.objectLabel = null;
+            ctx.search = null;
+            ctx.found = null;
+            ctx.create = null;
             if (action == null) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         null,
                         null,
-                        name + ' is unreadable.'
+                        ctx,
+                        null,
+                        'This step can’t be read. Remove it and add it again.'
                     )
                 );
                 continue;
@@ -113,16 +170,18 @@ public with sharing class FinalMappingValidator {
             String id = str(action.get('id'));
             if (id == null || !seenIds.add(id)) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         null,
-                        name + ' has no id, or shares one with another step.'
+                        ctx,
+                        null,
+                        'This step has no id, or shares one with another step. Remove it and add it again.'
                     )
                 );
                 continue;
             }
-            checkAction(action, id, name, ctx, out);
+            checkAction(action, id, ctx, out);
         }
         return out;
     }
@@ -132,8 +191,12 @@ public with sharing class FinalMappingValidator {
         Set<String> skippable;
         Boolean isPublic;
         Map<String, Object> placeholders;
-        /** The object the step being checked searches, for its sentences. */
+        /** The step being checked: its label and its sections' headings. */
+        String stepLabel;
         String objectLabel;
+        String search;
+        String found;
+        String create;
         /** Steps seen so far, id → object API name: the only legal action refs. */
         Map<String, String> earlier = new Map<String, String>();
     }
@@ -141,7 +204,6 @@ public with sharing class FinalMappingValidator {
     private static void checkAction(
         Map<String, Object> action,
         String id,
-        String name,
         Context ctx,
         List<Diagnostic> out
     ) {
@@ -151,29 +213,46 @@ public with sharing class FinalMappingValidator {
             : Schema.getGlobalDescribe().get(objectApi);
         if (t == null) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     null,
-                    name + ' names an object that doesn’t exist.'
+                    ctx,
+                    null,
+                    'Its object doesn’t exist in this org. Remove this step.'
                 )
             );
             return;
         }
         Schema.DescribeSObjectResult d = t.getDescribe();
-        name += ' (' + d.getLabel() + ')';
+        // Said the way the step reads on the Data tab.
+        String article = d.getLabel().left(1).toLowerCase().containsAny('aeiou')
+            ? 'an '
+            : 'a ';
+        ctx.stepLabel += ' · ' + d.getLabel();
+        ctx.objectLabel = d.getLabel();
+        ctx.search = 'Find an existing ' + d.getLabel() + ' where';
+        ctx.found = 'If one is found';
+        ctx.create =
+            (str(action.get('operation')) == FinalMappingRules.OP_FIND_OR_CREATE
+                ? 'If none is found, create '
+                : 'Create ') +
+            article +
+            d.getLabel() +
+            ' with';
         if (
             FinalMappingRules.SETUP_OBJECTS.contains(d.getName().toLowerCase())
         ) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     null,
-                    name +
-                        ': Salesforce can’t write ' +
+                    ctx,
+                    null,
+                    'Salesforce can’t write ' +
                         d.getLabelPlural() +
-                        ' together with ordinary records.'
+                        ' together with ordinary records. Remove this step.'
                 )
             );
             return;
@@ -184,15 +263,24 @@ public with sharing class FinalMappingValidator {
             op != FinalMappingRules.OP_FIND_OR_CREATE
         ) {
             out.add(
-                new Diagnostic(BLOCKER, id, null, name + ' has no operation.')
+                at(
+                    BLOCKER,
+                    id,
+                    null,
+                    ctx,
+                    null,
+                    'Choose Always create or Find or create.'
+                )
             );
             return;
         }
         if (!d.isCreateable()) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
+                    null,
+                    ctx,
                     null,
                     'You can’t create ' +
                         d.getLabelPlural() +
@@ -211,16 +299,18 @@ public with sharing class FinalMappingValidator {
             );
             if (match == null) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         null,
-                        name + ' says find or create but has no search set up.'
+                        ctx,
+                        ctx.search,
+                        'Add the conditions that find the ' + d.getLabel() + '.'
                     )
                 );
             } else {
                 onMatch = str(match.get('onMatch'));
-                matchField = checkMatch(match, d, fieldMap, id, name, ctx, out);
+                matchField = checkMatch(match, d, fieldMap, id, ctx, out);
             }
         }
 
@@ -234,13 +324,15 @@ public with sharing class FinalMappingValidator {
                 : fieldMap.get(fieldApi);
             if (sf == null) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fieldApi,
-                        name +
-                            ' writes to a field that doesn’t exist' +
-                            (fieldApi == null ? '.' : ': ' + fieldApi + '.')
+                        ctx,
+                        ctx.create,
+                        'A field here doesn’t exist' +
+                            (fieldApi == null ? '.' : ': ' + fieldApi + '.') +
+                            ' Remove it.'
                     )
                 );
                 continue;
@@ -248,35 +340,39 @@ public with sharing class FinalMappingValidator {
             Schema.DescribeFieldResult fd = sf.getDescribe();
             if (FinalMappingRules.isMultiTarget(fd)) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ': ' +
-                            fd.getLabel() +
-                            ' can point at more than one kind of record, and mappings don’t support that.'
+                        ctx,
+                        ctx.create,
+                        fd.getLabel() +
+                        ' can point at more than one kind of record, which mappings don’t support. Remove it.'
                     )
                 );
                 continue;
             }
             if (!assigned.add(fd.getName().toLowerCase())) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name + ' writes to ' + fd.getLabel() + ' twice.'
+                        ctx,
+                        ctx.create,
+                        fd.getLabel() + ' is here twice. Remove one.'
                     )
                 );
                 continue;
             }
             if (!fd.isCreateable()) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
+                        ctx,
+                        ctx.create,
                         'You can’t set ' +
                             fd.getLabel() +
                             ' on ' +
@@ -288,27 +384,31 @@ public with sharing class FinalMappingValidator {
             if (f.get('writeOnMatch') == true) {
                 if (onMatch != FinalMappingRules.ON_MATCH_UPDATE) {
                     out.add(
-                        new Diagnostic(
+                        at(
                             BLOCKER,
                             id,
                             fd.getName(),
-                            name +
-                                ' marks ' +
-                                fd.getLabel() +
-                                ' to overwrite a found record, but this step doesn’t update found records.'
+                            ctx,
+                            ctx.found,
+                            fd.getLabel() +
+                                ' is ticked to update, but a found ' +
+                                d.getLabel() +
+                                ' is used as it is. Untick it, or choose Update it.'
                         )
                     );
                 } else if (!fd.isUpdateable()) {
                     out.add(
-                        new Diagnostic(
+                        at(
                             BLOCKER,
                             id,
                             fd.getName(),
+                            ctx,
+                            ctx.found,
                             'You can’t edit ' +
                                 fd.getLabel() +
                                 ' on ' +
                                 d.getLabelPlural() +
-                                ', so this form can’t overwrite it.'
+                                ', so this form can’t update it. Untick it.'
                         )
                     );
                 } else {
@@ -319,7 +419,6 @@ public with sharing class FinalMappingValidator {
                 FinalMappingRules.asMap(f.get('source')),
                 fd,
                 id,
-                name,
                 ctx,
                 out
             );
@@ -331,14 +430,14 @@ public with sharing class FinalMappingValidator {
                 isRequired(fd) && !assigned.contains(fd.getName().toLowerCase())
             ) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ' leaves ' +
-                            fd.getLabel() +
-                            ' empty, and Salesforce requires it.'
+                        ctx,
+                        ctx.create,
+                        fd.getLabel() +
+                        ' is missing, and Salesforce requires it. Add it and choose what fills it.'
                     )
                 );
             }
@@ -350,17 +449,17 @@ public with sharing class FinalMappingValidator {
             !overwritable.isEmpty()
         ) {
             out.add(
-                new Diagnostic(
+                at(
                     WARNING,
                     id,
                     null,
-                    'This form is public. ' +
-                        name +
-                        ' overwrites ' +
-                        String.join(overwritable, ', ') +
-                        ' on any ' +
+                    ctx,
+                    ctx.found,
+                    'This form is public. Anyone who matches a ' +
                         d.getLabel() +
-                        ' someone matches — without signing in.'
+                        ' can update its ' +
+                        String.join(overwritable, ', ') +
+                        ' without signing in.'
                 )
             );
         }
@@ -373,7 +472,6 @@ public with sharing class FinalMappingValidator {
         Schema.DescribeSObjectResult d,
         Map<String, Schema.SObjectField> fieldMap,
         String id,
-        String name,
         Context ctx,
         List<Diagnostic> out
     ) {
@@ -383,30 +481,32 @@ public with sharing class FinalMappingValidator {
             onMatch != FinalMappingRules.ON_MATCH_UPDATE
         ) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     null,
-                    name +
-                    ': choose what happens when a matching record is found.'
+                    ctx,
+                    ctx.found,
+                    'Choose what happens to it: use it as it is, or update it.'
                 )
             );
         } else if (
             onMatch == FinalMappingRules.ON_MATCH_UPDATE && !d.isUpdateable()
         ) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     null,
+                    ctx,
+                    ctx.found,
                     'You can’t edit ' +
                         d.getLabelPlural() +
-                        ', so this step can’t update the record it finds.'
+                        ', so this step can’t update the one it finds.'
                 )
             );
         }
 
-        ctx.objectLabel = d.getLabel();
         Set<String> answerKeys = new Set<String>();
         String matchField = null;
 
@@ -417,23 +517,26 @@ public with sharing class FinalMappingValidator {
             Schema.SObjectField mf = fieldMap.get(fieldApi);
             if (mf == null) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fieldApi,
-                        name + ' searches on a field that doesn’t exist.'
+                        ctx,
+                        ctx.search,
+                        'A condition uses a field that doesn’t exist.'
                     )
                 );
             } else if (!mf.getDescribe().isFilterable()) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fieldApi,
-                        name +
-                            ' searches on ' +
+                        ctx,
+                        ctx.search,
+                        'Salesforce can’t search by ' +
                             mf.getDescribe().getLabel() +
-                            ', which Salesforce can’t search by.'
+                            '. Use a different field.'
                     )
                 );
             } else {
@@ -449,12 +552,13 @@ public with sharing class FinalMappingValidator {
                 key == null
             ) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fieldApi,
-                        name +
-                        ' searches using a question that isn’t on this form.'
+                        ctx,
+                        ctx.search,
+                        'A condition uses a question that isn’t on this form.'
                     )
                 );
             } else {
@@ -464,9 +568,7 @@ public with sharing class FinalMappingValidator {
                     mf == null ? null : mf.getDescribe(),
                     false,
                     fieldApi,
-                    '',
                     id,
-                    name,
                     ctx,
                     out
                 );
@@ -476,14 +578,7 @@ public with sharing class FinalMappingValidator {
         Boolean typed = str(match.get('filterMode')) == FILTER_MODE_SOQL;
         if (typed) {
             // Typed conditions replace the rows; leftover rows are ignored.
-            Set<String> tokens = checkTypedConditions(
-                match,
-                d,
-                id,
-                name,
-                ctx,
-                out
-            );
+            Set<String> tokens = checkTypedConditions(match, d, id, ctx, out);
             if (tokens == null) {
                 return matchField; // already refused, in its own words
             }
@@ -497,19 +592,17 @@ public with sharing class FinalMappingValidator {
                 !FinalMappingRules.asList(filter.get('rows')).isEmpty();
             if (hasRows && JSON.serialize(filter).contains('$User.')) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         null,
-                        name +
-                            ' uses the current user in its search. This step runs in the ' +
-                            'background, where the current user is whoever submitted — often a site guest.'
+                        ctx,
+                        ctx.search,
+                        'A condition uses Current user. This step runs after the form is sent, when the current user is whoever sent it — often a site guest. Compare with an answer instead.'
                     )
                 );
             } else if (hasRows) {
-                answerKeys.addAll(
-                    checkRowAnswers(filter, d, name, id, ctx, out)
-                );
+                answerKeys.addAll(checkRowAnswers(filter, d, id, ctx, out));
                 FinalLookupService.Compiled c = FinalLookupService.compile(
                     new Map<String, Object>{ 'filter' => filter },
                     ctx.placeholders,
@@ -517,12 +610,7 @@ public with sharing class FinalMappingValidator {
                 );
                 if (c.blocked) {
                     out.add(
-                        new Diagnostic(
-                            BLOCKER,
-                            id,
-                            null,
-                            name + '’s search: ' + c.blockedReason
-                        )
+                        at(BLOCKER, id, null, ctx, ctx.search, c.blockedReason)
                     );
                 }
             }
@@ -532,12 +620,15 @@ public with sharing class FinalMappingValidator {
         // every submission — it isn't looking anyone up (round 1 #5).
         if (answerKeys.isEmpty()) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     typed ? CONDITIONS_FIELD : null,
-                    name +
-                    ' must search by at least one answer. Add a condition that compares with a question, like Email equals the answer to “Your email”.'
+                    ctx,
+                    ctx.search,
+                    'No condition compares with an answer, so every submission would find the same ' +
+                        d.getLabel() +
+                        '. Add one like Email equals the answer to “Your email”.'
                 )
             );
         }
@@ -560,7 +651,6 @@ public with sharing class FinalMappingValidator {
     private static Set<String> checkRowAnswers(
         Map<String, Object> filter,
         Schema.DescribeSObjectResult d,
-        String name,
         String id,
         Context ctx,
         List<Diagnostic> out
@@ -595,17 +685,7 @@ public with sharing class FinalMappingValidator {
                 !FinalMappingRules.isTextLike(rowField.getType()));
             for (String key : keys) {
                 seen.add(key);
-                checkAnswer(
-                    key,
-                    rowField,
-                    badComparison,
-                    path,
-                    '’s search',
-                    id,
-                    name,
-                    ctx,
-                    out
-                );
+                checkAnswer(key, rowField, badComparison, path, id, ctx, out);
             }
         }
         return seen;
@@ -616,29 +696,26 @@ public with sharing class FinalMappingValidator {
      * value (not a grid, an order, a file or several choices — decision 9),
      * fits the field, suits the comparison — and is always answered: a
      * question someone may skip can't be searched by (round 1 #5).
-     * `part` names the part of the step, for the missing-question message.
      */
     private static void checkAnswer(
         String key,
         Schema.DescribeFieldResult field,
         Boolean badComparison,
         String diagnosticField,
-        String part,
         String id,
-        String name,
         Context ctx,
         List<Diagnostic> out
     ) {
         Map<String, Object> q = ctx.questions.get(key);
         if (q == null) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     diagnosticField,
-                    name +
-                        part +
-                        ' uses a question that’s no longer on the form.'
+                    ctx,
+                    ctx.search,
+                    'A condition uses a question that’s no longer on the form.'
                 )
             );
             return;
@@ -651,14 +728,16 @@ public with sharing class FinalMappingValidator {
             ) || answerType == 'Options'
         ) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     diagnosticField,
-                    name +
-                        ': "' +
+                    ctx,
+                    ctx.search,
+                    '“' +
                         qLabel +
-                        '" can hold more than one value, so a filter can’t compare with it.'
+                        '”' +
+                        ' can hold more than one answer, so a condition can’t compare with it.'
                 )
             );
             return;
@@ -668,14 +747,17 @@ public with sharing class FinalMappingValidator {
             !FinalMappingRules.isCompatible(answerType, field.getType())
         ) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     diagnosticField,
-                    name +
-                        ': the answer to "' +
+                    ctx,
+                    ctx.search,
+                    'The answer to ' +
+                        '“' +
                         qLabel +
-                        '" can’t be compared with ' +
+                        '”' +
+                        ' can’t be compared with ' +
                         field.getLabel() +
                         '.'
                 )
@@ -684,31 +766,38 @@ public with sharing class FinalMappingValidator {
         }
         if (badComparison) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     diagnosticField,
-                    name +
-                        ': "' +
+                    ctx,
+                    ctx.search,
+                    'The answer to ' +
+                        '“' +
                         qLabel +
-                        '" can’t be used with that comparison.'
+                        '”' +
+                        ' can’t be used with that operator.'
                 )
             );
             return;
         }
         if (ctx.skippable.contains(key)) {
             out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    diagnosticField,
-                    name +
-                        ': “' +
-                        qLabel +
-                        '” is used to find the ' +
-                        (ctx.objectLabel == null ? 'record' : ctx.objectLabel) +
-                        ', so it must always be answered. Make it required (and not hidden by a rule), or take it out of the search.'
-                )
+                at(
+                        BLOCKER,
+                        id,
+                        diagnosticField,
+                        ctx,
+                        ctx.search,
+                        '“' +
+                            qLabel +
+                            '”' +
+                            ' can be skipped, but it’s used to find the ' +
+                            d0(ctx) +
+                            '.' +
+                            ' Make it required (and not hidden by a rule).'
+                    )
+                    .about(key, qLabel, 'finds the ' + d0(ctx))
             );
         }
     }
@@ -727,7 +816,6 @@ public with sharing class FinalMappingValidator {
         Map<String, Object> match,
         Schema.DescribeSObjectResult d,
         String id,
-        String name,
         Context ctx,
         List<Diagnostic> out
     ) {
@@ -736,12 +824,7 @@ public with sharing class FinalMappingValidator {
         );
         if (p.problem != null) {
             out.add(
-                new Diagnostic(
-                    BLOCKER,
-                    id,
-                    CONDITIONS_FIELD,
-                    name + '’s conditions: ' + p.problem
-                )
+                at(BLOCKER, id, CONDITIONS_FIELD, ctx, ctx.search, p.problem)
             );
             return null;
         }
@@ -760,9 +843,7 @@ public with sharing class FinalMappingValidator {
                     f != null &&
                     !FinalMappingRules.isTextLike(f.getType()),
                 CONDITIONS_FIELD,
-                '’s conditions',
                 id,
-                name,
                 ctx,
                 out
             );
@@ -783,11 +864,13 @@ public with sharing class FinalMappingValidator {
             );
         } catch (Exception e) {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     CONDITIONS_FIELD,
-                    name + ': ' + FinalMappingSoql.readableError(e.getMessage())
+                    ctx,
+                    ctx.search,
+                    FinalMappingSoql.readableError(e.getMessage())
                 )
             );
         }
@@ -832,7 +915,6 @@ public with sharing class FinalMappingValidator {
         Map<String, Object> src,
         Schema.DescribeFieldResult fd,
         String id,
-        String name,
         Context ctx,
         List<Diagnostic> out
     ) {
@@ -843,14 +925,14 @@ public with sharing class FinalMappingValidator {
             Map<String, Object> q = key == null ? null : ctx.questions.get(key);
             if (q == null) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ' fills ' +
-                            label +
-                            ' from a question that’s no longer on the form.'
+                        ctx,
+                        ctx.create,
+                        label +
+                        ' is filled from a question that’s no longer on the form.'
                     )
                 );
                 return;
@@ -861,14 +943,15 @@ public with sharing class FinalMappingValidator {
                 )
             ) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ': "' +
+                        ctx,
+                        ctx.create,
+                        '“' +
                             q.get('label') +
-                            '" gives more than one value, so it can’t fill ' +
+                            '” gives more than one value, so it can’t fill ' +
                             label +
                             '.'
                     )
@@ -878,12 +961,13 @@ public with sharing class FinalMappingValidator {
             String answerType = FinalSubmitService.answerTypeOf(q);
             if (!FinalMappingRules.isCompatible(answerType, fd.getType())) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ': a ' +
+                        ctx,
+                        ctx.create,
+                        'A ' +
                             answerType.toLowerCase() +
                             ' answer can’t go into ' +
                             label +
@@ -905,16 +989,17 @@ public with sharing class FinalMappingValidator {
                 for (String v : FinalMappingRules.optionValues(q)) {
                     if (!allowed.contains(v)) {
                         out.add(
-                            new Diagnostic(
+                            at(
                                 BLOCKER,
                                 id,
                                 fd.getName(),
-                                name +
-                                    ': "' +
+                                ctx,
+                                ctx.create,
+                                '“' +
                                     v +
-                                    '" is an option on the form but not a value ' +
+                                    '” is an option on the form, but ' +
                                     label +
-                                    ' accepts.'
+                                    ' doesn’t accept it.'
                             )
                         );
                         return;
@@ -923,30 +1008,37 @@ public with sharing class FinalMappingValidator {
             }
             if (isRequired(fd) && ctx.skippable.contains(key)) {
                 out.add(
-                    new Diagnostic(
-                        WARNING,
-                        id,
-                        fd.getName(),
-                        name +
-                            ' fills ' +
-                            label +
-                            ', which Salesforce requires, from "' +
-                            q.get('label') +
-                            '" — and that question can be skipped. When it is, this step fails.'
-                    )
+                    at(
+                            WARNING,
+                            id,
+                            fd.getName(),
+                            ctx,
+                            ctx.create,
+                            '“' +
+                                q.get('label') +
+                                '” can be skipped, but it fills ' +
+                                label +
+                                ', which Salesforce requires. When it’s skipped, this step fails.' +
+                                ' Make it required (and not hidden by a rule).'
+                        )
+                        .about(
+                            key,
+                            String.valueOf(q.get('label')),
+                            'fills ' + label + ', which Salesforce requires'
+                        )
                 );
             }
         } else if (kind == 'literal') {
             if (fd.getType() == Schema.DisplayType.REFERENCE) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ' fills ' +
-                            label +
-                            ' with a fixed value. Point it at another record instead.'
+                        ctx,
+                        ctx.create,
+                        label +
+                        ' can’t take a fixed value. Point it at another record.'
                     )
                 );
                 return;
@@ -955,25 +1047,27 @@ public with sharing class FinalMappingValidator {
                 FinalMappingRules.coerce(src.get('value'), fd);
             } catch (FinalMappingRules.MappingValueException e) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name + ': ' + e.getMessage()
+                        ctx,
+                        ctx.create,
+                        e.getMessage()
                     )
                 );
             }
         } else if (kind == 'recordRef') {
             if (fd.getType() != Schema.DisplayType.REFERENCE) {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ': ' +
-                            label +
-                            ' isn’t a lookup, so it can’t point at another record.'
+                        ctx,
+                        ctx.create,
+                        label +
+                        ' isn’t a lookup, so it can’t point at another record.'
                     )
                 );
                 return;
@@ -983,39 +1077,37 @@ public with sharing class FinalMappingValidator {
                 String target = ctx.earlier.get(ref.substring(7));
                 if (target == null) {
                     out.add(
-                        new Diagnostic(
+                        at(
                             BLOCKER,
                             id,
                             fd.getName(),
-                            name +
-                                ' points ' +
-                                label +
-                                ' at a step that comes later or no longer exists.'
+                            ctx,
+                            ctx.create,
+                            label +
+                            ' points at a step that comes later or no longer exists.'
                         )
                     );
                 } else if (!refersTo(fd, target)) {
                     out.add(
-                        new Diagnostic(
+                        at(
                             BLOCKER,
                             id,
                             fd.getName(),
-                            name +
-                                ': ' +
-                                label +
-                                ' can’t point at a ' +
-                                target +
-                                '.'
+                            ctx,
+                            ctx.create,
+                            label + ' can’t point at a ' + target + '.'
                         )
                     );
                 }
             } else if (ref == 'link') {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                        ': personalized-link records can’t be used in a Freeform mapping yet.'
+                        ctx,
+                        ctx.create,
+                        'Personalized-link records can’t be used in a mapping yet.'
                     )
                 );
             } else if (ref != null && ref.startsWith('answer:')) {
@@ -1028,51 +1120,52 @@ public with sharing class FinalMappingValidator {
                     : str(config.get('referenceTo'));
                 if (q == null) {
                     out.add(
-                        new Diagnostic(
+                        at(
                             BLOCKER,
                             id,
                             fd.getName(),
-                            name +
-                                ' points ' +
-                                label +
-                                ' at a question that’s no longer on the form.'
+                            ctx,
+                            ctx.create,
+                            label +
+                            ' points at a question that’s no longer on the form.'
                         )
                     );
                 } else if (refTo == null || !refersTo(fd, refTo)) {
                     out.add(
-                        new Diagnostic(
+                        at(
                             BLOCKER,
                             id,
                             fd.getName(),
-                            name +
-                                ': ' +
-                                label +
-                                ' can’t point at the record picked in "' +
+                            ctx,
+                            ctx.create,
+                            label +
+                                ' can’t point at the record picked in “' +
                                 q.get('label') +
-                                '".'
+                                '”.'
                         )
                     );
                 }
             } else {
                 out.add(
-                    new Diagnostic(
+                    at(
                         BLOCKER,
                         id,
                         fd.getName(),
-                        name +
-                            ' points ' +
-                            label +
-                            ' at a record the form can’t identify.'
+                        ctx,
+                        ctx.create,
+                        label + ' points at a record the form can’t identify.'
                     )
                 );
             }
         } else {
             out.add(
-                new Diagnostic(
+                at(
                     BLOCKER,
                     id,
                     fd.getName(),
-                    name + ' has no source for ' + label + '.'
+                    ctx,
+                    ctx.create,
+                    'Choose what fills ' + label + '.'
                 )
             );
         }

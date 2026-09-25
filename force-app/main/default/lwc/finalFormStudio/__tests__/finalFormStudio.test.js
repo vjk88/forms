@@ -2370,6 +2370,34 @@ describe('c-final-form-studio', () => {
             expect(publishSpec).not.toHaveBeenCalled();
         });
 
+        it('Go there publishes nothing and opens that mapping step', async () => {
+            publishWarnings.mockResolvedValue({
+                blockers: ['x'],
+                warnings: [],
+                items: [
+                    {
+                        severity: 'blocker',
+                        area: 'data',
+                        actionId: 'act_2',
+                        text: 'x'
+                    }
+                ]
+            });
+            FinalPublishDialog.open.mockResolvedValue({
+                goTo: { mode: 'data', actionId: 'act_2' }
+            });
+            const element = await ready();
+            publish(element);
+            await micro(12);
+
+            expect(FinalPublishDialog.open.mock.calls[0][0].items).toHaveLength(
+                1
+            );
+            expect(publishSpec).not.toHaveBeenCalled();
+            const data = element.shadowRoot.querySelector('c-final-data-mode');
+            expect(data.focusAction.actionId).toBe('act_2');
+        });
+
         it('still publishes when the warnings call fails', async () => {
             // a courtesy that cannot be computed must not block the act
             publishWarnings.mockRejectedValue(new Error('no class access'));

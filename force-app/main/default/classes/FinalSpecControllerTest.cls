@@ -246,7 +246,7 @@ private class FinalSpecControllerTest {
         } catch (AuraHandledException e) {
             refused = true;
             Assert.isTrue(
-                e.getMessage().contains('matching record is found'),
+                e.getMessage().contains('Choose what happens to it'),
                 e.getMessage()
             );
         }

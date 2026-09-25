@@ -38,13 +38,11 @@ describe('c-final-data-mode', () => {
         document.body.appendChild(el);
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        el.shadowRoot
-            .querySelector('c-final-mapping-editor')
-            .dispatchEvent(
-                new CustomEvent('specchange', {
-                    detail: { spec: { next: true } }
-                })
-            );
+        el.shadowRoot.querySelector('c-final-mapping-editor').dispatchEvent(
+            new CustomEvent('specchange', {
+                detail: { spec: { next: true } }
+            })
+        );
         expect(handler.mock.calls[0][0].detail.spec).toEqual({ next: true });
     });
 });

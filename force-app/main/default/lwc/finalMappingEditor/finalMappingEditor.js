@@ -52,6 +52,19 @@ export default class FinalMappingEditor extends LightningElement {
     fieldLabels = {};
     _labelsLoading = new Set();
 
+    /** { actionId, n }: open that step (the publish dialog's Go there). */
+    @api
+    get focusAction() {
+        return this._focusAction;
+    }
+    set focusAction(value) {
+        this._focusAction = value;
+        if (value && value.actionId) {
+            this.selectedId = value.actionId;
+        }
+    }
+    _focusAction;
+
     @api
     get spec() {
         return this._spec;

@@ -869,10 +869,10 @@ describe('Compare with An answer (mapping screen, Task 7)', () => {
         el.value = changes[0];
         await flush();
         expect(answerLabels(el, 0)).toEqual([
-            'Your last name (Can’t be used with this comparison)'
+            'Your last name (Can’t be used with this operator)'
         ]);
         expect(el.problems[0].message).toBe(
-            'This question can’t be used with this comparison.'
+            'This question can’t be used with this operator.'
         );
     });
 

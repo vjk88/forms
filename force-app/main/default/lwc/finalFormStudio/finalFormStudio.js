@@ -99,6 +99,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     viewEntry = null;
 
     mode = 'design';
+    /** The mapping step to open on the Data tab ({ actionId, n }). */
+    mappingFocus = null;
     /** Build-mode state: what's selected + which page the blueprint shows. */
     selection = null;
     buildPageIndex = 0;
@@ -2739,14 +2741,31 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             });
             return {
                 blockers: (found && found.blockers) || [],
-                warnings: (found && found.warnings) || []
+                warnings: (found && found.warnings) || [],
+                items: (found && found.items) || []
             };
         } catch (e) {
             // publishSpec is the gate (F2 D38), so a failed check only costs
             // the author the preview of what publish would refuse.
             // eslint-disable-next-line no-console
             console.error('Publish warnings unavailable:', e);
-            return { blockers: [], warnings: [] };
+            return { blockers: [], warnings: [], items: [] };
+        }
+    }
+
+    /** "Go there" from the publish dialog: the tab, then the thing on it. */
+    _goTo(goTo) {
+        if (goTo.mode === 'data') {
+            this.handleModeData();
+            this.mappingFocus = {
+                actionId: goTo.actionId,
+                n: (this.mappingFocus ? this.mappingFocus.n : 0) + 1
+            };
+        } else if (goTo.mode === 'build') {
+            this.handleModeBuild();
+            this.handleLogicJump({
+                detail: { kind: 'element', id: goTo.elementId }
+            });
         }
     }
 
@@ -2763,7 +2782,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 // question with answers being removed, or file questions on a
                 // form open to people who cannot upload (FREEFORM_SPEC 6.3).
                 // They never block - the author is told, then decides.
-                const { blockers, warnings } = await this._publishCheck();
+                const { blockers, warnings, items } =
+                    await this._publishCheck();
                 // Publish is the one confirmation in this app whose CONTENT
                 // varies: the others are fixed sentences, this one carries
                 // nought to N consequences and D26 promises a fourth the day
@@ -2783,9 +2803,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                           : 'Publish form',
                     formName: this.formName,
                     blockers,
-                    warnings
+                    warnings,
+                    items
                 });
-                if (!ok) return;
+                if (ok && ok.goTo) {
+                    this._goTo(ok.goTo);
+                    return;
+                }
+                if (ok !== true) return;
             } catch {
                 this.publishError = 'Publishing couldn’t start. Try again.';
                 return;

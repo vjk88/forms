@@ -61,10 +61,7 @@ private class FinalMappingValidatorTest {
             )
         );
         Assert.isTrue(
-            anyContains(
-                found,
-                'choose what happens when a matching record is found'
-            ),
+            anyContains(found, 'Choose what happens to it'),
             String.join(found, ' | ')
         );
     }
@@ -143,14 +140,14 @@ private class FinalMappingValidatorTest {
         Assert.isTrue(
             anyContains(
                 blockers(check(new List<Object>{ action })),
-                'must search by at least one answer'
+                'No condition compares with an answer'
             )
         );
         match.remove('filter');
         Assert.isTrue(
             anyContains(
                 blockers(check(new List<Object>{ action })),
-                'must search by at least one answer'
+                'No condition compares with an answer'
             )
         );
     }
@@ -260,7 +257,7 @@ private class FinalMappingValidatorTest {
         Assert.isTrue(
             anyContains(
                 blockers(check(new List<Object>{ action })),
-                'personalized-link'
+                'Personalized-link'
             )
         );
     }
@@ -302,7 +299,7 @@ private class FinalMappingValidatorTest {
         Assert.isTrue(
             anyContains(
                 blockers(check(new List<Object>{ action })),
-                'Last Name empty'
+                'Last Name is missing'
             )
         );
     }
@@ -408,7 +405,7 @@ private class FinalMappingValidatorTest {
             Assert.fail('a blocker must refuse the publish');
         } catch (AuraHandledException e) {
             Assert.isTrue(
-                e.getMessage().contains('matching record is found'),
+                e.getMessage().contains('Choose what happens to it'),
                 e.getMessage()
             );
         }
@@ -477,7 +474,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'unreadable step',
             new List<Object>{ null },
-            'is unreadable'
+            'can’t be read'
         );
 
         assertRefused(
@@ -494,7 +491,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'unknown object',
             new List<Object>{ ghost },
-            'names an object that'
+            'object doesn’t exist'
         );
 
         Map<String, Object> noOp = FinalMappingTestData.createContact('act_a');
@@ -502,7 +499,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'no operation',
             new List<Object>{ noOp },
-            'has no operation'
+            'Choose Always create or Find or create'
         );
 
         Map<String, Object> noSearch = FinalMappingTestData.findOrCreateContact(
@@ -513,7 +510,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'find or create without a search',
             new List<Object>{ noSearch },
-            'has no search set up'
+            'Add the conditions that find'
         );
 
         assertRefused(
@@ -528,7 +525,7 @@ private class FinalMappingValidatorTest {
                     }
                 )
             },
-            'writes to a field that'
+            'A field here doesn’t exist'
         );
 
         assertRefused(
@@ -579,7 +576,7 @@ private class FinalMappingValidatorTest {
                     }
                 )
             },
-            'Point it at another record instead'
+            'Point it at another record'
         );
 
         assertRefused(
@@ -656,7 +653,7 @@ private class FinalMappingValidatorTest {
             new List<Object>{
                 contact(new List<Object>{ field('Title', null) })
             },
-            'has no source for'
+            'Choose what fills'
         );
 
         Map<String, Object> caseStep = new Map<String, Object>{
@@ -694,7 +691,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'search on a missing field',
             new List<Object>{ a },
-            'searches on a field that'
+            'uses a field that'
         );
 
         a = FinalMappingTestData.findOrCreateContact('act_a', 'reuse');
@@ -742,7 +739,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'a filter that will not compile',
             new List<Object>{ a },
-            'search:'
+            'Find an existing Contact where”: '
         );
 
         a = FinalMappingTestData.findOrCreateContact('act_a', 'reuse');
@@ -755,7 +752,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'an overwrite on a step that only reuses',
             new List<Object>{ a },
-            'update found records'
+            'is used as it is'
         );
     }
 
@@ -808,7 +805,7 @@ private class FinalMappingValidatorTest {
                     }
                 )
             },
-            'is an option on the form but not a value'
+            'is an option on the form, but'
         );
     }
 
@@ -942,7 +939,7 @@ private class FinalMappingValidatorTest {
             checkRow(questionsPlus(many), filterRow('Title', 'eq', 'el_many'))
         );
         Assert.isTrue(
-            anyContains(found, 'more than one value'),
+            anyContains(found, 'more than one answer'),
             String.valueOf(found)
         );
     }
@@ -975,7 +972,7 @@ private class FinalMappingValidatorTest {
             checkRow(FinalMappingTestData.standardQuestions(), row)
         );
         Assert.isTrue(
-            anyContains(found, 'with that comparison'),
+            anyContains(found, 'with that operator'),
             String.valueOf(found)
         );
     }
@@ -995,7 +992,7 @@ private class FinalMappingValidatorTest {
         Assert.isTrue(
             anyContains(
                 blockers(found),
-                '“Nickname” is used to find the Contact, so it must always be answered'
+                '“Nickname” can be skipped, but it’s used to find the Contact'
             ),
             String.valueOf(blockers(found))
         );
@@ -1054,7 +1051,7 @@ private class FinalMappingValidatorTest {
         Assert.isTrue(
             found[0]
                 .startsWith(
-                    'Step 1 (Contact)’s conditions: Remove the semicolon'
+                    'Step 1 · Contact, “Find an existing Contact where”: Remove the semicolon'
                 )
         );
     }
@@ -1101,7 +1098,7 @@ private class FinalMappingValidatorTest {
             checkTyped(questionsPlus(many), 'Title = {!el_many}')
         );
         Assert.isTrue(
-            anyContains(found, 'more than one value'),
+            anyContains(found, 'more than one answer'),
             String.valueOf(found)
         );
     }
@@ -1117,7 +1114,7 @@ private class FinalMappingValidatorTest {
             checkTyped(questionsPlus(bday), 'Birthdate LIKE {!el_bd}')
         );
         Assert.isTrue(
-            anyContains(found, 'with that comparison'),
+            anyContains(found, 'with that operator'),
             String.valueOf(found)
         );
     }
@@ -1135,7 +1132,10 @@ private class FinalMappingValidatorTest {
             'LastName = {!el_nick}'
         );
         Assert.isTrue(
-            anyContains(conditionBlockers(found), 'must always be answered'),
+            anyContains(
+                conditionBlockers(found),
+                'can be skipped, but it’s used to find'
+            ),
             String.valueOf(conditionBlockers(found))
         );
     }

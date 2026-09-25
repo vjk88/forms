@@ -1,6 +1,105 @@
 import { api } from 'lwc';
 import LightningModal from 'lightning/modal';
 
+const BLOCKER = 'blocker';
+
+/**
+ * Groups what the publish check found by where the author fixes it (round 2):
+ * one group per mapping step ("Data · Mapping · Step 2 · Contact"), one per
+ * question on the Build tab, and one per question that several steps rely on
+ * — a question that can be skipped is said ONCE, with every step that needs
+ * it, because making it required fixes them all.
+ *
+ * Returns groups, those that stop publishing first:
+ * [{ key, area, where, goTo, lead, blocker, lines: [{ key, section, text,
+ * blocker }] }]. `goTo` is { mode: 'data', actionId } | { mode: 'build',
+ * elementId } | null.
+ */
+export function groupItems(items) {
+    const groups = [];
+    const byKey = new Map();
+    const group = (key, make) => {
+        if (!byKey.has(key)) {
+            const g = { key, lines: [], blocker: false, ...make() };
+            byKey.set(key, g);
+            groups.push(g);
+        }
+        return byKey.get(key);
+    };
+    (items || []).forEach((item, i) => {
+        const blocker = item.severity === BLOCKER;
+        let g;
+        if (item.questionKey) {
+            g = group(`q:${item.questionKey}`, () => ({
+                area: 'Build',
+                where: `“${item.elementLabel || 'A question'}”`,
+                goTo: { mode: 'build', elementId: item.questionKey },
+                question: true
+            }));
+            g.lines.push({
+                key: `l${i}`,
+                section: item.step || '',
+                text: item.questionUse || item.text,
+                blocker
+            });
+        } else if (item.area === 'data') {
+            g = group(`a:${item.actionId || 'mapping'}`, () => ({
+                area: 'Data',
+                where: item.step ? `Mapping · ${item.step}` : 'Mapping',
+                goTo: item.actionId
+                    ? { mode: 'data', actionId: item.actionId }
+                    : null
+            }));
+            g.lines.push({
+                key: `l${i}`,
+                section: item.section || '',
+                text: item.text,
+                blocker
+            });
+        } else {
+            g = group(`b:${item.elementId || i}`, () => ({
+                area: item.area === 'build' ? 'Build' : '',
+                where: item.elementLabel ? `“${item.elementLabel}”` : '',
+                goTo: item.elementId
+                    ? { mode: 'build', elementId: item.elementId }
+                    : null
+            }));
+            g.lines.push({
+                key: `l${i}`,
+                section: '',
+                text: item.text,
+                blocker
+            });
+        }
+        g.blocker = g.blocker || blocker;
+    });
+    groups.forEach((g) => {
+        if (g.question) {
+            // One fix for every step listed under it.
+            g.lead =
+                g.lines.length === 1
+                    ? 'Can be skipped, but this step needs it. Make it required (and not hidden by a rule).'
+                    : 'Can be skipped, but these steps need it. Make it required (and not hidden by a rule).';
+        }
+        g.lines.sort((a, b) => Number(b.blocker) - Number(a.blocker));
+    });
+    // Stable: what stops publishing first, otherwise in the order found.
+    return groups
+        .map((g, i) => ({ g, i }))
+        .sort((a, b) => Number(b.g.blocker) - Number(a.g.blocker) || a.i - b.i)
+        .map(({ g }) => g);
+}
+
+/** How many things: a folded question is one, however many steps use it. */
+function countOf(groups, blocker) {
+    return groups.reduce((n, g) => {
+        if (g.question) {
+            return n + (g.blocker === blocker ? 1 : 0);
+        }
+        return n + g.lines.filter((l) => l.blocker === blocker).length;
+    }, 0);
+}
+
 /**
  * The publish confirmation — for every publish, with or without warnings.
  *
@@ -20,8 +119,8 @@ import LightningModal from 'lightning/modal';
  * dialogs by count: an author publishing the same form twice should not find
  * the buttons moved and the wording changed because a warning appeared.
  *
- * Closing resolves `true` to publish and `false` to cancel — the same
- * contract the caller already had, so only the presentation changed.
+ * Closing resolves `true` to publish, `false` to cancel, and
+ * `{ goTo }` when the author picks Go there on a group.
  */
 export default class FinalPublishDialog extends LightningModal {
     /** The form's name, for the question being asked. */
@@ -31,25 +130,64 @@ export default class FinalPublishDialog extends LightningModal {
     @api warnings = [];
 
     /**
+     * The same findings, each placed where it's fixed (FinalPublishWarnings
+     * Item). When present, these are what the dialog shows.
+     */
+    @api items = [];
+
+    /**
      * Reasons publishing will be refused; may be empty. While any exist,
      * Publish is off. The server refuses them anyway (FinalSpecController
      * runs the same checks) — this only says so before the author tries.
      */
     @api blockers = [];
 
-    get hasBlockers() {
-        return Boolean(this.blockers && this.blockers.length);
+    /** Placed items, or the plain sentences as unplaced ones. */
+    get _found() {
+        if (this.items && this.items.length) {
+            return this.items;
+        }
+        return [
+            ...(this.blockers || []).map((text) => ({
+                severity: BLOCKER,
+                text
+            })),
+            ...(this.warnings || []).map((text) => ({
+                severity: 'warning',
+                text
+            }))
+        ];
     }
 
-    get blockerItems() {
-        return (this.blockers || []).map((text, i) => ({
-            key: `b${i}`,
-            text
+    get groups() {
+        return groupItems(this._found).map((g) => ({
+            ...g,
+            hasWhere: Boolean(g.area || g.where),
+            goLabel: g.goTo ? `Go to ${g.where || g.area}` : '',
+            lines: g.lines.map((l) => ({
+                ...l,
+                icon: l.blocker ? 'utility:error' : 'utility:warning',
+                variant: l.blocker ? 'error' : 'warning',
+                alt: l.blocker ? 'Must fix' : 'Warning',
+                cls: l.blocker ? 'pd-line pd-line--blocker' : 'pd-line'
+            }))
         }));
     }
 
+    get _blockerCount() {
+        return countOf(groupItems(this._found), true);
+    }
+
+    get _warningCount() {
+        return countOf(groupItems(this._found), false);
+    }
+
+    get hasBlockers() {
+        return this._blockerCount > 0;
+    }
+
     get hasWarnings() {
-        return Boolean(this.warnings && this.warnings.length);
+        return this._warningCount > 0;
     }
 
     get question() {
@@ -58,27 +196,15 @@ export default class FinalPublishDialog extends LightningModal {
             : `Publish "${this.formName}"?`;
     }
 
-    /**
-     * Keyed for the template, and numbered: an author who is told there are
-     * two consequences reads for two, where an unnumbered list invites
-     * stopping at the first.
-     */
-    get consequences() {
-        return (this.warnings || []).map((text, i) => ({
-            key: `w${i}`,
-            text
-        }));
-    }
-
     get heading() {
-        const blocked = this.blockers ? this.blockers.length : 0;
+        const blocked = this._blockerCount;
         if (blocked === 1) {
             return 'Fix this before publishing';
         }
         if (blocked > 1) {
             return `Fix ${blocked} things before publishing`;
         }
-        const count = this.warnings ? this.warnings.length : 0;
+        const count = this._warningCount;
         if (count === 0) {
             return 'Publish form';
         }
@@ -107,5 +233,15 @@ export default class FinalPublishDialog extends LightningModal {
 
     handleCancel() {
         this.close(false);
+    }
+
+    /** Closes without publishing, and tells the Studio where to take the author. */
+    handleGo(event) {
+        const g = groupItems(this._found).find(
+            (x) => x.key === event.currentTarget.dataset.key
+        );
+        if (g && g.goTo) {
+            this.close({ goTo: g.goTo });
+        }
     }
 }

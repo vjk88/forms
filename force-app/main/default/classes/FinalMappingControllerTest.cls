@@ -140,7 +140,7 @@ private class FinalMappingControllerTest {
         Assert.areEqual(1, found.size(), String.valueOf(found));
         Assert.areEqual('blocker', found[0].severity);
         Assert.isTrue(
-            found[0].message.contains('must always be answered'),
+            found[0].message.contains('can be skipped, but it’s used to find'),
             found[0].message
         );
     }
