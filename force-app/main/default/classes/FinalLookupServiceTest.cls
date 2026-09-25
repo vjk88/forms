@@ -809,4 +809,37 @@ private class FinalLookupServiceTest {
             )
         );
     }
+
+    @IsTest
+    static void lookupObjectsIncludeWhatCanOnlyBeRead() {
+        List<Map<String, String>> objects = FinalLookupController.listLookupObjects();
+        Set<String> names = new Set<String>();
+        for (Map<String, String> o : objects) {
+            names.add(o.get('value'));
+        }
+        // a setup object the mapping screen's list leaves out
+        Assert.isTrue(names.contains('User'), 'User is searchable');
+        // at least one object nobody can create, but anyone may read
+        Boolean readOnly = false;
+        for (String n : names) {
+            Schema.DescribeSObjectResult d = Schema.getGlobalDescribe()
+                .get(n)
+                .getDescribe();
+            if (!d.isCreateable()) {
+                readOnly = true;
+                break;
+            }
+        }
+        Assert.isTrue(readOnly, 'objects that can only be read are offered');
+        // and never one a search can't run against
+        Assert.isFalse(names.contains('ContentDocumentLink'));
+        Assert.isFalse(names.contains('FieldDefinition'));
+        for (String n : names) {
+            Assert.isFalse(n.endsWith('__mdt'), n);
+        }
+        // sorted by label for the picker
+        Assert.isTrue(
+            objects[0].get('label') <= objects[objects.size() - 1].get('label')
+        );
+    }
 }

@@ -1,7 +1,7 @@
 import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 
 jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
@@ -12,7 +12,7 @@ jest.mock(
     { virtual: true }
 );
 jest.mock(
-    '@salesforce/apex/FinalSpecController.getSpec',
+    '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -99,7 +99,10 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
     });
 
     it('published path: answers + consolidated repeats reach the Apex payload; success renders After Submit', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SPEC)
+        });
         submitForm.mockResolvedValue({ recordId: '003X', childCount: 1 });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
@@ -143,7 +146,10 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
             type: 'file',
             label: 'CV'
         });
-        getSpec.mockResolvedValue(JSON.stringify(spec));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(spec)
+        });
         submitForm.mockResolvedValue({ recordId: '003X', childCount: 0 });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
@@ -179,7 +185,10 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
     });
 
     it('omits `files` entirely when nothing was attached', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SPEC)
+        });
         submitForm.mockResolvedValue({ recordId: '003X', childCount: 1 });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
@@ -200,7 +209,10 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
     });
 
     it('a failed submit shows the banner, keeps the form, and allows retry', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SPEC)
+        });
         submitForm.mockRejectedValue({
             body: { message: 'Nope from the server.' }
         });
@@ -247,7 +259,10 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
     });
 
     it('the After-Submit continue intent navigates to a custom URL', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SPEC)
+        });
         submitForm.mockResolvedValue({ recordId: '003X' });
         const assign = jest.fn();
         delete window.location;

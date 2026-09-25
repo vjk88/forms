@@ -2063,6 +2063,23 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // The three choice types ship with real starter options: an
             // empty dropdown renders an empty control, and empty checkboxes
             // render nothing at all - an author would think it was broken.
+            // A record lookup on a form with no object of its own: the
+            // author picks the object in the inspector. Unbound, so it is
+            // always our search box (the platform's needs a bound field),
+            // and search reads `lookupConfig.targetObject` from the
+            // published element (IMPL_PLAN_F2_AUTOFILL 6.0).
+            case 'questionLookup':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Choose a record',
+                    config: {
+                        inputType: 'reference',
+                        referenceTo: null,
+                        renderAs: 'Filtered_Search'
+                    },
+                    lookupConfig: { targetObject: null }
+                };
             case 'questionDropdown':
                 return {
                     ...base,

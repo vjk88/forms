@@ -81,6 +81,35 @@ private class FinalSpecControllerTest {
     }
 
     @IsTest
+    static void envelopeNamesTheVersionItServed() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+        Form_Version__c active = [
+            SELECT Id
+            FROM Form_Version__c
+            WHERE Form__c = :form.Id AND Is_Active__c = TRUE
+            LIMIT 1
+        ];
+        Map<String, Object> out;
+        System.runAs(makeViewerUser()) {
+            Test.startTest();
+            out = FinalSpecController.getSpecEnvelope(form.Id, null);
+            Test.stopTest();
+        }
+        Assert.areEqual(active.Id, out.get('versionId'));
+        Assert.isTrue(((String) out.get('spec')).contains('"marker":"active"'));
+    }
+
+    @IsTest
+    static void envelopeNeedsAnId() {
+        try {
+            FinalSpecController.getSpecEnvelope(null, null);
+            Assert.fail('expected a refusal');
+        } catch (AuraHandledException e) {
+            Assert.isNotNull(e.getMessage());
+        }
+    }
+
+    @IsTest
     static void returnsSpecificVersionById() {
         Form_Version__c v1 = [
             SELECT Id
@@ -259,6 +288,49 @@ private class FinalSpecControllerTest {
             0,
             [SELECT COUNT() FROM Form_Version__c WHERE Form__c = :form.Id],
             'nothing was published'
+        );
+    }
+
+    @IsTest
+    static void publishSpecRefusesALookupWithNoObject() {
+        Map<String, Object> pick = new Map<String, Object>{
+            'id' => 'el_pick',
+            'type' => 'field',
+            'label' => 'Your company',
+            'binding' => null,
+            'config' => new Map<String, Object>{
+                'inputType' => 'reference',
+                'referenceTo' => null,
+                'renderAs' => 'Filtered_Search'
+            },
+            'lookupConfig' => new Map<String, Object>{ 'targetObject' => null }
+        };
+        Map<String, Object> spec = FinalMappingTestData.spec(
+            new List<Object>{ pick },
+            null
+        );
+        Form__c form = new Form__c(
+            Name = 'Lookup gate',
+            Form_Type__c = 'Freeform'
+        );
+        insert form;
+        try {
+            FinalSpecController.publishSpec(form.Id, JSON.serialize(spec));
+            Assert.fail('a lookup that searches nothing must not publish');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(
+                e.getMessage().contains('“Your company” searches'),
+                e.getMessage()
+            );
+        }
+
+        // named, it publishes
+        ((Map<String, Object>) pick.get('config'))
+            .put('referenceTo', 'Account');
+        ((Map<String, Object>) pick.get('lookupConfig'))
+            .put('targetObject', 'Account');
+        Assert.isNotNull(
+            FinalSpecController.publishSpec(form.Id, JSON.serialize(spec))
         );
     }
 

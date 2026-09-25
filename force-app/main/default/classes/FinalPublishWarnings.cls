@@ -182,6 +182,23 @@ public with sharing class FinalPublishWarnings {
             }
         }
 
+        // A record lookup that doesn't say what it searches can't be used:
+        // signed-in people get an error, guests get nothing, and a required
+        // one can never be answered (IMPL_PLAN_F2_AUTOFILL 6.0). Publish
+        // refuses it too (FinalSpecController.publishSpec).
+        for (Map<String, Object> el : lookupsWithoutObject(draft)) {
+            String label = labelOf(el, 'A record lookup');
+            String text = 'Choose which object “' + label + '” searches.';
+            check.blockers.add(text);
+            Item i = new Item();
+            i.severity = FinalMappingValidator.BLOCKER;
+            i.area = 'build';
+            i.text = text;
+            i.elementId = (String) el.get('id');
+            i.elementLabel = label;
+            check.items.add(i);
+        }
+
         // Mapping (FREEFORM_F2_MAPPING_SPEC section 7): the same validator
         // publishSpec runs, without throwing, so the author sees it first.
         try {
@@ -226,6 +243,67 @@ public with sharing class FinalPublishWarnings {
     }
 
     /** Every question in a spec, by element id. Content blocks are skipped. */
+    /**
+     * Record lookups with no object: unbound (so no field says which object)
+     * and no object picked. Bound lookups take theirs from the field.
+     */
+    public static List<Map<String, Object>> lookupsWithoutObject(
+        Map<String, Object> spec
+    ) {
+        List<Map<String, Object>> out = new List<Map<String, Object>>();
+        if (spec == null) {
+            return out;
+        }
+        for (Object pageObj : asList(spec.get('pages'))) {
+            Map<String, Object> page = asMap(pageObj);
+            for (
+                Object secObj : asList(
+                    page == null ? null : page.get('sections')
+                )
+            ) {
+                Map<String, Object> sec = asMap(secObj);
+                collectLookupsWithoutObject(
+                    asList(sec == null ? null : sec.get('elements')),
+                    out
+                );
+            }
+        }
+        return out;
+    }
+
+    private static void collectLookupsWithoutObject(
+        List<Object> elements,
+        List<Map<String, Object>> out
+    ) {
+        for (Object elObj : elements) {
+            Map<String, Object> el = asMap(elObj);
+            if (el == null) {
+                continue;
+            }
+            // a repeating group carries its own elements
+            collectLookupsWithoutObject(asList(el.get('elements')), out);
+            Map<String, Object> cfg = asMap(el.get('config'));
+            if (cfg == null || cfg.get('inputType') != 'reference') {
+                continue;
+            }
+            Map<String, Object> binding = asMap(el.get('binding'));
+            if (binding != null && binding.get('field') != null) {
+                continue;
+            }
+            Map<String, Object> lookup = asMap(el.get('lookupConfig'));
+            Boolean named =
+                isSet(cfg.get('referenceTo')) ||
+                (lookup != null && isSet(lookup.get('targetObject')));
+            if (!named) {
+                out.add(el);
+            }
+        }
+    }
+
+    private static Boolean isSet(Object o) {
+        return o instanceof String && String.isNotBlank((String) o);
+    }
+
     private static Map<String, Map<String, Object>> questionsOf(
         Map<String, Object> spec
     ) {

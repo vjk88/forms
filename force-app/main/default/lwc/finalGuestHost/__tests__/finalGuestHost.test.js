@@ -91,6 +91,9 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         expect(viewer).not.toBeNull();
         expect(viewer.spec.form.name).toBe('Guest');
         expect(viewer.delegateSubmit).toBe(true);
+        // lookup search and signed-in Autofill ask which published version
+        expect(viewer.formId).toBe('a0Xguest');
+        expect(viewer.versionId).toBe('v1');
         expect(el.shadowRoot.querySelector('.guest-unavailable')).toBeNull();
     });
 

@@ -694,7 +694,8 @@ describe('c-final-form-studio', () => {
             'questionDropdown',
             'questionChoice',
             'questionMultiChoice',
-            'questionEmail'
+            'questionEmail',
+            'questionLookup'
         ]) {
             palette.dispatchEvent(
                 new CustomEvent('addquestion', { detail: { questionType } })
@@ -704,18 +705,26 @@ describe('c-final-form-studio', () => {
         const saved = JSON.parse(
             saveDraft.mock.calls[saveDraft.mock.calls.length - 1][0].specJson
         );
-        const added = saved.pages[0].sections[0].elements.slice(-4);
+        const added = saved.pages[0].sections[0].elements.slice(-5);
         expect(added.map((e) => e.config.renderAs)).toEqual([
             'Dropdown',
             'Radio_Buttons',
             'Checkbox_Group',
-            undefined
+            undefined,
+            'Filtered_Search'
         ]);
         // and nothing stray at the element root, where it would be ignored
         expect(added.every((e) => e.renderAs === undefined)).toBe(true);
         // choice questions arrive with real options; an empty one looks broken
         expect(added[2].config.options).toHaveLength(3);
         expect(added[3].config.inputType).toBe('email');
+        // a record lookup: unbound, our search box, its object still to pick
+        expect(added[4]).toMatchObject({
+            type: 'field',
+            binding: null,
+            config: { inputType: 'reference', referenceTo: null },
+            lookupConfig: { targetObject: null }
+        });
         jest.useRealTimers();
     });
 

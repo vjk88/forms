@@ -13,6 +13,18 @@ jest.mock(
     { virtual: true }
 );
 jest.mock(
+    '@salesforce/apex/FinalLookupController.listLookupObjects',
+    () => ({
+        default: jest.fn(() =>
+            Promise.resolve([
+                { label: 'Account', value: 'Account' },
+                { label: 'User', value: 'User' }
+            ])
+        )
+    }),
+    { virtual: true }
+);
+jest.mock(
     '@salesforce/apex/FinalAssetController.uploadImage',
     () => ({ default: jest.fn() }),
     { virtual: true }
@@ -431,6 +443,122 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         await flush();
         expect(guestToggle(el)).toBeFalsy();
     });
+    describe('a record lookup question (unbound)', () => {
+        const lookupQuestion = (config, lookupConfig) => ({
+            id: 'el_pick',
+            type: 'field',
+            label: 'Choose a record',
+            binding: null,
+            config: {
+                inputType: 'reference',
+                renderAs: 'Filtered_Search',
+                ...config
+            },
+            lookupConfig
+        });
+
+        it('asks which object it searches, and offers no Display-as', async () => {
+            const el = mount({
+                kind: 'element',
+                node: lookupQuestion(
+                    { referenceTo: null },
+                    {
+                        targetObject: null
+                    }
+                )
+            });
+            await flush();
+            await flush();
+            const picker = el.shadowRoot.querySelector(
+                '.pp-lookup-object c-final-object-picker'
+            );
+            expect(picker.label).toBe('Object');
+            expect(picker.objects.map((o) => o.value)).toEqual([
+                'Account',
+                'User'
+            ]);
+            expect(el.shadowRoot.querySelector('.pp-renderas')).toBeNull();
+            // nothing to filter until it knows what it searches
+            expect(
+                el.shadowRoot.querySelector('c-final-lookup-filter')
+            ).toBeNull();
+        });
+
+        it('picking an object sets what it shows AND searches, in one change', async () => {
+            const el = mount({
+                kind: 'element',
+                node: lookupQuestion(
+                    { referenceTo: 'Contact' },
+                    {
+                        targetObject: 'Contact',
+                        displayFields: ['Name']
+                    }
+                )
+            });
+            const got = [];
+            el.addEventListener('propchange', (e) => got.push(e.detail.patch));
+            await flush();
+            el.shadowRoot
+                .querySelector('.pp-lookup-object c-final-object-picker')
+                .dispatchEvent(
+                    new CustomEvent('pick', {
+                        detail: { value: 'Account', label: 'Account' }
+                    })
+                );
+            expect(got).toHaveLength(1);
+            expect(got[0].config.referenceTo).toBe('Account');
+            expect(got[0].config.renderAs).toBe('Filtered_Search');
+            // the old object's display fields start over
+            expect(got[0].lookupConfig).toEqual({ targetObject: 'Account' });
+        });
+
+        it('says what changing the object clears only once one is set', async () => {
+            const blank = mount({
+                kind: 'element',
+                node: lookupQuestion(
+                    { referenceTo: null },
+                    {
+                        targetObject: null
+                    }
+                )
+            });
+            await flush();
+            expect(
+                blank.shadowRoot.querySelector('.pp-lookup-object .pp-hint')
+            ).toBeNull();
+            const set = mount({
+                kind: 'element',
+                node: lookupQuestion(
+                    { referenceTo: 'Account' },
+                    {
+                        targetObject: 'Account'
+                    }
+                )
+            });
+            await flush();
+            expect(
+                set.shadowRoot.querySelector('.pp-lookup-object .pp-hint')
+                    .textContent
+            ).toContain('guest access');
+        });
+
+        it('a bound lookup never shows the Object picker', async () => {
+            const el = mount({
+                kind: 'element',
+                bindingObjectApi: 'Case',
+                node: {
+                    id: 'el_ref',
+                    type: 'field',
+                    label: 'Ref',
+                    binding: { object: 'Case', field: 'ContactId' },
+                    config: { inputType: 'reference', referenceTo: 'Contact' }
+                }
+            });
+            await flush();
+            expect(el.shadowRoot.querySelector('.pp-lookup-object')).toBeNull();
+        });
+    });
+
     describe('lookup Display-as', () => {
         const refNode = (config) => ({
             id: 'el_ref',

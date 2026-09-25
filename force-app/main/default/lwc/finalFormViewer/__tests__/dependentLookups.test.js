@@ -1,6 +1,6 @@
 import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import search from '@salesforce/apex/FinalLookupController.search';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 
@@ -8,7 +8,7 @@ jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
 }));
 jest.mock(
-    '@salesforce/apex/FinalSpecController.getSpec',
+    '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -128,7 +128,10 @@ async function pickContact(el) {
 }
 
 async function mount() {
-    getSpec.mockResolvedValue(JSON.stringify(SPEC));
+    getSpecEnvelope.mockResolvedValue({
+        versionId: 'a0Vserved',
+        spec: JSON.stringify(SPEC)
+    });
     submitForm.mockResolvedValue({ recordId: '500x', childCount: 0 });
     search.mockResolvedValue([
         { id: '003a', title: 'Rose Gonzalez', subtitle: 'Edge' }
@@ -268,7 +271,10 @@ describe('c-final-form-viewer — reference default and the form-level override'
     });
 
     async function mountWith(spec) {
-        getSpec.mockResolvedValue(JSON.stringify(spec));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(spec)
+        });
         search.mockResolvedValue([]);
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
@@ -342,5 +348,76 @@ describe('c-final-form-viewer — reference default and the form-level override'
         const el = await mountWith(spec);
         expect(lookupOf(el)).not.toBeNull();
         expect(deepQuery(el.shadowRoot, 'lightning-input-field')).toBeNull();
+    });
+
+    it('loaded by form id alone, searches with the version the server served', async () => {
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SPEC)
+        });
+        jest.useFakeTimers();
+        search.mockResolvedValue([
+            { id: '003a', title: 'Rose Gonzalez', subtitle: 'Edge' }
+        ]);
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.formId = 'a0Fx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        expect(getSpecEnvelope).toHaveBeenCalledWith({
+            formId: 'a0Fx',
+            versionId: null
+        });
+        await pickContact(el);
+        expect(search).toHaveBeenCalled();
+        expect(search.mock.calls[0][0].versionId).toBe('a0Vserved');
+        expect(search.mock.calls[0][0].formId).toBe('a0Fx');
+        jest.useRealTimers();
+    });
+
+    it('never reloads itself once it knows the served version', async () => {
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            formId: 'a0Fx',
+            spec: JSON.stringify(SPEC)
+        });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.formId = 'a0Fx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        // leaving and coming back (a console tab switch) re-runs the load
+        document.body.removeChild(el);
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        expect(getSpecEnvelope).toHaveBeenCalledTimes(1);
+    });
+
+    it('opened by version alone, searches with the form the server named', async () => {
+        jest.useFakeTimers();
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vonly',
+            formId: 'a0Fserved',
+            spec: JSON.stringify(SPEC)
+        });
+        search.mockResolvedValue([
+            { id: '003a', title: 'Rose Gonzalez', subtitle: 'Edge' }
+        ]);
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vonly';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        await pickContact(el);
+        expect(search.mock.calls[0][0].formId).toBe('a0Fserved');
+        expect(search.mock.calls[0][0].versionId).toBe('a0Vonly');
+        jest.useRealTimers();
     });
 });

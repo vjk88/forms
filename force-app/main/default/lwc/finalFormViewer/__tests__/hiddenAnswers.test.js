@@ -1,12 +1,12 @@
 import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 
 jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
 }));
 jest.mock(
-    '@salesforce/apex/FinalSpecController.getSpec',
+    '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -114,7 +114,10 @@ function typeInto(el, label, value) {
  *  be submitted, re-answered and submitted again. After Submit would replace
  *  the form and there would be nothing left to type into. */
 async function mount(spec) {
-    getSpec.mockResolvedValue(JSON.stringify(spec || SPEC));
+    getSpecEnvelope.mockResolvedValue({
+        versionId: 'a0Vserved',
+        spec: JSON.stringify(spec || SPEC)
+    });
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
     el.versionId = 'a0Vx';
     el.delegateSubmit = true;

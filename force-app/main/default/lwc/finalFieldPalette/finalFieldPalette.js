@@ -192,6 +192,12 @@ const GENERAL_QUESTIONS = [
         label: 'Multiple choice',
         icon: 'utility:check',
         title: 'Pick any number of options'
+    },
+    {
+        type: 'questionLookup',
+        label: 'Record lookup',
+        icon: 'utility:search',
+        title: 'Pick an existing Salesforce record'
     }
 ];
 

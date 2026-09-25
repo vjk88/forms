@@ -3,7 +3,7 @@ import FinalFieldPalette from 'c/finalFieldPalette';
 
 // The palette per form type (FREEFORM_SPEC D4): a Form gets its object's
 // fields, a Survey gets its 12 questions UNCHANGED, and a Freeform gets those
-// plus seven general inputs, grouped so 19 items don't read as one wall.
+// plus eight general inputs, grouped so 20 items don't read as one wall.
 jest.mock(
     '@salesforce/apex/FinalStudioController.describeFields',
     () => {
@@ -62,11 +62,11 @@ describe('field palette per form type', () => {
         );
     });
 
-    it('gives freeform the same widgets plus seven general inputs, grouped', () => {
+    it('gives freeform the same widgets plus eight general inputs, grouped', () => {
         const el = mount({ formType: 'freeform' });
         const found = labels(el);
-        expect(found).toHaveLength(19);
-        // the seven that Survey never offered
+        expect(found).toHaveLength(20);
+        // the eight that Survey never offered
         [
             'Email',
             'Phone',
@@ -74,7 +74,8 @@ describe('field palette per form type', () => {
             'Link',
             'Dropdown',
             'Single choice',
-            'Multiple choice'
+            'Multiple choice',
+            'Record lookup'
         ].forEach((l) => expect(found).toContain(l));
         // and the survey widgets are still there
         ['NPS', 'Matrix', 'Likert'].forEach((l) => expect(found).toContain(l));
