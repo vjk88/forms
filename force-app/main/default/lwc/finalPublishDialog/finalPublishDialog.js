@@ -61,15 +61,15 @@ export function groupItems(items) {
             }
         } else if (item.area === 'data') {
             g = group(`a:${item.actionId || 'mapping'}`, () => ({
-                area: 'Data',
+                // Mapping opens from the Build rail (IMPL_PLAN_F2_AUTOFILL
+                // D63); the goTo keeps its old 'data' name.
+                area: 'Build',
                 where: item.step ? `Mapping · ${item.step}` : 'Mapping',
-                goTo: item.actionId
-                    ? {
-                          mode: 'data',
-                          actionId: item.actionId,
-                          section: item.section || null
-                      }
-                    : null
+                goTo: {
+                    mode: 'data',
+                    actionId: item.actionId || null,
+                    section: item.section || null
+                }
             }));
             g.lines.push({
                 key: `l${i}`,

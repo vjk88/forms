@@ -319,7 +319,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         // Apply it to our own DOM so publishing blocks both pointer and keyboard edits.
         this.template
             .querySelector('.st-body')
-            ?.toggleAttribute('inert', this.editorLocked);
+            ?.toggleAttribute('inert', this.editorLocked || this.mappingOpen);
+        // The Mapping dialog is modal for screen readers too, not only for
+        // the mouse and Tab.
+        this.template
+            .querySelector('.st-bar')
+            ?.toggleAttribute('inert', this.mappingOpen);
         const sel = this.template.querySelector('.st-verselect');
         const current = this.viewVersionId || this.editableVersionId;
         if (sel && current && sel.value !== current) {

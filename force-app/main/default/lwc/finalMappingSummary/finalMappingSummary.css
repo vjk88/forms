@@ -39,7 +39,7 @@
 }
 
 .msu-step--warn {
-    border-left: 3px solid var(--c-studio-warning, #dd7a01);
+    border-left: 3px solid var(--c-studio-warning-border);
 }
 
 .msu-step-title {

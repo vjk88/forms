@@ -9,13 +9,9 @@ import {
     addAction,
     moveAction,
     answerIndex,
-    actionState
+    actionState,
+    STATE_TEXT
 } from 'c/finalMappingModel';
-
-const STATE_TEXT = {
-    incomplete: 'Not finished',
-    broken: 'Points at a missing step'
-};
 
 /** What this answer does on that record, in the author's words — the
  *  field's label, never its API name. */

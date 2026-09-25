@@ -1,12 +1,10 @@
 import { LightningElement, api } from 'lwc';
 import listCreatableObjects from '@salesforce/apex/FinalMappingController.listCreatableObjects';
 import describeQuestions from '@salesforce/apex/FinalMappingController.describeQuestions';
-import { actionsOf, actionState } from 'c/finalMappingModel';
+import { actionsOf, actionState, STATE_TEXT } from 'c/finalMappingModel';
 
-const STATE_TEXT = {
-    incomplete: 'Not finished',
-    broken: 'Points at a missing step'
-};
+/** Typing a question's label changes the pages on every key: wait for a pause. */
+const QUESTIONS_WAIT_MS = 300;
 
 /**
  * finalMappingSummary — Mapping in the Build rail (IMPL_PLAN_F2_AUTOFILL
@@ -19,6 +17,9 @@ export default class FinalMappingSummary extends LightningElement {
     objects = [];
     questions = [];
     _questionsFor;
+    _questionsTimer;
+    /** Only the newest reply counts: an older one can land last. */
+    _questionsTicket = 0;
 
     @api
     get spec() {
@@ -26,7 +27,16 @@ export default class FinalMappingSummary extends LightningElement {
     }
     set spec(value) {
         this._spec = value;
-        this._loadQuestions();
+        clearTimeout(this._questionsTimer);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._questionsTimer = setTimeout(
+            () => this._loadQuestions(),
+            this._questionsFor === undefined ? 0 : QUESTIONS_WAIT_MS
+        );
+    }
+
+    disconnectedCallback() {
+        clearTimeout(this._questionsTimer);
     }
 
     connectedCallback() {
@@ -46,13 +56,18 @@ export default class FinalMappingSummary extends LightningElement {
         );
         if (pagesJson === this._questionsFor) return;
         this._questionsFor = pagesJson;
+        const ticket = ++this._questionsTicket;
+        let found;
         try {
-            this.questions =
+            found =
                 (await describeQuestions({
                     specJson: JSON.stringify(this._spec || {})
                 })) || [];
         } catch {
-            this.questions = [];
+            found = [];
+        }
+        if (ticket === this._questionsTicket) {
+            this.questions = found;
         }
     }
 

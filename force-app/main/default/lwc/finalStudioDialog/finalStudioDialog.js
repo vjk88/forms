@@ -24,6 +24,8 @@ export default class FinalStudioDialog extends LightningElement {
     @api confirmLabel = 'Done';
     /** Unsaved changes: leaving asks first. */
     @api dirty = false;
+    /** What the "Discard your changes?" question says under its title. */
+    @api discardText = 'Your changes haven’t been applied yet.';
 
     /** The "Discard your changes?" question is showing. */
     confirming = false;
@@ -50,6 +52,13 @@ export default class FinalStudioDialog extends LightningElement {
     }
 
     renderedCallback() {
+        // While the question is up, the rest of the dialog is out of reach
+        // for the keyboard and screen readers, not just behind a scrim.
+        ['.sd-header', '.sd-body', '.sd-footer'].forEach((selector) => {
+            this.template
+                .querySelector(selector)
+                ?.toggleAttribute('inert', this.confirming);
+        });
         // Into the dialog on open, so the keyboard starts where the eye does.
         if (!this._focused) {
             this._focused = true;
@@ -79,18 +88,9 @@ export default class FinalStudioDialog extends LightningElement {
             this.handleKeep();
             return;
         }
-        // An open list inside (a combobox) closes itself first.
-        const open = event
-            .composedPath()
-            .some(
-                (n) =>
-                    n &&
-                    typeof n.getAttribute === 'function' &&
-                    n.getAttribute('aria-expanded') === 'true'
-            );
-        if (open) {
-            return;
-        }
+        // An open dropdown inside closes itself first: lightning-combobox
+        // and c-final-typeahead both handle their own Escape (org-checked
+        // 2026-09-25), so it never reaches here.
         event.stopPropagation();
         this.handleDismiss();
     }

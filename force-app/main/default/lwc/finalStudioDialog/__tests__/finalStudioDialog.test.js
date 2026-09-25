@@ -113,23 +113,6 @@ describe('c-final-studio-dialog', () => {
         expect(got).toEqual([]);
     });
 
-    it('lets an open list inside close itself first', async () => {
-        const { el, got } = mount();
-        await flush();
-        const open = document.createElement('div');
-        open.setAttribute('aria-expanded', 'true');
-        el.shadowRoot.querySelector('.sd-body').appendChild(open);
-        open.dispatchEvent(
-            new KeyboardEvent('keydown', {
-                key: 'Escape',
-                bubbles: true,
-                composed: true
-            })
-        );
-        await flush();
-        expect(got).toEqual([]);
-    });
-
     it('wraps Tab around at both edges', async () => {
         const { el } = mount();
         await flush();

@@ -24,8 +24,8 @@
     display: flex;
     flex-direction: column;
     background: var(--c-studio-surface);
-    border-radius: 0.5rem;
-    box-shadow: 0 24px 64px rgb(0 0 0 / 28%);
+    border-radius: var(--c-studio-radius-lg);
+    box-shadow: var(--c-studio-dialog-shadow);
     overflow: hidden;
 }
 
@@ -62,6 +62,15 @@
     min-height: 0;
     overflow: auto;
     padding: 1rem;
+    /* A flex column, so content that grows to fill its parent (the mapping
+       screen does) gets the dialog's whole height. */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Full-size content brings its own padding. */
+.sd--full .sd-body {
+    padding: 0;
 }
 
 .sd-footer {
@@ -88,7 +97,7 @@
 .sd-ask-backdrop {
     position: absolute;
     inset: 0;
-    background: rgb(255 255 255 / 70%);
+    background: color-mix(in srgb, var(--c-studio-surface) 70%, transparent);
 }
 
 .sd-ask {
@@ -100,8 +109,8 @@
     padding: 1.25rem;
     background: var(--c-studio-surface);
     border: 1px solid var(--c-studio-border);
-    border-radius: 0.5rem;
-    box-shadow: 0 16px 48px rgb(0 0 0 / 24%);
+    border-radius: var(--c-studio-radius-lg);
+    box-shadow: var(--c-studio-dialog-shadow);
 }
 
 .sd-ask-title {

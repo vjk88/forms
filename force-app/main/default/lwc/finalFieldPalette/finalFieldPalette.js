@@ -366,7 +366,7 @@ export default class FinalFieldPalette extends LightningElement {
             blocks: 'utility:apps',
             logic: 'utility:strategy',
             autofill: 'utility:magicwand',
-            mapping: 'utility:upload'
+            mapping: 'utility:data_mapping'
         };
         // Freeform: Mapping lives here (IMPL_PLAN_F2_AUTOFILL, D63). Its
         // Autofill tab arrives with the new rule dialog (slice B).
