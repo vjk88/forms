@@ -1,6 +1,6 @@
 # IMPL_PLAN_F2_AUTOFILL — Build is the one place: Mapping and Autofill in the left rail
 
-**Status:** Draft for owner review, revision 2 (2026-09-25). Revision 2 folds in the first review (§11). No code until the owner says go.
+**Status:** Draft for owner review, revision 3 (2026-09-25). Revisions 2 and 3 fold in two reviews (§11). No code until the owner says go.
 **Replaces:** ruling D30 of FREEFORM_F2_MAPPING_SPEC ("Autofill moves into Data mode"). See D63 below.
 **Builds on:** `archive/IMPL_PLAN_AUTOFILL_RULES.md` (today's Autofill, shipped PRs #241–#245), IMPL_PLAN_F2_SEARCH (the mapping screen, shipped PRs #332–#348).
 
@@ -53,12 +53,12 @@
 
 Each slice: own branch → PR → uiux-flow-reviewer → deploy → org check → merge.
 
-| Slice | What ships                                                                                               | Why here                                                 |
-| ----- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| **A** | Data tab removed; Mapping rail icon + window-filling dialog; Go there retargeted                         | Small, no new behaviour; clears the ground               |
-| **B** | Autofill dialog + rail list; **Autofill turned on for Freeform** (link and lookup); the new answer types | The core of the feature, on the type that has none today |
-| **C** | One-hop sources and the signed-in-person source                                                          | Adds read paths; isolated server work                    |
-| **D** | Form and Survey switch to the new dialog; old editor deleted                                             | Only after B/C are proven in the org                     |
+| Slice | What ships                                                                                                                                    | Why here                                                 |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **A** | Data tab removed; Mapping rail icon + window-filling dialog; Go there retargeted                                                              | Small, no new behaviour; clears the ground               |
+| **B** | Freeform **Record lookup** question; Autofill dialog + rail list; **Autofill turned on for Freeform** (link and lookup); the new answer types | The core of the feature, on the type that has none today |
+| **C** | One-hop sources and the signed-in-person source                                                                                               | Adds read paths; isolated server work                    |
+| **D** | Form and Survey switch to the new dialog; old editor deleted                                                                                  | Only after B/C are proven in the org                     |
 
 ## 5. Slice A — no Data tab; Mapping in the rail
 
@@ -95,7 +95,7 @@ Each slice: own branch → PR → uiux-flow-reviewer → deploy → org check �
 - **The Studio owns the Mapping dialog:**
   - new state `mappingOpen`, `mappingDraft`, `mappingFocus`;
   - `handleOpenMapping(event)`, from the palette's `openmapping { target }`, copies the spec into `mappingDraft`, sets `mappingFocus` from the target, and sets `mappingOpen`;
-  - the template renders `c-final-studio-dialog size="full" label="Mapping"`, holding `c-final-mapping-editor spec={mappingDraft} focus-action={mappingFocus}` and `dirty={mappingDirty}`;
+  - the template renders `c-final-studio-dialog size="full" label="Mapping"`, holding `c-final-mapping-editor spec={mappingDraft} focus-action={mappingFocus} read-only={isReadOnly} is-public={isPublic}` (the same four props `finalDataMode` forwards today; without `is-public` the find-or-create warning to public forms disappears), and `dirty={mappingDirty}`;
   - `confirm`: commits `mappingDraft` through `handleSpecChange` (one undo entry) and closes;
   - `dismiss`: closes.
 - **`_goTo`**, for a mapping target: switch to Build, then call `handleOpenMapping` with `{ actionId, section }`. The old `mode: 'data'` shape is kept as the dialog's target name (the publish dialog is unchanged).
@@ -129,10 +129,26 @@ Each slice: own branch → PR → uiux-flow-reviewer → deploy → org check �
   - `finalStudioDialog`: size classes, focus-in and return, Tab trap, all three ways out when clean and when dirty (with `LightningConfirm` mocked);
   - `finalMappingSummary`: counts, empty state, the event;
   - `finalFieldPalette`: the tab lists per type;
-  - `finalFormStudio`: no Data button; Open mapping shows the dialog; Done commits one undo entry; Cancel commits nothing; Go there opens the dialog at the step.
+  - `finalFormStudio`: no Data button; Open mapping shows the dialog; the editor inside receives `is-public` and `read-only`; Done commits one undo entry; Cancel commits nothing; Go there opens the dialog at the step;
+  - `finalMappingAction`: on a public form inside the dialog, the "This form is public…" warning still shows.
 - **Org:** the §5.1 acceptance gate, plus Go there from a real publish refusal.
 
 ## 6. Slice B — the Autofill dialog, and Autofill on Freeform
+
+### 6.0 A lookup question for Freeform
+
+Freeform has no lookup question today: the palette doesn't offer one, `_mintQuestion` can't make one, and the properties panel can't choose its object. Autofill's lookup source (and mapping's "The record picked in…") needs one, so slice B adds it.
+
+- **Palette (`finalFieldPalette`):** a **Record lookup** item in Freeform's "Questions" group (`GENERAL_QUESTIONS`).
+- **Mint (`finalFormStudio._mintQuestion('lookup')`):** a `type: 'field'` element with `config: { inputType: 'reference', referenceTo: null }`, unbound.
+  - The renderer already takes its object from `config.referenceTo` (`finalElementRenderer.lookupTargetObject`).
+  - An unbound lookup can only use the custom search box, since the native `lightning-input-field` mode needs a bound field. So the question is created in the custom mode.
+- **Properties panel (`finalPropertyPanel`):** for an unbound lookup, an **Object** combobox sets `config.referenceTo`. It lists readable, searchable objects, from `FinalMappingController.listCreatableObjects`, the list the mapping screen's Add a record uses.
+  - Changing the object clears the lookup's display, search and filter settings, which named the old object's fields. It asks first when any were set.
+  - The rest of today's lookup inspector (what each result shows, which fields are searched, the filter) then applies unchanged.
+- **Runtime:** the answer is the picked record's Id, stored as the question's answer. The mapping rule already reads it through "The record picked in …".
+- **First task of the slice (org):** confirm that search, the submit-time check and guest refusal work for an unbound lookup. They read the element's own config, not a binding. Fix anything that assumes a binding before building the Autofill parts on top.
+- **Tests:** palette item on Freeform only; minted shape; Object change clears and asks; renderer uses `referenceTo`; Apex search accepts an unbound lookup element.
 
 ### 6.1 Rail: `lwc/finalAutofillPanel` becomes the list
 
@@ -175,14 +191,18 @@ Classes `am-`.
 
 ### 6.3 Field picker contract (`lwc/finalFieldPicker`)
 
-Three new `@api` properties. Their defaults keep today's behaviour, which lookup filters and mapping conditions rely on.
+Four new `@api` properties. Their defaults keep today's behaviour, which lookup filters and mapping conditions rely on.
 
 - **`maxDepth`** (default: unchanged).
   - `0` shows only the object's own fields: no "related" drill-in.
   - `1` allows one hop.
   - The Autofill editor passes `0` in slice B and `1` in slice C.
 - **`allowedRelationships`** (default: empty, meaning all). When set, only these relationship names can be drilled into. A `user` rule passes `['Contact', 'Account', 'Manager']`.
-- **`allowedTypes`** (default: empty, meaning all). A list of the lowercase describe types the picker offers (its data already carries `type` from `FinalLookupController.describeLookupFields`). Relationship entries stay visible while `maxDepth` allows them.
+- **`allowedTypes`** (default: empty, meaning all). A list of the lowercase describe types the picker offers (its data carries `type`). Relationship entries stay visible while `maxDepth` allows them.
+- **`purpose`** (default `'filter'`, today's behaviour). `describeLookupFields` returns only fields that can be filtered on (`isFilterable()`), because conditions compile to a WHERE clause, and long-text fields can't be used there. Autofill _reads_ fields, so a long text must be offered.
+  - `'read'` makes the picker call a new cacheable `FinalLookupController.describeReadableFields(objectApiName, relationshipName)`. It returns every readable field, filterable or not, in the same shape.
+  - `describeLookupFields` is unchanged, so conditions and lookup filters still see only filterable fields.
+  - The Autofill editor passes `purpose="read"`.
 - **The fits table is one table, in Apex** (`FinalAutofillRules`). The browser gets it from a new cacheable `FinalAutofillController.fitsTable()` that returns `{ describeType: [answerTypes] }`.
   - The editor passes `allowedTypes` = every describe type that fits at least one destination on the form.
   - Once a field is picked, the editor uses `typeForPath` (already exported by the picker) and the table to list the destinations it fits.
@@ -295,9 +315,11 @@ A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)
 | `lwc/finalAutofillRecordSource` (LDS `getRecord`)                                                           | `optionalFields` of direct fields              | `Object.Rel.Field` in `optionalFields`; read the value through `fields.Rel.value.fields.Field.value`                                                                                            |
 
 - **A missing relationship versus an unreadable field:**
-  - When the lookup is empty (no Account), the value is **present and null**, so the answer is cleared under "Always replace" and left alone under "Keep what they typed".
+  - When the lookup is empty (no Account), the value is **present and null**. It goes through today's ownership rules, unchanged:
+    - an answer Autofill filled and the person hasn't touched is **cleared under both policies**, so an old Account's details never linger;
+    - an answer the person edited is kept under "Keep what they typed" and replaced under "Always replace".
   - When the person can't read the field, the value is **left out**, which is today's rule for direct fields.
-- Tests cover both cases at each row of the table above.
+- Tests cover both cases at each row of the table above, and `autofillEngine` tests an empty relationship against an untouched answer and an edited one, under both policies.
 
 ### 7.2 The signed-in person (`source.type: "user"`)
 
@@ -309,26 +331,40 @@ A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)
   - refuses `guestAllowed: true` on a `user` rule;
   - refuses a hop other than Contact, Account or Manager.
   - The dialog hides the guest column.
+- **Server, for the Studio preview: new `FinalAutofillController.getUserPreviewValues(String specJson)`.**
+  - An unpublished `user` rule has no published version to read, so the preview passes the draft spec.
+  - Refused to guests. It takes only the draft's enabled `user` rules, checks each `from` against the same one-hop limits, and reads the **running user's own** User record in USER_MODE.
+  - Returns the same destination-keyed shape.
 - **Who calls it:** `finalFormViewer`, when `@salesforce/user/isGuest` is false. That covers the internal hosts, and signed-in people on the site (`finalGuestHost` renders the same viewer).
   - A guest never calls it. That's decided by who is signed in, not by which host is showing the form.
-  - In the Studio preview, the author is the signed-in person, so the preview fills with the author's own values.
-- **How results enter Autofill:** the same path lookup results take.
-  - The viewer calls the engine's `onSourceChanged` once per `user` rule after the published version is known, with `sourceKey` = the user id.
-  - It uses the returned `requestIdentity` (`ruleId`, `generation`, `sessionId`).
-  - It applies the reply only if that identity is still current.
+  - In the Studio preview, it calls `getUserPreviewValues`. The author is the signed-in person, so the preview fills with the author's own values.
+- **The viewer needs to know which published version it shows.** Today neither host tells it:
+  - **Site:** `finalGuestHost` already has `versionId` from `getGuestRuntimeSpec`. It passes `form-id={formId}` and `version-id={versionId}` to `c-final-form-viewer`, which has `@api formId` and `@api versionId` already.
+  - **Internal (loaded by form id):** `getSpec` returns only the spec, so the viewer never learns the version. Add `FinalSpecController.getSpecEnvelope(formId, versionId)`, which returns `{ versionId, spec }` (the version actually served), and have the viewer's own load (≈ line 616) use it and store `versionId`. `getSpec` stays for its other callers.
+  - **Studio preview:** it has no published version by design; it uses the preview endpoint above.
+  - No `versionId` and not a preview: the viewer skips `user` rules. It never guesses.
+- **How results enter Autofill:** the same path lookup results take, with one conversion.
+  - The viewer calls the engine's `onSourceChanged` once per `user` rule after the version (or preview) is known, with `sourceKey` = the user id. It uses the returned `requestIdentity` (`ruleId`, `generation`, `sessionId`).
+  - The server's reply is keyed by **destination** (`{ el_email: … }`), and `onResult` looks values up by **source** (`mapping.from`). So each rule's values go through the existing `_toSourceKeyed(ruleId, values)` before `onResult`, exactly as the guest and test-value paths do today (its R6 note).
+  - The reply is applied only if that identity is still current.
+  - Tests cover both spec shapes: the internal spec (mappings have `from`), and the projected site spec (mappings have only `to`, so `_toSourceKeyed` falls back to `to`).
 - **Stale replies:** a spec change (the rules fingerprint) or a new session bumps the generation, and older replies are dropped. This is today's rule for lookups (`_startAutofillRequest` ≈ 2576).
-- **Loading:** no spinner. Answers appear when they arrive, as lookup Autofill does today.
-- **Failure:** the rule's answers stay blank, and the form stays usable, with a console log only. This matches today's `_handleAutofillTimeout`.
+- **Loading and failure: the same as lookup Autofill today.**
+  - While a `user` request is pending, it counts as pending Autofill, so Submit stays off.
+  - After 10 seconds it times out. The rule is marked failed (`onRequestFailure`), and the form shows today's message, "Could not fill these details. Enter them yourself or retry." (`_handleAutofillTimeout`).
+  - A server error is handled the same way.
 - **Reset:** a new session re-runs it. Nothing about the person is stored in the spec or the submission.
 
 ### 7.3 Tests
 
 - **Apex:**
   - paths through the validator, the disclosure check (Studio mint and the Flow invocable), `extractGuestDisclosures`, the guest context, `extractAccessibleMappings` and `getTestRecordValues`, each with an empty lookup and an unreadable field;
-  - `getUserValues`: refused to a guest; a hop outside the three refused.
+  - `getUserValues` and `getUserPreviewValues`: refused to a guest; a hop outside the three refused; the preview reads only the draft's `user` rules;
+  - `getSpecEnvelope`: returns the version it served.
 - **Jest:**
   - `finalAutofillRecordSource`: a path in `optionalFields` and its value read;
-  - `finalFormViewer`: a `user` rule's stale reply is dropped; no call when `isGuest`.
+  - `finalFormViewer`: a `user` rule's stale reply is dropped; no call when `isGuest`; no call without a version outside the preview; the reply is converted by `_toSourceKeyed` for an internal spec and for a projected site spec; pending blocks Submit and a timeout shows the message;
+  - `finalGuestHost`: passes `form-id` and `version-id` to the viewer.
 - **Org:**
   - a link rule filling `Account.Name` for a guest (site published first);
   - a signed-in site user and an internal user each get their own name and email;
@@ -364,7 +400,9 @@ Legacy `autofillEditor`, `formAutofill` and `zAutofillEditor` aren't part of the
 - The invitations redesign (F2.5).
 - The app-wide typography pass (PENDING_WORK §4.0).
 
-## 11. Review 1 (2026-09-25): what changed
+## 11. Reviews: what changed
+
+**Review 1 (2026-09-25):**
 
 | #   | Finding                                                                                | Now                                                                                                                                 |
 | --- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -379,3 +417,15 @@ Legacy `autofillEditor`, `formAutofill` and `zAutofillEditor` aren't part of the
 | —   | Freeform questions are `type: 'field'`                                                 | Destinations are `type: 'field'`, bound or unbound (6.6)                                                                            |
 | —   | Freeform's Autofill tab belongs to B                                                   | Moved to 6.1                                                                                                                        |
 | —   | `invalidateLinks` isn't Survey-only                                                    | Corrected (6.6)                                                                                                                     |
+
+**Review 2 (2026-09-25):**
+
+| #   | Finding                                                                          | Now                                                                                                                          |
+| --- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Freeform has no lookup question to author                                        | Slice B adds the Record lookup question: palette, mint, Object picker, unbound-lookup proof (6.0)                            |
+| 2   | The viewer doesn't know its form and version; the preview has no published rules | Site host passes `form-id` / `version-id`; `getSpecEnvelope` for internal loads; `getUserPreviewValues` for the Studio (7.2) |
+| 3   | Destination-keyed replies meet a source-keyed `onResult`                         | `_toSourceKeyed` before `onResult`; tested on both spec shapes (7.2)                                                         |
+| 4   | Long-text fields never reach the picker (filterable-only describe)               | `purpose="read"` and `describeReadableFields`; conditions unchanged (6.3)                                                    |
+| 5   | Empty relationships must clear untouched owned answers under both policies       | Today's ownership rules kept, with tests (7.1)                                                                               |
+| 6   | The Mapping dialog dropped `is-public` and `read-only`                           | Forwarded, with a regression test (5.2, 5.6)                                                                                 |
+| —   | Timeout isn't console-only                                                       | `user` requests keep today's behaviour: Submit off while pending, message on timeout (7.2)                                   |
