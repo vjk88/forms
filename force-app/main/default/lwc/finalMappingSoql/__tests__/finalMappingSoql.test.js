@@ -234,4 +234,25 @@ describe('c-final-mapping-soql', () => {
             'The check couldn’t run. Try again.'
         );
     });
+
+    it('an answer that can be skipped gets a note under the box', async () => {
+        const el = createElement('c-final-mapping-soql', {
+            is: FinalMappingSoql
+        });
+        el.questions = [
+            {
+                elementKey: 'el_k',
+                label: 'Nickname',
+                answerType: 'Text',
+                mappable: true,
+                skippable: true
+            }
+        ];
+        el.value = 'LastName = {!el_k}';
+        document.body.appendChild(el);
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.ms-skip-note').textContent
+        ).toContain('“Nickname” can be skipped');
+    });
 });

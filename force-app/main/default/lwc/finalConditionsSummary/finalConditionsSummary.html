@@ -2,13 +2,16 @@
     <div class="cs">
         <template lwc:if={isTyped}>
             <p class="cs-heading">
-                Only records where:
+                <template lwc:if={isMapping}></template>
+                <template lwc:else>Only records where:</template>
                 <span class="slds-badge cs-badge">Advanced (SOQL)</span>
             </p>
             <pre class="cs-typed">{typedText}</pre>
         </template>
         <template lwc:if={showRules}>
-            <p class="cs-heading">{heading}</p>
+            <template lwc:if={heading}>
+                <p class="cs-heading">{heading}</p>
+            </template>
             <ol class="cs-rules">
                 <template for:each={items} for:item="item">
                     <li key={item.key} class="cs-rule">

@@ -292,27 +292,35 @@ public without sharing class FinalMappingService {
         Schema.DescribeSObjectResult d,
         Run run
     ) {
-        Map<String, Object> src = FinalMappingRules.asMap(match.get('source'));
-        Schema.SObjectField mf = d.fields.getMap()
-            .get(String.valueOf(match.get('field')));
-        if (mf == null) {
-            throw new StepException(
-                'the field it searches on no longer exists.'
+        // Steps published before round 1 also have a separate "Where [field]
+        // matches the answer to [question]"; it still runs, ANDed with the
+        // conditions. Newer steps are their conditions alone.
+        Schema.SObjectField mf = null;
+        Object matchValue = null;
+        if (match.get('field') != null) {
+            Map<String, Object> src = FinalMappingRules.asMap(
+                match.get('source')
             );
-        }
-        String key = String.valueOf(src.get('elementKey'));
-        // The SAME conversion the write uses, against the field being searched:
-        // a choice written as a label must not be searched as its value.
-        Object matchValue = FinalMappingRules.answerValue(
-            run.answers.get(key),
-            run.questions.get(key),
-            mf.getDescribe()
-        );
-        if (matchValue == null) {
-            // Never search for a blank value: it matches every record without one (D44).
-            throw new StepException(
-                'the answer used to find the record was left blank, so no search was run.'
+            mf = d.fields.getMap().get(String.valueOf(match.get('field')));
+            if (mf == null) {
+                throw new StepException(
+                    'the field it searches on no longer exists.'
+                );
+            }
+            String key = String.valueOf(src.get('elementKey'));
+            // The SAME conversion the write uses, against the field being searched:
+            // a choice written as a label must not be searched as its value.
+            matchValue = FinalMappingRules.answerValue(
+                run.answers.get(key),
+                run.questions.get(key),
+                mf.getDescribe()
             );
+            if (matchValue == null) {
+                // Never search for a blank value: it matches every record without one (D44).
+                throw new StepException(
+                    'the answer used to find the record was left blank, so no search was run.'
+                );
+            }
         }
         String whereClause;
         Map<String, Object> binds;
@@ -337,14 +345,17 @@ public without sharing class FinalMappingService {
             binds = new Map<String, Object>(c.binds);
         }
         // m* (typed), b* (compiled) and mappingMatchValue never collide.
-        binds.put('mappingMatchValue', matchValue);
+        String legacy = '';
+        if (mf != null) {
+            binds.put('mappingMatchValue', matchValue);
+            legacy = mf.getDescribe().getName() + ' = :mappingMatchValue AND ';
+        }
         String soql =
             'SELECT Id FROM ' +
             d.getName() +
             ' WHERE ' +
-            mf.getDescribe().getName() +
-            ' = :mappingMatchValue' +
-            ' AND (' +
+            legacy +
+            '(' +
             whereClause + // NOPMD — typed conditions: parsed by FinalMappingSoql, checked as the author at publish (D50)
             ') LIMIT 2';
         List<SObject> hits = Database.queryWithBinds(

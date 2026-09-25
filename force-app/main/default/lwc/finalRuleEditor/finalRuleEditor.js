@@ -373,6 +373,17 @@ export default class FinalRuleEditor extends LightningElement {
         return null;
     }
 
+    /** A chosen answer that can be skipped: publishing refuses it (round 1 #5). */
+    _answerNote(rule) {
+        const key = this._answerKey(rule);
+        const choice = key
+            ? this._answerChoices.find((a) => a.key === key)
+            : null;
+        return choice && choice.skippable
+            ? `“${choice.label}” can be skipped. Make it required before you publish — a search can’t use an answer that might be missing.`
+            : '';
+    }
+
     _answerOptions(rule) {
         const options = this._fittingAnswers(rule).map((a) => ({
             value: ANSWER_PREFIX + a.key,
@@ -980,6 +991,7 @@ export default class FinalRuleEditor extends LightningElement {
                 compareOptions: this._compareOptionsFor(rule, i),
                 valueIsAnswer: this._compareOf(rule, i) === 'answer',
                 answerOptions: this._answerOptions(rule),
+                answerNote: this._answerNote(rule),
                 compareLabel: `Condition ${i + 1}: compare with`,
                 valueIsUser: this._compareOf(rule, i) === 'user',
                 key: `rule_${i}`,

@@ -13,7 +13,9 @@ import {
     answerIndex,
     actionState,
     setFilterMode,
-    soqlTokenIds
+    soqlTokenIds,
+    foldMatch,
+    searchAnswerIds
 } from 'c/finalMappingModel';
 
 const base = () => ({ specVersion: 1, pages: [] });
@@ -42,11 +44,7 @@ describe('finalMappingModel', () => {
     it('a new find-or-create step has no match answer', () => {
         const { spec, actionId } = addAction(base(), 'Contact', 'findOrCreate');
         const a = actionsOf(spec).find((x) => x.id === actionId);
-        expect(a.match).toEqual({
-            field: null,
-            source: null,
-            filter: { logic: 'all', rows: [] }
-        });
+        expect(a.match).toEqual({ filter: { logic: 'all', rows: [] } });
         expect('onMatch' in a.match).toBe(false);
     });
 
@@ -95,7 +93,7 @@ describe('finalMappingModel', () => {
         expect(a.fields[0].writeOnMatch).toBeUndefined();
     });
 
-    it('reuse clears overwrite flags; the match field can never be flagged', () => {
+    it('reuse clears overwrite flags; any field may be flagged (no locks)', () => {
         let { spec, actionId } = addAction(base(), 'Contact', 'findOrCreate');
         spec = setMatch(spec, actionId, {
             field: 'Email',
@@ -107,9 +105,9 @@ describe('finalMappingModel', () => {
         spec = setWriteOnMatch(spec, actionId, 'Email', true);
         spec = setWriteOnMatch(spec, actionId, 'Title', true);
         let a = actionsOf(spec)[0];
-        expect(
-            a.fields.find((f) => f.field === 'Email').writeOnMatch
-        ).toBeUndefined();
+        expect(a.fields.find((f) => f.field === 'Email').writeOnMatch).toBe(
+            true
+        );
         expect(a.fields.find((f) => f.field === 'Title').writeOnMatch).toBe(
             true
         );
@@ -132,8 +130,8 @@ describe('finalMappingModel', () => {
             {
                 actionId,
                 object: 'Contact',
-                field: 'Email',
-                use: 'match',
+                field: null,
+                use: 'filter',
                 step: 1
             },
             {
@@ -311,97 +309,149 @@ describe('typed conditions (D50)', () => {
     });
 
     it('a typed step is complete only with text', () => {
+        const noLegacy = { field: null, source: null };
         expect(
-            actionState([findStep({ filterMode: 'soql', soql: '  ' })], 0)
+            actionState(
+                [findStep({ ...noLegacy, filterMode: 'soql', soql: '  ' })],
+                0
+            )
         ).toBe('incomplete');
         expect(
             actionState(
-                [findStep({ filterMode: 'soql', soql: 'Title = {!el_t}' })],
+                [
+                    findStep({
+                        ...noLegacy,
+                        filterMode: 'soql',
+                        soql: 'Title = {!el_t}'
+                    })
+                ],
                 0
             )
         ).toBe('ok');
+        // conditions that compare with no answer aren't a search yet
+        expect(
+            actionState(
+                [
+                    findStep({
+                        ...noLegacy,
+                        filterMode: 'soql',
+                        soql: "Title = 'x'"
+                    })
+                ],
+                0
+            )
+        ).toBe('incomplete');
     });
 });
 
-describe('pre-filling the searched field (decision 12)', () => {
-    const step = () => ({
-        ...base(),
-        mapping: {
-            actions: [
-                {
-                    id: 'act_a',
-                    object: 'Contact',
-                    operation: 'findOrCreate',
-                    match: { filter: { logic: 'all', rows: [] } },
-                    fields: [{ field: 'LastName', source: answer('el_n') }]
-                }
-            ]
-        }
+describe('one search block (round 1 #4)', () => {
+    const answerRow = (key, field = 'Email') => ({
+        fieldPath: field,
+        operator: 'eq',
+        value: '$field.' + key
     });
-    const fieldsOf = (spec) => actionsOf(spec)[0].fields;
-    const pickEmail = (spec) =>
-        setMatch(setMatch(spec, 'act_a', { field: 'Email' }), 'act_a', {
-            source: answer('el_e')
-        });
 
-    it('adds the searched field, fed by its answer, once both are chosen', () => {
-        const spec = setMatch(step(), 'act_a', { field: 'Email' });
-        expect(fieldsOf(spec).map((x) => x.field)).toEqual(['LastName']);
-        const done = setMatch(spec, 'act_a', { source: answer('el_e') });
-        expect(fieldsOf(done)[0]).toEqual({
+    it('folds an older Where/Matches into the first condition', () => {
+        const m = foldMatch({
             field: 'Email',
             source: answer('el_e'),
-            prefilled: true
-        });
-    });
-
-    it('follows a source change while untouched', () => {
-        const spec = setMatch(pickEmail(step()), 'act_a', {
-            source: answer('el_x')
-        });
-        expect(fieldsOf(spec)[0].source).toEqual(answer('el_x'));
-    });
-
-    it('stays as the author set it once edited', () => {
-        let spec = setFieldSource(pickEmail(step()), 'act_a', 'Email', {
-            kind: 'literal',
-            value: 'x@y.z'
-        });
-        expect(fieldsOf(spec)[0].prefilled).toBeUndefined();
-        spec = setMatch(spec, 'act_a', { source: answer('el_x') });
-        expect(fieldsOf(spec)[0].source).toEqual({
-            kind: 'literal',
-            value: 'x@y.z'
-        });
-    });
-
-    it('is not re-added after deletion when the filter or source changes', () => {
-        let spec = removeField(pickEmail(step()), 'act_a', 'Email');
-        spec = setMatch(spec, 'act_a', {
+            onMatch: 'reuse',
             filter: {
                 logic: 'all',
                 rows: [{ fieldPath: 'Title', operator: 'eq', value: 'x' }]
             }
         });
-        spec = setMatch(spec, 'act_a', { source: answer('el_x') });
-        expect(fieldsOf(spec).map((x) => x.field)).toEqual(['LastName']);
+        expect(m.field).toBeUndefined();
+        expect(m.source).toBeUndefined();
+        expect(m.onMatch).toBe('reuse');
+        expect(m.filter.rows[0]).toEqual(answerRow('el_e'));
+        expect(m.filter.rows).toHaveLength(2);
     });
 
-    it('is offered again when the search field changes', () => {
-        let spec = removeField(pickEmail(step()), 'act_a', 'Email');
-        spec = setMatch(spec, 'act_a', { field: 'Phone' });
-        expect(fieldsOf(spec)[0]).toEqual({
-            field: 'Phone',
+    it('keeps OR and custom logic meaning the same when folding', () => {
+        const any = foldMatch({
+            field: 'Email',
             source: answer('el_e'),
-            prefilled: true
+            filter: {
+                logic: 'any',
+                rows: [
+                    { fieldPath: 'Title', operator: 'eq', value: 'a' },
+                    { fieldPath: 'Title', operator: 'eq', value: 'b' }
+                ]
+            }
         });
+        expect(any.filter.logic).toBe('custom');
+        expect(any.filter.customLogic).toBe('1 AND (2 OR 3)');
+        const custom = foldMatch({
+            field: 'Email',
+            source: answer('el_e'),
+            filter: {
+                logic: 'custom',
+                customLogic: '1 OR 2',
+                rows: [
+                    { fieldPath: 'Title', operator: 'eq', value: 'a' },
+                    { fieldPath: 'Title', operator: 'eq', value: 'b' }
+                ]
+            }
+        });
+        expect(custom.filter.customLogic).toBe('1 AND (2 OR 3)');
     });
 
-    it('drops the old untouched pre-fill when the search field changes', () => {
-        const spec = setMatch(pickEmail(step()), 'act_a', { field: 'Phone' });
-        expect(fieldsOf(spec).map((x) => x.field)).toEqual([
-            'Phone',
-            'LastName'
-        ]);
+    it('puts an older Where/Matches in front of typed conditions', () => {
+        expect(
+            foldMatch({
+                field: 'Email',
+                source: answer('el_e'),
+                filterMode: 'soql',
+                soql: "Title = 'x' OR Title = 'y'"
+            }).soql
+        ).toBe("Email = {!el_e} AND (Title = 'x' OR Title = 'y')");
+    });
+
+    it('any edit to the step saves it folded', () => {
+        let spec = {
+            ...base(),
+            mapping: {
+                actions: [
+                    {
+                        id: 'act_a',
+                        object: 'Contact',
+                        operation: 'findOrCreate',
+                        match: {
+                            field: 'Email',
+                            source: answer('el_e'),
+                            filter: { logic: 'all', rows: [] }
+                        },
+                        fields: []
+                    }
+                ]
+            }
+        };
+        spec = setOnMatch(spec, 'act_a', 'reuse');
+        const m = actionsOf(spec)[0].match;
+        expect('field' in m).toBe(false);
+        expect(m.filter.rows).toEqual([answerRow('el_e')]);
+    });
+
+    it('searchAnswerIds reads rows, typed conditions and older steps', () => {
+        expect(
+            searchAnswerIds({
+                filter: { logic: 'all', rows: [answerRow('el_a')] }
+            })
+        ).toEqual(['el_a']);
+        expect(
+            searchAnswerIds({ filterMode: 'soql', soql: 'LastName = {!el_b}' })
+        ).toEqual(['el_b']);
+        expect(
+            searchAnswerIds({ field: 'Email', source: answer('el_c') })
+        ).toEqual(['el_c']);
+    });
+
+    it('nothing is added to the create list when a search is set', () => {
+        let { spec, actionId } = addAction(base(), 'Contact', 'findOrCreate');
+        spec = setMatch(spec, actionId, {
+            filter: { logic: 'all', rows: [answerRow('el_e')] }
+        });
+        expect(actionsOf(spec)[0].fields).toEqual([]);
     });
 });

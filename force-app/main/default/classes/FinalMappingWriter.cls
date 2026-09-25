@@ -88,13 +88,6 @@ public without sharing class FinalMappingWriter {
             }
             out.add(((String) f.get('field')).toLowerCase());
         }
-        if (isUpdate) {
-            Object matchField = FinalMappingRules.asMap(action.get('match'))
-                .get('field');
-            if (matchField instanceof String) {
-                out.remove(((String) matchField).toLowerCase());
-            }
-        }
         return out;
     }
 }

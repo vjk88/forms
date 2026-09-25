@@ -150,6 +150,13 @@
                                         data-control="value"
                                         onchange={handleRuleField}
                                     ></lightning-combobox>
+                                    <template lwc:if={r.answerNote}>
+                                        <p
+                                            class="re-record-hint re-answer-note"
+                                        >
+                                            {r.answerNote}
+                                        </p>
+                                    </template>
                                 </template>
                                 <template lwc:elseif={r.valueIsUser}>
                                     <c-final-field-picker

@@ -354,7 +354,7 @@ describe('find or create', () => {
         ).toBe('reuse');
     });
 
-    it('update shows an overwrite tick per field, off, and none on the match field', async () => {
+    it('update shows a tick on every field, off — no field is locked', async () => {
         const el = mount(
             foc(
                 {
@@ -385,12 +385,39 @@ describe('find or create', () => {
         expect(
             el.shadowRoot.querySelector(
                 '[data-row="Email"] lightning-input[data-overwrite]'
-            )
-        ).toBeNull();
+            ).checked
+        ).toBe(false);
+        expect(el.shadowRoot.querySelector('.ma-lock')).toBeNull();
+    });
+
+    it('an older step reads its Where/Matches as the first condition', async () => {
+        const el = mount(
+            foc(
+                {
+                    field: 'Email',
+                    source: { kind: 'answer', elementKey: 'el_e' },
+                    filter: {
+                        logic: 'all',
+                        rows: [
+                            { fieldPath: 'Title', operator: 'eq', value: 'x' }
+                        ]
+                    },
+                    onMatch: 'reuse'
+                },
+                []
+            ),
+            'act_1'
+        );
+        await flush();
+        const filter = el.shadowRoot.querySelector('c-final-lookup-filter');
+        expect(filter.value.filter.rows).toEqual([
+            { fieldPath: 'Email', operator: 'eq', value: '$field.el_e' },
+            { fieldPath: 'Title', operator: 'eq', value: 'x' }
+        ]);
         expect(
-            el.shadowRoot.querySelector('[data-row="Email"] .ma-lock')
-                .textContent
-        ).toContain('never updated');
+            el.shadowRoot.querySelectorAll('lightning-combobox[label="Where"]')
+                .length
+        ).toBe(0);
     });
 
     it('passes the filter to the lookup filter editor and takes its changes', async () => {
@@ -450,14 +477,16 @@ describe('find or create', () => {
             {
                 key: 'el_e',
                 label: 'Work email',
+                skippable: false,
                 fits: ['email', 'string', 'textarea']
             },
             {
                 key: 'el_n',
                 label: 'Your surname',
+                skippable: false,
                 fits: ['string', 'textarea']
             },
-            { key: 'el_o', label: 'Pick several', fits: [] }
+            { key: 'el_o', label: 'Pick several', skippable: false, fits: [] }
         ]);
     });
 });
@@ -500,7 +529,7 @@ describe('the step reads as its branches (S5)', () => {
         const el = mount([findStep('reuse')], 'act_1');
         await flush();
         expect(headings(el)).toEqual([
-            'Find an existing Contact',
+            'Find an existing Contact where',
             'If one is found',
             'If none is found, create a Contact with'
         ]);
@@ -544,23 +573,6 @@ describe('the step reads as its branches (S5)', () => {
         expect(
             el.shadowRoot.querySelector('[data-row="Email"] .ma-why')
         ).toBeNull();
-    });
-
-    it('the searched field, filled in for the author, says so', async () => {
-        const step = findStep('reuse');
-        step.fields = [
-            {
-                field: 'Email',
-                source: { kind: 'answer', elementKey: 'el_e' },
-                prefilled: true
-            }
-        ];
-        const el = mount([step], 'act_1');
-        await flush();
-        expect(
-            el.shadowRoot.querySelector('[data-row="Email"] .ma-prefilled')
-                .textContent
-        ).toContain('Filled in from your search.');
     });
 
     it('uses an before a vowel', async () => {

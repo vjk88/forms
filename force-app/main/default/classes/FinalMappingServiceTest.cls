@@ -933,4 +933,44 @@ private class FinalMappingServiceTest {
         Assert.areEqual('Failed', r.status);
         Assert.isTrue(r.message.contains('more than one'), r.message);
     }
+
+    // ------------------------------------------- one search block (round 1 #4)
+
+    @IsTest
+    static void aStepThatIsOnlyConditionsFindsTheRecord() {
+        insert new List<Contact>{
+            new Contact(LastName = 'Jane', Email = 'jane@example.com'),
+            new Contact(LastName = 'Other', Email = 'other@example.com')
+        };
+        Map<String, Object> action = FinalMappingTestData.findOrCreateContact(
+            'act_a',
+            'reuse'
+        );
+        Map<String, Object> match = (Map<String, Object>) action.get('match');
+        match.remove('field');
+        match.remove('source');
+        match.put(
+            'filter',
+            new Map<String, Object>{
+                'logic' => 'all',
+                'rows' => new List<Object>{
+                    new Map<String, Object>{
+                        'fieldPath' => 'Email',
+                        'operator' => 'eq',
+                        'value' => '$field.el_email'
+                    }
+                }
+            }
+        );
+        Id subId = arrange(new List<Object>{ action }, jane());
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM Contact WHERE Email = 'jane@example.com'],
+            'Jane was found by the condition alone, nothing was created'
+        );
+    }
 }

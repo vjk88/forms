@@ -181,8 +181,8 @@ describe('c-final-conditions-summary', () => {
         ['visibility', 'hide', 'all', 2, 'Hide when all are met:'],
         ['visibility', 'show', 'all', 1, 'Show when:'],
         ['lookup', 'show', 'all', 2, 'Only records where all are met:'],
-        ['mapping', 'show', 'any', 2, 'Only records where any is met:'],
-        ['mapping', 'show', 'all', 1, 'Only records where:']
+        ['mapping', 'show', 'any', 2, 'Any of these:'],
+        ['mapping', 'show', 'all', 2, 'All of these:']
     ])('%s %s %s ×%i reads %p', async (columns, action, logic, n, heading) => {
         const el = mount({
             columns,
@@ -197,6 +197,20 @@ describe('c-final-conditions-summary', () => {
         });
         await flush();
         expect(texts(el, '.cs-heading')).toEqual([heading]);
+    });
+
+    it('a single mapping condition needs no heading: the step already says "where"', async () => {
+        const el = mount({
+            columns: 'mapping',
+            value: {
+                action: 'show',
+                logic: 'all',
+                customLogic: null,
+                rules: [rule('el_1', 'isBlank', null)]
+            }
+        });
+        await flush();
+        expect(texts(el, '.cs-heading')).toEqual([]);
     });
 
     it('shows five and says how many more', async () => {

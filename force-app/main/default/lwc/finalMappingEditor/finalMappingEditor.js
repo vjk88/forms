@@ -21,7 +21,7 @@ const STATE_TEXT = {
  *  field's label, never its API name. */
 function describeUse(use, fieldLabel) {
     if (use.use === 'match') return 'used to find the record';
-    if (use.use === 'filter') return 'used to narrow the search';
+    if (use.use === 'filter') return 'used to find the record';
     if (use.use === 'link') return `linked as ${fieldLabel}`;
     return fieldLabel;
 }
