@@ -764,7 +764,7 @@ private class FinalLookupServiceTest {
             new Map<String, Object>(),
             'Account'
         );
-        Assert.isFalse(c.blocked, c.blockedReason);
+        Assert.isFalse(c.blocked, 'reason: ' + c.blockedReason);
         Assert.areEqual(5, c.binds.get('b0'));
         Assert.areEqual(false, c.binds.get('b1'));
         // and the query actually runs with them
