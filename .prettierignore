@@ -12,3 +12,6 @@ coverage/
 # The F2 plan embeds LWC templates; prettier’s html parser quotes their
 # bindings ({x} -> "{x}"), which would break anything copied out of it.
 docs/FinalDesign/specs/IMPL_PLAN_FREEFORM_F2.md
+
+# Markdown (plans, specs, notes) is left exactly as written
+**/*.md
