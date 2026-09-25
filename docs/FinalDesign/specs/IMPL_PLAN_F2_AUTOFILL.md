@@ -1,6 +1,6 @@
 # IMPL_PLAN_F2_AUTOFILL — Build is the one place: Mapping and Autofill in the left rail
 
-**Status:** Draft for owner review, revision 3 (2026-09-25). Revisions 2 and 3 fold in two reviews (§11). No code until the owner says go.
+**Status:** Draft for owner review, revision 4 (2026-09-25). Revisions 2–4 fold in three reviews (§11). No code until the owner says go.
 **Replaces:** ruling D30 of FREEFORM_F2_MAPPING_SPEC ("Autofill moves into Data mode"). See D63 below.
 **Builds on:** `archive/IMPL_PLAN_AUTOFILL_RULES.md` (today's Autofill, shipped PRs #241–#245), IMPL_PLAN_F2_SEARCH (the mapping screen, shipped PRs #332–#348).
 
@@ -143,12 +143,16 @@ Freeform has no lookup question today: the palette doesn't offer one, `_mintQues
 - **Mint (`finalFormStudio._mintQuestion('lookup')`):** a `type: 'field'` element with `config: { inputType: 'reference', referenceTo: null }`, unbound.
   - The renderer already takes its object from `config.referenceTo` (`finalElementRenderer.lookupTargetObject`).
   - An unbound lookup can only use the custom search box, since the native `lightning-input-field` mode needs a bound field. So the question is created in the custom mode.
-- **Properties panel (`finalPropertyPanel`):** for an unbound lookup, an **Object** combobox sets `config.referenceTo`. It lists readable, searchable objects, from `FinalMappingController.listCreatableObjects`, the list the mapping screen's Add a record uses.
+- **Properties panel (`finalPropertyPanel`):** for an unbound lookup, an **Object** combobox sets `config.referenceTo`. It lists the objects a lookup can use, from a new cacheable `FinalLookupController.listLookupObjects()`: readable and queryable (`isAccessible`, `isQueryable`), including setup objects like User. It doesn't use the mapping screen's `listCreatableObjects`, which needs create permission and leaves out setup objects, because a lookup only reads existing records.
   - Changing the object clears the lookup's display, search and filter settings, which named the old object's fields. It asks first when any were set.
   - The rest of today's lookup inspector (what each result shows, which fields are searched, the filter) then applies unchanged.
 - **Runtime:** the answer is the picked record's Id, stored as the question's answer. The mapping rule already reads it through "The record picked in …".
+- **The viewer must know its form and published version (moved here from slice C).** `FinalLookupController.search` refuses a request without both ids (it reads the published element through `publishedConfig(formId, versionId, elementId)`). Today neither host gives the viewer those ids, so a lookup question would fail to search on internal forms loaded by form id and on the site:
+  - **Site:** `finalGuestHost` already has `versionId` from `getGuestRuntimeSpec`. It passes `form-id={formId}` and `version-id={versionId}` to `c-final-form-viewer`, which has `@api formId` and `@api versionId` already.
+  - **Internal (loaded by form id):** `getSpec` returns only the spec, so the viewer never learns the version. Add `FinalSpecController.getSpecEnvelope(formId, versionId)`, which returns `{ versionId, spec }` (the version actually served). The viewer's own load (≈ line 616) uses it and stores `versionId`. `getSpec` stays for its other callers.
+  - **Studio preview:** it has no published version by design. A lookup question in the preview can't search (today's behaviour for unpublished lookups); slice C's preview endpoint covers the `user` source only.
 - **First task of the slice (org):** confirm that search, the submit-time check and guest refusal work for an unbound lookup. They read the element's own config, not a binding. Fix anything that assumes a binding before building the Autofill parts on top.
-- **Tests:** palette item on Freeform only; minted shape; Object change clears and asks; renderer uses `referenceTo`; Apex search accepts an unbound lookup element.
+- **Tests:** palette item on Freeform only; minted shape; Object change clears and asks; the Object list includes an object the author can read but not create (and User); renderer uses `referenceTo`; Apex search accepts an unbound lookup element; `getSpecEnvelope` returns the version it served; `finalGuestHost` passes `form-id` and `version-id`; a lookup search on an internal form loaded by form id and on the site sends both ids.
 
 ### 6.1 Rail: `lwc/finalAutofillPanel` becomes the list
 
@@ -201,11 +205,12 @@ Four new `@api` properties. Their defaults keep today's behaviour, which lookup 
 - **`allowedTypes`** (default: empty, meaning all). A list of the lowercase describe types the picker offers (its data carries `type`). Relationship entries stay visible while `maxDepth` allows them.
 - **`purpose`** (default `'filter'`, today's behaviour). `describeLookupFields` returns only fields that can be filtered on (`isFilterable()`), because conditions compile to a WHERE clause, and long-text fields can't be used there. Autofill _reads_ fields, so a long text must be offered.
   - `'read'` makes the picker call a new cacheable `FinalLookupController.describeReadableFields(objectApiName, relationshipName)`. It returns every readable field, filterable or not, in the same shape.
+  - **`purpose` reaches every describe the picker module makes.** The module-level `describe(objectApi, relationship)`, `labelForPath` and `typeForPath` all gain a `purpose` argument (default `'filter'`), and the shared cache key becomes `${purpose}|${objectApi}|${relationship}`. Otherwise a long-text field picked in read mode would look up its type through the filter-only describe and find nothing, and read and filter results would overwrite each other in the cache.
   - `describeLookupFields` is unchanged, so conditions and lookup filters still see only filterable fields.
   - The Autofill editor passes `purpose="read"`.
 - **The fits table is one table, in Apex** (`FinalAutofillRules`). The browser gets it from a new cacheable `FinalAutofillController.fitsTable()` that returns `{ describeType: [answerTypes] }`.
   - The editor passes `allowedTypes` = every describe type that fits at least one destination on the form.
-  - Once a field is picked, the editor uses `typeForPath` (already exported by the picker) and the table to list the destinations it fits.
+  - Once a field is picked, the editor calls `typeForPath(object, path, 'read')` and uses the table to list the destinations it fits.
 
 ### 6.4 What fits where
 
@@ -283,7 +288,7 @@ A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)
   - `autofillEngine`: `fitValue` for each type, including the skipped cases;
   - `finalAutofillRuleEditor`: sources, the second-link refusal, polymorphic object choice, rows filtered by fit, Apply problems;
   - `finalAutofillPanel`: Freeform opens the dialog, Form keeps the in-rail editor;
-  - `finalFieldPicker`: `maxDepth: 0` hides related fields; `allowedTypes` filters; the defaults are unchanged.
+  - `finalFieldPicker`: `maxDepth: 0` hides related fields; `allowedTypes` filters; the defaults are unchanged; `purpose="read"` offers a long-text field and `typeForPath(…, 'read')` types it; opening a read picker and then a filter picker on the same object, and the other way round, each gets its own fields (no shared cache entry).
 - **Apex:**
   - `FinalAutofillRulesTest`: the table, the legacy fixtures, `destinationOf` (bound versus unbound);
   - `FinalAutofillValidatorTest`: Freeform question destinations, a lookup-question source, the second link rule, a type that doesn't fit, a number/date/pick-list source now accepted;
@@ -338,11 +343,10 @@ A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)
 - **Who calls it:** `finalFormViewer`, when `@salesforce/user/isGuest` is false. That covers the internal hosts, and signed-in people on the site (`finalGuestHost` renders the same viewer).
   - A guest never calls it. That's decided by who is signed in, not by which host is showing the form.
   - In the Studio preview, it calls `getUserPreviewValues`. The author is the signed-in person, so the preview fills with the author's own values.
-- **The viewer needs to know which published version it shows.** Today neither host tells it:
-  - **Site:** `finalGuestHost` already has `versionId` from `getGuestRuntimeSpec`. It passes `form-id={formId}` and `version-id={versionId}` to `c-final-form-viewer`, which has `@api formId` and `@api versionId` already.
-  - **Internal (loaded by form id):** `getSpec` returns only the spec, so the viewer never learns the version. Add `FinalSpecController.getSpecEnvelope(formId, versionId)`, which returns `{ versionId, spec }` (the version actually served), and have the viewer's own load (≈ line 616) use it and store `versionId`. `getSpec` stays for its other callers.
-  - **Studio preview:** it has no published version by design; it uses the preview endpoint above.
-  - No `versionId` and not a preview: the viewer skips `user` rules. It never guesses.
+- **The viewer's form and version ids** are wired in slice B (6.0). The `user` source relies on them:
+  - with a `versionId`, the viewer calls `getUserValues`;
+  - in the Studio preview, it calls `getUserPreviewValues`;
+  - with no `versionId` and not a preview, it skips `user` rules. It never guesses.
 - **How results enter Autofill:** the same path lookup results take, with one conversion.
   - The viewer calls the engine's `onSourceChanged` once per `user` rule after the version (or preview) is known, with `sourceKey` = the user id. It uses the returned `requestIdentity` (`ruleId`, `generation`, `sessionId`).
   - The server's reply is keyed by **destination** (`{ el_email: … }`), and `onResult` looks values up by **source** (`mapping.from`). So each rule's values go through the existing `_toSourceKeyed(ruleId, values)` before `onResult`, exactly as the guest and test-value paths do today (its R6 note).
@@ -360,11 +364,9 @@ A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)
 - **Apex:**
   - paths through the validator, the disclosure check (Studio mint and the Flow invocable), `extractGuestDisclosures`, the guest context, `extractAccessibleMappings` and `getTestRecordValues`, each with an empty lookup and an unreadable field;
   - `getUserValues` and `getUserPreviewValues`: refused to a guest; a hop outside the three refused; the preview reads only the draft's `user` rules;
-  - `getSpecEnvelope`: returns the version it served.
 - **Jest:**
   - `finalAutofillRecordSource`: a path in `optionalFields` and its value read;
   - `finalFormViewer`: a `user` rule's stale reply is dropped; no call when `isGuest`; no call without a version outside the preview; the reply is converted by `_toSourceKeyed` for an internal spec and for a projected site spec; pending blocks Submit and a timeout shows the message;
-  - `finalGuestHost`: passes `form-id` and `version-id` to the viewer.
 - **Org:**
   - a link rule filling `Account.Name` for a guest (site published first);
   - a signed-in site user and an internal user each get their own name and email;
@@ -429,3 +431,11 @@ Legacy `autofillEditor`, `formAutofill` and `zAutofillEditor` aren't part of the
 | 5   | Empty relationships must clear untouched owned answers under both policies       | Today's ownership rules kept, with tests (7.1)                                                                               |
 | 6   | The Mapping dialog dropped `is-public` and `read-only`                           | Forwarded, with a regression test (5.2, 5.6)                                                                                 |
 | —   | Timeout isn't console-only                                                       | `user` requests keep today's behaviour: Submit off while pending, message on timeout (7.2)                                   |
+
+**Review 3 (2026-09-25):**
+
+| #   | Finding                                                                                  | Now                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1   | The lookup question needs form and version ids in slice B; `search` refuses without them | Host props and `getSpecEnvelope` moved into B (6.0); C only uses them (7.2)                            |
+| 2   | `listCreatableObjects` needs create permission and leaves out User                       | New `listLookupObjects()`: readable and queryable, User included; test a read-only object (6.0)        |
+| 3   | `typeForPath` and the cache ignore `purpose`                                             | `purpose` through `describe`, `labelForPath`, `typeForPath` and the cache key; either-order test (6.3) |
