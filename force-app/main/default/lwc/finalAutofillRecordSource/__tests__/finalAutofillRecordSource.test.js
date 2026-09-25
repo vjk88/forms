@@ -133,4 +133,38 @@ describe('c-final-autofill-record-source', () => {
         expect(detail.sessionId).toBe('sess_123');
         expect(detail.error.body).toEqual(mockError);
     });
+
+    it('reads one hop: a value, an empty lookup, and an unreadable one (7.1)', async () => {
+        const element = createElement('c-final-autofill-record-source', {
+            is: FinalAutofillRecordSource
+        });
+        element.ruleId = 'af_1';
+        element.recordId = '003000000000009AAA';
+        element.objectApiName = 'Contact';
+        element.fields = ['Account.Name', 'ReportsTo.Name', 'Owner.Name'];
+        const success = jest.fn();
+        element.addEventListener('recordsuccess', success);
+        document.body.appendChild(element);
+        getRecord.emit({
+            id: '003000000000009AAA',
+            fields: {
+                Account: {
+                    value: {
+                        fields: { Name: { value: 'Edge Communications' } }
+                    }
+                },
+                // no one it reports to: present and null
+                ReportsTo: { value: null }
+                // Owner not returned: unreadable, left out
+            }
+        });
+        await Promise.resolve();
+        const values = success.mock.calls[0][0].detail.values;
+        expect(values['Account.Name']).toBe('Edge Communications');
+        expect(values['ReportsTo.Name']).toBeNull();
+        expect('ReportsTo.Name' in values).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(values, 'Owner.Name')).toBe(
+            false
+        );
+    });
 });

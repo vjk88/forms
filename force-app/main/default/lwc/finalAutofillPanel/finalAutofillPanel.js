@@ -362,9 +362,15 @@ export default class FinalAutofillPanel extends LightningElement {
 
         return (this.rules || []).map((r) => {
             const isLink = r.source?.type === 'link';
-            const sourceBadge = isLink
-                ? `Link: ${r.source?.objectApiName || 'Unconfigured'}`
-                : `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}${r.source?.objectApiName ? ` · ${r.source.objectApiName}` : ''}`;
+            const isUser = r.source?.type === 'user';
+            let sourceBadge;
+            if (isUser) {
+                sourceBadge = 'Signed-in person';
+            } else if (isLink) {
+                sourceBadge = `Link: ${r.source?.objectApiName || 'Unconfigured'}`;
+            } else {
+                sourceBadge = `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}${r.source?.objectApiName ? ` · ${r.source.objectApiName}` : ''}`;
+            }
 
             const mappingCount = (r.mappings || []).length;
             const mappingCountText = `${mappingCount} mapping${mappingCount === 1 ? '' : 's'}`;
@@ -374,7 +380,9 @@ export default class FinalAutofillPanel extends LightningElement {
                     : 'Preserve edits';
 
             const errors = [];
-            if (isLink && !r.source?.objectApiName) {
+            if (isUser) {
+                // the signed-in person always has a source record
+            } else if (isLink && !r.source?.objectApiName) {
                 errors.push('Source object missing');
             } else if (!isLink && !r.source?.elementId) {
                 errors.push('Lookup field missing');

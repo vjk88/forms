@@ -39,6 +39,14 @@
                 >
                     A record picked in a lookup
                 </button>
+                <button
+                    type="button"
+                    class={userClass}
+                    aria-pressed={userPressed}
+                    onclick={handleUser}
+                >
+                    The signed-in person
+                </button>
             </div>
             <template lwc:if={linkDisabled}>
                 <p class="am-hint">
@@ -55,6 +63,13 @@
                     value={draft.source.objectApiName}
                     onpick={handleObjectPick}
                 ></c-final-object-picker>
+            </template>
+            <template lwc:if={isUser}>
+                <p class="am-hint">
+                    Fills from the person filling in the form: their own user
+                    record, and their Contact, Account or Manager. People who
+                    aren’t signed in get nothing from this rule.
+                </p>
             </template>
             <template lwc:if={isLookup}>
                 <template lwc:if={hasLookups}>
@@ -107,6 +122,7 @@
                                 object-api={sourceObject}
                                 purpose="read"
                                 max-depth={maxDepth}
+                                allowed-relationships={allowedRelationships}
                                 allowed-types={allowedTypes}
                                 value={r.from}
                                 data-index={r.index}

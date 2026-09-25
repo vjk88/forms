@@ -177,4 +177,35 @@ private class FinalAutofillRulesTest {
             FinalAutofillRules.fillsText(Account.CreatedDate.getDescribe())
         );
     }
+
+    // ---- IMPL_PLAN_F2_AUTOFILL 7.1: one hop
+
+    @IsTest
+    static void aFieldOrOneHopResolvesInItsSelectSpelling() {
+        FinalAutofillRules.ResolvedPath direct = FinalAutofillRules.readablePath(
+            'Contact',
+            'email'
+        );
+        Assert.areEqual('Email', direct.path);
+        Assert.isFalse(direct.hop);
+        FinalAutofillRules.ResolvedPath hop = FinalAutofillRules.readablePath(
+            'Contact',
+            'account.name'
+        );
+        Assert.areEqual('Account.Name', hop.path);
+        Assert.isTrue(hop.hop);
+        Assert.areEqual(Schema.DisplayType.STRING, hop.field.getType());
+    }
+
+    @IsTest
+    static void neverTwoHopsAPolymorphicHopOrAFieldThatIsNotThere() {
+        Assert.isNull(
+            FinalAutofillRules.readablePath('Contact', 'Account.Owner.Name')
+        );
+        // Task.What points at many objects: no single object to read
+        Assert.isNull(FinalAutofillRules.readablePath('Task', 'What.Name'));
+        Assert.isNull(FinalAutofillRules.readablePath('Contact', 'Nope__c'));
+        Assert.isNull(FinalAutofillRules.readablePath('Contact', 'Nope.Name'));
+        Assert.isNull(FinalAutofillRules.readablePath('No_Object__c', 'Name'));
+    }
 }

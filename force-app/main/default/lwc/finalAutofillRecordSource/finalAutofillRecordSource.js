@@ -56,8 +56,30 @@ export default class FinalAutofillRecordSource extends LightningElement {
             const values = {};
             const recordFields = data.fields || {};
             for (const fieldName of this.fields) {
-                if (recordFields[fieldName] !== undefined) {
-                    values[fieldName] = recordFields[fieldName].value;
+                const dot = fieldName.indexOf('.');
+                if (dot < 0) {
+                    if (recordFields[fieldName] !== undefined) {
+                        values[fieldName] = recordFields[fieldName].value;
+                    }
+                    continue;
+                }
+                // One hop (IMPL_PLAN_F2_AUTOFILL 7.1): LDS nests it as
+                // fields.Account.value.fields.Name.value. An empty lookup is
+                // present and null; an unreadable one is left out.
+                const rel = recordFields[fieldName.slice(0, dot)];
+                if (rel === undefined) {
+                    continue;
+                }
+                if (rel.value === null) {
+                    values[fieldName] = null;
+                    continue;
+                }
+                const inner =
+                    rel.value &&
+                    rel.value.fields &&
+                    rel.value.fields[fieldName.slice(dot + 1)];
+                if (inner !== undefined) {
+                    values[fieldName] = inner.value;
                 }
             }
             this.dispatchEvent(

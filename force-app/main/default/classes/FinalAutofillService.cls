@@ -119,16 +119,10 @@ public with sharing class FinalAutofillService {
     public static Boolean canDiscloseFields(LinkSourceContract contract) {
         Map<String, Set<String>> byObject = disclosedFieldsByObject(contract);
         for (String objName : byObject.keySet()) {
-            Schema.SObjectType t = Schema.getGlobalDescribe()
-                .get(objName.toLowerCase());
-            if (t == null || !t.getDescribe().isAccessible()) {
-                return false;
-            }
-            Map<String, Schema.SObjectField> fields = t.getDescribe()
-                .fields.getMap();
             for (String f : byObject.get(objName)) {
-                Schema.SObjectField sf = fields.get(f.toLowerCase());
-                if (sf == null || !sf.getDescribe().isAccessible()) {
+                // A field, or one hop (Account.Name): the minter must read the
+                // lookup, the object it points at and the field there.
+                if (FinalAutofillRules.readablePath(objName, f) == null) {
                     return false;
                 }
             }

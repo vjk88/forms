@@ -165,7 +165,7 @@ describe('c-final-autofill-rule-editor', () => {
         const picker = $(el, 'c-final-field-picker');
         expect(picker.objectApi).toBe('Account');
         expect(picker.purpose).toBe('read');
-        expect(picker.maxDepth).toBe(0);
+        expect(picker.maxDepth).toBe(1); // one hop (7.1)
         expect($(el, '.am-guest')).toBeNull();
     });
 
@@ -349,5 +349,28 @@ describe('c-final-autofill-rule-editor', () => {
         expect($(el, '.am-row-test').textContent).toBe(
             'Won’t fill: “lots” doesn’t fit a number answer'
         );
+    });
+
+    it('the signed-in person reads User, one hop through three relationships, never to guests', async () => {
+        const { el, got } = mount({
+            rule: linkRule([
+                { id: 'm1', from: 'Name', to: 'el_company', guestAllowed: true }
+            ])
+        });
+        await flush();
+        const [, , user] = $$(el, '.am-seg');
+        user.click();
+        await flush();
+        const last = got[got.length - 1];
+        expect(last.source).toEqual({ type: 'user' });
+        expect(last.mappings[0].guestAllowed).toBe(false);
+        const picker = $(el, 'c-final-field-picker');
+        expect(picker.objectApi).toBe('User');
+        expect(picker.allowedRelationships).toEqual([
+            'Contact',
+            'Account',
+            'Manager'
+        ]);
+        expect($(el, '.am-guest')).toBeNull();
     });
 });

@@ -202,7 +202,11 @@ public with sharing class FinalAutofillValidator {
                 ? (String) source.get('type')
                 : null;
 
-            if (sourceType != 'link' && sourceType != 'lookup') {
+            if (
+                sourceType != 'link' &&
+                sourceType != 'lookup' &&
+                sourceType != 'user'
+            ) {
                 diagnostics.add(
                     new Diagnostic(
                         'AUTOFILL_INVALID_SOURCE_TYPE',
@@ -254,6 +258,9 @@ public with sharing class FinalAutofillValidator {
                         )
                     );
                 }
+            } else if (sourceType == 'user') {
+                // The signed-in person's own User record (7.2).
+                sourceObjectApi = 'User';
             } else if (sourceType == 'lookup') {
                 String lookupElId = (String) source.get('elementId');
                 if (String.isBlank(lookupElId)) {
@@ -493,6 +500,16 @@ public with sharing class FinalAutofillValidator {
                 // destination (FinalAutofillRules).
                 Schema.DisplayType fromType = null;
 
+                if (sourceType == 'user' && guestAllowed) {
+                    diagnostics.add(
+                        new Diagnostic(
+                            'AUTOFILL_USER_GUEST_DISCLOSURE',
+                            ruleId,
+                            mapId,
+                            'The signed-in person’s values never go to people who aren’t signed in.'
+                        )
+                    );
+                }
                 if (sourceType == 'lookup' && guestAllowed) {
                     diagnostics.add(
                         new Diagnostic(
@@ -517,11 +534,32 @@ public with sharing class FinalAutofillValidator {
                     distinctSourceFields.add(
                         sourceObjectApi + '.' + fromField.toLowerCase()
                     );
-                    if (sourceFieldMap != null) {
-                        Schema.SObjectField fld = sourceFieldMap.get(
-                            fromField.toLowerCase()
+                    // A field or one hop (Account.Name), with the three
+                    // readability checks (FinalAutofillRules.readablePath).
+                    FinalAutofillRules.ResolvedPath resolved = sourceFieldMap ==
+                        null
+                        ? null
+                        : FinalAutofillRules.readablePath(
+                              sourceObjectApi,
+                              fromField
+                          );
+                    if (
+                        sourceType == 'user' &&
+                        fromField.contains('.') &&
+                        !FinalAutofillRules.USER_HOPS.contains(
+                            fromField.substringBefore('.').toLowerCase()
+                        )
+                    ) {
+                        diagnostics.add(
+                            new Diagnostic(
+                                'AUTOFILL_USER_HOP_NOT_ALLOWED',
+                                ruleId,
+                                mapId,
+                                'The signed-in person’s fields can reach their Contact, Account or Manager only.'
+                            )
                         );
-                        if (fld == null || !fld.getDescribe().isAccessible()) {
+                    } else if (sourceFieldMap != null) {
+                        if (resolved == null) {
                             diagnostics.add(
                                 new Diagnostic(
                                     'AUTOFILL_SOURCE_FIELD_INACCESSIBLE',
@@ -534,7 +572,7 @@ public with sharing class FinalAutofillValidator {
                                 )
                             );
                         } else {
-                            Schema.DescribeFieldResult fd = fld.getDescribe();
+                            Schema.DescribeFieldResult fd = resolved.field;
                             fromType = fd.getType();
                             if (!FinalAutofillRules.isReadableSource(fd)) {
                                 diagnostics.add(
