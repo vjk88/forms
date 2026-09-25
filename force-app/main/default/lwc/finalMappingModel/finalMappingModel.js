@@ -203,20 +203,21 @@ export function setMatch(spec, actionId, patch) {
 }
 
 /**
- * Built conditions or typed ones (D50) — one or the other per step. Typed
- * mode keeps its text in `match.soql` and empties the rows; going back to
- * built conditions drops the text. Callers set the new rows themselves.
+ * Built conditions or typed ones (D50): `filterMode` says which one the
+ * search uses. The other is kept, so switching back and forth loses nothing;
+ * publish and the runtime read only the one in use. `soql`, when given,
+ * replaces the typed text.
  */
 export function setFilterMode(spec, actionId, mode, soql) {
     return update(spec, actionId, (a) => {
         a.match = a.match || emptyMatch();
         if (mode === 'soql') {
             a.match.filterMode = 'soql';
-            a.match.soql = soql || '';
-            a.match.filter = { logic: 'all', rows: [] };
         } else {
             delete a.match.filterMode;
-            delete a.match.soql;
+        }
+        if (typeof soql === 'string') {
+            a.match.soql = soql;
         }
     });
 }

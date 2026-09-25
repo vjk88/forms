@@ -252,7 +252,7 @@ describe('typed conditions (D50)', () => {
         mapping: { actions: [action] }
     });
 
-    it('setFilterMode switches to typed text and back', () => {
+    it('setFilterMode switches to typed text and back, keeping both', () => {
         let spec = specWith(
             findStep({
                 filter: {
@@ -265,11 +265,12 @@ describe('typed conditions (D50)', () => {
         let m = actionsOf(spec)[0].match;
         expect(m.filterMode).toBe('soql');
         expect(m.soql).toBe('LastName = {!el_n}');
-        expect(m.filter.rows).toEqual([]);
+        expect(m.filter.rows).toHaveLength(2); // the folded Where + Title
         spec = setFilterMode(spec, 'act_a', 'rows');
         m = actionsOf(spec)[0].match;
         expect(m.filterMode).toBeUndefined();
-        expect(m.soql).toBeUndefined();
+        expect(m.soql).toBe('LastName = {!el_n}');
+        expect(m.filter.rows).toHaveLength(2); // the folded Where + Title
     });
 
     it('reads token ids outside quoted text only', () => {

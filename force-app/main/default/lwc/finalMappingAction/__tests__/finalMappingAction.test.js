@@ -619,11 +619,11 @@ describe('the step says why its search is not finished', () => {
         );
         await flush();
         expect(notes(el)[0]).toContain(
-            'Add a condition that compares with an answer'
+            'At least one condition must compare with an answer'
         );
     });
 
-    it('a question someone may skip is named, with the fix', async () => {
+    it('a question someone may skip is left to its own row', async () => {
         const el = mount(
             step({
                 logic: 'all',
@@ -635,8 +635,10 @@ describe('the step says why its search is not finished', () => {
         );
         el.questions = [{ ...QUESTIONS[0], skippable: true }, QUESTIONS[1]];
         await flush();
-        expect(notes(el)).toEqual([
-            '“Work email” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.'
-        ]);
+        expect(notes(el)).toEqual([]);
+        const filter = el.shadowRoot.querySelector('c-final-lookup-filter');
+        expect(
+            filter.answerChoices.find((q) => q.key === 'el_e').skippable
+        ).toBe(true);
     });
 });

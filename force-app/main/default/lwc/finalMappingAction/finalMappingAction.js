@@ -287,23 +287,16 @@ export default class FinalMappingAction extends LightningElement {
             m.filterMode === 'soql'
                 ? Boolean((m.soql || '').trim())
                 : Boolean(m.filter && (m.filter.rows || []).length);
-        const answers = searchAnswerIds(m);
-        const out = [];
-        if (hasConditions && !answers.length) {
-            out.push({
-                key: 'no-answer',
-                text: 'Add a condition that compares with an answer, like Email equals the answer to “Your email”.'
-            });
-        }
-        (this.questions || [])
-            .filter((q) => q.skippable && answers.includes(q.elementKey))
-            .forEach((q) =>
-                out.push({
-                    key: `skip-${q.elementKey}`,
-                    text: `“${q.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
-                })
-            );
-        return out;
+        // A question that can be skipped is said under its own row (or the
+        // SOQL box), right where it's used.
+        return hasConditions && !searchAnswerIds(m).length
+            ? [
+                  {
+                      key: 'no-answer',
+                      text: 'At least one condition must compare with an answer, like Email equals the answer to “Your email”.'
+                  }
+              ]
+            : [];
     }
 
     get hasSearchNotes() {
@@ -341,16 +334,12 @@ export default class FinalMappingAction extends LightningElement {
         }));
     }
 
-    get filterDialogLabel() {
-        return `Find an existing ${this.objectLabel}`;
-    }
-
     /** finalLookupFilter speaks whole lookup configs; hand it one holding our filter. */
     get filterConfig() {
         return { filter: this.match.filter || { logic: 'all', rows: [] } };
     }
 
-    /** The saved typed conditions, for the dialog and the summary. */
+    /** The saved typed conditions, and which of the two is in use. */
     get typedFilter() {
         return {
             mode: this.match.filterMode === 'soql' ? 'soql' : 'rows',
@@ -358,7 +347,7 @@ export default class FinalMappingAction extends LightningElement {
         };
     }
 
-    /** What the Advanced (SOQL) tab needs: the form, the step, the questions. */
+    /** What the SOQL box needs: the form, the step, the questions. */
     get typedContext() {
         return {
             spec: this.spec,
@@ -367,22 +356,24 @@ export default class FinalMappingAction extends LightningElement {
         };
     }
 
+    /** One editor per step: its half-set-up rows belong to that step. */
+    get filterKeys() {
+        return [{ key: this.actionId }];
+    }
+
     handleFilter(event) {
         event.stopPropagation();
-        const next = event.detail.value || {};
         const typed = event.detail.typed;
-        if (typed && typed.mode === 'soql') {
+        if (typed) {
+            // The Conditions / SOQL switch, or typing in the SOQL box.
             this._emit(
-                setFilterMode(this.spec, this.actionId, 'soql', typed.soql)
+                setFilterMode(this.spec, this.actionId, typed.mode, typed.soql)
             );
             return;
         }
-        // Built conditions, in one emitted spec: typed text (if any) dropped.
-        const spec = typed
-            ? setFilterMode(this.spec, this.actionId, 'rows')
-            : this.spec;
+        const next = event.detail.value || {};
         this._emit(
-            setMatch(spec, this.actionId, {
+            setMatch(this.spec, this.actionId, {
                 filter: next.filter || { logic: 'all', rows: [] }
             })
         );

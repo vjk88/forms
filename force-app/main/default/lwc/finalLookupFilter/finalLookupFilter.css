@@ -18,6 +18,16 @@
     border-radius: 0.25rem;
 }
 
+.lf-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.lf-mode-note {
+    margin: 0;
+}
+
 .lf-conditions {
     margin-top: 0.25rem;
 }
