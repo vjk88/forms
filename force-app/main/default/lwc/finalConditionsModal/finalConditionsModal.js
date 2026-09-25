@@ -257,9 +257,17 @@ export default class FinalConditionsModal extends LightningModal {
     async _applyTyped() {
         const box = this.template.querySelector('c-final-mapping-soql');
         if (!this.soqlDraft.trim()) {
-            this.typedAttention =
-                'Write the conditions, or go back to the Conditions tab.';
-            if (box) box.focus();
+            // An empty box means "stop using typed conditions": apply the
+            // built ones instead (or none), with no error and no question.
+            if (!this.hasConditions) {
+                this.close({ value: null, typed: { mode: 'rows', soql: '' } });
+                return;
+            }
+            this.activeTab = 'conditions';
+            // Let the editor render so its problems can be checked.
+            await Promise.resolve();
+            await Promise.resolve();
+            await this.handleApply();
             return;
         }
         if (box && !box.reportValidity()) {

@@ -1,7 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import FinalConditionsModal from 'c/finalConditionsModal';
 import { removedLabel, USER_EXTRAS } from 'c/finalRuleEditor';
-import { labelForPath } from 'c/finalFieldPicker';
+import { labelForPath, typeForPath } from 'c/finalFieldPicker';
 import { displayNames, toDisplay } from 'c/finalMappingSoql';
 
 /**
@@ -69,7 +69,7 @@ export function describeCondition(
         types.get(source) === 'checkbox' &&
         (raw === 'true' || raw === 'false')
     ) {
-        shown = raw === 'true' ? 'Yes' : 'No';
+        shown = raw === 'true' ? 'True' : 'False';
     } else if (
         answersOn &&
         typeof raw === 'string' &&
@@ -214,6 +214,7 @@ export default class FinalConditionsSummary extends LightningElement {
     _labelledFor = '';
 
     renderedCallback() {
+        this._loadRecordTypes();
         const wanted = this.rules
             .flatMap((r) => [
                 r.source || '',
@@ -268,8 +269,43 @@ export default class FinalConditionsSummary extends LightningElement {
         });
     }
 
+    /** Record screens: which conditions are on checkbox fields (True/False). */
+    _checkboxPaths = {};
+    _typedFor = '';
+
+    _loadRecordTypes() {
+        if (this.isVisibility || !this.fieldObject) {
+            return;
+        }
+        const paths = this.rules
+            .map((r) => r.source)
+            .filter((s) => s && !s.startsWith('user:'));
+        const key = `${this.fieldObject}|${paths.join('|')}`;
+        if (!paths.length || key === this._typedFor) {
+            return;
+        }
+        this._typedFor = key;
+        Promise.all(
+            paths.map((p) =>
+                typeForPath(this.fieldObject, p).then((t) => [p, t])
+            )
+        ).then((pairs) => {
+            if (key !== this._typedFor) {
+                return; // an older request, answered late
+            }
+            const out = {};
+            pairs.forEach(([p, t]) => {
+                if (t === 'boolean') {
+                    out[p] = true;
+                }
+            });
+            this._checkboxPaths = out;
+        });
+    }
+
     get _types() {
         const map = new Map();
+        Object.keys(this._checkboxPaths).forEach((p) => map.set(p, 'checkbox'));
         if (
             this.sourceIndex &&
             typeof this.sourceIndex.forEach === 'function'

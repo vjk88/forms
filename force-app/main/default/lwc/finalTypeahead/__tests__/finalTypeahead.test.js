@@ -200,4 +200,15 @@ describe('c-final-typeahead', () => {
         );
         expect(back).toHaveBeenCalledTimes(1);
     });
+
+    it('closes when the page or dialog scrolls it away', async () => {
+        const el = mount();
+        input(el).dispatchEvent(new CustomEvent('focus'));
+        await flush();
+        expect(shown(el).length).toBeGreaterThan(0);
+        document.body.dispatchEvent(new Event('scroll'));
+        window.dispatchEvent(new Event('scroll'));
+        await flush();
+        expect(shown(el)).toEqual([]);
+    });
 });

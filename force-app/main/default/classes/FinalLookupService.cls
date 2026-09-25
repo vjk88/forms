@@ -292,7 +292,28 @@ public inherited sharing class FinalLookupService {
             } else if (MULTI_VALUE_OPS.contains(op)) {
                 out.binds.put(key, asStringList(resolved));
             } else {
-                out.binds.put(key, resolved);
+                // A fixed value is saved as text ("false", "5", "2026-01-31");
+                // bind it as the field's own type, or say why it can't be.
+                // Answers and user values arrive already typed (or are a
+                // publish-time placeholder); only fixed text is converted.
+                Object rawValue = row.get('value');
+                Boolean fixedText = !(rawValue instanceof String &&
+                ((String) rawValue).startsWith('$'));
+                Schema.DescribeFieldResult fd = fixedText
+                    ? fieldAt(objectName, safePath)
+                    : null;
+                try {
+                    out.binds.put(key, asFieldType(resolved, fd));
+                } catch (Exception e) {
+                    out.blocked = true;
+                    out.blockedReason =
+                        '"' +
+                        String.valueOf(resolved) +
+                        '" isn’t a valid value for ' +
+                        (fd == null ? fieldPath : fd.getLabel()) +
+                        '.';
+                    return out;
+                }
             }
             pieces.add(clause);
         }
@@ -317,6 +338,56 @@ public inherited sharing class FinalLookupService {
     }
 
     // ------------------------------------------------------------- internals
+
+    private class ValueException extends Exception {
+    }
+
+    /**
+     * Text saved for a fixed value, as the field's own type: a checkbox
+     * binds true/false, a number binds a number, a date binds a date.
+     * Anything that isn't text (an answer already converted) passes through.
+     * Throws when the text can't be that type.
+     */
+    @TestVisible
+    private static Object asFieldType(
+        Object value,
+        Schema.DescribeFieldResult fd
+    ) {
+        if (!(value instanceof String) || fd == null) {
+            return value;
+        }
+        String s = ((String) value).trim();
+        switch on fd.getType() {
+            when BOOLEAN {
+                if (s.equalsIgnoreCase('true')) {
+                    return true;
+                }
+                if (s.equalsIgnoreCase('false')) {
+                    return false;
+                }
+                throw new ValueException('not a checkbox value');
+            }
+            when INTEGER {
+                return Integer.valueOf(s);
+            }
+            when LONG {
+                return Long.valueOf(s);
+            }
+            when DOUBLE, CURRENCY, PERCENT {
+                return Decimal.valueOf(s);
+            }
+            when DATE {
+                return Date.valueOf(s);
+            }
+            when DATETIME {
+                String d = s.replace('T', ' ');
+                return Datetime.valueOf(d.length() == 16 ? d + ':00' : d);
+            }
+            when else {
+                return value;
+            }
+        }
+    }
 
     private static String clauseFor(String path, String op, String key) {
         switch on op {

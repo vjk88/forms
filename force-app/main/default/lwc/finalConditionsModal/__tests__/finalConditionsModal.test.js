@@ -329,14 +329,34 @@ describe('the Advanced (SOQL) tab (D50)', () => {
         ]);
     });
 
-    it('an empty typed tab says what to do instead of applying', async () => {
-        const { el, closed } = openTyped(null, { mode: 'soql', soql: '' });
+    it('an emptied typed tab applies no typed conditions, without an error', async () => {
+        const { el, closed } = openTyped(null, {
+            mode: 'soql',
+            soql: 'Title = null'
+        });
+        await flush();
+        typeSoql(el, '');
         await flush();
         button(el, 'Apply conditions').click();
         await flush();
-        expect(closed).toEqual([]);
-        expect(
-            el.shadowRoot.querySelector('.cm-attention').textContent
-        ).toContain('Write the conditions, or go back to the Conditions tab.');
+        expect(closed).toEqual([
+            { value: null, typed: { mode: 'rows', soql: '' } }
+        ]);
+    });
+
+    it('an emptied typed tab falls back to the built conditions', async () => {
+        const { el, closed } = openTyped(good, {
+            mode: 'soql',
+            soql: 'Title = null'
+        });
+        await flush();
+        typeSoql(el, '');
+        await flush();
+        button(el, 'Apply conditions').click();
+        await flush();
+        expect(closed).toEqual([
+            { value: good, typed: { mode: 'rows', soql: '' } }
+        ]);
+        expect(LightningConfirm.open).not.toHaveBeenCalled();
     });
 });

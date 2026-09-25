@@ -162,4 +162,26 @@ private class FinalMappingSoqlTest {
         Assert.areEqual('c:\\\\x', FinalMappingSoql.escapeLike('c:\\x'));
         Assert.isNull(FinalMappingSoql.escapeLike(null));
     }
+
+    @IsTest
+    static void parseErrorsAreSaidAboutTheAuthorsText() {
+        Assert.areEqual(
+            'Salesforce couldn’t read “aelksdhjawldna”. Check it for a typo, or a missing AND / OR before it.',
+            FinalMappingSoql.readableError(
+                'unexpected token: \'aelksdhjawldna\''
+            )
+        );
+        Assert.isTrue(
+            FinalMappingSoql.readableError('unexpected token: \')\'')
+                .startsWith('These conditions end too soon')
+        );
+        Assert.isTrue(
+            FinalMappingSoql.readableError('unexpected token: \'LIMIT\'')
+                .startsWith('These conditions end too soon')
+        );
+        Assert.areEqual(
+            'Salesforce refused these conditions: No such column',
+            FinalMappingSoql.readableError('No such column')
+        );
+    }
 }

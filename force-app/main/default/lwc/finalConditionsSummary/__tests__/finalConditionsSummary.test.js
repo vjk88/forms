@@ -123,7 +123,7 @@ describe('describeCondition', () => {
         ).toBe('Account.Type (not available) is blank');
     });
 
-    it('reads a checkbox as Yes or No', () => {
+    it('reads a checkbox as True or False', () => {
         const types = new Map([['el_2', 'checkbox']]);
         expect(
             describeCondition(
@@ -131,7 +131,7 @@ describe('describeCondition', () => {
                 new Map([['el_2', 'Newsletter']]),
                 types
             )
-        ).toBe('Newsletter equals Yes');
+        ).toBe('Newsletter equals True');
     });
 });
 

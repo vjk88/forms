@@ -232,12 +232,103 @@ export default class FinalTypeahead extends LightningElement {
     }
 
     renderedCallback() {
+        if (this.open) {
+            this._place();
+            this._watchPlacement(true);
+        } else {
+            this._watchPlacement(false);
+        }
         // Arrowing past the bottom of the box keeps the active row in view.
         const active = this.open
             ? this.template.querySelector('.ta-item--active')
             : null;
         if (active && typeof active.scrollIntoView === 'function') {
             active.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    /**
+     * The list floats over whatever holds the box — a dialog's scrolling
+     * body would otherwise cut it off after two rows. It is fixed to the
+     * screen, under the box (or over it, when there is more room above),
+     * and as tall as the room allows.
+     *
+     * A dialog frame can move where "fixed" measures from (it has a
+     * transform), so the list is placed, measured, and nudged by the
+     * difference: it lands where the box is whatever holds it.
+     */
+    _place() {
+        const box = this.template.querySelector('.ta-box');
+        const pop = this.template.querySelector('.ta-pop');
+        if (!box || !pop || typeof box.getBoundingClientRect !== 'function') {
+            return;
+        }
+        const r = box.getBoundingClientRect();
+        const viewH = window.innerHeight || 0;
+        if (!viewH || !r.width) {
+            return; // not laid out (tests, hidden)
+        }
+        const gap = 2;
+        const margin = 8;
+        const below = viewH - r.bottom - gap - margin;
+        const above = r.top - gap - margin;
+        const up = below < 200 && above > below;
+        const room = Math.min(320, Math.max(0, up ? above : below));
+        pop.style.width = `${r.width}px`;
+        pop.style.maxHeight = `${room}px`;
+        pop.style.left = '0px';
+        pop.style.top = '0px';
+        // Where (0, 0) actually landed tells us where "fixed" measures from.
+        const origin = pop.getBoundingClientRect();
+        const height = origin.height;
+        const wantTop = up ? r.top - gap - height : r.bottom + gap;
+        pop.style.left = `${r.left - origin.left}px`;
+        pop.style.top = `${wantTop - origin.top}px`;
+    }
+
+    _placeHandler = (event) => {
+        if (!this.open) {
+            return;
+        }
+        const pop = this.template.querySelector('.ta-pop');
+        const inside =
+            event &&
+            event.type === 'scroll' &&
+            pop &&
+            event.composedPath &&
+            event.composedPath().includes(pop);
+        if (event && event.type === 'scroll' && !inside) {
+            // Scrolling the page or the dialog moves the box away: close,
+            // as native dropdowns do, rather than float over the header.
+            this.query = this._labelFor(this._value);
+            this._close();
+            return;
+        }
+        if (this._frame) {
+            return;
+        }
+        // At most once per frame.
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._frame = requestAnimationFrame(() => {
+            this._frame = null;
+            this._place();
+        });
+    };
+
+    _watching = false;
+
+    /** While open, follow the box when the page or the dialog scrolls. */
+    _watchPlacement(on) {
+        if (on === this._watching) {
+            return;
+        }
+        this._watching = on;
+        if (on) {
+            window.addEventListener('scroll', this._placeHandler, true);
+            window.addEventListener('resize', this._placeHandler);
+        } else {
+            window.removeEventListener('scroll', this._placeHandler, true);
+            window.removeEventListener('resize', this._placeHandler);
         }
     }
 
@@ -323,5 +414,6 @@ export default class FinalTypeahead extends LightningElement {
 
     disconnectedCallback() {
         clearTimeout(this._blurTimer);
+        this._watchPlacement(false);
     }
 }

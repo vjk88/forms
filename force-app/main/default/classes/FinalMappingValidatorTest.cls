@@ -1003,7 +1003,10 @@ private class FinalMappingValidatorTest {
                 'Nope__c = \'x\''
             )
         );
-        Assert.isTrue(anyContains(found, 'don’t run'), String.valueOf(found));
+        Assert.isTrue(
+            anyContains(found, 'Salesforce refused these conditions'),
+            String.valueOf(found)
+        );
         Assert.isTrue(anyContains(found, 'Nope__c'), String.valueOf(found));
     }
 
@@ -1118,6 +1121,95 @@ private class FinalMappingValidatorTest {
                 )
             );
         }
-        Assert.isTrue(anyContains(found, 'don’t run'), String.valueOf(found));
+        Assert.isTrue(
+            anyContains(found, 'Salesforce refused these conditions'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void junkInTypedConditionsIsNamed() {
+        List<String> found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'LastName != null OR FirstName = \'a\' aelksdhjawldna'
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, '“aelksdhjawldna”'),
+            String.valueOf(found)
+        );
+        found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'LastName = \'x\' AND'
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, 'end too soon'),
+            String.valueOf(found)
+        );
+    }
+
+    @IsTest
+    static void anAnswerComparedWithANumberFieldPublishes() {
+        Map<String, Object> age = FinalMappingTestData.question(
+            'el_age',
+            'number',
+            'Age'
+        );
+        List<FinalMappingValidator.Diagnostic> found = checkRow(
+            questionsPlus(age),
+            new Map<String, Object>{
+                'fieldPath' => 'Birthdate',
+                'operator' => 'isNotBlank'
+            }
+        );
+        Assert.areEqual(new List<String>(), blockers(found));
+        Map<String, Object> num = FinalMappingTestData.question(
+            'el_n',
+            'number',
+            'Employees'
+        );
+        found = FinalMappingValidator.validate(
+            FinalMappingTestData.spec(
+                questionsPlus(num),
+                new List<Object>{ accountByEmployees() }
+            ),
+            null
+        );
+        Assert.isFalse(
+            anyContains(blockers(found), 'isn’t a valid value'),
+            String.valueOf(blockers(found))
+        );
+    }
+
+    private static Map<String, Object> accountByEmployees() {
+        return new Map<String, Object>{
+            'id' => 'act_acc',
+            'object' => 'Account',
+            'operation' => 'findOrCreate',
+            'match' => new Map<String, Object>{
+                'field' => 'Name',
+                'source' => FinalMappingTestData.answer('el_last'),
+                'onMatch' => 'reuse',
+                'filter' => new Map<String, Object>{
+                    'logic' => 'all',
+                    'rows' => new List<Object>{
+                        new Map<String, Object>{
+                            'fieldPath' => 'NumberOfEmployees',
+                            'operator' => 'eq',
+                            'value' => '$field.el_n'
+                        }
+                    }
+                }
+            },
+            'fields' => new List<Object>{
+                FinalMappingTestData.field(
+                    'Name',
+                    FinalMappingTestData.answer('el_last')
+                )
+            }
+        };
     }
 }

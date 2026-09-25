@@ -73,12 +73,17 @@
 }
 
 /* The dropdown: the options, then any note (nothing matches, cut short). */
+/* Fixed to the screen and placed by the component (_place), so a dialog's
+   scrolling body can't cut it off. Above the dialog (SLDS modals sit at
+   9000). */
 .ta-pop {
-    position: absolute;
-    z-index: 10;
-    top: calc(100% + 0.125rem);
+    position: fixed;
+    z-index: 9500;
+    top: 0;
     left: 0;
-    right: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 20rem;
     background: var(--ta-surface);
     border: 1px solid var(--ta-border);
     border-radius: 0.25rem;
@@ -86,7 +91,8 @@
 }
 
 .ta-list {
-    max-height: 16rem;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 

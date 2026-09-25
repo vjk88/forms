@@ -750,4 +750,63 @@ private class FinalLookupServiceTest {
         );
         System.assertEquals(2, found.size());
     }
+
+    @isTest
+    static void fixedValuesBindAsTheFieldsType() {
+        FinalLookupService.Compiled c = FinalLookupService.compile(
+            cfg(
+                'Account',
+                new List<Object>{
+                    row('NumberOfEmployees', 'eq', '5'),
+                    row('IsDeleted', 'eq', 'false')
+                }
+            ),
+            new Map<String, Object>(),
+            'Account'
+        );
+        Assert.isFalse(c.blocked, 'reason: ' + c.blockedReason);
+        Assert.areEqual(5, c.binds.get('b0'));
+        Assert.areEqual(false, c.binds.get('b1'));
+        // and the query actually runs with them
+        Database.queryWithBinds(
+            'SELECT Id FROM Account WHERE ' + c.whereClause + ' LIMIT 1',
+            c.binds,
+            AccessLevel.SYSTEM_MODE
+        );
+    }
+
+    @isTest
+    static void aFixedValueOfTheWrongTypeSaysSo() {
+        FinalLookupService.Compiled c = FinalLookupService.compile(
+            cfg(
+                'Account',
+                new List<Object>{ row('NumberOfEmployees', 'eq', 'lots') }
+            ),
+            new Map<String, Object>(),
+            'Account'
+        );
+        Assert.isTrue(c.blocked);
+        Assert.isTrue(
+            c.blockedReason.contains('isn’t a valid value for Employees'),
+            c.blockedReason
+        );
+    }
+
+    @isTest
+    static void datesAndDatetimesFromTheEditorBind() {
+        Assert.areEqual(
+            Date.newInstance(2026, 1, 31),
+            FinalLookupService.asFieldType(
+                '2026-01-31',
+                Contact.Birthdate.getDescribe()
+            )
+        );
+        Assert.areEqual(
+            Datetime.newInstance(2026, 1, 31, 9, 30, 0),
+            FinalLookupService.asFieldType(
+                '2026-01-31T09:30',
+                Contact.EmailBouncedDate.getDescribe()
+            )
+        );
+    }
 }
