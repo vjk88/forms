@@ -14,13 +14,13 @@ import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
+import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 import {
-    reconcileAnswers,
+    // The engine's two-argument reconcile, as the call below always meant:
+    // previewSession's three-argument copy was imported by mistake and,
+    // called with two, saw no next spec and dropped every rule.
     reconcileAutofillSession,
-    pageAnchor,
-    restorePage
-} from './previewSession';
-import {
+    extractDestinations,
     createAutofillSession,
     extractAutofillRules,
     computeRulesFingerprint,
@@ -865,7 +865,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._autofillSession = createAutofillSession({
                 specVersionId: this.effectiveVersionId || null,
                 rules: extractAutofillRules(spec),
-                initialAnswers: this.answers
+                initialAnswers: this.answers,
+                destinations: extractDestinations(spec)
             });
         }
         const defaults = seedStaticDefaults(spec, this.answers);
@@ -1316,7 +1317,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this.activeAutofillRequests = [];
         this._autofillSession = createAutofillSession({
             specVersionId: this.effectiveVersionId || null,
-            rules: extractAutofillRules(spec)
+            rules: extractAutofillRules(spec),
+            destinations: extractDestinations(spec)
         });
         const defaults = seedStaticDefaults(spec);
         this._autofillSession.staticDefaults = defaults;

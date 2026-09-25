@@ -387,13 +387,8 @@ public with sharing class FinalStudioController {
                 continue;
             }
             Schema.DisplayType dt = fd.getType();
-            if (
-                dt == Schema.DisplayType.STRING ||
-                dt == Schema.DisplayType.TEXTAREA ||
-                dt == Schema.DisplayType.EMAIL ||
-                dt == Schema.DisplayType.PHONE ||
-                dt == Schema.DisplayType.URL
-            ) {
+            // What Autofill may read: one table (FinalAutofillRules).
+            if (FinalAutofillRules.isSupportedSource(fd)) {
                 fields.add(
                     new Map<String, Object>{
                         'apiName' => fd.getName(),

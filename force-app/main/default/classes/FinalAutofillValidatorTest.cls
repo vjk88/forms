@@ -284,12 +284,12 @@ private class FinalAutofillValidatorTest {
     /** Base spec plus a Task "Related To" lookup carrying the given rules. */
     private static Map<String, Object> polymorphicSpec(List<Object> rules) {
         Map<String, Object> spec = createBaseSpec();
-        Map<String, Object> page = (Map<String, Object>) (
-            (List<Object>) spec.get('pages')
-        )[0];
-        Map<String, Object> section = (Map<String, Object>) (
-            (List<Object>) page.get('sections')
-        )[0];
+        Map<String, Object> page = (Map<String, Object>) ((List<Object>) spec.get(
+            'pages'
+        ))[0];
+        Map<String, Object> section = (Map<String, Object>) ((List<Object>) page.get(
+            'sections'
+        ))[0];
         ((List<Object>) section.get('elements'))
             .add(
                 new Map<String, Object>{
@@ -304,11 +304,9 @@ private class FinalAutofillValidatorTest {
                     }
                 }
             );
-        (
-            (Map<String, Object>) (
-                (Map<String, Object>) spec.get('settings')
-            ).get('prefill')
-        ).put('autofillRules', rules);
+        ((Map<String, Object>) ((Map<String, Object>) spec.get('settings'))
+                .get('prefill'))
+            .put('autofillRules', rules);
         return spec;
     }
 
@@ -329,7 +327,10 @@ private class FinalAutofillValidatorTest {
             'enabled' => true,
             'source' => source,
             'mappings' => new List<Object>{
-                new Map<String, Object>{ 'from' => fromField, 'to' => 'el_phone' }
+                new Map<String, Object>{
+                    'from' => fromField,
+                    'to' => 'el_phone'
+                }
             }
         };
     }
@@ -434,5 +435,157 @@ private class FinalAutofillValidatorTest {
         );
         System.assert(codes.contains('AUTOFILL_DUPLICATE_LOOKUP_RULE'), codes);
         System.assert(codes.contains('AUTOFILL_DESTINATION_CONFLICT'), codes);
+    }
+
+    // ---- IMPL_PLAN_F2_AUTOFILL 6.4 / 6.6: questions, types, lookup questions
+
+    private static Map<String, Object> freeformSpec(
+        List<Object> elements,
+        List<Object> rules
+    ) {
+        Map<String, Object> spec = createBaseSpec();
+        List<Object> els = (List<Object>) ((Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) spec.get(
+                    'pages'
+                ))[0])
+                .get('sections'))[0])
+            .get('elements');
+        els.addAll(elements);
+        ((Map<String, Object>) ((Map<String, Object>) spec.get('settings'))
+                .get('prefill'))
+            .put('autofillRules', rules);
+        return spec;
+    }
+
+    private static Map<String, Object> question(String id, String inputType) {
+        return new Map<String, Object>{
+            'id' => id,
+            'type' => 'field',
+            'label' => id,
+            'config' => new Map<String, Object>{ 'inputType' => inputType }
+        };
+    }
+
+    private static Map<String, Object> linkRule(List<Object> mappings) {
+        return new Map<String, Object>{
+            'id' => 'af_link',
+            'enabled' => true,
+            'source' => new Map<String, Object>{
+                'type' => 'link',
+                'objectApiName' => 'Account'
+            },
+            'mappings' => mappings
+        };
+    }
+
+    private static Map<String, Object> mapping(String fromField, String toEl) {
+        return new Map<String, Object>{
+            'id' => 'afm_' + toEl,
+            'from' => fromField,
+            'to' => toEl,
+            'guestAllowed' => false
+        };
+    }
+
+    @isTest
+    static void numbersDatesAndChoicesFillMatchingQuestions() {
+        Map<String, Object> choice = question('el_industry', 'picklist');
+        ((Map<String, Object>) choice.get('config'))
+            .put('renderAs', 'Dropdown');
+        Map<String, Object> spec = freeformSpec(
+            new List<Object>{
+                question('el_revenue', 'number'),
+                question('el_since', 'date'),
+                choice
+            },
+            new List<Object>{
+                linkRule(
+                    new List<Object>{
+                        mapping('AnnualRevenue', 'el_revenue'),
+                        mapping('CreatedDate', 'el_since'),
+                        mapping('Industry', 'el_industry')
+                    }
+                )
+            }
+        );
+        Set<String> codes = codesOf(spec);
+        Assert.isFalse(
+            codes.contains('AUTOFILL_TYPE_MISMATCH'),
+            String.valueOf(codes)
+        );
+        Assert.isFalse(
+            codes.contains('AUTOFILL_INCOMPATIBLE_DESTINATION'),
+            String.valueOf(codes)
+        );
+        Assert.isFalse(
+            codes.contains('AUTOFILL_UNSUPPORTED_SOURCE_TYPE'),
+            String.valueOf(codes)
+        );
+    }
+
+    @isTest
+    static void aFieldThatDoesNotFitItsAnswerIsRefused() {
+        Map<String, Object> spec = freeformSpec(
+            new List<Object>{ question('el_revenue', 'number') },
+            new List<Object>{
+                linkRule(new List<Object>{ mapping('Name', 'el_revenue') })
+            }
+        );
+        Assert.isTrue(codesOf(spec).contains('AUTOFILL_TYPE_MISMATCH'));
+    }
+
+    @isTest
+    static void aSeveralChoiceQuestionIsNotADestination() {
+        Map<String, Object> multi = question('el_tags', 'picklist');
+        ((Map<String, Object>) multi.get('config'))
+            .put('renderAs', 'Checkbox_Group');
+        Map<String, Object> spec = freeformSpec(
+            new List<Object>{ multi },
+            new List<Object>{
+                linkRule(new List<Object>{ mapping('Industry', 'el_tags') })
+            }
+        );
+        Assert.isTrue(
+            codesOf(spec).contains('AUTOFILL_INCOMPATIBLE_DESTINATION')
+        );
+    }
+
+    @isTest
+    static void aRecordLookupQuestionIsASourceWithItsPickedObject() {
+        Map<String, Object> pick = new Map<String, Object>{
+            'id' => 'el_pick',
+            'type' => 'field',
+            'label' => 'Company',
+            'config' => new Map<String, Object>{
+                'inputType' => 'reference',
+                'referenceTo' => 'Account'
+            },
+            'lookupConfig' => new Map<String, Object>{
+                'targetObject' => 'Account'
+            }
+        };
+        Map<String, Object> rule = new Map<String, Object>{
+            'id' => 'af_pick',
+            'enabled' => true,
+            'source' => new Map<String, Object>{
+                'type' => 'lookup',
+                'elementId' => 'el_pick'
+            },
+            'mappings' => new List<Object>{
+                mapping('Phone', 'el_phone'),
+                mapping('No_Such_Field__c', 'el_first_name')
+            }
+        };
+        Set<String> codes = codesOf(
+            freeformSpec(new List<Object>{ pick }, new List<Object>{ rule })
+        );
+        Assert.isFalse(
+            codes.contains('AUTOFILL_INVALID_LOOKUP_BINDING'),
+            String.valueOf(codes)
+        );
+        // fields are checked against the picked object, so a bad one is found
+        Assert.isTrue(
+            codes.contains('AUTOFILL_SOURCE_FIELD_INACCESSIBLE'),
+            String.valueOf(codes)
+        );
     }
 }

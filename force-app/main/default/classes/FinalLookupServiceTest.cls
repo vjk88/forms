@@ -842,4 +842,32 @@ private class FinalLookupServiceTest {
             objects[0].get('label') <= objects[objects.size() - 1].get('label')
         );
     }
+
+    @IsTest
+    static void readableFieldsIncludeLongTextFilterableOnesDoNot() {
+        Set<String> readable = new Set<String>();
+        for (
+            Object o : (List<Object>) FinalLookupController.describeReadableFields(
+                    'Account',
+                    null
+                )
+                .get('fields')
+        ) {
+            readable.add((String) ((Map<String, Object>) o).get('path'));
+        }
+        Set<String> filterable = new Set<String>();
+        for (
+            Object o : (List<Object>) FinalLookupController.describeLookupFields(
+                    'Account',
+                    null
+                )
+                .get('fields')
+        ) {
+            filterable.add((String) ((Map<String, Object>) o).get('path'));
+        }
+        // Description is long text: readable, never filterable
+        Assert.isTrue(readable.contains('Description'));
+        Assert.isFalse(filterable.contains('Description'));
+        Assert.isTrue(readable.containsAll(filterable));
+    }
 }

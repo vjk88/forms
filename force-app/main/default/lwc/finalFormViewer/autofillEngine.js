@@ -11,6 +11,105 @@ export const POLICY_PRESERVE_EDITS = 'preserveEdits';
 export const POLICY_ALWAYS_REPLACE = 'alwaysReplace';
 
 /**
+ * The answer type an element is filled as — the browser's copy of
+ * FinalSubmitService.answerTypeOf, for inputs only (`type: 'field'`). Kept
+ * to what Autofill fills; anything else is null.
+ */
+function answerTypeOf(el) {
+    if (!el || el.type !== 'field') {
+        return null;
+    }
+    const cfg = el.config || {};
+    const kind = String(cfg.inputType || 'text').toLowerCase();
+    if (kind === 'email') return 'Email';
+    if (kind === 'phone' || kind === 'tel') return 'Phone';
+    if (kind === 'url') return 'URL';
+    if (kind === 'date') return 'Date';
+    if (['number', 'currency', 'percent', 'slider'].includes(kind)) {
+        return 'Number';
+    }
+    if (kind === 'picklist') {
+        const multi = ['Checkbox_Group', 'Custom_MultiSelect'].includes(
+            cfg.renderAs
+        );
+        return multi ? null : 'Choice';
+    }
+    if (['text', 'textarea'].includes(kind)) return 'Text';
+    return null;
+}
+
+/**
+ * Every element Autofill might fill, by id: { answerType, options }. The
+ * engine fits each value to it (fitValue) before applying it.
+ */
+export function extractDestinations(spec) {
+    const out = {};
+    const walk = (elements) => {
+        (elements || []).forEach((el) => {
+            if (!el) return;
+            if (Array.isArray(el.elements)) walk(el.elements);
+            const answerType = answerTypeOf(el);
+            if (el.id && answerType) {
+                out[el.id] = {
+                    answerType,
+                    options: (el.config && el.config.options) || null
+                };
+            }
+        });
+    };
+    (spec?.pages || []).forEach((page) =>
+        (page.sections || []).forEach((sec) => walk(sec.elements))
+    );
+    return out;
+}
+
+/** What fitValue returns for a value the question can't take. */
+export const DOES_NOT_FIT = Symbol('doesNotFit');
+
+/**
+ * Turns a source value into the answer its question takes
+ * (IMPL_PLAN_F2_AUTOFILL 6.7), or DOES_NOT_FIT. A value that doesn't fit is
+ * never forced in: the engine treats it as no value.
+ *   Number — a number (text that reads as one is accepted)
+ *   Date   — 'YYYY-MM-DD'; a date-time keeps its date
+ *   Choice — the option whose value or label matches; none, DOES_NOT_FIT
+ *   text   — a string
+ * No destination known (older specs, previews) — the value as it came.
+ */
+export function fitValue(value, destination) {
+    if (value === null || value === undefined || !destination) {
+        return value;
+    }
+    switch (destination.answerType) {
+        case 'Number': {
+            if (typeof value === 'number') {
+                return Number.isFinite(value) ? value : DOES_NOT_FIT;
+            }
+            const text = String(value).trim();
+            const n = text === '' ? NaN : Number(text);
+            return Number.isFinite(n) ? n : DOES_NOT_FIT;
+        }
+        case 'Date': {
+            const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(value));
+            return m ? m[1] : DOES_NOT_FIT;
+        }
+        case 'Choice': {
+            const options = destination.options;
+            const text = String(value);
+            if (!Array.isArray(options) || !options.length) {
+                return text;
+            }
+            const hit = options.find(
+                (o) => o && (String(o.value) === text || o.label === text)
+            );
+            return hit ? hit.value : DOES_NOT_FIT;
+        }
+        default:
+            return typeof value === 'string' ? value : String(value);
+    }
+}
+
+/**
  * Computes a stable fingerprint string for an array of rules to detect
  * spec/rule changes that must invalidate pending requests.
  */
@@ -63,7 +162,8 @@ export function createAutofillSession({
     specVersionId = null,
     rules = [],
     restoredSession = null,
-    initialDefaults = {}
+    initialDefaults = {},
+    destinations = {}
 } = {}) {
     const enabledRules = (rules || []).filter((r) => r && r.enabled);
     const fingerprint = computeRulesFingerprint(enabledRules);
@@ -73,6 +173,8 @@ export function createAutofillSession({
         specVersionId,
         rulesFingerprint: fingerprint,
         rules: enabledRules,
+        // destinations[elementId] = { answerType, options } — for fitValue
+        destinations: destinations || {},
         // editRevision[elementId] tracks every manual edit
         editRevision: { ...(restoredSession?.editRevision || {}) },
         // touched[elementId] is true if respondent manually interacted with the input
@@ -325,7 +427,12 @@ export function onResult(
             continue;
         }
 
-        const rawValue = fieldValues[sourceField];
+        // A value its question can't take is no value (never forced in).
+        const fitted = fitValue(
+            fieldValues[sourceField],
+            session.destinations?.[destId]
+        );
+        const rawValue = fitted === DOES_NOT_FIT ? null : fitted;
 
         // Check if respondent edited the destination AFTER this request started
         const currentRev = session.editRevision[destId] || 0;
@@ -428,6 +535,7 @@ export function reconcileAutofillSession(session, nextSpec) {
 
     session.rules = nextRules;
     session.rulesFingerprint = nextFingerprint;
+    session.destinations = extractDestinations(nextSpec);
 
     // R10 — cancel bookkeeping for requests the edit just invalidated.
     // isRequestCurrent already REJECTS their late results, because the

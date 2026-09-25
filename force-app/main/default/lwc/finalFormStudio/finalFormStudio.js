@@ -109,6 +109,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     mappingFocus = null;
     mappingDirty = false;
     _mappingOriginal = null;
+    /** The Autofill rule dialog (Freeform, IMPL_PLAN_F2_AUTOFILL 6.1). */
+    autofillOpen = false;
+    autofillDraft = null;
+    autofillDirty = false;
+    _autofillOriginal = null;
+    _autofillIsNew = false;
     /** Build-mode state: what's selected + which page the blueprint shows. */
     selection = null;
     buildPageIndex = 0;
@@ -647,6 +653,77 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (this.mode !== 'design') this.capturePreviewSession();
         this.mode = 'design';
         this.settingsMenuOpen = false;
+    }
+
+    // ----- the Autofill rule dialog (IMPL_PLAN_F2_AUTOFILL 6.1, D65) -----
+
+    get _autofillRules() {
+        return this.spec?.settings?.prefill?.autofillRules || [];
+    }
+
+    /** From the rail: a rule to edit, or null for a new one. */
+    handleEditAutofillRule(event) {
+        event.stopPropagation();
+        const rule = event.detail && event.detail.rule;
+        this._autofillIsNew = !rule;
+        this.autofillDraft = rule || null;
+        this._autofillOriginal = rule ? JSON.stringify(rule) : null;
+        this.autofillDirty = false;
+        this.autofillOpen = true;
+    }
+
+    /** Another enabled link rule besides this one (a link carries one record). */
+    get autofillHasOtherLinkRule() {
+        const id = this.autofillDraft && this.autofillDraft.id;
+        return this._autofillRules.some(
+            (r) => r.enabled && r.source?.type === 'link' && r.id !== id
+        );
+    }
+
+    handleAutofillDraft(event) {
+        event.stopPropagation();
+        this.autofillDraft = event.detail.rule;
+        this.autofillDirty = this._autofillIsNew
+            ? true
+            : JSON.stringify(this.autofillDraft) !== this._autofillOriginal;
+    }
+
+    /** Apply: problems stop it and show; otherwise the rule joins the form. */
+    handleAutofillApply() {
+        const editor = this.template.querySelector(
+            'c-final-autofill-rule-editor'
+        );
+        if (editor && editor.reportProblems().length) {
+            return;
+        }
+        const rule = editor ? editor.rule : this.autofillDraft;
+        if (rule && !this.isReadOnly) {
+            const rules = JSON.parse(JSON.stringify(this._autofillRules));
+            const at = rules.findIndex((r) => r.id === rule.id);
+            if (at >= 0) {
+                rules[at] = rule;
+            } else {
+                rules.push(rule);
+            }
+            const next = JSON.parse(JSON.stringify(this.spec));
+            next.settings = next.settings || {};
+            next.settings.prefill = next.settings.prefill || {};
+            next.settings.prefill.rulesVersion = 1;
+            next.settings.prefill.autofillRules = rules;
+            this.handleSpecChange({ detail: { spec: next } });
+        }
+        this._closeAutofill();
+    }
+
+    handleAutofillDismiss() {
+        this._closeAutofill();
+    }
+
+    _closeAutofill() {
+        this.autofillOpen = false;
+        this.autofillDraft = null;
+        this.autofillDirty = false;
+        this._autofillOriginal = null;
     }
 
     // ----- the Mapping dialog (IMPL_PLAN_F2_AUTOFILL 5.2, D64) -----

@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import describeLookupFields from '@salesforce/apex/FinalLookupController.describeLookupFields';
+import describeReadableFields from '@salesforce/apex/FinalLookupController.describeReadableFields';
 
 /**
  * finalFieldPicker — choose a field of an object, or of a record it looks
@@ -7,6 +8,11 @@ import describeLookupFields from '@salesforce/apex/FinalLookupController.describ
  * are one level deep, listed the Form Designer's way — "Account › Industry"
  * — and loaded only when the author opens that relationship. Every
  * relationship is listed; none is capped away.
+ *
+ * Purpose: 'filter' (the default — conditions compile to a WHERE clause,
+ * so only filterable fields) or 'read' (Autofill reads fields, long text
+ * included). `max-depth` 0 hides related fields; `allowed-types` and
+ * `allowed-relationships` narrow what is offered (IMPL_PLAN_F2_AUTOFILL 6.3).
  *
  * Emits `fieldchange` { value, label, type } where value is `prefix + path`
  * (`Industry`, `Account.Industry`, `record:Account.Industry`, …).
@@ -16,18 +22,20 @@ import describeLookupFields from '@salesforce/apex/FinalLookupController.describ
  */
 
 /**
- * One describe per object + relationship for the whole editing session,
- * shared by every picker. A failed read is forgotten so a retry can work.
+ * One describe per purpose + object + relationship for the whole editing
+ * session, shared by every picker. Read and filter answers never share an
+ * entry. A failed read is forgotten so a retry can work.
  */
 const CACHE = new Map();
 
 /** Fields no condition should offer. */
 const POINTLESS = /(^|\.)IsDeleted$/;
 
-function describe(objectApi, relationship) {
-    const key = `${objectApi}|${relationship || ''}`;
+function describe(objectApi, relationship, purpose = 'filter') {
+    const read = purpose === 'read';
+    const key = `${read ? 'read' : 'filter'}|${objectApi}|${relationship || ''}`;
     if (!CACHE.has(key)) {
-        const pending = describeLookupFields({
+        const pending = (read ? describeReadableFields : describeLookupFields)({
             objectApiName: objectApi,
             relationshipName: relationship || null
         })
@@ -67,21 +75,21 @@ export function resetFieldCache() {
  * from whatever describes this session has loaded (loading the one it
  * needs). Falls back to the path itself.
  */
-export async function labelForPath(objectApi, path) {
+export async function labelForPath(objectApi, path, purpose = 'filter') {
     if (!objectApi || !path) {
         return path || '';
     }
     try {
         const dot = path.indexOf('.');
         if (dot < 0) {
-            const root = await describe(objectApi, null);
+            const root = await describe(objectApi, null, purpose);
             const hit = (root.fields || []).find((f) => f.path === path);
             return hit ? hit.label : path;
         }
         const rel = path.slice(0, dot);
         const [root, related] = await Promise.all([
-            describe(objectApi, null),
-            describe(objectApi, rel)
+            describe(objectApi, null, purpose),
+            describe(objectApi, rel, purpose)
         ]);
         const relMeta = (root.relationships || []).find((r) => r.name === rel);
         const hit = (related.fields || []).find((f) => f.path === path);
@@ -95,7 +103,7 @@ export async function labelForPath(objectApi, path) {
  * A field's Salesforce type, lower case ('date', 'double', …), from the
  * session's describes — own fields and one hop. Null when it isn't there.
  */
-export async function typeForPath(objectApi, path) {
+export async function typeForPath(objectApi, path, purpose = 'filter') {
     if (!objectApi || !path) {
         return null;
     }
@@ -103,7 +111,8 @@ export async function typeForPath(objectApi, path) {
         const dot = path.indexOf('.');
         const list = await describe(
             objectApi,
-            dot < 0 ? null : path.slice(0, dot)
+            dot < 0 ? null : path.slice(0, dot),
+            purpose
         );
         const hit = (list.fields || []).find((f) => f.path === path);
         return hit ? hit.type : null;
@@ -121,6 +130,41 @@ export default class FinalFieldPicker extends LightningElement {
     @api prefix = '';
     /** Picked before the object's own fields, e.g. Profile name. */
     @api extraItems = [];
+    /** 0 = the object's own fields only; unset = one hop (as always). */
+    @api maxDepth;
+    /** Lower-case describe types to offer; empty = every type. */
+    @api allowedTypes = [];
+    /** Relationship names that may be opened; empty = all of them. */
+    @api allowedRelationships = [];
+
+    _purpose = 'filter';
+
+    /** 'filter' (default) or 'read'. Changing it reloads the fields. */
+    @api
+    get purpose() {
+        return this._purpose;
+    }
+    set purpose(next) {
+        const value = next === 'read' ? 'read' : 'filter';
+        if (value !== this._purpose) {
+            this._purpose = value;
+            this.root = null;
+            this.related = {};
+            this.level = null;
+            this._scheduleLoad();
+        }
+    }
+
+    get _typeOk() {
+        const allowed = this.allowedTypes || [];
+        return (type) => !allowed.length || allowed.includes(type);
+    }
+
+    get _relOk() {
+        const allowed = this.allowedRelationships || [];
+        return (name) =>
+            this.maxDepth !== 0 && (!allowed.length || allowed.includes(name));
+    }
 
     _objectApi;
     _value = '';
@@ -139,7 +183,7 @@ export default class FinalFieldPicker extends LightningElement {
             this.root = null;
             this.related = {};
             this.level = null;
-            this._load();
+            this._scheduleLoad();
         }
     }
 
@@ -214,13 +258,29 @@ export default class FinalFieldPicker extends LightningElement {
         return path.slice(0, dot);
     }
 
+    /**
+     * One load, after this tick's settings have all landed: a parent sets
+     * object-api and purpose in either order, and loading on the first
+     * would fetch the wrong list.
+     */
+    _scheduleLoad() {
+        if (this._loadQueued) {
+            return;
+        }
+        this._loadQueued = true;
+        Promise.resolve().then(() => {
+            this._loadQueued = false;
+            this._load();
+        });
+    }
+
     async _load() {
         const objectApi = this._objectApi;
         if (!objectApi) {
             return;
         }
         try {
-            const out = await describe(objectApi, null);
+            const out = await describe(objectApi, null, this._purpose);
             if (objectApi === this._objectApi) {
                 this.root = out;
                 this.loadError = '';
@@ -243,8 +303,8 @@ export default class FinalFieldPicker extends LightningElement {
         }
         try {
             const [root, out] = await Promise.all([
-                describe(objectApi, null),
-                describe(objectApi, rel)
+                describe(objectApi, null, this._purpose),
+                describe(objectApi, rel, this._purpose)
             ]);
             if (objectApi !== this._objectApi) {
                 return;
@@ -270,13 +330,16 @@ export default class FinalFieldPicker extends LightningElement {
         if (!group) {
             return [];
         }
-        return group.fields.map((f) => ({
-            value: this.prefix + f.path,
-            label: `${group.label} › ${f.label}`,
-            meta: f.path,
-            type: f.type,
-            searchOnly
-        }));
+        const typeOk = this._typeOk;
+        return group.fields
+            .filter((f) => typeOk(f.type))
+            .map((f) => ({
+                value: this.prefix + f.path,
+                label: `${group.label} › ${f.label}`,
+                meta: f.path,
+                type: f.type,
+                searchOnly
+            }));
     }
 
     get items() {
@@ -286,21 +349,25 @@ export default class FinalFieldPicker extends LightningElement {
                 ...this._relatedItems(this.level, false)
             ];
         }
-        const own = ((this.root && this.root.fields) || []).map((f) => ({
-            value: this.prefix + f.path,
-            label: f.label,
-            meta: f.path,
-            type: f.type
-        }));
-        const groups = ((this.root && this.root.relationships) || []).map(
-            (r) => ({
+        const typeOk = this._typeOk;
+        const relOk = this._relOk;
+        const own = ((this.root && this.root.fields) || [])
+            .filter((f) => typeOk(f.type))
+            .map((f) => ({
+                value: this.prefix + f.path,
+                label: f.label,
+                meta: f.path,
+                type: f.type
+            }));
+        const groups = ((this.root && this.root.relationships) || [])
+            .filter((r) => relOk(r.name))
+            .map((r) => ({
                 value: r.name,
                 label: relationshipLabel(r),
                 meta: r.object,
                 searchText: r.name,
                 kind: 'group'
-            })
-        );
+            }));
         // Fields of relationships already opened join the search, without
         // lengthening the unfiltered list.
         const opened = Object.keys(this.related).flatMap((rel) =>
@@ -317,7 +384,10 @@ export default class FinalFieldPicker extends LightningElement {
         if (!this.root) {
             return '';
         }
-        const hasGroups = (this.root.relationships || []).length > 0;
+        const relOk = this._relOk;
+        const hasGroups = (this.root.relationships || []).some((r) =>
+            relOk(r.name)
+        );
         return hasGroups && Object.keys(this.related).length === 0
             ? 'Fields on related records appear when you open them (›).'
             : '';

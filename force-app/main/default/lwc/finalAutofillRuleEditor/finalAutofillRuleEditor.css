@@ -1,0 +1,119 @@
+@import 'c/finalStudioStyles';
+
+.am {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.am-top {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+.am-name {
+    flex: 1;
+}
+
+.am-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.am-heading {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.025rem;
+    text-transform: uppercase;
+    color: var(--c-studio-text-weak);
+}
+
+.am-segs {
+    display: flex;
+    gap: 0;
+}
+
+.am-seg {
+    padding: 0.375rem 0.875rem;
+    border: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface);
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+
+.am-seg:first-child {
+    border-radius: 0.25rem 0 0 0.25rem;
+}
+
+.am-seg:last-child {
+    border-radius: 0 0.25rem 0.25rem 0;
+    border-left: 0;
+}
+
+.am-seg.on {
+    background: var(--c-studio-accent, #0b5cab);
+    border-color: var(--c-studio-accent, #0b5cab);
+    color: #fff;
+}
+
+.am-seg:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.am-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.am-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.am-head {
+    font-size: 0.75rem;
+    color: var(--c-studio-text-weak);
+}
+
+.am-row-problem,
+.am-row-test {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 0.75rem;
+}
+
+.am-row-problem {
+    color: var(--c-studio-error);
+}
+
+.am-row-test {
+    color: var(--c-studio-text-weak);
+}
+
+.am-add {
+    align-self: flex-start;
+}
+
+.am-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--c-studio-text-weak);
+}
+
+.am-test {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.am-test-id {
+    flex: 1;
+    max-width: 24rem;
+}

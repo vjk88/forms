@@ -25,6 +25,13 @@ public with sharing class FinalAutofillController {
         );
     }
 
+    /** What fits where, for the Studio's Autofill dialog (FinalAutofillRules). */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, List<String>> fitsTable() {
+        gateNotGuest();
+        return FinalAutofillRules.fitsTable();
+    }
+
     @AuraEnabled
     public static Map<String, Object> getTestRecordValues(
         Id formId,
@@ -360,6 +367,31 @@ public with sharing class FinalAutofillController {
                     if (
                         String.isBlank(bindObject) || String.isBlank(bindField)
                     ) {
+                        // A Freeform Record lookup question is unbound: its
+                        // object is the one the author picked, from the
+                        // PUBLISHED spec. Records are still read under the
+                        // respondent's own access (LDS), so naming an object
+                        // grants nothing (IMPL_PLAN_F2_AUTOFILL 6.6).
+                        String picked = config == null
+                            ? null
+                            : str(config.get('referenceTo'));
+                        Schema.SObjectType pickedType = picked == null
+                            ? null
+                            : Schema.getGlobalDescribe()
+                                  .get(picked.toLowerCase());
+                        if (
+                            pickedType != null &&
+                            pickedType.getDescribe().isAccessible()
+                        ) {
+                            String name = pickedType.getDescribe().getName();
+                            lookupObjectsByElementId.put(elId, name);
+                            lookupDescriptors.add(
+                                new Map<String, Object>{
+                                    'elementId' => elId,
+                                    'objectApiName' => name
+                                }
+                            );
+                        }
                         continue;
                     }
 
@@ -469,6 +501,12 @@ public with sharing class FinalAutofillController {
             return fallbackObject;
         }
         return null;
+    }
+
+    private static String str(Object o) {
+        return o instanceof String && String.isNotBlank((String) o)
+            ? (String) o
+            : null;
     }
 
     private static String bindingField(Object binding) {

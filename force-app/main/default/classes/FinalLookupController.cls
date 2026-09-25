@@ -125,6 +125,27 @@ public with sharing class FinalLookupController {
         String objectApiName,
         String relationshipName
     ) {
+        return describeFor(objectApiName, relationshipName, true);
+    }
+
+    /**
+     * Authoring: the fields Autofill may READ, filterable or not — long text
+     * can't be used in a WHERE clause but can fill an answer
+     * (IMPL_PLAN_F2_AUTOFILL 6.3). Same shape as describeLookupFields.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> describeReadableFields(
+        String objectApiName,
+        String relationshipName
+    ) {
+        return describeFor(objectApiName, relationshipName, false);
+    }
+
+    private static Map<String, Object> describeFor(
+        String objectApiName,
+        String relationshipName,
+        Boolean filterableOnly
+    ) {
         if (UserInfo.getUserType() == 'Guest') {
             throw new AuraHandledException('Unauthorized');
         }
@@ -153,7 +174,7 @@ public with sharing class FinalLookupController {
             if (!d.isAccessible()) {
                 continue;
             }
-            if (d.isFilterable()) {
+            if (!filterableOnly || d.isFilterable()) {
                 fields.add(
                     new Map<String, Object>{
                         'path' => prefix + d.getName(),

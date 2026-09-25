@@ -313,7 +313,10 @@ describe('c-final-autofill-panel', () => {
                                     id: 'el_what',
                                     type: 'field',
                                     label: 'Related To',
-                                    binding: { object: 'Task', field: 'WhatId' },
+                                    binding: {
+                                        object: 'Task',
+                                        field: 'WhatId'
+                                    },
                                     config: {
                                         inputType: 'reference',
                                         polymorphic: true
@@ -474,6 +477,48 @@ describe('c-final-autofill-panel', () => {
         expect(mintRecordLink).toHaveBeenCalledWith({
             formId: 'a00123',
             recordId: '003000000000123AAA'
+        });
+    });
+
+    describe('Freeform: rules open in the Studio dialog (IMPL_PLAN_F2_AUTOFILL 6.1)', () => {
+        it('Add and Edit ask the Studio to open the rule, and never edit here', async () => {
+            const el = mount({ spec: SAMPLE_SPEC, formType: 'freeform' });
+            const got = [];
+            el.addEventListener('editautofillrule', (e) => got.push(e.detail));
+            await flush();
+            el.shadowRoot.querySelector('button[title="Add rule"]').click();
+            el.shadowRoot.querySelector('button[title="Edit rule"]').click();
+            await flush();
+            expect(got[0]).toEqual({ rule: null });
+            expect(got[1].rule.id).toBe(
+                SAMPLE_SPEC.settings.prefill.autofillRules[0].id
+            );
+            // still the list: no in-rail editor opened
+            expect(el.shadowRoot.querySelector('.ap-editor-footer')).toBeNull();
+        });
+
+        it('makes links under the list when a link rule is on', async () => {
+            const el = mount({
+                spec: SAMPLE_SPEC,
+                formType: 'freeform',
+                formId: 'a00123',
+                activeVersionId: 'v001'
+            });
+            await flush();
+            expect(el.shadowRoot.querySelector('.ap-mint-form')).not.toBeNull();
+        });
+
+        it('a Form still edits its rules in the rail', async () => {
+            const el = mount({ spec: SAMPLE_SPEC, formType: 'form' });
+            const got = [];
+            el.addEventListener('editautofillrule', (e) => got.push(e.detail));
+            await flush();
+            el.shadowRoot.querySelector('button[title="Edit rule"]').click();
+            await flush();
+            expect(got).toEqual([]);
+            expect(
+                el.shadowRoot.querySelector('.ap-editor-footer')
+            ).not.toBeNull();
         });
     });
 });

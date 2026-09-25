@@ -1,12 +1,19 @@
 import { createElement } from 'lwc';
 import FinalFieldPicker, {
     labelForPath,
+    typeForPath,
     resetFieldCache
 } from 'c/finalFieldPicker';
 import describeLookupFields from '@salesforce/apex/FinalLookupController.describeLookupFields';
+import describeReadableFields from '@salesforce/apex/FinalLookupController.describeReadableFields';
 
 jest.mock(
     '@salesforce/apex/FinalLookupController.describeLookupFields',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalLookupController.describeReadableFields',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -157,5 +164,77 @@ describe('labelForPath', () => {
             'Account › Industry'
         );
         expect(await labelForPath('Contact', 'Nope__c')).toBe('Nope__c');
+    });
+});
+
+describe('reading, not filtering (IMPL_PLAN_F2_AUTOFILL 6.3)', () => {
+    const READABLE = {
+        fields: [
+            ...CONTACT.fields,
+            { path: 'Description', label: 'Description', type: 'textarea' },
+            { path: 'Birthdate', label: 'Birthdate', type: 'date' }
+        ],
+        relationships: CONTACT.relationships
+    };
+    beforeEach(() => {
+        describeReadableFields.mockImplementation(({ relationshipName }) =>
+            Promise.resolve(relationshipName === 'Account' ? ACCOUNT : READABLE)
+        );
+    });
+
+    it('offers long text when reading', async () => {
+        const el = mount({ purpose: 'read' });
+        await flush();
+        expect(box(el).items.map((i) => i.label)).toContain('Description');
+        expect(describeReadableFields).toHaveBeenCalled();
+        expect(describeLookupFields).not.toHaveBeenCalled();
+    });
+
+    it('types a read-only field through the read describe', async () => {
+        expect(await typeForPath('Contact', 'Description', 'read')).toBe(
+            'textarea'
+        );
+        // the filter describe doesn't have it
+        expect(await typeForPath('Contact', 'Description')).toBeNull();
+    });
+
+    it('read and filter pickers never share a cache entry, either order', async () => {
+        const read = mount({ purpose: 'read' });
+        const filter = mount();
+        await flush();
+        expect(box(read).items.map((i) => i.label)).toContain('Description');
+        expect(box(filter).items.map((i) => i.label)).not.toContain(
+            'Description'
+        );
+        resetFieldCache();
+        document.body.removeChild(read);
+        document.body.removeChild(filter);
+        const filter2 = mount();
+        const read2 = mount({ purpose: 'read' });
+        await flush();
+        expect(box(filter2).items.map((i) => i.label)).not.toContain(
+            'Description'
+        );
+        expect(box(read2).items.map((i) => i.label)).toContain('Description');
+    });
+
+    it('max-depth 0 offers no related records', async () => {
+        const el = mount({ purpose: 'read', maxDepth: 0 });
+        await flush();
+        expect(box(el).items.some((i) => i.kind === 'group')).toBe(false);
+        expect(box(el).hint).toBe('');
+    });
+
+    it('allowed-types narrows the list', async () => {
+        const el = mount({ purpose: 'read', allowedTypes: ['date'] });
+        await flush();
+        const own = box(el).items.filter((i) => i.kind !== 'group');
+        expect(own.map((i) => i.label)).toEqual(['Birthdate']);
+    });
+
+    it('allowed-relationships limits what opens', async () => {
+        const el = mount({ allowedRelationships: ['Owner'] });
+        await flush();
+        expect(box(el).items.some((i) => i.kind === 'group')).toBe(false);
     });
 });

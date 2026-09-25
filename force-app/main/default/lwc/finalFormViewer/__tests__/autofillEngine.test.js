@@ -10,7 +10,10 @@ import {
     onResult,
     onRequestFailure,
     isRequestCurrent,
-    reconcileAutofillSession
+    reconcileAutofillSession,
+    fitValue,
+    extractDestinations,
+    DOES_NOT_FIT
 } from '../autofillEngine';
 
 describe('autofillEngine — pure state machine and patch engine', () => {
@@ -639,5 +642,126 @@ describe('autofillEngine — pure state machine and patch engine', () => {
             expect(session.requests.af_account).toBeUndefined();
             expect(session.owner.el_account_phone).toBeUndefined();
         });
+    });
+});
+
+describe('fitting a value to its question (IMPL_PLAN_F2_AUTOFILL 6.7)', () => {
+    const num = { answerType: 'Number' };
+    const date = { answerType: 'Date' };
+    const choice = {
+        answerType: 'Choice',
+        options: [
+            { value: 'Tech', label: 'Technology' },
+            { value: 'Retail', label: 'Retail' }
+        ]
+    };
+
+    it('numbers: a number, or text that reads as one', () => {
+        expect(fitValue(1500000, num)).toBe(1500000);
+        expect(fitValue(' 42.5 ', num)).toBe(42.5);
+        expect(fitValue('lots', num)).toBe(DOES_NOT_FIT);
+        expect(fitValue('', num)).toBe(DOES_NOT_FIT);
+    });
+
+    it('dates: YYYY-MM-DD, a date-time keeps its date', () => {
+        expect(fitValue('2026-09-25', date)).toBe('2026-09-25');
+        expect(fitValue('2026-09-25T14:03:00.000Z', date)).toBe('2026-09-25');
+        expect(fitValue('next week', date)).toBe(DOES_NOT_FIT);
+    });
+
+    it('choices: the option whose value or label matches, never forced', () => {
+        expect(fitValue('Tech', choice)).toBe('Tech');
+        expect(fitValue('Technology', choice)).toBe('Tech');
+        expect(fitValue('Banking', choice)).toBe(DOES_NOT_FIT);
+        // options not known here: the value as text
+        expect(fitValue('Banking', { answerType: 'Choice' })).toBe('Banking');
+    });
+
+    it('text: a string; no destination known: as it came', () => {
+        expect(fitValue(12, { answerType: 'Text' })).toBe('12');
+        expect(fitValue(12, undefined)).toBe(12);
+        expect(fitValue(null, num)).toBeNull();
+    });
+
+    it('finds the destinations in a spec, inputs only', () => {
+        const spec = {
+            pages: [
+                {
+                    sections: [
+                        {
+                            elements: [
+                                {
+                                    id: 'el_n',
+                                    type: 'field',
+                                    config: { inputType: 'number' }
+                                },
+                                {
+                                    id: 'el_d',
+                                    type: 'field',
+                                    config: { inputType: 'date' }
+                                },
+                                {
+                                    id: 'el_c',
+                                    type: 'field',
+                                    config: {
+                                        inputType: 'picklist',
+                                        renderAs: 'Dropdown',
+                                        options: choice.options
+                                    }
+                                },
+                                {
+                                    id: 'el_m',
+                                    type: 'field',
+                                    config: {
+                                        inputType: 'picklist',
+                                        renderAs: 'Checkbox_Group'
+                                    }
+                                },
+                                { id: 'el_nps', type: 'nps' },
+                                { id: 'el_t', type: 'field' }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        const d = extractDestinations(spec);
+        expect(Object.keys(d).sort()).toEqual(['el_c', 'el_d', 'el_n', 'el_t']);
+        expect(d.el_c.options).toHaveLength(2);
+        expect(d.el_t.answerType).toBe('Text');
+    });
+
+    it('a value that does not fit is no value: nothing is forced in', () => {
+        const rule = {
+            id: 'af_acc',
+            enabled: true,
+            policy: 'preserveEdits',
+            source: { type: 'link', objectApiName: 'Account' },
+            mappings: [
+                { id: 'm1', from: 'Industry', to: 'el_c' },
+                { id: 'm2', from: 'AnnualRevenue', to: 'el_n' }
+            ]
+        };
+        const session = createAutofillSession({
+            sessionId: 's1',
+            specVersionId: 'v1',
+            rules: [rule],
+            destinations: {
+                el_c: choice,
+                el_n: num
+            }
+        });
+        const { requestIdentity } = onSourceChanged(session, 'af_acc', 'k1');
+        const result = onResult(
+            session,
+            requestIdentity,
+            { Industry: 'Banking', AnnualRevenue: '2500' },
+            {},
+            true
+        );
+        // Banking isn't an option: left blank, and not owned
+        expect(result.patch.el_c).toBeUndefined();
+        expect(session.owner.el_c).toBeUndefined();
+        expect(result.patch.el_n).toBe(2500);
     });
 });
