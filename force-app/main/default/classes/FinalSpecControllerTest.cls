@@ -81,6 +81,35 @@ private class FinalSpecControllerTest {
     }
 
     @IsTest
+    static void envelopeNamesTheVersionItServed() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+        Form_Version__c active = [
+            SELECT Id
+            FROM Form_Version__c
+            WHERE Form__c = :form.Id AND Is_Active__c = TRUE
+            LIMIT 1
+        ];
+        Map<String, Object> out;
+        System.runAs(makeViewerUser()) {
+            Test.startTest();
+            out = FinalSpecController.getSpecEnvelope(form.Id, null);
+            Test.stopTest();
+        }
+        Assert.areEqual(active.Id, out.get('versionId'));
+        Assert.isTrue(((String) out.get('spec')).contains('"marker":"active"'));
+    }
+
+    @IsTest
+    static void envelopeNeedsAnId() {
+        try {
+            FinalSpecController.getSpecEnvelope(null, null);
+            Assert.fail('expected a refusal');
+        } catch (AuraHandledException e) {
+            Assert.isNotNull(e.getMessage());
+        }
+    }
+
+    @IsTest
     static void returnsSpecificVersionById() {
         Form_Version__c v1 = [
             SELECT Id

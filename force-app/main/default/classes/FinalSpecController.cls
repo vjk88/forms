@@ -52,6 +52,56 @@ public with sharing class FinalSpecController {
     }
 
     /**
+     * The same spec as getSpec, with the id of the version it came from.
+     * The viewer needs that id: lookup search and signed-in Autofill are
+     * both asked "which published version?" (IMPL_PLAN_F2_AUTOFILL 6.0), and
+     * a form loaded by form id alone never learned it.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> getSpecEnvelope(Id formId, Id versionId) {
+        try {
+            List<Form_Version__c> versions;
+            if (versionId != null) {
+                versions = [
+                    SELECT Id, Spec_JSON__c
+                    FROM Form_Version__c
+                    WHERE Id = :versionId
+                    WITH USER_MODE
+                    LIMIT 1
+                ];
+            } else if (formId != null) {
+                versions = [
+                    SELECT Id, Spec_JSON__c
+                    FROM Form_Version__c
+                    WHERE Form__c = :formId AND Is_Active__c = TRUE
+                    WITH USER_MODE
+                    ORDER BY Version_Number__c DESC
+                    LIMIT 1
+                ];
+            } else {
+                throw new AuraHandledException(
+                    'A form Id or version Id is required.'
+                );
+            }
+            if (
+                versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)
+            ) {
+                throw new AuraHandledException(
+                    'No published specification found for this form.'
+                );
+            }
+            return new Map<String, Object>{
+                'versionId' => versions[0].Id,
+                'spec' => versions[0].Spec_JSON__c
+            };
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException('The form could not be loaded.');
+        }
+    }
+
+    /**
      * Resolve-at-publish (BUILD_PHASES P2): activates a new version carrying
      * the given spec. The contract is enforced HERE, not trusted from the
      * client: a publishable spec must be v1 and carry a non-empty

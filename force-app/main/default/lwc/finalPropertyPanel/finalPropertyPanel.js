@@ -1,5 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
+import listLookupObjects from '@salesforce/apex/FinalLookupController.listLookupObjects';
 import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyTopics';
 import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurveyTopic';
 import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
@@ -653,6 +654,9 @@ export default class FinalPropertyPanel extends LightningElement {
     _topicsRequested = false;
 
     renderedCallback() {
+        if (this.isUnboundLookup) {
+            this._loadLookupObjects();
+        }
         if (this.isSurveyQuestion && !this._topicsRequested) {
             this._topicsRequested = true;
             listSurveyTopics()
@@ -940,8 +944,64 @@ export default class FinalPropertyPanel extends LightningElement {
         return (
             (t === 'reference' || t === 'lookup') &&
             !this.cfg.polymorphic &&
-            this.cfg.renderAs === 'Filtered_Search'
+            this.cfg.renderAs === 'Filtered_Search' &&
+            // an unbound lookup says what it searches first
+            Boolean(this.lookupTargetObject)
         );
+    }
+
+    /**
+     * A record lookup question (Freeform): no bound field says which object
+     * it searches, so the author picks one here (IMPL_PLAN_F2_AUTOFILL 6.0).
+     */
+    get isUnboundLookup() {
+        const t = this.cfg.inputType;
+        return (
+            (t === 'reference' || t === 'lookup') &&
+            !(this.n && this.n.binding && this.n.binding.field)
+        );
+    }
+
+    lookupObjects = [];
+    _lookupObjectsLoaded = false;
+
+    _loadLookupObjects() {
+        if (this._lookupObjectsLoaded) {
+            return;
+        }
+        this._lookupObjectsLoaded = true;
+        listLookupObjects()
+            .then((rows) => {
+                this.lookupObjects = rows || [];
+            })
+            .catch(() => {
+                this._lookupObjectsLoaded = false;
+                this.lookupObjects = [];
+            });
+    }
+
+    get lookupObjectOptions() {
+        return this.lookupObjects;
+    }
+
+    get lookupObjectPlaceholder() {
+        return this.lookupObjects.length ? 'Search objects' : 'Loading…';
+    }
+
+    /**
+     * One change, one undo step: the object the question shows AND the one
+     * search reads. What each result shows, which fields are searched and
+     * the filter named the old object's fields, so they start over.
+     */
+    handleLookupObject(event) {
+        const objectApi = event.detail.value || null;
+        if (objectApi === (this.cfg.referenceTo || null)) {
+            return;
+        }
+        this._prop({
+            config: { ...this.cfg, referenceTo: objectApi },
+            lookupConfig: { targetObject: objectApi }
+        });
     }
 
     get lookupTargetObject() {
@@ -981,7 +1041,8 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get hasRenderAsChoices() {
-        return this.renderAsOptions.length > 1;
+        // an unbound lookup is always our search box: nothing to choose
+        return !this.isUnboundLookup && this.renderAsOptions.length > 1;
     }
 
     /** Options editor: custom choices for text fields; describe-seeded and

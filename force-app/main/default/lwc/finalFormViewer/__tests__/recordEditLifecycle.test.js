@@ -79,10 +79,10 @@ const editSource = (el) =>
         el.shadowRoot.querySelectorAll('c-final-autofill-record-source')
     ).find((n) => n.ruleId === '__edit__') || null;
 
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 jest.mock(
-    '@salesforce/apex/FinalSpecController.getSpec',
+    '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -106,7 +106,10 @@ describe('review: record edit lifecycle regressions', () => {
         jest.clearAllMocks();
     });
     it('waits for the existing record before allowing a real submit', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(EDIT_SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(EDIT_SPEC)
+        });
         submitForm.mockResolvedValue({ recordId: RECORD });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
@@ -137,7 +140,10 @@ describe('review: record edit lifecycle regressions', () => {
         expect(el.answers.el_title).toBe('Typed while loading');
     });
     it('switches the edit reader when the host record changes', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(EDIT_SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(EDIT_SPEC)
+        });
         submitForm.mockResolvedValue({ recordId: RECORD });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
@@ -244,7 +250,10 @@ const change = (el, value) =>
         })
     );
 async function published(props = {}) {
-    getSpec.mockResolvedValue(JSON.stringify(EDIT_SPEC));
+    getSpecEnvelope.mockResolvedValue({
+        versionId: 'a0Vserved',
+        spec: JSON.stringify(EDIT_SPEC)
+    });
     submitForm.mockResolvedValue({ recordId: RECORD });
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
     el.existingRecordId = RECORD;
@@ -356,7 +365,7 @@ describe('record lifecycle boundaries', () => {
             JSON.parse(submitForm.mock.calls[0][0].payloadJson).meta
                 .existingRecordId
         ).toBe(B);
-        expect(getSpec).toHaveBeenCalledTimes(1);
+        expect(getSpecEnvelope).toHaveBeenCalledTimes(1);
     });
     it('ignores stale A success/error after A to B to A and preserves same-ID edits', async () => {
         const el = mount();

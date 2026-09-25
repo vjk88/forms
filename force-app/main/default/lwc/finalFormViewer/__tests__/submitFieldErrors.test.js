@@ -1,7 +1,7 @@
 import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
 
 jest.mock('c/finalThemeCatalog', () => ({
@@ -13,7 +13,7 @@ jest.mock(
     { virtual: true }
 );
 jest.mock(
-    '@salesforce/apex/FinalSpecController.getSpec',
+    '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -89,7 +89,10 @@ function deepQuery(root, selector) {
 }
 
 async function published() {
-    getSpec.mockResolvedValue(JSON.stringify(SPEC));
+    getSpecEnvelope.mockResolvedValue({
+        versionId: 'a0Vserved',
+        spec: JSON.stringify(SPEC)
+    });
     const el = createElement('c-final-form-viewer', { is: FinalFormViewer });
     el.versionId = 'a0Vx';
     document.body.appendChild(el);
@@ -269,7 +272,10 @@ describe('survey writeback rejections reach the mapped question', () => {
         // only the failure path cleared it. Found in a browser 2026-09-09
         // with 843 tests green.
         getRecordContext.mockResolvedValue({ ruleFacts: {}, prefill: {} });
-        getSpec.mockResolvedValue(JSON.stringify(SURVEY_SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SURVEY_SPEC)
+        });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
         });
@@ -287,7 +293,10 @@ describe('survey writeback rejections reach the mapped question', () => {
     });
 
     it('routes a rejected mapped field onto the question that maps it', async () => {
-        getSpec.mockResolvedValue(JSON.stringify(SURVEY_SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SURVEY_SPEC)
+        });
         const el = createElement('c-final-form-viewer', {
             is: FinalFormViewer
         });

@@ -478,6 +478,23 @@
                     </select>
                 </template>
 
+                <template lwc:if={isUnboundLookup}>
+                    <div class="pp-fld pp-lookup-object">
+                        <!-- Typed into, not scrolled: an org has hundreds. -->
+                        <c-final-object-picker
+                            label="Object"
+                            placeholder={lookupObjectPlaceholder}
+                            objects={lookupObjectOptions}
+                            value={cfg.referenceTo}
+                            onpick={handleLookupObject}
+                        ></c-final-object-picker>
+                        <p class="pp-hint">
+                            Changing it starts over what each result shows, the
+                            fields searched and the filter.
+                        </p>
+                    </div>
+                </template>
+
                 <!-- Lookup results. Only for OUR control: native mode hands
                      the field to the platform, so there is nothing here to
                      configure and offering boxes would be a lie. -->

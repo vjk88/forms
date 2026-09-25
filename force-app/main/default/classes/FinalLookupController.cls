@@ -21,19 +21,61 @@ public with sharing class FinalLookupController {
         String answersJson
     ) {
         Map<String, Object> cfg = publishedConfig(formId, versionId, elementId);
-        if (UserInfo.getUserType() == 'Guest' && cfg.get('allowGuest') != true) {
+        if (
+            UserInfo.getUserType() == 'Guest' &&
+            cfg.get('allowGuest') != true
+        ) {
             // Say nothing about why. A guest learns only that there is nothing
             // to see, never that a lookup exists and is restricted.
             return new List<FinalLookupService.Row>();
         }
         try {
-            return FinalLookupService.search(
-                cfg,
-                term,
-                answersOf(answersJson)
-            );
+            return FinalLookupService.search(cfg, term, answersOf(answersJson));
         } catch (FinalLookupService.LookupException e) {
             throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    /**
+     * Authoring: the objects a lookup question can search (IMPL_PLAN_F2_AUTOFILL
+     * 6.0). A lookup only READS existing records, so this is every object the
+     * author can see and query, setup objects like User included — unlike the
+     * mapping screen's list, which needs create permission.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> listLookupObjects() {
+        if (UserInfo.getUserType() == 'Guest') {
+            throw new AuraHandledException('Unauthorized');
+        }
+        List<Map<String, String>> out = new List<Map<String, String>>();
+        for (Schema.SObjectType st : Schema.getGlobalDescribe().values()) {
+            try {
+                Schema.DescribeSObjectResult d = st.getDescribe();
+                if (
+                    d.isAccessible() &&
+                    d.isQueryable() &&
+                    !d.isDeprecatedAndHidden() &&
+                    !d.isCustomSetting() &&
+                    !FinalFormCreateController.isSystemTable(d.getName())
+                ) {
+                    out.add(
+                        new Map<String, String>{
+                            'label' => d.getLabel(),
+                            'value' => d.getName()
+                        }
+                    );
+                }
+            } catch (Exception ignored) {
+                // Some describes throw for restricted types — skip them.
+            }
+        }
+        out.sort(new ByLabel());
+        return out;
+    }
+
+    private class ByLabel implements System.Comparator<Map<String, String>> {
+        public Integer compare(Map<String, String> a, Map<String, String> b) {
+            return a.get('label').compareTo(b.get('label'));
         }
     }
 
@@ -66,7 +108,11 @@ public with sharing class FinalLookupController {
 
         List<Map<String, Object>> fields = new List<Map<String, Object>>();
         List<Map<String, Object>> rels = new List<Map<String, Object>>();
-        for (Schema.SObjectField f : target.getDescribe().fields.getMap().values()) {
+        for (
+            Schema.SObjectField f : target.getDescribe()
+                .fields.getMap()
+                .values()
+        ) {
             Schema.DescribeFieldResult d = f.getDescribe();
             if (!d.isAccessible()) {
                 continue;
@@ -112,7 +158,9 @@ public with sharing class FinalLookupController {
         String relationshipName
     ) {
         for (
-            Schema.SObjectField f : source.getDescribe().fields.getMap().values()
+            Schema.SObjectField f : source.getDescribe()
+                .fields.getMap()
+                .values()
         ) {
             Schema.DescribeFieldResult d = f.getDescribe();
             if (

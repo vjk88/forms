@@ -1,7 +1,7 @@
 import { createElement } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import FinalFormViewer from 'c/finalFormViewer';
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkContext';
 
@@ -9,7 +9,7 @@ jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
 }));
 jest.mock(
-    '@salesforce/apex/FinalSpecController.getSpec',
+    '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -113,7 +113,10 @@ async function open(state) {
 
 describe('c-final-form-viewer personalized link inside Salesforce', () => {
     beforeEach(() => {
-        getSpec.mockResolvedValue(JSON.stringify(SPEC));
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(SPEC)
+        });
         submitForm.mockResolvedValue({ recordId: '500000000000001AAA' });
         getLinkContext.mockResolvedValue(CONTEXT);
     });

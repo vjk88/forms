@@ -5,7 +5,7 @@ import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import USER_ID from '@salesforce/user/Id';
 import IS_GUEST from '@salesforce/user/isGuest';
 import USER_OBJECT from '@salesforce/schema/User';
-import getSpec from '@salesforce/apex/FinalSpecController.getSpec';
+import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
@@ -588,9 +588,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return this._urlFormId || this.formId;
     }
 
+    /**
+     * The published version on screen. Loaded by form id alone, it is the one
+     * the server served (getSpecEnvelope): lookup search and signed-in
+     * Autofill both need it (IMPL_PLAN_F2_AUTOFILL 6.0).
+     */
     get effectiveVersionId() {
-        return this._urlVersionId || this.versionId;
+        return this._urlVersionId || this.versionId || this._servedVersionId;
     }
+
+    _servedVersionId = null;
 
     async _load() {
         if (this._inlineSpec) {
@@ -606,6 +613,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return;
         }
         this._loadedKey = key;
+        this._servedVersionId = null;
         this._submitGeneration += 1;
         this._submitting = false;
         this._editSpec = null;
@@ -613,12 +621,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._editReaders = [];
         this.model = null;
         try {
-            const raw = await getSpec({
+            const served = await getSpecEnvelope({
                 formId: formId || null,
                 versionId: versionId || null
             });
             if (key !== this._loadedKey) return;
-            await this._apply(JSON.parse(raw));
+            this._servedVersionId = (served && served.versionId) || null;
+            await this._apply(JSON.parse(served.spec));
         } catch (e) {
             if (key !== this._loadedKey) return;
             this.model = null;
