@@ -99,8 +99,16 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     viewEntry = null;
 
     mode = 'design';
-    /** The mapping step to open on the Data tab ({ actionId, n }). */
+    /**
+     * The Mapping dialog (IMPL_PLAN_F2_AUTOFILL 5.2): open, the spec it
+     * edits (a copy — nothing reaches the form until Done), the step to open
+     * ({ actionId, section, n }), and whether anything changed.
+     */
+    mappingOpen = false;
+    mappingDraft = null;
     mappingFocus = null;
+    mappingDirty = false;
+    _mappingOriginal = null;
     /** Build-mode state: what's selected + which page the blueprint shows. */
     selection = null;
     buildPageIndex = 0;
@@ -311,7 +319,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         // Apply it to our own DOM so publishing blocks both pointer and keyboard edits.
         this.template
             .querySelector('.st-body')
-            ?.toggleAttribute('inert', this.editorLocked);
+            ?.toggleAttribute('inert', this.editorLocked || this.mappingOpen);
+        // The Mapping dialog is modal for screen readers too, not only for
+        // the mouse and Tab.
+        this.template
+            .querySelector('.st-bar')
+            ?.toggleAttribute('inert', this.mappingOpen);
         const sel = this.template.querySelector('.st-verselect');
         const current = this.viewVersionId || this.editableVersionId;
         if (sel && current && sel.value !== current) {
@@ -494,24 +507,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.mode === 'design';
     }
 
-    get isData() {
-        return this.mode === 'data';
-    }
-
-    /** Data mode is Freeform-only in F2; Form and Survey gain it when
-     *  Autofill moves in (FREEFORM_F2_MAPPING_SPEC D30). */
-    get showDataMode() {
-        return this.isFreeform;
-    }
-
-    get dataClass() {
-        return this.mode === 'data' ? 'st-mode on' : 'st-mode';
-    }
-
-    get isDataPressed() {
-        return String(this.mode === 'data');
-    }
-
     get availability() {
         return this.spec?.settings?.availability || {};
     }
@@ -642,7 +637,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         if (this.mode !== 'build') this.capturePreviewSession();
         this.mode = 'build';
-        this.mappingFocus = null;
         this.settingsMenuOpen = false;
     }
 
@@ -652,17 +646,67 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         if (this.mode !== 'design') this.capturePreviewSession();
         this.mode = 'design';
-        this.mappingFocus = null;
         this.settingsMenuOpen = false;
     }
 
-    handleModeData() {
-        if (this.isReadOnly) {
+    // ----- the Mapping dialog (IMPL_PLAN_F2_AUTOFILL 5.2, D64) -----
+
+    /** From the rail's "Open mapping", or Go there with a step to show. */
+    handleOpenMapping(event) {
+        if (event) {
+            event.stopPropagation();
+        }
+        this._openMapping(null);
+    }
+
+    _openMapping(target) {
+        if (!this.isFreeform) {
             return;
         }
-        if (this.mode !== 'data') this.capturePreviewSession();
-        this.mode = 'data';
-        this.settingsMenuOpen = false;
+        this._mappingOriginal = JSON.stringify(this.spec);
+        this.mappingDraft = JSON.parse(this._mappingOriginal);
+        this.mappingDirty = false;
+        this.mappingFocus = target
+            ? {
+                  actionId: target.actionId,
+                  section: target.section || null,
+                  n: (this.mappingFocus ? this.mappingFocus.n : 0) + 1
+              }
+            : null;
+        this.mappingOpen = true;
+    }
+
+    handleMappingDraft(event) {
+        event.stopPropagation();
+        this.mappingDraft = event.detail.spec;
+        this.mappingDirty =
+            JSON.stringify(this.mappingDraft) !== this._mappingOriginal;
+    }
+
+    /** Done: the draft becomes the form, as one undo step. */
+    handleMappingDone() {
+        const changed = this.mappingDirty && !this.isReadOnly;
+        const draft = this.mappingDraft;
+        this._closeMapping();
+        if (changed) {
+            this.handleSpecChange({ detail: { spec: draft } });
+        }
+    }
+
+    handleMappingDismiss() {
+        this._closeMapping();
+    }
+
+    _closeMapping() {
+        this.mappingOpen = false;
+        this.mappingDraft = null;
+        this.mappingFocus = null;
+        this.mappingDirty = false;
+        this._mappingOriginal = null;
+        const palette = this.template.querySelector('c-final-field-palette');
+        if (palette) {
+            palette.focusMappingButton();
+        }
     }
 
     handleSettingsToggle() {
@@ -2760,15 +2804,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (this.isReadOnly) {
             return;
         }
-        if (goTo.mode === 'data' && this.showDataMode) {
-            this.handleModeData();
-            // Consumed once: leaving the Data tab clears it (handleModeBuild
-            // / handleModeDesign), so coming back doesn't jump again.
-            this.mappingFocus = {
-                actionId: goTo.actionId,
-                section: goTo.section || null,
-                n: (this.mappingFocus ? this.mappingFocus.n : 0) + 1
-            };
+        if (goTo.mode === 'data' && this.isFreeform) {
+            // A mapping step: Build, the rail on Mapping, and the dialog open
+            // at that step (the target keeps its old 'data' name).
+            this.handleModeBuild();
+            this._openMapping(goTo);
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            requestAnimationFrame(() => {
+                const palette = this.template.querySelector(
+                    'c-final-field-palette'
+                );
+                if (palette) {
+                    palette.showMapping();
+                }
+            });
         } else if (goTo.mode === 'build' && goTo.id) {
             this.handleModeBuild();
             this.handleLogicJump({

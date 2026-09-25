@@ -1,0 +1,132 @@
+@import 'c/finalStudioStyles';
+
+/* Rendered inside the Studio (not in <body>), like the relationship picker:
+   nothing above it is transformed, so `fixed` means the window. */
+.sd-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: var(--c-studio-overlay);
+}
+
+.sd {
+    position: fixed;
+    inset: 0;
+    z-index: 9001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.sd-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--c-studio-surface);
+    border-radius: var(--c-studio-radius-lg);
+    box-shadow: var(--c-studio-dialog-shadow);
+    overflow: hidden;
+}
+
+/* Full: fills the window, less a small margin so it still reads as a dialog. */
+.sd--full .sd-container {
+    width: calc(100vw - 2rem);
+    height: calc(100vh - 2rem);
+}
+
+/* Large: the SLDS large width. */
+.sd--large .sd-container {
+    width: min(90vw, 80rem);
+    max-height: calc(100vh - 3rem);
+}
+
+.sd-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--c-studio-border, #e5e5e5);
+}
+
+.sd-title {
+    flex: 1;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    outline: none;
+}
+
+.sd-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 1rem;
+    /* A flex column, so content that grows to fill its parent (the mapping
+       screen does) gets the dialog's whole height. */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Full-size content brings its own padding. */
+.sd--full .sd-body {
+    padding: 0;
+}
+
+.sd-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--c-studio-border, #e5e5e5);
+    background: var(--c-studio-surface-subtle);
+}
+
+.sd-spacer {
+    flex: 1;
+}
+
+.sd-edge {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* The "Discard your changes?" question, over the dialog's own content. */
+.sd-ask-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--c-studio-surface) 70%, transparent);
+}
+
+.sd-ask {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(26rem, calc(100% - 2rem));
+    padding: 1.25rem;
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-lg);
+    box-shadow: var(--c-studio-dialog-shadow);
+}
+
+.sd-ask-title {
+    margin: 0 0 0.375rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.sd-ask-text {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--c-studio-text-weak);
+}
+
+.sd-ask-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}

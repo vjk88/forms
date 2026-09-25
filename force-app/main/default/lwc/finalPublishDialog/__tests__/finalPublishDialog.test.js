@@ -255,7 +255,7 @@ describe('placed where they are fixed (round 2)', () => {
                 ]
             },
             {
-                where: 'Data Mapping · Step 2 · Contact',
+                where: 'Build Mapping · Step 2 · Contact',
                 lead: '',
                 lines: [
                     'Find an existing Contact where No condition compares with an answer.'

@@ -1,0 +1,76 @@
+<template>
+    <div class="sd-backdrop" role="presentation"></div>
+    <section
+        class={sectionClass}
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="sd-heading"
+        onkeydown={handleKeydown}
+    >
+        <!-- Tab and Shift+Tab wrap around inside the dialog. -->
+        <span class="sd-edge" tabindex="0" onfocus={handleFocusStart}></span>
+        <div class="sd-container">
+            <header class="sd-header">
+                <h1 id="sd-heading" class="sd-title" tabindex="-1">{label}</h1>
+                <lightning-button-icon
+                    class="sd-close"
+                    icon-name="utility:close"
+                    variant="bare"
+                    size="large"
+                    alternative-text="Close"
+                    title="Close"
+                    onclick={handleDismiss}
+                ></lightning-button-icon>
+            </header>
+            <div class="sd-body">
+                <slot name="body"></slot>
+            </div>
+            <footer class="sd-footer">
+                <slot name="footer-start"></slot>
+                <span class="sd-spacer"></span>
+                <lightning-button
+                    label="Cancel"
+                    onclick={handleDismiss}
+                ></lightning-button>
+                <lightning-button
+                    class="sd-confirm"
+                    variant="brand"
+                    label={confirmLabel}
+                    onclick={handleConfirm}
+                ></lightning-button>
+            </footer>
+            <template lwc:if={confirming}>
+                <!-- Asked here, inside the dialog: nothing else can open on
+                     top, and focus never leaves. -->
+                <div class="sd-ask-backdrop" role="presentation"></div>
+                <div
+                    class="sd-ask"
+                    role="alertdialog"
+                    aria-modal="true"
+                    aria-labelledby="sd-ask-title"
+                    aria-describedby="sd-ask-text"
+                >
+                    <h2 id="sd-ask-title" class="sd-ask-title">
+                        Discard your changes?
+                    </h2>
+                    <p id="sd-ask-text" class="sd-ask-text">{discardText}</p>
+                    <div class="sd-ask-actions">
+                        <lightning-button
+                            class="sd-keep"
+                            label="Keep editing"
+                            onclick={handleKeep}
+                        ></lightning-button>
+                        <lightning-button
+                            class="sd-discard"
+                            variant="destructive"
+                            label="Discard"
+                            onclick={handleDiscard}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <span class="sd-edge" tabindex="0" onfocus={handleFocusEnd}></span>
+    </section>
+</template>

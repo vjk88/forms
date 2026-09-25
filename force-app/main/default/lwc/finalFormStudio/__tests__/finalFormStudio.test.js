@@ -2386,7 +2386,7 @@ describe('c-final-form-studio', () => {
             FinalPublishDialog.open.mockResolvedValue({
                 goTo: { mode: 'data', actionId: 'act_2' }
             });
-            // the Data tab exists on a Freeform only
+            // Mapping exists on a Freeform only
             const spec = JSON.parse(JSON.stringify(SPEC));
             spec.form = { id: 'a0F1', name: 'Mapped', type: 'freeform' };
             loadStudio.mockResolvedValue({
@@ -2404,8 +2404,15 @@ describe('c-final-form-studio', () => {
                 1
             );
             expect(publishSpec).not.toHaveBeenCalled();
-            const data = element.shadowRoot.querySelector('c-final-data-mode');
-            expect(data.focusAction.actionId).toBe('act_2');
+            // Build, with the Mapping dialog open at that step
+            const dialog = element.shadowRoot.querySelector(
+                'c-final-studio-dialog'
+            );
+            expect(dialog).toBeTruthy();
+            const editor = element.shadowRoot.querySelector(
+                'c-final-mapping-editor'
+            );
+            expect(editor.focusAction.actionId).toBe('act_2');
         });
 
         it('still publishes when the warnings call fails', async () => {
@@ -2503,7 +2510,7 @@ describe('c-final-form-studio', () => {
     });
 });
 
-describe('Data mode', () => {
+describe('Mapping in the Build rail (no Data tab)', () => {
     async function open(type) {
         const spec = JSON.parse(JSON.stringify(SPEC));
         spec.form = { id: 'a0F1', name: 'Mapped', type };
@@ -2517,25 +2524,82 @@ describe('Data mode', () => {
         const el = mount();
         CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
         await flush();
+        // the rail lives on Build
+        const build = [...el.shadowRoot.querySelectorAll('.st-mode')].find(
+            (b) => b.textContent.trim() === 'Build'
+        );
+        build.click();
+        await flush();
         return el;
     }
     const modes = (el) => [...el.shadowRoot.querySelectorAll('.st-mode')];
-
-    it('is offered for a Freeform and opens the data surface', async () => {
-        const el = await open('freeform');
-        const data = modes(el).find((b) => b.textContent.trim() === 'Data');
-        expect(data).toBeTruthy();
-        data.click();
+    const palette = (el) =>
+        el.shadowRoot.querySelector('c-final-field-palette');
+    const dialog = (el) => el.shadowRoot.querySelector('c-final-studio-dialog');
+    const editor = (el) =>
+        el.shadowRoot.querySelector('c-final-mapping-editor');
+    const openMapping = async (el) => {
+        palette(el).dispatchEvent(
+            new CustomEvent('openmapping', { detail: { target: null } })
+        );
         await flush();
-        expect(el.shadowRoot.querySelector('c-final-data-mode')).toBeTruthy();
-        expect(data.getAttribute('aria-pressed')).toBe('true');
-    });
+    };
 
-    it('is not offered for a Form', async () => {
-        const el = await open('form');
+    it.each(['freeform', 'form'])('has no Data button (%s)', async (type) => {
+        const el = await open(type);
         expect(modes(el).map((b) => b.textContent.trim())).toEqual([
             'Build',
             'Design'
         ]);
+    });
+
+    it('opens the mapping screen in a window-filling dialog, on a copy', async () => {
+        const el = await open('freeform');
+        await openMapping(el);
+        expect(dialog(el).size).toBe('full');
+        expect(dialog(el).dirty).toBe(false);
+        expect(editor(el).spec.form.name).toBe('Mapped');
+        // the editor keeps the context the Data tab gave it
+        expect(editor(el).isPublic).toBe(false);
+        expect(editor(el).readOnly).toBe(false);
+    });
+
+    it('Cancel leaves the form as it was', async () => {
+        const el = await open('freeform');
+        await openMapping(el);
+        const changed = JSON.parse(JSON.stringify(editor(el).spec));
+        changed.mapping = { actions: [{ id: 'act_x', object: 'Contact' }] };
+        editor(el).dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: changed } })
+        );
+        await flush();
+        expect(dialog(el).dirty).toBe(true);
+        dialog(el).dispatchEvent(new CustomEvent('dismiss'));
+        await flush();
+        expect(dialog(el)).toBeNull();
+        await openMapping(el);
+        expect(editor(el).spec.mapping).toBeUndefined();
+    });
+
+    it('Done makes the draft the form', async () => {
+        const el = await open('freeform');
+        await openMapping(el);
+        const changed = JSON.parse(JSON.stringify(editor(el).spec));
+        changed.mapping = { actions: [{ id: 'act_x', object: 'Contact' }] };
+        editor(el).dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: changed } })
+        );
+        await flush();
+        dialog(el).dispatchEvent(new CustomEvent('confirm'));
+        await flush();
+        expect(dialog(el)).toBeNull();
+        await openMapping(el);
+        expect(editor(el).spec.mapping.actions[0].id).toBe('act_x');
+    });
+
+    it('never opens on a Form', async () => {
+        const el = await open('form');
+        await openMapping(el);
+        expect(dialog(el)).toBeNull();
     });
 });

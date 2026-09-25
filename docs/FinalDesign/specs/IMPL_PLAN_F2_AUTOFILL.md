@@ -34,7 +34,7 @@
    - its `full` size behaves like `large` on any screen wider than 480px, so nothing fills a desktop window;
    - its Escape key and ✕ close it at once, with no chance to ask first.
 
-   So one small component, `c/finalStudioDialog`, uses SLDS's own modal markup (`section role="dialog"`, `slds-modal`, `slds-backdrop`). It is shown **full** for Mapping and **large** for Autofill, and it owns all three ways out: Cancel, Escape and ✕.
+   So one small component, `c/finalStudioDialog`, is a `section role="dialog"` over a backdrop, rendered inside the Studio the way the relationship picker is. It is shown **full** for Mapping and **large** for Autofill, and it owns all three ways out: Cancel, Escape and ✕.
 
 2. **Leaving with unsaved changes asks first.**
    - Mapping: edits count only on **Done**, as you approved, and Done is one undo step.
@@ -64,7 +64,7 @@ Each slice: own branch → PR → uiux-flow-reviewer → deploy → org check �
 
 ### 5.1 New `lwc/finalStudioDialog`
 
-- **What it is:** SLDS modal blueprint markup, rendered inside the Studio's own template (5.2). It renders under no transformed ancestor, so `position: fixed` fills the window.
+- **What it is:** a `section role="dialog" aria-modal="true"` over a backdrop, rendered inside the Studio's own template (5.2), like `finalRelationshipPicker`. It renders under no transformed ancestor, so `position: fixed` fills the window.
 - **API:**
   - `@api size`: `'full'` (inset 1rem, fills the window) or `'large'` (the SLDS large width);
   - `@api label`;
@@ -73,7 +73,8 @@ Each slice: own branch → PR → uiux-flow-reviewer → deploy → org check �
   - Cancel and a brand `@api confirmLabel` button, provided by the dialog.
 - **Events:**
   - `confirm` (the brand button);
-  - `dismiss` (Cancel, Escape or ✕), fired only after a `LightningConfirm` "Discard your changes?" passes when `dirty`.
+  - `dismiss` (Cancel, Escape or ✕). When `dirty`, the dialog first asks "Discard your changes?" **inside itself** (an `alertdialog` with **Keep editing** and **Discard**; Escape means Keep editing).
+  - **As built (2026-09-25):** `lightning/confirm` was tried first. In the VF-hosted Studio its promise never settled after Cancel, so the dialog could never ask again. Hence the built-in question. Escape is also heard on the window while the dialog is open, so it works wherever focus lands.
 - **Accessibility:**
   - `aria-modal="true"` and `aria-labelledby`;
   - focus moves into the dialog on open and returns to the opener on close;
@@ -126,7 +127,7 @@ Each slice: own branch → PR → uiux-flow-reviewer → deploy → org check �
 ### 5.6 Tests
 
 - **Jest:**
-  - `finalStudioDialog`: size classes, focus-in and return, Tab trap, all three ways out when clean and when dirty (with `LightningConfirm` mocked);
+  - `finalStudioDialog`: size classes, focus-in and return, Tab trap, all three ways out when clean and when dirty; Keep editing then asking again; Escape while asking;
   - `finalMappingSummary`: counts, empty state, the event;
   - `finalFieldPalette`: the tab lists per type;
   - `finalFormStudio`: no Data button; Open mapping shows the dialog; the editor inside receives `is-public` and `read-only`; Done commits one undo entry; Cancel commits nothing; Go there opens the dialog at the step;

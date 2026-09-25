@@ -86,17 +86,6 @@
                 >
                     Build
                 </button>
-                <template lwc:if={showDataMode}>
-                    <button
-                        type="button"
-                        class={dataClass}
-                        aria-pressed={isDataPressed}
-                        disabled={modeDisabled}
-                        onclick={handleModeData}
-                    >
-                        Data
-                    </button>
-                </template>
                 <button
                     type="button"
                     class={designClass}
@@ -296,18 +285,6 @@
                     </div>
                 </main>
             </template>
-            <template lwc:elseif={isData}>
-                <main class="st-stagearea st-stagearea--data">
-                    <c-final-data-mode
-                        spec={spec}
-                        form-id={formId}
-                        read-only={isReadOnly}
-                        is-public={isPublic}
-                        focus-action={mappingFocus}
-                        onspecchange={handleSpecChange}
-                    ></c-final-data-mode>
-                </main>
-            </template>
             <template lwc:elseif={isDesign}>
                 <aside class="st-left">
                     <c-final-design-panel
@@ -410,6 +387,7 @@
                             onspecchange={handleSpecChange}
                             ontestpreview={handleTestPreview}
                             oncleartestpreview={handleClearTestPreview}
+                            onopenmapping={handleOpenMapping}
                         ></c-final-field-palette>
                     </template>
                 </aside>
@@ -556,6 +534,27 @@
                 onsave={handleThemeSaved}
                 oncancel={handleEditorCancel}
             ></c-final-theme-editor>
+        </template>
+
+        <template lwc:if={mappingOpen}>
+            <c-final-studio-dialog
+                size="full"
+                label="Mapping"
+                confirm-label="Done"
+                discard-text="Your mapping changes haven’t been applied to the form yet."
+                dirty={mappingDirty}
+                onconfirm={handleMappingDone}
+                ondismiss={handleMappingDismiss}
+            >
+                <c-final-mapping-editor
+                    slot="body"
+                    spec={mappingDraft}
+                    read-only={isReadOnly}
+                    is-public={isPublic}
+                    focus-action={mappingFocus}
+                    onspecchange={handleMappingDraft}
+                ></c-final-mapping-editor>
+            </c-final-studio-dialog>
         </template>
 
         <template lwc:if={relPickerOpen}>

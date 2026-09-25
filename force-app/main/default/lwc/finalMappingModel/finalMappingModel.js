@@ -377,6 +377,12 @@ function filterRowComplete(row) {
     return row.value !== null && row.value !== undefined && row.value !== '';
 }
 
+/** How a step's state reads, wherever it's shown (rail and editor alike). */
+export const STATE_TEXT = {
+    incomplete: 'Not finished',
+    broken: 'Points at a missing step'
+};
+
 /**
  * `skippable` (optional): ids of questions someone may skip. A search that
  * uses one can't be published (D59), so the step isn't finished either.
