@@ -33,21 +33,42 @@ export function groupItems(items) {
             g = group(`q:${item.questionKey}`, () => ({
                 area: 'Build',
                 where: `“${item.elementLabel || 'A question'}”`,
-                goTo: { mode: 'build', elementId: item.questionKey },
-                question: true
+                // The fix is made where the reason is: the question, or the
+                // section or page whose rule can hide it.
+                goTo: {
+                    mode: 'build',
+                    kind: item.fixKind || 'element',
+                    id: item.fixId || item.questionKey
+                },
+                question: true,
+                why: item.questionWhy || 'can be skipped',
+                fix: item.questionFix || 'Make it required.'
             }));
-            g.lines.push({
+            const line = {
                 key: `l${i}`,
                 section: item.step || '',
                 text: item.questionUse || item.text,
                 blocker
-            });
+            };
+            // Two conditions on one step using the same answer are one use.
+            const same = g.lines.find(
+                (l) => l.section === line.section && l.text === line.text
+            );
+            if (same) {
+                same.blocker = same.blocker || blocker;
+            } else {
+                g.lines.push(line);
+            }
         } else if (item.area === 'data') {
             g = group(`a:${item.actionId || 'mapping'}`, () => ({
                 area: 'Data',
                 where: item.step ? `Mapping · ${item.step}` : 'Mapping',
                 goTo: item.actionId
-                    ? { mode: 'data', actionId: item.actionId }
+                    ? {
+                          mode: 'data',
+                          actionId: item.actionId,
+                          section: item.section || null
+                      }
                     : null
             }));
             g.lines.push({
@@ -61,7 +82,7 @@ export function groupItems(items) {
                 area: item.area === 'build' ? 'Build' : '',
                 where: item.elementLabel ? `“${item.elementLabel}”` : '',
                 goTo: item.elementId
-                    ? { mode: 'build', elementId: item.elementId }
+                    ? { mode: 'build', kind: 'element', id: item.elementId }
                     : null
             }));
             g.lines.push({
@@ -76,10 +97,10 @@ export function groupItems(items) {
     groups.forEach((g) => {
         if (g.question) {
             // One fix for every step listed under it.
-            g.lead =
-                g.lines.length === 1
-                    ? 'Can be skipped, but this step needs it. Make it required (and not hidden by a rule).'
-                    : 'Can be skipped, but these steps need it. Make it required (and not hidden by a rule).';
+            const why = g.why.charAt(0).toUpperCase() + g.why.slice(1);
+            g.lead = `${why}, but ${
+                g.lines.length === 1 ? 'this step needs' : 'these steps need'
+            } it. ${g.fix}`;
         }
         g.lines.sort((a, b) => Number(b.blocker) - Number(a.blocker));
     });
@@ -163,6 +184,7 @@ export default class FinalPublishDialog extends LightningModal {
         return groupItems(this._found).map((g) => ({
             ...g,
             hasWhere: Boolean(g.area || g.where),
+            areaClass: g.where ? 'pd-area pd-area--sep' : 'pd-area',
             goLabel: g.goTo ? `Go to ${g.where || g.area}` : '',
             lines: g.lines.map((l) => ({
                 ...l,
@@ -191,9 +213,17 @@ export default class FinalPublishDialog extends LightningModal {
     }
 
     get question() {
-        return this.hasBlockers
-            ? `"${this.formName}" can’t be published yet.`
-            : `Publish "${this.formName}"?`;
+        if (this.hasBlockers) {
+            const more = this._warningCount;
+            return `"${this.formName}" can’t be published yet.${
+                more === 1
+                    ? ' There’s also 1 thing to know.'
+                    : more > 1
+                      ? ` There are also ${more} things to know.`
+                      : ''
+            }`;
+        }
+        return `Publish "${this.formName}"?`;
     }
 
     get heading() {

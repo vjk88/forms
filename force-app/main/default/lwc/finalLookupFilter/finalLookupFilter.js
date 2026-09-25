@@ -170,8 +170,9 @@ export default class FinalLookupFilter extends LightningElement {
         } catch {
             this.fields = [];
             this.relationships = [];
-            this.loadError =
-                'Those fields could not be read. Check the object name.';
+            this.loadError = this.filterOnly
+                ? 'The fields couldn’t be read. Reload the page and try again.'
+                : 'Those fields could not be read. Check the object name.';
         } finally {
             this.loading = false;
         }

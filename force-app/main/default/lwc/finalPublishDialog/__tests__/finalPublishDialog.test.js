@@ -248,7 +248,7 @@ describe('placed where they are fixed (round 2)', () => {
         expect(groups(el)).toEqual([
             {
                 where: 'Build “Your answer”',
-                lead: 'Can be skipped, but these steps need it. Make it required (and not hidden by a rule).',
+                lead: 'Can be skipped, but these steps need it. Make it required.',
                 lines: [
                     'Step 3 · Contact finds the Contact',
                     'Step 1 · Account fills Account Name, which Salesforce requires'
@@ -288,6 +288,74 @@ describe('placed where they are fixed (round 2)', () => {
             'Go to “Phone”'
         ]);
         go[1].click();
-        expect(closed).toEqual([{ goTo: { mode: 'data', actionId: 'act_2' } }]);
+        expect(closed).toEqual([
+            {
+                goTo: {
+                    mode: 'data',
+                    actionId: 'act_2',
+                    section: 'Find an existing Contact where'
+                }
+            }
+        ]);
+    });
+
+    it('names why a question can go unanswered, and goes where that is fixed', async () => {
+        const el = mount({
+            formName: 'F',
+            items: [
+                {
+                    severity: 'blocker',
+                    area: 'data',
+                    actionId: 'act_3',
+                    step: 'Step 3 · Contact',
+                    text: 'x',
+                    questionKey: 'el_a',
+                    elementLabel: 'Your answer',
+                    questionUse: 'finds the Contact',
+                    questionWhy:
+                        'is on the section “Extras”, which a rule can hide',
+                    questionFix:
+                        'Remove that section’s rule, or compare with something else.',
+                    fixKind: 'section',
+                    fixId: 'sec_2'
+                },
+                {
+                    severity: 'blocker',
+                    area: 'data',
+                    actionId: 'act_3',
+                    step: 'Step 3 · Contact',
+                    text: 'x again',
+                    questionKey: 'el_a',
+                    elementLabel: 'Your answer',
+                    questionUse: 'finds the Contact'
+                }
+            ]
+        });
+        const closed = [];
+        el.addEventListener('close', (e) => closed.push(e.detail));
+        await flush();
+        expect(el.shadowRoot.querySelector('.pd-lead').textContent).toBe(
+            'Is on the section “Extras”, which a rule can hide, but this step needs it. Remove that section’s rule, or compare with something else.'
+        );
+        // two conditions using the same answer on one step: one line
+        expect(el.shadowRoot.querySelectorAll('.pd-line')).toHaveLength(1);
+        el.shadowRoot.querySelector('lightning-button[data-key]').click();
+        expect(closed).toEqual([
+            { goTo: { mode: 'build', kind: 'section', id: 'sec_2' } }
+        ]);
+    });
+
+    it('says there is more to know under what must be fixed', async () => {
+        const el = mount({
+            formName: 'F',
+            items: [
+                { severity: 'blocker', area: 'data', actionId: 'a', text: 'b' },
+                { severity: 'warning', area: 'build', text: 'w' }
+            ]
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('.pd-question').textContent).toBe(
+            '"F" can’t be published yet. There’s also 1 thing to know.'
+        );
     });
 });

@@ -222,6 +222,54 @@ private class FinalMappingRulesTest {
     }
 
     @IsTest
+    static void skippableSaysWhyAndWhereItIsFixed() {
+        Map<String, Object> optional = FinalMappingTestData.question(
+            'el_opt',
+            'text',
+            'Optional'
+        );
+        optional.put('required', false);
+        Map<String, Object> spec = FinalMappingTestData.spec(
+            new List<Object>{
+                FinalMappingTestData.question('el_req', 'text', 'Required'),
+                optional
+            },
+            null
+        );
+        Map<String, FinalMappingRules.Skippable> why = FinalMappingRules.skippable(
+            spec
+        );
+        Assert.areEqual('can be skipped', why.get('el_opt').why);
+        Assert.areEqual('Make it required.', why.get('el_opt').fix);
+        Assert.areEqual('element', why.get('el_opt').kind);
+        Assert.isFalse(why.containsKey('el_req'));
+
+        // a rule on the section: the fix is the section's, and Go there goes there
+        Map<String, Object> section = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) spec.get(
+                'pages'
+            ))[0])
+            .get('sections'))[0];
+        section.put('title', 'Extras');
+        section.put(
+            'visibility',
+            new Map<String, Object>{
+                'rules' => new List<Object>{ new Map<String, Object>() }
+            }
+        );
+        why = FinalMappingRules.skippable(spec);
+        FinalMappingRules.Skippable req = why.get('el_req');
+        Assert.areEqual(
+            'is on the section “Extras”, which a rule can hide',
+            req.why
+        );
+        Assert.areEqual('section', req.kind);
+        Assert.areEqual('sec_1', req.id);
+        Assert.isTrue(
+            why.get('el_opt').fix.endsWith('Make the question required too.')
+        );
+    }
+
+    @IsTest
     static void actionsOfIsEmptyWithoutAMapping() {
         Assert.areEqual(
             0,

@@ -243,23 +243,23 @@ public inherited sharing class FinalLookupService {
             Map<String, Object> row = asMap(rowObj);
             if (row == null) {
                 out.blocked = true;
-                out.blockedReason = 'A filter condition is not readable.';
+                out.blockedReason = 'A condition can’t be read. Remove it and add it again.';
                 return out;
             }
             String fieldPath = (String) row.get('fieldPath');
             String op = (String) row.get('operator');
             if (String.isBlank(fieldPath) || String.isBlank(op)) {
                 out.blocked = true;
-                out.blockedReason = 'A filter condition is incomplete.';
+                out.blockedReason = 'A condition isn’t finished. Choose its field and operator.';
                 return out;
             }
             String safePath = resolvePath(objectName, fieldPath);
             if (safePath == null) {
                 out.blocked = true;
                 out.blockedReason =
-                    'Filter field "' +
+                    'A condition uses the field "' +
                     fieldPath +
-                    '" does not exist.';
+                    '", which doesn’t exist.';
                 return out;
             }
 
@@ -273,7 +273,7 @@ public inherited sharing class FinalLookupService {
             Object resolved = resolveValue(row, answers);
             if (resolved == null) {
                 out.blocked = true;
-                out.blockedReason = 'A filter condition has no value yet.';
+                out.blockedReason = 'A condition has no value yet.';
                 return out;
             }
 
@@ -282,9 +282,9 @@ public inherited sharing class FinalLookupService {
             if (clause == null) {
                 out.blocked = true;
                 out.blockedReason =
-                    'Filter operator "' +
+                    'A condition uses the operator "' +
                     op +
-                    '" is not supported.';
+                    '", which isn’t supported.';
                 return out;
             }
             if (op == 'like') {

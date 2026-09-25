@@ -8,15 +8,16 @@
             <section key={g.key} class="pd-group">
                 <template lwc:if={g.hasWhere}>
                     <div class="pd-group-head">
-                        <span class="pd-where">
-                            <span class="pd-area">{g.area}</span>
+                        <h3 class="pd-where">
+                            <span class={g.areaClass}>{g.area}</span>
                             <span>{g.where}</span>
-                        </span>
+                        </h3>
                         <template lwc:if={g.goTo}>
                             <lightning-button
                                 variant="base"
                                 label="Go there"
                                 title={g.goLabel}
+                                aria-label={g.goLabel}
                                 data-key={g.key}
                                 onclick={handleGo}
                             ></lightning-button>

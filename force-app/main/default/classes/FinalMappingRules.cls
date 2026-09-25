@@ -442,17 +442,35 @@ public with sharing class FinalMappingRules {
      * (rule-hidden answers are dropped before the server sees them).
      */
     public static Set<String> skippableElementIds(Map<String, Object> spec) {
-        Set<String> out = new Set<String>();
+        return skippable(spec).keySet();
+    }
+
+    /**
+     * Why a question can go unanswered, and where that is fixed: the
+     * question itself (optional, or its own rule), or the section or page
+     * whose rule can hide it. `why` and `fix` finish a sentence that starts
+     * with the question's name.
+     */
+    public class Skippable {
+        public String why;
+        public String fix;
+        /** What Go there selects: 'element', 'section' or 'page'. */
+        public String kind;
+        public String id;
+    }
+
+    public static Map<String, Skippable> skippable(Map<String, Object> spec) {
+        Map<String, Skippable> out = new Map<String, Skippable>();
         for (Object pageObj : asList(spec == null ? null : spec.get('pages'))) {
             Map<String, Object> page = asMap(pageObj);
-            Boolean pageConditional = hasRule(page);
+            Boolean pageRule = hasRule(page);
             for (
                 Object secObj : asList(
                     page == null ? null : page.get('sections')
                 )
             ) {
                 Map<String, Object> sec = asMap(secObj);
-                Boolean secConditional = pageConditional || hasRule(sec);
+                Boolean secRule = hasRule(sec);
                 for (
                     Object elObj : asList(
                         sec == null ? null : sec.get('elements')
@@ -462,17 +480,61 @@ public with sharing class FinalMappingRules {
                     if (el == null || !(el.get('id') instanceof String)) {
                         continue;
                     }
-                    if (
-                        secConditional ||
-                        hasRule(el) ||
-                        !isAlwaysRequired(el)
-                    ) {
-                        out.add((String) el.get('id'));
+                    Boolean optional = !isAlwaysRequired(el);
+                    Boolean ownRule = hasRule(el);
+                    if (!optional && !ownRule && !secRule && !pageRule) {
+                        continue;
                     }
+                    Skippable s = new Skippable();
+                    String alsoRequired = optional
+                        ? ' Make the question required too.'
+                        : '';
+                    if (pageRule || secRule) {
+                        Boolean onPage = pageRule;
+                        Map<String, Object> holder = onPage ? page : sec;
+                        String name = str(
+                            holder.get(onPage ? 'name' : 'title'),
+                            onPage ? 'Page' : 'Section'
+                        );
+                        s.why =
+                            'is on the ' +
+                            (onPage ? 'page' : 'section') +
+                            ' “' +
+                            name +
+                            '”, which a rule can hide';
+                        s.fix =
+                            'Remove that ' +
+                            (onPage ? 'page' : 'section') +
+                            '’s rule, or compare with something else.' +
+                            alsoRequired;
+                        s.kind = onPage ? 'page' : 'section';
+                        s.id = str(holder.get('id'), null);
+                    } else if (ownRule) {
+                        s.why = optional
+                            ? 'can be skipped, and a rule can hide it'
+                            : 'can be hidden by its rule';
+                        s.fix = optional
+                            ? 'Make it required and remove its rule.'
+                            : 'Remove its rule, or compare with something else.';
+                        s.kind = 'element';
+                        s.id = (String) el.get('id');
+                    } else {
+                        s.why = 'can be skipped';
+                        s.fix = 'Make it required.';
+                        s.kind = 'element';
+                        s.id = (String) el.get('id');
+                    }
+                    out.put((String) el.get('id'), s);
                 }
             }
         }
         return out;
+    }
+
+    private static String str(Object o, String fallback) {
+        return o instanceof String && String.isNotBlank((String) o)
+            ? (String) o
+            : fallback;
     }
 
     private static Boolean hasRule(Map<String, Object> node) {

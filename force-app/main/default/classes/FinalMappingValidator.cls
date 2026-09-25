@@ -39,6 +39,16 @@ public with sharing class FinalMappingValidator {
         /** What this step uses that question for: "finds the Contact". */
         @AuraEnabled
         public String questionUse;
+        /** Why it can go unanswered and the fix: "can be skipped" / "Make it required." */
+        @AuraEnabled
+        public String questionWhy;
+        @AuraEnabled
+        public String questionFix;
+        /** Where that fix is made: 'element' | 'section' | 'page', and its id. */
+        @AuraEnabled
+        public String fixKind;
+        @AuraEnabled
+        public String fixId;
 
         public Diagnostic(
             String severity,
@@ -53,10 +63,21 @@ public with sharing class FinalMappingValidator {
             this.text = message;
         }
 
-        public Diagnostic about(String key, String label, String use) {
+        public Diagnostic about(
+            String key,
+            String label,
+            String use,
+            FinalMappingRules.Skippable why
+        ) {
             this.questionKey = key;
             this.questionLabel = label;
             this.questionUse = use;
+            if (why != null) {
+                this.questionWhy = why.why;
+                this.questionFix = why.fix;
+                this.fixKind = why.kind;
+                this.fixId = why.id;
+            }
             return this;
         }
     }
@@ -137,7 +158,7 @@ public with sharing class FinalMappingValidator {
 
         Context ctx = new Context();
         ctx.questions = FinalMappingRules.questionMap(spec);
-        ctx.skippable = FinalMappingRules.skippableElementIds(spec);
+        ctx.skippable = FinalMappingRules.skippable(spec);
         ctx.isPublic = isPublic(formId);
         ctx.placeholders = new Map<String, Object>();
         for (String key : ctx.questions.keySet()) {
@@ -188,7 +209,7 @@ public with sharing class FinalMappingValidator {
 
     private class Context {
         Map<String, Map<String, Object>> questions;
-        Set<String> skippable;
+        Map<String, FinalMappingRules.Skippable> skippable;
         Boolean isPublic;
         Map<String, Object> placeholders;
         /** The step being checked: its label and its sections' headings. */
@@ -534,9 +555,8 @@ public with sharing class FinalMappingValidator {
                         fieldApi,
                         ctx,
                         ctx.search,
-                        'Salesforce can’t search by ' +
-                            mf.getDescribe().getLabel() +
-                            '. Use a different field.'
+                        mf.getDescribe().getLabel() +
+                        ' can’t be used in a condition. Choose a different field.'
                     )
                 );
             } else {
@@ -781,7 +801,8 @@ public with sharing class FinalMappingValidator {
             );
             return;
         }
-        if (ctx.skippable.contains(key)) {
+        if (ctx.skippable.containsKey(key)) {
+            FinalMappingRules.Skippable why = ctx.skippable.get(key);
             out.add(
                 at(
                         BLOCKER,
@@ -791,13 +812,14 @@ public with sharing class FinalMappingValidator {
                         ctx.search,
                         '“' +
                             qLabel +
-                            '”' +
-                            ' can be skipped, but it’s used to find the ' +
+                            '” ' +
+                            why.why +
+                            ', but it’s used to find the ' +
                             d0(ctx) +
-                            '.' +
-                            ' Make it required (and not hidden by a rule).'
+                            '. ' +
+                            why.fix
                     )
-                    .about(key, qLabel, 'finds the ' + d0(ctx))
+                    .about(key, qLabel, 'finds the ' + d0(ctx), why)
             );
         }
     }
@@ -1006,7 +1028,8 @@ public with sharing class FinalMappingValidator {
                     }
                 }
             }
-            if (isRequired(fd) && ctx.skippable.contains(key)) {
+            if (isRequired(fd) && ctx.skippable.containsKey(key)) {
+                FinalMappingRules.Skippable why = ctx.skippable.get(key);
                 out.add(
                     at(
                             WARNING,
@@ -1016,15 +1039,18 @@ public with sharing class FinalMappingValidator {
                             ctx.create,
                             '“' +
                                 q.get('label') +
-                                '” can be skipped, but it fills ' +
+                                '” ' +
+                                why.why +
+                                ', but it fills ' +
                                 label +
-                                ', which Salesforce requires. When it’s skipped, this step fails.' +
-                                ' Make it required (and not hidden by a rule).'
+                                ', which Salesforce requires. When it’s left blank, this step fails. ' +
+                                why.fix
                         )
                         .about(
                             key,
                             String.valueOf(q.get('label')),
-                            'fills ' + label + ', which Salesforce requires'
+                            'fills ' + label + ', which Salesforce requires',
+                            why
                         )
                 );
             }

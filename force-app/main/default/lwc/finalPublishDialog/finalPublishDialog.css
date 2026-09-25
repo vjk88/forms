@@ -29,6 +29,7 @@
 }
 
 .pd-where {
+    margin: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -42,7 +43,7 @@
     color: var(--slds-g-color-neutral-base-30, #5c5c5c);
 }
 
-.pd-area::after {
+.pd-area--sep::after {
     content: ' ·';
 }
 

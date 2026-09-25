@@ -49,6 +49,15 @@ public with sharing class FinalPublishWarnings {
         public String questionKey;
         @AuraEnabled
         public String questionUse;
+        /** For such a question: why, the fix, and where it's made. */
+        @AuraEnabled
+        public String questionWhy;
+        @AuraEnabled
+        public String questionFix;
+        @AuraEnabled
+        public String fixKind;
+        @AuraEnabled
+        public String fixId;
     }
 
     private static Item buildItem(String text, String elementId, String label) {
@@ -197,6 +206,10 @@ public with sharing class FinalPublishWarnings {
                 i.questionKey = d.questionKey;
                 i.elementLabel = d.questionLabel;
                 i.questionUse = d.questionUse;
+                i.questionWhy = d.questionWhy;
+                i.questionFix = d.questionFix;
+                i.fixKind = d.fixKind;
+                i.fixId = d.fixId;
                 check.items.add(i);
             }
         } catch (Exception e) {

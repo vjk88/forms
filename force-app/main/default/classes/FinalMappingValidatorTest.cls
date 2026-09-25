@@ -699,7 +699,7 @@ private class FinalMappingValidatorTest {
         assertRefused(
             'search on a long text field',
             new List<Object>{ a },
-            'search by'
+            'can’t be used in a condition'
         );
 
         a = FinalMappingTestData.findOrCreateContact('act_a', 'reuse');

@@ -2386,6 +2386,16 @@ describe('c-final-form-studio', () => {
             FinalPublishDialog.open.mockResolvedValue({
                 goTo: { mode: 'data', actionId: 'act_2' }
             });
+            // the Data tab exists on a Freeform only
+            const spec = JSON.parse(JSON.stringify(SPEC));
+            spec.form = { id: 'a0F1', name: 'Mapped', type: 'freeform' };
+            loadStudio.mockResolvedValue({
+                name: 'Mapped',
+                specJson: JSON.stringify(spec),
+                draftVersionId: 'a0V1',
+                versionNumber: 2,
+                activeVersionNumber: 1
+            });
             const element = await ready();
             publish(element);
             await micro(12);

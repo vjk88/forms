@@ -642,6 +642,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         if (this.mode !== 'build') this.capturePreviewSession();
         this.mode = 'build';
+        this.mappingFocus = null;
         this.settingsMenuOpen = false;
     }
 
@@ -651,6 +652,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
         if (this.mode !== 'design') this.capturePreviewSession();
         this.mode = 'design';
+        this.mappingFocus = null;
         this.settingsMenuOpen = false;
     }
 
@@ -2755,16 +2757,22 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     /** "Go there" from the publish dialog: the tab, then the thing on it. */
     _goTo(goTo) {
-        if (goTo.mode === 'data') {
+        if (this.isReadOnly) {
+            return;
+        }
+        if (goTo.mode === 'data' && this.showDataMode) {
             this.handleModeData();
+            // Consumed once: leaving the Data tab clears it (handleModeBuild
+            // / handleModeDesign), so coming back doesn't jump again.
             this.mappingFocus = {
                 actionId: goTo.actionId,
+                section: goTo.section || null,
                 n: (this.mappingFocus ? this.mappingFocus.n : 0) + 1
             };
-        } else if (goTo.mode === 'build') {
+        } else if (goTo.mode === 'build' && goTo.id) {
             this.handleModeBuild();
             this.handleLogicJump({
-                detail: { kind: 'element', id: goTo.elementId }
+                detail: { kind: goTo.kind || 'element', id: goTo.id }
             });
         }
     }

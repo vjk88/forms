@@ -60,7 +60,7 @@ public with sharing class FinalMappingSoql {
     public static Parsed parse(String clause) {
         Parsed out = new Parsed();
         if (String.isBlank(clause)) {
-            out.problem = 'Write the conditions, or go back to the Conditions tab.';
+            out.problem = 'Write the SOQL, or switch to Conditions.';
             return out;
         }
         if (clause.length() > MAX_LENGTH) {
