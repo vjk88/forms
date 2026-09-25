@@ -12,58 +12,26 @@ public with sharing class FinalSpecController {
      */
     @AuraEnabled(cacheable=true)
     public static String getSpec(Id formId, Id versionId) {
-        try {
-            List<Form_Version__c> versions;
-            if (versionId != null) {
-                versions = [
-                    SELECT Spec_JSON__c
-                    FROM Form_Version__c
-                    WHERE Id = :versionId
-                    WITH USER_MODE
-                    LIMIT 1
-                ];
-            } else if (formId != null) {
-                versions = [
-                    SELECT Spec_JSON__c
-                    FROM Form_Version__c
-                    WHERE Form__c = :formId AND Is_Active__c = TRUE
-                    WITH USER_MODE
-                    ORDER BY Version_Number__c DESC
-                    LIMIT 1
-                ];
-            } else {
-                throw new AuraHandledException(
-                    'A form Id or version Id is required.'
-                );
-            }
-            if (
-                versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)
-            ) {
-                throw new AuraHandledException(
-                    'No published specification found for this form.'
-                );
-            }
-            return versions[0].Spec_JSON__c;
-        } catch (AuraHandledException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new AuraHandledException('The form could not be loaded.');
-        }
+        return (String) getSpecEnvelope(formId, versionId).get('spec');
     }
 
     /**
      * The same spec as getSpec, with the id of the version it came from.
      * The viewer needs that id: lookup search and signed-in Autofill are
      * both asked "which published version?" (IMPL_PLAN_F2_AUTOFILL 6.0), and
-     * a form loaded by form id alone never learned it.
+     * a form loaded by form id alone never learned it. The form id comes
+     * back too, for a form opened by version id alone.
+     *
+     * Not cacheable: after a republish a cached answer would name a version
+     * that is no longer active, and lookup search refuses those.
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static Map<String, Object> getSpecEnvelope(Id formId, Id versionId) {
         try {
             List<Form_Version__c> versions;
             if (versionId != null) {
                 versions = [
-                    SELECT Id, Spec_JSON__c
+                    SELECT Id, Form__c, Spec_JSON__c
                     FROM Form_Version__c
                     WHERE Id = :versionId
                     WITH USER_MODE
@@ -71,7 +39,7 @@ public with sharing class FinalSpecController {
                 ];
             } else if (formId != null) {
                 versions = [
-                    SELECT Id, Spec_JSON__c
+                    SELECT Id, Form__c, Spec_JSON__c
                     FROM Form_Version__c
                     WHERE Form__c = :formId AND Is_Active__c = TRUE
                     WITH USER_MODE
@@ -92,6 +60,7 @@ public with sharing class FinalSpecController {
             }
             return new Map<String, Object>{
                 'versionId' => versions[0].Id,
+                'formId' => versions[0].Form__c,
                 'spec' => versions[0].Spec_JSON__c
             };
         } catch (AuraHandledException e) {
@@ -149,6 +118,22 @@ public with sharing class FinalSpecController {
         // the dialog only shows the same results, and an @AuraEnabled method
         // can be called without the dialog.
         FinalMappingValidator.validateForPublish(formId, spec);
+
+        // A record lookup must say what it searches (IMPL_PLAN_F2_AUTOFILL
+        // 6.0); the publish dialog shows the same, but this is the gate.
+        List<Map<String, Object>> unnamed = FinalPublishWarnings.lookupsWithoutObject(
+            spec
+        );
+        if (!unnamed.isEmpty()) {
+            Object label = unnamed[0].get('label');
+            throw FinalMappingRules.refusal(
+                'Choose which object “' +
+                    (label instanceof String
+                        ? (String) label
+                        : 'A record lookup') +
+                    '” searches before publishing.'
+            );
+        }
 
         Savepoint sp = Database.setSavepoint();
         try {

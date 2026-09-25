@@ -488,10 +488,13 @@
                             value={cfg.referenceTo}
                             onpick={handleLookupObject}
                         ></c-final-object-picker>
-                        <p class="pp-hint">
-                            Changing it starts over what each result shows, the
-                            fields searched and the filter.
-                        </p>
+                        <template lwc:if={showLookupObjectHint}>
+                            <p class="pp-hint">
+                                Picking a different object clears what results
+                                show, which fields are searched, the filter and
+                                guest access.
+                            </p>
+                        </template>
                     </div>
                 </template>
 

@@ -311,4 +311,53 @@ private class FinalPublishWarningsTest {
         // the sentence alone: the dialog shows the step above it
         Assert.isTrue(i.text.startsWith('Choose what happens to it'), i.text);
     }
+
+    @IsTest
+    static void aLookupThatSearchesNothingIsABlockerOnTheBuildTab() {
+        Form__c form = new Form__c(
+            Name = 'Lookup warn',
+            Form_Type__c = 'Freeform'
+        );
+        insert form;
+        Map<String, Object> spec = FinalMappingTestData.spec(
+            new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'el_pick',
+                    'type' => 'field',
+                    'label' => 'Your company',
+                    'config' => new Map<String, Object>{
+                        'inputType' => 'reference'
+                    }
+                },
+                // a bound lookup takes its object from the field: fine
+                new Map<String, Object>{
+                    'id' => 'el_bound',
+                    'type' => 'field',
+                    'label' => 'Account',
+                    'binding' => new Map<String, Object>{
+                        'object' => 'Contact',
+                        'field' => 'AccountId'
+                    },
+                    'config' => new Map<String, Object>{
+                        'inputType' => 'reference'
+                    }
+                }
+            },
+            null
+        );
+        FinalPublishWarnings.PublishCheck check = FinalPublishWarnings.forPublish(
+            form.Id,
+            JSON.serialize(spec)
+        );
+        Assert.areEqual(
+            1,
+            check.blockers.size(),
+            String.join(check.blockers, ' | ')
+        );
+        FinalPublishWarnings.Item i = check.items[0];
+        Assert.areEqual('blocker', i.severity);
+        Assert.areEqual('build', i.area);
+        Assert.areEqual('el_pick', i.elementId);
+        Assert.areEqual('Choose which object “Your company” searches.', i.text);
+    }
 }

@@ -831,6 +831,12 @@ private class FinalLookupServiceTest {
             }
         }
         Assert.isTrue(readOnly, 'objects that can only be read are offered');
+        // and never one a search can't run against
+        Assert.isFalse(names.contains('ContentDocumentLink'));
+        Assert.isFalse(names.contains('FieldDefinition'));
+        for (String n : names) {
+            Assert.isFalse(n.endsWith('__mdt'), n);
+        }
         // sorted by label for the picker
         Assert.isTrue(
             objects[0].get('label') <= objects[objects.size() - 1].get('label')

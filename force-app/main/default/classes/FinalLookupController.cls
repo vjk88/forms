@@ -56,7 +56,8 @@ public with sharing class FinalLookupController {
                     d.isQueryable() &&
                     !d.isDeprecatedAndHidden() &&
                     !d.isCustomSetting() &&
-                    !FinalFormCreateController.isSystemTable(d.getName())
+                    !FinalFormCreateController.isSystemTable(d.getName()) &&
+                    !unsearchable(d.getName())
                 ) {
                     out.add(
                         new Map<String, String>{
@@ -71,6 +72,41 @@ public with sharing class FinalLookupController {
         }
         out.sort(new ByLabel());
         return out;
+    }
+
+    /**
+     * Objects a lookup search can't run against: custom metadata, big and
+     * external objects, and system tables Salesforce only lets you query
+     * with particular filters. Offering one would let an author set up a
+     * lookup whose every search fails.
+     */
+    private static final Set<String> RESTRICTED = new Set<String>{
+        'contentdocumentlink',
+        'fielddefinition',
+        'entitydefinition',
+        'entityparticle',
+        'userrecordaccess',
+        'recordactionhistory',
+        'flowrecordrelation',
+        'datatype',
+        'publisher',
+        'relationshipdomain',
+        'relationshipinfo',
+        'searchlayout',
+        'userentityaccess',
+        'userfieldaccess',
+        'ownerchangeoptioninfo',
+        'picklistvalueinfo',
+        'userapproutenamelist'
+    };
+
+    private static Boolean unsearchable(String name) {
+        String n = name.toLowerCase();
+        return n.endsWith('__mdt') ||
+            n.endsWith('__b') ||
+            n.endsWith('__x') ||
+            n.endsWith('__e') ||
+            RESTRICTED.contains(n);
     }
 
     private class ByLabel implements System.Comparator<Map<String, String>> {

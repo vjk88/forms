@@ -376,4 +376,48 @@ describe('c-final-form-viewer — reference default and the form-level override'
         expect(search.mock.calls[0][0].formId).toBe('a0Fx');
         jest.useRealTimers();
     });
+
+    it('never reloads itself once it knows the served version', async () => {
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            formId: 'a0Fx',
+            spec: JSON.stringify(SPEC)
+        });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.formId = 'a0Fx';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        // leaving and coming back (a console tab switch) re-runs the load
+        document.body.removeChild(el);
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        expect(getSpecEnvelope).toHaveBeenCalledTimes(1);
+    });
+
+    it('opened by version alone, searches with the form the server named', async () => {
+        jest.useFakeTimers();
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vonly',
+            formId: 'a0Fserved',
+            spec: JSON.stringify(SPEC)
+        });
+        search.mockResolvedValue([
+            { id: '003a', title: 'Rose Gonzalez', subtitle: 'Edge' }
+        ]);
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.versionId = 'a0Vonly';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        await pickContact(el);
+        expect(search.mock.calls[0][0].formId).toBe('a0Fserved');
+        expect(search.mock.calls[0][0].versionId).toBe('a0Vonly');
+        jest.useRealTimers();
+    });
 });

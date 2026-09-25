@@ -585,7 +585,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     get effectiveFormId() {
-        return this._urlFormId || this.formId;
+        return this._urlFormId || this.formId || this._servedFormId;
     }
 
     /**
@@ -598,13 +598,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     _servedVersionId = null;
+    _servedFormId = null;
 
     async _load() {
         if (this._inlineSpec) {
             return;
         }
-        const formId = this.effectiveFormId;
-        const versionId = this.effectiveVersionId;
+        // What was ASKED for, never what came back: keying on the served
+        // ids would make the next wire tick look like a new form and reload
+        // it, wiping what the person had typed.
+        const formId = this._urlFormId || this.formId;
+        const versionId = this._urlVersionId || this.versionId;
         if (!formId && !versionId) {
             return;
         }
@@ -614,6 +618,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._loadedKey = key;
         this._servedVersionId = null;
+        this._servedFormId = null;
         this._submitGeneration += 1;
         this._submitting = false;
         this._editSpec = null;
@@ -627,6 +632,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             });
             if (key !== this._loadedKey) return;
             this._servedVersionId = (served && served.versionId) || null;
+            this._servedFormId = (served && served.formId) || null;
             await this._apply(JSON.parse(served.spec));
         } catch (e) {
             if (key !== this._loadedKey) return;

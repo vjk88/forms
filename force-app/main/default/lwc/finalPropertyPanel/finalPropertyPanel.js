@@ -963,20 +963,23 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     lookupObjects = [];
-    _lookupObjectsLoaded = false;
+    /** 'idle' | 'loading' | 'ready' | 'error' — asked once; a failure is
+     *  said, never retried on every render. */
+    lookupObjectsState = 'idle';
 
     _loadLookupObjects() {
-        if (this._lookupObjectsLoaded) {
+        if (this.lookupObjectsState !== 'idle') {
             return;
         }
-        this._lookupObjectsLoaded = true;
+        this.lookupObjectsState = 'loading';
         listLookupObjects()
             .then((rows) => {
                 this.lookupObjects = rows || [];
+                this.lookupObjectsState = 'ready';
             })
             .catch(() => {
-                this._lookupObjectsLoaded = false;
                 this.lookupObjects = [];
+                this.lookupObjectsState = 'error';
             });
     }
 
@@ -985,7 +988,20 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get lookupObjectPlaceholder() {
-        return this.lookupObjects.length ? 'Search objects' : 'Loading…';
+        if (this.lookupObjectsState === 'error') {
+            return 'The objects couldn’t be loaded';
+        }
+        if (this.lookupObjectsState !== 'ready') {
+            return 'Loading…';
+        }
+        return this.lookupObjects.length
+            ? 'Search objects'
+            : 'No objects you can search';
+    }
+
+    /** Only once there is an object to change away from. */
+    get showLookupObjectHint() {
+        return Boolean(this.cfg.referenceTo);
     }
 
     /**

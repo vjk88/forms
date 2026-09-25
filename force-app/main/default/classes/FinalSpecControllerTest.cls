@@ -292,6 +292,49 @@ private class FinalSpecControllerTest {
     }
 
     @IsTest
+    static void publishSpecRefusesALookupWithNoObject() {
+        Map<String, Object> pick = new Map<String, Object>{
+            'id' => 'el_pick',
+            'type' => 'field',
+            'label' => 'Your company',
+            'binding' => null,
+            'config' => new Map<String, Object>{
+                'inputType' => 'reference',
+                'referenceTo' => null,
+                'renderAs' => 'Filtered_Search'
+            },
+            'lookupConfig' => new Map<String, Object>{ 'targetObject' => null }
+        };
+        Map<String, Object> spec = FinalMappingTestData.spec(
+            new List<Object>{ pick },
+            null
+        );
+        Form__c form = new Form__c(
+            Name = 'Lookup gate',
+            Form_Type__c = 'Freeform'
+        );
+        insert form;
+        try {
+            FinalSpecController.publishSpec(form.Id, JSON.serialize(spec));
+            Assert.fail('a lookup that searches nothing must not publish');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(
+                e.getMessage().contains('“Your company” searches'),
+                e.getMessage()
+            );
+        }
+
+        // named, it publishes
+        ((Map<String, Object>) pick.get('config'))
+            .put('referenceTo', 'Account');
+        ((Map<String, Object>) pick.get('lookupConfig'))
+            .put('targetObject', 'Account');
+        Assert.isNotNull(
+            FinalSpecController.publishSpec(form.Id, JSON.serialize(spec))
+        );
+    }
+
+    @IsTest
     static void publishSpecRefusesElevenSteps() {
         // Spec test 17.
         List<Object> actions = new List<Object>();

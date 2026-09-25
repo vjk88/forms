@@ -512,6 +512,36 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             expect(got[0].lookupConfig).toEqual({ targetObject: 'Account' });
         });
 
+        it('says what changing the object clears only once one is set', async () => {
+            const blank = mount({
+                kind: 'element',
+                node: lookupQuestion(
+                    { referenceTo: null },
+                    {
+                        targetObject: null
+                    }
+                )
+            });
+            await flush();
+            expect(
+                blank.shadowRoot.querySelector('.pp-lookup-object .pp-hint')
+            ).toBeNull();
+            const set = mount({
+                kind: 'element',
+                node: lookupQuestion(
+                    { referenceTo: 'Account' },
+                    {
+                        targetObject: 'Account'
+                    }
+                )
+            });
+            await flush();
+            expect(
+                set.shadowRoot.querySelector('.pp-lookup-object .pp-hint')
+                    .textContent
+            ).toContain('guest access');
+        });
+
         it('a bound lookup never shows the Object picker', async () => {
             const el = mount({
                 kind: 'element',
