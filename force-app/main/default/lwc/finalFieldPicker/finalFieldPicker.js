@@ -21,16 +21,28 @@ import describeLookupFields from '@salesforce/apex/FinalLookupController.describ
  */
 const CACHE = new Map();
 
+/** Fields no condition should offer. */
+const POINTLESS = /(^|\.)IsDeleted$/;
+
 function describe(objectApi, relationship) {
     const key = `${objectApi}|${relationship || ''}`;
     if (!CACHE.has(key)) {
         const pending = describeLookupFields({
             objectApiName: objectApi,
             relationshipName: relationship || null
-        }).catch((error) => {
-            CACHE.delete(key);
-            throw error;
-        });
+        })
+            .then((out) => ({
+                ...out,
+                // Deleted records are never searched, so "Deleted" is a
+                // condition that can only ever say the obvious.
+                fields: ((out && out.fields) || []).filter(
+                    (f) => !POINTLESS.test(f.path || '')
+                )
+            }))
+            .catch((error) => {
+                CACHE.delete(key);
+                throw error;
+            });
         CACHE.set(key, pending);
     }
     return CACHE.get(key);

@@ -184,6 +184,35 @@ public with sharing class FinalMappingSoql {
         return out;
     }
 
+    private static final String UNEXPECTED = 'unexpected token: \'';
+
+    /**
+     * Salesforce's parse errors, said about the author's own text. The
+     * conditions always run inside brackets — WHERE (…) — so a closing
+     * bracket or LIMIT it trips on is ours, and means the conditions ended
+     * too soon; any other word it names is the author's. Everything else
+     * (a wrong field, a value of the wrong type) is already readable and
+     * passes through unchanged.
+     */
+    public static String readableError(String message) {
+        String m = message == null ? '' : message.trim();
+        if (m.startsWith(UNEXPECTED) && m.endsWith('\'')) {
+            String token = m.substring(UNEXPECTED.length(), m.length() - 1);
+            if (token == ')' || token.equalsIgnoreCase('LIMIT')) {
+                return 'they end too soon. Finish the last condition, or remove a trailing AND / OR.';
+            }
+            return 'Salesforce couldn’t read “' +
+                token +
+                '”. Check it for a typo, or a missing AND / OR before it.';
+        }
+        if (m.startsWith('missing value at ')) {
+            return 'Salesforce couldn’t read these conditions near ' +
+                m.substring(17) +
+                '. Check for a comparison with no value, or two conditions without AND / OR between them.';
+        }
+        return m;
+    }
+
     /** For LIKE: the answer matches as typed; a % or _ is never a wildcard. */
     public static String escapeLike(String s) {
         if (s == null) {

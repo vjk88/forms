@@ -438,8 +438,8 @@ describe('typed rule operators and value editors', () => {
         const yesNo = control(el, 0, 'value');
         expect(yesNo.tagName).toBe('LIGHTNING-COMBOBOX');
         expect(yesNo.options).toEqual([
-            { value: 'true', label: 'Yes' },
-            { value: 'false', label: 'No' }
+            { value: 'true', label: 'True' },
+            { value: 'false', label: 'False' }
         ]);
         // "true" matches the engine's String(actual) === String(rule.value)
         expect(yesNo.value).toBe('true');
@@ -913,5 +913,27 @@ describe('Compare with An answer (mapping screen, Task 7)', () => {
         expect(answerLabels(el, 0)).toEqual(['(Question removed)']);
         expect(compareValues(el, 1)).toEqual(['fixed']);
         expect(el.reportProblems().message).toBe('Question removed.');
+    });
+});
+
+describe('record screens type the value box by field (round 1 #7)', () => {
+    it('a checkbox field offers True / False, a date field a date picker', async () => {
+        const el = mount({
+            columns: 'lookup',
+            sourceIndex: undefined,
+            sources: [
+                { id: 'DoNotCall', label: 'Do Not Call', type: 'boolean' },
+                { id: 'Birthdate', label: 'Birthdate', type: 'date' }
+            ],
+            value: config([
+                rule('DoNotCall', 'equals', 'false'),
+                rule('Birthdate', 'equals', '')
+            ])
+        });
+        await flush();
+        const bool = control(el, 0, 'value');
+        expect(bool.tagName).toBe('LIGHTNING-COMBOBOX');
+        expect(bool.options.map((o) => o.label)).toEqual(['True', 'False']);
+        expect(control(el, 1, 'value').type).toBe('date');
     });
 });

@@ -396,7 +396,7 @@ export default class FinalRuleEditor extends LightningElement {
 
     /** Saved rows learn their field's type from the object's describe. */
     _resolveFieldTypes() {
-        if (!this.answersOn || !this.fieldObject) {
+        if (this.isVisibility || !this.fieldObject) {
             return;
         }
         this._askedFieldTypes = this._askedFieldTypes || new Set();
@@ -638,6 +638,15 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     _valueKind(source) {
+        if (!this.isVisibility && !String(source || '').startsWith('user:')) {
+            // Record screens: the value box follows the field's own type —
+            // True/False for a checkbox, a date picker for a date. The
+            // operator list is left as it is.
+            return (
+                VALUE_KIND[DISPLAY_TO_SUBTYPE[this._fieldType(source)]] ||
+                'text'
+            );
+        }
         return VALUE_KIND[this._subtype(source)] || 'text';
     }
 
@@ -695,8 +704,8 @@ export default class FinalRuleEditor extends LightningElement {
             ...(!canDisplay('bool', value)
                 ? [{ value: String(value), label: `${value} (not valid here)` }]
                 : []),
-            { value: 'true', label: 'Yes' },
-            { value: 'false', label: 'No' }
+            { value: 'true', label: 'True' },
+            { value: 'false', label: 'False' }
         ];
     }
 
@@ -735,7 +744,7 @@ export default class FinalRuleEditor extends LightningElement {
                         this._compareOf(rule, i) === 'answer'
                             ? 'Choose a question.'
                             : this._valueKind(rule.source) === 'bool'
-                              ? 'Choose Yes or No.'
+                              ? 'Choose True or False.'
                               : this._compareOf(rule, i) === 'user'
                                 ? 'Choose a user field.'
                                 : 'Enter a value, or use “Is blank”.'

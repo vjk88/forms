@@ -771,9 +771,9 @@ public with sharing class FinalMappingValidator {
             Database.queryWithBinds(
                 'SELECT Id FROM ' + // NOPMD — see FinalMappingSoql (typed conditions, D50)
                     d.getName() +
-                    ' WHERE ' +
+                    ' WHERE (' +
                     p.whereClause +
-                    ' LIMIT 0',
+                    ') LIMIT 0',
                 binds,
                 AccessLevel.USER_MODE
             );
@@ -783,7 +783,9 @@ public with sharing class FinalMappingValidator {
                     BLOCKER,
                     id,
                     CONDITIONS_FIELD,
-                    name + '’s conditions don’t run: ' + e.getMessage()
+                    name +
+                        '’s conditions don’t run: ' +
+                        FinalMappingSoql.readableError(e.getMessage())
                 )
             );
         }

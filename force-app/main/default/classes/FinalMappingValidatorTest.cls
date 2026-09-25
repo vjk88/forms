@@ -1120,4 +1120,28 @@ private class FinalMappingValidatorTest {
         }
         Assert.isTrue(anyContains(found, 'don’t run'), String.valueOf(found));
     }
+
+    @IsTest
+    static void junkInTypedConditionsIsNamed() {
+        List<String> found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'LastName != null OR FirstName = \'a\' aelksdhjawldna'
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, '“aelksdhjawldna”'),
+            String.valueOf(found)
+        );
+        found = conditionBlockers(
+            checkTyped(
+                FinalMappingTestData.standardQuestions(),
+                'LastName = \'x\' AND'
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, 'end too soon'),
+            String.valueOf(found)
+        );
+    }
 }
