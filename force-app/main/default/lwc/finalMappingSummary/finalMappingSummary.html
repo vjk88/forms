@@ -1,0 +1,32 @@
+<template>
+    <div class="msu">
+        <p class="msu-lead">
+            Send answers to Salesforce records after the form is submitted.
+        </p>
+        <template lwc:if={hasSteps}>
+            <p class="msu-count">{countText}</p>
+            <ol class="msu-steps">
+                <template for:each={steps} for:item="s">
+                    <li key={s.id} class={s.cls}>
+                        <span class="msu-step-title">{s.title}</span>
+                        <span class="msu-step-detail">{s.detail}</span>
+                        <template lwc:if={s.stateText}>
+                            <span class="msu-step-state">{s.stateText}</span>
+                        </template>
+                    </li>
+                </template>
+            </ol>
+        </template>
+        <template lwc:else>
+            <p class="msu-empty">
+                Add a record, then choose which answer fills each of its fields.
+            </p>
+        </template>
+        <lightning-button
+            class="msu-open"
+            variant="brand"
+            label={openLabel}
+            onclick={handleOpen}
+        ></lightning-button>
+    </div>
+</template>

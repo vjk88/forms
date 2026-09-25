@@ -1,0 +1,56 @@
+@import 'c/finalStudioStyles';
+
+.msu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+}
+
+.msu-lead,
+.msu-empty,
+.msu-count {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--c-studio-text-weak);
+}
+
+.msu-count {
+    color: var(--c-studio-text);
+    font-weight: 600;
+}
+
+.msu-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.msu-step {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--c-studio-border);
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+}
+
+.msu-step--warn {
+    border-left: 3px solid var(--c-studio-warning, #dd7a01);
+}
+
+.msu-step-title {
+    font-weight: 600;
+}
+
+.msu-step-detail,
+.msu-step-state {
+    color: var(--c-studio-text-weak);
+}
+
+.msu-open {
+    align-self: flex-start;
+}

@@ -249,6 +249,9 @@
                     onnavigatetab={handleNavigateTab}
                 ></c-final-autofill-panel>
             </template>
+            <template lwc:elseif={isMapping}>
+                <c-final-mapping-summary spec={spec}></c-final-mapping-summary>
+            </template>
             <template lwc:elseif={isStub}>
                 <p class="fp-note">{stubLabel}</p>
             </template>

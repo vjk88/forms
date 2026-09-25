@@ -319,6 +319,31 @@ export default class FinalFieldPalette extends LightningElement {
         return this.tab === 'autofill';
     }
 
+    /** Freeform only: the summary, and the button that opens Mapping. */
+    get isMapping() {
+        return this.tab === 'mapping';
+    }
+
+    /** Opens the rail on Mapping (the publish dialog's Go there). */
+    @api
+    showMapping() {
+        this.tab = 'mapping';
+    }
+
+    /** Back to "Open mapping" when the Mapping dialog closes. */
+    @api
+    focusMappingButton() {
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        requestAnimationFrame(() => {
+            const summary = this.template.querySelector(
+                'c-final-mapping-summary'
+            );
+            if (summary) {
+                summary.focusOpen();
+            }
+        });
+    }
+
     get isStub() {
         return false;
     }
@@ -340,13 +365,14 @@ export default class FinalFieldPalette extends LightningElement {
             fields: 'utility:list',
             blocks: 'utility:apps',
             logic: 'utility:strategy',
-            autofill: 'utility:magicwand'
+            autofill: 'utility:magicwand',
+            mapping: 'utility:upload'
         };
-        // Freeform hides Autofill in F1: its rules assume one object and a
-        // Freeform has none. The multi-object editor ships with F2 (D7).
+        // Freeform: Mapping lives here (IMPL_PLAN_F2_AUTOFILL, D63). Its
+        // Autofill tab arrives with the new rule dialog (slice B).
         const names =
             this.formType === FREEFORM
-                ? ['fields', 'blocks', 'logic']
+                ? ['fields', 'blocks', 'logic', 'mapping']
                 : ['fields', 'blocks', 'logic', 'autofill'];
         return names.map((t) => ({
             key: t,

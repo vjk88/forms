@@ -324,4 +324,30 @@ describe('c-final-field-palette', () => {
             el.shadowRoot.querySelector('.fp-tab[data-tab="fields"]').classList
         ).toContain('on');
     });
+
+    it('Freeform has Mapping in the rail; Form and Survey keep Autofill', async () => {
+        const tabs = (el) =>
+            [...el.shadowRoot.querySelectorAll('.fp-tab')].map(
+                (t) => t.dataset.tab
+            );
+        const free = mount({ formType: 'freeform' });
+        await flush();
+        expect(tabs(free)).toEqual(['fields', 'blocks', 'logic', 'mapping']);
+        const form = mount({ formType: 'form' });
+        await flush();
+        expect(tabs(form)).toEqual(['fields', 'blocks', 'logic', 'autofill']);
+    });
+
+    it('showMapping opens the Mapping tab with its summary', async () => {
+        const el = mount({ formType: 'freeform', spec: { pages: [] } });
+        await flush();
+        el.showMapping();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.fp-tab[data-tab="mapping"]').classList
+        ).toContain('on');
+        expect(
+            el.shadowRoot.querySelector('c-final-mapping-summary')
+        ).toBeTruthy();
+    });
 });
