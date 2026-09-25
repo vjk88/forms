@@ -650,6 +650,23 @@ export default class FinalRuleEditor extends LightningElement {
         return VALUE_KIND[this._subtype(source)] || 'text';
     }
 
+    /**
+     * The box a row's value is shown in. Record screens fall back to a text
+     * box when the typed one can't show what is saved (an older rule, a
+     * date literal like TODAY) or when the comparison is "contains" — the
+     * value must stay visible, never an empty picker over a kept value.
+     */
+    _rowValueKind(rule) {
+        const kind = this._valueKind(rule.source);
+        if (this.isVisibility || kind === 'text') {
+            return kind;
+        }
+        if (rule.operator === 'contains' || !canDisplay(kind, rule.value)) {
+            return 'text';
+        }
+        return kind;
+    }
+
     _extra() {
         return Array.isArray(this.extraOperators) ? this.extraOperators : [];
     }
@@ -938,7 +955,7 @@ export default class FinalRuleEditor extends LightningElement {
         const messageFor = (i, control) => this._shownMessage(i, control);
         return this.rules.map((rule, i) => {
             const kind = kindOf(rule.source, this._kinds[i]);
-            const valueKind = this._valueKind(rule.source);
+            const valueKind = this._rowValueKind(rule);
             let pickerObject = this.fieldObject;
             if (this.isVisibility) {
                 pickerObject =

@@ -783,9 +783,7 @@ public with sharing class FinalMappingValidator {
                     BLOCKER,
                     id,
                     CONDITIONS_FIELD,
-                    name +
-                        '’s conditions don’t run: ' +
-                        FinalMappingSoql.readableError(e.getMessage())
+                    name + ': ' + FinalMappingSoql.readableError(e.getMessage())
                 )
             );
         }

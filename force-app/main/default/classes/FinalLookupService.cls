@@ -294,7 +294,14 @@ public inherited sharing class FinalLookupService {
             } else {
                 // A fixed value is saved as text ("false", "5", "2026-01-31");
                 // bind it as the field's own type, or say why it can't be.
-                Schema.DescribeFieldResult fd = fieldAt(objectName, safePath);
+                // Answers and user values arrive already typed (or are a
+                // publish-time placeholder); only fixed text is converted.
+                Object rawValue = row.get('value');
+                Boolean fixedText = !(rawValue instanceof String &&
+                ((String) rawValue).startsWith('$'));
+                Schema.DescribeFieldResult fd = fixedText
+                    ? fieldAt(objectName, safePath)
+                    : null;
                 try {
                     out.binds.put(key, asFieldType(resolved, fd));
                 } catch (Exception e) {

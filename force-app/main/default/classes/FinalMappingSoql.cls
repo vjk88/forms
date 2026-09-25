@@ -199,7 +199,7 @@ public with sharing class FinalMappingSoql {
         if (m.startsWith(UNEXPECTED) && m.endsWith('\'')) {
             String token = m.substring(UNEXPECTED.length(), m.length() - 1);
             if (token == ')' || token.equalsIgnoreCase('LIMIT')) {
-                return 'they end too soon. Finish the last condition, or remove a trailing AND / OR.';
+                return 'These conditions end too soon. Finish the last one, or remove a trailing AND / OR.';
             }
             return 'Salesforce couldn’t read “' +
                 token +
@@ -210,7 +210,7 @@ public with sharing class FinalMappingSoql {
                 m.substring(17) +
                 '. Check for a comparison with no value, or two conditions without AND / OR between them.';
         }
-        return m;
+        return 'Salesforce refused these conditions: ' + m;
     }
 
     /** For LIKE: the answer matches as typed; a % or _ is never a wildcard. */

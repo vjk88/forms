@@ -936,4 +936,20 @@ describe('record screens type the value box by field (round 1 #7)', () => {
         expect(bool.options.map((o) => o.label)).toEqual(['True', 'False']);
         expect(control(el, 1, 'value').type).toBe('date');
     });
+
+    it('keeps a saved value visible when the typed box cannot show it', async () => {
+        const el = mount({
+            columns: 'lookup',
+            sourceIndex: undefined,
+            sources: [{ id: 'Birthdate', label: 'Birthdate', type: 'date' }],
+            value: config([
+                rule('Birthdate', 'equals', 'TODAY'),
+                rule('Birthdate', 'contains', '2026')
+            ])
+        });
+        await flush();
+        expect(control(el, 0, 'value').type).toBe('text');
+        expect(control(el, 0, 'value').value).toBe('TODAY');
+        expect(control(el, 1, 'value').type).toBe('text');
+    });
 });

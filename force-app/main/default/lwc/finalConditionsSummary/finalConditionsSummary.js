@@ -290,6 +290,9 @@ export default class FinalConditionsSummary extends LightningElement {
                 typeForPath(this.fieldObject, p).then((t) => [p, t])
             )
         ).then((pairs) => {
+            if (key !== this._typedFor) {
+                return; // an older request, answered late
+            }
             const out = {};
             pairs.forEach(([p, t]) => {
                 if (t === 'boolean') {

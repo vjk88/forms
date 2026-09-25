@@ -173,14 +173,14 @@ private class FinalMappingSoqlTest {
         );
         Assert.isTrue(
             FinalMappingSoql.readableError('unexpected token: \')\'')
-                .startsWith('they end too soon')
+                .startsWith('These conditions end too soon')
         );
         Assert.isTrue(
             FinalMappingSoql.readableError('unexpected token: \'LIMIT\'')
-                .startsWith('they end too soon')
+                .startsWith('These conditions end too soon')
         );
         Assert.areEqual(
-            'No such column',
+            'Salesforce refused these conditions: No such column',
             FinalMappingSoql.readableError('No such column')
         );
     }

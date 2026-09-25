@@ -273,7 +273,7 @@ export default class FinalTypeahead extends LightningElement {
         const below = viewH - r.bottom - gap - margin;
         const above = r.top - gap - margin;
         const up = below < 200 && above > below;
-        const room = Math.max(120, Math.min(320, up ? above : below));
+        const room = Math.min(320, Math.max(0, up ? above : below));
         pop.style.width = `${r.width}px`;
         pop.style.maxHeight = `${room}px`;
         pop.style.left = '0px';
@@ -286,10 +286,33 @@ export default class FinalTypeahead extends LightningElement {
         pop.style.top = `${wantTop - origin.top}px`;
     }
 
-    _placeHandler = () => {
-        if (this.open) {
-            this._place();
+    _placeHandler = (event) => {
+        if (!this.open) {
+            return;
         }
+        const pop = this.template.querySelector('.ta-pop');
+        const inside =
+            event &&
+            event.type === 'scroll' &&
+            pop &&
+            event.composedPath &&
+            event.composedPath().includes(pop);
+        if (event && event.type === 'scroll' && !inside) {
+            // Scrolling the page or the dialog moves the box away: close,
+            // as native dropdowns do, rather than float over the header.
+            this.query = this._labelFor(this._value);
+            this._close();
+            return;
+        }
+        if (this._frame) {
+            return;
+        }
+        // At most once per frame.
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._frame = requestAnimationFrame(() => {
+            this._frame = null;
+            this._place();
+        });
     };
 
     _watching = false;

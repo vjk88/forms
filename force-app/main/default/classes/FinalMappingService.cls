@@ -144,9 +144,7 @@ public without sharing class FinalMappingService {
                 // Typed conditions that broke after publishing (a field
                 // deleted, a value Salesforce now refuses).
                 throw new StepException(
-                    name +
-                        ': its search couldn’t run: ' +
-                        FinalMappingSoql.readableError(e.getMessage())
+                    name + ': ' + FinalMappingSoql.readableError(e.getMessage())
                 );
             }
         }
