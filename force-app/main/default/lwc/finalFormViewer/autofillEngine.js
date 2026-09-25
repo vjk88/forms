@@ -10,104 +10,15 @@
 export const POLICY_PRESERVE_EDITS = 'preserveEdits';
 export const POLICY_ALWAYS_REPLACE = 'alwaysReplace';
 
-/**
- * The answer type an element is filled as — the browser's copy of
- * FinalSubmitService.answerTypeOf, for inputs only (`type: 'field'`). Kept
- * to what Autofill fills; anything else is null.
- */
-function answerTypeOf(el) {
-    if (!el || el.type !== 'field') {
-        return null;
-    }
-    const cfg = el.config || {};
-    const kind = String(cfg.inputType || 'text').toLowerCase();
-    if (kind === 'email') return 'Email';
-    if (kind === 'phone' || kind === 'tel') return 'Phone';
-    if (kind === 'url') return 'URL';
-    if (kind === 'date') return 'Date';
-    if (['number', 'currency', 'percent', 'slider'].includes(kind)) {
-        return 'Number';
-    }
-    if (kind === 'picklist') {
-        const multi = ['Checkbox_Group', 'Custom_MultiSelect'].includes(
-            cfg.renderAs
-        );
-        return multi ? null : 'Choice';
-    }
-    if (['text', 'textarea'].includes(kind)) return 'Text';
-    return null;
-}
+import {
+    DOES_NOT_FIT,
+    extractDestinations,
+    fitValue
+} from 'c/finalAutofillFit';
 
-/**
- * Every element Autofill might fill, by id: { answerType, options }. The
- * engine fits each value to it (fitValue) before applying it.
- */
-export function extractDestinations(spec) {
-    const out = {};
-    const walk = (elements) => {
-        (elements || []).forEach((el) => {
-            if (!el) return;
-            if (Array.isArray(el.elements)) walk(el.elements);
-            const answerType = answerTypeOf(el);
-            if (el.id && answerType) {
-                out[el.id] = {
-                    answerType,
-                    options: (el.config && el.config.options) || null
-                };
-            }
-        });
-    };
-    (spec?.pages || []).forEach((page) =>
-        (page.sections || []).forEach((sec) => walk(sec.elements))
-    );
-    return out;
-}
-
-/** What fitValue returns for a value the question can't take. */
-export const DOES_NOT_FIT = Symbol('doesNotFit');
-
-/**
- * Turns a source value into the answer its question takes
- * (IMPL_PLAN_F2_AUTOFILL 6.7), or DOES_NOT_FIT. A value that doesn't fit is
- * never forced in: the engine treats it as no value.
- *   Number — a number (text that reads as one is accepted)
- *   Date   — 'YYYY-MM-DD'; a date-time keeps its date
- *   Choice — the option whose value or label matches; none, DOES_NOT_FIT
- *   text   — a string
- * No destination known (older specs, previews) — the value as it came.
- */
-export function fitValue(value, destination) {
-    if (value === null || value === undefined || !destination) {
-        return value;
-    }
-    switch (destination.answerType) {
-        case 'Number': {
-            if (typeof value === 'number') {
-                return Number.isFinite(value) ? value : DOES_NOT_FIT;
-            }
-            const text = String(value).trim();
-            const n = text === '' ? NaN : Number(text);
-            return Number.isFinite(n) ? n : DOES_NOT_FIT;
-        }
-        case 'Date': {
-            const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(value));
-            return m ? m[1] : DOES_NOT_FIT;
-        }
-        case 'Choice': {
-            const options = destination.options;
-            const text = String(value);
-            if (!Array.isArray(options) || !options.length) {
-                return text;
-            }
-            const hit = options.find(
-                (o) => o && (String(o.value) === text || o.label === text)
-            );
-            return hit ? hit.value : DOES_NOT_FIT;
-        }
-        default:
-            return typeof value === 'string' ? value : String(value);
-    }
-}
+// The fitting rules live in c/finalAutofillFit, shared with the Studio's
+// rule dialog; re-exported here for the engine's own callers.
+export { DOES_NOT_FIT, extractDestinations, fitValue };
 
 /**
  * Computes a stable fingerprint string for an array of rules to detect
@@ -427,12 +338,11 @@ export function onResult(
             continue;
         }
 
-        // A value its question can't take is no value (never forced in).
         const fitted = fitValue(
             fieldValues[sourceField],
             session.destinations?.[destId]
         );
-        const rawValue = fitted === DOES_NOT_FIT ? null : fitted;
+        let rawValue = fitted;
 
         // Check if respondent edited the destination AFTER this request started
         const currentRev = session.editRevision[destId] || 0;
@@ -456,6 +366,21 @@ export function onResult(
             Object.prototype.hasOwnProperty.call(currentAnswers, destId) &&
             currentAnswers[destId] !== undefined &&
             currentAnswers[destId] !== null;
+
+        // A value its question can't take is never forced in, and never
+        // wipes what someone typed: it only clears an answer THIS rule put
+        // there and nobody has touched since (IMPL_PLAN_F2_AUTOFILL 6.7).
+        if (fitted === DOES_NOT_FIT) {
+            const ownUntouched =
+                currentOwner?.ruleId === rule.id &&
+                (session.editRevision[destId] || 0) ===
+                    (currentOwner.appliedAtRevision || 0);
+            if (ownUntouched) {
+                patch[destId] = null;
+                delete session.owner[destId];
+            }
+            continue;
+        }
 
         // Destination decision based on policy
         if (policy === POLICY_PRESERVE_EDITS) {

@@ -339,13 +339,31 @@ public with sharing class FinalAutofillValidator {
                                 'referenceTo'
                             );
                         } else if (
-                            cfg != null &&
-                            cfg.get('referenceTo') instanceof String &&
-                            String.isNotBlank((String) cfg.get('referenceTo'))
+                            binding == null ||
+                            binding.get('field') == null
                         ) {
                             // A Freeform Record lookup question: unbound, its
-                            // object picked in the inspector.
-                            sourceObjectApi = (String) cfg.get('referenceTo');
+                            // object picked in the inspector. A BOUND lookup
+                            // never reads config.referenceTo (an authoring
+                            // copy); it keeps exactly today's checks.
+                            Object picked = cfg == null
+                                ? null
+                                : cfg.get('referenceTo');
+                            if (
+                                picked instanceof String &&
+                                String.isNotBlank((String) picked)
+                            ) {
+                                sourceObjectApi = (String) picked;
+                            } else {
+                                diagnostics.add(
+                                    new Diagnostic(
+                                        'AUTOFILL_LOOKUP_NO_OBJECT',
+                                        ruleId,
+                                        null,
+                                        'That lookup question has no object yet. Pick one in its settings.'
+                                    )
+                                );
+                            }
                         }
                         // A polymorphic lookup (Task "Related To") names ONE of
                         // its objects per rule, and the rule fires only when the
@@ -518,7 +536,7 @@ public with sharing class FinalAutofillValidator {
                         } else {
                             Schema.DescribeFieldResult fd = fld.getDescribe();
                             fromType = fd.getType();
-                            if (!FinalAutofillRules.isSupportedSource(fd)) {
+                            if (!FinalAutofillRules.isReadableSource(fd)) {
                                 diagnostics.add(
                                     new Diagnostic(
                                         'AUTOFILL_UNSUPPORTED_SOURCE_TYPE',

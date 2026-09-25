@@ -126,4 +126,55 @@ private class FinalAutofillRulesTest {
         Assert.areEqual(new List<String>{ 'Date' }, table.get('date'));
         Assert.isFalse(table.containsKey('boolean'));
     }
+
+    @IsTest
+    static void richTextStillReadsButIsNotOffered() {
+        Schema.DescribeFieldResult rich = null;
+        for (
+            Schema.SObjectField f : Schema.getGlobalDescribe()
+                .get('Account')
+                .getDescribe()
+                .fields.getMap()
+                .values()
+        ) {
+            Schema.DescribeFieldResult d = f.getDescribe();
+            if (
+                d.getType() == Schema.DisplayType.TEXTAREA &&
+                d.isHtmlFormatted()
+            ) {
+                rich = d;
+                break;
+            }
+        }
+        if (rich == null) {
+            return; // no rich text on Account in this org
+        }
+        Assert.isTrue(FinalAutofillRules.isReadableSource(rich));
+        Assert.isFalse(FinalAutofillRules.isSupportedSource(rich));
+    }
+
+    @IsTest
+    static void lookupsAndCheckboxesAreNeverDestinations() {
+        Assert.isNull(
+            FinalAutofillRules.destinationAnswerType(field('reference'))
+        );
+        Assert.isNull(
+            FinalAutofillRules.destinationAnswerType(field('lookup'))
+        );
+        Assert.isNull(
+            FinalAutofillRules.destinationAnswerType(field('checkbox'))
+        );
+        Assert.isNull(FinalAutofillRules.destinationAnswerType(field('file')));
+    }
+
+    @IsTest
+    static void theInRailEditorOffersOnlyWhatFitsText() {
+        Assert.isTrue(FinalAutofillRules.fillsText(Account.Name.getDescribe()));
+        Assert.isTrue(
+            FinalAutofillRules.fillsText(Account.AnnualRevenue.getDescribe())
+        );
+        Assert.isFalse(
+            FinalAutofillRules.fillsText(Account.CreatedDate.getDescribe())
+        );
+    }
 }

@@ -232,10 +232,19 @@
                                     value={surveySourceObject}
                                     disabled
                                 ></lightning-input>
-                                <p class="ap-field-hint">
-                                    Survey link prefill is locked to the survey
-                                    context object.
-                                </p>
+                                <template lwc:if={surveyNotConnected}>
+                                    <p class="ap-field-hint">
+                                        Connect this survey to an object first:
+                                        a survey link reads its connected
+                                        record.
+                                    </p>
+                                </template>
+                                <template lwc:else>
+                                    <p class="ap-field-hint">
+                                        Survey link prefill is locked to the
+                                        survey context object.
+                                    </p>
+                                </template>
                             </template>
                             <template lwc:else>
                                 <lightning-input

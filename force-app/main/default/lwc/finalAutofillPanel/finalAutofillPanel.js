@@ -117,12 +117,17 @@ export default class FinalAutofillPanel extends LightningElement {
         ];
     }
 
+    /** A survey's link reads its connected object; '' when not connected. */
     get surveySourceObject() {
         return (
             this.spec?.form?.primaryContextObject ||
             this.spec?.form?.targetObject ||
-            'Contact'
+            ''
         );
+    }
+
+    get surveyNotConnected() {
+        return this.isSurvey && !this.surveySourceObject;
     }
 
     get isSourceLink() {
@@ -467,6 +472,15 @@ export default class FinalAutofillPanel extends LightningElement {
         }
 
         this.draftRule = JSON.parse(JSON.stringify(rule));
+        // A survey's link reads its connected object, whatever an older rule
+        // saved: the control that could change it is (rightly) locked.
+        if (
+            this.isSurvey &&
+            this.draftRule.source?.type === 'link' &&
+            this.surveySourceObject
+        ) {
+            this.draftRule.source.objectApiName = this.surveySourceObject;
+        }
         if (!this.draftRule.mappings) this.draftRule.mappings = [];
         if (!this.draftRule.policy) this.draftRule.policy = 'preserveEdits';
         if (!this.draftRule.source) this.draftRule.source = { type: 'link' };

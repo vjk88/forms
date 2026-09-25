@@ -387,8 +387,10 @@ public with sharing class FinalStudioController {
                 continue;
             }
             Schema.DisplayType dt = fd.getType();
-            // What Autofill may read: one table (FinalAutofillRules).
-            if (FinalAutofillRules.isSupportedSource(fd)) {
+            // What the in-rail Form/Survey editor may offer: it lists only
+            // text-like destinations, so only sources that fit one
+            // (FinalAutofillRules). The Freeform dialog reads the full table.
+            if (FinalAutofillRules.fillsText(fd)) {
                 fields.add(
                     new Map<String, Object>{
                         'apiName' => fd.getName(),

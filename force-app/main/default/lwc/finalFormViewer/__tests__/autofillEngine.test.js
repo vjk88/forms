@@ -764,4 +764,45 @@ describe('fitting a value to its question (IMPL_PLAN_F2_AUTOFILL 6.7)', () => {
         expect(session.owner.el_c).toBeUndefined();
         expect(result.patch.el_n).toBe(2500);
     });
+
+    it('a date-time keeps the date where the respondent is', () => {
+        const iso = '2026-09-25T02:00:00.000Z';
+        const d = new Date(iso);
+        const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+            2,
+            '0'
+        )}-${String(d.getDate()).padStart(2, '0')}`;
+        expect(fitValue(iso, { answerType: 'Date' })).toBe(local);
+    });
+
+    it('a value that does not fit never wipes what someone typed', () => {
+        const rule = {
+            id: 'af_r',
+            enabled: true,
+            policy: 'alwaysReplace',
+            source: { type: 'link', objectApiName: 'Account' },
+            mappings: [{ id: 'm1', from: 'Industry', to: 'el_c' }]
+        };
+        const session = createAutofillSession({
+            sessionId: 's2',
+            specVersionId: 'v1',
+            rules: [rule],
+            destinations: {
+                el_c: {
+                    answerType: 'Choice',
+                    options: [{ value: 'Tech', label: 'Technology' }]
+                }
+            }
+        });
+        const { requestIdentity } = onSourceChanged(session, 'af_r', 'k1');
+        const result = onResult(
+            session,
+            requestIdentity,
+            { Industry: 'Banking' },
+            // typed by the respondent, owned by no rule
+            { el_c: 'Tech' },
+            false
+        );
+        expect(result.patch).toEqual({});
+    });
 });

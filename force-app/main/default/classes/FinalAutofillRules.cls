@@ -24,6 +24,22 @@ public with sharing class FinalAutofillRules {
         'Choice'
     };
 
+    /** Mirrors the browser's list (c/finalAutofillFit answerTypeOf). */
+    private static final Set<String> FILLABLE_INPUTS = new Set<String>{
+        'text',
+        'textarea',
+        'email',
+        'phone',
+        'tel',
+        'url',
+        'number',
+        'currency',
+        'percent',
+        'slider',
+        'date',
+        'picklist'
+    };
+
     private static final Set<String> TEXT_LIKE = new Set<String>{
         'Text',
         'Email',
@@ -48,13 +64,31 @@ public with sharing class FinalAutofillRules {
         Schema.DisplayType.PICKLIST => new Set<String>{ 'Choice', 'Text' }
     };
 
-    /** A source field Autofill may read. Rich text is never offered. */
+    /** A source field Autofill may OFFER. Rich text is never offered. */
     public static Boolean isSupportedSource(Schema.DescribeFieldResult fd) {
-        if (fd == null || !FITS.containsKey(fd.getType())) {
+        if (!isReadableSource(fd)) {
             return false;
         }
         return !(fd.getType() == Schema.DisplayType.TEXTAREA &&
         fd.isHtmlFormatted());
+    }
+
+    /**
+     * A source field Autofill may READ at publish: every row type, rich text
+     * included. Rules saved before this table read rich text and must still
+     * publish (the compatibility promise); it just isn't offered any more.
+     */
+    public static Boolean isReadableSource(Schema.DescribeFieldResult fd) {
+        return fd != null && FITS.containsKey(fd.getType());
+    }
+
+    /**
+     * A source the Form/Survey in-rail editor may offer until slice D: that
+     * editor lists only text-like destinations, so only sources that fit one
+     * (text-likes, numbers, picklists; never a date).
+     */
+    public static Boolean fillsText(Schema.DescribeFieldResult fd) {
+        return isSupportedSource(fd) && fits(fd.getType(), 'Text');
     }
 
     /** Whether a field of this type can fill an answer of that type. */
@@ -85,6 +119,21 @@ public with sharing class FinalAutofillRules {
      */
     public static String destinationAnswerType(Map<String, Object> el) {
         if (el == null || el.get('type') != 'field') {
+            return null;
+        }
+        // Only inputs Autofill knows. answerTypeOf reads anything else (a
+        // lookup, a checkbox) as Text; the browser's copy rejects them, and
+        // so must this.
+        Map<String, Object> cfg = el.get(
+                'config'
+            ) instanceof Map<String, Object>
+            ? (Map<String, Object>) el.get('config')
+            : null;
+        Object kind = cfg == null ? null : cfg.get('inputType');
+        if (
+            kind != null &&
+            !FILLABLE_INPUTS.contains(String.valueOf(kind).toLowerCase())
+        ) {
             return null;
         }
         String answerType = FinalSubmitService.answerTypeOf(el);

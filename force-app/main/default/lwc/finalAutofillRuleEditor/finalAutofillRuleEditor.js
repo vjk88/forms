@@ -4,6 +4,7 @@ import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTes
 import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
 import listLookupObjects from '@salesforce/apex/FinalLookupController.listLookupObjects';
 import { typeForPath } from 'c/finalFieldPicker';
+import { answerTypeOf, fitValue, DOES_NOT_FIT } from 'c/finalAutofillFit';
 
 function mintId(prefix) {
     const bytes = new Uint8Array(8);
@@ -13,29 +14,6 @@ function mintId(prefix) {
         suffix += (b % 36).toString(36);
     }
     return `${prefix}_${suffix}`;
-}
-
-/** The answer type a form element is filled as (FinalAutofillRules). */
-function answerTypeOf(el) {
-    if (!el || el.type !== 'field') {
-        return null;
-    }
-    const cfg = el.config || {};
-    const kind = String(cfg.inputType || 'text').toLowerCase();
-    if (kind === 'email') return 'Email';
-    if (kind === 'phone' || kind === 'tel') return 'Phone';
-    if (kind === 'url') return 'URL';
-    if (kind === 'date') return 'Date';
-    if (['number', 'currency', 'percent', 'slider'].includes(kind)) {
-        return 'Number';
-    }
-    if (kind === 'picklist') {
-        return ['Checkbox_Group', 'Custom_MultiSelect'].includes(cfg.renderAs)
-            ? null
-            : 'Choice';
-    }
-    if (kind === 'text' || kind === 'textarea') return 'Text';
-    return null;
 }
 
 const ANSWER_WORDS = {
@@ -108,7 +86,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         // A new rule on a form that already has a link rule starts on a
         // lookup (the page may have set `rule` before `has-other-link-rule`).
         if (
-            this.hasOtherLinkRule &&
+            this.linkConflict &&
             this.isLink &&
             !this.draft.source.objectApiName &&
             !this.draft.mappings.some((m) => m.from)
@@ -180,7 +158,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
             .map(({ el }) => ({
                 id: el.id,
                 label: el.label || el.id,
-                answerType: answerTypeOf(el)
+                answerType: answerTypeOf(el),
+                options: (el.config && el.config.options) || null
             }))
             .filter((d) => d.answerType);
     }
@@ -232,8 +211,13 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         return String(this.isLookup);
     }
 
+    /** Another link rule is on, and this one would be on too. */
+    get linkConflict() {
+        return Boolean(this.hasOtherLinkRule && this.draft?.enabled);
+    }
+
     get linkDisabled() {
-        return this.hasOtherLinkRule && !this.isLink;
+        return this.linkConflict && !this.isLink;
     }
 
     get lookupOptions() {
@@ -292,8 +276,21 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         if (this.isLink || this.linkDisabled) return;
         this._update((r) => {
             r.source = { type: 'link', objectApiName: '' };
+            this._clearRows(r);
         });
-        this.fromTypes = {};
+        this._afterSourceChange();
+    }
+
+    /**
+     * A different object means different fields: a row keeps its question
+     * but its field, and any "show to guests" tick, start over — a tick given
+     * for Contact.Email must never carry over to another object's Email.
+     */
+    _clearRows(r) {
+        r.mappings.forEach((m) => {
+            m.from = '';
+            m.guestAllowed = false;
+        });
     }
 
     handleLookup() {
@@ -303,6 +300,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 type: 'lookup',
                 elementId: this.lookupElements[0]?.id || ''
             };
+            this._clearRows(r);
             // a lookup is signed-in only: nothing goes to guests
             r.mappings.forEach((m) => {
                 m.guestAllowed = false;
@@ -313,8 +311,10 @@ export default class FinalAutofillRuleEditor extends LightningElement {
 
     handleObjectPick(event) {
         const value = event.detail.value;
+        if (value === this.draft.source.objectApiName) return;
         this._update((r) => {
             r.source.objectApiName = value;
+            this._clearRows(r);
         });
         this._afterSourceChange();
     }
@@ -323,6 +323,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         const value = event.detail.value;
         this._update((r) => {
             r.source = { type: 'lookup', elementId: value };
+            this._clearRows(r);
         });
         this._afterSourceChange();
     }
@@ -332,6 +333,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         const target = this.referenceTargets.find((t) => t.value === value);
         this._update((r) => {
             r.source.objectApiName = value;
+            this._clearRows(r);
             // the runtime reads the rule only when the picked record is this
             if (target && target.keyPrefix) {
                 r.source.keyPrefix = target.keyPrefix;
@@ -405,6 +407,9 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     get rows() {
         const byId = new Map(this.destinations.map((d) => [d.id, d]));
         return (this.draft?.mappings || []).map((m, index) => {
+            const typed =
+                m.from &&
+                Object.prototype.hasOwnProperty.call(this.fromTypes, m.from);
             const type = m.from ? this.fromTypes[m.from] : null;
             const fitting = type ? this.fits[type] || [] : null;
             const options = this.destinations
@@ -417,6 +422,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
             let problem = '';
             if (!m.from) {
                 problem = 'Choose a Salesforce field.';
+            } else if (typed && !type) {
+                problem = `That field isn’t on ${this.sourceObject}.`;
             } else if (!m.to) {
                 problem = 'Choose what it fills.';
             } else if (!current) {
@@ -439,6 +446,20 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 Object.prototype.hasOwnProperty.call(this.testValues, m.from)
                     ? this.testValues[m.from]
                     : undefined;
+            let testText = '';
+            if (test !== undefined) {
+                const filled = fitValue(test, current || undefined);
+                if (test === null || test === '') {
+                    testText = 'Empty on this record';
+                } else if (filled === DOES_NOT_FIT) {
+                    testText =
+                        current && current.answerType === 'Choice'
+                            ? `Won’t fill: “${test}” isn’t one of this question’s options`
+                            : `Won’t fill: “${test}” doesn’t fit a ${ANSWER_WORDS[current.answerType]} answer`;
+                } else {
+                    testText = `Fills: ${filled}`;
+                }
+            }
             return {
                 key: m.id || `row${index}`,
                 index,
@@ -449,10 +470,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 problem: this.showProblems ? problem : '',
                 rawProblem: problem,
                 hasTest: test !== undefined,
-                testText:
-                    test === null || test === ''
-                        ? 'Empty on this record'
-                        : `Fills: ${test}`,
+                testText,
                 removeLabel: `Remove row ${index + 1}`,
                 fieldLabel: `Salesforce field, row ${index + 1}`,
                 toLabel: `Fills, row ${index + 1}`,
@@ -593,10 +611,10 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         if (!this.draft) {
             return out;
         }
-        if (this.isLink && this.hasOtherLinkRule) {
+        if (this.isLink && this.linkConflict) {
             out.push({
                 message:
-                    'This form already has a link rule. A link carries one record.'
+                    'Turn off the other link rule first, or turn this one off. A link carries one record.'
             });
         }
         if (this.isLink && !this.draft.source.objectApiName) {

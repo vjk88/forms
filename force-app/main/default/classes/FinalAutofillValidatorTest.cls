@@ -588,4 +588,55 @@ private class FinalAutofillValidatorTest {
             String.valueOf(codes)
         );
     }
+
+    @isTest
+    static void aLookupQuestionIsNeverADestination() {
+        Map<String, Object> spec = freeformSpec(
+            new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'el_pick2',
+                    'type' => 'field',
+                    'label' => 'Pick',
+                    'config' => new Map<String, Object>{
+                        'inputType' => 'reference',
+                        'referenceTo' => 'Account'
+                    }
+                }
+            },
+            new List<Object>{
+                linkRule(new List<Object>{ mapping('Name', 'el_pick2') })
+            }
+        );
+        Assert.isTrue(
+            codesOf(spec).contains('AUTOFILL_INCOMPATIBLE_DESTINATION')
+        );
+    }
+
+    @isTest
+    static void aLookupQuestionWithNoObjectIsSaid() {
+        Map<String, Object> pick = new Map<String, Object>{
+            'id' => 'el_pick3',
+            'type' => 'field',
+            'label' => 'Pick',
+            'config' => new Map<String, Object>{ 'inputType' => 'reference' }
+        };
+        Map<String, Object> rule = new Map<String, Object>{
+            'id' => 'af_3',
+            'enabled' => true,
+            'source' => new Map<String, Object>{
+                'type' => 'lookup',
+                'elementId' => 'el_pick3'
+            },
+            'mappings' => new List<Object>{ mapping('Phone', 'el_phone') }
+        };
+        Assert.isTrue(
+            codesOf(
+                    freeformSpec(
+                        new List<Object>{ pick },
+                        new List<Object>{ rule }
+                    )
+                )
+                .contains('AUTOFILL_LOOKUP_NO_OBJECT')
+        );
+    }
 }

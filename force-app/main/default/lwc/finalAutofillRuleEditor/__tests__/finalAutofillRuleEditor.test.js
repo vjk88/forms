@@ -274,4 +274,80 @@ describe('c-final-autofill-rule-editor', () => {
         await flush();
         expect(el.reportProblems()).toEqual([]);
     });
+
+    it('a new object clears every field and guest tick (review fix)', async () => {
+        const { el, got } = mount({
+            rule: linkRule([
+                { id: 'm1', from: 'Name', to: 'el_company', guestAllowed: true }
+            ])
+        });
+        await flush();
+        $(el, '.am-object').dispatchEvent(
+            new CustomEvent('pick', { detail: { value: 'Contact' } })
+        );
+        const last = got[got.length - 1];
+        expect(last.source.objectApiName).toBe('Contact');
+        expect(last.mappings[0]).toMatchObject({
+            from: '',
+            to: 'el_company',
+            guestAllowed: false
+        });
+    });
+
+    it('a field the object does not have is said', async () => {
+        const { el } = mount({
+            rule: linkRule([
+                {
+                    id: 'm1',
+                    from: 'Gone__c',
+                    to: 'el_company',
+                    guestAllowed: false
+                }
+            ])
+        });
+        await flush();
+        await flush();
+        el.reportProblems();
+        await flush();
+        expect($(el, '.am-row-problem').textContent).toBe(
+            'That field isn’t on Account.'
+        );
+    });
+
+    it('a link rule that is off never conflicts with another', async () => {
+        const off = { ...linkRule([]), enabled: false };
+        const { el } = mount({ rule: off, hasOtherLinkRule: true });
+        await flush();
+        const [link] = $$(el, '.am-seg');
+        expect(link.disabled).toBe(false);
+        expect(
+            el.reportProblems().some((p) => /other link rule/.test(p.message))
+        ).toBe(false);
+    });
+
+    it('try-it shows what will really fill, and what won’t', async () => {
+        getTestRecordValues.mockResolvedValue({ AnnualRevenue: 'lots' });
+        const { el } = mount({
+            rule: linkRule([
+                {
+                    id: 'm1',
+                    from: 'AnnualRevenue',
+                    to: 'el_revenue',
+                    guestAllowed: false
+                }
+            ])
+        });
+        await flush();
+        const id = $(el, '.am-test-id');
+        id.value = '001000000000001';
+        id.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        $$(el, 'lightning-button')
+            .find((b) => b.label === 'Show what it fills')
+            .click();
+        await flush();
+        expect($(el, '.am-row-test').textContent).toBe(
+            'Won’t fill: “lots” doesn’t fit a number answer'
+        );
+    });
 });
