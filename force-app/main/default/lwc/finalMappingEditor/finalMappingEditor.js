@@ -20,7 +20,6 @@ const STATE_TEXT = {
 /** What this answer does on that record, in the author's words — the
  *  field's label, never its API name. */
 function describeUse(use, fieldLabel) {
-    if (use.use === 'match') return 'used to find the record';
     if (use.use === 'filter') return 'used to find the record';
     if (use.use === 'link') return `linked as ${fieldLabel}`;
     return fieldLabel;
@@ -150,8 +149,13 @@ export default class FinalMappingEditor extends LightningElement {
     get cards() {
         const labels = new Map(this.objects.map((o) => [o.value, o.label]));
         const all = this.actions;
+        const skippable = new Set(
+            (this.questions || [])
+                .filter((q) => q.skippable)
+                .map((q) => q.elementKey)
+        );
         return all.map((a, i) => {
-            const state = actionState(all, i);
+            const state = actionState(all, i, skippable);
             const selected = a.id === this.selectedIdOrFirst;
             return {
                 id: a.id,

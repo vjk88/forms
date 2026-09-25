@@ -454,4 +454,19 @@ describe('one search block (round 1 #4)', () => {
         });
         expect(actionsOf(spec)[0].fields).toEqual([]);
     });
+
+    it('a search that uses a question someone may skip is not finished', () => {
+        const step = {
+            id: 'act_a',
+            object: 'Contact',
+            operation: 'findOrCreate',
+            match: {
+                onMatch: 'reuse',
+                filter: { logic: 'all', rows: [answerRow('el_e')] }
+            },
+            fields: [{ field: 'LastName', source: answer('el_n') }]
+        };
+        expect(actionState([step], 0, new Set())).toBe('ok');
+        expect(actionState([step], 0, new Set(['el_e']))).toBe('incomplete');
+    });
 });

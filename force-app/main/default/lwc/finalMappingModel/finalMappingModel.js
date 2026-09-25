@@ -261,7 +261,7 @@ export function setOnMatch(spec, actionId, onMatch) {
     });
 }
 
-/** The match field can never be overwritten: you don't overwrite what you searched by. */
+/** Tick or untick "Also update when found" for one field (update mode only). */
 export function setWriteOnMatch(spec, actionId, field, on) {
     return update(spec, actionId, (a) => {
         if (!a.match || a.match.onMatch !== 'update') {
@@ -376,7 +376,11 @@ function filterRowComplete(row) {
     return row.value !== null && row.value !== undefined && row.value !== '';
 }
 
-export function actionState(actions, index) {
+/**
+ * `skippable` (optional): ids of questions someone may skip. A search that
+ * uses one can't be published (D59), so the step isn't finished either.
+ */
+export function actionState(actions, index, skippable) {
     const a = actions[index];
     if (!a) return 'broken';
     const earlier = new Set(actions.slice(0, index).map((x) => x.id));
@@ -402,7 +406,11 @@ export function actionState(actions, index) {
             ? typeof m.soql === 'string' && m.soql.trim() !== ''
             : Boolean(m.filter && (m.filter.rows || []).length) &&
               m.filter.rows.every(filterRowComplete);
-        if (!m.onMatch || !filterDone || !searchAnswerIds(m).length) {
+        const answers = searchAnswerIds(m);
+        if (!m.onMatch || !filterDone || !answers.length) {
+            return 'incomplete';
+        }
+        if (skippable && answers.some((id) => skippable.has(id))) {
             return 'incomplete';
         }
     }

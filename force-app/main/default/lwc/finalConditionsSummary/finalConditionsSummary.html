@@ -15,7 +15,9 @@
             <ol class="cs-rules">
                 <template for:each={items} for:item="item">
                     <li key={item.key} class="cs-rule">
-                        <span class="cs-num">{item.number}</span>
+                        <template lwc:if={item.showNumber}>
+                            <span class="cs-num">{item.number}</span>
+                        </template>
                         <span class="cs-text">{item.text}</span>
                     </li>
                 </template>

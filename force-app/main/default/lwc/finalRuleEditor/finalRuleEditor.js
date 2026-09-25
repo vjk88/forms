@@ -380,7 +380,7 @@ export default class FinalRuleEditor extends LightningElement {
             ? this._answerChoices.find((a) => a.key === key)
             : null;
         return choice && choice.skippable
-            ? `“${choice.label}” can be skipped. Make it required before you publish — a search can’t use an answer that might be missing.`
+            ? `“${choice.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
             : '';
     }
 

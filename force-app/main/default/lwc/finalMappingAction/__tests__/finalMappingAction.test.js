@@ -593,3 +593,50 @@ describe('the step reads as its branches (S5)', () => {
         expect(headings(el)).toEqual(['Create an Account with']);
     });
 });
+
+describe('the step says why its search is not finished', () => {
+    const step = (filter) => [
+        {
+            id: 'act_1',
+            object: 'Contact',
+            operation: 'findOrCreate',
+            match: { onMatch: 'reuse', filter },
+            fields: []
+        }
+    ];
+    const notes = (el) =>
+        [...el.shadowRoot.querySelectorAll('.ma-search-note')].map((n) =>
+            n.textContent.trim()
+        );
+
+    it('conditions with no answer ask for one', async () => {
+        const el = mount(
+            step({
+                logic: 'all',
+                rows: [{ fieldPath: 'Title', operator: 'eq', value: 'CEO' }]
+            }),
+            'act_1'
+        );
+        await flush();
+        expect(notes(el)[0]).toContain(
+            'Add a condition that compares with an answer'
+        );
+    });
+
+    it('a question someone may skip is named, with the fix', async () => {
+        const el = mount(
+            step({
+                logic: 'all',
+                rows: [
+                    { fieldPath: 'Email', operator: 'eq', value: '$field.el_e' }
+                ]
+            }),
+            'act_1'
+        );
+        el.questions = [{ ...QUESTIONS[0], skippable: true }, QUESTIONS[1]];
+        await flush();
+        expect(notes(el)).toEqual([
+            '“Work email” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.'
+        ]);
+    });
+});

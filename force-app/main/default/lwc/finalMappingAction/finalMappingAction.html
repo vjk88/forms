@@ -36,6 +36,13 @@
                     dialog-label={filterDialogLabel}
                     onlookupconfigchange={handleFilter}
                 ></c-final-lookup-filter>
+                <template lwc:if={hasSearchNotes}>
+                    <template for:each={searchNotes} for:item="n">
+                        <p key={n.key} class="ma-why ma-search-note">
+                            {n.text}
+                        </p>
+                    </template>
+                </template>
             </section>
 
             <section class="ma-branch">

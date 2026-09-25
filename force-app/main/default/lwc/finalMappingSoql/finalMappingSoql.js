@@ -315,7 +315,7 @@ export default class FinalMappingSoql extends LightningElement {
             .filter((q) => q.skippable && ids.has(q.elementKey))
             .map((q) => ({
                 key: q.elementKey,
-                text: `“${names.get(q.elementKey) || q.label}” can be skipped. Make it required before you publish — a search can’t use an answer that might be missing.`
+                text: `“${names.get(q.elementKey) || q.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
             }));
     }
 

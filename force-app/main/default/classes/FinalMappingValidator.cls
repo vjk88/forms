@@ -537,7 +537,7 @@ public with sharing class FinalMappingValidator {
                     id,
                     typed ? CONDITIONS_FIELD : null,
                     name +
-                    ' must search by at least one answer. Add a condition that compares with a question, like “Email equals the answer to Your email”.'
+                    ' must search by at least one answer. Add a condition that compares with a question, like Email equals the answer to “Your email”.'
                 )
             );
         }

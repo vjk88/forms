@@ -10,7 +10,8 @@ import {
     setOnMatch,
     setWriteOnMatch,
     setFilterMode,
-    foldMatch
+    foldMatch,
+    searchAnswerIds
 } from 'c/finalMappingModel';
 
 /** "a Contact", "an Account". */
@@ -266,11 +267,47 @@ export default class FinalMappingAction extends LightningElement {
             return 'It’s used as-is. Nothing is written to it.';
         }
         const ticked = ((this.action && this.action.fields) || []).some(
-            (f) => f.writeOnMatch === true && f.field !== this.match.field
+            (f) => f.writeOnMatch === true
         );
         return ticked
             ? 'It’s updated with the fields ticked under “Also update when found”.'
             : 'It’s updated with the fields ticked under “Also update when found”. None are ticked yet, so nothing changes.';
+    }
+
+    /**
+     * What stops this search being published, said on the step itself —
+     * so "Not finished" always has its reason beside it.
+     */
+    get searchNotes() {
+        if (!this.isFindOrCreate) {
+            return [];
+        }
+        const m = this.match;
+        const hasConditions =
+            m.filterMode === 'soql'
+                ? Boolean((m.soql || '').trim())
+                : Boolean(m.filter && (m.filter.rows || []).length);
+        const answers = searchAnswerIds(m);
+        const out = [];
+        if (hasConditions && !answers.length) {
+            out.push({
+                key: 'no-answer',
+                text: 'Add a condition that compares with an answer, like Email equals the answer to “Your email”.'
+            });
+        }
+        (this.questions || [])
+            .filter((q) => q.skippable && answers.includes(q.elementKey))
+            .forEach((q) =>
+                out.push({
+                    key: `skip-${q.elementKey}`,
+                    text: `“${q.label}” can be skipped. Make it required (and not hidden by a rule), or take it out of the search.`
+                })
+            );
+        return out;
+    }
+
+    get hasSearchNotes() {
+        return this.searchNotes.length > 0;
     }
 
     /** The create list's heading: the branch it is, on a find-or-create step. */
