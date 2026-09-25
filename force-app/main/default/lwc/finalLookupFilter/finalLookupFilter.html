@@ -32,24 +32,64 @@
             ></lightning-input>
         </template>
 
-        <div class="lf-conditions">
-            <c-final-conditions-summary
-                value={ruleValue}
-                columns={conditionColumns}
-                field-object={targetObject}
-                allow-current-user={allowCurrentUserCompare}
-                answer-choices={answerChoices}
-                allow-typed={allowTyped}
-                typed-value={typedValue}
-                typed-context={typedContext}
-                sources={sources}
-                noun="field"
-                extra-operators={extraOperators}
-                label={dialogLabel}
-                description={dialogDescription}
-                disabled={loading}
-                onconditionschange={handleRuleChange}
-            ></c-final-conditions-summary>
-        </div>
+        <template lwc:if={filterOnly}>
+            <!-- The mapping step has room: the conditions are edited right
+                 here, and every change saves, like the rest of the step. -->
+            <div class="lf-inline">
+                <template lwc:if={allowTyped}>
+                    <lightning-radio-group
+                        class="lf-mode"
+                        label="Write the conditions as"
+                        variant="label-hidden"
+                        type="button"
+                        options={modeOptions}
+                        value={modeValue}
+                        onchange={handleMode}
+                    ></lightning-radio-group>
+                </template>
+                <template lwc:if={onTyped}>
+                    <c-final-mapping-soql
+                        value={typedSoql}
+                        questions={typedQuestions}
+                        spec={typedSpec}
+                        action-id={typedActionId}
+                        onsoqlchange={handleSoql}
+                    ></c-final-mapping-soql>
+                </template>
+                <template lwc:else>
+                    <c-final-rule-editor
+                        value={draft}
+                        columns="mapping"
+                        sources={sources}
+                        noun="field"
+                        extra-operators={extraOperators}
+                        field-object={targetObject}
+                        answer-choices={answerChoices}
+                        onrulechange={handleInlineRule}
+                    ></c-final-rule-editor>
+                </template>
+                <template lwc:if={otherModeNote}>
+                    <p class="lf-hint lf-mode-note">{otherModeNote}</p>
+                </template>
+            </div>
+        </template>
+        <template lwc:else>
+            <div class="lf-conditions">
+                <c-final-conditions-summary
+                    value={ruleValue}
+                    columns="lookup"
+                    field-object={targetObject}
+                    allow-current-user={allowCurrentUserCompare}
+                    answer-choices={answerChoices}
+                    sources={sources}
+                    noun="field"
+                    extra-operators={extraOperators}
+                    label={dialogLabel}
+                    description={dialogDescription}
+                    disabled={loading}
+                    onconditionschange={handleRuleChange}
+                ></c-final-conditions-summary>
+            </div>
+        </template>
     </div>
 </template>

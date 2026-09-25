@@ -519,6 +519,9 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     get emptyHint() {
+        if (this.columns === 'mapping') {
+            return 'No conditions yet. Add one that compares with an answer, like Email equals the answer to “Your email”.';
+        }
         if (!this.isVisibility) {
             return 'No conditions yet. Add one to narrow which records are searched.';
         }

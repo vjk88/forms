@@ -61,12 +61,3 @@
     align-self: flex-start;
     margin-top: 0.25rem;
 }
-
-/* Typed conditions, shown as written. */
-.cs-typed {
-    margin: 0.25rem 0 0.5rem;
-    white-space: pre-wrap;
-    word-break: break-word;
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-    font-size: 0.75rem;
-}

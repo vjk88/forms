@@ -2,7 +2,6 @@ import { LightningElement, api } from 'lwc';
 import FinalConditionsModal from 'c/finalConditionsModal';
 import { removedLabel, USER_EXTRAS } from 'c/finalRuleEditor';
 import { labelForPath, typeForPath } from 'c/finalFieldPicker';
-import { displayNames, toDisplay } from 'c/finalMappingSoql';
 
 /**
  * What a screen shows of its conditions (IMPL_PLAN_F2_SEARCH decision 19):
@@ -118,10 +117,6 @@ export default class FinalConditionsSummary extends LightningElement {
     /** The dialog's title and sentence. */
     @api label;
     @api description;
-    /** Mapping search: the Advanced (SOQL) tab (D50) — see c/finalConditionsModal. */
-    @api allowTyped = false;
-    @api typedValue;
-    @api typedContext;
     /** Off while the fields it would offer are still loading. */
     @api disabled = false;
 
@@ -140,36 +135,16 @@ export default class FinalConditionsSummary extends LightningElement {
         );
     }
 
-    get isTyped() {
-        return Boolean(
-            this.allowTyped &&
-            this.typedValue &&
-            this.typedValue.mode === 'soql' &&
-            (this.typedValue.soql || '').trim()
-        );
-    }
-
-    /** The typed conditions as the author wrote them: {Your email}, not ids. */
-    get typedText() {
-        if (!this.isTyped) {
-            return '';
-        }
-        const questions =
-            (this.typedContext && this.typedContext.questions) || [];
-        const stored = this.typedValue.soql;
-        return toDisplay(stored, displayNames(questions, stored));
-    }
-
     get hasRules() {
         return this.rules.length > 0;
     }
 
     get showRules() {
-        return this.hasRules && !this.isTyped;
+        return this.hasRules;
     }
 
     get showEmpty() {
-        return !this.hasRules && !this.isTyped;
+        return !this.hasRules;
     }
 
     get emptyText() {
@@ -370,9 +345,7 @@ export default class FinalConditionsSummary extends LightningElement {
     }
 
     get buttonLabel() {
-        return this.hasRules || this.isTyped
-            ? 'Edit conditions'
-            : 'Add conditions';
+        return this.hasRules ? 'Edit conditions' : 'Add conditions';
     }
 
     async handleEdit() {
@@ -400,10 +373,7 @@ export default class FinalConditionsSummary extends LightningElement {
                 allowCurrentUser: this.allowCurrentUser,
                 answerChoices: this.answerChoices,
                 recordObject: this.recordObject,
-                allowTyped: this.allowTyped,
-                typedValue: this.typedValue,
-                typedContext: this.typedContext,
-                startWithRow: !this.hasRules && !this.isTyped
+                startWithRow: !this.hasRules
             });
         } finally {
             this._opening = false;
@@ -411,7 +381,7 @@ export default class FinalConditionsSummary extends LightningElement {
         if (result) {
             this.dispatchEvent(
                 new CustomEvent('conditionschange', {
-                    detail: { value: result.value, typed: result.typed }
+                    detail: { value: result.value }
                 })
             );
         }

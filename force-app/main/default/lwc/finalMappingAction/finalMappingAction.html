@@ -25,17 +25,19 @@
         <template lwc:if={isFindOrCreate}>
             <section class="ma-branch ma-match">
                 <h3 class="ma-subhead">Find an existing {objectLabel} where</h3>
-                <c-final-lookup-filter
-                    target-object={objectApi}
-                    value={filterConfig}
-                    filter-only
-                    answer-choices={filterAnswerChoices}
-                    allow-typed
-                    typed-value={typedFilter}
-                    typed-context={typedContext}
-                    dialog-label={filterDialogLabel}
-                    onlookupconfigchange={handleFilter}
-                ></c-final-lookup-filter>
+                <template for:each={filterKeys} for:item="k">
+                    <c-final-lookup-filter
+                        key={k.key}
+                        target-object={objectApi}
+                        value={filterConfig}
+                        filter-only
+                        answer-choices={filterAnswerChoices}
+                        allow-typed
+                        typed-value={typedFilter}
+                        typed-context={typedContext}
+                        onlookupconfigchange={handleFilter}
+                    ></c-final-lookup-filter>
+                </template>
                 <template lwc:if={hasSearchNotes}>
                     <template for:each={searchNotes} for:item="n">
                         <p key={n.key} class="ma-why ma-search-note">

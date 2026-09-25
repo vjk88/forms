@@ -17,6 +17,11 @@ import describeLookupFields from '@salesforce/apex/FinalLookupController.describ
  *
  * Emits the whole next config as `lookupconfigchange` {value}; the studio owns
  * the spec.
+ *
+ * Two layouts. A lookup (cramped inspector) shows a summary and edits in the
+ * conditions dialog. The mapping step (`filter-only`) has room, so the rule
+ * editor sits on the page and every edit saves at once, with a Conditions /
+ * SOQL switch when `allow-typed` is set (round 2).
  */
 
 /** Rule-editor operator → the operator the spec stores. */
@@ -45,6 +50,23 @@ const EXTRA_OPERATORS = [
 ];
 const MULTI_VALUE = new Set(['in', 'nin', 'includes', 'excludes']);
 
+/** A filter's content, whatever order or leftovers its keys carry. */
+function filterKey(filter) {
+    if (!filter) {
+        return 'null';
+    }
+    return JSON.stringify({
+        logic: filter.logic || 'all',
+        customLogic: filter.customLogic || null,
+        rows: (filter.rows || []).map((r) => [
+            r.fieldPath || '',
+            r.operator || '',
+            r.value === undefined ? null : r.value,
+            r.values || null
+        ])
+    });
+}
+
 export default class FinalLookupFilter extends LightningElement {
     /** The object this lookup searches. */
     @api targetObject;
@@ -58,32 +80,27 @@ export default class FinalLookupFilter extends LightningElement {
     @api filterOnly = false;
     /** Mapping screen: the questions a row may compare with (Task 7). */
     @api answerChoices = [];
-    /** Mapping search: the Advanced (SOQL) tab (D50) — see c/finalConditionsModal. */
+    /** Mapping step: offer SOQL beside the built conditions (D50). */
     @api allowTyped = false;
+    /** The saved typed conditions: { mode: 'soql' | 'rows', soql }. */
     @api typedValue;
+    /** What the SOQL box needs: { spec, actionId, questions }. */
     @api typedContext;
 
     get showLookupControls() {
         return !this.filterOnly;
     }
 
-    /** The conditions dialog's title; the mapping screen names its object. */
+    /** The conditions dialog's title. */
     @api dialogLabel;
 
-    /** Which screen the shared condition editor lays itself out for. */
     /** Current user only for signed-in searches: a guest would be the site guest. */
     get allowCurrentUserCompare() {
-        return !this.filterOnly && !this.allowGuest;
-    }
-
-    get conditionColumns() {
-        return this.filterOnly ? 'mapping' : 'lookup';
+        return !this.allowGuest;
     }
 
     get dialogDescription() {
-        return this.filterOnly
-            ? 'The record that meets these conditions is the one found.'
-            : 'Only records that meet these conditions can be picked.';
+        return 'Only records that meet these conditions can be picked.';
     }
 
     @track fields = [];
@@ -94,12 +111,38 @@ export default class FinalLookupFilter extends LightningElement {
     _value;
     _loadedFor;
 
+    /**
+     * On the page, the editor's own copy of the conditions. A saved filter
+     * can't hold everything mid-edit — a row still being set up, a trailing
+     * comma in "is one of" — so the draft is kept while the saved filter is
+     * the one it last saved, and rebuilt only when the filter changes from
+     * elsewhere (another step, an undo).
+     */
+    draft = null;
+    _draftFor;
+
     @api
     get value() {
         return this._value;
     }
     set value(next) {
         this._value = next || null;
+        const key = filterKey((next && next.filter) || null);
+        if (key !== this._draftFor) {
+            this._draftFor = key;
+            const v = this.ruleValue;
+            // A new search starts with one empty row, so the first click
+            // isn't spent on Add condition. It isn't saved until it's used.
+            this.draft =
+                v && v.rules.length
+                    ? v
+                    : {
+                          action: 'show',
+                          logic: 'all',
+                          customLogic: null,
+                          rules: [{ source: '', operator: 'equals', value: '' }]
+                      };
+        }
     }
 
     get extraOperators() {
@@ -162,6 +205,109 @@ export default class FinalLookupFilter extends LightningElement {
                     : row.value
             }))
         };
+    }
+
+    // ---- on the page (the mapping step) ----
+
+    get onTyped() {
+        return Boolean(
+            this.allowTyped &&
+            this.typedValue &&
+            this.typedValue.mode === 'soql'
+        );
+    }
+
+    get modeValue() {
+        return this.onTyped ? 'soql' : 'rows';
+    }
+
+    get modeOptions() {
+        return [
+            { label: 'Conditions', value: 'rows' },
+            { label: 'SOQL', value: 'soql' }
+        ];
+    }
+
+    get typedSoql() {
+        return (this.typedValue && this.typedValue.soql) || '';
+    }
+
+    get typedQuestions() {
+        return (this.typedContext && this.typedContext.questions) || [];
+    }
+
+    get typedSpec() {
+        return this.typedContext && this.typedContext.spec;
+    }
+
+    get typedActionId() {
+        return this.typedContext && this.typedContext.actionId;
+    }
+
+    /** Only one of the two is used; the other is kept to switch back to. */
+    get otherModeNote() {
+        if (!this.allowTyped) {
+            return '';
+        }
+        if (this.onTyped) {
+            const n = (
+                (this._value &&
+                    this._value.filter &&
+                    this._value.filter.rows) ||
+                []
+            ).length;
+            return n
+                ? 'Only the SOQL is used. The conditions you built are kept, in case you switch back.'
+                : '';
+        }
+        return this.typedSoql.trim()
+            ? 'Only these conditions are used. The SOQL you wrote is kept, in case you switch back.'
+            : '';
+    }
+
+    handleMode(event) {
+        event.stopPropagation();
+        this._emit(this._value || {}, {
+            mode: event.detail.value,
+            soql: this.typedSoql
+        });
+    }
+
+    handleSoql(event) {
+        event.stopPropagation();
+        this._emit(this._value || {}, {
+            mode: 'soql',
+            soql: event.detail.value || ''
+        });
+    }
+
+    /**
+     * Every edit saves. A row nobody has started isn't saved (it would only
+     * make the step "Not finished"), unless custom logic counts on its
+     * number.
+     */
+    handleInlineRule(event) {
+        event.stopPropagation();
+        const next = (event.detail && event.detail.value) || null;
+        this.draft = next;
+        const rules = (next && next.rules) || [];
+        const custom = Boolean(next && next.logic === 'custom');
+        const kept = custom
+            ? rules
+            : rules.filter(
+                  (r) =>
+                      r.source ||
+                      (r.value !== undefined &&
+                          r.value !== null &&
+                          String(r.value).trim() !== '')
+              );
+        const filter = {
+            logic: (next && next.logic) || 'all',
+            customLogic: (next && next.customLogic) || null,
+            rows: kept.map((rule) => this._toRow(rule))
+        };
+        this._draftFor = filterKey(filter);
+        this._emit({ ...(this._value || {}), filter });
     }
 
     handleRuleChange(event) {

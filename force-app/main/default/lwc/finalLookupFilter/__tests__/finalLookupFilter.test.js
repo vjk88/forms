@@ -34,13 +34,18 @@ const flush = () =>
         .then(() => Promise.resolve())
         .then(() => Promise.resolve());
 
-function mount(value, { filterOnly = false } = {}) {
+function mount(
+    value,
+    { filterOnly = false, allowTyped = false, typedValue } = {}
+) {
     describeLookupFields.mockResolvedValue(DESCRIBE);
     const el = createElement('c-final-lookup-filter', {
         is: FinalLookupFilter
     });
     el.targetObject = 'Contact';
     el.filterOnly = filterOnly;
+    el.allowTyped = allowTyped;
+    el.typedValue = typedValue;
     el.value = value || null;
     document.body.appendChild(el);
     return el;
@@ -236,7 +241,7 @@ describe('filter-only mode', () => {
             (i) => i.label
         );
 
-    it('hides the lookup-only controls', async () => {
+    it('hides the lookup-only controls and edits on the page', async () => {
         const el = mount(null, { filterOnly: true });
         await flush();
         expect(labels(el)).not.toContain('Show in each result');
@@ -244,11 +249,14 @@ describe('filter-only mode', () => {
         expect(labels(el)).not.toContain(
             'Let people filling this form anonymously search it'
         );
-        expect(ruleEditor(el)).toBeTruthy();
-        expect(ruleEditor(el).columns).toBe('mapping');
-        expect(ruleEditor(el).description).toBe(
-            'The record that meets these conditions is the one found.'
-        );
+        // no summary, no dialog: the editor itself
+        expect(ruleEditor(el)).toBeNull();
+        const editor = el.shadowRoot.querySelector('c-final-rule-editor');
+        expect(editor.columns).toBe('mapping');
+        // a new search starts with one empty row
+        expect(editor.value.rules).toEqual([
+            { source: '', operator: 'equals', value: '' }
+        ]);
     });
 
     it('a lookup still gets all of them', async () => {
@@ -258,5 +266,149 @@ describe('filter-only mode', () => {
         expect(labels(el)).toContain(
             'Let people filling this form anonymously search it'
         );
+    });
+});
+
+describe('conditions on the page (mapping step)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    const inline = (el) => el.shadowRoot.querySelector('c-final-rule-editor');
+    const listen = (el) => {
+        const got = [];
+        el.addEventListener('lookupconfigchange', (e) => got.push(e.detail));
+        return got;
+    };
+    const change = (el, value) =>
+        inline(el).dispatchEvent(
+            new CustomEvent('rulechange', { detail: { value } })
+        );
+
+    it('saves every edit, without a row nobody has started', async () => {
+        const el = mount(null, { filterOnly: true });
+        const got = listen(el);
+        await flush();
+        change(el, {
+            action: 'show',
+            logic: 'all',
+            customLogic: null,
+            rules: [
+                { source: 'Title', operator: 'equals', value: 'CEO' },
+                { source: '', operator: 'equals', value: '' }
+            ]
+        });
+        expect(got[0].value.filter).toEqual({
+            logic: 'all',
+            customLogic: null,
+            rows: [{ fieldPath: 'Title', operator: 'eq', value: 'CEO' }]
+        });
+        expect(got[0].typed).toBeUndefined();
+    });
+
+    it('keeps the row still being set up when the saved filter comes back', async () => {
+        const el = mount(null, { filterOnly: true });
+        const got = listen(el);
+        await flush();
+        const draft = {
+            action: 'show',
+            logic: 'all',
+            customLogic: null,
+            rules: [
+                { source: 'Title', operator: 'in', value: 'CEO,' },
+                { source: '', operator: 'equals', value: '' }
+            ]
+        };
+        change(el, draft);
+        // the host saves it and hands it straight back
+        el.value = JSON.parse(JSON.stringify(got[0].value));
+        await flush();
+        expect(inline(el).value).toEqual(draft);
+    });
+
+    it('rebuilds from the saved filter when it changes elsewhere', async () => {
+        const el = mount(null, { filterOnly: true });
+        await flush();
+        el.value = {
+            filter: {
+                logic: 'all',
+                rows: [{ fieldPath: 'Title', operator: 'eq', value: 'CFO' }]
+            }
+        };
+        await flush();
+        expect(inline(el).value.rules).toEqual([
+            { source: 'Title', operator: 'equals', value: 'CFO' }
+        ]);
+    });
+
+    it('keeps blank rows under custom logic: their numbers count', async () => {
+        const el = mount(null, { filterOnly: true });
+        const got = listen(el);
+        await flush();
+        change(el, {
+            action: 'show',
+            logic: 'custom',
+            customLogic: '1 OR 2',
+            rules: [
+                { source: 'Title', operator: 'equals', value: 'CEO' },
+                { source: '', operator: 'equals', value: '' }
+            ]
+        });
+        expect(got[0].value.filter.rows).toHaveLength(2);
+    });
+
+    it('switches to SOQL and back, keeping both', async () => {
+        const el = mount(
+            {
+                filter: {
+                    logic: 'all',
+                    rows: [{ fieldPath: 'Title', operator: 'eq', value: 'CEO' }]
+                }
+            },
+            {
+                filterOnly: true,
+                allowTyped: true,
+                typedValue: { mode: 'rows', soql: '' }
+            }
+        );
+        const got = listen(el);
+        await flush();
+        const mode = el.shadowRoot.querySelector('.lf-mode');
+        expect(mode.value).toBe('rows');
+        mode.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'soql' } })
+        );
+        expect(got[0].typed).toEqual({ mode: 'soql', soql: '' });
+
+        el.typedValue = { mode: 'soql', soql: 'Email = {!el_e}' };
+        await flush();
+        expect(el.shadowRoot.querySelector('c-final-rule-editor')).toBeNull();
+        expect(el.shadowRoot.querySelector('c-final-mapping-soql').value).toBe(
+            'Email = {!el_e}'
+        );
+        expect(
+            el.shadowRoot.querySelector('.lf-mode-note').textContent
+        ).toContain('Only the SOQL is used');
+    });
+
+    it('typing in the SOQL box saves it', async () => {
+        const el = mount(null, {
+            filterOnly: true,
+            allowTyped: true,
+            typedValue: { mode: 'soql', soql: '' }
+        });
+        const got = listen(el);
+        await flush();
+        el.shadowRoot.querySelector('c-final-mapping-soql').dispatchEvent(
+            new CustomEvent('soqlchange', {
+                detail: { value: 'LastName = {!el_n}' }
+            })
+        );
+        expect(got[0].typed).toEqual({
+            mode: 'soql',
+            soql: 'LastName = {!el_n}'
+        });
     });
 });
