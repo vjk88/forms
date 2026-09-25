@@ -325,14 +325,20 @@ describe('c-final-field-palette', () => {
         ).toContain('on');
     });
 
-    it('Freeform has Mapping in the rail; Form and Survey keep Autofill', async () => {
+    it('Freeform has Autofill and Mapping in the rail; Form and Survey have Autofill', async () => {
         const tabs = (el) =>
             [...el.shadowRoot.querySelectorAll('.fp-tab')].map(
                 (t) => t.dataset.tab
             );
         const free = mount({ formType: 'freeform' });
         await flush();
-        expect(tabs(free)).toEqual(['fields', 'blocks', 'logic', 'mapping']);
+        expect(tabs(free)).toEqual([
+            'fields',
+            'blocks',
+            'logic',
+            'autofill',
+            'mapping'
+        ]);
         const form = mount({ formType: 'form' });
         await flush();
         expect(tabs(form)).toEqual(['fields', 'blocks', 'logic', 'autofill']);

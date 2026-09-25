@@ -1,0 +1,207 @@
+<template>
+    <div class="am">
+        <div class="am-top">
+            <lightning-input
+                class="am-name"
+                label="Rule name"
+                placeholder="For example: Contact from the link"
+                value={draft.name}
+                onchange={handleName}
+            ></lightning-input>
+            <lightning-input
+                class="am-enabled"
+                type="toggle"
+                label="On"
+                message-toggle-active=""
+                message-toggle-inactive=""
+                checked={draft.enabled}
+                onchange={handleEnabled}
+            ></lightning-input>
+        </div>
+
+        <section class="am-section">
+            <h2 class="am-heading">Fill from</h2>
+            <div class="am-segs" role="group" aria-label="Fill from">
+                <button
+                    type="button"
+                    class={linkClass}
+                    aria-pressed={linkPressed}
+                    disabled={linkDisabled}
+                    onclick={handleLink}
+                >
+                    The record in the link
+                </button>
+                <button
+                    type="button"
+                    class={lookupClass}
+                    aria-pressed={lookupPressed}
+                    onclick={handleLookup}
+                >
+                    A record picked in a lookup
+                </button>
+            </div>
+            <template lwc:if={linkDisabled}>
+                <p class="am-hint">
+                    Another link rule is on. A link carries one record, so turn
+                    that rule off to use the link here.
+                </p>
+            </template>
+
+            <template lwc:if={isLink}>
+                <c-final-object-picker
+                    class="am-object"
+                    label="Object in the link"
+                    objects={objects}
+                    value={draft.source.objectApiName}
+                    onpick={handleObjectPick}
+                ></c-final-object-picker>
+            </template>
+            <template lwc:if={isLookup}>
+                <template lwc:if={hasLookups}>
+                    <lightning-combobox
+                        class="am-lookup"
+                        label="Lookup question"
+                        options={lookupOptions}
+                        value={draft.source.elementId}
+                        onchange={handleLookupPick}
+                    ></lightning-combobox>
+                    <template lwc:if={isPolymorphicLookup}>
+                        <lightning-combobox
+                            class="am-poly"
+                            label="Which object this rule reads"
+                            options={polymorphicOptions}
+                            value={draft.source.objectApiName}
+                            onchange={handlePolymorphicPick}
+                        ></lightning-combobox>
+                    </template>
+                    <p class="am-hint">
+                        Only for people who are signed in: a lookup reads the
+                        record they pick, with their own access.
+                    </p>
+                </template>
+                <template lwc:else>
+                    <p class="am-hint">
+                        Add a Record lookup question to the form first.
+                    </p>
+                </template>
+            </template>
+        </section>
+
+        <section class="am-section">
+            <h2 class="am-heading">What it fills</h2>
+            <template lwc:if={hasSourceObject}>
+                <div class="am-grid" role="list">
+                    <div class="am-row am-head" aria-hidden="true">
+                        <span>Salesforce field</span>
+                        <span>Fills</span>
+                        <template lwc:if={showGuestColumn}>
+                            <span>Guests</span>
+                        </template>
+                        <span></span>
+                    </div>
+                    <template for:each={rows} for:item="r">
+                        <div key={r.key} class="am-row" role="listitem">
+                            <c-final-field-picker
+                                label={r.fieldLabel}
+                                variant="label-hidden"
+                                object-api={sourceObject}
+                                purpose="read"
+                                max-depth={maxDepth}
+                                allowed-types={allowedTypes}
+                                value={r.from}
+                                data-index={r.index}
+                                onfieldchange={handleFromPick}
+                            ></c-final-field-picker>
+                            <lightning-combobox
+                                label={r.toLabel}
+                                variant="label-hidden"
+                                placeholder="Choose a question"
+                                options={r.options}
+                                value={r.to}
+                                data-index={r.index}
+                                onchange={handleToPick}
+                            ></lightning-combobox>
+                            <template lwc:if={showGuestColumn}>
+                                <lightning-input
+                                    class="am-guest"
+                                    type="checkbox"
+                                    label={r.guestLabel}
+                                    variant="label-hidden"
+                                    checked={r.guestAllowed}
+                                    data-index={r.index}
+                                    onchange={handleGuest}
+                                ></lightning-input>
+                            </template>
+                            <lightning-button-icon
+                                icon-name="utility:delete"
+                                variant="bare"
+                                alternative-text={r.removeLabel}
+                                title={r.removeLabel}
+                                data-index={r.index}
+                                onclick={handleRemoveRow}
+                            ></lightning-button-icon>
+                            <template lwc:if={r.problem}>
+                                <p class="am-row-problem">{r.problem}</p>
+                            </template>
+                            <template lwc:if={r.hasTest}>
+                                <p class="am-row-test">{r.testText}</p>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <lightning-button
+                    class="am-add"
+                    variant="base"
+                    label="Add a row"
+                    icon-name="utility:add"
+                    onclick={handleAddRow}
+                ></lightning-button>
+                <template lwc:if={guestNote}>
+                    <p class="am-hint">{guestNote}</p>
+                </template>
+            </template>
+            <template lwc:else>
+                <p class="am-hint">Choose where the values come from first.</p>
+            </template>
+        </section>
+
+        <section class="am-section">
+            <lightning-radio-group
+                class="am-policy"
+                label="When someone has already typed an answer"
+                options={policyOptions}
+                value={draft.policy}
+                onchange={handlePolicy}
+            ></lightning-radio-group>
+        </section>
+
+        <section class="am-section">
+            <h2 class="am-heading">Try it with a record</h2>
+            <div class="am-test">
+                <lightning-input
+                    class="am-test-id"
+                    label="Record Id"
+                    placeholder="A record you can see, e.g. 003…"
+                    value={testRecordId}
+                    onchange={handleTestId}
+                ></lightning-input>
+                <lightning-button
+                    label="Show what it fills"
+                    disabled={testDisabled}
+                    onclick={handleTest}
+                ></lightning-button>
+            </div>
+            <template lwc:if={testError}>
+                <p class="am-row-problem" role="alert">{testError}</p>
+            </template>
+        </section>
+
+        <div class="am-problems" role="status">
+            <template lwc:if={hasShownProblems}>
+                <template for:each={shownProblems} for:item="p">
+                    <p key={p.key} class="am-row-problem">{p.text}</p>
+                </template>
+            </template>
+        </div>
+    </div>
+</template>

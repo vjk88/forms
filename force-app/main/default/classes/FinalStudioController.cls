@@ -387,13 +387,10 @@ public with sharing class FinalStudioController {
                 continue;
             }
             Schema.DisplayType dt = fd.getType();
-            if (
-                dt == Schema.DisplayType.STRING ||
-                dt == Schema.DisplayType.TEXTAREA ||
-                dt == Schema.DisplayType.EMAIL ||
-                dt == Schema.DisplayType.PHONE ||
-                dt == Schema.DisplayType.URL
-            ) {
+            // What the in-rail Form/Survey editor may offer: it lists only
+            // text-like destinations, so only sources that fit one
+            // (FinalAutofillRules). The Freeform dialog reads the full table.
+            if (FinalAutofillRules.fillsText(fd)) {
                 fields.add(
                     new Map<String, Object>{
                         'apiName' => fd.getName(),

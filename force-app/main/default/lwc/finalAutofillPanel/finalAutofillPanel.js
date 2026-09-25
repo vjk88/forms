@@ -21,7 +21,33 @@ export default class FinalAutofillPanel extends LightningElement {
     @api spec;
     @api formId;
     @api isPublic = false;
-    @api isSurvey = false;
+    /** 'form' | 'survey' | 'freeform'. The palette always passed this;
+     *  the panel used to declare an isSurvey nobody set. */
+    @api formType;
+
+    get isSurvey() {
+        return this.formType === 'survey';
+    }
+
+    /**
+     * Freeform edits a rule in the Studio's large dialog (IMPL_PLAN_F2_AUTOFILL
+     * 6.1); Form and Survey keep this in-rail editor until slice D.
+     */
+    get usesDialog() {
+        return this.formType === 'freeform';
+    }
+
+    /** A link rule is on: its links can be made here, under the list. */
+    get hasEnabledLinkRule() {
+        return this.rules.some((r) => r.enabled && r.source?.type === 'link');
+    }
+
+    /** Where the link tools show: in the rule editor, or (Freeform) the list. */
+    get showLinkTools() {
+        return this.usesDialog
+            ? !this.isEditing && this.hasEnabledLinkRule
+            : this.isEditing && this.isSourceLink;
+    }
     @api activeVersionId = null;
 
     @api
@@ -91,12 +117,17 @@ export default class FinalAutofillPanel extends LightningElement {
         ];
     }
 
+    /** A survey's link reads its connected object; '' when not connected. */
     get surveySourceObject() {
         return (
             this.spec?.form?.primaryContextObject ||
             this.spec?.form?.targetObject ||
-            'Contact'
+            ''
         );
+    }
+
+    get surveyNotConnected() {
+        return this.isSurvey && !this.surveySourceObject;
     }
 
     get isSourceLink() {
@@ -299,7 +330,10 @@ export default class FinalAutofillPanel extends LightningElement {
     }
 
     get canMintLink() {
-        return Boolean(this.activeVersionId && this.isSourceLink);
+        return Boolean(
+            this.activeVersionId &&
+            (this.usesDialog ? this.hasEnabledLinkRule : this.isSourceLink)
+        );
     }
 
     get createLinkDisabled() {
@@ -391,7 +425,22 @@ export default class FinalAutofillPanel extends LightningElement {
 
     // ----- Rule Navigation & Editor Lifecycle -----
 
+    /** Freeform: the Studio opens the rule in its dialog. */
+    _openInDialog(rule) {
+        this.dispatchEvent(
+            new CustomEvent('editautofillrule', {
+                bubbles: true,
+                composed: true,
+                detail: { rule: rule ? JSON.parse(JSON.stringify(rule)) : null }
+            })
+        );
+    }
+
     handleCreateRule() {
+        if (this.usesDialog) {
+            this._openInDialog(null);
+            return;
+        }
         const defaultObject = this.isSurvey ? this.surveySourceObject : '';
         this.draftRule = {
             id: mintId('af'),
@@ -417,8 +466,21 @@ export default class FinalAutofillPanel extends LightningElement {
         const ruleId = event.currentTarget.dataset.id;
         const rule = (this.rules || []).find((r) => r.id === ruleId);
         if (!rule) return;
+        if (this.usesDialog) {
+            this._openInDialog(rule);
+            return;
+        }
 
         this.draftRule = JSON.parse(JSON.stringify(rule));
+        // A survey's link reads its connected object, whatever an older rule
+        // saved: the control that could change it is (rightly) locked.
+        if (
+            this.isSurvey &&
+            this.draftRule.source?.type === 'link' &&
+            this.surveySourceObject
+        ) {
+            this.draftRule.source.objectApiName = this.surveySourceObject;
+        }
         if (!this.draftRule.mappings) this.draftRule.mappings = [];
         if (!this.draftRule.policy) this.draftRule.policy = 'preserveEdits';
         if (!this.draftRule.source) this.draftRule.source = { type: 'link' };

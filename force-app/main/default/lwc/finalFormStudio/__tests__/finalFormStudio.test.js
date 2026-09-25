@@ -2606,6 +2606,29 @@ describe('Mapping in the Build rail (no Data tab)', () => {
         expect(editor(el).spec.mapping.actions[0].id).toBe('act_x');
     });
 
+    it('an Autofill rule opens in a large dialog; Apply waits for its problems', async () => {
+        const el = await open('freeform');
+        palette(el).dispatchEvent(
+            new CustomEvent('editautofillrule', { detail: { rule: null } })
+        );
+        await flush();
+        const d = el.shadowRoot.querySelector('c-final-studio-dialog');
+        expect(d.size).toBe('large');
+        expect(d.confirmLabel).toBe('Apply');
+        expect(
+            el.shadowRoot.querySelector('c-final-autofill-rule-editor')
+        ).toBeTruthy();
+        // a new rule has no object yet: Apply keeps the dialog open
+        d.dispatchEvent(new CustomEvent('confirm'));
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-studio-dialog')
+        ).toBeTruthy();
+        d.dispatchEvent(new CustomEvent('dismiss'));
+        await flush();
+        expect(el.shadowRoot.querySelector('c-final-studio-dialog')).toBeNull();
+    });
+
     it('never opens on a Form', async () => {
         const el = await open('form');
         await openMapping(el);

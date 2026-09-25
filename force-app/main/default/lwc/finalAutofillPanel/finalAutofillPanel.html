@@ -232,10 +232,19 @@
                                     value={surveySourceObject}
                                     disabled
                                 ></lightning-input>
-                                <p class="ap-field-hint">
-                                    Survey link prefill is locked to the survey
-                                    context object.
-                                </p>
+                                <template lwc:if={surveyNotConnected}>
+                                    <p class="ap-field-hint">
+                                        Connect this survey to an object first:
+                                        a survey link reads its connected
+                                        record.
+                                    </p>
+                                </template>
+                                <template lwc:else>
+                                    <p class="ap-field-hint">
+                                        Survey link prefill is locked to the
+                                        survey context object.
+                                    </p>
+                                </template>
                             </template>
                             <template lwc:else>
                                 <lightning-input
@@ -276,9 +285,9 @@
                                     ></lightning-combobox>
                                     <p class="ap-field-hint">
                                         This lookup can point at several
-                                        objects. The rule fills answers only when
-                                        the chosen record is this object. Add
-                                        another rule for another object.
+                                        objects. The rule fills answers only
+                                        when the chosen record is this object.
+                                        Add another rule for another object.
                                     </p>
                                     <template lwc:if={referenceTargetsError}>
                                         <p class="ap-field-hint">
@@ -527,106 +536,6 @@
                         </template>
                     </div>
 
-                    <!-- Create Personalized Link Section (for link rules) -->
-                    <template lwc:if={isSourceLink}>
-                        <div class="ap-section-divider"></div>
-                        <div class="ap-mint-section">
-                            <div class="ap-mint-header">
-                                <span class="ap-section-title"
-                                    >Create personalized link</span
-                                >
-                                <span class="ap-section-sub"
-                                    >Mint encrypted c__rt link for a specific
-                                    recipient</span
-                                >
-                            </div>
-                            <template lwc:if={canMintLink}>
-                                <div class="ap-mint-form">
-                                    <lightning-input
-                                        label="Record ID"
-                                        value={linkRecordId}
-                                        onchange={handleLinkRecordIdChange}
-                                        placeholder="Record ID to associate with link"
-                                    ></lightning-input>
-                                    <div class="ap-checkbox-row">
-                                        <lightning-input
-                                            type="checkbox"
-                                            label="Track invitation & responses"
-                                            checked={linkTracked}
-                                            onchange={handleLinkTrackedChange}
-                                        ></lightning-input>
-                                    </div>
-                                    <template lwc:if={linkTracked}>
-                                        <lightning-input
-                                            label="Recipient Email / Identifier"
-                                            value={linkRecipient}
-                                            onchange={handleLinkRecipientChange}
-                                            placeholder="Optional recipient address"
-                                        ></lightning-input>
-                                        <div class="ap-checkbox-row">
-                                            <lightning-input
-                                                type="checkbox"
-                                                label="Single-use (burn after submission)"
-                                                checked={linkSingleUse}
-                                                onchange={handleLinkSingleUseChange}
-                                            ></lightning-input>
-                                        </div>
-                                    </template>
-                                    <div class="ap-mint-actions">
-                                        <button
-                                            type="button"
-                                            class="ap-btn-primary ap-btn-sm"
-                                            onclick={handleCreateLink}
-                                            disabled={createLinkDisabled}
-                                        >
-                                            {createLinkLabel}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="ap-btn-secondary ap-btn-sm"
-                                            onclick={handleInvalidateLinks}
-                                        >
-                                            Invalidate all links
-                                        </button>
-                                    </div>
-                                    <template lwc:if={linkError}>
-                                        <p class="ap-error-inline">
-                                            {linkError}
-                                        </p>
-                                    </template>
-                                    <template lwc:if={linkNotice}>
-                                        <p class="ap-notice-inline">
-                                            {linkNotice}
-                                        </p>
-                                    </template>
-                                    <template lwc:if={mintedLink}>
-                                        <div class="ap-minted-result">
-                                            <lightning-input
-                                                label="Generated Link Query"
-                                                value={mintedLink}
-                                                readonly
-                                            ></lightning-input>
-                                            <button
-                                                type="button"
-                                                class="ap-btn-secondary ap-btn-sm ap-copy-btn"
-                                                onclick={handleCopyLink}
-                                            >
-                                                {copiedLinkText}
-                                            </button>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                            <template lwc:else>
-                                <p class="ap-note">
-                                    Publish this form to create personalized
-                                    links. Links cannot be generated from
-                                    unpublished draft rules.
-                                </p>
-                            </template>
-                        </div>
-                    </template>
-
                     <!-- Save / Done Buttons in Editor Footer -->
                     <div class="ap-editor-footer">
                         <button
@@ -647,5 +556,102 @@
                 </div>
             </template>
         </div>
+
+        <!-- The link tools: in the rule editor for Form and Survey; under the
+             rule list for Freeform, whose rules edit in a dialog. -->
+        <!-- Create Personalized Link Section (for link rules) -->
+        <template lwc:if={showLinkTools}>
+            <div class="ap-section-divider"></div>
+            <div class="ap-mint-section">
+                <div class="ap-mint-header">
+                    <span class="ap-section-title"
+                        >Create personalized link</span
+                    >
+                    <span class="ap-section-sub"
+                        >Mint encrypted c__rt link for a specific
+                        recipient</span
+                    >
+                </div>
+                <template lwc:if={canMintLink}>
+                    <div class="ap-mint-form">
+                        <lightning-input
+                            label="Record ID"
+                            value={linkRecordId}
+                            onchange={handleLinkRecordIdChange}
+                            placeholder="Record ID to associate with link"
+                        ></lightning-input>
+                        <div class="ap-checkbox-row">
+                            <lightning-input
+                                type="checkbox"
+                                label="Track invitation & responses"
+                                checked={linkTracked}
+                                onchange={handleLinkTrackedChange}
+                            ></lightning-input>
+                        </div>
+                        <template lwc:if={linkTracked}>
+                            <lightning-input
+                                label="Recipient Email / Identifier"
+                                value={linkRecipient}
+                                onchange={handleLinkRecipientChange}
+                                placeholder="Optional recipient address"
+                            ></lightning-input>
+                            <div class="ap-checkbox-row">
+                                <lightning-input
+                                    type="checkbox"
+                                    label="Single-use (burn after submission)"
+                                    checked={linkSingleUse}
+                                    onchange={handleLinkSingleUseChange}
+                                ></lightning-input>
+                            </div>
+                        </template>
+                        <div class="ap-mint-actions">
+                            <button
+                                type="button"
+                                class="ap-btn-primary ap-btn-sm"
+                                onclick={handleCreateLink}
+                                disabled={createLinkDisabled}
+                            >
+                                {createLinkLabel}
+                            </button>
+                            <button
+                                type="button"
+                                class="ap-btn-secondary ap-btn-sm"
+                                onclick={handleInvalidateLinks}
+                            >
+                                Invalidate all links
+                            </button>
+                        </div>
+                        <template lwc:if={linkError}>
+                            <p class="ap-error-inline">{linkError}</p>
+                        </template>
+                        <template lwc:if={linkNotice}>
+                            <p class="ap-notice-inline">{linkNotice}</p>
+                        </template>
+                        <template lwc:if={mintedLink}>
+                            <div class="ap-minted-result">
+                                <lightning-input
+                                    label="Generated Link Query"
+                                    value={mintedLink}
+                                    readonly
+                                ></lightning-input>
+                                <button
+                                    type="button"
+                                    class="ap-btn-secondary ap-btn-sm ap-copy-btn"
+                                    onclick={handleCopyLink}
+                                >
+                                    {copiedLinkText}
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+                <template lwc:else>
+                    <p class="ap-note">
+                        Publish this form to create personalized links. Links
+                        cannot be generated from unpublished draft rules.
+                    </p>
+                </template>
+            </div>
+        </template>
     </div>
 </template>

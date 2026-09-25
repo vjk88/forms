@@ -10,6 +10,16 @@
 export const POLICY_PRESERVE_EDITS = 'preserveEdits';
 export const POLICY_ALWAYS_REPLACE = 'alwaysReplace';
 
+import {
+    DOES_NOT_FIT,
+    extractDestinations,
+    fitValue
+} from 'c/finalAutofillFit';
+
+// The fitting rules live in c/finalAutofillFit, shared with the Studio's
+// rule dialog; re-exported here for the engine's own callers.
+export { DOES_NOT_FIT, extractDestinations, fitValue };
+
 /**
  * Computes a stable fingerprint string for an array of rules to detect
  * spec/rule changes that must invalidate pending requests.
@@ -63,7 +73,8 @@ export function createAutofillSession({
     specVersionId = null,
     rules = [],
     restoredSession = null,
-    initialDefaults = {}
+    initialDefaults = {},
+    destinations = {}
 } = {}) {
     const enabledRules = (rules || []).filter((r) => r && r.enabled);
     const fingerprint = computeRulesFingerprint(enabledRules);
@@ -73,6 +84,8 @@ export function createAutofillSession({
         specVersionId,
         rulesFingerprint: fingerprint,
         rules: enabledRules,
+        // destinations[elementId] = { answerType, options } — for fitValue
+        destinations: destinations || {},
         // editRevision[elementId] tracks every manual edit
         editRevision: { ...(restoredSession?.editRevision || {}) },
         // touched[elementId] is true if respondent manually interacted with the input
@@ -325,7 +338,11 @@ export function onResult(
             continue;
         }
 
-        const rawValue = fieldValues[sourceField];
+        const fitted = fitValue(
+            fieldValues[sourceField],
+            session.destinations?.[destId]
+        );
+        let rawValue = fitted;
 
         // Check if respondent edited the destination AFTER this request started
         const currentRev = session.editRevision[destId] || 0;
@@ -349,6 +366,21 @@ export function onResult(
             Object.prototype.hasOwnProperty.call(currentAnswers, destId) &&
             currentAnswers[destId] !== undefined &&
             currentAnswers[destId] !== null;
+
+        // A value its question can't take is never forced in, and never
+        // wipes what someone typed: it only clears an answer THIS rule put
+        // there and nobody has touched since (IMPL_PLAN_F2_AUTOFILL 6.7).
+        if (fitted === DOES_NOT_FIT) {
+            const ownUntouched =
+                currentOwner?.ruleId === rule.id &&
+                (session.editRevision[destId] || 0) ===
+                    (currentOwner.appliedAtRevision || 0);
+            if (ownUntouched) {
+                patch[destId] = null;
+                delete session.owner[destId];
+            }
+            continue;
+        }
 
         // Destination decision based on policy
         if (policy === POLICY_PRESERVE_EDITS) {
@@ -428,6 +460,7 @@ export function reconcileAutofillSession(session, nextSpec) {
 
     session.rules = nextRules;
     session.rulesFingerprint = nextFingerprint;
+    session.destinations = extractDestinations(nextSpec);
 
     // R10 — cancel bookkeeping for requests the edit just invalidated.
     // isRequestCurrent already REJECTS their late results, because the

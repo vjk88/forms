@@ -388,6 +388,7 @@
                             ontestpreview={handleTestPreview}
                             oncleartestpreview={handleClearTestPreview}
                             onopenmapping={handleOpenMapping}
+                            oneditautofillrule={handleEditAutofillRule}
                         ></c-final-field-palette>
                     </template>
                 </aside>
@@ -534,6 +535,28 @@
                 onsave={handleThemeSaved}
                 oncancel={handleEditorCancel}
             ></c-final-theme-editor>
+        </template>
+
+        <template lwc:if={autofillOpen}>
+            <c-final-studio-dialog
+                size="large"
+                label="Autofill rule"
+                confirm-label="Apply"
+                discard-text="Your changes to this rule haven’t been applied to the form yet."
+                dirty={autofillDirty}
+                onconfirm={handleAutofillApply}
+                ondismiss={handleAutofillDismiss}
+            >
+                <c-final-autofill-rule-editor
+                    slot="body"
+                    rule={autofillDraft}
+                    spec={spec}
+                    form-id={formId}
+                    is-public={isPublic}
+                    has-other-link-rule={autofillHasOtherLinkRule}
+                    onrulechange={handleAutofillDraft}
+                ></c-final-autofill-rule-editor>
+            </c-final-studio-dialog>
         </template>
 
         <template lwc:if={mappingOpen}>

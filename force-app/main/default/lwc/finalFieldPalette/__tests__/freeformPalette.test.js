@@ -91,14 +91,13 @@ describe('field palette per form type', () => {
         expect(labels(el)).toEqual([]);
     });
 
-    it('hides the Autofill tab for freeform only', () => {
+    it('offers Autofill on every type, and Mapping on Freeform', () => {
         expect(tabNames(mount({ formType: 'survey' }))).toContain('Autofill');
         expect(tabNames(mount({ formType: 'form' }))).toContain('Autofill');
-        // Autofill IS a Freeform feature, but its rules assume one object;
-        // the multi-object editor ships with F2 (D7).
-        expect(tabNames(mount({ formType: 'freeform' }))).not.toContain(
-            'Autofill'
-        );
+        // Freeform's rules edit in the Studio's dialog (IMPL_PLAN_F2_AUTOFILL)
+        const free = tabNames(mount({ formType: 'freeform' }));
+        expect(free).toContain('Autofill');
+        expect(free).toContain('Mapping');
     });
 
     it('emits the question type the studio mints from', () => {

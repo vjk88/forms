@@ -338,6 +338,32 @@ public with sharing class FinalAutofillValidator {
                             sourceObjectApi = (String) binding.get(
                                 'referenceTo'
                             );
+                        } else if (
+                            binding == null ||
+                            binding.get('field') == null
+                        ) {
+                            // A Freeform Record lookup question: unbound, its
+                            // object picked in the inspector. A BOUND lookup
+                            // never reads config.referenceTo (an authoring
+                            // copy); it keeps exactly today's checks.
+                            Object picked = cfg == null
+                                ? null
+                                : cfg.get('referenceTo');
+                            if (
+                                picked instanceof String &&
+                                String.isNotBlank((String) picked)
+                            ) {
+                                sourceObjectApi = (String) picked;
+                            } else {
+                                diagnostics.add(
+                                    new Diagnostic(
+                                        'AUTOFILL_LOOKUP_NO_OBJECT',
+                                        ruleId,
+                                        null,
+                                        'That lookup question has no object yet. Pick one in its settings.'
+                                    )
+                                );
+                            }
                         }
                         // A polymorphic lookup (Task "Related To") names ONE of
                         // its objects per rule, and the rule fires only when the
@@ -463,6 +489,9 @@ public with sharing class FinalAutofillValidator {
                 String fromField = (String) m.get('from');
                 String toElement = (String) m.get('to');
                 Boolean guestAllowed = m.get('guestAllowed') == true;
+                // What the source field is, once known, to pair it with the
+                // destination (FinalAutofillRules).
+                Schema.DisplayType fromType = null;
 
                 if (sourceType == 'lookup' && guestAllowed) {
                     diagnostics.add(
@@ -506,7 +535,8 @@ public with sharing class FinalAutofillValidator {
                             );
                         } else {
                             Schema.DescribeFieldResult fd = fld.getDescribe();
-                            if (!isSupportedSourceType(fd.getType())) {
+                            fromType = fd.getType();
+                            if (!FinalAutofillRules.isReadableSource(fd)) {
                                 diagnostics.add(
                                     new Diagnostic(
                                         'AUTOFILL_UNSUPPORTED_SOURCE_TYPE',
@@ -583,20 +613,37 @@ public with sharing class FinalAutofillValidator {
                             )
                         );
                     } else {
-                        String elType = (String) destEl.get('type');
-                        Map<String, Object> cfg = asMap(destEl.get('config'));
-                        String inputType = cfg != null
-                            ? (String) cfg.get('inputType')
-                            : null;
-                        if (!isCompatibleDestination(elType, inputType)) {
+                        String answerType = FinalAutofillRules.destinationAnswerType(
+                            destEl
+                        );
+                        if (answerType == null) {
                             diagnostics.add(
                                 new Diagnostic(
                                     'AUTOFILL_INCOMPATIBLE_DESTINATION',
                                     ruleId,
                                     mapId,
-                                    'Destination element ' +
-                                        toElement +
-                                        ' is not a compatible text/email/phone/url field.'
+                                    'Autofill can’t fill ' +
+                                        labelOfElement(destEl, toElement) +
+                                        '. It fills text, email, phone, link, number, date and single-choice answers.'
+                                )
+                            );
+                        } else if (
+                            fromType != null &&
+                            !FinalAutofillRules.fits(fromType, answerType)
+                        ) {
+                            diagnostics.add(
+                                new Diagnostic(
+                                    'AUTOFILL_TYPE_MISMATCH',
+                                    ruleId,
+                                    mapId,
+                                    fromField +
+                                        ' can’t fill ' +
+                                        labelOfElement(destEl, toElement) +
+                                        ': a ' +
+                                        String.valueOf(fromType).toLowerCase() +
+                                        ' field doesn’t fit a ' +
+                                        answerType.toLowerCase() +
+                                        ' answer.'
                                 )
                             );
                         }
@@ -705,29 +752,14 @@ public with sharing class FinalAutofillValidator {
         return a.substringBeforeLast(':') == b.substringBeforeLast(':');
     }
 
-    private static Boolean isSupportedSourceType(Schema.DisplayType type) {
-        return type == Schema.DisplayType.STRING ||
-            type == Schema.DisplayType.TEXTAREA ||
-            type == Schema.DisplayType.EMAIL ||
-            type == Schema.DisplayType.PHONE ||
-            type == Schema.DisplayType.URL;
-    }
-
-    private static Boolean isCompatibleDestination(
-        String elType,
-        String inputType
+    private static String labelOfElement(
+        Map<String, Object> el,
+        String fallback
     ) {
-        if (elType != 'field') {
-            return false;
-        }
-        if (String.isBlank(inputType)) {
-            return true; // standard text default
-        }
-        return inputType == 'text' ||
-            inputType == 'textarea' ||
-            inputType == 'email' ||
-            inputType == 'phone' ||
-            inputType == 'url';
+        Object label = el == null ? null : el.get('label');
+        return label instanceof String && String.isNotBlank((String) label)
+            ? '“' + (String) label + '”'
+            : fallback;
     }
 
     private static Map<String, Object> asMap(Object obj) {
