@@ -188,12 +188,46 @@
                             </button>
                             <button
                                 type="button"
-                                class="ap-btn-secondary ap-btn-sm"
+                                class="ap-btn-secondary ap-btn-sm ap-stop-trigger"
                                 onclick={handleInvalidateLinks}
                             >
-                                Invalidate all links
+                                Stop earlier links
                             </button>
                         </div>
+                        <template lwc:if={confirmingStop}>
+                            <div
+                                class="ap-stop-ask"
+                                role="alertdialog"
+                                aria-labelledby="ap-stop-title"
+                                aria-describedby="ap-stop-text"
+                                onkeydown={handleStopKeydown}
+                            >
+                                <p id="ap-stop-title" class="ap-stop-title">
+                                    Stop every link made so far?
+                                </p>
+                                <p id="ap-stop-text" class="ap-stop-text">
+                                    People who open an earlier link will no
+                                    longer see their answers filled in. Links
+                                    you make after this still work.
+                                </p>
+                                <div class="ap-stop-actions">
+                                    <button
+                                        type="button"
+                                        class="ap-btn-secondary ap-btn-sm ap-stop-cancel"
+                                        onclick={handleStopCancel}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="ap-btn-danger ap-btn-sm ap-stop-confirm"
+                                        onclick={handleStopConfirm}
+                                    >
+                                        Stop links
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
                         <template lwc:if={linkError}>
                             <p class="ap-error-inline">{linkError}</p>
                         </template>
