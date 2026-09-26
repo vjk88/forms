@@ -521,4 +521,60 @@ describe('c-final-autofill-panel', () => {
             ).not.toBeNull();
         });
     });
+
+    it('number and single-choice questions are fillable, not flagged (6.7)', async () => {
+        const spec = {
+            pages: [
+                {
+                    id: 'p1',
+                    sections: [
+                        {
+                            id: 's1',
+                            elements: [
+                                {
+                                    id: 'el_rev',
+                                    type: 'field',
+                                    label: 'Revenue',
+                                    config: { inputType: 'number' }
+                                },
+                                {
+                                    id: 'el_ind',
+                                    type: 'field',
+                                    label: 'Industry',
+                                    config: {
+                                        inputType: 'picklist',
+                                        renderAs: 'Dropdown'
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            settings: {
+                prefill: {
+                    rulesVersion: 1,
+                    autofillRules: [
+                        {
+                            id: 'af_1',
+                            enabled: true,
+                            source: { type: 'link', objectApiName: 'Account' },
+                            mappings: [
+                                { from: 'AnnualRevenue', to: 'el_rev' },
+                                { from: 'Industry', to: 'el_ind' },
+                                { from: 'Name', to: 'el_gone' }
+                            ]
+                        }
+                    ]
+                }
+            }
+        };
+        const el = mount({ spec, formType: 'freeform' });
+        await flush();
+        const errors = Array.from(
+            el.shadowRoot.querySelectorAll('.ap-card-errors')
+        ).map((e) => e.textContent);
+        expect(errors.join(' ')).not.toMatch(/Revenue|Industry|el_rev|el_ind/);
+        expect(errors.join(' ')).toMatch(/gone or can’t be filled/);
+    });
 });

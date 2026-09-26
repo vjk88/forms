@@ -460,6 +460,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         } else {
             this._prepareEditMode(this._editSpec);
+            // a new record means a new session: the signed-in person fills again
+            this._loadUserValues(this._applySeq, this._editSpec);
         }
     }
 
@@ -1138,9 +1140,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (!preview && !(formId && versionId)) {
             return;
         }
-        // Once per set of rules and version: a preview edit elsewhere
-        // doesn't ask again.
-        const key = JSON.stringify({ rules, versionId, preview });
+        // Once per session and rules contract: a new session (a record
+        // switch, edit mode) or a plan upgrade asks again; nothing else does.
+        const key = JSON.stringify({
+            sessionId: session.sessionId,
+            fingerprint: session.rulesFingerprint,
+            versionId,
+            preview
+        });
         if (key === this._userRulesKey) {
             return;
         }
@@ -1159,14 +1166,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             ? getUserPreviewValues({ specJson: JSON.stringify(spec || {}) })
             : getUserValues({ formId, versionId });
         call.then((byRule) => {
-            if (seq !== this._applySeq || !this.isConnected) {
-                return;
-            }
+            const stale = seq !== this._applySeq || !this.isConnected;
             for (const identity of identities) {
-                if (!isRequestCurrent(this._autofillSession, identity)) {
+                // a replaced request still gives back its timer and pending entry
+                this._finishUserRequest(identity);
+                if (
+                    stale ||
+                    !isRequestCurrent(this._autofillSession, identity)
+                ) {
                     continue;
                 }
-                this._finishUserRequest(identity);
                 // replies are keyed by question; the engine reads by source
                 const values = this._toSourceKeyed(
                     identity.ruleId,
@@ -1185,6 +1194,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         }).catch(() => {
             for (const identity of identities) {
+                this._finishUserRequest(identity);
                 if (isRequestCurrent(this._autofillSession, identity)) {
                     this._userRulesKey = null; // a later apply may retry
                     this._finishUserRequest(identity);
@@ -1200,8 +1210,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         const timerId = setTimeout(() => {
             this._finishUserRequest(identity);
-            this._handleAutofillTimeout(identity);
+            // never report on a request something newer replaced
+            if (isRequestCurrent(this._autofillSession, identity)) {
+                this._userRulesKey = null;
+                this._handleAutofillTimeout(identity);
+            }
         }, 10000);
+        for (const old of this.userAutofillPending) {
+            if (old.ruleId === identity.ruleId) {
+                this._clearAutofillTimeout(old.ruleId, old.generation);
+            }
+        }
         this._autofillTimers.set(reqKey, timerId);
         this.userAutofillPending = [
             ...this.userAutofillPending.filter(
@@ -1369,6 +1388,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // A restored or pre-selected lookup answer must fire without waiting for
         // a DOM change event (§6 initialization order).
         this._executeLookupRulesFromAnswers();
+        // the moved fingerprint made any signed-in request stale: ask again
+        this._loadUserValues(this._applySeq, this._editSpec);
     }
 
     /**
@@ -2765,6 +2786,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         }
         this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !gone.has(r.ruleId)
+        );
+        for (const req of this.userAutofillPending) {
+            if (gone.has(req.ruleId)) {
+                this._clearAutofillTimeout(req.ruleId, req.generation);
+            }
+        }
+        this.userAutofillPending = this.userAutofillPending.filter(
             (r) => !gone.has(r.ruleId)
         );
     }

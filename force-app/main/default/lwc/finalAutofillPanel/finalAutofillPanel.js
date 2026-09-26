@@ -6,6 +6,7 @@ import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLin
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import LightningConfirm from 'lightning/confirm';
+import { answerTypeOf } from 'c/finalAutofillFit';
 
 function mintId(prefix) {
     const bytes = new Uint8Array(8);
@@ -254,12 +255,8 @@ export default class FinalAutofillPanel extends LightningElement {
                 if (el.type !== 'field') return false;
                 if (el.inRepeater) return false;
                 if (el.readOnly) return false;
-                const inputType = (
-                    el.config?.inputType || 'text'
-                ).toLowerCase();
-                return ['text', 'textarea', 'email', 'phone', 'url'].includes(
-                    inputType
-                );
+                // the same list the runtime and the server fill (6.7)
+                return Boolean(answerTypeOf(el));
             })
             .map((el) => ({
                 label: `${el.label || el.id} [${el.config?.inputType || 'text'}]`,
@@ -405,7 +402,7 @@ export default class FinalAutofillPanel extends LightningElement {
                         errors.push('Mapping has no destination');
                     } else if (!destMap.has(m.to)) {
                         errors.push(
-                            `Destination ${m.to} missing or incompatible`
+                            'Fills a question that’s gone or can’t be filled'
                         );
                     }
                 });

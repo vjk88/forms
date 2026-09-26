@@ -373,4 +373,31 @@ describe('c-final-autofill-rule-editor', () => {
         ]);
         expect($(el, '.am-guest')).toBeNull();
     });
+
+    it('the signed-in person is tried on yourself, with no record id to paste', async () => {
+        getTestRecordValues.mockResolvedValue({ Name: 'Ada Lovelace' });
+        const { el } = mount({
+            rule: {
+                ...linkRule([
+                    {
+                        id: 'm1',
+                        from: 'Name',
+                        to: 'el_company',
+                        guestAllowed: false
+                    }
+                ]),
+                source: { type: 'user' }
+            },
+            formId: 'a0F1'
+        });
+        await flush();
+        expect($(el, '.am-test-id')).toBeNull();
+        $(el, '.am-test-me').click();
+        await flush();
+        const call = getTestRecordValues.mock.calls[0][0];
+        expect(call.objectApiName).toBe('User');
+        expect(call.recordId).toBeTruthy();
+        expect(call.fieldApiNames).toEqual(['Name']);
+        expect($(el, '.am-row-test').textContent).toBe('Fills: Ada Lovelace');
+    });
 });

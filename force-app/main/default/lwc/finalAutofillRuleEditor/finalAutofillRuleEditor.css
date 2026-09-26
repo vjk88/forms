@@ -33,6 +33,7 @@
 
 .am-segs {
     display: flex;
+    flex-wrap: wrap;
     gap: 0;
 }
 

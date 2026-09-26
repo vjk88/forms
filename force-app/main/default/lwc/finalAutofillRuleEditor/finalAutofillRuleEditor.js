@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import USER_ID from '@salesforce/user/Id';
 import fitsTable from '@salesforce/apex/FinalAutofillController.fitsTable';
 import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTestRecordValues';
 import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
@@ -604,7 +605,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     get testDisabled() {
         return (
             this.testBusy ||
-            ![15, 18].includes(this.testRecordId.length) ||
+            (!this.isUser && ![15, 18].includes(this.testRecordId.length)) ||
             !this.hasSourceObject ||
             !(this.draft?.mappings || []).some((m) => m.from)
         );
@@ -619,7 +620,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 (await getTestRecordValues({
                     formId: this.formId || null,
                     objectApiName: this.sourceObject,
-                    recordId: this.testRecordId,
+                    // the signed-in person: try it on yourself
+                    recordId: this.isUser ? USER_ID : this.testRecordId,
                     fieldApiNames: this.draft.mappings
                         .map((m) => m.from)
                         .filter(Boolean)
