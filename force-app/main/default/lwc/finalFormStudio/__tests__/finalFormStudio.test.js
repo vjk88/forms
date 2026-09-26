@@ -19,6 +19,7 @@ import getActionSummary from '@salesforce/apex/FinalFormActionsController.getAct
 import archiveForm from '@salesforce/apex/FinalFormActionsController.archiveForm';
 import deleteForm from '@salesforce/apex/FinalFormActionsController.deleteForm';
 import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm';
+import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
@@ -106,6 +107,11 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalStudioController.setGuestAccess',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalStudioController.invalidateLinks',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -1684,6 +1690,42 @@ describe('c-final-form-studio', () => {
             enabled: false
         });
         expect(panel.publicSaveText).toBe('✓ Access saved immediately');
+    });
+
+    it('stops earlier links without lightning/confirm (the panel asked inline)', async () => {
+        const surveySpec = JSON.parse(JSON.stringify(SPEC));
+        surveySpec.form.type = 'survey';
+        loadStudio.mockResolvedValue({
+            name: 'Event feedback',
+            specJson: JSON.stringify(surveySpec),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        invalidateLinks.mockResolvedValue({ ok: true });
+        LightningConfirm.open.mockReset();
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(4);
+
+        el.shadowRoot.querySelector('[data-id="settings-trigger"]').click();
+        await Promise.resolve();
+        [...el.shadowRoot.querySelectorAll('.st-settings-item')]
+            .find((item) => item.dataset.section === 'access')
+            .click();
+        await Promise.resolve();
+        const panel = el.shadowRoot.querySelector(
+            'c-final-studio-settings-panel'
+        );
+        panel.dispatchEvent(new CustomEvent('invalidatelinks'));
+        await micro(3);
+
+        expect(LightningConfirm.open).not.toHaveBeenCalled();
+        expect(invalidateLinks).toHaveBeenCalledWith({ formId: 'a0F1' });
+        expect(panel.linkNotice).toBe(
+            'Earlier links are stopped. Links you make from now on will work.'
+        );
+        expect(panel.linkBusy).toBe(false);
     });
 
     it('shows all wired actions and sends the live spec to Clone Apex', async () => {

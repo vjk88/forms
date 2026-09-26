@@ -6,7 +6,6 @@ import { LightningElement, api } from 'lwc';
  */
 export default class FinalRecordLinkPanel extends LightningElement {
     @api objectApi;
-    @api linkBusy;
     @api linkError;
     @api linkNotice;
 
@@ -22,7 +21,30 @@ export default class FinalRecordLinkPanel extends LightningElement {
         this._mintedLink = value;
     }
 
+    /**
+     * The Studio's busy flag. When a stop we asked for finishes, hand focus
+     * back to the button that started it.
+     */
+    @api
+    get linkBusy() {
+        return this._linkBusy;
+    }
+    set linkBusy(value) {
+        const wasBusy = this._linkBusy;
+        this._linkBusy = Boolean(value);
+        if (wasBusy && !this._linkBusy && this.stopRequested) {
+            this.stopRequested = false;
+            this._focusNext = '.rl-stop-trigger';
+        }
+    }
+
     _mintedLink;
+    _linkBusy = false;
+    /** The "Stop every link made so far?" question is showing. */
+    confirmingStop = false;
+    /** We asked the Studio to stop links and it has not finished yet. */
+    stopRequested = false;
+    _focusNext = null;
     recordId = '';
     tracked = false;
     recipient = '';
@@ -35,9 +57,28 @@ export default class FinalRecordLinkPanel extends LightningElement {
     }
 
     get createLabel() {
-        return this.linkBusy
+        return this.linkBusy && !this.stopRequested
             ? 'Creating invitation…'
             : 'Create invitation link';
+    }
+
+    get stopLabel() {
+        return this.linkBusy && this.stopRequested
+            ? 'Stopping…'
+            : 'Stop earlier links';
+    }
+
+    get stopExpanded() {
+        return this.confirmingStop ? 'true' : 'false';
+    }
+
+    /** Old results would sit beside the question; hide them while asking. */
+    get showError() {
+        return Boolean(this.linkError) && !this.confirmingStop;
+    }
+
+    get showNotice() {
+        return Boolean(this.linkNotice) && !this.confirmingStop;
     }
 
     get copyLabel() {
@@ -85,8 +126,45 @@ export default class FinalRecordLinkPanel extends LightningElement {
         );
     }
 
+    /**
+     * The question is asked inline, not with `lightning/confirm`: in the
+     * VF-hosted Studio that modal never settles after Cancel (same fix as
+     * c/finalAutofillPanel). The Studio still does the stopping.
+     */
     handleInvalidate() {
+        if (this.linkBusy) {
+            return;
+        }
+        this.confirmingStop = true;
+        // Land on the safe choice.
+        this._focusNext = '.rl-stop-cancel';
+    }
+
+    handleStopCancel() {
+        this.confirmingStop = false;
+        this._focusNext = '.rl-stop-trigger';
+    }
+
+    handleStopKeydown(event) {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            this.handleStopCancel();
+        }
+    }
+
+    handleStopConfirm() {
+        this.confirmingStop = false;
+        this.stopRequested = true;
+        this._focusNext = '.rl-stop-trigger';
         this.dispatchEvent(new CustomEvent('invalidatelinks'));
+    }
+
+    renderedCallback() {
+        if (this._focusNext) {
+            const target = this.template.querySelector(this._focusNext);
+            this._focusNext = null;
+            target?.focus();
+        }
     }
 
     handleManage() {

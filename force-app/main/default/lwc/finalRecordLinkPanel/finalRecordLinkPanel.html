@@ -67,7 +67,7 @@
             ></lightning-button>
         </div>
 
-        <template lwc:if={linkError}>
+        <template lwc:if={showError}>
             <p class="rl-message rl-message--error" role="alert">{linkError}</p>
         </template>
 
@@ -93,19 +93,56 @@
             </div>
         </template>
 
-        <template lwc:if={linkNotice}>
+        <template lwc:if={showNotice}>
             <p class="rl-message" role="status" aria-live="polite">
                 {linkNotice}
             </p>
         </template>
 
         <div class="rl-danger-row">
-            <lightning-button
-                variant="destructive-text"
-                label="Invalidate all invitation links"
+            <button
+                type="button"
+                class="rl-btn rl-btn-danger-text rl-stop-trigger"
                 disabled={linkBusy}
+                aria-expanded={stopExpanded}
                 onclick={handleInvalidate}
-            ></lightning-button>
+            >
+                {stopLabel}
+            </button>
+            <template lwc:if={confirmingStop}>
+                <div
+                    class="rl-stop-ask"
+                    role="alertdialog"
+                    aria-labelledby="rl-stop-title"
+                    aria-describedby="rl-stop-text"
+                    onkeydown={handleStopKeydown}
+                >
+                    <p id="rl-stop-title" class="rl-stop-title">
+                        Stop every link made so far?
+                    </p>
+                    <p id="rl-stop-text" class="rl-stop-text">
+                        People who open an earlier link will no longer see their
+                        answers filled in. Links you make after this still work.
+                        You can’t undo this.
+                    </p>
+                    <div class="rl-stop-actions">
+                        <button
+                            type="button"
+                            class="rl-btn rl-btn-secondary rl-stop-cancel"
+                            onclick={handleStopCancel}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            class="rl-btn rl-btn-danger rl-stop-confirm"
+                            onclick={handleStopConfirm}
+                        >
+                            Stop links
+                        </button>
+                    </div>
+                </div>
+            </template>
         </div>
     </section>
 </template>

@@ -1566,30 +1566,25 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         }
     }
 
+    // c/finalRecordLinkPanel has already asked "Stop every link made so
+    // far?" inline (lightning/confirm never settles after Cancel in the
+    // VF-hosted Studio), so this only does the stopping.
     async handleInvalidateLinks() {
         if (this.linkBusy) {
             return;
         }
-        const ok = await LightningConfirm.open({
-            message:
-                'Invalidate every record link already sent for this survey? ' +
-                'Links you create afterward will still work; ones already out ' +
-                'there will stop opening their record context.',
-            label: 'Invalidate all links'
-        });
-        if (!ok) {
-            return;
-        }
         this.linkBusy = true;
         this.linkError = '';
+        this.linkNotice = '';
         try {
             await invalidateLinks({ formId: this.formId });
             this.mintedLink = null;
             this.linkNotice =
-                'All record links already sent are now invalid. New links you create will still work.';
+                'Earlier links are stopped. Links you make from now on will work.';
         } catch (e) {
             this.linkError =
-                (e && e.body && e.body.message) || "Couldn't invalidate links.";
+                (e && e.body && e.body.message) ||
+                "Couldn't stop earlier links.";
         } finally {
             this.linkBusy = false;
         }
