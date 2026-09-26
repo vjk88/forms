@@ -301,7 +301,6 @@
     margin-top: 8px;
     padding: 10px 12px;
     border: 1px solid var(--c-studio-error-border);
-    border-left: 3px solid var(--c-studio-error);
     border-radius: 6px;
     background: var(--c-studio-error-surface);
 }
