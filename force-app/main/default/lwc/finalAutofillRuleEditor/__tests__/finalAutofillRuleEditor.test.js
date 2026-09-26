@@ -553,4 +553,51 @@ describe('c-final-autofill-rule-editor', () => {
             keyPrefix: '006'
         });
     });
+
+    it('a survey rule saved with another object is checked against the connected one', async () => {
+        const { el } = mount({
+            spec: {
+                ...SPEC,
+                form: { type: 'survey', primaryContextObject: 'Contact' }
+            },
+            // the Studio sets rule before form-type
+            rule: {
+                ...linkRule([{ id: 'm1', from: 'Nope__c', to: 'el_company' }]),
+                source: { type: 'link', objectApiName: 'Lead' }
+            },
+            formType: 'survey'
+        });
+        await flush();
+        await flush();
+        expect(el.reportProblems().map((p) => p.message)).toContain(
+            '1 row needs attention.'
+        );
+        await flush();
+        expect($(el, '.am-row-problem').textContent).toBe(
+            'That field isn’t on Contact.'
+        );
+    });
+
+    it('sums up what guests get, in one line', async () => {
+        const { el } = mount({
+            rule: linkRule([
+                {
+                    id: 'm1',
+                    from: 'Name',
+                    to: 'el_company',
+                    guestAllowed: true
+                },
+                {
+                    id: 'm2',
+                    from: 'AnnualRevenue',
+                    to: 'el_revenue',
+                    guestAllowed: false
+                }
+            ])
+        });
+        await flush();
+        expect($(el, '.am-guest-summary').textContent).toBe(
+            'People who aren’t signed in get: Company.'
+        );
+    });
 });

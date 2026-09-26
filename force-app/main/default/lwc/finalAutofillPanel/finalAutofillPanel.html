@@ -142,8 +142,7 @@
                         >Create personalized link</span
                     >
                     <span class="ap-section-sub"
-                        >Mint encrypted c__rt link for a specific
-                        recipient</span
+                        >Make a link that fills this form from one record</span
                     >
                 </div>
                 <template lwc:if={canMintLink}>
@@ -204,7 +203,7 @@
                         <template lwc:if={mintedLink}>
                             <div class="ap-minted-result">
                                 <lightning-input
-                                    label="Generated Link Query"
+                                    label="Link ending (add it to the form’s address)"
                                     value={mintedLink}
                                     readonly
                                 ></lightning-input>

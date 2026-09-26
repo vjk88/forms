@@ -155,7 +155,11 @@ export default class FinalAutofillPanel extends LightningElement {
             if (isUser) {
                 // the signed-in person always has a source record
             } else if (isLink && !linkObject) {
-                errors.push('Source object missing');
+                errors.push(
+                    this.formType === 'survey'
+                        ? 'Connect this survey to an object first'
+                        : 'Choose the object in the link'
+                );
             } else if (!isLink && !r.source?.elementId) {
                 errors.push('Lookup field missing');
             } else if (!isLink && !lookupMap.has(r.source?.elementId)) {
@@ -177,7 +181,9 @@ export default class FinalAutofillPanel extends LightningElement {
                         errors.push('Mapping has no destination');
                     } else if (!fillable.has(m.to)) {
                         errors.push(
-                            'Fills a question that’s gone or can’t be filled'
+                            this.formType === 'form'
+                                ? 'Fills a field that’s gone or can’t be filled'
+                                : 'Fills a question that’s gone or can’t be filled'
                         );
                     }
                 });

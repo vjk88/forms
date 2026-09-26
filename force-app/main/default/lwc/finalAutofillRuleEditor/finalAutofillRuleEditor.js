@@ -100,6 +100,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                     objectApiName: this.lockedLinkObject
                 }
             };
+            // the rows were typed against the saved object: type them again
+            this._typeRows();
         }
         // A new rule on a form that already has a link rule starts on a
         // lookup (the page may have set `rule` before `has-other-link-rule`).
@@ -189,7 +191,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                     !inRepeater &&
                     el.type === 'field' &&
                     (el.config?.inputType === 'reference' ||
-                        Boolean(el.binding?.referenceTo))
+                        Boolean(el.binding?.referenceTo) ||
+                        Boolean(el.config?.referenceTo))
             )
             .map(({ el }) => ({
                 id: el.id,
@@ -661,6 +664,20 @@ export default class FinalAutofillRuleEditor extends LightningElement {
 
     get showGuestColumn() {
         return this.isLink;
+    }
+
+    /** Every answer this rule gives people who aren't signed in. */
+    get guestSummary() {
+        if (!this.isLink) {
+            return '';
+        }
+        const byId = new Map(this.destinations.map((d) => [d.id, d.label]));
+        const names = (this.draft?.mappings || [])
+            .filter((m) => m.guestAllowed && m.from && m.to)
+            .map((m) => byId.get(m.to) || m.to);
+        return names.length
+            ? `People who aren’t signed in get: ${names.join(', ')}.`
+            : 'People who aren’t signed in get nothing from this rule.';
     }
 
     get guestNote() {
