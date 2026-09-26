@@ -1,78 +1,23 @@
-import { LightningElement, api, track } from 'lwc';
-import describeSourceFields from '@salesforce/apex/FinalAutofillController.describeSourceFields';
-import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
-import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTestRecordValues';
+import { LightningElement, api } from 'lwc';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import LightningConfirm from 'lightning/confirm';
 import { answerTypeOf } from 'c/finalAutofillFit';
 
-function mintId(prefix) {
-    const bytes = new Uint8Array(8);
-    crypto.getRandomValues(bytes);
-    let suffix = '';
-    for (const b of bytes) {
-        suffix += (b % 36).toString(36);
-    }
-    return `${prefix}_${suffix}`;
-}
-
+/**
+ * finalAutofillPanel — the Autofill rail: the list of rules, and the
+ * personalized-link tools while a link rule is on. Every rule edits in the
+ * Studio's dialog (c/finalAutofillRuleEditor), for every form type
+ * (IMPL_PLAN_F2_AUTOFILL 8); this panel only asks for it.
+ */
 export default class FinalAutofillPanel extends LightningElement {
     @api spec;
     @api formId;
     @api isPublic = false;
-    /** 'form' | 'survey' | 'freeform'. The palette always passed this;
-     *  the panel used to declare an isSurvey nobody set. */
+    /** 'form' | 'survey' | 'freeform'. */
     @api formType;
-
-    get isSurvey() {
-        return this.formType === 'survey';
-    }
-
-    /**
-     * Freeform edits a rule in the Studio's large dialog (IMPL_PLAN_F2_AUTOFILL
-     * 6.1); Form and Survey keep this in-rail editor until slice D.
-     */
-    get usesDialog() {
-        return this.formType === 'freeform';
-    }
-
-    /** A link rule is on: its links can be made here, under the list. */
-    get hasEnabledLinkRule() {
-        return this.rules.some((r) => r.enabled && r.source?.type === 'link');
-    }
-
-    /** Where the link tools show: in the rule editor, or (Freeform) the list. */
-    get showLinkTools() {
-        return this.usesDialog
-            ? !this.isEditing && this.hasEnabledLinkRule
-            : this.isEditing && this.isSourceLink;
-    }
     @api activeVersionId = null;
-
-    @api
-    get testRecordId() {
-        return this.activeTestRecordId;
-    }
-    set testRecordId(value) {
-        this.activeTestRecordId = value || null;
-    }
-
-    @track draftRule = null;
-    isEditing = false;
-
-    // Source fields state
-    sourceFields = [];
-    loadingSourceFields = false;
-    sourceFieldsError = '';
-    _lastFetchedObject = null;
-
-    // Test in preview state
-    testRecordInput = '';
-    testBusy = false;
-    testError = '';
-    activeTestRecordId = null;
 
     // Link minting state
     linkRecordId = '';
@@ -97,62 +42,9 @@ export default class FinalAutofillPanel extends LightningElement {
         return this.rules.filter((r) => r.enabled).length >= 20;
     }
 
-    get isList() {
-        return !this.isEditing;
-    }
-
-    get hasActiveTestData() {
-        return Boolean(this.activeTestRecordId);
-    }
-
-    get policyOptions() {
-        return [
-            {
-                label: 'Preserve respondent edits (default)',
-                value: 'preserveEdits'
-            },
-            {
-                label: 'Always replace when the source changes',
-                value: 'alwaysReplace'
-            }
-        ];
-    }
-
-    /** A survey's link reads its connected object; '' when not connected. */
-    get surveySourceObject() {
-        return (
-            this.spec?.form?.primaryContextObject ||
-            this.spec?.form?.targetObject ||
-            ''
-        );
-    }
-
-    get surveyNotConnected() {
-        return this.isSurvey && !this.surveySourceObject;
-    }
-
-    get isSourceLink() {
-        return this.draftRule?.source?.type === 'link';
-    }
-
-    get isSourceLookup() {
-        return this.draftRule?.source?.type === 'lookup';
-    }
-
-    get isAlwaysReplace() {
-        return this.draftRule?.policy === 'alwaysReplace';
-    }
-
-    get isSourceLinkAndPublic() {
-        return this.isSourceLink && Boolean(this.isPublic);
-    }
-
-    get linkSourceClass() {
-        return this.isSourceLink ? 'ap-radio-btn on' : 'ap-radio-btn';
-    }
-
-    get lookupSourceClass() {
-        return this.isSourceLookup ? 'ap-radio-btn on' : 'ap-radio-btn';
+    /** A link rule is on: its links can be made here, under the list. */
+    get hasEnabledLinkRule() {
+        return this.rules.some((r) => r.enabled && r.source?.type === 'link');
     }
 
     get formElements() {
@@ -197,140 +89,19 @@ export default class FinalAutofillPanel extends LightningElement {
             });
     }
 
-    get hasLookupElements() {
-        return this.lookupElements.length > 0;
-    }
-
-    get lookupOptions() {
-        return this.lookupElements.map((l) => ({
-            label: l.label,
-            value: l.value
-        }));
-    }
-
-    referenceTargets = [];
-    referenceTargetsError = '';
-    _referenceTargetsFor = null;
-
-    get selectedLookup() {
-        if (!this.draftRule?.source?.elementId) return null;
-        return (
-            this.lookupElements.find(
-                (l) => l.value === this.draftRule.source.elementId
-            ) || null
+    /** What Autofill can fill: the same list the runtime and server use (6.7). */
+    get fillableIds() {
+        return new Set(
+            this.formElements
+                .filter(
+                    (el) => !el.inRepeater && !el.readOnly && answerTypeOf(el)
+                )
+                .map((el) => el.id)
         );
-    }
-
-    /** A polymorphic lookup needs the author to name the ONE object this rule
-     *  reads; the rule fills answers only when the chosen record is that
-     *  object. Owner ruling 2026-09-13. */
-    get isPolymorphicLookupSource() {
-        return Boolean(this.isSourceLookup && this.selectedLookup?.polymorphic);
-    }
-
-    get lookupTargetObject() {
-        const found = this.selectedLookup;
-        if (!found) return '';
-        return found.polymorphic
-            ? this.draftRule?.source?.objectApiName || ''
-            : found.objectApiName;
-    }
-
-    get showSingleTargetHint() {
-        return (
-            Boolean(this.lookupTargetObject) && !this.isPolymorphicLookupSource
-        );
-    }
-
-    get polymorphicTargetOptions() {
-        return (this.referenceTargets || []).map((t) => ({
-            label: t.label,
-            value: t.value
-        }));
-    }
-
-    get destinationOptions() {
-        return this.formElements
-            .filter((el) => {
-                if (el.type !== 'field') return false;
-                if (el.inRepeater) return false;
-                if (el.readOnly) return false;
-                // the same list the runtime and the server fill (6.7)
-                return Boolean(answerTypeOf(el));
-            })
-            .map((el) => ({
-                label: `${el.label || el.id} [${el.config?.inputType || 'text'}]`,
-                value: el.id
-            }));
-    }
-
-    get currentSourceObject() {
-        if (this.isSourceLink) {
-            return this.isSurvey
-                ? this.surveySourceObject
-                : this.draftRule?.source?.objectApiName;
-        }
-        if (this.isSourceLookup) {
-            return this.lookupTargetObject;
-        }
-        return null;
-    }
-
-    get sourceFieldsUnavailable() {
-        return (
-            !this.currentSourceObject ||
-            this.loadingSourceFields ||
-            Boolean(this.sourceFieldsError)
-        );
-    }
-
-    get sourceFieldOptions() {
-        return (this.sourceFields || []).map((f) => ({
-            label: `${f.label} (${f.apiName})`,
-            value: f.apiName
-        }));
-    }
-
-    get draftMappings() {
-        return this.draftRule?.mappings || [];
-    }
-
-    get hasMappings() {
-        return this.draftMappings.length > 0;
-    }
-
-    get disclosedFieldLabels() {
-        const map = new Map(
-            (this.sourceFields || []).map((f) => [f.apiName, f.label])
-        );
-        return (this.draftMappings || [])
-            .filter((m) => m.guestAllowed && m.from)
-            .map((m) => map.get(m.from) || m.from);
-    }
-
-    get hasDisclosedFields() {
-        return this.disclosedFieldLabels.length > 0;
-    }
-
-    get testApplyDisabled() {
-        const id = (this.testRecordInput || '').trim();
-        return (
-            this.testBusy ||
-            ![15, 18].includes(id.length) ||
-            !this.hasMappings ||
-            !this.currentSourceObject
-        );
-    }
-
-    get testButtonLabel() {
-        return this.testBusy ? 'Loading…' : 'Apply to preview';
     }
 
     get canMintLink() {
-        return Boolean(
-            this.activeVersionId &&
-            (this.usesDialog ? this.hasEnabledLinkRule : this.isSourceLink)
-        );
+        return Boolean(this.activeVersionId && this.hasEnabledLinkRule);
     }
 
     get createLinkDisabled() {
@@ -353,18 +124,22 @@ export default class FinalAutofillPanel extends LightningElement {
         const polymorphicIds = new Set(
             this.lookupElements.filter((l) => l.polymorphic).map((l) => l.value)
         );
-        const destMap = new Map(
-            this.destinationOptions.map((d) => [d.value, d.label])
-        );
+        const fillable = this.fillableIds;
 
         return (this.rules || []).map((r) => {
             const isLink = r.source?.type === 'link';
             const isUser = r.source?.type === 'user';
+            // a survey's link always carries its connected record
+            const linkObject =
+                this.formType === 'survey'
+                    ? this.spec?.form?.primaryContextObject ||
+                      this.spec?.form?.targetObject
+                    : r.source?.objectApiName;
             let sourceBadge;
             if (isUser) {
                 sourceBadge = 'Signed-in person';
             } else if (isLink) {
-                sourceBadge = `Link: ${r.source?.objectApiName || 'Unconfigured'}`;
+                sourceBadge = `Link: ${linkObject || 'Unconfigured'}`;
             } else {
                 sourceBadge = `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}${r.source?.objectApiName ? ` · ${r.source.objectApiName}` : ''}`;
             }
@@ -379,7 +154,7 @@ export default class FinalAutofillPanel extends LightningElement {
             const errors = [];
             if (isUser) {
                 // the signed-in person always has a source record
-            } else if (isLink && !r.source?.objectApiName) {
+            } else if (isLink && !linkObject) {
                 errors.push('Source object missing');
             } else if (!isLink && !r.source?.elementId) {
                 errors.push('Lookup field missing');
@@ -400,7 +175,7 @@ export default class FinalAutofillPanel extends LightningElement {
                     if (!m.from) errors.push('Mapping has no source field');
                     if (!m.to) {
                         errors.push('Mapping has no destination');
-                    } else if (!destMap.has(m.to)) {
+                    } else if (!fillable.has(m.to)) {
                         errors.push(
                             'Fills a question that’s gone or can’t be filled'
                         );
@@ -422,15 +197,9 @@ export default class FinalAutofillPanel extends LightningElement {
         });
     }
 
-    _lookupName(elementId) {
-        if (!elementId) return 'Unconfigured';
-        const found = this.lookupElements.find((l) => l.value === elementId);
-        return found ? found.label : elementId;
-    }
+    // ----- Rules -----
 
-    // ----- Rule Navigation & Editor Lifecycle -----
-
-    /** Freeform: the Studio opens the rule in its dialog. */
+    /** The Studio opens the rule in its dialog; null means a new rule. */
     _openInDialog(rule) {
         this.dispatchEvent(
             new CustomEvent('editautofillrule', {
@@ -442,93 +211,15 @@ export default class FinalAutofillPanel extends LightningElement {
     }
 
     handleCreateRule() {
-        if (this.usesDialog) {
-            this._openInDialog(null);
-            return;
-        }
-        const defaultObject = this.isSurvey ? this.surveySourceObject : '';
-        this.draftRule = {
-            id: mintId('af'),
-            name: 'New Autofill Rule',
-            enabled: true,
-            policy: 'preserveEdits',
-            source: {
-                type: 'link',
-                objectApiName: defaultObject
-            },
-            mappings: []
-        };
-        this.isEditing = true;
-        this.sourceFields = [];
-        this.sourceFieldsError = '';
-        this._lastFetchedObject = null;
-        if (defaultObject) {
-            this._fetchSourceFields(defaultObject);
-        }
+        this._openInDialog(null);
     }
 
     handleEditRule(event) {
         const ruleId = event.currentTarget.dataset.id;
-        const rule = (this.rules || []).find((r) => r.id === ruleId);
-        if (!rule) return;
-        if (this.usesDialog) {
+        const rule = this.rules.find((r) => r.id === ruleId);
+        if (rule) {
             this._openInDialog(rule);
-            return;
         }
-
-        this.draftRule = JSON.parse(JSON.stringify(rule));
-        // A survey's link reads its connected object, whatever an older rule
-        // saved: the control that could change it is (rightly) locked.
-        if (
-            this.isSurvey &&
-            this.draftRule.source?.type === 'link' &&
-            this.surveySourceObject
-        ) {
-            this.draftRule.source.objectApiName = this.surveySourceObject;
-        }
-        if (!this.draftRule.mappings) this.draftRule.mappings = [];
-        if (!this.draftRule.policy) this.draftRule.policy = 'preserveEdits';
-        if (!this.draftRule.source) this.draftRule.source = { type: 'link' };
-
-        this.isEditing = true;
-        this.sourceFields = [];
-        this.sourceFieldsError = '';
-        this._lastFetchedObject = null;
-
-        const obj = this.currentSourceObject;
-        if (obj) {
-            this._fetchSourceFields(obj);
-        }
-        if (this.isPolymorphicLookupSource) {
-            this._loadReferenceTargets(this.selectedLookup);
-        }
-    }
-
-    handleBackToList() {
-        this.isEditing = false;
-        this.draftRule = null;
-    }
-
-    handleCancelEdit() {
-        this.isEditing = false;
-        this.draftRule = null;
-    }
-
-    handleSaveRule() {
-        if (!this.draftRule) return;
-
-        const updatedRules = JSON.parse(JSON.stringify(this.rules));
-        const idx = updatedRules.findIndex((r) => r.id === this.draftRule.id);
-
-        if (idx >= 0) {
-            updatedRules[idx] = this.draftRule;
-        } else {
-            updatedRules.push(this.draftRule);
-        }
-
-        this._commitRules(updatedRules);
-        this.isEditing = false;
-        this.draftRule = null;
     }
 
     handleToggleRule(event) {
@@ -567,267 +258,6 @@ export default class FinalAutofillPanel extends LightningElement {
                 bubbles: true,
                 composed: true,
                 detail: { spec: nextSpec }
-            })
-        );
-    }
-
-    // ----- Rule Field Handlers -----
-
-    handleNameChange(event) {
-        if (!this.draftRule) return;
-        this.draftRule.name = event.target.value;
-    }
-
-    handleSourceTypeSelect(event) {
-        const type = event.currentTarget.dataset.type;
-        if (!this.draftRule || this.draftRule.source?.type === type) return;
-
-        this.draftRule.source.type = type;
-        if (type === 'link') {
-            delete this.draftRule.source.elementId;
-            delete this.draftRule.source.keyPrefix;
-            this.draftRule.source.objectApiName = this.isSurvey
-                ? this.surveySourceObject
-                : '';
-            // Reset mappings guestAllowed if needed
-        } else if (type === 'lookup') {
-            delete this.draftRule.source.objectApiName;
-            delete this.draftRule.source.keyPrefix;
-            this.draftRule.source.elementId =
-                this.lookupElements[0]?.value || '';
-            // Lookup mappings cannot be guest allowed
-            (this.draftRule.mappings || []).forEach((m) => {
-                m.guestAllowed = false;
-            });
-        }
-
-        const obj = this.currentSourceObject;
-        if (obj) {
-            this._fetchSourceFields(obj);
-        } else {
-            this.sourceFields = [];
-        }
-        if (this.isPolymorphicLookupSource) {
-            this._loadReferenceTargets(this.selectedLookup);
-        }
-    }
-
-    handleSourceObjectChange(event) {
-        if (!this.draftRule || !this.isSourceLink) return;
-        const obj = event.target.value ? event.target.value.trim() : '';
-        this.draftRule.source.objectApiName = obj;
-        if (obj) {
-            this._fetchSourceFields(obj);
-        } else {
-            this.sourceFields = [];
-        }
-    }
-
-    handleLookupElementChange(event) {
-        if (!this.draftRule || !this.isSourceLookup) return;
-        this.draftRule.source.elementId = event.target.value;
-        // A different lookup means a different set of possible objects.
-        delete this.draftRule.source.objectApiName;
-        delete this.draftRule.source.keyPrefix;
-        this._lastFetchedObject = null;
-        if (this.isPolymorphicLookupSource) {
-            this.sourceFields = [];
-            this._loadReferenceTargets(this.selectedLookup);
-            return;
-        }
-        const obj = this.lookupTargetObject;
-        if (obj) {
-            this._fetchSourceFields(obj);
-        } else {
-            this.sourceFields = [];
-        }
-    }
-
-    handlePolymorphicObjectChange(event) {
-        if (!this.draftRule || !this.isPolymorphicLookupSource) return;
-        const value = event.detail ? event.detail.value : event.target.value;
-        const target = (this.referenceTargets || []).find(
-            (t) => t.value === value
-        );
-        this.draftRule.source.objectApiName = value || '';
-        // Every record id of this object starts with it; the runtime compares
-        // the chosen record against it so the rule never reads another object.
-        if (target && target.keyPrefix) {
-            this.draftRule.source.keyPrefix = target.keyPrefix;
-        } else {
-            delete this.draftRule.source.keyPrefix;
-        }
-        if (value) {
-            this._fetchSourceFields(value);
-        } else {
-            this.sourceFields = [];
-        }
-    }
-
-    async _loadReferenceTargets(lookup) {
-        const binding = lookup?.element?.binding;
-        const objectApiName = binding?.object;
-        const fieldApiName = binding?.field;
-        if (!objectApiName || !fieldApiName) {
-            this.referenceTargets = [];
-            this.referenceTargetsError =
-                'This lookup is not bound to a field, so its objects cannot be listed.';
-            return;
-        }
-        const key = `${objectApiName}.${fieldApiName}`;
-        if (this._referenceTargetsFor === key) return;
-        this._referenceTargetsFor = key;
-        this.referenceTargetsError = '';
-        try {
-            this.referenceTargets =
-                (await describeReferenceTargets({
-                    objectApiName,
-                    fieldApiName
-                })) || [];
-        } catch (e) {
-            this.referenceTargets = [];
-            this._referenceTargetsFor = null;
-            this.referenceTargetsError =
-                e?.body?.message ||
-                'Could not list the objects this lookup can point at.';
-        }
-    }
-
-    handlePolicyChange(event) {
-        if (!this.draftRule) return;
-        this.draftRule.policy = event.target.value;
-    }
-
-    handleGoToFields() {
-        this.dispatchEvent(
-            new CustomEvent('navigatetab', {
-                bubbles: true,
-                composed: true,
-                detail: { tab: 'fields' }
-            })
-        );
-    }
-
-    async _fetchSourceFields(objectApiName) {
-        if (!objectApiName || objectApiName === this._lastFetchedObject) return;
-        this._lastFetchedObject = objectApiName;
-        this.loadingSourceFields = true;
-        this.sourceFieldsError = '';
-        try {
-            const fields = await describeSourceFields({
-                formId: this.formId || null,
-                objectApiName
-            });
-            this.sourceFields = fields || [];
-        } catch (e) {
-            this.sourceFields = [];
-            this.sourceFieldsError =
-                e?.body?.message ||
-                `Could not load fields for ${objectApiName}.`;
-        } finally {
-            this.loadingSourceFields = false;
-        }
-    }
-
-    // ----- Mappings Table Handlers -----
-
-    handleAddMapping() {
-        if (!this.draftRule) return;
-        if (!this.draftRule.mappings) this.draftRule.mappings = [];
-        this.draftRule.mappings.push({
-            id: mintId('afm'),
-            from: this.sourceFieldOptions[0]?.value || '',
-            to: this.destinationOptions[0]?.value || '',
-            guestAllowed: false
-        });
-    }
-
-    handleRemoveMapping(event) {
-        const idx = Number(event.currentTarget.dataset.index);
-        if (isNaN(idx) || !this.draftRule?.mappings) return;
-        this.draftRule.mappings.splice(idx, 1);
-    }
-
-    handleMappingFromChange(event) {
-        const idx = Number(event.currentTarget.dataset.index);
-        if (isNaN(idx) || !this.draftRule?.mappings?.[idx]) return;
-        this.draftRule.mappings[idx].from = event.target.value;
-    }
-
-    handleMappingToChange(event) {
-        const idx = Number(event.currentTarget.dataset.index);
-        if (isNaN(idx) || !this.draftRule?.mappings?.[idx]) return;
-        this.draftRule.mappings[idx].to = event.target.value;
-    }
-
-    handleGuestAllowedChange(event) {
-        const idx = Number(event.currentTarget.dataset.index);
-        if (isNaN(idx) || !this.draftRule?.mappings?.[idx]) return;
-        this.draftRule.mappings[idx].guestAllowed = event.target.checked;
-    }
-
-    // ----- Test in Preview Handlers -----
-
-    handleTestRecordInputChange(event) {
-        this.testRecordInput = event.target.value;
-        this.testError = '';
-    }
-
-    async handleApplyTestRecord() {
-        const recordId = (this.testRecordInput || '').trim();
-        if (![15, 18].includes(recordId.length) || !this.currentSourceObject) {
-            return;
-        }
-
-        this.testBusy = true;
-        this.testError = '';
-        try {
-            const fieldNames = (this.draftMappings || [])
-                .map((m) => m.from)
-                .filter(Boolean);
-
-            const vals = await getTestRecordValues({
-                formId: this.formId || null,
-                objectApiName: this.currentSourceObject,
-                recordId,
-                fieldApiNames: fieldNames
-            });
-
-            const elementValues = {};
-            (this.draftMappings || []).forEach((m) => {
-                if (m.from && m.to && vals[m.from] !== undefined) {
-                    elementValues[m.to] = vals[m.from];
-                }
-            });
-
-            this.activeTestRecordId = recordId;
-            this.dispatchEvent(
-                new CustomEvent('testpreview', {
-                    bubbles: true,
-                    composed: true,
-                    detail: {
-                        recordId,
-                        ruleId: this.draftRule?.id,
-                        values: elementValues
-                    }
-                })
-            );
-        } catch (e) {
-            this.testError =
-                e?.body?.message || 'Could not load test record values.';
-        } finally {
-            this.testBusy = false;
-        }
-    }
-
-    handleClearTestData() {
-        this.activeTestRecordId = null;
-        this.testRecordInput = '';
-        this.testError = '';
-        this.dispatchEvent(
-            new CustomEvent('cleartestpreview', {
-                bubbles: true,
-                composed: true
             })
         );
     }

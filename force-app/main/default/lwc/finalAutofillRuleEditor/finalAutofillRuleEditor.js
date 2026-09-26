@@ -45,6 +45,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     @api isPublic = false;
     /** Another enabled link rule exists: a link carries one record (D67). */
     @api hasOtherLinkRule = false;
+    /** 'form' | 'survey' | 'freeform' (IMPL_PLAN_F2_AUTOFILL 8). */
+    @api formType;
 
     draft = null;
     fits = {};
@@ -84,6 +86,21 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     }
 
     connectedCallback() {
+        // A survey's link reads its connected object, whatever an older rule
+        // saved. Silent: correcting it isn't an edit the author made.
+        if (
+            this.isLink &&
+            this.lockedLinkObject &&
+            this.draft.source.objectApiName !== this.lockedLinkObject
+        ) {
+            this.draft = {
+                ...this.draft,
+                source: {
+                    ...this.draft.source,
+                    objectApiName: this.lockedLinkObject
+                }
+            };
+        }
         // A new rule on a form that already has a link rule starts on a
         // lookup (the page may have set `rule` before `has-other-link-rule`).
         if (
@@ -171,7 +188,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 ({ el, inRepeater }) =>
                     !inRepeater &&
                     el.type === 'field' &&
-                    el.config?.inputType === 'reference'
+                    (el.config?.inputType === 'reference' ||
+                        Boolean(el.binding?.referenceTo))
             )
             .map(({ el }) => ({
                 id: el.id,
@@ -184,6 +202,59 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 polymorphic: Boolean(el.config?.polymorphic),
                 binding: el.binding || null
             }));
+    }
+
+    // ---- the form type ----
+
+    get isForm() {
+        return this.formType === 'form';
+    }
+
+    get isSurvey() {
+        return this.formType === 'survey';
+    }
+
+    /** A Form fills fields; Surveys and Freeform fill questions. */
+    get answerNoun() {
+        return this.isForm ? 'field' : 'question';
+    }
+
+    get choosePlaceholder() {
+        return `Choose a ${this.answerNoun}`;
+    }
+
+    get lookupLabel() {
+        return `Lookup ${this.answerNoun}`;
+    }
+
+    get noLookupsHint() {
+        return this.isForm
+            ? 'Add a lookup field to the form first.'
+            : 'Add a Record lookup question to the form first.';
+    }
+
+    /** A survey's link always carries its connected record ('' if none). */
+    get lockedLinkObject() {
+        if (!this.isSurvey) {
+            return null;
+        }
+        return (
+            this.spec?.form?.primaryContextObject ||
+            this.spec?.form?.targetObject ||
+            ''
+        );
+    }
+
+    get isLinkLocked() {
+        return this.lockedLinkObject !== null;
+    }
+
+    get lockedLinkText() {
+        return `Object in the link: ${this.lockedLinkObject}, the object this survey is connected to.`;
+    }
+
+    get surveyNotConnected() {
+        return this.isSurvey && !this.lockedLinkObject;
     }
 
     // ---- the source ----
@@ -274,6 +345,9 @@ export default class FinalAutofillRuleEditor extends LightningElement {
             return 'User';
         }
         if (this.isLink) {
+            if (this.isLinkLocked) {
+                return this.lockedLinkObject;
+            }
             return this.draft.source.objectApiName || '';
         }
         const lookup = this.selectedLookup;
@@ -292,7 +366,10 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     handleLink() {
         if (this.isLink || this.linkDisabled) return;
         this._update((r) => {
-            r.source = { type: 'link', objectApiName: '' };
+            r.source = {
+                type: 'link',
+                objectApiName: this.lockedLinkObject || ''
+            };
             this._clearRows(r);
         });
         this._afterSourceChange();
@@ -459,7 +536,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
             } else if (!m.to) {
                 problem = 'Choose what it fills.';
             } else if (!current) {
-                problem = 'That question is no longer on the form.';
+                problem = `That ${this.answerNoun} is no longer on the form.`;
             } else if (fitting && !fitting.includes(current.answerType)) {
                 problem = `This field can’t fill a ${ANSWER_WORDS[current.answerType]} answer.`;
             }
@@ -650,11 +727,15 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                     'Turn off the other link rule first, or turn this one off. A link carries one record.'
             });
         }
-        if (this.isLink && !this.draft.source.objectApiName) {
+        if (this.isLink && this.surveyNotConnected) {
+            out.push({
+                message: 'Connect this survey to an object first.'
+            });
+        } else if (this.isLink && !this.sourceObject) {
             out.push({ message: 'Choose the object in the link.' });
         }
         if (this.isLookup && !this.selectedLookup) {
-            out.push({ message: 'Choose the lookup question.' });
+            out.push({ message: `Choose the lookup ${this.answerNoun}.` });
         } else if (this.isLookup && !this.sourceObject) {
             out.push({
                 message: this.isPolymorphicLookup

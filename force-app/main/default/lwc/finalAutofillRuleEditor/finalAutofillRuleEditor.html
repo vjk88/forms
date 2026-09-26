@@ -56,13 +56,26 @@
             </template>
 
             <template lwc:if={isLink}>
-                <c-final-object-picker
-                    class="am-object"
-                    label="Object in the link"
-                    objects={objects}
-                    value={draft.source.objectApiName}
-                    onpick={handleObjectPick}
-                ></c-final-object-picker>
+                <template lwc:if={isLinkLocked}>
+                    <template lwc:if={surveyNotConnected}>
+                        <p class="am-hint am-locked">
+                            Connect this survey to an object first: a survey
+                            link carries its connected record.
+                        </p>
+                    </template>
+                    <template lwc:else>
+                        <p class="am-hint am-locked">{lockedLinkText}</p>
+                    </template>
+                </template>
+                <template lwc:else>
+                    <c-final-object-picker
+                        class="am-object"
+                        label="Object in the link"
+                        objects={objects}
+                        value={draft.source.objectApiName}
+                        onpick={handleObjectPick}
+                    ></c-final-object-picker>
+                </template>
             </template>
             <template lwc:if={isUser}>
                 <p class="am-hint">
@@ -75,7 +88,7 @@
                 <template lwc:if={hasLookups}>
                     <lightning-combobox
                         class="am-lookup"
-                        label="Lookup question"
+                        label={lookupLabel}
                         options={lookupOptions}
                         value={draft.source.elementId}
                         onchange={handleLookupPick}
@@ -95,9 +108,7 @@
                     </p>
                 </template>
                 <template lwc:else>
-                    <p class="am-hint">
-                        Add a Record lookup question to the form first.
-                    </p>
+                    <p class="am-hint">{noLookupsHint}</p>
                 </template>
             </template>
         </section>
@@ -131,7 +142,7 @@
                             <lightning-combobox
                                 label={r.toLabel}
                                 variant="label-hidden"
-                                placeholder="Choose a question"
+                                placeholder={choosePlaceholder}
                                 options={r.options}
                                 value={r.to}
                                 data-index={r.index}

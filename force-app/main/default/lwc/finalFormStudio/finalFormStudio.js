@@ -605,28 +605,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     previewSession;
-    testRecordContext = null;
 
     handlePreviewSessionConsumed() {
         this.previewSession = undefined;
-    }
-
-    handleTestPreview(event) {
-        const detail = event.detail || {};
-        if (detail.ruleId && detail.values) {
-            this.testRecordContext = {
-                autofill: [
-                    {
-                        ruleId: detail.ruleId,
-                        values: detail.values
-                    }
-                ]
-            };
-        }
-    }
-
-    handleClearTestPreview() {
-        this.testRecordContext = null;
     }
 
     capturePreviewSession() {
@@ -1994,15 +1975,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     get isFreeform() {
         return this.formType === FREEFORM;
-    }
-
-    /**
-     * Freeform hides the Autofill tab in F1 (D6/D7). Autofill IS a Freeform
-     * feature, but its rules assume the form has exactly ONE object, and a
-     * Freeform has none - the multi-object rule editor ships with F2.
-     */
-    get showAutofillTab() {
-        return !this.isFreeform;
     }
 
     /** Question defaults (SURVEY_PLAN §2.2): analytics scale bounds ship

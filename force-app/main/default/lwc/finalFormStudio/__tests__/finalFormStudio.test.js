@@ -728,7 +728,7 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
-    it('Autofill in Build mode: palette specchange records history and autosaves; testpreview relays to preview stage', async () => {
+    it('Autofill in Build mode: palette specchange records history and autosaves', async () => {
         jest.useFakeTimers();
         const el = mount();
         CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
@@ -739,37 +739,7 @@ describe('c-final-form-studio', () => {
         await Promise.resolve();
 
         const palette = el.shadowRoot.querySelector('c-final-field-palette');
-        const previewStage = el.shadowRoot.querySelector(
-            '.st-buildpreview c-final-preview-stage'
-        );
         expect(palette).not.toBeNull();
-        expect(previewStage).not.toBeNull();
-
-        // Dispatch testpreview from palette/autofillPanel
-        palette.dispatchEvent(
-            new CustomEvent('testpreview', {
-                bubbles: true,
-                composed: true,
-                detail: {
-                    ruleId: 'af_1',
-                    values: { el_1: 'Test Value' }
-                }
-            })
-        );
-        await Promise.resolve();
-        expect(previewStage.recordContext).toEqual({
-            autofill: [{ ruleId: 'af_1', values: { el_1: 'Test Value' } }]
-        });
-
-        // Dispatch cleartestpreview
-        palette.dispatchEvent(
-            new CustomEvent('cleartestpreview', {
-                bubbles: true,
-                composed: true
-            })
-        );
-        await Promise.resolve();
-        expect(previewStage.recordContext).toBeNull();
 
         // Dispatch specchange
         const nextSpec = JSON.parse(JSON.stringify(SPEC));
@@ -2616,8 +2586,8 @@ describe('Mapping in the Build rail (no Data tab)', () => {
         expect(d.size).toBe('large');
         expect(d.confirmLabel).toBe('Apply');
         expect(
-            el.shadowRoot.querySelector('c-final-autofill-rule-editor')
-        ).toBeTruthy();
+            el.shadowRoot.querySelector('c-final-autofill-rule-editor').formType
+        ).toBe('freeform');
         // a new rule has no object yet: Apply keeps the dialog open
         d.dispatchEvent(new CustomEvent('confirm'));
         await flush();
@@ -2628,6 +2598,21 @@ describe('Mapping in the Build rail (no Data tab)', () => {
         await flush();
         expect(el.shadowRoot.querySelector('c-final-studio-dialog')).toBeNull();
     });
+
+    it.each(['form', 'survey'])(
+        'a %s rule opens in the same dialog (IMPL_PLAN_F2_AUTOFILL 8)',
+        async (formType) => {
+            const el = await open(formType);
+            palette(el).dispatchEvent(
+                new CustomEvent('editautofillrule', { detail: { rule: null } })
+            );
+            await flush();
+            expect(
+                el.shadowRoot.querySelector('c-final-autofill-rule-editor')
+                    .formType
+            ).toBe(formType);
+        }
+    );
 
     it('never opens on a Form', async () => {
         const el = await open('form');

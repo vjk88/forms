@@ -4,6 +4,7 @@ import fitsTable from '@salesforce/apex/FinalAutofillController.fitsTable';
 import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTestRecordValues';
 import listLookupObjects from '@salesforce/apex/FinalLookupController.listLookupObjects';
 import describeReadableFields from '@salesforce/apex/FinalLookupController.describeReadableFields';
+import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
 import { resetFieldCache } from 'c/finalFieldPicker';
 
 jest.mock(
@@ -399,5 +400,157 @@ describe('c-final-autofill-rule-editor', () => {
         expect(call.recordId).toBeTruthy();
         expect(call.fieldApiNames).toEqual(['Name']);
         expect($(el, '.am-row-test').textContent).toBe('Fills: Ada Lovelace');
+    });
+
+    // ---- IMPL_PLAN_F2_AUTOFILL 8: every type edits here ----
+
+    it('a survey link reads its connected object, shown and not choosable', async () => {
+        const spec = {
+            ...SPEC,
+            form: { type: 'survey', primaryContextObject: 'Contact' }
+        };
+        // an older rule saved without the object, or with another one
+        const { el, got } = mount({
+            spec,
+            formType: 'survey',
+            rule: { ...linkRule([]), source: { type: 'link' } }
+        });
+        await flush();
+        expect($(el, 'c-final-object-picker')).toBeNull();
+        expect($(el, '.am-locked').textContent).toContain('Contact');
+        // corrected silently: opening a rule is not an edit
+        expect(got).toEqual([]);
+        expect(el.rule.source.objectApiName).toBe('Contact');
+        expect($(el, 'c-final-field-picker').objectApi).toBe('Contact');
+    });
+
+    it('a survey that is not connected says so, and Apply refuses', async () => {
+        const { el } = mount({
+            spec: { ...SPEC, form: { type: 'survey' } },
+            formType: 'survey',
+            rule: { ...linkRule([]), source: { type: 'link' } }
+        });
+        await flush();
+        expect($(el, '.am-locked').textContent).toContain(
+            'Connect this survey'
+        );
+        expect(el.reportProblems().map((p) => p.message)).toContain(
+            'Connect this survey to an object first.'
+        );
+    });
+
+    it('a Form says field, and its bound lookups are sources', async () => {
+        const spec = {
+            form: { type: 'form', targetObject: 'Case' },
+            pages: [
+                {
+                    sections: [
+                        {
+                            elements: [
+                                {
+                                    id: 'el_acct',
+                                    type: 'field',
+                                    label: 'Account',
+                                    binding: {
+                                        object: 'Case',
+                                        field: 'AccountId',
+                                        referenceTo: 'Account'
+                                    },
+                                    config: { inputType: 'lookup' }
+                                },
+                                {
+                                    id: 'el_subject',
+                                    type: 'field',
+                                    label: 'Subject',
+                                    config: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        const { el } = mount({
+            spec,
+            formType: 'form',
+            rule: {
+                ...linkRule([{ id: 'm1', from: 'Name', to: '' }]),
+                source: { type: 'lookup', elementId: 'el_acct' }
+            }
+        });
+        await flush();
+        const lookup = $(el, '.am-lookup');
+        expect(lookup.label).toBe('Lookup field');
+        expect(lookup.options).toEqual([
+            { label: 'Account (Account)', value: 'el_acct' }
+        ]);
+        expect(
+            $$(el, 'lightning-combobox').find((c) => c.placeholder).placeholder
+        ).toBe('Choose a field');
+    });
+
+    it('a polymorphic lookup names one object and stamps its key prefix', async () => {
+        describeReferenceTargets.mockResolvedValue([
+            { value: 'Account', label: 'Account', keyPrefix: '001' },
+            { value: 'Opportunity', label: 'Opportunity', keyPrefix: '006' }
+        ]);
+        const spec = {
+            form: { type: 'form', targetObject: 'Task' },
+            pages: [
+                {
+                    sections: [
+                        {
+                            elements: [
+                                {
+                                    id: 'el_what',
+                                    type: 'field',
+                                    label: 'Related To',
+                                    binding: {
+                                        object: 'Task',
+                                        field: 'WhatId'
+                                    },
+                                    config: {
+                                        inputType: 'reference',
+                                        polymorphic: true
+                                    }
+                                },
+                                {
+                                    id: 'el_subject',
+                                    type: 'field',
+                                    label: 'Subject',
+                                    config: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        const { el, got } = mount({
+            spec,
+            formType: 'form',
+            rule: {
+                ...linkRule([{ id: 'm1', from: '', to: 'el_subject' }]),
+                source: { type: 'lookup', elementId: 'el_what' }
+            }
+        });
+        await flush();
+        await flush();
+        const poly = $(el, '.am-poly');
+        expect(poly.options.map((o) => o.value)).toEqual([
+            'Account',
+            'Opportunity'
+        ]);
+        poly.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'Opportunity' } })
+        );
+        await flush();
+        const last = got[got.length - 1];
+        expect(last.source).toEqual({
+            type: 'lookup',
+            elementId: 'el_what',
+            objectApiName: 'Opportunity',
+            keyPrefix: '006'
+        });
     });
 });
