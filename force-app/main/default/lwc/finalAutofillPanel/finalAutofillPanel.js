@@ -2,7 +2,6 @@ import { LightningElement, api } from 'lwc';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
-import LightningConfirm from 'lightning/confirm';
 import { answerTypeOf } from 'c/finalAutofillFit';
 
 /**
@@ -29,6 +28,10 @@ export default class FinalAutofillPanel extends LightningElement {
     linkNotice = '';
     mintedLink = null;
     copiedLink = false;
+    /** The "Stop every link made so far?" question is showing. */
+    confirmingStop = false;
+    stoppingLinks = false;
+    _focusNext = null;
 
     get rules() {
         return this.spec?.settings?.prefill?.autofillRules || [];
@@ -110,7 +113,17 @@ export default class FinalAutofillPanel extends LightningElement {
     }
 
     get createLinkLabel() {
-        return this.linkBusy ? 'Creating link…' : 'Create link';
+        return this.linkBusy && !this.stoppingLinks
+            ? 'Creating link…'
+            : 'Create link';
+    }
+
+    get stopExpanded() {
+        return this.confirmingStop ? 'true' : 'false';
+    }
+
+    get stopLinksLabel() {
+        return this.stoppingLinks ? 'Stopping…' : 'Stop earlier links';
     }
 
     get copiedLinkText() {
@@ -317,28 +330,56 @@ export default class FinalAutofillPanel extends LightningElement {
         }
     }
 
-    async handleInvalidateLinks() {
+    /**
+     * The question is asked inline, not with `lightning/confirm`: in the
+     * VF-hosted Studio that modal never settles after Cancel (the same
+     * reason c/finalStudioDialog asks "Discard your changes?" itself).
+     */
+    handleInvalidateLinks() {
         if (this.linkBusy) return;
-        const ok = await LightningConfirm.open({
-            message:
-                'Invalidate every personalized link already created for this form? ' +
-                'Links created afterward will still work; earlier links will stop autofilling.',
-            label: 'Invalidate all links'
-        });
-        if (!ok) return;
+        this.linkError = '';
+        this.linkNotice = '';
+        this.confirmingStop = true;
+        // Land on the safe choice.
+        this._focusNext = '.ap-stop-cancel';
+    }
 
+    handleStopCancel() {
+        this.confirmingStop = false;
+        this._focusNext = '.ap-stop-trigger';
+    }
+
+    handleStopKeydown(event) {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            this.handleStopCancel();
+        }
+    }
+
+    async handleStopConfirm() {
+        this.confirmingStop = false;
         this.linkBusy = true;
+        this.stoppingLinks = true;
         this.linkError = '';
         try {
             await invalidateLinks({ formId: this.formId });
             this.mintedLink = null;
             this.linkNotice =
-                'All earlier personalized links are now invalid. New links you generate will work.';
+                'Earlier links are stopped. Links you make from now on will work.';
         } catch (e) {
-            this.linkError =
-                e?.body?.message || "Couldn't invalidate personalized links.";
+            this.linkError = e?.body?.message || "Couldn't stop earlier links.";
         } finally {
             this.linkBusy = false;
+            this.stoppingLinks = false;
+            this._focusNext = '.ap-stop-trigger';
+        }
+    }
+
+    renderedCallback() {
+        if (this._focusNext) {
+            const target = this.template.querySelector(this._focusNext);
+            this._focusNext = null;
+            target?.focus();
         }
     }
 

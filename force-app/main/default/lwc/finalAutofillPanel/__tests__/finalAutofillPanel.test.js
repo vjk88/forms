@@ -3,7 +3,6 @@ import FinalAutofillPanel from 'c/finalAutofillPanel';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
-import LightningConfirm from 'lightning/confirm';
 
 jest.mock(
     '@salesforce/apex/FinalStudioController.mintRecordLink',
@@ -20,10 +19,6 @@ jest.mock(
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
-jest.mock('lightning/confirm', () => ({
-    __esModule: true,
-    default: { open: jest.fn() }
-}));
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -104,7 +99,6 @@ describe('c-final-autofill-panel', () => {
         mintRecordLink.mockResolvedValue({ query: 'c__rt=token123' });
         mintTrackedLink.mockResolvedValue({ query: 'c__rt=token456' });
         invalidateLinks.mockResolvedValue({ ok: true });
-        LightningConfirm.open.mockResolvedValue(true);
     });
 
     afterEach(() => {
@@ -206,6 +200,128 @@ describe('c-final-autofill-panel', () => {
         expect(mintRecordLink).toHaveBeenCalledWith({
             formId: 'a00123',
             recordId: '003000000000123AAA'
+        });
+    });
+
+    describe('Stop earlier links asks inline, never with lightning/confirm', () => {
+        const openPanel = async () => {
+            const el = mount({
+                spec: SAMPLE_SPEC,
+                formId: 'a00123',
+                activeVersionId: 'v001'
+            });
+            await flush();
+            return el;
+        };
+        const $ = (el, sel) => el.shadowRoot.querySelector(sel);
+
+        it('shows the question with focus on Cancel, and Cancel stops nothing', async () => {
+            const el = await openPanel();
+            const trigger = $(el, '.ap-stop-trigger');
+            expect(trigger.textContent.trim()).toBe('Stop earlier links');
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+
+            trigger.click();
+            await flush();
+
+            const ask = $(el, '[role="alertdialog"]');
+            expect(ask).not.toBeNull();
+            expect($(el, '.ap-stop-title').textContent.trim()).toBe(
+                'Stop every link made so far?'
+            );
+            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-cancel'));
+            expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+            $(el, '.ap-stop-cancel').click();
+            await flush();
+
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+            expect(invalidateLinks).not.toHaveBeenCalled();
+            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+            expect(trigger.getAttribute('aria-expanded')).toBe('false');
+        });
+
+        it('Escape closes the question like Cancel', async () => {
+            const el = await openPanel();
+            $(el, '.ap-stop-trigger').click();
+            await flush();
+
+            $(el, '[role="alertdialog"]').dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+            );
+            await flush();
+
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+            expect(invalidateLinks).not.toHaveBeenCalled();
+            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+        });
+
+        it('Stop links stops them, says so, and hands focus back', async () => {
+            const el = await openPanel();
+            $(el, '.ap-stop-trigger').click();
+            await flush();
+            $(el, '.ap-stop-confirm').click();
+            await flush();
+            await flush();
+
+            expect(invalidateLinks).toHaveBeenCalledWith({ formId: 'a00123' });
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+            expect($(el, '.ap-notice-inline').textContent).toBe(
+                'Earlier links are stopped. Links you make from now on will work.'
+            );
+            expect($(el, '.ap-notice-inline').getAttribute('role')).toBe(
+                'status'
+            );
+            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+        });
+
+        it('while stopping, the button says so and cannot ask again', async () => {
+            let finish;
+            invalidateLinks.mockReturnValue(
+                new Promise((r) => {
+                    finish = r;
+                })
+            );
+            const el = await openPanel();
+            $(el, '.ap-stop-trigger').click();
+            await flush();
+            $(el, '.ap-stop-confirm').click();
+            await flush();
+
+            const trigger = $(el, '.ap-stop-trigger');
+            expect(trigger.textContent.trim()).toBe('Stopping…');
+            expect(trigger.disabled).toBe(true);
+            expect(
+                $(el, '.ap-mint-actions .ap-btn-primary').textContent.trim()
+            ).toBe('Create link');
+            trigger.click();
+            await flush();
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+
+            finish({ ok: true });
+            await flush();
+            await flush();
+            expect($(el, '.ap-stop-trigger').textContent.trim()).toBe(
+                'Stop earlier links'
+            );
+        });
+
+        it('says so plainly when stopping fails', async () => {
+            invalidateLinks.mockRejectedValue({ body: {} });
+            const el = await openPanel();
+            $(el, '.ap-stop-trigger').click();
+            await flush();
+            $(el, '.ap-stop-confirm').click();
+            await flush();
+            await flush();
+
+            expect($(el, '.ap-error-inline').textContent).toBe(
+                "Couldn't stop earlier links."
+            );
+            expect($(el, '.ap-error-inline').getAttribute('role')).toBe(
+                'alert'
+            );
+            expect($(el, '.ap-notice-inline')).toBeNull();
         });
     });
 

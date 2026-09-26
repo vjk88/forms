@@ -281,6 +281,51 @@
     cursor: not-allowed;
 }
 
+.ap-btn-danger {
+    background: var(--c-studio-error);
+    color: var(--c-studio-on-accent);
+    border: 0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ap-btn-danger:hover:not(:disabled) {
+    background: var(--c-studio-error-text);
+}
+
+/* Inline "Stop every link made so far?" question. */
+.ap-stop-ask {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--c-studio-error-border);
+    border-left: 3px solid var(--c-studio-error);
+    border-radius: 6px;
+    background: var(--c-studio-error-surface);
+}
+
+.ap-stop-title {
+    margin: 0 0 4px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--c-studio-text);
+}
+
+.ap-stop-text {
+    margin: 0 0 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--c-studio-text-weak);
+}
+
+.ap-stop-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .ap-btn-sm {
     padding: 4px 8px;
     font-size: 11.5px;
