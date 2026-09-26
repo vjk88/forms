@@ -39,6 +39,14 @@
                 >
                     A record picked in a lookup
                 </button>
+                <button
+                    type="button"
+                    class={userClass}
+                    aria-pressed={userPressed}
+                    onclick={handleUser}
+                >
+                    The signed-in person
+                </button>
             </div>
             <template lwc:if={linkDisabled}>
                 <p class="am-hint">
@@ -55,6 +63,13 @@
                     value={draft.source.objectApiName}
                     onpick={handleObjectPick}
                 ></c-final-object-picker>
+            </template>
+            <template lwc:if={isUser}>
+                <p class="am-hint">
+                    Fills from whoever is signed in: their own details (name,
+                    email, phone…) and their Contact, Account or Manager. People
+                    who aren’t signed in get nothing from this rule.
+                </p>
             </template>
             <template lwc:if={isLookup}>
                 <template lwc:if={hasLookups}>
@@ -107,6 +122,7 @@
                                 object-api={sourceObject}
                                 purpose="read"
                                 max-depth={maxDepth}
+                                allowed-relationships={allowedRelationships}
                                 allowed-types={allowedTypes}
                                 value={r.from}
                                 data-index={r.index}
@@ -176,21 +192,34 @@
         </section>
 
         <section class="am-section">
-            <h2 class="am-heading">Try it with a record</h2>
-            <div class="am-test">
-                <lightning-input
-                    class="am-test-id"
-                    label="Record Id"
-                    placeholder="A record you can see, e.g. 003…"
-                    value={testRecordId}
-                    onchange={handleTestId}
-                ></lightning-input>
-                <lightning-button
-                    label="Show what it fills"
-                    disabled={testDisabled}
-                    onclick={handleTest}
-                ></lightning-button>
-            </div>
+            <template lwc:if={isUser}>
+                <h2 class="am-heading">Try it on yourself</h2>
+                <div class="am-test">
+                    <lightning-button
+                        class="am-test-me"
+                        label="Show what it fills for me"
+                        disabled={testDisabled}
+                        onclick={handleTest}
+                    ></lightning-button>
+                </div>
+            </template>
+            <template lwc:else>
+                <h2 class="am-heading">Try it with a record</h2>
+                <div class="am-test">
+                    <lightning-input
+                        class="am-test-id"
+                        label="Record Id"
+                        placeholder="A record you can see, e.g. 003…"
+                        value={testRecordId}
+                        onchange={handleTestId}
+                    ></lightning-input>
+                    <lightning-button
+                        label="Show what it fills"
+                        disabled={testDisabled}
+                        onclick={handleTest}
+                    ></lightning-button>
+                </div>
+            </template>
             <template lwc:if={testError}>
                 <p class="am-row-problem" role="alert">{testError}</p>
             </template>

@@ -408,7 +408,10 @@ private class FinalAutofillControllerTest {
                 account = t;
             }
         }
-        System.assert(targets.size() > 1, 'Related To points at several objects');
+        System.assert(
+            targets.size() > 1,
+            'Related To points at several objects'
+        );
         System.assertNotEquals(null, account, 'Account is a Related To target');
         System.assertEquals('001', account.get('keyPrefix'));
     }
@@ -524,5 +527,78 @@ private class FinalAutofillControllerTest {
         System.assertEquals('Account', rules[0].get('objectApiName'));
         System.assertEquals('001', rules[0].get('keyPrefix'));
         System.assertEquals(true, rules[0].get('polymorphic'));
+    }
+
+    // ---- 7.1 / 7.2
+
+    private static String userRuleSpec() {
+        return JSON.serialize(
+            new Map<String, Object>{
+                'pages' => new List<Object>(),
+                'settings' => new Map<String, Object>{
+                    'prefill' => new Map<String, Object>{
+                        'rulesVersion' => 1,
+                        'autofillRules' => new List<Object>{
+                            new Map<String, Object>{
+                                'id' => 'af_me',
+                                'enabled' => true,
+                                'source' => new Map<String, Object>{
+                                    'type' => 'user'
+                                },
+                                'mappings' => new List<Object>{
+                                    new Map<String, Object>{
+                                        'from' => 'Email',
+                                        'to' => 'el_email'
+                                    },
+                                    new Map<String, Object>{
+                                        'from' => 'Manager.Name',
+                                        'to' => 'el_boss'
+                                    },
+                                    // outside the three hops: never read
+                                    new Map<String, Object>{
+                                        'from' => 'Profile.Name',
+                                        'to' => 'el_profile'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    @IsTest
+    static void thePreviewReadsTheRunningUsersOwnRecord() {
+        Map<String, Object> out = FinalAutofillController.getUserPreviewValues(
+            userRuleSpec()
+        );
+        Map<String, Object> values = (Map<String, Object>) out.get('af_me');
+        User me = [SELECT Email FROM User WHERE Id = :UserInfo.getUserId()];
+        Assert.areEqual(me.Email, values.get('el_email'));
+        // no manager: present and empty
+        Assert.isTrue(values.containsKey('el_boss'));
+        Assert.isFalse(
+            values.containsKey('el_profile'),
+            'a fourth hop is never read'
+        );
+    }
+
+    @IsTest
+    static void aHopReadsForTheTryItToo() {
+        Contact c = new Contact(LastName = 'NoAccount');
+        insert c;
+        Map<String, Object> out = FinalAutofillController.getTestRecordValues(
+            null,
+            'Contact',
+            c.Id,
+            new List<String>{ 'Account.Name', 'LastName', 'Account.Owner.Name' }
+        );
+        Assert.areEqual('NoAccount', out.get('LastName'));
+        // an empty lookup: present and null
+        Assert.isTrue(out.containsKey('Account.Name'));
+        Assert.isNull(out.get('Account.Name'));
+        // two hops: never read, so left out
+        Assert.isFalse(out.containsKey('Account.Owner.Name'));
     }
 }

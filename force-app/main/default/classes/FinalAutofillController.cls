@@ -25,6 +25,132 @@ public with sharing class FinalAutofillController {
         );
     }
 
+    /**
+     * The signed-in person's values for the PUBLISHED version's `user` rules
+     * (IMPL_PLAN_F2_AUTOFILL 7.2): { ruleId: { elementId: value } }, keyed by
+     * question like every other source. Read from their own User record in
+     * USER_MODE, fields and one hop through Contact, Account or Manager.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getUserValues(Id formId, Id versionId) {
+        gateNotGuest();
+        if (formId == null || versionId == null) {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
+        Form_Version__c version = loadActivePublishedVersion(formId, versionId);
+        return userValuesFor(
+            (Map<String, Object>) JSON.deserializeUntyped(version.Spec_JSON__c)
+        );
+    }
+
+    /**
+     * The same for the Studio preview, from the DRAFT spec: an unpublished
+     * rule has no published version to read. Only the running user's own
+     * record, only the draft's `user` rules, so a draft grants nothing.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getUserPreviewValues(String specJson) {
+        gateNotGuest();
+        if (String.isBlank(specJson)) {
+            return new Map<String, Object>();
+        }
+        Map<String, Object> spec;
+        try {
+            spec = (Map<String, Object>) JSON.deserializeUntyped(specJson);
+        } catch (Exception e) {
+            return new Map<String, Object>();
+        }
+        return userValuesFor(spec);
+    }
+
+    private static Map<String, Object> userValuesFor(Map<String, Object> spec) {
+        Map<String, Object> out = new Map<String, Object>();
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        Map<String, Object> prefill = settings == null
+            ? null
+            : asMap(settings.get('prefill'));
+        List<Object> rules = prefill == null
+            ? null
+            : asList(prefill.get('autofillRules'));
+        if (rules == null) {
+            return out;
+        }
+        // rule id -> [ { to, path } ]
+        Map<String, List<Map<String, String>>> plan = new Map<String, List<Map<String, String>>>();
+        Set<String> paths = new Set<String>();
+        for (Object rObj : rules) {
+            Map<String, Object> rule = asMap(rObj);
+            Map<String, Object> source = rule == null
+                ? null
+                : asMap(rule.get('source'));
+            if (
+                rule == null ||
+                rule.get('enabled') != true ||
+                source == null ||
+                source.get('type') != 'user'
+            ) {
+                continue;
+            }
+            List<Map<String, String>> rows = new List<Map<String, String>>();
+            for (Object mObj : asList(rule.get('mappings'))) {
+                Map<String, Object> m = asMap(mObj);
+                String fromField = m == null ? null : str(m.get('from'));
+                String toEl = m == null ? null : str(m.get('to'));
+                if (fromField == null || toEl == null) {
+                    continue;
+                }
+                if (
+                    fromField.contains('.') &&
+                    !FinalAutofillRules.USER_HOPS.contains(
+                        fromField.substringBefore('.').toLowerCase()
+                    )
+                ) {
+                    continue;
+                }
+                FinalAutofillRules.ResolvedPath p = FinalAutofillRules.readablePath(
+                    'User',
+                    fromField
+                );
+                if (p == null) {
+                    continue; // unreadable: left out, never blanked
+                }
+                paths.add(p.path);
+                rows.add(
+                    new Map<String, String>{ 'to' => toEl, 'path' => p.path }
+                );
+            }
+            if (!rows.isEmpty()) {
+                plan.put((String) rule.get('id'), rows);
+            }
+        }
+        if (paths.isEmpty()) {
+            return out;
+        }
+        Id me = UserInfo.getUserId();
+        List<SObject> found = Database.query(
+            'SELECT ' +
+                String.join(new List<String>(paths), ', ') +
+                ' FROM User WHERE Id = :me WITH USER_MODE LIMIT 1'
+        );
+        if (found.isEmpty()) {
+            return out;
+        }
+        for (String ruleId : plan.keySet()) {
+            Map<String, Object> values = new Map<String, Object>();
+            for (Map<String, String> row : plan.get(ruleId)) {
+                values.put(
+                    row.get('to'),
+                    FinalSurveyObjectController.valueAt(
+                        found[0],
+                        row.get('path')
+                    )
+                );
+            }
+            out.put(ruleId, values);
+        }
+        return out;
+    }
+
     /** What fits where, for the Studio's Autofill dialog (FinalAutofillRules). */
     @AuraEnabled(cacheable=true)
     public static Map<String, List<String>> fitsTable() {
@@ -67,18 +193,24 @@ public with sharing class FinalAutofillController {
                 'You do not have access to ' + objectApiName
             );
         }
-        Map<String, Schema.SObjectField> fieldMap = sType.getDescribe()
-            .fields.getMap();
-        List<String> validFields = new List<String>();
+        // Each asked-for field or one hop, as the author may read it; the
+        // answer is keyed by what was asked for.
+        Map<String, String> pathFor = new Map<String, String>();
         for (String fName : fieldApiNames) {
-            Schema.SObjectField f = fieldMap.get(fName.toLowerCase());
-            if (f != null && f.getDescribe().isAccessible()) {
-                validFields.add(f.getDescribe().getName());
+            FinalAutofillRules.ResolvedPath p = FinalAutofillRules.readablePath(
+                objectApiName,
+                fName
+            );
+            if (p != null) {
+                pathFor.put(fName, p.path);
             }
         }
-        if (validFields.isEmpty()) {
+        if (pathFor.isEmpty()) {
             return new Map<String, Object>();
         }
+        List<String> validFields = new List<String>(
+            new Set<String>(pathFor.values())
+        );
         String soql =
             'SELECT ' +
             String.join(validFields, ', ') +
@@ -91,8 +223,11 @@ public with sharing class FinalAutofillController {
         }
         SObject rec = records[0];
         Map<String, Object> result = new Map<String, Object>();
-        for (String fName : validFields) {
-            result.put(fName, rec.get(fName));
+        for (String fName : pathFor.keySet()) {
+            result.put(
+                fName,
+                FinalSurveyObjectController.valueAt(rec, pathFor.get(fName))
+            );
         }
         return result;
     }
@@ -449,13 +584,6 @@ public with sharing class FinalAutofillController {
         String objectApiName
     ) {
         List<Map<String, Object>> mappings = new List<Map<String, Object>>();
-        Schema.SObjectType t = Schema.getGlobalDescribe()
-            .get(objectApiName.toLowerCase());
-        if (t == null || !t.getDescribe().isAccessible()) {
-            return mappings;
-        }
-        Map<String, Schema.SObjectField> fieldMap = t.getDescribe()
-            .fields.getMap();
 
         for (Object mObj : asList(rule.get('mappings'))) {
             Map<String, Object> m = asMap(mObj);
@@ -464,11 +592,16 @@ public with sharing class FinalAutofillController {
             String fromField = (String) m.get('from');
             String toEl = (String) m.get('to');
             if (String.isNotBlank(fromField) && String.isNotBlank(toEl)) {
-                Schema.SObjectField f = fieldMap.get(fromField.toLowerCase());
-                if (f != null && f.getDescribe().isAccessible()) {
+                // A field or one hop the respondent may read (7.1); an
+                // unreadable one is left out, never blanked.
+                FinalAutofillRules.ResolvedPath p = FinalAutofillRules.readablePath(
+                    objectApiName,
+                    fromField
+                );
+                if (p != null) {
                     mappings.add(
                         new Map<String, Object>{
-                            'from' => f.getDescribe().getName(),
+                            'from' => p.path,
                             'to' => toEl
                         }
                     );

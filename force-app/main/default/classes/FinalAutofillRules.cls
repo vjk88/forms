@@ -64,6 +64,97 @@ public with sharing class FinalAutofillRules {
         Schema.DisplayType.PICKLIST => new Set<String>{ 'Choice', 'Text' }
     };
 
+    /** Relationships the signed-in person's own record may hop through. */
+    public static final Set<String> USER_HOPS = new Set<String>{
+        'contact',
+        'account',
+        'manager'
+    };
+
+    /** A source path, resolved: its SELECT spelling and its field. */
+    public class ResolvedPath {
+        public String path;
+        public Schema.DescribeFieldResult field;
+        public Boolean hop;
+        ResolvedPath(
+            String path,
+            Schema.DescribeFieldResult field,
+            Boolean hop
+        ) {
+            this.path = path;
+            this.field = field;
+            this.hop = hop;
+        }
+    }
+
+    /**
+     * A field, or one hop to a field (`Account.Name`), that the RUNNING user
+     * may read (IMPL_PLAN_F2_AUTOFILL 7.1). Three checks for a hop: the lookup
+     * field is readable, the object it points at is readable, and the field
+     * there is readable. A polymorphic lookup is never a hop (it has no single
+     * object), and never more than one dot. Null when any check fails.
+     */
+    public static ResolvedPath readablePath(String objectApi, String path) {
+        if (String.isBlank(objectApi) || String.isBlank(path)) {
+            return null;
+        }
+        List<String> parts = path.split('\\.');
+        if (parts.size() > 2) {
+            return null;
+        }
+        Schema.SObjectType t = Schema.getGlobalDescribe()
+            .get(objectApi.toLowerCase());
+        if (t == null || !t.getDescribe().isAccessible()) {
+            return null;
+        }
+        Map<String, Schema.SObjectField> fields = t.getDescribe()
+            .fields.getMap();
+        if (parts.size() == 1) {
+            Schema.SObjectField f = fields.get(parts[0].toLowerCase());
+            if (f == null || !f.getDescribe().isAccessible()) {
+                return null;
+            }
+            return new ResolvedPath(
+                f.getDescribe().getName(),
+                f.getDescribe(),
+                false
+            );
+        }
+        Schema.DescribeFieldResult lookup = null;
+        for (Schema.SObjectField f : fields.values()) {
+            Schema.DescribeFieldResult d = f.getDescribe();
+            if (
+                d.getType() == Schema.DisplayType.REFERENCE &&
+                parts[0].equalsIgnoreCase(d.getRelationshipName())
+            ) {
+                lookup = d;
+                break;
+            }
+        }
+        if (
+            lookup == null ||
+            !lookup.isAccessible() ||
+            lookup.getReferenceTo().size() != 1
+        ) {
+            return null;
+        }
+        Schema.DescribeSObjectResult related = lookup.getReferenceTo()[0]
+            .getDescribe();
+        if (!related.isAccessible()) {
+            return null;
+        }
+        Schema.SObjectField target = related.fields.getMap()
+            .get(parts[1].toLowerCase());
+        if (target == null || !target.getDescribe().isAccessible()) {
+            return null;
+        }
+        return new ResolvedPath(
+            lookup.getRelationshipName() + '.' + target.getDescribe().getName(),
+            target.getDescribe(),
+            true
+        );
+    }
+
     /** A source field Autofill may OFFER. Rich text is never offered. */
     public static Boolean isSupportedSource(Schema.DescribeFieldResult fd) {
         if (!isReadableSource(fd)) {

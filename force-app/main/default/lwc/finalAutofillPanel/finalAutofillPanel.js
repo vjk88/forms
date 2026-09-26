@@ -6,6 +6,7 @@ import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLin
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import LightningConfirm from 'lightning/confirm';
+import { answerTypeOf } from 'c/finalAutofillFit';
 
 function mintId(prefix) {
     const bytes = new Uint8Array(8);
@@ -254,12 +255,8 @@ export default class FinalAutofillPanel extends LightningElement {
                 if (el.type !== 'field') return false;
                 if (el.inRepeater) return false;
                 if (el.readOnly) return false;
-                const inputType = (
-                    el.config?.inputType || 'text'
-                ).toLowerCase();
-                return ['text', 'textarea', 'email', 'phone', 'url'].includes(
-                    inputType
-                );
+                // the same list the runtime and the server fill (6.7)
+                return Boolean(answerTypeOf(el));
             })
             .map((el) => ({
                 label: `${el.label || el.id} [${el.config?.inputType || 'text'}]`,
@@ -362,9 +359,15 @@ export default class FinalAutofillPanel extends LightningElement {
 
         return (this.rules || []).map((r) => {
             const isLink = r.source?.type === 'link';
-            const sourceBadge = isLink
-                ? `Link: ${r.source?.objectApiName || 'Unconfigured'}`
-                : `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}${r.source?.objectApiName ? ` · ${r.source.objectApiName}` : ''}`;
+            const isUser = r.source?.type === 'user';
+            let sourceBadge;
+            if (isUser) {
+                sourceBadge = 'Signed-in person';
+            } else if (isLink) {
+                sourceBadge = `Link: ${r.source?.objectApiName || 'Unconfigured'}`;
+            } else {
+                sourceBadge = `Lookup: ${lookupMap.get(r.source?.elementId) || r.source?.elementId || 'Unconfigured'}${r.source?.objectApiName ? ` · ${r.source.objectApiName}` : ''}`;
+            }
 
             const mappingCount = (r.mappings || []).length;
             const mappingCountText = `${mappingCount} mapping${mappingCount === 1 ? '' : 's'}`;
@@ -374,7 +377,9 @@ export default class FinalAutofillPanel extends LightningElement {
                     : 'Preserve edits';
 
             const errors = [];
-            if (isLink && !r.source?.objectApiName) {
+            if (isUser) {
+                // the signed-in person always has a source record
+            } else if (isLink && !r.source?.objectApiName) {
                 errors.push('Source object missing');
             } else if (!isLink && !r.source?.elementId) {
                 errors.push('Lookup field missing');
@@ -397,7 +402,7 @@ export default class FinalAutofillPanel extends LightningElement {
                         errors.push('Mapping has no destination');
                     } else if (!destMap.has(m.to)) {
                         errors.push(
-                            `Destination ${m.to} missing or incompatible`
+                            'Fills a question that’s gone or can’t be filled'
                         );
                     }
                 });

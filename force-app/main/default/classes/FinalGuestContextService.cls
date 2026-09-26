@@ -114,10 +114,16 @@ public without sharing class FinalGuestContextService {
                 fields.add(f);
             }
         }
+        // A guest-allowed field or one hop (Account.Name), in its SELECT
+        // spelling. The author and the person minting passed the readability
+        // checks; this read is the token-authorized system read.
+        Map<String, String> guestPaths = new Map<String, String>();
         for (Map<String, Object> m : guestLinkMappings) {
             String f = (String) m.get('from');
-            if (fieldMap.containsKey(f.toLowerCase())) {
-                fields.add(f);
+            String path = FinalLookupService.canonicalPath(targetObject, f);
+            if (path != null && path.countMatches('.') <= 1) {
+                guestPaths.put(f, path);
+                fields.add(path);
             }
         }
         SObject rec = null;
@@ -195,15 +201,15 @@ public without sharing class FinalGuestContextService {
             for (Map<String, Object> m : guestLinkMappings) {
                 String fromField = (String) m.get('from');
                 String toEl = (String) m.get('to');
-                if (fieldMap.containsKey(fromField.toLowerCase())) {
-                    if (populatedLower.containsKey(fromField.toLowerCase())) {
-                        ruleValues.put(
-                            toEl,
-                            populatedLower.get(fromField.toLowerCase())
-                        );
-                    } else if (rec != null) {
-                        ruleValues.put(toEl, null);
-                    }
+                String path = guestPaths.get(fromField);
+                if (path != null && rec != null) {
+                    // An empty lookup reads as null: present, and cleared by
+                    // the runtime's ownership rules. Always keyed by the
+                    // question, never by the source field.
+                    ruleValues.put(
+                        toEl,
+                        FinalSurveyObjectController.valueAt(rec, path)
+                    );
                 }
             }
             autofillList.add(

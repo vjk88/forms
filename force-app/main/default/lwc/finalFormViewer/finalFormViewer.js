@@ -10,6 +10,8 @@ import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
 import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkContext';
+import getUserValues from '@salesforce/apex/FinalAutofillController.getUserValues';
+import getUserPreviewValues from '@salesforce/apex/FinalAutofillController.getUserPreviewValues';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
@@ -458,6 +460,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         } else {
             this._prepareEditMode(this._editSpec);
+            // a new record means a new session: the signed-in person fills again
+            this._loadUserValues(this._applySeq, this._editSpec);
         }
     }
 
@@ -502,6 +506,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _autofillSession = null;
     activeAutofillRequests = [];
     _autofillTimers = new Map();
+    /** Signed-in-person reads in flight: [{ ruleId, generation }] (7.2). */
+    userAutofillPending = [];
+    _userRulesKey = null;
 
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
@@ -1102,6 +1109,136 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // re-apply can't wipe it.
         this._applyInjectedContext();
         this._loadLinkContext(seq);
+        this._loadUserValues(seq, spec);
+    }
+
+    /**
+     * Autofill from the signed-in person (IMPL_PLAN_F2_AUTOFILL 7.2).
+     *
+     * Decided by who is signed in, not by which host shows the form: a guest
+     * never asks. Published forms read the version on screen (getUserValues);
+     * the Studio preview reads its draft (getUserPreviewValues). With neither
+     * a version nor a preview it skips, never guesses. Each rule goes through
+     * the engine's request identity, so a late reply is dropped, Submit waits
+     * while it's pending, and a timeout says so like any other source.
+     */
+    _loadUserValues(seq, spec) {
+        const session = this._autofillSession;
+        if (IS_GUEST || !session) {
+            return;
+        }
+        const rules = (session.rules || []).filter(
+            (r) => r && r.source && r.source.type === 'user'
+        );
+        if (!rules.length) {
+            this._userRulesKey = null;
+            return;
+        }
+        const preview = Boolean(this.preservePreview || this.authoring);
+        const formId = this.effectiveFormId;
+        const versionId = this.effectiveVersionId;
+        if (!preview && !(formId && versionId)) {
+            return;
+        }
+        // Once per session and rules contract: a new session (a record
+        // switch, edit mode) or a plan upgrade asks again; nothing else does.
+        const key = JSON.stringify({
+            sessionId: session.sessionId,
+            fingerprint: session.rulesFingerprint,
+            versionId,
+            preview
+        });
+        if (key === this._userRulesKey) {
+            return;
+        }
+        this._userRulesKey = key;
+
+        const identities = rules
+            .map((r) => onSourceChanged(session, r.id, USER_ID).requestIdentity)
+            .filter(Boolean);
+        if (!identities.length) {
+            return;
+        }
+        for (const identity of identities) {
+            this._startUserRequest(identity);
+        }
+        const call = preview
+            ? getUserPreviewValues({ specJson: JSON.stringify(spec || {}) })
+            : getUserValues({ formId, versionId });
+        call.then((byRule) => {
+            const stale = seq !== this._applySeq || !this.isConnected;
+            for (const identity of identities) {
+                // a replaced request still gives back its timer and pending entry
+                this._finishUserRequest(identity);
+                if (
+                    stale ||
+                    !isRequestCurrent(this._autofillSession, identity)
+                ) {
+                    continue;
+                }
+                // replies are keyed by question; the engine reads by source
+                const values = this._toSourceKeyed(
+                    identity.ruleId,
+                    (byRule && byRule[identity.ruleId]) || {}
+                );
+                const res = onResult(
+                    this._autofillSession,
+                    identity,
+                    values,
+                    this.answers,
+                    false
+                );
+                if (res.applied && res.patch && Object.keys(res.patch).length) {
+                    this._applyAutofillPatch(res.patch);
+                }
+            }
+        }).catch(() => {
+            for (const identity of identities) {
+                this._finishUserRequest(identity);
+                if (isRequestCurrent(this._autofillSession, identity)) {
+                    this._userRulesKey = null; // a later apply may retry
+                    this._finishUserRequest(identity);
+                    this._handleAutofillTimeout(identity);
+                }
+            }
+        });
+    }
+
+    /** Pending like a lookup read: Submit waits, a timeout says so. */
+    _startUserRequest(identity) {
+        const reqKey = `${identity.ruleId}_${identity.generation}`;
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        const timerId = setTimeout(() => {
+            this._finishUserRequest(identity);
+            // never report on a request something newer replaced
+            if (isRequestCurrent(this._autofillSession, identity)) {
+                this._userRulesKey = null;
+                this._handleAutofillTimeout(identity);
+            }
+        }, 10000);
+        for (const old of this.userAutofillPending) {
+            if (old.ruleId === identity.ruleId) {
+                this._clearAutofillTimeout(old.ruleId, old.generation);
+            }
+        }
+        this._autofillTimers.set(reqKey, timerId);
+        this.userAutofillPending = [
+            ...this.userAutofillPending.filter(
+                (r) => r.ruleId !== identity.ruleId
+            ),
+            { ruleId: identity.ruleId, generation: identity.generation }
+        ];
+    }
+
+    _finishUserRequest(identity) {
+        this._clearAutofillTimeout(identity.ruleId, identity.generation);
+        this.userAutofillPending = this.userAutofillPending.filter(
+            (r) =>
+                !(
+                    r.ruleId === identity.ruleId &&
+                    r.generation === identity.generation
+                )
+        );
     }
 
     /**
@@ -1251,6 +1388,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // A restored or pre-selected lookup answer must fire without waiting for
         // a DOM change event (§6 initialization order).
         this._executeLookupRulesFromAnswers();
+        // the moved fingerprint made any signed-in request stale: ask again
+        this._loadUserValues(this._applySeq, this._editSpec);
     }
 
     /**
@@ -1315,6 +1454,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         for (const timer of this._autofillTimers.values()) clearTimeout(timer);
         this._autofillTimers.clear();
         this.activeAutofillRequests = [];
+        this.userAutofillPending = [];
+        this._userRulesKey = null;
         this._autofillSession = createAutofillSession({
             specVersionId: this.effectiveVersionId || null,
             rules: extractAutofillRules(spec),
@@ -2475,7 +2616,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     get isAutofillPending() {
         return (
-            this._linkLoading || (this.activeAutofillRequests || []).length > 0
+            this._linkLoading ||
+            (this.activeAutofillRequests || []).length > 0 ||
+            (this.userAutofillPending || []).length > 0
         );
     }
 
@@ -2643,6 +2786,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
         }
         this.activeAutofillRequests = this.activeAutofillRequests.filter(
+            (r) => !gone.has(r.ruleId)
+        );
+        for (const req of this.userAutofillPending) {
+            if (gone.has(req.ruleId)) {
+                this._clearAutofillTimeout(req.ruleId, req.generation);
+            }
+        }
+        this.userAutofillPending = this.userAutofillPending.filter(
             (r) => !gone.has(r.ruleId)
         );
     }

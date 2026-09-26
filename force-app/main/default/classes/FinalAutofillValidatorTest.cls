@@ -639,4 +639,111 @@ private class FinalAutofillValidatorTest {
                 .contains('AUTOFILL_LOOKUP_NO_OBJECT')
         );
     }
+
+    // ---- 7.1 / 7.2
+
+    private static Map<String, Object> rule(
+        String id,
+        Map<String, Object> source,
+        List<Object> mappings
+    ) {
+        return new Map<String, Object>{
+            'id' => id,
+            'enabled' => true,
+            'source' => source,
+            'mappings' => mappings
+        };
+    }
+
+    @isTest
+    static void aLinkRuleMayReadOneHop() {
+        Map<String, Object> spec = freeformSpec(
+            new List<Object>(),
+            new List<Object>{
+                rule(
+                    'af_c',
+                    new Map<String, Object>{
+                        'type' => 'link',
+                        'objectApiName' => 'Contact'
+                    },
+                    new List<Object>{
+                        mapping('Account.Name', 'el_first_name'),
+                        mapping('Account.Owner.Name', 'el_email')
+                    }
+                )
+            }
+        );
+        List<FinalAutofillValidator.Diagnostic> found = FinalAutofillValidator.validate(
+            spec,
+            null
+        );
+        Integer bad = 0;
+        for (FinalAutofillValidator.Diagnostic d : found) {
+            if (d.code == 'AUTOFILL_SOURCE_FIELD_INACCESSIBLE') {
+                bad++;
+                Assert.isTrue(
+                    d.message.contains('Account.Owner.Name'),
+                    d.message
+                );
+            }
+        }
+        Assert.areEqual(1, bad, 'one hop reads; two hops never do');
+    }
+
+    @isTest
+    static void theSignedInPersonReadsTheirOwnRecordAndThreeHops() {
+        Map<String, Object> ok = rule(
+            'af_u',
+            new Map<String, Object>{ 'type' => 'user' },
+            new List<Object>{
+                mapping('Email', 'el_email'),
+                mapping('Manager.Name', 'el_first_name')
+            }
+        );
+        Set<String> codes = codesOf(
+            freeformSpec(new List<Object>(), new List<Object>{ ok })
+        );
+        Assert.isFalse(
+            codes.contains('AUTOFILL_INVALID_SOURCE_TYPE'),
+            String.valueOf(codes)
+        );
+        Assert.isFalse(
+            codes.contains('AUTOFILL_USER_HOP_NOT_ALLOWED'),
+            String.valueOf(codes)
+        );
+        Assert.isFalse(
+            codes.contains('AUTOFILL_SOURCE_FIELD_INACCESSIBLE'),
+            String.valueOf(codes)
+        );
+
+        Map<String, Object> profile = rule(
+            'af_u2',
+            new Map<String, Object>{ 'type' => 'user' },
+            new List<Object>{ mapping('Profile.Name', 'el_first_name') }
+        );
+        Assert.isTrue(
+            codesOf(
+                    freeformSpec(
+                        new List<Object>(),
+                        new List<Object>{ profile }
+                    )
+                )
+                .contains('AUTOFILL_USER_HOP_NOT_ALLOWED')
+        );
+    }
+
+    @isTest
+    static void theSignedInPersonNeverGoesToGuests() {
+        Map<String, Object> m = mapping('Email', 'el_email');
+        m.put('guestAllowed', true);
+        Map<String, Object> r = rule(
+            'af_u3',
+            new Map<String, Object>{ 'type' => 'user' },
+            new List<Object>{ m }
+        );
+        Assert.isTrue(
+            codesOf(freeformSpec(new List<Object>(), new List<Object>{ r }))
+                .contains('AUTOFILL_USER_GUEST_DISCLOSURE')
+        );
+    }
 }
