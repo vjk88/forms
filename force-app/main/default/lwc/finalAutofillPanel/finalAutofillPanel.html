@@ -190,8 +190,10 @@
                                 type="button"
                                 class="ap-btn-secondary ap-btn-sm ap-stop-trigger"
                                 onclick={handleInvalidateLinks}
+                                disabled={linkBusy}
+                                aria-expanded={stopExpanded}
                             >
-                                Stop earlier links
+                                {stopLinksLabel}
                             </button>
                         </div>
                         <template lwc:if={confirmingStop}>
@@ -208,7 +210,8 @@
                                 <p id="ap-stop-text" class="ap-stop-text">
                                     People who open an earlier link will no
                                     longer see their answers filled in. Links
-                                    you make after this still work.
+                                    you make after this still work. You can’t
+                                    undo this.
                                 </p>
                                 <div class="ap-stop-actions">
                                     <button
@@ -229,10 +232,14 @@
                             </div>
                         </template>
                         <template lwc:if={linkError}>
-                            <p class="ap-error-inline">{linkError}</p>
+                            <p class="ap-error-inline" role="alert">
+                                {linkError}
+                            </p>
                         </template>
                         <template lwc:if={linkNotice}>
-                            <p class="ap-notice-inline">{linkNotice}</p>
+                            <p class="ap-notice-inline" role="status">
+                                {linkNotice}
+                            </p>
                         </template>
                         <template lwc:if={mintedLink}>
                             <div class="ap-minted-result">

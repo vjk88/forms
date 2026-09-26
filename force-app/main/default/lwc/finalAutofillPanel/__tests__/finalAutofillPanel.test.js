@@ -230,6 +230,7 @@ describe('c-final-autofill-panel', () => {
                 'Stop every link made so far?'
             );
             expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-cancel'));
+            expect(trigger.getAttribute('aria-expanded')).toBe('true');
 
             $(el, '.ap-stop-cancel').click();
             await flush();
@@ -237,6 +238,7 @@ describe('c-final-autofill-panel', () => {
             expect($(el, '[role="alertdialog"]')).toBeNull();
             expect(invalidateLinks).not.toHaveBeenCalled();
             expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+            expect(trigger.getAttribute('aria-expanded')).toBe('false');
         });
 
         it('Escape closes the question like Cancel', async () => {
@@ -267,7 +269,41 @@ describe('c-final-autofill-panel', () => {
             expect($(el, '.ap-notice-inline').textContent).toBe(
                 'Earlier links are stopped. Links you make from now on will work.'
             );
+            expect($(el, '.ap-notice-inline').getAttribute('role')).toBe(
+                'status'
+            );
             expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+        });
+
+        it('while stopping, the button says so and cannot ask again', async () => {
+            let finish;
+            invalidateLinks.mockReturnValue(
+                new Promise((r) => {
+                    finish = r;
+                })
+            );
+            const el = await openPanel();
+            $(el, '.ap-stop-trigger').click();
+            await flush();
+            $(el, '.ap-stop-confirm').click();
+            await flush();
+
+            const trigger = $(el, '.ap-stop-trigger');
+            expect(trigger.textContent.trim()).toBe('Stopping…');
+            expect(trigger.disabled).toBe(true);
+            expect(
+                $(el, '.ap-mint-actions .ap-btn-primary').textContent.trim()
+            ).toBe('Create link');
+            trigger.click();
+            await flush();
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+
+            finish({ ok: true });
+            await flush();
+            await flush();
+            expect($(el, '.ap-stop-trigger').textContent.trim()).toBe(
+                'Stop earlier links'
+            );
         });
 
         it('says so plainly when stopping fails', async () => {
@@ -281,6 +317,9 @@ describe('c-final-autofill-panel', () => {
 
             expect($(el, '.ap-error-inline').textContent).toBe(
                 "Couldn't stop earlier links."
+            );
+            expect($(el, '.ap-error-inline').getAttribute('role')).toBe(
+                'alert'
             );
             expect($(el, '.ap-notice-inline')).toBeNull();
         });

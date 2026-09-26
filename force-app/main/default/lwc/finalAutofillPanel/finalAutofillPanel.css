@@ -282,8 +282,8 @@
 }
 
 .ap-btn-danger {
-    background: #ba0517;
-    color: #ffffff;
+    background: var(--c-studio-error);
+    color: var(--c-studio-on-accent);
     border: 0;
     border-radius: 6px;
     padding: 6px 12px;
@@ -293,31 +293,31 @@
 }
 
 .ap-btn-danger:hover:not(:disabled) {
-    background: #8e030f;
+    background: var(--c-studio-error-text);
 }
 
 /* Inline "Stop every link made so far?" question. */
 .ap-stop-ask {
     margin-top: 8px;
     padding: 10px 12px;
-    border: 1px solid #f3b2b2;
-    border-left: 3px solid #ba0517;
+    border: 1px solid var(--c-studio-error-border);
+    border-left: 3px solid var(--c-studio-error);
     border-radius: 6px;
-    background: #fef1f1;
+    background: var(--c-studio-error-surface);
 }
 
 .ap-stop-title {
     margin: 0 0 4px;
     font-size: 12.5px;
     font-weight: 700;
-    color: var(--c-studio-text, #181818);
+    color: var(--c-studio-text);
 }
 
 .ap-stop-text {
     margin: 0 0 8px;
     font-size: 12px;
     line-height: 1.4;
-    color: var(--c-studio-text-weak, #747474);
+    color: var(--c-studio-text-weak);
 }
 
 .ap-stop-actions {

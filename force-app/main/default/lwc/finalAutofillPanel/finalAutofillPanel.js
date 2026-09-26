@@ -30,6 +30,7 @@ export default class FinalAutofillPanel extends LightningElement {
     copiedLink = false;
     /** The "Stop every link made so far?" question is showing. */
     confirmingStop = false;
+    stoppingLinks = false;
     _focusNext = null;
 
     get rules() {
@@ -112,7 +113,17 @@ export default class FinalAutofillPanel extends LightningElement {
     }
 
     get createLinkLabel() {
-        return this.linkBusy ? 'Creating link…' : 'Create link';
+        return this.linkBusy && !this.stoppingLinks
+            ? 'Creating link…'
+            : 'Create link';
+    }
+
+    get stopExpanded() {
+        return this.confirmingStop ? 'true' : 'false';
+    }
+
+    get stopLinksLabel() {
+        return this.stoppingLinks ? 'Stopping…' : 'Stop earlier links';
     }
 
     get copiedLinkText() {
@@ -348,6 +359,7 @@ export default class FinalAutofillPanel extends LightningElement {
     async handleStopConfirm() {
         this.confirmingStop = false;
         this.linkBusy = true;
+        this.stoppingLinks = true;
         this.linkError = '';
         try {
             await invalidateLinks({ formId: this.formId });
@@ -358,6 +370,7 @@ export default class FinalAutofillPanel extends LightningElement {
             this.linkError = e?.body?.message || "Couldn't stop earlier links.";
         } finally {
             this.linkBusy = false;
+            this.stoppingLinks = false;
             this._focusNext = '.ap-stop-trigger';
         }
     }
