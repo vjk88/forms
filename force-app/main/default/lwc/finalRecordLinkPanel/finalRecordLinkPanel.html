@@ -67,7 +67,7 @@
             ></lightning-button>
         </div>
 
-        <template lwc:if={linkError}>
+        <template lwc:if={showError}>
             <p class="rl-message rl-message--error" role="alert">{linkError}</p>
         </template>
 
@@ -93,7 +93,7 @@
             </div>
         </template>
 
-        <template lwc:if={linkNotice}>
+        <template lwc:if={showNotice}>
             <p class="rl-message" role="status" aria-live="polite">
                 {linkNotice}
             </p>
@@ -101,11 +101,45 @@
 
         <div class="rl-danger-row">
             <lightning-button
+                class="rl-stop-trigger"
                 variant="destructive-text"
-                label="Invalidate all invitation links"
+                label={stopLabel}
                 disabled={linkBusy}
+                aria-expanded={stopExpanded}
                 onclick={handleInvalidate}
             ></lightning-button>
+            <template lwc:if={confirmingStop}>
+                <div
+                    class="rl-stop-ask"
+                    role="alertdialog"
+                    aria-labelledby="rl-stop-title"
+                    aria-describedby="rl-stop-text"
+                    onkeydown={handleStopKeydown}
+                >
+                    <p id="rl-stop-title" class="rl-stop-title">
+                        Stop every link made so far?
+                    </p>
+                    <p id="rl-stop-text" class="rl-stop-text">
+                        People who open an earlier link will no longer see their
+                        answers filled in. Links you make after this still work.
+                        You can’t undo this.
+                    </p>
+                    <div class="rl-stop-actions">
+                        <lightning-button
+                            class="rl-stop-cancel"
+                            label="Cancel"
+                            onclick={handleStopCancel}
+                        ></lightning-button>
+                        <lightning-button
+                            class="rl-stop-confirm"
+                            variant="destructive"
+                            label="Stop links"
+                            disabled={linkBusy}
+                            onclick={handleStopConfirm}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </template>
         </div>
     </section>
 </template>

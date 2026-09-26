@@ -1545,6 +1545,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.linkBusy = true;
+        this.linkAction = 'mint';
         this.linkError = '';
         this.linkNotice = '';
         this.mintedLink = null;
@@ -1563,35 +1564,33 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 (e && e.body && e.body.message) || "Couldn't create that link.";
         } finally {
             this.linkBusy = false;
+            this.linkAction = '';
         }
     }
 
+    // c/finalRecordLinkPanel has already asked "Stop every link made so
+    // far?" inline (lightning/confirm never settles after Cancel in the
+    // VF-hosted Studio), so this only does the stopping.
     async handleInvalidateLinks() {
         if (this.linkBusy) {
             return;
         }
-        const ok = await LightningConfirm.open({
-            message:
-                'Invalidate every record link already sent for this survey? ' +
-                'Links you create afterward will still work; ones already out ' +
-                'there will stop opening their record context.',
-            label: 'Invalidate all links'
-        });
-        if (!ok) {
-            return;
-        }
         this.linkBusy = true;
+        this.linkAction = 'stop';
         this.linkError = '';
+        this.linkNotice = '';
         try {
             await invalidateLinks({ formId: this.formId });
             this.mintedLink = null;
             this.linkNotice =
-                'All record links already sent are now invalid. New links you create will still work.';
+                'Earlier links are stopped. Links you make from now on will work.';
         } catch (e) {
             this.linkError =
-                (e && e.body && e.body.message) || "Couldn't invalidate links.";
+                (e && e.body && e.body.message) ||
+                "Couldn't stop earlier links.";
         } finally {
             this.linkBusy = false;
+            this.linkAction = '';
         }
     }
 
@@ -1808,6 +1807,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     mintedLink = null;
     /** SO-4: a mint / invalidate call is in flight. */
     linkBusy = false;
+    /** What the busy link call is: 'mint', 'stop' or ''. */
+    linkAction = '';
     /** SO-4: a mint failure, shown IN the record-links block (not the card top). */
     linkError = '';
     /** SO-4: a transient confirmation after Invalidate all links. */
