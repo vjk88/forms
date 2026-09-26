@@ -358,12 +358,6 @@ export default class FinalFieldPalette extends LightningElement {
         return '';
     }
 
-    handleNavigateTab(event) {
-        if (event.detail?.tab) {
-            this.tab = event.detail.tab;
-        }
-    }
-
     get tabs() {
         // vertical icon rail (owner 2026-07-08: same grammar as the Design
         // panel's area rail — icons + tiny labels, never horizontal text tabs)

@@ -1,28 +1,10 @@
 import { createElement } from 'lwc';
 import FinalAutofillPanel from 'c/finalAutofillPanel';
-import describeSourceFields from '@salesforce/apex/FinalAutofillController.describeSourceFields';
-import describeReferenceTargets from '@salesforce/apex/FinalAutofillController.describeReferenceTargets';
-import getTestRecordValues from '@salesforce/apex/FinalAutofillController.getTestRecordValues';
 import mintRecordLink from '@salesforce/apex/FinalStudioController.mintRecordLink';
 import mintTrackedLink from '@salesforce/apex/FinalStudioController.mintTrackedLink';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
 import LightningConfirm from 'lightning/confirm';
 
-jest.mock(
-    '@salesforce/apex/FinalAutofillController.describeSourceFields',
-    () => ({ default: jest.fn() }),
-    { virtual: true }
-);
-jest.mock(
-    '@salesforce/apex/FinalAutofillController.describeReferenceTargets',
-    () => ({ default: jest.fn() }),
-    { virtual: true }
-);
-jest.mock(
-    '@salesforce/apex/FinalAutofillController.getTestRecordValues',
-    () => ({ default: jest.fn() }),
-    { virtual: true }
-);
 jest.mock(
     '@salesforce/apex/FinalStudioController.mintRecordLink',
     () => ({ default: jest.fn() }),
@@ -108,13 +90,6 @@ const SAMPLE_SPEC = {
     }
 };
 
-const MOCK_FIELDS = [
-    { apiName: 'FirstName', label: 'First Name', type: 'string' },
-    { apiName: 'LastName', label: 'Last Name', type: 'string' },
-    { apiName: 'Email', label: 'Email', type: 'email' },
-    { apiName: 'Phone', label: 'Phone', type: 'phone' }
-];
-
 function mount(props = {}) {
     const el = createElement('c-final-autofill-panel', {
         is: FinalAutofillPanel
@@ -126,11 +101,6 @@ function mount(props = {}) {
 
 describe('c-final-autofill-panel', () => {
     beforeEach(() => {
-        describeSourceFields.mockResolvedValue(MOCK_FIELDS);
-        getTestRecordValues.mockResolvedValue({
-            FirstName: 'Avery',
-            Email: 'avery@example.test'
-        });
         mintRecordLink.mockResolvedValue({ query: 'c__rt=token123' });
         mintTrackedLink.mockResolvedValue({ query: 'c__rt=token456' });
         invalidateLinks.mockResolvedValue({ ok: true });
@@ -144,7 +114,7 @@ describe('c-final-autofill-panel', () => {
         jest.clearAllMocks();
     });
 
-    it('renders empty state when no rules exist and opens editor on Add rule', async () => {
+    it('renders empty state when no rules exist and asks for a new rule on Add rule', async () => {
         const el = mount({ spec: { pages: [] } });
         await flush();
 
@@ -152,12 +122,13 @@ describe('c-final-autofill-panel', () => {
             'Fill answers from Salesforce records'
         );
 
-        const addBtn = el.shadowRoot.querySelector('.ap-btn-primary');
-        addBtn.click();
+        const got = [];
+        el.addEventListener('editautofillrule', (e) => got.push(e.detail));
+        el.shadowRoot.querySelector('.ap-btn-primary').click();
         await flush();
 
-        expect(el.shadowRoot.querySelector('.ap-editor')).not.toBeNull();
-        expect(el.shadowRoot.querySelector('.ap-back-btn')).not.toBeNull();
+        // a new rule opens in the Studio dialog
+        expect(got).toEqual([{ rule: null }]);
     });
 
     it('renders rule list with cards, badges, and toggles rule state', async () => {
@@ -205,248 +176,6 @@ describe('c-final-autofill-panel', () => {
         expect(rulesListener.mock.calls[0][0].detail.rules.length).toBe(0);
     });
 
-    it('opens editor, loads source fields, and saves updated rule', async () => {
-        const el = mount({ spec: SAMPLE_SPEC, formId: 'a00123' });
-        await flush();
-
-        const editBtn = el.shadowRoot.querySelector(
-            'button[title="Edit rule"]'
-        );
-        editBtn.click();
-        await flush();
-
-        expect(describeSourceFields).toHaveBeenCalledWith({
-            formId: 'a00123',
-            objectApiName: 'Contact'
-        });
-
-        const rulesListener = jest.fn();
-        el.addEventListener('ruleschange', rulesListener);
-
-        // Add mapping
-        const addMapBtn = el.shadowRoot.querySelector('button.ap-btn-sm');
-        addMapBtn.click();
-        await flush();
-
-        const rows = el.shadowRoot.querySelectorAll('.ap-mapping-row');
-        expect(rows.length).toBe(2);
-
-        // Save rule
-        const doneBtn = el.shadowRoot.querySelector(
-            '.ap-editor-footer .ap-btn-primary'
-        );
-        doneBtn.click();
-        await flush();
-
-        expect(rulesListener).toHaveBeenCalled();
-        expect(
-            rulesListener.mock.calls[0][0].detail.rules[0].mappings.length
-        ).toBe(2);
-        // Back to list
-        expect(el.shadowRoot.querySelector('.ap-editor')).toBeNull();
-    });
-
-    it('navigates to Fields when no lookup elements exist on form', async () => {
-        const specNoLookups = {
-            pages: [
-                {
-                    sections: [
-                        {
-                            elements: [
-                                {
-                                    id: 'el_txt',
-                                    type: 'field',
-                                    config: { inputType: 'text' }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-        const el = mount({ spec: specNoLookups });
-        await flush();
-
-        // Create rule
-        el.shadowRoot.querySelector('.ap-btn-primary').click();
-        await flush();
-
-        // Switch to lookup source
-        const lookupRadio = el.shadowRoot.querySelector(
-            'button[data-type="lookup"]'
-        );
-        lookupRadio.click();
-        await flush();
-
-        expect(
-            el.shadowRoot.querySelector('.ap-missing-lookup-notice')
-        ).not.toBeNull();
-
-        const navListener = jest.fn();
-        el.addEventListener('navigatetab', navListener);
-
-        const goToFieldsBtn = el.shadowRoot.querySelector(
-            '.ap-missing-lookup-notice button'
-        );
-        goToFieldsBtn.click();
-        await flush();
-
-        expect(navListener).toHaveBeenCalled();
-        expect(navListener.mock.calls[0][0].detail.tab).toBe('fields');
-    });
-
-    it('a polymorphic lookup asks which object the rule reads, then loads its fields', async () => {
-        // Task "Related To" can point at many objects. One object per rule:
-        // the author names it, and the rule stamps that object's key prefix
-        // so the runtime only reads records that really are that object.
-        describeReferenceTargets.mockResolvedValue([
-            { value: 'Account', label: 'Account', keyPrefix: '001' },
-            { value: 'Opportunity', label: 'Opportunity', keyPrefix: '006' }
-        ]);
-        const specPoly = {
-            pages: [
-                {
-                    sections: [
-                        {
-                            elements: [
-                                {
-                                    id: 'el_what',
-                                    type: 'field',
-                                    label: 'Related To',
-                                    binding: {
-                                        object: 'Task',
-                                        field: 'WhatId'
-                                    },
-                                    config: {
-                                        inputType: 'reference',
-                                        polymorphic: true
-                                    }
-                                },
-                                {
-                                    id: 'el_phone',
-                                    type: 'field',
-                                    label: 'Phone',
-                                    config: { inputType: 'phone' }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-        const el = mount({ spec: specPoly, formId: 'a00123' });
-        await flush();
-        el.shadowRoot.querySelector('.ap-btn-primary').click();
-        await flush();
-        el.shadowRoot.querySelector('button[data-type="lookup"]').click();
-        await flush();
-        await flush();
-
-        expect(
-            el.shadowRoot.querySelector('.ap-missing-lookup-notice')
-        ).toBeNull();
-        expect(describeReferenceTargets).toHaveBeenCalledWith({
-            objectApiName: 'Task',
-            fieldApiName: 'WhatId'
-        });
-        const picker = el.shadowRoot.querySelector(
-            'lightning-combobox.ap-poly-object'
-        );
-        expect(picker).not.toBeNull();
-        expect(picker.options.map((o) => o.value)).toEqual([
-            'Account',
-            'Opportunity'
-        ]);
-        // No object chosen yet, so no fields are loaded.
-        expect(describeSourceFields).not.toHaveBeenCalled();
-
-        picker.dispatchEvent(
-            new CustomEvent('change', { detail: { value: 'Account' } })
-        );
-        await flush();
-        expect(describeSourceFields).toHaveBeenCalledWith({
-            formId: 'a00123',
-            objectApiName: 'Account'
-        });
-
-        const rulesListener = jest.fn();
-        el.addEventListener('ruleschange', rulesListener);
-        el.shadowRoot
-            .querySelector('.ap-editor-footer .ap-btn-primary')
-            .click();
-        await flush();
-        const saved = rulesListener.mock.calls[0][0].detail.rules.at(-1);
-        expect(saved.source).toEqual({
-            type: 'lookup',
-            elementId: 'el_what',
-            objectApiName: 'Account',
-            keyPrefix: '001'
-        });
-    });
-
-    it('renders guest disclosure review on public forms with link rules', async () => {
-        const el = mount({ spec: SAMPLE_SPEC, isPublic: true });
-        await flush();
-
-        // Edit rule
-        el.shadowRoot.querySelector('button[title="Edit rule"]').click();
-        await flush();
-
-        const disclosureCard = el.shadowRoot.querySelector(
-            '.ap-disclosure-card'
-        );
-        expect(disclosureCard).not.toBeNull();
-        expect(disclosureCard.textContent).toContain('First Name');
-    });
-
-    it('tests in preview under author access and clears test data', async () => {
-        const el = mount({ spec: SAMPLE_SPEC, formId: 'a00123' });
-        await flush();
-
-        // Edit rule
-        el.shadowRoot.querySelector('button[title="Edit rule"]').click();
-        await flush();
-
-        const testInput = el.shadowRoot.querySelector('.ap-test-input');
-        testInput.value = '003000000000123AAA';
-        testInput.dispatchEvent(new CustomEvent('change'));
-        await flush();
-
-        const testListener = jest.fn();
-        const clearListener = jest.fn();
-        el.addEventListener('testpreview', testListener);
-        el.addEventListener('cleartestpreview', clearListener);
-
-        const applyBtn = el.shadowRoot.querySelector(
-            '.ap-test-controls button'
-        );
-        applyBtn.click();
-        await flush();
-
-        expect(getTestRecordValues).toHaveBeenCalledWith({
-            formId: 'a00123',
-            objectApiName: 'Contact',
-            recordId: '003000000000123AAA',
-            fieldApiNames: ['FirstName']
-        });
-        expect(testListener).toHaveBeenCalled();
-        expect(testListener.mock.calls[0][0].detail).toEqual({
-            recordId: '003000000000123AAA',
-            ruleId: 'af_1',
-            values: { el_first_name: 'Avery' }
-        });
-
-        // Test banner should be visible
-        expect(el.shadowRoot.querySelector('.ap-test-banner')).not.toBeNull();
-
-        // Clear test data
-        el.shadowRoot.querySelector('.ap-clear-test-btn').click();
-        await flush();
-
-        expect(clearListener).toHaveBeenCalled();
-        expect(el.shadowRoot.querySelector('.ap-test-banner')).toBeNull();
-    });
-
     it('creates personalized link when form has active version', async () => {
         const el = mount({
             spec: SAMPLE_SPEC,
@@ -480,7 +209,7 @@ describe('c-final-autofill-panel', () => {
         });
     });
 
-    describe('Freeform: rules open in the Studio dialog (IMPL_PLAN_F2_AUTOFILL 6.1)', () => {
+    describe('rules open in the Studio dialog (IMPL_PLAN_F2_AUTOFILL 6.1, 8)', () => {
         it('Add and Edit ask the Studio to open the rule, and never edit here', async () => {
             const el = mount({ spec: SAMPLE_SPEC, formType: 'freeform' });
             const got = [];
@@ -493,8 +222,43 @@ describe('c-final-autofill-panel', () => {
             expect(got[1].rule.id).toBe(
                 SAMPLE_SPEC.settings.prefill.autofillRules[0].id
             );
-            // still the list: no in-rail editor opened
-            expect(el.shadowRoot.querySelector('.ap-editor-footer')).toBeNull();
+        });
+
+        it.each(['form', 'survey'])(
+            'a %s opens the dialog too',
+            async (formType) => {
+                const el = mount({ spec: SAMPLE_SPEC, formType });
+                const got = [];
+                el.addEventListener('editautofillrule', (e) =>
+                    got.push(e.detail)
+                );
+                await flush();
+                el.shadowRoot
+                    .querySelector('button[title="Edit rule"]')
+                    .click();
+                await flush();
+                expect(got[0].rule.id).toBe(
+                    SAMPLE_SPEC.settings.prefill.autofillRules[0].id
+                );
+            }
+        );
+
+        it('a survey link rule reads its connected object in the list', async () => {
+            const spec = JSON.parse(JSON.stringify(SAMPLE_SPEC));
+            spec.form = { type: 'survey', primaryContextObject: 'Contact' };
+            spec.settings.prefill.autofillRules = [
+                {
+                    id: 'af_s',
+                    enabled: true,
+                    source: { type: 'link' },
+                    mappings: []
+                }
+            ];
+            const el = mount({ spec, formType: 'survey' });
+            await flush();
+            const text = el.shadowRoot.textContent;
+            expect(text).toContain('Link: Contact');
+            expect(text).not.toContain('Source object missing');
         });
 
         it('makes links under the list when a link rule is on', async () => {
@@ -506,19 +270,6 @@ describe('c-final-autofill-panel', () => {
             });
             await flush();
             expect(el.shadowRoot.querySelector('.ap-mint-form')).not.toBeNull();
-        });
-
-        it('a Form still edits its rules in the rail', async () => {
-            const el = mount({ spec: SAMPLE_SPEC, formType: 'form' });
-            const got = [];
-            el.addEventListener('editautofillrule', (e) => got.push(e.detail));
-            await flush();
-            el.shadowRoot.querySelector('button[title="Edit rule"]').click();
-            await flush();
-            expect(got).toEqual([]);
-            expect(
-                el.shadowRoot.querySelector('.ap-editor-footer')
-            ).not.toBeNull();
         });
     });
 
