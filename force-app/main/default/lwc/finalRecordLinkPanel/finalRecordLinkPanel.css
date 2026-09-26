@@ -83,54 +83,6 @@
 }
 
 /* Inline "Stop every link made so far?" question (no lightning/confirm). */
-.rl-btn {
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.rl-btn:focus-visible {
-    outline: 2px solid var(--c-studio-accent);
-    outline-offset: 2px;
-}
-
-.rl-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.rl-btn-danger-text {
-    background: transparent;
-    color: var(--c-studio-error);
-    border: 1px solid var(--c-studio-border-strong);
-}
-
-.rl-btn-danger-text:hover:not(:disabled) {
-    background: var(--c-studio-error-surface);
-}
-
-.rl-btn-secondary {
-    background: #ffffff;
-    color: var(--c-studio-text);
-    border: 1px solid var(--c-studio-border-strong);
-}
-
-.rl-btn-secondary:hover:not(:disabled) {
-    background: var(--c-studio-hover);
-}
-
-.rl-btn-danger {
-    background: var(--c-studio-error);
-    color: var(--c-studio-on-accent);
-    border: 0;
-}
-
-.rl-btn-danger:hover:not(:disabled) {
-    background: var(--c-studio-error-text);
-}
-
 .rl-stop-ask {
     margin-top: 8px;
     padding: 10px 12px;

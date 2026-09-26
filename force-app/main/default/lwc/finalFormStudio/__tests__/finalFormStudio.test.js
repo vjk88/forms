@@ -1726,6 +1726,7 @@ describe('c-final-form-studio', () => {
             'Earlier links are stopped. Links you make from now on will work.'
         );
         expect(panel.linkBusy).toBe(false);
+        expect(panel.linkAction).toBe('');
     });
 
     it('shows all wired actions and sends the live spec to Clone Apex', async () => {

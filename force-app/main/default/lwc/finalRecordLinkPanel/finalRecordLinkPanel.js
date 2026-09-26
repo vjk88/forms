@@ -6,6 +6,7 @@ import { LightningElement, api } from 'lwc';
  */
 export default class FinalRecordLinkPanel extends LightningElement {
     @api objectApi;
+    @api linkBusy;
     @api linkError;
     @api linkNotice;
 
@@ -22,28 +23,24 @@ export default class FinalRecordLinkPanel extends LightningElement {
     }
 
     /**
-     * The Studio's busy flag. When a stop we asked for finishes, hand focus
-     * back to the button that started it.
+     * What the Studio's busy call is: 'mint', 'stop' or ''. When a stop
+     * finishes, hand focus back to the button that started it.
      */
     @api
-    get linkBusy() {
-        return this._linkBusy;
+    get linkAction() {
+        return this._linkAction;
     }
-    set linkBusy(value) {
-        const wasBusy = this._linkBusy;
-        this._linkBusy = Boolean(value);
-        if (wasBusy && !this._linkBusy && this.stopRequested) {
-            this.stopRequested = false;
+    set linkAction(value) {
+        if (this._linkAction === 'stop' && value !== 'stop') {
             this._focusNext = '.rl-stop-trigger';
         }
+        this._linkAction = value || '';
     }
 
     _mintedLink;
-    _linkBusy = false;
+    _linkAction = '';
     /** The "Stop every link made so far?" question is showing. */
     confirmingStop = false;
-    /** We asked the Studio to stop links and it has not finished yet. */
-    stopRequested = false;
     _focusNext = null;
     recordId = '';
     tracked = false;
@@ -57,15 +54,13 @@ export default class FinalRecordLinkPanel extends LightningElement {
     }
 
     get createLabel() {
-        return this.linkBusy && !this.stopRequested
+        return this.linkAction === 'mint'
             ? 'Creating invitation…'
             : 'Create invitation link';
     }
 
     get stopLabel() {
-        return this.linkBusy && this.stopRequested
-            ? 'Stopping…'
-            : 'Stop earlier links';
+        return this.linkAction === 'stop' ? 'Stopping…' : 'Stop earlier links';
     }
 
     get stopExpanded() {
@@ -114,6 +109,8 @@ export default class FinalRecordLinkPanel extends LightningElement {
         if (![15, 18].includes(recordId.length)) {
             return;
         }
+        // One link call at a time: creating closes the stop question.
+        this.confirmingStop = false;
         this.dispatchEvent(
             new CustomEvent('mintlink', {
                 detail: {
@@ -153,8 +150,10 @@ export default class FinalRecordLinkPanel extends LightningElement {
     }
 
     handleStopConfirm() {
+        if (this.linkBusy) {
+            return;
+        }
         this.confirmingStop = false;
-        this.stopRequested = true;
         this._focusNext = '.rl-stop-trigger';
         this.dispatchEvent(new CustomEvent('invalidatelinks'));
     }

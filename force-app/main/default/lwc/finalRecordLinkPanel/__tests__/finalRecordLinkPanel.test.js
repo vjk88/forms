@@ -99,10 +99,27 @@ describe('record invitation panel', () => {
 
     describe('Stop earlier links asks inline, never with lightning/confirm', () => {
         const $ = (el, sel) => el.shadowRoot.querySelector(sel);
-        const open = async () => {
-            const el = mount({ objectApi: 'Contact' });
+        const STOPPED =
+            'Earlier links are stopped. Links you make from now on will work.';
+        // The lightning-button stub has no focus(); record who was focused.
+        let focused;
+        beforeEach(() => {
+            focused = [];
+            jest.spyOn(HTMLElement.prototype, 'focus').mockImplementation(
+                function record() {
+                    focused.push(this);
+                }
+            );
+        });
+        afterEach(() => {
+            jest.restoreAllMocks();
+        });
+        const lastFocused = () => focused[focused.length - 1];
+        const open = async (props = {}) => {
+            const el = mount({ objectApi: 'Contact', ...props });
             const invalidate = jest.fn();
             el.addEventListener('invalidatelinks', invalidate);
+            await flush();
             $(el, '.rl-stop-trigger').click();
             await flush();
             return { el, invalidate };
@@ -113,7 +130,8 @@ describe('record invitation panel', () => {
             const invalidate = jest.fn();
             el.addEventListener('invalidatelinks', invalidate);
             const trigger = $(el, '.rl-stop-trigger');
-            expect(trigger.textContent.trim()).toBe('Stop earlier links');
+            expect(trigger.label).toBe('Stop earlier links');
+            expect(trigger.variant).toBe('destructive-text');
             expect(trigger.getAttribute('aria-expanded')).toBe('false');
             expect($(el, '[role="alertdialog"]')).toBeNull();
 
@@ -127,7 +145,7 @@ describe('record invitation panel', () => {
             expect($(el, '.rl-stop-text').textContent.trim()).toMatch(
                 /^People who open an earlier link will no longer see/
             );
-            expect(el.shadowRoot.activeElement).toBe($(el, '.rl-stop-cancel'));
+            expect(lastFocused()).toBe($(el, '.rl-stop-cancel'));
             expect(trigger.getAttribute('aria-expanded')).toBe('true');
 
             $(el, '.rl-stop-cancel').click();
@@ -135,7 +153,7 @@ describe('record invitation panel', () => {
 
             expect($(el, '[role="alertdialog"]')).toBeNull();
             expect(invalidate).not.toHaveBeenCalled();
-            expect(el.shadowRoot.activeElement).toBe($(el, '.rl-stop-trigger'));
+            expect(lastFocused()).toBe(trigger);
             expect(trigger.getAttribute('aria-expanded')).toBe('false');
         });
 
@@ -149,7 +167,7 @@ describe('record invitation panel', () => {
 
             expect($(el, '[role="alertdialog"]')).toBeNull();
             expect(invalidate).not.toHaveBeenCalled();
-            expect(el.shadowRoot.activeElement).toBe($(el, '.rl-stop-trigger'));
+            expect(lastFocused()).toBe($(el, '.rl-stop-trigger'));
         });
 
         it('Stop links asks the Studio once, shows Stopping, then hands focus back', async () => {
@@ -160,58 +178,107 @@ describe('record invitation panel', () => {
             expect(invalidate).toHaveBeenCalledTimes(1);
             expect($(el, '[role="alertdialog"]')).toBeNull();
 
-            // The Studio marks itself busy while it stops the links.
+            // The Studio says it is busy stopping.
             el.linkBusy = true;
+            el.linkAction = 'stop';
             await flush();
             const trigger = $(el, '.rl-stop-trigger');
-            expect(trigger.textContent.trim()).toBe('Stopping…');
+            expect(trigger.label).toBe('Stopping…');
             expect(trigger.disabled).toBe(true);
             expect(
                 buttonByLabel(el, 'Create invitation link')
             ).not.toBeUndefined();
 
+            focused = [];
             el.linkBusy = false;
-            el.linkNotice =
-                'Earlier links are stopped. Links you make from now on will work.';
+            el.linkAction = '';
+            el.linkNotice = STOPPED;
             await flush();
 
-            expect(trigger.textContent.trim()).toBe('Stop earlier links');
-            expect(el.shadowRoot.activeElement).toBe(trigger);
-            const notice = $(el, '.rl-message[role="status"]');
-            expect(notice.textContent.trim()).toBe(
-                'Earlier links are stopped. Links you make from now on will work.'
+            expect(trigger.label).toBe('Stop earlier links');
+            expect(lastFocused()).toBe(trigger);
+            expect($(el, '.rl-message[role="status"]').textContent.trim()).toBe(
+                STOPPED
             );
         });
 
-        it('cannot ask while a link is being created', async () => {
-            const el = mount({ objectApi: 'Contact', linkBusy: true });
+        it('a panel rebuilt mid-stop still shows Stopping and returns focus', async () => {
+            const el = mount({
+                objectApi: 'Contact',
+                linkBusy: true,
+                linkAction: 'stop'
+            });
+            await flush();
+            const trigger = $(el, '.rl-stop-trigger');
+            expect(trigger.label).toBe('Stopping…');
+            expect(
+                buttonByLabel(el, 'Create invitation link')
+            ).not.toBeUndefined();
+
+            el.linkBusy = false;
+            el.linkAction = '';
+            await flush();
+            expect(lastFocused()).toBe(trigger);
+        });
+
+        it('creating a link shows Creating, never Stopping', async () => {
+            const el = mount({
+                objectApi: 'Contact',
+                linkBusy: true,
+                linkAction: 'mint'
+            });
             await flush();
             const trigger = $(el, '.rl-stop-trigger');
             expect(trigger.disabled).toBe(true);
-            expect(trigger.textContent.trim()).toBe('Stop earlier links');
+            expect(trigger.label).toBe('Stop earlier links');
             expect(
                 buttonByLabel(el, 'Creating invitation…')
             ).not.toBeUndefined();
         });
 
-        it('hides an old result while asking, and shows a failure as an alert', async () => {
-            const el = mount({
-                objectApi: 'Contact',
-                linkNotice: 'Old news.'
-            });
+        it('creating a link closes the question, and Stop links does nothing while busy', async () => {
+            const { el, invalidate } = await open();
+            const mint = jest.fn();
+            el.addEventListener('mintlink', mint);
+            const idInput = inputByLabel(el, 'Salesforce record ID');
+            idInput.value = '003000000000001AAA';
+            idInput.dispatchEvent(new CustomEvent('change'));
+            await flush();
+            buttonByLabel(el, 'Create invitation link').click();
+            await flush();
+
+            expect(mint).toHaveBeenCalledTimes(1);
+            expect($(el, '[role="alertdialog"]')).toBeNull();
+
+            // Even if the question were open while busy, confirm is inert.
+            el.linkBusy = true;
+            el.linkAction = 'mint';
+            await flush();
+            el.linkBusy = false;
+            el.linkAction = '';
             await flush();
             $(el, '.rl-stop-trigger').click();
             await flush();
-            expect($(el, '.rl-message[role="status"]')).toBeNull();
-
-            $(el, '.rl-stop-confirm').click();
             el.linkBusy = true;
             await flush();
-            el.linkBusy = false;
+            expect($(el, '.rl-stop-confirm').disabled).toBe(true);
+            $(el, '.rl-stop-confirm').click();
+            expect(invalidate).not.toHaveBeenCalled();
+        });
+
+        it('hides an old result while asking, and shows a failure as an alert', async () => {
+            const { el } = await open({ linkNotice: 'Old news.' });
+            expect($(el, '.rl-message[role="status"]')).toBeNull();
+
+            $(el, '.rl-stop-cancel').click();
+            await flush();
+            expect($(el, '.rl-message[role="status"]').textContent.trim()).toBe(
+                'Old news.'
+            );
+
             el.linkNotice = '';
             el.linkError = "Couldn't stop earlier links.";
             await flush();
-
             const error = $(el, '.rl-message--error');
             expect(error.getAttribute('role')).toBe('alert');
             expect(error.textContent.trim()).toBe(

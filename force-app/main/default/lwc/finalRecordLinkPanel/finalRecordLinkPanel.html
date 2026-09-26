@@ -100,15 +100,14 @@
         </template>
 
         <div class="rl-danger-row">
-            <button
-                type="button"
-                class="rl-btn rl-btn-danger-text rl-stop-trigger"
+            <lightning-button
+                class="rl-stop-trigger"
+                variant="destructive-text"
+                label={stopLabel}
                 disabled={linkBusy}
                 aria-expanded={stopExpanded}
                 onclick={handleInvalidate}
-            >
-                {stopLabel}
-            </button>
+            ></lightning-button>
             <template lwc:if={confirmingStop}>
                 <div
                     class="rl-stop-ask"
@@ -126,20 +125,18 @@
                         You can’t undo this.
                     </p>
                     <div class="rl-stop-actions">
-                        <button
-                            type="button"
-                            class="rl-btn rl-btn-secondary rl-stop-cancel"
+                        <lightning-button
+                            class="rl-stop-cancel"
+                            label="Cancel"
                             onclick={handleStopCancel}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            class="rl-btn rl-btn-danger rl-stop-confirm"
+                        ></lightning-button>
+                        <lightning-button
+                            class="rl-stop-confirm"
+                            variant="destructive"
+                            label="Stop links"
+                            disabled={linkBusy}
                             onclick={handleStopConfirm}
-                        >
-                            Stop links
-                        </button>
+                        ></lightning-button>
                     </div>
                 </div>
             </template>

@@ -1545,6 +1545,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.linkBusy = true;
+        this.linkAction = 'mint';
         this.linkError = '';
         this.linkNotice = '';
         this.mintedLink = null;
@@ -1563,6 +1564,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 (e && e.body && e.body.message) || "Couldn't create that link.";
         } finally {
             this.linkBusy = false;
+            this.linkAction = '';
         }
     }
 
@@ -1574,6 +1576,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return;
         }
         this.linkBusy = true;
+        this.linkAction = 'stop';
         this.linkError = '';
         this.linkNotice = '';
         try {
@@ -1587,6 +1590,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 "Couldn't stop earlier links.";
         } finally {
             this.linkBusy = false;
+            this.linkAction = '';
         }
     }
 
@@ -1803,6 +1807,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     mintedLink = null;
     /** SO-4: a mint / invalidate call is in flight. */
     linkBusy = false;
+    /** What the busy link call is: 'mint', 'stop' or ''. */
+    linkAction = '';
     /** SO-4: a mint failure, shown IN the record-links block (not the card top). */
     linkError = '';
     /** SO-4: a transient confirmation after Invalidate all links. */

@@ -34,6 +34,7 @@ export default class FinalStudioSettingsPanel extends LightningElement {
     @api publicHelp;
     @api mintedLink;
     @api linkBusy;
+    @api linkAction;
     @api linkError;
     @api linkNotice;
     @api specSaveText;
