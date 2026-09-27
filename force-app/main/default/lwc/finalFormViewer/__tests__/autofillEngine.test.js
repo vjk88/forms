@@ -669,9 +669,21 @@ describe('fitting a value to its question (IMPL_PLAN_F2_AUTOFILL 6.7)', () => {
         expect(fitValue('next week', date)).toBe(DOES_NOT_FIT);
     });
 
-    it('choices: the option whose value or label matches, never forced', () => {
+    it('choices: only an exact value picks an option, never a label (owner 2026-09-27)', () => {
         expect(fitValue('Tech', choice)).toBe('Tech');
-        expect(fitValue('Technology', choice)).toBe('Tech');
+        // 'Technology' is only a label: no fill
+        expect(fitValue('Technology', choice)).toBe(DOES_NOT_FIT);
+        // exact: a different case is a different value
+        expect(fitValue('tech', choice)).toBe(DOES_NOT_FIT);
+        // one option's label never steals another option's value
+        const tiers = {
+            answerType: 'Choice',
+            options: [
+                { label: 'Gold', value: 'silver' },
+                { label: 'Platinum', value: 'Gold' }
+            ]
+        };
+        expect(fitValue('Gold', tiers)).toBe('Gold');
         expect(fitValue('Banking', choice)).toBe(DOES_NOT_FIT);
         // options not known here: the value as text
         expect(fitValue('Banking', { answerType: 'Choice' })).toBe('Banking');

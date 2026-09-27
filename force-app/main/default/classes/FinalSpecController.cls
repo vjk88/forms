@@ -119,6 +119,14 @@ public with sharing class FinalSpecController {
         // can be called without the dialog.
         FinalMappingValidator.validateForPublish(formId, spec);
 
+        // Choice options need a label and a unique value (owner 2026-09-27).
+        List<FinalPublishWarnings.ChoiceProblem> badChoices = FinalPublishWarnings.choiceOptionProblems(
+            spec
+        );
+        if (!badChoices.isEmpty()) {
+            throw FinalMappingRules.refusal(badChoices[0].text);
+        }
+
         // A record lookup must say what it searches (IMPL_PLAN_F2_AUTOFILL
         // 6.0); the publish dialog shows the same, but this is the gate.
         List<Map<String, Object>> unnamed = FinalPublishWarnings.lookupsWithoutObject(

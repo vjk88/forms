@@ -287,6 +287,15 @@ export default class FinalElementRenderer extends LightningElement {
         }));
     }
 
+    /** Radio, checkbox and dropdown take plain text: the emoji goes in
+     *  front of the label (a sublabel can't be drawn there at all). */
+    get nativeOptions() {
+        return this.options.map((o) => ({
+            label: o.emoji ? `${o.emoji} ${o.label}` : o.label,
+            value: o.value
+        }));
+    }
+
     get hasOptions() {
         return this.options.length > 0;
     }

@@ -1073,15 +1073,63 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get optionRows() {
-        return (this.cfg.options || []).map((o, i) => ({
-            key: `opt_${i}`,
-            index: i,
-            label: o.label || '',
-            value: o.value || '',
-            // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
-            emoji: o.emoji || '',
-            description: o.description || ''
-        }));
+        const options = this.cfg.options || [];
+        const multi = this.cfg.renderAs === 'Checkbox_Group';
+        const firstAt = new Map();
+        return options.map((o, i) => {
+            const label = o.label || '';
+            const value = o.value || '';
+            const blank = (t) => !t.trim();
+            // Both are required and every value is its own (exact match):
+            // Autofill picks an option by its value, never its label. A row
+            // nobody has typed in yet stays quiet; publish still refuses it.
+            let labelProblem = '';
+            let valueProblem = '';
+            if (!(blank(label) && blank(value))) {
+                if (blank(label)) {
+                    labelProblem = 'Enter a label.';
+                }
+                if (blank(value)) {
+                    valueProblem = 'Enter a value.';
+                } else if (value === '__other__') {
+                    valueProblem =
+                        'That value is kept for “Other”. Choose another.';
+                } else if (multi && value.includes(';')) {
+                    valueProblem = 'A value here can’t contain “;”.';
+                } else if (firstAt.has(value)) {
+                    valueProblem = `Same value as option ${firstAt.get(value) + 1}. Each value must be different.`;
+                }
+            }
+            if (!blank(value) && !firstAt.has(value)) {
+                firstAt.set(value, i);
+            }
+            const problem = [labelProblem, valueProblem]
+                .filter(Boolean)
+                .join(' ');
+            return {
+                key: `opt_${i}`,
+                index: i,
+                label,
+                value,
+                // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
+                emoji: o.emoji || '',
+                description: o.description || '',
+                problem,
+                problemId: `opt-problem-${i}`,
+                labelInvalid: labelProblem ? 'true' : 'false',
+                valueInvalid: valueProblem ? 'true' : 'false',
+                labelClass: labelProblem ? 'pp-input pp-input-bad' : 'pp-input',
+                valueClass: valueProblem ? 'pp-input pp-input-bad' : 'pp-input'
+            };
+        });
+    }
+
+    /** A sublabel shows only on chips and cards: a plain radio, checkbox or
+     *  dropdown can't draw a second line. */
+    get showOptionSublabels() {
+        return (
+            this.cfg.optionStyle === 'chips' || this.cfg.optionStyle === 'cards'
+        );
     }
 
     /** Raw <input value={x}> writes the LITERAL string "undefined" into the
@@ -1412,7 +1460,14 @@ export default class FinalPropertyPanel extends LightningElement {
         if (!row) {
             return;
         }
-        row[field] = event.target.value;
+        const text = event.target.value;
+        // On creation only: an option whose value was never set takes its
+        // label as its value. After that, label and value are the author's
+        // own, edited separately (owner 2026-09-27).
+        if (field === 'label' && !row.value) {
+            row.value = text;
+        }
+        row[field] = text;
         this._config({ options });
     }
 

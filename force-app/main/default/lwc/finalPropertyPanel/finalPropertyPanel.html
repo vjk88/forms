@@ -524,7 +524,7 @@
                                         class="pp-input pp-emoji"
                                         placeholder="🙂"
                                         title="Optional emoji shown before the label"
-                                        maxlength="4"
+                                        maxlength="16"
                                         value={o.emoji}
                                         data-index={o.index}
                                         data-field="emoji"
@@ -532,8 +532,12 @@
                                     />
                                     <input
                                         type="text"
-                                        class="pp-input"
+                                        class={o.labelClass}
                                         placeholder="Label"
+                                        aria-label="Option label"
+                                        aria-invalid={o.labelInvalid}
+                                        aria-describedby={o.problemId}
+                                        required
                                         value={o.label}
                                         data-index={o.index}
                                         data-field="label"
@@ -541,8 +545,13 @@
                                     />
                                     <input
                                         type="text"
-                                        class="pp-input"
+                                        class={o.valueClass}
                                         placeholder="Value"
+                                        aria-label="Option value"
+                                        aria-invalid={o.valueInvalid}
+                                        aria-describedby={o.problemId}
+                                        title="Stored in answers. Autofill picks this option only when a record's value is exactly this."
+                                        required
                                         value={o.value}
                                         data-index={o.index}
                                         data-field="value"
@@ -558,15 +567,22 @@
                                         ×
                                     </button>
                                 </div>
-                                <input
-                                    type="text"
-                                    class="pp-input pp-sublabel"
-                                    placeholder="Sublabel (optional — small line under the label)"
-                                    value={o.description}
-                                    data-index={o.index}
-                                    data-field="description"
-                                    onchange={handleOptionChange}
-                                />
+                                <template lwc:if={o.problem}>
+                                    <p class="pp-opt-problem" id={o.problemId}>
+                                        {o.problem}
+                                    </p>
+                                </template>
+                                <template lwc:if={showOptionSublabels}>
+                                    <input
+                                        type="text"
+                                        class="pp-input pp-sublabel"
+                                        placeholder="Sublabel (optional — small line under the label)"
+                                        value={o.description}
+                                        data-index={o.index}
+                                        data-field="description"
+                                        onchange={handleOptionChange}
+                                    />
+                                </template>
                             </div>
                         </template>
                         <button

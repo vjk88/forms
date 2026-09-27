@@ -360,4 +360,104 @@ private class FinalPublishWarningsTest {
         Assert.areEqual('el_pick', i.elementId);
         Assert.areEqual('Choose which object “Your company” searches.', i.text);
     }
+
+    // ---- choice options: a label and a unique value each (2026-09-27) ----
+
+    private static Map<String, Object> choiceSpec(List<Object> options) {
+        return new Map<String, Object>{
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'elements' => new List<Object>{
+                                new Map<String, Object>{
+                                    'id' => 'el_tier',
+                                    'type' => 'field',
+                                    'label' => 'Tier',
+                                    'config' => new Map<String, Object>{
+                                        'inputType' => 'picklist',
+                                        'renderAs' => 'Radio_Buttons',
+                                        'options' => options
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    private static Map<String, Object> opt(String label, String value) {
+        return new Map<String, Object>{ 'label' => label, 'value' => value };
+    }
+
+    @IsTest
+    static void everyOptionNeedsALabelAndAValue() {
+        List<FinalPublishWarnings.ChoiceProblem> found = FinalPublishWarnings.choiceOptionProblems(
+            choiceSpec(
+                new List<Object>{ opt('Gold', 'Gold'), opt('Silver', '') }
+            )
+        );
+        Assert.areEqual(1, found.size());
+        Assert.areEqual('el_tier', found[0].elementId);
+        Assert.areEqual(
+            'Give every option in “Tier” a label and a value.',
+            found[0].text
+        );
+    }
+
+    @IsTest
+    static void noTwoOptionsShareAValueExactly() {
+        List<FinalPublishWarnings.ChoiceProblem> found = FinalPublishWarnings.choiceOptionProblems(
+            choiceSpec(
+                new List<Object>{ opt('Gold', 'Gold'), opt('Platinum', 'Gold') }
+            )
+        );
+        Assert.areEqual(1, found.size());
+        Assert.isTrue(
+            found[0].text.contains('have the value “Gold”'),
+            found[0].text
+        );
+        // exact match: a different case is a different value
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(
+                    choiceSpec(
+                        new List<Object>{
+                            opt('Gold', 'Gold'),
+                            opt('gold', 'gold')
+                        }
+                    )
+                )
+                .isEmpty()
+        );
+    }
+
+    @IsTest
+    static void otherIsKeptAndSeveralPicksCannotHoldASemicolon() {
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(
+                    choiceSpec(new List<Object>{ opt('Other', '__other__') })
+                )[0]
+                .text.contains('kept for “Other”')
+        );
+        Map<String, Object> spec = choiceSpec(
+            new List<Object>{ opt('Yes; definitely', 'Yes; definitely') }
+        );
+        // a single choice stores one value: a ';' is fine there
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(spec).isEmpty()
+        );
+        Map<String, Object> el = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) spec.get(
+                    'pages'
+                ))[0])
+                .get('sections'))[0])
+            .get('elements'))[0];
+        ((Map<String, Object>) el.get('config'))
+            .put('renderAs', 'Checkbox_Group');
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(spec)[0]
+                .text.contains('can’t contain “;”')
+        );
+    }
 }

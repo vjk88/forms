@@ -153,6 +153,63 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(events[1].patch.options).toHaveLength(2);
     });
 
+    it('a new option takes its label as its value once; both are required and values are unique (owner 2026-09-27)', async () => {
+        const choice = (options, optionStyle) => ({
+            kind: 'element',
+            node: {
+                id: 'el_1',
+                type: 'field',
+                label: 'Tier',
+                config: {
+                    inputType: 'picklist',
+                    renderAs: 'Radio_Buttons',
+                    optionStyle,
+                    options
+                }
+            }
+        });
+        const el = mount(choice([{ label: '', value: '' }]));
+        await flush();
+        const events = [];
+        el.addEventListener('configchange', (e) => events.push(e.detail));
+        const label = el.shadowRoot.querySelector(
+            '.pp-optrow [data-field="label"]'
+        );
+        label.value = 'Gold';
+        label.dispatchEvent(new CustomEvent('change'));
+        expect(events[0].patch.options).toEqual([
+            { label: 'Gold', value: 'Gold' }
+        ]);
+        // a row nobody has typed in yet stays quiet
+        expect(el.shadowRoot.querySelector('.pp-opt-problem')).toBeNull();
+        // a plain radio can't draw a sublabel, so none is offered
+        expect(el.shadowRoot.querySelector('.pp-sublabel')).toBeNull();
+        document.body.removeChild(el);
+
+        const dup = mount(
+            choice(
+                [
+                    { label: 'Gold', value: 'Gold' },
+                    { label: 'Platinum', value: 'Gold' }
+                ],
+                'cards'
+            )
+        );
+        await flush();
+        const problems = [
+            ...dup.shadowRoot.querySelectorAll('.pp-opt-problem')
+        ].map((p) => p.textContent.trim());
+        // only the later row, and only its value box
+        expect(problems).toEqual([
+            'Same value as option 1. Each value must be different.'
+        ]);
+        const bad = [...dup.shadowRoot.querySelectorAll('.pp-input-bad')].map(
+            (i) => i.dataset.field
+        );
+        expect(bad).toEqual(['value']);
+        expect(dup.shadowRoot.querySelector('.pp-sublabel')).not.toBeNull();
+    });
+
     it('Width renders ONLY in multi-column sections and spans segmented (legacy showWidth)', async () => {
         const one = mount({
             kind: 'element',
