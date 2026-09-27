@@ -8,6 +8,11 @@
  *
  * Guests reach `search` only when the author opted that element in
  * (`lookupConfig.allowGuest`). The default is off.
+ *
+ * The one exception is `searchPreview`, for the Studio preview, which has no
+ * published version yet. It takes the draft's config from the browser, so it
+ * is for internal users only and runs in USER_MODE like every search: the config
+ * can only ask for what the signed-in author could query anyway.
  */
 public with sharing class FinalLookupController {
     private static final String UNAVAILABLE = 'This form is not available.';
@@ -28,6 +33,38 @@ public with sharing class FinalLookupController {
             // Say nothing about why. A guest learns only that there is nothing
             // to see, never that a lookup exists and is restricted.
             return new List<FinalLookupService.Row>();
+        }
+        try {
+            return FinalLookupService.search(cfg, term, answersOf(answersJson));
+        } catch (FinalLookupService.LookupException e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    /**
+     * The Studio preview: search with the draft's own lookup config. Fields
+     * are still checked against describe and every value is bound
+     * (FinalLookupService), and the query runs as the signed-in user.
+     */
+    @AuraEnabled
+    public static List<FinalLookupService.Row> searchPreview(
+        String configJson,
+        String term,
+        String answersJson
+    ) {
+        // Studio authors only: never a guest, and never a portal user, for
+        // whom a free-form config would be a general record browser.
+        if (UserInfo.getUserType() != 'Standard') {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
+        Map<String, Object> cfg = null;
+        try {
+            cfg = asMap(JSON.deserializeUntyped(configJson));
+        } catch (Exception e) {
+            cfg = null;
+        }
+        if (cfg == null) {
+            throw new AuraHandledException('This lookup is not configured.');
         }
         try {
             return FinalLookupService.search(cfg, term, answersOf(answersJson));

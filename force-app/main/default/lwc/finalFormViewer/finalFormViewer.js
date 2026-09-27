@@ -2008,6 +2008,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                                 this.effectiveFormId || null,
                                             versionId:
                                                 this.effectiveVersionId || null,
+                                            // the Studio preview searches
+                                            // the draft, not a published copy
+                                            previewConfig:
+                                                this.preservePreview ||
+                                                this.authoring
+                                                    ? base.lookupConfig
+                                                    : null,
                                             answers: this.answers,
                                             filterKey: lookupFilterKey(
                                                 base,

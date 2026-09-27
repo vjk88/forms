@@ -870,4 +870,93 @@ private class FinalLookupServiceTest {
         Assert.isFalse(filterable.contains('Description'));
         Assert.isTrue(readable.containsAll(filterable));
     }
+
+    // ---- objects without a Name, and the Studio preview (2026-09-27) ----
+
+    @isTest
+    static void theNameFieldIsWhateverSalesforceMarks() {
+        Assert.areEqual('CaseNumber', FinalLookupService.nameFieldOf('Case'));
+        Assert.areEqual('Subject', FinalLookupService.nameFieldOf('Task'));
+        Assert.areEqual('Name', FinalLookupService.nameFieldOf('Contact'));
+        Assert.isNull(FinalLookupService.nameFieldOf('No_Such_Object__c'));
+    }
+
+    @isTest
+    static void aCaseIsFoundByItsSubjectAndShownByItsNumber() {
+        Case c = new Case(Subject = 'Printer on fire qqz');
+        insert c;
+        Map<String, Object> caseCfg = new Map<String, Object>{
+            'targetObject' => 'Case'
+        };
+        List<FinalLookupService.Row> rows = FinalLookupService.search(
+            caseCfg,
+            'on fire qqz',
+            new Map<String, Object>()
+        );
+        Assert.areEqual(1, rows.size(), 'searched by Subject, never by Id');
+        Case saved = [SELECT CaseNumber FROM Case WHERE Id = :c.Id];
+        Assert.areEqual(saved.CaseNumber, rows[0].title);
+        Assert.areEqual('Printer on fire qqz', rows[0].subtitle);
+    }
+
+    @isTest
+    static void aFieldThatTakesNoTextSearchIsNeverSearched() {
+        // an author who picked only a date to search gets nothing, not an error
+        Map<String, Object> c = new Map<String, Object>{
+            'targetObject' => 'Contact',
+            'displayFields' => new List<Object>{ 'LastName' },
+            'searchFields' => new List<Object>{ 'Birthdate' }
+        };
+        Assert.areEqual(
+            0,
+            FinalLookupService.search(c, 'zz', new Map<String, Object>()).size()
+        );
+    }
+
+    @isTest
+    static void thePreviewSearchesTheDraftConfig() {
+        insert new Contact(LastName = 'Previewqqz');
+        String draft = JSON.serialize(
+            new Map<String, Object>{
+                'targetObject' => 'Contact',
+                'displayFields' => new List<Object>{ 'LastName' },
+                'searchFields' => new List<Object>{ 'LastName' }
+            }
+        );
+        List<FinalLookupService.Row> rows = FinalLookupController.searchPreview(
+            draft,
+            'Previewqqz',
+            '{}'
+        );
+        Assert.areEqual(1, rows.size());
+        Assert.areEqual('Previewqqz', rows[0].title);
+        try {
+            FinalLookupController.searchPreview('not json', 'ab', '{}');
+            Assert.fail('a broken config is refused');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true);
+        }
+    }
+
+    @isTest
+    static void aShortTextAreaIsStillSearched() {
+        insert new Contact(
+            LastName = 'Streetqqz',
+            MailingStreet = '12 Elm Road qqz'
+        );
+        Map<String, Object> c = new Map<String, Object>{
+            'targetObject' => 'Contact',
+            'displayFields' => new List<Object>{ 'LastName' },
+            'searchFields' => new List<Object>{ 'MailingStreet' }
+        };
+        Assert.areEqual(
+            1,
+            FinalLookupService.search(
+                    c,
+                    'Elm Road qqz',
+                    new Map<String, Object>()
+                )
+                .size()
+        );
+    }
 }
