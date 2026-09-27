@@ -532,6 +532,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.addEventListener('lookupinvalid', (e) =>
                 this.handleLookupInvalid(e)
             );
+            // Owner 2026-09-27: while Autofill fills the form, nothing can be
+            // typed, tabbed to or pasted (the cover takes the clicks). Focus
+            // stays where it was, so the person carries on from the lookup.
+            const guard = (e) => {
+                if (this.isAutofillPending) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            };
+            this.addEventListener('keydown', guard);
+            this.addEventListener('beforeinput', guard);
+            this.addEventListener('paste', guard);
         }
         if (this._connectedOnce) {
             this._refreshNavCtor();

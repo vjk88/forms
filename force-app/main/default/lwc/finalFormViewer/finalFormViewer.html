@@ -55,10 +55,21 @@
                         data-edit-surface
                     >
                         <template lwc:if={isAutofillPending}>
-                            <lightning-spinner
-                                alternative-text="Loading"
-                                size="small"
-                            ></lightning-spinner>
+                            <!-- Owner 2026-09-27: nothing on the form can be
+                                 touched until Autofill has filled it. -->
+                            <div class="viewer-busy" role="status">
+                                <div class="viewer-busy-box">
+                                    <div class="viewer-busy-spinner">
+                                        <lightning-spinner
+                                            alternative-text="Filling in details"
+                                            size="small"
+                                        ></lightning-spinner>
+                                    </div>
+                                    <p class="viewer-busy-text">
+                                        Filling in details…
+                                    </p>
+                                </div>
+                            </div>
                         </template>
                         <lwc:component
                             lwc:is={navCtor}
