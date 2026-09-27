@@ -937,4 +937,26 @@ private class FinalLookupServiceTest {
             Assert.isTrue(true);
         }
     }
+
+    @isTest
+    static void aShortTextAreaIsStillSearched() {
+        insert new Contact(
+            LastName = 'Streetqqz',
+            MailingStreet = '12 Elm Road qqz'
+        );
+        Map<String, Object> c = new Map<String, Object>{
+            'targetObject' => 'Contact',
+            'displayFields' => new List<Object>{ 'LastName' },
+            'searchFields' => new List<Object>{ 'MailingStreet' }
+        };
+        Assert.areEqual(
+            1,
+            FinalLookupService.search(
+                    c,
+                    'Elm Road qqz',
+                    new Map<String, Object>()
+                )
+                .size()
+        );
+    }
 }

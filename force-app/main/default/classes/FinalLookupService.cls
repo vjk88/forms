@@ -746,6 +746,7 @@ public inherited sharing class FinalLookupService {
         }
         Schema.DisplayType t = d.getType();
         return t == Schema.DisplayType.STRING ||
+            t == Schema.DisplayType.TEXTAREA ||
             t == Schema.DisplayType.EMAIL ||
             t == Schema.DisplayType.PHONE ||
             t == Schema.DisplayType.URL ||

@@ -11,7 +11,7 @@
  *
  * The one exception is `searchPreview`, for the Studio preview, which has no
  * published version yet. It takes the draft's config from the browser, so it
- * is closed to guests and runs in USER_MODE like every search: the config
+ * is for internal users only and runs in USER_MODE like every search: the config
  * can only ask for what the signed-in author could query anyway.
  */
 public with sharing class FinalLookupController {
@@ -52,7 +52,9 @@ public with sharing class FinalLookupController {
         String term,
         String answersJson
     ) {
-        if (UserInfo.getUserType() == 'Guest') {
+        // Studio authors only: never a guest, and never a portal user, for
+        // whom a free-form config would be a general record browser.
+        if (UserInfo.getUserType() != 'Standard') {
             throw new AuraHandledException(UNAVAILABLE);
         }
         Map<String, Object> cfg = null;
