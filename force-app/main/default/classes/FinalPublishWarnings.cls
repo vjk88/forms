@@ -452,11 +452,16 @@ public with sharing class FinalPublishWarnings {
             }
             List<Object> options = asList(cfg.get('options'));
             if (options.isEmpty()) {
-                continue; // a bound picklist reads its options from Salesforce
+                continue; // nothing authored to check
             }
+            // Bound picklists land here too: the Studio copies their values
+            // into config.options, and Salesforce's values already pass.
+            Boolean multi = cfg.get('renderAs') == 'Checkbox_Group';
             String label = labelOf(el, 'A choice question');
             Boolean missing = false;
             String repeated = null;
+            String reserved = null;
+            String splits = null;
             Set<String> seen = new Set<String>();
             for (Object o : options) {
                 Map<String, Object> opt = asMap(o);
@@ -464,6 +469,11 @@ public with sharing class FinalPublishWarnings {
                 String v = opt == null ? null : textOf(opt.get('value'));
                 if (String.isBlank(l) || String.isBlank(v)) {
                     missing = true;
+                } else if (v == '__other__') {
+                    reserved = v;
+                } else if (multi && v.contains(';') && splits == null) {
+                    // several picks are stored joined by ';'
+                    splits = v;
                 } else if (!seen.add(v) && repeated == null) {
                     repeated = v;
                 }
@@ -474,6 +484,18 @@ public with sharing class FinalPublishWarnings {
                     'Give every option in “' +
                     label +
                     '” a label and a value.';
+            } else if (reserved != null) {
+                text =
+                    'An option in “' +
+                    label +
+                    '” uses the value “__other__”, which is kept for “Other”.';
+            } else if (splits != null) {
+                text =
+                    'The value “' +
+                    splits +
+                    '” in “' +
+                    label +
+                    '” can’t contain “;”.';
             } else if (repeated != null) {
                 text =
                     'Two options in “' +

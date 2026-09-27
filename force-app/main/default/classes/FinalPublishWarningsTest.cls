@@ -432,4 +432,32 @@ private class FinalPublishWarningsTest {
                 .isEmpty()
         );
     }
+
+    @IsTest
+    static void otherIsKeptAndSeveralPicksCannotHoldASemicolon() {
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(
+                    choiceSpec(new List<Object>{ opt('Other', '__other__') })
+                )[0]
+                .text.contains('kept for “Other”')
+        );
+        Map<String, Object> spec = choiceSpec(
+            new List<Object>{ opt('Yes; definitely', 'Yes; definitely') }
+        );
+        // a single choice stores one value: a ';' is fine there
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(spec).isEmpty()
+        );
+        Map<String, Object> el = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) spec.get(
+                    'pages'
+                ))[0])
+                .get('sections'))[0])
+            .get('elements'))[0];
+        ((Map<String, Object>) el.get('config'))
+            .put('renderAs', 'Checkbox_Group');
+        Assert.isTrue(
+            FinalPublishWarnings.choiceOptionProblems(spec)[0]
+                .text.contains('can’t contain “;”')
+        );
+    }
 }

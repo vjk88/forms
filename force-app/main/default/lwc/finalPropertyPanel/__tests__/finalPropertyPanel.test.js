@@ -180,10 +180,8 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(events[0].patch.options).toEqual([
             { label: 'Gold', value: 'Gold' }
         ]);
-        // blank: said under the option
-        expect(el.shadowRoot.querySelector('.pp-opt-problem').textContent).toBe(
-            'Enter a label and a value.'
-        );
+        // a row nobody has typed in yet stays quiet
+        expect(el.shadowRoot.querySelector('.pp-opt-problem')).toBeNull();
         // a plain radio can't draw a sublabel, so none is offered
         expect(el.shadowRoot.querySelector('.pp-sublabel')).toBeNull();
         document.body.removeChild(el);
@@ -201,10 +199,14 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         const problems = [
             ...dup.shadowRoot.querySelectorAll('.pp-opt-problem')
         ].map((p) => p.textContent.trim());
+        // only the later row, and only its value box
         expect(problems).toEqual([
-            'Another option has this value. Each value must be different.',
-            'Another option has this value. Each value must be different.'
+            'Same value as option 1. Each value must be different.'
         ]);
+        const bad = [...dup.shadowRoot.querySelectorAll('.pp-input-bad')].map(
+            (i) => i.dataset.field
+        );
+        expect(bad).toEqual(['value']);
         expect(dup.shadowRoot.querySelector('.pp-sublabel')).not.toBeNull();
     });
 

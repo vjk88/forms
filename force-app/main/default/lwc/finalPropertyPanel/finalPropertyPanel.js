@@ -1074,27 +1074,38 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get optionRows() {
         const options = this.cfg.options || [];
-        const seen = new Map();
-        options.forEach((o) => {
-            const v = o.value || '';
-            seen.set(v, (seen.get(v) || 0) + 1);
-        });
+        const multi = this.cfg.renderAs === 'Checkbox_Group';
+        const firstAt = new Map();
         return options.map((o, i) => {
             const label = o.label || '';
             const value = o.value || '';
+            const blank = (t) => !t.trim();
             // Both are required and every value is its own (exact match):
-            // Autofill picks an option by its value, never its label.
-            let problem = '';
-            if (!label && !value) {
-                problem = 'Enter a label and a value.';
-            } else if (!label) {
-                problem = 'Enter a label.';
-            } else if (!value) {
-                problem = 'Enter a value.';
-            } else if (seen.get(value) > 1) {
-                problem =
-                    'Another option has this value. Each value must be different.';
+            // Autofill picks an option by its value, never its label. A row
+            // nobody has typed in yet stays quiet; publish still refuses it.
+            let labelProblem = '';
+            let valueProblem = '';
+            if (!(blank(label) && blank(value))) {
+                if (blank(label)) {
+                    labelProblem = 'Enter a label.';
+                }
+                if (blank(value)) {
+                    valueProblem = 'Enter a value.';
+                } else if (value === '__other__') {
+                    valueProblem =
+                        'That value is kept for “Other”. Choose another.';
+                } else if (multi && value.includes(';')) {
+                    valueProblem = 'A value here can’t contain “;”.';
+                } else if (firstAt.has(value)) {
+                    valueProblem = `Same value as option ${firstAt.get(value) + 1}. Each value must be different.`;
+                }
             }
+            if (!blank(value) && !firstAt.has(value)) {
+                firstAt.set(value, i);
+            }
+            const problem = [labelProblem, valueProblem]
+                .filter(Boolean)
+                .join(' ');
             return {
                 key: `opt_${i}`,
                 index: i,
@@ -1104,7 +1115,11 @@ export default class FinalPropertyPanel extends LightningElement {
                 emoji: o.emoji || '',
                 description: o.description || '',
                 problem,
-                valueClass: problem ? 'pp-input pp-input-bad' : 'pp-input'
+                problemId: `opt-problem-${i}`,
+                labelInvalid: labelProblem ? 'true' : 'false',
+                valueInvalid: valueProblem ? 'true' : 'false',
+                labelClass: labelProblem ? 'pp-input pp-input-bad' : 'pp-input',
+                valueClass: valueProblem ? 'pp-input pp-input-bad' : 'pp-input'
             };
         });
     }

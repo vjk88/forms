@@ -532,9 +532,11 @@
                                     />
                                     <input
                                         type="text"
-                                        class={o.valueClass}
+                                        class={o.labelClass}
                                         placeholder="Label"
                                         aria-label="Option label"
+                                        aria-invalid={o.labelInvalid}
+                                        aria-describedby={o.problemId}
                                         required
                                         value={o.label}
                                         data-index={o.index}
@@ -546,6 +548,8 @@
                                         class={o.valueClass}
                                         placeholder="Value"
                                         aria-label="Option value"
+                                        aria-invalid={o.valueInvalid}
+                                        aria-describedby={o.problemId}
                                         title="Stored in answers. Autofill picks this option only when a record's value is exactly this."
                                         required
                                         value={o.value}
@@ -564,7 +568,7 @@
                                     </button>
                                 </div>
                                 <template lwc:if={o.problem}>
-                                    <p class="pp-opt-problem" role="alert">
+                                    <p class="pp-opt-problem" id={o.problemId}>
                                         {o.problem}
                                     </p>
                                 </template>

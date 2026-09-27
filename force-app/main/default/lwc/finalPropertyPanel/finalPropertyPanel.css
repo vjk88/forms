@@ -460,11 +460,11 @@
 
 /* A choice option missing its label or value, or repeating a value. */
 .pp-input-bad {
-    border-color: var(--c-studio-error-border, #ba0517);
+    border-color: var(--c-studio-error);
 }
 
 .pp-opt-problem {
     margin: 0.125rem 0 0;
     font-size: 0.75rem;
-    color: var(--c-studio-error-text, #ba0517);
+    color: var(--c-studio-error);
 }
