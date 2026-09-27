@@ -532,6 +532,31 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.addEventListener('lookupinvalid', (e) =>
                 this.handleLookupInvalid(e)
             );
+            // Owner 2026-09-27: while Autofill fills the form, nothing can be
+            // typed, tabbed to or pasted (the cover takes the clicks). Focus
+            // stays where it was, so the person carries on from the lookup.
+            const guard = (e) => {
+                if (this.isAutofillPending) {
+                    e.preventDefault();
+                }
+            };
+            this.addEventListener('keydown', (e) => {
+                // Shortcuts (copy, find, reload), Escape and the F-keys
+                // change nothing on the form, so they still work. Arrows
+                // stay blocked: they change radios, sliders and pick-lists.
+                if (
+                    e.ctrlKey ||
+                    e.metaKey ||
+                    e.altKey ||
+                    e.key === 'Escape' ||
+                    /^F\d{1,2}$/.test(e.key || '')
+                ) {
+                    return;
+                }
+                guard(e);
+            });
+            this.addEventListener('beforeinput', guard);
+            this.addEventListener('paste', guard);
         }
         if (this._connectedOnce) {
             this._refreshNavCtor();
@@ -1267,6 +1292,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._linkCtxKey = key;
         this._linkLoading = true;
+        // Never lock the form longer than any other Autofill source: a late
+        // answer still fills, but the person isn't kept waiting past 10s.
+        clearTimeout(this._linkTimer);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._linkTimer = setTimeout(() => {
+            if (key === this._linkCtxKey && this._linkLoading) {
+                this._linkLoading = false;
+            }
+        }, 10000);
         getLinkContext({ formId, token })
             .then((ctx) => {
                 if (seq !== this._applySeq || !this.isConnected) {
@@ -1282,6 +1316,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             })
             .finally(() => {
                 if (key === this._linkCtxKey) {
+                    clearTimeout(this._linkTimer);
                     this._linkLoading = false;
                 }
             });
@@ -2614,6 +2649,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     // ----- Autofill Runtime (IMPL_PLAN_AUTOFILL_RULES §6) -----
 
+    /** aria-busy on the form while Autofill fills it. */
+    get autofillBusyAttr() {
+        return this.isAutofillPending ? 'true' : 'false';
+    }
+
     get isAutofillPending() {
         return (
             this._linkLoading ||
@@ -2627,7 +2667,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this.isAutofillPending) {
             return {
                 ...base,
-                label: 'Finishing Autofill…'
+                label: 'Filling in details…'
             };
         }
         return base;
@@ -2635,7 +2675,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     get effectiveSubmitLabel() {
         if (this.isAutofillPending) {
-            return 'Finishing Autofill…';
+            return 'Filling in details…';
         }
         return (
             (this.model && this.model.submit && this.model.submit.label) ||
@@ -2735,9 +2775,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     _startAutofillRequest(requestIdentity, objectApiName, fields) {
         const reqKey = `${requestIdentity.ruleId}_${requestIdentity.generation}`;
+        for (const old of this.activeAutofillRequests) {
+            if (old.ruleId === requestIdentity.ruleId) {
+                this._clearAutofillTimeout(old.ruleId, old.generation);
+            }
+        }
         // eslint-disable-next-line @lwc/lwc/no-async-operation
         const timerId = setTimeout(() => {
-            this._handleAutofillTimeout(requestIdentity);
+            if (isRequestCurrent(this._autofillSession, requestIdentity)) {
+                this._handleAutofillTimeout(requestIdentity);
+            }
         }, 10000);
         this._autofillTimers.set(reqKey, timerId);
 

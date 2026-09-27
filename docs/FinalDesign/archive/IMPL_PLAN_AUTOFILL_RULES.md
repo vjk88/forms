@@ -302,6 +302,8 @@ onResult(identity, fields):
 
 Hide/show does not grant or remove data access. Hidden answers retain the runtime's existing lifecycle; Autofill must not invent a second clearing policy. A newly visible destination displays its current answer. Do not wait for a hidden field to mount before applying a value.
 
+> **Superseded 2026-09-27 (owner):** while Autofill is pending, a cover over the whole form takes every click, key, Tab and paste, labelled "Filling in details…", until the fill lands or times out; focus stays where it was. The sentence below is the original rule, kept for history.
+
 While Autofill is pending, keep field editing and page navigation available. Disable Submit with **Finishing Autofill…** until the current fetch settles. Use a 10-second per-request timeout, invalidate its generation, restore submission, and show **Could not fill these details. Enter them yourself or retry.** All v1 destinations are editable; existing required/format validation remains the final gate. A late timed-out result cannot overwrite subsequent answers.
 
 ## 7. Guest personalized-link reads

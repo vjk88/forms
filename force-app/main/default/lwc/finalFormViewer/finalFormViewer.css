@@ -14,9 +14,45 @@
     min-height: 240px;
 }
 
-/* Anchors the Autofill spinner over the form. */
+/* Anchors the Autofill cover over the form. */
 .viewer-surface {
     position: relative;
+}
+
+/* While Autofill fills the form, a cover takes every click (the key guard in
+   the JS takes the keyboard). The label stays in view on a long form. */
+.viewer-busy {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    cursor: progress;
+    background: color-mix(in srgb, var(--c-page-bg, #fff) 60%, transparent);
+}
+
+.viewer-busy-box {
+    position: sticky;
+    top: 40vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--c-space-2, 0.5rem);
+    padding: var(--c-space-4, 1rem) 0;
+}
+
+.viewer-busy-spinner {
+    position: relative;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.viewer-busy-text {
+    margin: 0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--c-text, inherit);
+    background: var(--c-content-bg, #fff);
 }
 
 /* Submit failure — the response was NOT recorded; say so where the eye is. */

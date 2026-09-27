@@ -157,3 +157,14 @@ prefills. Rules:
   the paid SKU is never required.
 - **Prefer iframe embeds over provider JS SDKs** (e.g. `youtube-nocookie.com` iframe) — LWS blocks
   many SDK patterns; iframes are the LWS-safe path.
+
+## Autofill blocks the form while it fills (owner 2026-09-27)
+
+While any Autofill request is out (a lookup pick, a personal link loading, the signed-in person's
+values), `finalFormViewer` covers the form surface (`.viewer-busy`, "Filling in details…") and a
+host-level guard cancels `keydown`, `beforeinput` and `paste`. Focus is deliberately NOT moved:
+`inert` would throw it to the page body, and the viewer cannot reach inside the layout's shadow DOM
+to put it back, so the person resumes from the lookup they just used. The 10-second timeout still
+releases the form with "Could not fill these details…". This replaces the original "keep editing
+available" rule (archive/IMPL_PLAN_AUTOFILL_RULES.md §6). Visibility rules need no wait: they are
+re-evaluated synchronously the moment the filled values land.

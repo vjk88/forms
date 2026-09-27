@@ -13,5 +13,11 @@ module.exports = {
         '^c/finalStudioStyles$':
             '<rootDir>/force-app/main/default/lwc/finalStudioStyles/finalStudioStyles.css'
     },
-    modulePathIgnorePatterns: ['<rootDir>/.localdevserver']
+    modulePathIgnorePatterns: ['<rootDir>/.localdevserver'],
+    // Other Claude sessions keep git worktrees under .claude/worktrees; their
+    // copies of the tests must never run against this checkout's components.
+    testPathIgnorePatterns: [
+        ...(jestConfig.testPathIgnorePatterns || []),
+        '<rootDir>/.claude/'
+    ]
 };

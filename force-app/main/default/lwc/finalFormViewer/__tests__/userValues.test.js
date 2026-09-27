@@ -172,4 +172,60 @@ describe('c-final-form-viewer signed-in person', () => {
         await flush();
         expect(el.submitError).toMatch(/Could not fill/);
     });
+
+    it('covers the form and takes the keyboard until Autofill has filled it (owner 2026-09-27)', async () => {
+        let answer;
+        getUserValues.mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    answer = resolve;
+                })
+        );
+        const el = await open();
+        await flush();
+        expect(el.shadowRoot.querySelector('.viewer-busy')).not.toBeNull();
+        const key = new KeyboardEvent('keydown', {
+            key: 'Tab',
+            bubbles: true,
+            composed: true,
+            cancelable: true
+        });
+        el.dispatchEvent(key);
+        expect(key.defaultPrevented).toBe(true);
+        const typed = new Event('beforeinput', {
+            bubbles: true,
+            composed: true,
+            cancelable: true
+        });
+        el.dispatchEvent(typed);
+        expect(typed.defaultPrevented).toBe(true);
+
+        // shortcuts and Escape still work: they change nothing
+        const copy = new KeyboardEvent('keydown', {
+            key: 'c',
+            ctrlKey: true,
+            bubbles: true,
+            composed: true,
+            cancelable: true
+        });
+        el.dispatchEvent(copy);
+        expect(copy.defaultPrevented).toBe(false);
+        expect(
+            el.shadowRoot
+                .querySelector('.viewer-surface')
+                .getAttribute('aria-busy')
+        ).toBe('true');
+
+        answer({ af_me: { el_email: 'me@example.com' } });
+        await flush();
+        expect(el.shadowRoot.querySelector('.viewer-busy')).toBeNull();
+        const after = new KeyboardEvent('keydown', {
+            key: 'Tab',
+            bubbles: true,
+            composed: true,
+            cancelable: true
+        });
+        el.dispatchEvent(after);
+        expect(after.defaultPrevented).toBe(false);
+    });
 });

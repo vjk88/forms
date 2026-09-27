@@ -267,10 +267,10 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         answer(el, 'el_account_lookup', '001000000000001AAA');
         await flush();
 
-        // Expect submit bar to be disabled with Finishing Autofill… label
+        // Expect submit bar to be disabled with Filling in details… label
         const submitBar = deepQuery(el.shadowRoot, 'c-final-submit-bar');
         expect(submitBar.disabled).toBe(true);
-        expect(submitBar.config.label).toBe('Finishing Autofill…');
+        expect(submitBar.config.label).toBe('Filling in details…');
 
         // Expect c-final-autofill-record-source to be mounted in DOM
         const recordSource = el.shadowRoot.querySelector(
