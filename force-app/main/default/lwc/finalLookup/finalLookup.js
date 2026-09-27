@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import search from '@salesforce/apex/FinalLookupController.search';
+import searchPreview from '@salesforce/apex/FinalLookupController.searchPreview';
 
 const DEBOUNCE_MS = 300;
 const MIN_TERM = 2;
@@ -31,6 +32,9 @@ export default class FinalLookup extends LightningElement {
     /** Identifies the published config the server should compile. */
     @api formId;
     @api versionId;
+    /** The Studio preview: the draft's lookupConfig, searched as it stands
+     *  (there is no published version to read it from yet). */
+    @api previewConfig;
 
     /** Answers the server resolves `$field.<id>` tokens against. */
     @api answers;
@@ -344,13 +348,20 @@ export default class FinalLookup extends LightningElement {
         const generation = ++this._generation;
         const term = this.term;
         try {
-            const rows = await search({
-                formId: this.formId || null,
-                versionId: this.versionId || null,
-                elementId: this.elementId,
-                term,
-                answersJson: JSON.stringify(this.answers || {})
-            });
+            const answersJson = JSON.stringify(this.answers || {});
+            const rows = this.previewConfig
+                ? await searchPreview({
+                      configJson: JSON.stringify(this.previewConfig),
+                      term,
+                      answersJson
+                  })
+                : await search({
+                      formId: this.formId || null,
+                      versionId: this.versionId || null,
+                      elementId: this.elementId,
+                      term,
+                      answersJson
+                  });
             if (generation !== this._generation) {
                 return; // a later keystroke already owns the field
             }
@@ -394,7 +405,8 @@ export default class FinalLookup extends LightningElement {
         const n = this.results.length;
         const from = this.activeIndex;
         // Wraps, because a list that silently stops moving feels broken.
-        const next = from < 0 ? (delta > 0 ? 0 : n - 1) : (from + delta + n) % n;
+        const next =
+            from < 0 ? (delta > 0 ? 0 : n - 1) : (from + delta + n) % n;
         this._setActive(next);
     }
 
@@ -403,9 +415,7 @@ export default class FinalLookup extends LightningElement {
             return;
         }
         this.activeIndex = index;
-        this.results = this.results.map((r, i) =>
-            this._decorate(r, i, index)
-        );
+        this.results = this.results.map((r, i) => this._decorate(r, i, index));
         this._pendingActive = true;
     }
 

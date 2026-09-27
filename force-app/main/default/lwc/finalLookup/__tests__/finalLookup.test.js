@@ -1,9 +1,15 @@
 import { createElement } from 'lwc';
 import FinalLookup from 'c/finalLookup';
 import search from '@salesforce/apex/FinalLookupController.search';
+import searchPreview from '@salesforce/apex/FinalLookupController.searchPreview';
 
 jest.mock(
     '@salesforce/apex/FinalLookupController.search',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalLookupController.searchPreview',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -128,6 +134,24 @@ describe('c-final-lookup', () => {
         );
         expect(sent).not.toContain('filter');
         expect(sent).not.toContain('targetObject');
+    });
+
+    it('the Studio preview searches the draft config, never a published copy', async () => {
+        searchPreview.mockResolvedValue(ROWS);
+        const draft = { targetObject: 'Contact', searchFields: ['LastName'] };
+        const el = mount({
+            formId: null,
+            versionId: null,
+            previewConfig: draft
+        });
+        await type(el, 'Ro');
+        expect(search).not.toHaveBeenCalled();
+        expect(searchPreview).toHaveBeenCalledWith({
+            configJson: JSON.stringify(draft),
+            term: 'Ro',
+            answersJson: '{}'
+        });
+        expect(options(el)).toHaveLength(3);
     });
 
     it('only the last keystroke wins when responses arrive out of order', async () => {

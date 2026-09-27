@@ -76,6 +76,9 @@ public inherited sharing class FinalLookupService {
         String objectName = requireObject(cfg);
         List<String> displayFields = displayFieldsOf(cfg, objectName);
         List<String> searchFields = searchFieldsOf(cfg, objectName);
+        if (searchFields.isEmpty()) {
+            return out; // nothing on this object takes a text search
+        }
 
         Compiled c = compile(cfg, answers, objectName);
         if (c.blocked) {
@@ -706,10 +709,48 @@ public inherited sharing class FinalLookupService {
     ) {
         List<String> out = validPaths(cfg.get('displayFields'), objectName);
         if (out.isEmpty()) {
-            String n = resolvePath(objectName, 'Name');
+            // The object's own name field: Name, or CaseNumber on Case,
+            // Subject on Task. A Case read as "Name" fell back to Id.
+            String n = nameFieldOf(objectName);
             out.add(n == null ? 'Id' : n);
+            // A Case or a Task is found by what it's about, too.
+            String subject = resolvePath(objectName, 'Subject');
+            if (subject != null && !out.contains(subject)) {
+                out.add(subject);
+            }
         }
         return out;
+    }
+
+    /** The field Salesforce marks as the record's name, or null. */
+    @TestVisible
+    private static String nameFieldOf(String objectName) {
+        Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
+        if (t == null) {
+            return null;
+        }
+        for (Schema.SObjectField f : t.getDescribe().fields.getMap().values()) {
+            Schema.DescribeFieldResult d = f.getDescribe();
+            if (d.isNameField()) {
+                return d.getName();
+            }
+        }
+        return null;
+    }
+
+    /** LIKE works on text only: never on an Id, a number or a date. */
+    private static Boolean takesTextSearch(String objectName, String path) {
+        Schema.DescribeFieldResult d = fieldAt(objectName, path);
+        if (d == null || !d.isFilterable()) {
+            return false;
+        }
+        Schema.DisplayType t = d.getType();
+        return t == Schema.DisplayType.STRING ||
+            t == Schema.DisplayType.EMAIL ||
+            t == Schema.DisplayType.PHONE ||
+            t == Schema.DisplayType.URL ||
+            t == Schema.DisplayType.PICKLIST ||
+            t == Schema.DisplayType.COMBOBOX;
     }
 
     private static List<String> searchFieldsOf(
@@ -720,7 +761,13 @@ public inherited sharing class FinalLookupService {
         if (out.isEmpty()) {
             out = displayFieldsOf(cfg, objectName);
         }
-        return out;
+        List<String> searchable = new List<String>();
+        for (String f : out) {
+            if (takesTextSearch(objectName, f)) {
+                searchable.add(f);
+            }
+        }
+        return searchable;
     }
 
     private static List<String> validPaths(Object raw, String objectName) {

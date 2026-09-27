@@ -439,6 +439,10 @@ export default class FinalElementRenderer extends LightningElement {
         return this.lookupCtx.versionId || null;
     }
 
+    get lookupPreviewConfig() {
+        return this.lookupCtx.previewConfig || null;
+    }
+
     get lookupAnswers() {
         return this.lookupCtx.answers || {};
     }
