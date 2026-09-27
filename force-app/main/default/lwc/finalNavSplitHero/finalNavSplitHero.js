@@ -36,6 +36,9 @@ const ARRANGE_CLASS = {
 };
 
 export default class FinalNavSplitHero extends LightningElement {
+    /** The viewer holds the form while Autofill fills it: Enter stays put. */
+    @api locked = false;
+
     @api currentPageIndex = 0;
     @api pageValidity = [];
     /**
@@ -350,6 +353,9 @@ export default class FinalNavSplitHero extends LightningElement {
     }
 
     handleKeydown(event) {
+        if (this.locked) {
+            return; // Autofill is filling the form
+        }
         if (!this.keyboardAdvanceOn || this.onLastScreen) {
             return;
         }
@@ -372,6 +378,9 @@ export default class FinalNavSplitHero extends LightningElement {
      *  Enter (or a multiline took Ctrl/Cmd+Enter) — advance. */
     handleAdvanceKey(event) {
         event.stopPropagation();
+        if (this.locked) {
+            return;
+        }
         if (!this.keyboardAdvanceOn || this.onLastScreen) {
             return;
         }

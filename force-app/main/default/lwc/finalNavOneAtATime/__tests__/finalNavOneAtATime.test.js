@@ -95,6 +95,30 @@ describe('c-final-nav-one-at-a-time', () => {
         expect(progressText(cmp)).toBe('2 of 3');
     });
 
+    it('stays put on Enter while Autofill fills the form (owner 2026-09-27)', async () => {
+        const cmp = await mount();
+        cmp.options = { advanceTrigger: 'keyboard' };
+        cmp.locked = true;
+        await Promise.resolve();
+        cmp.shadowRoot
+            .querySelector('.primary-btn')
+            .dispatchEvent(
+                new CustomEvent('advancekey', { bubbles: true, composed: true })
+            );
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('1 of 3');
+
+        cmp.locked = false;
+        await Promise.resolve();
+        cmp.shadowRoot
+            .querySelector('.primary-btn')
+            .dispatchEvent(
+                new CustomEvent('advancekey', { bubbles: true, composed: true })
+            );
+        await Promise.resolve();
+        expect(progressText(cmp)).toBe('2 of 3');
+    });
+
     it('raw keydown retargeted to the renderer host is ignored (LWS: advancekey speaks instead)', async () => {
         const cmp = await mount();
         cmp.options = { advanceTrigger: 'keyboard' };

@@ -47,8 +47,12 @@
 
 .viewer-busy-text {
     margin: 0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
     font-size: 0.875rem;
     font-weight: 600;
+    color: var(--c-text, inherit);
+    background: var(--c-content-bg, #fff);
 }
 
 /* Submit failure — the response was NOT recorded; say so where the eye is. */

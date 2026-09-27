@@ -200,6 +200,22 @@ describe('c-final-form-viewer signed-in person', () => {
         el.dispatchEvent(typed);
         expect(typed.defaultPrevented).toBe(true);
 
+        // shortcuts and Escape still work: they change nothing
+        const copy = new KeyboardEvent('keydown', {
+            key: 'c',
+            ctrlKey: true,
+            bubbles: true,
+            composed: true,
+            cancelable: true
+        });
+        el.dispatchEvent(copy);
+        expect(copy.defaultPrevented).toBe(false);
+        expect(
+            el.shadowRoot
+                .querySelector('.viewer-surface')
+                .getAttribute('aria-busy')
+        ).toBe('true');
+
         answer({ af_me: { el_email: 'me@example.com' } });
         await flush();
         expect(el.shadowRoot.querySelector('.viewer-busy')).toBeNull();

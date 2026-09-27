@@ -52,12 +52,13 @@
                     <div
                         class="viewer-surface"
                         hidden={isEditBlocked}
+                        aria-busy={autofillBusyAttr}
                         data-edit-surface
                     >
                         <template lwc:if={isAutofillPending}>
                             <!-- Owner 2026-09-27: nothing on the form can be
                                  touched until Autofill has filled it. -->
-                            <div class="viewer-busy" role="status">
+                            <div class="viewer-busy">
                                 <div class="viewer-busy-box">
                                     <div class="viewer-busy-spinner">
                                         <lightning-spinner
@@ -65,7 +66,10 @@
                                             size="small"
                                         ></lightning-spinner>
                                     </div>
-                                    <p class="viewer-busy-text">
+                                    <p
+                                        class="viewer-busy-text"
+                                        aria-hidden="true"
+                                    >
                                         Filling in details…
                                     </p>
                                 </div>
@@ -78,6 +82,7 @@
                             page-validity={pageValidity}
                             options={model.layoutOptions}
                             lockup={model.paneLockup}
+                            locked={isAutofillPending}
                             arrangement={model.buttonArrangement}
                             bleed={model.bleed}
                             submit-label={effectiveSubmitLabel}
