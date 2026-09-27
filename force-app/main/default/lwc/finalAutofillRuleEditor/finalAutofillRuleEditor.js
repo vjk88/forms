@@ -566,7 +566,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
                 } else if (filled === DOES_NOT_FIT) {
                     testText =
                         current && current.answerType === 'Choice'
-                            ? `Won’t fill: “${test}” isn’t one of this question’s options`
+                            ? `Won’t fill: “${test}” isn’t the value of any option here`
                             : `Won’t fill: “${test}” doesn’t fit a ${ANSWER_WORDS[current.answerType]} answer`;
                 } else {
                     testText = `Fills: ${filled}`;

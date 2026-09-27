@@ -1073,15 +1073,48 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get optionRows() {
-        return (this.cfg.options || []).map((o, i) => ({
-            key: `opt_${i}`,
-            index: i,
-            label: o.label || '',
-            value: o.value || '',
-            // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
-            emoji: o.emoji || '',
-            description: o.description || ''
-        }));
+        const options = this.cfg.options || [];
+        const seen = new Map();
+        options.forEach((o) => {
+            const v = o.value || '';
+            seen.set(v, (seen.get(v) || 0) + 1);
+        });
+        return options.map((o, i) => {
+            const label = o.label || '';
+            const value = o.value || '';
+            // Both are required and every value is its own (exact match):
+            // Autofill picks an option by its value, never its label.
+            let problem = '';
+            if (!label && !value) {
+                problem = 'Enter a label and a value.';
+            } else if (!label) {
+                problem = 'Enter a label.';
+            } else if (!value) {
+                problem = 'Enter a value.';
+            } else if (seen.get(value) > 1) {
+                problem =
+                    'Another option has this value. Each value must be different.';
+            }
+            return {
+                key: `opt_${i}`,
+                index: i,
+                label,
+                value,
+                // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
+                emoji: o.emoji || '',
+                description: o.description || '',
+                problem,
+                valueClass: problem ? 'pp-input pp-input-bad' : 'pp-input'
+            };
+        });
+    }
+
+    /** A sublabel shows only on chips and cards: a plain radio, checkbox or
+     *  dropdown can't draw a second line. */
+    get showOptionSublabels() {
+        return (
+            this.cfg.optionStyle === 'chips' || this.cfg.optionStyle === 'cards'
+        );
     }
 
     /** Raw <input value={x}> writes the LITERAL string "undefined" into the
@@ -1412,7 +1445,14 @@ export default class FinalPropertyPanel extends LightningElement {
         if (!row) {
             return;
         }
-        row[field] = event.target.value;
+        const text = event.target.value;
+        // On creation only: an option whose value was never set takes its
+        // label as its value. After that, label and value are the author's
+        // own, edited separately (owner 2026-09-27).
+        if (field === 'label' && !row.value) {
+            row.value = text;
+        }
+        row[field] = text;
         this._config({ options });
     }
 

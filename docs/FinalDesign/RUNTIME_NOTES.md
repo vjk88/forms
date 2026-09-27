@@ -168,3 +168,12 @@ to put it back, so the person resumes from the lookup they just used. The 10-sec
 releases the form with "Could not fill these details…". This replaces the original "keep editing
 available" rule (archive/IMPL_PLAN_AUTOFILL_RULES.md §6). Visibility rules need no wait: they are
 re-evaluated synchronously the moment the filled values land.
+
+## Autofill matches choice values only, never labels (owner 2026-09-27)
+
+`fitValue` (c/finalAutofillFit) picks a choice option only when the source value equals the
+option's stored **value** exactly (case-sensitive, untrimmed). Labels are never compared: matching
+both let one option's label steal another option's value. The authoring side makes values real:
+a new option's value starts as its label (on creation only), both are required, values are
+unique per question (exact), and publish refuses a question that breaks those rules
+(`FinalPublishWarnings.choiceOptionProblems`). Do not reintroduce label matching.

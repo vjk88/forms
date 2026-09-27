@@ -161,6 +161,32 @@ describe('native control value hydration', () => {
         );
     });
 
+    it('radio, checkbox and dropdown show the option emoji in front of the label', () => {
+        const withEmoji = [
+            { label: 'Happy', value: 'happy', emoji: '😀' },
+            { label: 'Meh', value: 'meh' }
+        ];
+        for (const renderAs of [
+            'Radio_Buttons',
+            'Checkbox_Group',
+            'Dropdown'
+        ]) {
+            const el = mount({
+                id: `e_${renderAs}`,
+                type: 'field',
+                label: 'Mood',
+                config: { renderAs, options: withEmoji }
+            });
+            const native = el.shadowRoot.querySelector(
+                'lightning-radio-group, lightning-checkbox-group, lightning-combobox'
+            );
+            expect(native.options).toEqual([
+                { label: '😀 Happy', value: 'happy' },
+                { label: 'Meh', value: 'meh' }
+            ]);
+        }
+    });
+
     it('toggle hydrates checked from the boolean answer', () => {
         const el = mount({
             id: 'e1',

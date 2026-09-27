@@ -182,6 +182,20 @@ public with sharing class FinalPublishWarnings {
             }
         }
 
+        // Every choice option needs a label and a value, and no two values
+        // may be the same: an answer is stored as its value, and Autofill
+        // picks an option by its value only (owner 2026-09-27).
+        for (ChoiceProblem p : choiceOptionProblems(draft)) {
+            check.blockers.add(p.text);
+            Item i = new Item();
+            i.severity = FinalMappingValidator.BLOCKER;
+            i.area = 'build';
+            i.text = p.text;
+            i.elementId = p.elementId;
+            i.elementLabel = p.label;
+            check.items.add(i);
+        }
+
         // A record lookup that doesn't say what it searches can't be used:
         // signed-in people get an error, guests get nothing, and a required
         // one can never be answered (IMPL_PLAN_F2_AUTOFILL 6.0). Publish
@@ -376,6 +390,110 @@ public with sharing class FinalPublishWarnings {
             }
         }
         return out;
+    }
+
+    /** One choice question whose options can't be published. */
+    public class ChoiceProblem {
+        public String elementId;
+        public String label;
+        public String text;
+    }
+
+    private static final Set<String> CHOICE_RENDERS = new Set<String>{
+        'Dropdown',
+        'Radio_Buttons',
+        'Checkbox_Group'
+    };
+
+    /**
+     * Choice questions with an option missing its label or value, or two
+     * options sharing a value (exact match, as Autofill compares).
+     */
+    public static List<ChoiceProblem> choiceOptionProblems(
+        Map<String, Object> spec
+    ) {
+        List<ChoiceProblem> out = new List<ChoiceProblem>();
+        if (spec == null) {
+            return out;
+        }
+        for (Object pageObj : asList(spec.get('pages'))) {
+            Map<String, Object> page = asMap(pageObj);
+            for (
+                Object secObj : asList(
+                    page == null ? null : page.get('sections')
+                )
+            ) {
+                Map<String, Object> sec = asMap(secObj);
+                collectChoiceProblems(
+                    asList(sec == null ? null : sec.get('elements')),
+                    out
+                );
+            }
+        }
+        return out;
+    }
+
+    private static void collectChoiceProblems(
+        List<Object> elements,
+        List<ChoiceProblem> out
+    ) {
+        for (Object elObj : elements) {
+            Map<String, Object> el = asMap(elObj);
+            if (el == null) {
+                continue;
+            }
+            collectChoiceProblems(asList(el.get('elements')), out);
+            Map<String, Object> cfg = asMap(el.get('config'));
+            if (
+                cfg == null ||
+                !CHOICE_RENDERS.contains(String.valueOf(cfg.get('renderAs')))
+            ) {
+                continue;
+            }
+            List<Object> options = asList(cfg.get('options'));
+            if (options.isEmpty()) {
+                continue; // a bound picklist reads its options from Salesforce
+            }
+            String label = labelOf(el, 'A choice question');
+            Boolean missing = false;
+            String repeated = null;
+            Set<String> seen = new Set<String>();
+            for (Object o : options) {
+                Map<String, Object> opt = asMap(o);
+                String l = opt == null ? null : textOf(opt.get('label'));
+                String v = opt == null ? null : textOf(opt.get('value'));
+                if (String.isBlank(l) || String.isBlank(v)) {
+                    missing = true;
+                } else if (!seen.add(v) && repeated == null) {
+                    repeated = v;
+                }
+            }
+            String text = null;
+            if (missing) {
+                text =
+                    'Give every option in “' +
+                    label +
+                    '” a label and a value.';
+            } else if (repeated != null) {
+                text =
+                    'Two options in “' +
+                    label +
+                    '” have the value “' +
+                    repeated +
+                    '”. Each value must be different.';
+            }
+            if (text != null) {
+                ChoiceProblem p = new ChoiceProblem();
+                p.elementId = (String) el.get('id');
+                p.label = label;
+                p.text = text;
+                out.add(p);
+            }
+        }
+    }
+
+    private static String textOf(Object o) {
+        return o == null ? null : String.valueOf(o);
     }
 
     private static String labelOf(Map<String, Object> el, String fallback) {

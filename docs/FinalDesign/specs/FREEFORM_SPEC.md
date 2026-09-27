@@ -520,7 +520,7 @@ regression net, not decoration:
 23. A user holding only `Freeform_Submission_Reader` is refused an unshared submission, reads it once
     it is shared, and a `Freeform_Submission_Admin` holder reads it either way (D25). A permission
     set is metadata — nothing else in the build notices when it is wrong.
-24. Reader: a single choice reads by label; a numeric option value matches its stored string; a
+24. (Autofill is separate: it matches choice **values only, never labels**; owner 2026-09-27, see IMPL_PLAN_F2_AUTOFILL 6.4.) Reader: a single choice reads by label; a numeric option value matches its stored string; a
     deleted option falls back to its key; matrix statements hold the version's order against a
     shuffled query result and a skipped statement reads "No answer"; email, phone, URL and files
     render as links.

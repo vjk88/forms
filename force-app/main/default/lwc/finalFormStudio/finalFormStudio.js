@@ -63,12 +63,14 @@ const SAVE_DEBOUNCE_MS = 900;
  *  Tokens are Dropdown | Radio_Buttons | Checkbox_Group. */
 
 /** Starter choices for a new choice question. Three is enough to show the
- *  shape without the author having to delete a crowd. */
+ *  shape without the author having to delete a crowd. The value starts as
+ *  the label (owner 2026-09-27: never option-1): Autofill matches values
+ *  only, so a value must mean something. */
 function starterOptions() {
     return [
-        { value: 'option-1', label: 'First choice' },
-        { value: 'option-2', label: 'Second choice' },
-        { value: 'option-3', label: 'Third choice' }
+        { value: 'First choice', label: 'First choice' },
+        { value: 'Second choice', label: 'Second choice' },
+        { value: 'Third choice', label: 'Third choice' }
     ];
 }
 

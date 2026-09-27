@@ -92,7 +92,8 @@ function dateOf(value) {
  * A value that doesn't fit is never forced in.
  *   Number — a number (text that reads as one is accepted)
  *   Date   — 'YYYY-MM-DD'; a date-time keeps its local date
- *   Choice — the option whose value or label matches; none, DOES_NOT_FIT
+ *   Choice — the option whose VALUE is exactly the source value; labels
+ *            are never matched (owner 2026-09-27). None, DOES_NOT_FIT
  *   text   — a string
  * No destination known (older specs, previews) — the value as it came.
  */
@@ -117,9 +118,9 @@ export function fitValue(value, destination) {
             if (!Array.isArray(options) || !options.length) {
                 return text;
             }
-            const hit = options.find(
-                (o) => o && (String(o.value) === text || o.label === text)
-            );
+            // Values only, exact: a label never picks an option, so one
+            // option's label can't steal another option's value.
+            const hit = options.find((o) => o && String(o.value) === text);
             return hit ? hit.value : DOES_NOT_FIT;
         }
         default:

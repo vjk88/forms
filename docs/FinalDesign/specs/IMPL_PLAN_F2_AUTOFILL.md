@@ -216,6 +216,8 @@ Four new `@api` properties. Their defaults keep today's behaviour, which lookup 
 
 ### 6.4 What fits where
 
+> **Autofill matches choice VALUES only (owner ruling 2026-09-27).** A record's value picks the option whose stored value is *exactly* that text: case-sensitive, no trimming, and **never by label**. No match means the question is left blank. To make that workable, every choice option must have a label AND a value, values must be unique within the question (exact), and a new option's value starts as its label (only when the option is created; after that they are edited separately). Publish refuses a question that breaks either rule (`FinalPublishWarnings.choiceOptionProblems`, gated in `publishSpec`). Studio starter options no longer use `option-1/2/3`.
+
 A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)`.
 
 | Salesforce field type                          | Fills                                                                                                 |
@@ -278,7 +280,7 @@ A destination's answer type comes from `FinalSubmitService.answerTypeOf(element)
 - **`lwc/finalFormViewer/autofillEngine.js`:** a new pure `fitValue(value, destination)` turns the value into the answer:
   - Number: a number, or skipped if it isn't numeric;
   - Date: `YYYY-MM-DD`, with a date-time cut to its date;
-  - Choice: the option whose value or label equals it, else skipped;
+  - Choice: the option whose **value** is exactly it, else skipped (**values only, never labels**; owner 2026-09-27, see 6.4);
   - text types: a string.
   - Skipped means _left blank and not owned_.
 - **`finalFormViewer.js`** gives the engine each destination's `{ answerType, options }` from the spec. Answers are keyed by element id already, for bound fields and questions alike.

@@ -85,7 +85,7 @@
                     label={el.label}
                     value={el.value}
                     placeholder={el.placeholder}
-                    options={options}
+                    options={nativeOptions}
                     required={el.required}
                     disabled={el.readOnly}
                     field-level-help={nativeHelp}
@@ -97,7 +97,7 @@
                 <lightning-radio-group
                     label={el.label}
                     value={el.value}
-                    options={options}
+                    options={nativeOptions}
                     required={el.required}
                     disabled={el.readOnly}
                     variant="label-hidden"
@@ -108,7 +108,7 @@
             <template lwc:elseif={isCheckboxGroup}>
                 <lightning-checkbox-group
                     label={el.label}
-                    options={options}
+                    options={nativeOptions}
                     value={checkboxGroupValues}
                     required={el.required}
                     disabled={el.readOnly}
