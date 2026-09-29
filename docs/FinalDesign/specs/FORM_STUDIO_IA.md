@@ -78,7 +78,8 @@ The Build|Design toggle is persistent and always legible — mode is never hidde
 Forced by the math: 7 layouts × 30 themes makes a WYSIWYG canvas untenable (every theme/layout
 change would re-flow the editing surface). So structure and presentation are split:
 
-- **Blueprint (center, dark, deliberately schematic):** page chips (`Page 1 · Details`, `+ Page`),
+- **Blueprint (center, light, deliberately schematic):** (dark until 2026-09-29; now light authoring
+  surfaces with a teal selection, still schematic) page chips (`Page 1 · Details`, `+ Page`),
   sections with grips, field rows with skeleton value bars, drop zones. Structure only — it never
   changes when layouts/themes are added. Bar copy: "BLUEPRINT — structure only; the preview is the truth."
 - **Live preview (right):** the real published render, same parser (one-parser rule — preview IS

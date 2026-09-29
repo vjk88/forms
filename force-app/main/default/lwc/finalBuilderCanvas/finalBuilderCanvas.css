@@ -1,7 +1,9 @@
 @import 'c/finalStudioStyles';
 
-/* The blueprint is deliberately dark + schematic (IA §4): it must read as
-   "structure", never compete with the live preview for "looks". */
+/* The blueprint is deliberately schematic (IA §4): light authoring surfaces,
+   dashed cards, skeleton bars and a teal selection. It must read as
+   "structure", never compete with the live preview for "looks". (It was dark
+   until 2026-09-29; the colors all come from the --c-studio-canvas-* tokens.) */
 :host {
     --c-studio-focus: var(--c-studio-canvas-accent);
     display: block;
@@ -51,6 +53,7 @@
 }
 
 .bc-chip.selected {
+    background: var(--c-studio-accent-surface);
     box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
@@ -77,7 +80,9 @@
 .bc-section {
     position: relative;
     margin-top: 16px;
-    border: 1px solid var(--c-studio-canvas-divider);
+    /* the stronger border token: the hairline divider is ~1.2:1 on the light
+       canvas, which would make an unselected section nearly vanish */
+    border: 1px solid var(--c-studio-canvas-border);
     border-radius: 10px;
     background: var(--c-studio-canvas-surface);
     padding: 10px 10px 12px;
@@ -86,6 +91,7 @@
 
 .bc-section.selected {
     border-color: var(--c-studio-canvas-accent);
+    background: var(--c-studio-accent-surface);
     box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
@@ -203,6 +209,7 @@
 .bc-row.selected {
     border-style: solid;
     border-color: var(--c-studio-canvas-accent);
+    background: var(--c-studio-accent-surface);
     box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
@@ -320,6 +327,7 @@
 
 .bc-block.selected {
     border-color: var(--c-studio-canvas-accent);
+    background: var(--c-studio-accent-surface);
     box-shadow: 0 0 0 1px var(--c-studio-canvas-accent);
 }
 
