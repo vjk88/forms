@@ -344,12 +344,12 @@ Deployment is a separate execution step when included in the implementation requ
 - [x] Task 0: baseline and format diagnosis recorded (`docs/FinalDesign/qa/studio-ux-baseline.md`)
 - [x] Task 1: preview expansion (PR #363; verified in the VF host, 27 checks; LEX host pending in Task 7)
 - [x] Task 2: tools collapse and workspace widths (verified in the VF host at 1024, 1280, 1440 and 768, 21 checks; LEX host pending in Task 7)
-- [ ] Task 3: light structure styling (PR #365, implemented and deployed; the state-by-state pass and the light/dark respondent theme check are in Task 7)
+- [x] Task 3: light structure styling (PR #365; state-by-state pass and the dark-respondent-theme check done in Task 7: normal, hover, selected, focus, required, empty, drag-over, read-only)
 - [x] Task 4: compact Advanced rich-text controls (the plan's spike passed on the real editor in the VF host, on a scratch clone; LEX host pending in Task 7)
 - [x] Task 5A: mobile outer/card spacing (verified in the VF host's Studio preview: Desktop/Tablet unchanged, Mobile compact, exact 539/540/541px boundary, Split Hero unpadded; a real hosted guest form and the LEX host are pending, see Task 7 and the site-publish decision in section 8)
 - [x] Task 5B: mobile header (verified the same way: first input 558px → 316px, no overflow at 320/540, a 72-character unbroken word wraps; the cross-component container query reaches the header)
 - [x] Task 6: save-aware Back to forms (verified in the VF host on a scratch clone: the edit typed just before Back was in the saved draft, and a forced save failure stayed in the Studio with Retry; LEX host pending in Task 7)
-- [ ] Task 7: combined verification and evidence
+- [x] Task 7: combined verification and evidence (`docs/FinalDesign/qa/studio-ux-results.md`: whole LWC suite 108 suites / 1,317 tests green; VF and LEX hosts checked; not verified: a real guest-hosted form (site publish not approved), Firefox and Safari, and some header fixtures, all listed there)
 
 ## 7. Copyable prompt for each implementation session
 

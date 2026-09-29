@@ -1,0 +1,140 @@
+{
+  "label": "after",
+  "viewport": "1280x800",
+  "steps": {
+    "designSimple": {
+      "leftPane": {
+        "x": 0,
+        "y": 53,
+        "w": 430,
+        "h": 682
+      },
+      "previewViewport": {
+        "x": 448,
+        "y": 112,
+        "w": 814,
+        "h": 836
+      },
+      "scaleLabel": "64%"
+    },
+    "build": {
+      "toolsPane": {
+        "x": 0,
+        "y": 53,
+        "w": 320,
+        "h": 682
+      },
+      "structurePane": {
+        "x": 320,
+        "y": 53,
+        "w": 320,
+        "h": 682
+      },
+      "previewPane": {
+        "x": 640,
+        "y": 53,
+        "w": 640,
+        "h": 682
+      },
+      "previewViewport": {
+        "x": 659,
+        "y": 112,
+        "w": 603,
+        "h": 620
+      },
+      "scaleLabel": "47%"
+    },
+    "toolsCollapsed": {
+      "toolsPane": {
+        "x": 0,
+        "y": 53,
+        "w": 44,
+        "h": 682
+      },
+      "structurePane": {
+        "x": 44,
+        "y": 53,
+        "w": 320,
+        "h": 682
+      },
+      "previewPane": {
+        "x": 364,
+        "y": 53,
+        "w": 916,
+        "h": 682
+      },
+      "scaleLabel": "69%"
+    },
+    "expandedPreview": {
+      "previewPane": {
+        "x": 0,
+        "y": 53,
+        "w": 1280,
+        "h": 682
+      },
+      "scaleLabel": "97%"
+    },
+    "mobile": {
+      "scaleLabel": "100%",
+      "canvas": {
+        "x": 660,
+        "y": 112,
+        "w": 390,
+        "h": 1766
+      },
+      "header": {
+        "x": 689,
+        "y": 145,
+        "w": 332,
+        "h": 184
+      },
+      "headerTitleFontSize": "20px",
+      "firstInputTopInDevice": 316
+    },
+    "designAdvanced": {
+      "disclosures": [
+        {
+          "top": 389,
+          "bottom": 446,
+          "h": 58
+        },
+        {
+          "top": 446,
+          "bottom": 522,
+          "h": 76
+        },
+        {
+          "top": 522,
+          "bottom": 579,
+          "h": 58
+        }
+      ],
+      "leftPane": {
+        "x": 0,
+        "y": 53,
+        "w": 430,
+        "h": 682
+      }
+    },
+    "stacked768": {
+      "direction": "column",
+      "tools": {
+        "x": 0,
+        "y": 119,
+        "w": 768,
+        "h": 320
+      },
+      "structure": {
+        "x": 0,
+        "y": 439,
+        "w": 768,
+        "h": 360
+      }
+    }
+  },
+  "consoleErrors": [],
+  "chromium": "149.0.7827.55",
+  "landingMode": "Design",
+  "exitLabel": "← Back to forms",
+  "host": "VF full-page host: /apex/FinalStudio?c__formId=a05hk000001RX8zAAG (dev org revclouddev)"
+}
