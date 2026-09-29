@@ -1,0 +1,132 @@
+{
+  "label": "baseline",
+  "viewport": "1280x800",
+  "steps": {
+    "build": {
+      "toolsPane": {
+        "x": 0,
+        "y": 53,
+        "w": 320,
+        "h": 682
+      },
+      "structurePane": {
+        "x": 320,
+        "y": 53,
+        "w": 320,
+        "h": 682
+      },
+      "previewPane": {
+        "x": 640,
+        "y": 53,
+        "w": 640,
+        "h": 682
+      },
+      "previewViewport": {
+        "x": 659,
+        "y": 112,
+        "w": 603,
+        "h": 620
+      },
+      "stBody": {
+        "x": 0,
+        "y": 53,
+        "w": 1280,
+        "h": 682
+      },
+      "scaleLabel": "47%",
+      "topBar": {
+        "x": 0,
+        "y": 0,
+        "w": 1280,
+        "h": 53
+      },
+      "exitLabel": "← Exit",
+      "overflow": {
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
+        "overflowX": false
+      }
+    },
+    "buildSelected": {
+      "propertiesShown": true,
+      "toolsPane": {
+        "x": 0,
+        "y": 53,
+        "w": 320,
+        "h": 682
+      }
+    },
+    "mobile": {
+      "scaleLabel": "100%",
+      "canvas": {
+        "x": 766,
+        "y": 112,
+        "w": 390,
+        "h": 2153
+      },
+      "header": {
+        "x": 815,
+        "y": 209,
+        "w": 292,
+        "h": 354
+      },
+      "headerTitleFontSize": "25.6px",
+      "firstInput": {
+        "top": 670,
+        "h": 32,
+        "tag": "INPUT"
+      },
+      "firstInputTopInDevice": 558
+    },
+    "designSimple": {
+      "leftPane": {
+        "x": 0,
+        "y": 53,
+        "w": 430,
+        "h": 682
+      },
+      "previewViewport": {
+        "x": 448,
+        "y": 112,
+        "w": 814,
+        "h": 836
+      },
+      "scaleLabel": "64%",
+      "overflow": {
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
+        "overflowX": false
+      }
+    },
+    "designAdvanced": {
+      "richTextEditors": [
+        {
+          "key": "title",
+          "top": 418,
+          "h": 219
+        },
+        {
+          "key": "description",
+          "top": 673,
+          "h": 219
+        },
+        {
+          "key": "brandName",
+          "top": 927,
+          "h": 219
+        }
+      ],
+      "richTextTotalHeight": 657,
+      "leftPane": {
+        "x": 0,
+        "y": 53,
+        "w": 430,
+        "h": 682
+      }
+    }
+  },
+  "consoleErrors": [],
+  "chromium": "149.0.7827.55",
+  "landingMode": "Design",
+  "host": "VF full-page host: /apex/FinalStudio?c__formId=a05hk000001RX8zAAG (dev org revclouddev)"
+}
