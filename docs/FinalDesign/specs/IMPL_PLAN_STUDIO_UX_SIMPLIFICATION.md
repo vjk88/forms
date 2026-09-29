@@ -342,8 +342,8 @@ Deployment is a separate execution step when included in the implementation requ
 ## 6. Task checklist
 
 - [x] Task 0: baseline and format diagnosis recorded (`docs/FinalDesign/qa/studio-ux-baseline.md`)
-- [ ] Task 1: preview expansion
-- [ ] Task 2: tools collapse and workspace widths
+- [x] Task 1: preview expansion (PR #363; verified in the VF host, 27 checks; LEX host pending in Task 7)
+- [x] Task 2: tools collapse and workspace widths (verified in the VF host at 1024, 1280, 1440 and 768, 21 checks; LEX host pending in Task 7)
 - [ ] Task 3: light structure styling
 - [ ] Task 4: compact Advanced rich-text controls
 - [ ] Task 5A: mobile outer/card spacing
@@ -383,13 +383,15 @@ Made during the pre-implementation review against the code and approved by the o
 - Deploying the affected bundles to the dev org `revclouddev` for browser checks is approved.
 - Publishing the Experience site to check a real guest-hosted form is **not** approved. Ask again, with specifics, when Task 5 needs it. Until then verify mobile in the VF and LEX hosts and mark the guest-site check pending.
 - The editor-mismatch diagnosis is included (Task 0, done).
+- Faster mode (owner, later on 2026-09-29): skip the per-task UX-reviewer pass and batch the full browser verification into Task 7. Each task is still deployed to `revclouddev` as it lands so the owner can test in parallel. Targeted browser proofs stay where the plan needs them (the Task 4 rich-text spike and the Task 5A container proof), and CSS-heavy tasks get a quick load-and-measure smoke run.
 
 **Task refinements**
 
 - **Task 1:** "fills the workspace" is measured against `.st-body`. In the VF host 65px of the window below `.st-body` is unused today; that predates this plan and is not part of it.
 - **Task 2:**
-  - At a 1024px window the tools column becomes 256px (320px today). Check the property panel at that width; if controls wrap or clip, raise the floor of the `clamp()` to about 280px.
-  - Verified in Chromium 149 that a `container-type: inline-size` wrapper does not re-anchor `position: fixed` overlays (for example the theme gallery scrim inside the Design panel). Firefox and Safari are not verified.
+  - At a 1024px window the tools column becomes 256px (320px today). Checked in the org: the property panel fits at that width with no wrapping or clipping, so the `clamp(240px, 25%, 320px)` stays. (A higher floor would also break the "preview is at least half" rule below roughly 1120px.)
+  - Verified in Chromium 149 that a `container-type: inline-size` wrapper does not re-anchor `position: fixed` overlays: after the change the settings drawer and the theme-gallery scrim still cover the whole 1280×800 window. Firefox and Safari are not verified.
+  - Measured in the org at 1280×800: collapsing tools takes Desktop Fit from 47% to 69% (+22 points); the panes are 320/320/640 open and 44/320/916 collapsed. At 1024 they are 256/256/512, at 1440 320/320/800, and at 768 they stack (tools 320px, structure 360px, preview in normal flow).
 - **Task 3:**
   - With the token table exactly as written, unselected section cards nearly vanish: `canvas-divider` `#dce2e9` on `canvas` `#f1f5f9` is 1.19:1 and `canvas-surface` on `canvas` is 1.05:1. Point `.bc-section` borders at the existing `--c-studio-canvas-border` (3.56:1 on white) and keep `canvas-divider` for skeleton bars and hairlines. No new hex values.
   - Also update `BUILDER_SURFACES.md` section 6 ("dark, schematic"), together with `FORM_STUDIO_IA.md` section 4 and the canvas CSS comment.

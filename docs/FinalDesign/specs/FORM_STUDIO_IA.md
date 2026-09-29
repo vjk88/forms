@@ -83,6 +83,10 @@ change would re-flow the editing surface). So structure and presentation are spl
   changes when layouts/themes are added. Bar copy: "BLUEPRINT — structure only; the preview is the truth."
 - **Live preview (right):** the real published render, same parser (one-parser rule — preview IS
   the runtime). Desktop/Mobile device toggle.
+  - **Expand preview (2026-09-29):** an inline toolbar button gives the preview the whole workspace
+    below the top bar in Build, Design and read-only history (`Collapse preview` returns it). Layout
+    state only: the same stage and viewer stay mounted, so test answers, device and zoom survive.
+    Switching Build/Design, entering or leaving version history, or loading another form collapses it.
   - **BUILT 2026-07-11 as `c/finalPreviewStage`** (all three preview surfaces: Build, Design,
     read-only history). Devices = Desktop 1280 / Tablet 768 / Mobile 390 + restart (full viewer
     remount). Mechanism: shells are container-query responsive, so the stage lays the viewer out
@@ -95,6 +99,14 @@ change would re-flow the editing surface). So structure and presentation are spl
 - **Left column = palette ⇄ properties swap.** Rail: Fields / Blocks / Logic / Autofill. Selecting
   a blueprint element swaps the palette column for that element's properties (`‹ Fields` back row);
   the preview never moves. Properties drive blueprint AND preview — one model, two projections.
+  - **Collapsible (2026-09-29):** `« Collapse tools` folds the column into a 44px strip (`»` shows it
+    again). The palette/properties subtree stays mounted, just hidden. Selecting anything (canvas,
+    preview click, logic jump) reopens it — except while the preview is expanded, where the
+    preference is left alone and returns with the layout. Workspace state only: never in the spec,
+    undo history or storage; resets when another form loads.
+  - **Widths:** tools and structure take a quarter each (240–320px); the preview takes the rest and
+    never less than half. Below a 960px workspace the Build panes stack (tools 320px, structure
+    360px, then the preview in normal flow).
 - **Palette rules:** required createable fields seeded at creation render dimmed + `ADDED`;
   everything drags; rejection = native no-drop, never a toast (see `reference-formstudio-dnd`).
 - **Preview-click selection sync is a P3 requirement** — clicking a field in the preview selects it

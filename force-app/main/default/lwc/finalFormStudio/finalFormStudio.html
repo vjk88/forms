@@ -262,175 +262,203 @@
             </p>
         </template>
 
-        <div class={bodyClass} aria-busy={publishing}>
-            <template lwc:if={isReadOnly}>
-                <aside class="st-left st-left--notice">
-                    <div class="st-notice">
-                        <h3 class="st-notice-title">{readOnlyTitle}</h3>
-                        <p class="st-notice-text">{readOnlyText}</p>
-                        <button
-                            type="button"
-                            class="st-primary st-notice-btn"
-                            onclick={handleBackToEditable}
-                        >
-                            {backToEditableLabel}
-                        </button>
-                    </div>
-                </aside>
-                <main class="st-stagearea">
-                    <div class="st-scroll">
-                        <c-final-preview-stage
-                            spec={viewSpec}
-                            expandable
-                            expanded={previewExpanded}
-                            onpreviewexpand={handlePreviewExpand}
-                        ></c-final-preview-stage>
-                    </div>
-                </main>
-            </template>
-            <template lwc:elseif={isDesign}>
-                <aside class="st-left">
-                    <c-final-design-panel
-                        spec={spec}
-                        form-id={formId}
-                        onspecchange={handleSpecChange}
-                        onthemeedit={handleThemeEdit}
-                    ></c-final-design-panel>
-                </aside>
-                <main class="st-stagearea">
-                    <div class="st-scroll">
-                        <c-final-preview-stage
-                            spec={spec}
-                            session={previewSession}
-                            preserve-session
-                            expandable
-                            expanded={previewExpanded}
-                            onpreviewexpand={handlePreviewExpand}
-                            onsessionconsumed={handlePreviewSessionConsumed}
-                        ></c-final-preview-stage>
-                    </div>
-                </main>
-            </template>
-            <template lwc:else>
-                <aside class="st-left st-left--build">
-                    <template lwc:if={showProperties}>
-                        <div class="st-props">
+        <div class="st-workspace-container">
+            <div class={bodyClass} aria-busy={publishing}>
+                <template lwc:if={isReadOnly}>
+                    <aside class="st-left st-left--notice">
+                        <div class="st-notice">
+                            <h3 class="st-notice-title">{readOnlyTitle}</h3>
+                            <p class="st-notice-text">{readOnlyText}</p>
                             <button
                                 type="button"
-                                class="st-back"
-                                onclick={handleBackToPalette}
+                                class="st-primary st-notice-btn"
+                                onclick={handleBackToEditable}
                             >
-                                ‹ Fields
+                                {backToEditableLabel}
                             </button>
-                            <c-final-property-panel
-                                node={selectedNode}
-                                kind={selectedKind}
-                                binding-object-api={selectionBindingObject}
-                                section-columns={selectionSectionColumns}
-                                block-style={selectionBlockStyle}
-                                form-id={formId}
-                                rule-sources={selectionRuleSources}
-                                record-rule-sources={recordRuleSources}
-                                record-rule-object={recordRuleObject}
-                                form-is-public={isPublic}
-                                rule-index={ruleIndexMap}
-                                host-repeat-section-id={selectionHostRepeat}
-                                form-type={formType}
-                                mapping-fields={mappingFields}
-                                onmappingchange={handleMappingChange}
-                                onmappingmodechange={handleMappingModeChange}
-                                onguestprefillchange={handleGuestPrefillChange}
-                                onpropchange={handlePropChange}
-                                onconfigchange={handleConfigChange}
-                                onrepeatchange={handleRepeatChange}
-                                onblockstylechange={handleBlockStyleChange}
-                                onaddchildfield={handleAddChildField}
-                                onvalidationchange={handleValidationChange}
-                            ></c-final-property-panel>
                         </div>
-                    </template>
-                    <template lwc:else>
-                        <template lwc:if={isSurvey}>
-                            <div class="st-survey-context">
-                                <span class="st-context-icon" aria-hidden="true"
-                                    >SF</span
-                                >
-                                <span class="st-context-copy">
-                                    <span class="st-context-label"
-                                        >Connected object</span
-                                    >
-                                    <span class="st-context-title"
-                                        >{surveyContextTitle}</span
-                                    >
-                                    <span class="st-context-detail"
-                                        >{surveyContextDetail}</span
-                                    >
-                                </span>
-                                <lightning-button-icon
-                                    icon-name="utility:edit"
-                                    alternative-text="Edit connected object"
-                                    title="Edit connected object"
-                                    onclick={handleOpenConnectionFromContext}
-                                ></lightning-button-icon>
-                            </div>
-                        </template>
-                        <c-final-field-palette
-                            object-api={objectApi}
-                            form-type={formType}
-                            used-fields={usedFields}
-                            used-labels={usedLabels}
-                            logic-index={logicIndex}
+                    </aside>
+                    <main class="st-stagearea">
+                        <div class="st-scroll">
+                            <c-final-preview-stage
+                                spec={viewSpec}
+                                expandable
+                                expanded={previewExpanded}
+                                onpreviewexpand={handlePreviewExpand}
+                            ></c-final-preview-stage>
+                        </div>
+                    </main>
+                </template>
+                <template lwc:elseif={isDesign}>
+                    <aside class="st-left">
+                        <c-final-design-panel
                             spec={spec}
                             form-id={formId}
-                            is-public={isPublic}
-                            active-version-id={activeVersionId}
-                            onaddfield={handleAddField}
-                            onaddquestion={handleAddQuestion}
-                            onaddblock={handleAddBlock}
-                            onaddrepeater={handleAddRepeater}
-                            onlogicjump={handleLogicJump}
                             onspecchange={handleSpecChange}
-                            onopenmapping={handleOpenMapping}
-                            oneditautofillrule={handleEditAutofillRule}
-                        ></c-final-field-palette>
-                    </template>
-                </aside>
-                <main class="st-blueprint">
-                    <c-final-builder-canvas
-                        spec={spec}
-                        selection={selection}
-                        current-page-index={buildPageIndex}
-                        onselect={handleSelect}
-                        onpagechange={handleBuildPageChange}
-                        onaddpage={handleAddPage}
-                        onaddsection={handleAddSection}
-                        onremoveelement={handleRemoveElement}
-                        onremovesection={handleRemoveSection}
-                        onremovepage={handleRemovePage}
-                        ondropfield={handleDropField}
-                        ondropblock={handleDropBlock}
-                        ondroprepeater={handleDropRepeater}
-                        onmoveelement={handleMoveElement}
-                        onmovesection={handleMoveSection}
-                        onmovepage={handleMovePage}
-                    ></c-final-builder-canvas>
-                </main>
-                <aside class="st-buildpreview">
-                    <div class="st-scroll">
-                        <c-final-preview-stage
+                            onthemeedit={handleThemeEdit}
+                        ></c-final-design-panel>
+                    </aside>
+                    <main class="st-stagearea">
+                        <div class="st-scroll">
+                            <c-final-preview-stage
+                                spec={spec}
+                                session={previewSession}
+                                preserve-session
+                                expandable
+                                expanded={previewExpanded}
+                                onpreviewexpand={handlePreviewExpand}
+                                onsessionconsumed={handlePreviewSessionConsumed}
+                            ></c-final-preview-stage>
+                        </div>
+                    </main>
+                </template>
+                <template lwc:else>
+                    <aside class={toolsClass}>
+                        <button
+                            type="button"
+                            class="st-tools-toggle"
+                            aria-expanded={toolsExpandedAria}
+                            aria-controls="tools-panel"
+                            aria-label={toolsToggleLabel}
+                            title={toolsToggleLabel}
+                            onclick={handleToolsToggle}
+                        >
+                            <span class="st-tools-glyph" aria-hidden="true"
+                                >{toolsGlyph}</span
+                            >
+                            <template lwc:if={toolsOpen}>
+                                <span class="st-tools-text"
+                                    >Collapse tools</span
+                                >
+                            </template>
+                        </button>
+                        <div
+                            id="tools-panel"
+                            class="st-tools-panel"
+                            hidden={toolsCollapsed}
+                        >
+                            <template lwc:if={showProperties}>
+                                <div class="st-props">
+                                    <button
+                                        type="button"
+                                        class="st-back"
+                                        onclick={handleBackToPalette}
+                                    >
+                                        ‹ Fields
+                                    </button>
+                                    <c-final-property-panel
+                                        node={selectedNode}
+                                        kind={selectedKind}
+                                        binding-object-api={selectionBindingObject}
+                                        section-columns={selectionSectionColumns}
+                                        block-style={selectionBlockStyle}
+                                        form-id={formId}
+                                        rule-sources={selectionRuleSources}
+                                        record-rule-sources={recordRuleSources}
+                                        record-rule-object={recordRuleObject}
+                                        form-is-public={isPublic}
+                                        rule-index={ruleIndexMap}
+                                        host-repeat-section-id={selectionHostRepeat}
+                                        form-type={formType}
+                                        mapping-fields={mappingFields}
+                                        onmappingchange={handleMappingChange}
+                                        onmappingmodechange={handleMappingModeChange}
+                                        onguestprefillchange={handleGuestPrefillChange}
+                                        onpropchange={handlePropChange}
+                                        onconfigchange={handleConfigChange}
+                                        onrepeatchange={handleRepeatChange}
+                                        onblockstylechange={handleBlockStyleChange}
+                                        onaddchildfield={handleAddChildField}
+                                        onvalidationchange={handleValidationChange}
+                                    ></c-final-property-panel>
+                                </div>
+                            </template>
+                            <template lwc:else>
+                                <template lwc:if={isSurvey}>
+                                    <div class="st-survey-context">
+                                        <span
+                                            class="st-context-icon"
+                                            aria-hidden="true"
+                                            >SF</span
+                                        >
+                                        <span class="st-context-copy">
+                                            <span class="st-context-label"
+                                                >Connected object</span
+                                            >
+                                            <span class="st-context-title"
+                                                >{surveyContextTitle}</span
+                                            >
+                                            <span class="st-context-detail"
+                                                >{surveyContextDetail}</span
+                                            >
+                                        </span>
+                                        <lightning-button-icon
+                                            icon-name="utility:edit"
+                                            alternative-text="Edit connected object"
+                                            title="Edit connected object"
+                                            onclick={handleOpenConnectionFromContext}
+                                        ></lightning-button-icon>
+                                    </div>
+                                </template>
+                                <c-final-field-palette
+                                    object-api={objectApi}
+                                    form-type={formType}
+                                    used-fields={usedFields}
+                                    used-labels={usedLabels}
+                                    logic-index={logicIndex}
+                                    spec={spec}
+                                    form-id={formId}
+                                    is-public={isPublic}
+                                    active-version-id={activeVersionId}
+                                    onaddfield={handleAddField}
+                                    onaddquestion={handleAddQuestion}
+                                    onaddblock={handleAddBlock}
+                                    onaddrepeater={handleAddRepeater}
+                                    onlogicjump={handleLogicJump}
+                                    onspecchange={handleSpecChange}
+                                    onopenmapping={handleOpenMapping}
+                                    oneditautofillrule={handleEditAutofillRule}
+                                ></c-final-field-palette>
+                            </template>
+                        </div>
+                    </aside>
+                    <main class="st-blueprint">
+                        <c-final-builder-canvas
                             spec={spec}
-                            session={previewSession}
-                            preserve-session
-                            expandable
-                            expanded={previewExpanded}
-                            onpreviewexpand={handlePreviewExpand}
-                            onsessionconsumed={handlePreviewSessionConsumed}
-                            authoring
-                            onelementselect={handlePreviewSelect}
-                        ></c-final-preview-stage>
-                    </div>
-                </aside>
-            </template>
+                            selection={selection}
+                            current-page-index={buildPageIndex}
+                            onselect={handleSelect}
+                            onpagechange={handleBuildPageChange}
+                            onaddpage={handleAddPage}
+                            onaddsection={handleAddSection}
+                            onremoveelement={handleRemoveElement}
+                            onremovesection={handleRemoveSection}
+                            onremovepage={handleRemovePage}
+                            ondropfield={handleDropField}
+                            ondropblock={handleDropBlock}
+                            ondroprepeater={handleDropRepeater}
+                            onmoveelement={handleMoveElement}
+                            onmovesection={handleMoveSection}
+                            onmovepage={handleMovePage}
+                        ></c-final-builder-canvas>
+                    </main>
+                    <aside class="st-buildpreview">
+                        <div class="st-scroll">
+                            <c-final-preview-stage
+                                spec={spec}
+                                session={previewSession}
+                                preserve-session
+                                expandable
+                                expanded={previewExpanded}
+                                onpreviewexpand={handlePreviewExpand}
+                                onsessionconsumed={handlePreviewSessionConsumed}
+                                authoring
+                                onelementselect={handlePreviewSelect}
+                            ></c-final-preview-stage>
+                        </div>
+                    </aside>
+                </template>
+            </div>
         </div>
 
         <template lwc:if={settingsDrawerOpen}>
