@@ -110,3 +110,51 @@
     align-items: center;
     text-align: center;
 }
+
+/*
+ * Narrow form (Studio UX plan, Task 5B): a compact lockup. The container is the
+ * whole rendered form (finalPageFrame), not this card, so a narrow card on a
+ * wide device keeps the desktop lockup. Authored inline rich-text sizes and
+ * colors still win, and nothing is truncated: long words and links wrap.
+ * Each cap is min(existing token, cap) so a smaller authored value stays smaller.
+ */
+@container final-form-viewport (max-width: 540px) {
+    .hdr {
+        gap: min(var(--c-space-3), 12px);
+        padding: min(var(--c-space-5), 16px);
+        margin-bottom: min(var(--c-space-5), 16px);
+    }
+
+    /* .hdr .hdr-title outranks .arr-inline .hdr-title (both 0,2,0; this is later) */
+    .hdr .hdr-title {
+        font-size: 1.25rem;
+        line-height: 1.3;
+    }
+
+    .lockup-text,
+    .hdr-title,
+    .hdr-desc {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* The rich-text host carries SLDS's own overflow-wrap: break-word, which
+       beats the value inherited from the ancestors above AND does not shrink a
+       long word's minimum width, so an unbroken word would still stretch the
+       card. Set it on the hosts themselves. */
+    .lockup-text lightning-formatted-rich-text,
+    .brand-wordmark lightning-formatted-rich-text {
+        overflow-wrap: anywhere;
+    }
+
+    .brand-logo {
+        max-height: 40px;
+        max-width: min(160px, 100%);
+    }
+
+    /* logoBeside: branding above the text instead of beside it */
+    .arr-logo-beside {
+        grid-template-columns: 1fr;
+        row-gap: var(--c-space-3);
+    }
+}

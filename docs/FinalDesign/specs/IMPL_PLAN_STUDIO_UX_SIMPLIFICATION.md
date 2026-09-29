@@ -346,8 +346,8 @@ Deployment is a separate execution step when included in the implementation requ
 - [x] Task 2: tools collapse and workspace widths (verified in the VF host at 1024, 1280, 1440 and 768, 21 checks; LEX host pending in Task 7)
 - [ ] Task 3: light structure styling (PR #365, implemented and deployed; the state-by-state pass and the light/dark respondent theme check are in Task 7)
 - [x] Task 4: compact Advanced rich-text controls (the plan's spike passed on the real editor in the VF host, on a scratch clone; LEX host pending in Task 7)
-- [ ] Task 5A: mobile outer/card spacing
-- [ ] Task 5B: mobile header
+- [x] Task 5A: mobile outer/card spacing (verified in the VF host's Studio preview: Desktop/Tablet unchanged, Mobile compact, exact 539/540/541px boundary, Split Hero unpadded; a real hosted guest form and the LEX host are pending, see Task 7 and the site-publish decision in section 8)
+- [x] Task 5B: mobile header (verified the same way: first input 558px → 316px, no overflow at 320/540, a 72-character unbroken word wraps; the cross-component container query reaches the header)
 - [x] Task 6: save-aware Back to forms (verified in the VF host on a scratch clone: the edit typed just before Back was in the saved draft, and a forced save failure stayed in the Studio with Retry; LEX host pending in Task 7)
 - [ ] Task 7: combined verification and evidence
 
@@ -399,7 +399,9 @@ Made during the pre-implementation review against the code and approved by the o
 - **Task 4:**
   - Spike result (VF host, real `lightning-input-rich-text`, scratch clone): the editor initialises fine inside a closed `<details>`, shows its full toolbar (219px, as before) on first open, keeps the caret at the end across the autosave spec echo (two typing bursts came out in order in the live preview), and bold reaches the preview. All three summaries now sit inside the 800px window (bottoms at y=446/522/579; Brand name used to start at y=927).
   - The native disclosure marker is not shown in the Studio hosts, so the chevron is drawn explicitly (`.rt-summary::before`, rotated when open), and the summary line hides while the editor is open because the editor already shows the text.
-- **Task 5B:** the baseline first input is already at 558px (`studio-ux-baseline.md`), so the "within 650px" ceiling cannot show progress. Success is a relative reduction from 558px as well as staying under the ceiling.
+- **Task 5B:** the baseline first input is already at 558px (`studio-ux-baseline.md`), so the "within 650px" ceiling cannot show progress. Success is a relative reduction from 558px as well as staying under the ceiling. Result in the org: 316px (a 242px reduction), and the header shrank from 354px to 184px.
+- **Task 5B (long words):** `overflow-wrap: anywhere` on the header ancestors is not enough. `lightning-formatted-rich-text` carries SLDS's own `overflow-wrap: break-word` (via `.slds-rich-text-editor__output`), which beats the inherited value and does not shrink a word's minimum width, so a 72-character unbroken word stretched the header to 1622px. The narrow rules therefore also set `overflow-wrap: anywhere` on the rich-text hosts inside `.lockup-text` and `.brand-wordmark`. Any future rich-text container that must wrap long words needs the same.
+- **Tasks 5A + 5B (verification limits):** verified in the Studio preview by changing the preview canvas width (its width is the form's width), which is exactly what the container measures. Not verified: a real hosted guest form (needs the site-publish decision above), the LEX host, and Firefox/Safari.
 - **Task 6:**
   - Keep `exiting` out of `editorLocked`. That getter also gates `_mutate` and `handleSpecChange`, so folding it in would silently drop an edit that arrives during the exit save, and the revision check in step 7 cannot see a dropped edit. Give the buttons their own disabled getter and extend the inert toggle explicitly.
   - Reset `exiting` right after the LEX navigation call (LEX may reuse the instance for the same form, and `routed()` reloads only when the form id changes). For the VF host, also reset it on `pageshow` when the page is restored from the back/forward cache.

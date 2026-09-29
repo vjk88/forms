@@ -2,6 +2,18 @@
     display: block;
 
     /*
+     * The whole rendered form is the "viewport" that narrow-form rules ask
+     * about (this file below, and the header in its own stylesheet): the form's
+     * own width, NOT the browser window, because the Studio's Mobile preview is
+     * a 390px form inside a wide window. width:100% and min-width:0 guard the
+     * container-type collapse (a flex/grid item would otherwise shrink to 0).
+     */
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    container: final-form-viewport / inline-size;
+
+    /*
      * Neutral base — the "no theme" render (ARCH §3.1 rule 5).
      * Declared ONCE, here only. The engine's inline tokens on this same host win.
      * Children everywhere consume bare var(--c-x) — no per-file fallbacks.
@@ -207,4 +219,19 @@
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+}
+
+/*
+ * Narrow form (Studio UX plan, Task 5A): at 540px or less the outer gutters and
+ * card padding give the questions more of the width. Bleed layouts own their
+ * canvas and keep zero padding, so they are excluded.
+ */
+@container final-form-viewport (max-width: 540px) {
+    .page:not(.page--bleed) {
+        padding: 16px 12px 24px;
+    }
+
+    .panel:not(.panel--bleed) {
+        padding: min(var(--c-space-6), 16px);
+    }
 }
