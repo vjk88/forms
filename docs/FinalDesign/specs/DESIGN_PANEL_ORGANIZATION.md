@@ -89,6 +89,11 @@ screen rendered both on the real buttons, which closes the open question about w
   each with a permanent toolbar, pushing Colors / Typography / Header appearance below the fold. It
   is the default-open section, so it is the first thing seen in Advanced. Same fix as the existing
   §9.2 "collapse rich-text toolbars until focused" item, which now applies to Advanced too.
+  **Resolved 2026-09-29 (Studio UX plan, Task 4):** each Advanced rich-text control (Title,
+  Description, Brand name) is a closed native `<details>` showing its label and a one-line summary
+  (up to 80 plain-text characters, `Not set`, or `Contains an image`). Opening it reveals the full
+  `lightning-input-rich-text`, which stays mounted while closed; opening or closing writes nothing
+  to the spec. The summary is display-only and is never stored. Simple's editors are unchanged.
 - **Duplicated customization chrome** — the "N customization(s) · Reset all" chip sits directly
   above "N advanced customization(s) are active." Pre-existing; already tracked in §9.2.
 

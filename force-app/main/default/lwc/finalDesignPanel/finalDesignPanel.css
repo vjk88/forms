@@ -369,9 +369,64 @@
     padding: 6px 0;
 }
 
+/* Advanced rich text folds into a native disclosure: label + a one-line
+   summary, the full editor inside once it is opened. */
+/* The browser's own marker is not shown in every host, so the chevron is drawn
+   here: a closed row must still read as something you can open. */
+.rt-summary {
+    position: relative;
+    display: block;
+    padding: 2px 0 2px 16px;
+    list-style: none;
+    cursor: pointer;
+}
+
+.rt-summary::-webkit-details-marker {
+    display: none;
+}
+
+.rt-summary::before {
+    content: '›';
+    position: absolute;
+    top: 0;
+    left: 3px;
+    font-size: 18px;
+    line-height: 1.2;
+    color: var(--c-studio-text-weak);
+}
+
+.rt-disclosure[open] > .rt-summary::before {
+    transform: rotate(90deg);
+}
+
+.rt-summary:hover .rt-label {
+    color: var(--c-studio-accent-text);
+}
+
+.rt-summary:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* the open editor already shows the text, so the summary line steps aside */
+.rt-disclosure[open] .rt-preview {
+    display: none;
+}
+
 .rt-label {
     display: block;
     margin-bottom: 4px;
+}
+
+.rt-preview {
+    display: block;
+    color: var(--c-studio-text-weak);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.rt-body {
+    padding-top: 6px;
 }
 
 .row input[type='number'] {
