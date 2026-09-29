@@ -262,7 +262,7 @@
             </p>
         </template>
 
-        <div class="st-body" aria-busy={publishing}>
+        <div class={bodyClass} aria-busy={publishing}>
             <template lwc:if={isReadOnly}>
                 <aside class="st-left st-left--notice">
                     <div class="st-notice">
@@ -281,6 +281,9 @@
                     <div class="st-scroll">
                         <c-final-preview-stage
                             spec={viewSpec}
+                            expandable
+                            expanded={previewExpanded}
+                            onpreviewexpand={handlePreviewExpand}
                         ></c-final-preview-stage>
                     </div>
                 </main>
@@ -300,6 +303,9 @@
                             spec={spec}
                             session={previewSession}
                             preserve-session
+                            expandable
+                            expanded={previewExpanded}
+                            onpreviewexpand={handlePreviewExpand}
                             onsessionconsumed={handlePreviewSessionConsumed}
                         ></c-final-preview-stage>
                     </div>
@@ -415,6 +421,9 @@
                             spec={spec}
                             session={previewSession}
                             preserve-session
+                            expandable
+                            expanded={previewExpanded}
+                            onpreviewexpand={handlePreviewExpand}
                             onsessionconsumed={handlePreviewSessionConsumed}
                             authoring
                             onelementselect={handlePreviewSelect}

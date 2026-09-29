@@ -78,7 +78,27 @@
     cursor: pointer;
 }
 
+/* Same quiet outline family as Restart, with words: the host owns what it does. */
+.ps-expand {
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 8px;
+    background: var(--c-studio-surface);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--c-studio-text-weak);
+    padding: 5px 10px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ps-expand[aria-expanded='true'] {
+    border-color: var(--c-studio-accent);
+    color: var(--c-studio-accent-text);
+}
+
 .ps-refresh:hover,
+.ps-expand:hover,
 .ps-device:hover:not(.on),
 .ps-zoom:hover:not(.on) {
     background: var(--c-studio-hover);

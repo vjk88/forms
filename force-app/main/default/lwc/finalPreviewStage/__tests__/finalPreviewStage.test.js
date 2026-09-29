@@ -298,4 +298,88 @@ describe('c-final-preview-stage', () => {
         );
         expect(seen).toEqual([{ elementId: 'el_x' }]);
     });
+
+    describe('expand control', () => {
+        const FIELD_SPEC = {
+            ...SPEC,
+            pages: [
+                {
+                    id: 'p',
+                    sections: [
+                        {
+                            id: 's',
+                            elements: [
+                                {
+                                    id: 'q',
+                                    type: 'field',
+                                    config: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        it('is absent unless the host opts in, so other stage consumers keep their UI', async () => {
+            const el = await mount();
+            expect(el.shadowRoot.querySelector('.ps-expand')).toBeNull();
+        });
+
+        it('asks the host to expand and never flips its own state', async () => {
+            const el = await mount({ expandable: true });
+            const button = el.shadowRoot.querySelector('.ps-expand');
+            expect(button.tagName).toBe('BUTTON');
+            expect(button.getAttribute('type')).toBe('button');
+            expect(button.textContent.trim()).toBe('Expand preview');
+            expect(button.getAttribute('aria-expanded')).toBe('false');
+            const seen = [];
+            el.addEventListener('previewexpand', (e) => seen.push(e.detail));
+
+            button.click();
+            await flush();
+            expect(seen).toEqual([{ expanded: true }]);
+            // the host owns the layout — nothing changes until it says so
+            expect(button.textContent.trim()).toBe('Expand preview');
+            expect(el.expanded).toBe(false);
+
+            el.expanded = true;
+            await flush();
+            // the SAME element updates in place, so keyboard focus survives
+            expect(el.shadowRoot.querySelector('.ps-expand')).toBe(button);
+            expect(button.textContent.trim()).toBe('Collapse preview');
+            expect(button.getAttribute('aria-expanded')).toBe('true');
+            button.click();
+            expect(seen).toEqual([{ expanded: true }, { expanded: false }]);
+        });
+
+        it('keeps the same viewer, answers, device and zoom across expand and collapse', async () => {
+            const el = await mount({
+                spec: FIELD_SPEC,
+                expandable: true,
+                preserveSession: true
+            });
+            el.shadowRoot.querySelector('[data-device="tablet"]').click();
+            el.shadowRoot.querySelector('[data-zoom="actual"]').click();
+            const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+            viewer.shadowRoot.querySelector('x-test').dispatchEvent(
+                new CustomEvent('valuechange', {
+                    detail: { elementId: 'q', value: 'Kept' }
+                })
+            );
+
+            el.expanded = true;
+            await flush();
+            el.expanded = false;
+            await flush();
+
+            expect(el.shadowRoot.querySelector('c-final-form-viewer')).toBe(
+                viewer
+            );
+            const session = el.getSession();
+            expect(session.device).toBe('tablet');
+            expect(session.zoom).toBe('actual');
+            expect(session.viewer.answers.q).toBe('Kept');
+        });
+    });
 });

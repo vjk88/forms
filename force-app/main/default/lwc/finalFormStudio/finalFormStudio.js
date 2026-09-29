@@ -233,6 +233,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     async _load() {
         this.previewSession = undefined;
+        this.previewExpanded = false;
         clearTimeout(this._saveTimer);
         const session = {
             formId: this.formId,
@@ -465,11 +466,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // read-only viewing KEEPS `resolved` — the frozen tokens ARE the
             // published render; stripping is only for specs re-entering the
             // editor (see _load)
+            const arriving = !this.viewVersionId;
             this.viewSpec = JSON.parse(json);
             this.viewEntry = entry;
             this.viewVersionId = id;
             this.selection = null;
             this.propsOpen = false;
+            // Arriving from the draft shows the read-only notice, not a hidden
+            // pane; hopping between two history versions keeps the layout.
+            if (arriving) {
+                this.previewExpanded = false;
+            }
         } catch {
             // stay editable; renderedCallback snaps the select back
             this.handleBackToEditable();
@@ -477,6 +484,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     handleBackToEditable() {
+        // Only LEAVING history collapses. A failed version load lands here
+        // too, and must leave the current (possibly expanded) preview alone.
+        if (this.viewVersionId) {
+            this.previewExpanded = false;
+        }
         this.viewVersionId = null;
         this.viewSpec = null;
         this.viewEntry = null;
@@ -608,6 +620,19 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     previewSession;
 
+    /** Workspace layout only — never the spec, undo history, autosave or
+     *  storage. The ONE preview stage stays mounted (its answers, device and
+     *  zoom live there); the flag just hides the editing panes around it. */
+    previewExpanded = false;
+
+    get bodyClass() {
+        return this.previewExpanded ? 'st-body st-body--expanded' : 'st-body';
+    }
+
+    handlePreviewExpand(event) {
+        this.previewExpanded = Boolean(event.detail?.expanded);
+    }
+
     handlePreviewSessionConsumed() {
         this.previewSession = undefined;
     }
@@ -624,7 +649,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (this.isReadOnly) {
             return;
         }
-        if (this.mode !== 'build') this.capturePreviewSession();
+        if (this.mode !== 'build') {
+            this.capturePreviewSession();
+            this.previewExpanded = false;
+        }
         this.mode = 'build';
         this.settingsMenuOpen = false;
     }
@@ -633,7 +661,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (this.isReadOnly) {
             return;
         }
-        if (this.mode !== 'design') this.capturePreviewSession();
+        if (this.mode !== 'design') {
+            this.capturePreviewSession();
+            this.previewExpanded = false;
+        }
         this.mode = 'design';
         this.settingsMenuOpen = false;
     }

@@ -329,6 +329,7 @@
 }
 
 .st-scroll {
+    box-sizing: border-box;
     height: 100%;
     overflow: auto;
     padding: 18px;
@@ -470,6 +471,22 @@
     min-width: 340px;
     background: var(--c-studio-workspace);
     border-left: 1px solid var(--c-studio-border);
+}
+
+/* Expanded preview (Studio UX plan, Task 1): the editing panes step aside and
+   the ONE preview stage takes the workspace. The stage is never unmounted or
+   moved — hiding is layout only, so its answers, device and zoom survive.
+   Direct-child selectors keep this away from anything nested in a pane. */
+.st-body--expanded > .st-left,
+.st-body--expanded > .st-blueprint {
+    display: none;
+}
+
+.st-body--expanded > .st-buildpreview {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    border-left: 0;
 }
 
 /* Read-only version viewing: the editing column collapses to a slim notice —

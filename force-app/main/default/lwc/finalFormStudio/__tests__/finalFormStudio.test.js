@@ -1530,6 +1530,197 @@ describe('c-final-form-studio', () => {
         expect(viewer.spec.resolved).toBeUndefined();
     });
 
+    describe('preview expansion', () => {
+        const FIELD_SPEC = {
+            ...SPEC,
+            pages: [
+                {
+                    id: 'p',
+                    sections: [
+                        {
+                            id: 's',
+                            elements: [
+                                {
+                                    id: 'q',
+                                    type: 'field',
+                                    config: { inputType: 'text' }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        async function open(mode) {
+            loadStudio.mockResolvedValue({
+                name: 'Expand',
+                specJson: JSON.stringify(FIELD_SPEC),
+                draftVersionId: 'a0V2',
+                versionNumber: 2,
+                activeVersionNumber: 1
+            });
+            listVersions.mockResolvedValue(VERSIONS);
+            getSpec.mockResolvedValue(JSON.stringify(FIELD_SPEC));
+            saveDraft.mockResolvedValue('a0V2');
+            const el = mount();
+            CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+            await flush();
+            await flush();
+            if (mode === 'build') {
+                el.shadowRoot.querySelectorAll('.st-mode')[0].click();
+                await flush();
+            }
+            return el;
+        }
+        const stage = (el) =>
+            el.shadowRoot.querySelector('c-final-preview-stage');
+        const isExpanded = (el) =>
+            el.shadowRoot
+                .querySelector('.st-body')
+                .classList.contains('st-body--expanded');
+        async function setExpanded(el, expanded) {
+            stage(el).dispatchEvent(
+                new CustomEvent('previewexpand', { detail: { expanded } })
+            );
+            await flush();
+        }
+
+        it.each(['build', 'design'])(
+            '%s: expanding changes layout state only',
+            async (mode) => {
+                const el = await open(mode);
+                const before = stage(el);
+                const viewer = previewViewer(el);
+                expect(before.expandable).toBe(true);
+                expect(before.expanded).toBe(false);
+
+                await setExpanded(el, true);
+                expect(isExpanded(el)).toBe(true);
+                expect(before.expanded).toBe(true);
+                expect(stage(el)).toBe(before);
+                expect(previewViewer(el)).toBe(viewer);
+
+                await setExpanded(el, false);
+                expect(isExpanded(el)).toBe(false);
+                expect(before.expanded).toBe(false);
+                expect(stage(el)).toBe(before);
+                expect(previewViewer(el)).toBe(viewer);
+
+                // never an edit: no save, no undo entry
+                expect(saveDraft).not.toHaveBeenCalled();
+                expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(
+                    true
+                );
+            }
+        );
+
+        it('keeps preview answers, device and zoom across expand and collapse', async () => {
+            const el = await open('build');
+            stage(el)
+                .shadowRoot.querySelector('[data-device="tablet"]')
+                .click();
+            stage(el).shadowRoot.querySelector('[data-zoom="actual"]').click();
+            previewViewer(el)
+                .shadowRoot.querySelector('x-test')
+                .dispatchEvent(
+                    new CustomEvent('valuechange', {
+                        detail: { elementId: 'q', value: 'Draft answer' }
+                    })
+                );
+
+            await setExpanded(el, true);
+            await setExpanded(el, false);
+
+            const session = stage(el).getSession();
+            expect(session.device).toBe('tablet');
+            expect(session.zoom).toBe('actual');
+            expect(session.viewer.answers.q).toBe('Draft answer');
+        });
+
+        it('leaves expanded mode on a Build/Design switch and when another form loads', async () => {
+            const el = await open('build');
+            await setExpanded(el, true);
+            el.shadowRoot.querySelectorAll('.st-mode')[1].click(); // Design
+            await flush();
+            expect(isExpanded(el)).toBe(false);
+            expect(stage(el).expanded).toBe(false);
+
+            await setExpanded(el, true);
+            el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+            await flush();
+            expect(isExpanded(el)).toBe(false);
+            expect(stage(el).expanded).toBe(false);
+
+            await setExpanded(el, true);
+            CurrentPageReference.emit({ state: { c__formId: 'a0F2' } });
+            await flush();
+            await flush();
+            expect(isExpanded(el)).toBe(false);
+        });
+
+        it('read-only: entering history collapses, the read-only view expands, leaving history collapses', async () => {
+            const el = await open('design');
+            await setExpanded(el, true);
+            const select = el.shadowRoot.querySelector('.st-verselect');
+            select.value = 'a0V1';
+            select.dispatchEvent(new CustomEvent('change'));
+            await flush();
+
+            // the read-only notice must be visible on arrival
+            expect(el.shadowRoot.querySelector('.st-notice')).not.toBeNull();
+            expect(isExpanded(el)).toBe(false);
+            expect(stage(el).expandable).toBe(true);
+            expect(stage(el).expanded).toBe(false);
+
+            await setExpanded(el, true);
+            expect(isExpanded(el)).toBe(true);
+            expect(stage(el).expanded).toBe(true);
+            // the badge stays in the top bar and the same version stays open
+            expect(el.shadowRoot.querySelector('.st-robadge')).not.toBeNull();
+            expect(el.shadowRoot.querySelector('.st-verselect').value).toBe(
+                'a0V1'
+            );
+
+            el.shadowRoot.querySelector('.st-rolink').click(); // Back to draft
+            await flush();
+            expect(el.shadowRoot.querySelector('.st-robadge')).toBeNull();
+            expect(isExpanded(el)).toBe(false);
+            expect(saveDraft).not.toHaveBeenCalled();
+        });
+
+        it('a failed version load leaves the current expanded preview usable', async () => {
+            const el = await open('design');
+            await setExpanded(el, true);
+            getSpec.mockRejectedValue(new Error('boom'));
+            const select = el.shadowRoot.querySelector('.st-verselect');
+            select.value = 'a0V1';
+            select.dispatchEvent(new CustomEvent('change'));
+            await flush();
+
+            expect(el.shadowRoot.querySelector('.st-robadge')).toBeNull();
+            expect(isExpanded(el)).toBe(true);
+            expect(stage(el).expanded).toBe(true);
+        });
+
+        it('a click in the expanded Build preview selects the element without collapsing', async () => {
+            const el = await open('build');
+            await setExpanded(el, true);
+            stage(el).dispatchEvent(
+                new CustomEvent('elementselect', {
+                    detail: { elementId: 'q' }
+                })
+            );
+            await flush();
+
+            expect(
+                el.shadowRoot.querySelector('c-final-builder-canvas').selection
+            ).toEqual({ kind: 'element', id: 'q' });
+            expect(isExpanded(el)).toBe(true);
+            expect(stage(el).expanded).toBe(true);
+        });
+    });
+
     it('undo/redo (slice 6): steps restore, persist via autosave, and never re-record', async () => {
         jest.useFakeTimers();
         loadStudio.mockResolvedValue({
