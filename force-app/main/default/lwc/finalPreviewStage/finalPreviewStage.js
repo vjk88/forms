@@ -35,6 +35,11 @@ export default class FinalPreviewStage extends LightningElement {
     @api preserveSession = false;
     @api session;
     @api recordContext;
+    /** Opt-in: the host that can give the stage more room shows the toggle.
+     *  The stage only asks (`previewexpand`); the host owns the layout and
+     *  feeds the result back through `expanded`. */
+    @api expandable = false;
+    @api expanded = false;
     previewState;
 
     connectedCallback() {
@@ -113,6 +118,22 @@ export default class FinalPreviewStage extends LightningElement {
 
     get scaleLabel() {
         return `${Math.round(this.scale * 100)}%`;
+    }
+
+    get expandLabel() {
+        return this.expanded ? 'Collapse preview' : 'Expand preview';
+    }
+
+    get expandedAria() {
+        return String(this.expanded);
+    }
+
+    handleExpand() {
+        this.dispatchEvent(
+            new CustomEvent('previewexpand', {
+                detail: { expanded: !this.expanded }
+            })
+        );
     }
 
     handleZoom(event) {
