@@ -62,7 +62,9 @@ in the mockup). One IA, two chromes, zero duplication.
 
 ## 3. Studio top bar (App Builder grammar)
 
-`← Exit` far left (back to Forms tab) · form name + version chip (`v2 · Draft`) · saved-state text
+`← Back to forms` far left (back to the Forms library; it finishes any pending save first and
+stays put with the normal save error and Retry if that fails) · form name + version chip
+(`v2 · Draft`) · saved-state text
 (`✓ All changes saved` / `Unsaved changes`) · **Build | Design** mode toggle · undo/redo ·
 **Actions** (Clone form · Export form · Import form · Delete form) · **Publish**.
 

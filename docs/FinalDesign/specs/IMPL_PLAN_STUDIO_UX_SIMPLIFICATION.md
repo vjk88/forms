@@ -348,7 +348,7 @@ Deployment is a separate execution step when included in the implementation requ
 - [x] Task 4: compact Advanced rich-text controls (the plan's spike passed on the real editor in the VF host, on a scratch clone; LEX host pending in Task 7)
 - [ ] Task 5A: mobile outer/card spacing
 - [ ] Task 5B: mobile header
-- [ ] Task 6: save-aware Back to forms
+- [x] Task 6: save-aware Back to forms (verified in the VF host on a scratch clone: the edit typed just before Back was in the saved draft, and a forced save failure stayed in the Studio with Retry; LEX host pending in Task 7)
 - [ ] Task 7: combined verification and evidence
 
 ## 7. Copyable prompt for each implementation session

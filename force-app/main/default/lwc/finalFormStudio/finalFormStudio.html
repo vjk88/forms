@@ -53,17 +53,17 @@
             <button
                 type="button"
                 class="st-exit"
-                disabled={publishing}
-                onclick={handleExit}
+                disabled={exitDisabled}
+                onclick={handleBackToForms}
             >
-                ← Exit
+                ← Back to forms
             </button>
             <span class="st-name">{formName}</span>
             <template lwc:if={hasVersions}>
                 <select
                     class="st-verselect"
                     aria-label="Form version"
-                    disabled={editorLocked}
+                    disabled={controlsLocked}
                     onchange={handleVersionChange}
                 >
                     <template for:each={versionOptions} for:item="o">
@@ -155,7 +155,7 @@
                         title="Form settings"
                         aria-haspopup="menu"
                         aria-expanded={settingsMenuOpen}
-                        disabled={editorLocked}
+                        disabled={controlsLocked}
                         onclick={handleSettingsToggle}
                     ></lightning-button-icon>
                     <template lwc:if={settingsMenuOpen}>

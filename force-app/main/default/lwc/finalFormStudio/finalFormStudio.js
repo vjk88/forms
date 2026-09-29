@@ -165,6 +165,17 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     _saveSession;
     _redirected = false;
 
+    /** True while the top bar's "Back to forms" finishes saving. UI lock only:
+     *  see controlsLocked for why it is not part of editorLocked. */
+    exiting = false;
+    _onPageShow = (event) => {
+        // Visualforce can restore this page from the back/forward cache with
+        // the lock still set; the page is live again, so unlock it.
+        if (event.persisted) {
+            this.exiting = false;
+        }
+    };
+
     /** Undo/redo (slice 6): in-memory snapshot history per loaded form.
      *  The manager isn't reactive — these mirrored flags drive the bar. */
     _history = createHistory();
@@ -179,6 +190,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     @api exitUrl;
 
     connectedCallback() {
+        window.addEventListener('pageshow', this._onPageShow);
         if (this.hostFormId && !this.formId) {
             this.formId = this.hostFormId;
             this._load();
@@ -190,6 +202,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  edit; a post-unmount timer would fire on a dead component). _save's
      *  own catch owns failures. */
     disconnectedCallback() {
+        window.removeEventListener('pageshow', this._onPageShow);
         clearTimeout(this._saveTimer);
         if (this.saveState === 'dirty') {
             this._save();
@@ -235,6 +248,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.previewSession = undefined;
         this.previewExpanded = false;
         this.toolsCollapsed = false;
+        this.exiting = false;
         clearTimeout(this._saveTimer);
         const session = {
             formId: this.formId,
@@ -329,7 +343,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         // Apply it to our own DOM so publishing blocks both pointer and keyboard edits.
         this.template
             .querySelector('.st-body')
-            ?.toggleAttribute('inert', this.editorLocked || this.mappingOpen);
+            ?.toggleAttribute('inert', this.controlsLocked || this.mappingOpen);
         // The Mapping dialog is modal for screen readers too, not only for
         // the mouse and Tab.
         this.template
@@ -395,7 +409,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this._confirmingPublish ||
             this.isReadOnly ||
             this.actionBusy ||
-            this.objectSaving
+            this.objectSaving ||
+            this.exiting
         );
     }
 
@@ -403,12 +418,24 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.publishing || this.publishNeedsCleanup;
     }
 
+    /** UI-only lock for the controls that would conflict with "Back to forms"
+     *  while it saves. Deliberately NOT part of editorLocked, which also guards
+     *  _mutate and handleSpecChange: an edit that lands mid-exit must still be
+     *  recorded so the exit's revision check can see it, not be dropped. */
+    get controlsLocked() {
+        return this.editorLocked || this.exiting;
+    }
+
     get modeDisabled() {
-        return this.isReadOnly || this.editorLocked;
+        return this.isReadOnly || this.controlsLocked;
     }
 
     get actionsDisabled() {
-        return this.actionBusy || this.editorLocked;
+        return this.actionBusy || this.controlsLocked;
+    }
+
+    get exitDisabled() {
+        return this.exiting || this.publishing || this.actionBusy;
     }
 
     get publishLabel() {
@@ -438,7 +465,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     }
 
     async handleVersionChange(event) {
-        if (this.editorLocked) {
+        if (this.controlsLocked) {
             return;
         }
         this.closeSettings();
@@ -1189,6 +1216,45 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             type: 'standard__navItemPage',
             attributes: { apiName: FORMS_TAB }
         });
+    }
+
+    /**
+     * The top bar's "Back to forms" (Studio UX plan, Task 6): finish saving,
+     * THEN leave. handleExit stays the plain navigation used after lifecycle
+     * actions and from the not-found and archived screens.
+     */
+    async handleBackToForms() {
+        if (this.exitDisabled) {
+            return;
+        }
+        // History (any read-only view) has nothing to save.
+        if (this.isReadOnly) {
+            this.handleExit();
+            return;
+        }
+        const session = this._saveSession;
+        this.closeSettings();
+        this.exiting = true;
+        // Even when the bar already says "saved": a clean drain makes no
+        // request, and awaiting it also joins a save that is in flight.
+        const saved = await this._save();
+        const settled =
+            saved &&
+            session === this._saveSession &&
+            session.revision === session.savedRevision;
+        if (!settled) {
+            // Stay: the normal save state (error + Retry, or "Unsaved changes")
+            // says why. Loading another form already reset the lock itself.
+            if (session === this._saveSession) {
+                this.exiting = false;
+            }
+            return;
+        }
+        this.handleExit();
+        if (!this.exitUrl) {
+            // Lightning reuses this page instance: leaving does not unload it.
+            this.exiting = false;
+        }
     }
 
     // ----- Build mode: the studio owns every structural mutation -----
