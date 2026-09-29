@@ -106,7 +106,11 @@ entry (schema §4 sugar). No regex input anywhere.
 | Repeating Group | CANVAS_RULES §4.4: Child records (ro) · Display style · Add-button label · Min rows · Max rows (0 = unlimited) · child-field list |
 | Page            | Name · Visibility                                                                                                                 |
 
-## 6 · Blueprint canvas (dark, schematic — the reference screenshots)
+## 6 · Blueprint canvas (schematic — the legacy reference screenshots are dark; the final build has been light since 2026-09-29)
+
+Structure and behaviour below are unchanged. Only the colors moved: light authoring surfaces and a
+darker teal selection (`--c-studio-canvas-*` tokens), so the panel reads as part of the same tool as
+the rest of the Studio. The look still comes from the dashed cards and skeleton bars.
 
 - Page chips row (`Page 1 · name` ×, `+ Page`).
 - Sections: title as a **border tag** (top-left chip), repeat chip, delete ×, description line,

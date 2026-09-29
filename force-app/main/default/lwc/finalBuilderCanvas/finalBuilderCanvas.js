@@ -5,9 +5,10 @@ export { canMoveElement } from './movement';
 /**
  * finalBuilderCanvas — the blueprint (FORM_STUDIO_IA §4).
  *
- * Deliberately schematic and DARK: structure only — page chips, sections
- * with grips, field rows as skeleton bars. It never re-flows when layouts or
- * themes change; the live preview is the truth for looks.
+ * Deliberately schematic (light authoring surfaces, teal selection): structure
+ * only — page chips, sections with grips, field rows as skeleton bars. It
+ * never re-flows when layouts or themes change; the live preview is the truth
+ * for looks.
  *
  * DUMB view: the studio owns the spec. This component renders it and emits
  * intents — `select` {kind,id} · `addpage` · `addsection` {pageId} ·

@@ -31,18 +31,21 @@
     --c-studio-dialog-shadow: 0 20px 48px rgb(0 0 0 / 28%);
     --c-studio-radius-lg: 12px;
     --c-studio-space-lg: 24px;
-    --c-studio-canvas: #1c1f26;
-    --c-studio-canvas-surface: #232730;
-    --c-studio-canvas-card: #1d212a;
-    --c-studio-canvas-text: #d7dfe9;
-    --c-studio-canvas-text-weak: #aab6c6;
-    --c-studio-canvas-border: #748297;
-    --c-studio-canvas-divider: #3a4150;
-    --c-studio-canvas-accent: #2dd4bf;
-    --c-studio-canvas-accent-text: #d7f5f0;
-    --c-studio-canvas-error: #fca5a5;
-    --c-studio-canvas-drop: rgb(45 212 191 / 8%);
-    --c-studio-canvas-drop-gap: rgb(45 212 191 / 35%);
+    /* Structure panel (the blueprint): light authoring surfaces with a darker
+       teal selection and focus color (2026-09-29; it was dark). Only the
+       structure panel reads these; respondent theme tokens are untouched. */
+    --c-studio-canvas: #f1f5f9;
+    --c-studio-canvas-surface: #f8fafc;
+    --c-studio-canvas-card: #ffffff;
+    --c-studio-canvas-text: #1f2937;
+    --c-studio-canvas-text-weak: #526071;
+    --c-studio-canvas-border: #7c8999;
+    --c-studio-canvas-divider: #dce2e9;
+    --c-studio-canvas-accent: #0f766e;
+    --c-studio-canvas-accent-text: #115e59;
+    --c-studio-canvas-error: #b42318;
+    --c-studio-canvas-drop: rgb(15 118 110 / 8%);
+    --c-studio-canvas-drop-gap: rgb(15 118 110 / 35%);
 }
 
 /* Scoped to native authoring controls in each importing component's template.
