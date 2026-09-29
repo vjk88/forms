@@ -324,6 +324,7 @@ export default class FinalDesignPanel extends LightningElement {
                 }));
             } else if (c.type === 'richtext') {
                 vm.value = typeof value === 'string' ? value : '';
+                vm.summary = this._richTextSummary(vm.value);
             } else if (c.type === 'number') {
                 vm.value = value === undefined || value === null ? '' : value;
             } else if (c.type === 'select') {
@@ -436,6 +437,21 @@ export default class FinalDesignPanel extends LightningElement {
             asTitle: pick('asTitle'),
             asMessage: pick('asMessage')
         };
+    }
+
+    /** Display-only line under a collapsed rich-text control: up to 80
+     *  characters of its plain text, `Not set` when there is none, and
+     *  `Contains an image` when the only content is an image. It is computed
+     *  from the stored HTML and never written back to the spec. */
+    _richTextSummary(html) {
+        const doc = new DOMParser().parseFromString(html || '', 'text/html');
+        const text = doc.body.textContent.replace(/\s+/g, ' ').trim();
+        if (!text) {
+            return doc.body.querySelector('img')
+                ? 'Contains an image'
+                : 'Not set';
+        }
+        return text.length > 80 ? `${text.slice(0, 80).trimEnd()}…` : text;
     }
 
     get contentSummary() {

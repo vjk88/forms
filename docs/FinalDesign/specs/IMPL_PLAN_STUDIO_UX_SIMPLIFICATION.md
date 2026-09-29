@@ -344,8 +344,8 @@ Deployment is a separate execution step when included in the implementation requ
 - [x] Task 0: baseline and format diagnosis recorded (`docs/FinalDesign/qa/studio-ux-baseline.md`)
 - [x] Task 1: preview expansion (PR #363; verified in the VF host, 27 checks; LEX host pending in Task 7)
 - [x] Task 2: tools collapse and workspace widths (verified in the VF host at 1024, 1280, 1440 and 768, 21 checks; LEX host pending in Task 7)
-- [ ] Task 3: light structure styling
-- [ ] Task 4: compact Advanced rich-text controls
+- [ ] Task 3: light structure styling (PR #365, implemented and deployed; the state-by-state pass and the light/dark respondent theme check are in Task 7)
+- [x] Task 4: compact Advanced rich-text controls (the plan's spike passed on the real editor in the VF host, on a scratch clone; LEX host pending in Task 7)
 - [ ] Task 5A: mobile outer/card spacing
 - [ ] Task 5B: mobile header
 - [ ] Task 6: save-aware Back to forms
@@ -396,6 +396,9 @@ Made during the pre-implementation review against the code and approved by the o
   - With the token table exactly as written, unselected section cards nearly vanish: `canvas-divider` `#dce2e9` on `canvas` `#f1f5f9` is 1.19:1 and `canvas-surface` on `canvas` is 1.05:1. Point `.bc-section` borders at the existing `--c-studio-canvas-border` (3.56:1 on white) and keep `canvas-divider` for skeleton bars and hairlines. No new hex values.
   - Also update `BUILDER_SURFACES.md` section 6 ("dark, schematic"), together with `FORM_STUDIO_IA.md` section 4 and the canvas CSS comment.
   - Measured contrast of the proposed tokens: row border 3.56:1, weak text 6.14:1, error 6.57:1, teal ring 5.00:1 (on canvas) and 4.89:1 (on the selected tint).
+- **Task 4:**
+  - Spike result (VF host, real `lightning-input-rich-text`, scratch clone): the editor initialises fine inside a closed `<details>`, shows its full toolbar (219px, as before) on first open, keeps the caret at the end across the autosave spec echo (two typing bursts came out in order in the live preview), and bold reaches the preview. All three summaries now sit inside the 800px window (bottoms at y=446/522/579; Brand name used to start at y=927).
+  - The native disclosure marker is not shown in the Studio hosts, so the chevron is drawn explicitly (`.rt-summary::before`, rotated when open), and the summary line hides while the editor is open because the editor already shows the text.
 - **Task 5B:** the baseline first input is already at 558px (`studio-ux-baseline.md`), so the "within 650px" ceiling cannot show progress. Success is a relative reduction from 558px as well as staying under the ceiling.
 - **Task 6:**
   - Keep `exiting` out of `editorLocked`. That getter also gates `_mutate` and `handleSpecChange`, so folding it in would silently drop an edit that arrives during the exit save, and the revision check in step 7 cannot see a dropped edit. Give the buttons their own disabled getter and extend the inert toggle explicitly.

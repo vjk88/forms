@@ -915,4 +915,137 @@ describe('c-final-design-panel', () => {
         expect(spec.header.title).toBe('<p>New Title</p>');
         expect(spec.theme.overrides || {}).toEqual({});
     });
+
+    describe('Advanced rich-text disclosures (Studio UX plan, Task 4)', () => {
+        const RICH_KEYS = ['title', 'description', 'brandName'];
+        const RICH_TEXT_HTML =
+            '<p><strong>Bold</strong> and <a href="https://example.com">a link</a></p><ul><li>one</li></ul>';
+
+        async function openBrand(spec) {
+            const el = mount(spec);
+            await goAdvanced(el);
+            await openArea(el, 'brand');
+            return el;
+        }
+        const editorOf = (el, key) =>
+            el.shadowRoot.querySelector(
+                `lightning-input-rich-text[data-key="${key}"]`
+            );
+        const disclosureOf = (el, key) =>
+            editorOf(el, key).closest('details.rt-disclosure');
+        const previewOf = (el, key) =>
+            disclosureOf(el, key)
+                .querySelector('.rt-preview')
+                .textContent.trim();
+        const sampleWith = (header) => {
+            const spec = buildSampleSpec({
+                layout: 'stepper',
+                themeKey: 'nordic'
+            });
+            Object.assign(spec.header, header);
+            return spec;
+        };
+
+        it('each control starts closed with its label and a summary, and keeps the full editor mounted', async () => {
+            const el = await openBrand(
+                sampleWith({
+                    title: '<p><strong>Welcome</strong> &amp; hello</p>',
+                    description: '',
+                    brandName: ''
+                })
+            );
+            for (const key of RICH_KEYS) {
+                const editor = editorOf(el, key);
+                expect(editor).not.toBeNull(); // mounted while closed
+                expect(disclosureOf(el, key).open).toBe(false);
+                expect(editor.variant).toBe('bottom-toolbar');
+                expect(
+                    disclosureOf(el, key)
+                        .querySelector('summary .rt-label')
+                        .textContent.trim().length
+                ).toBeGreaterThan(0);
+            }
+            expect(previewOf(el, 'title')).toBe('Welcome & hello');
+            expect(previewOf(el, 'description')).toBe('Not set');
+            expect(previewOf(el, 'brandName')).toBe('Not set');
+        });
+
+        it('summaries cap plain text at 80 characters and say so for an image-only value', async () => {
+            const el = await openBrand(
+                sampleWith({
+                    title: `<p>${'a'.repeat(100)}</p>`,
+                    description: '<p><img src="x.png" alt=""></p>',
+                    brandName: '<p>  </p>'
+                })
+            );
+            expect(previewOf(el, 'title')).toBe(`${'a'.repeat(80)}…`);
+            expect(previewOf(el, 'description')).toBe('Contains an image');
+            expect(previewOf(el, 'brandName')).toBe('Not set');
+        });
+
+        it('opening, closing and a Simple/Advanced round trip change nothing', async () => {
+            const spec = sampleWith({ title: RICH_TEXT_HTML });
+            const before = JSON.parse(JSON.stringify(spec));
+            const el = await openBrand(spec);
+            const handler = jest.fn();
+            el.addEventListener('specchange', handler);
+
+            const details = disclosureOf(el, 'title');
+            details.open = true;
+            details.dispatchEvent(new CustomEvent('toggle'));
+            await flush();
+            details.open = false;
+            details.dispatchEvent(new CustomEvent('toggle'));
+            await flush();
+            el.shadowRoot.querySelectorAll('.lens-btn')[0].click(); // Simple
+            await flush();
+            await goAdvanced(el);
+            await openArea(el, 'brand');
+
+            expect(handler).not.toHaveBeenCalled();
+            expect(el.spec).toEqual(before);
+            expect(editorOf(el, 'title').value).toBe(RICH_TEXT_HTML);
+        });
+
+        it('a deliberate edit inside the disclosure writes the same canonical path', async () => {
+            const el = await openBrand(sampleWith({ title: RICH_TEXT_HTML }));
+            const handler = jest.fn();
+            el.addEventListener('specchange', handler);
+            disclosureOf(el, 'title').open = true;
+            const editor = editorOf(el, 'title');
+            editor.value = '<p>New Title</p>';
+            editor.dispatchEvent(new CustomEvent('change'));
+            await flush();
+            const spec = lastSpec(handler);
+            expect(spec.header.title).toBe('<p>New Title</p>');
+            expect(spec.theme.overrides || {}).toEqual({});
+        });
+
+        it('a spec echo after typing does not close a disclosure the author opened', async () => {
+            const el = await openBrand(sampleWith({ title: RICH_TEXT_HTML }));
+            const handler = jest.fn();
+            el.addEventListener('specchange', handler);
+            const details = disclosureOf(el, 'title');
+            details.open = true;
+            const editor = editorOf(el, 'title');
+            editor.value = '<p>Typed</p>';
+            editor.dispatchEvent(new CustomEvent('change'));
+            await flush();
+
+            el.spec = lastSpec(handler); // the host echoes the new spec back
+            await flush();
+            expect(disclosureOf(el, 'title')).toBe(details);
+            expect(details.open).toBe(true);
+            expect(previewOf(el, 'title')).toBe('Typed');
+        });
+
+        it('Simple keeps its own editors, unwrapped', async () => {
+            const el = mount(sampleWith({ title: RICH_TEXT_HTML }));
+            await flush();
+            expect(editorOf(el, 'title')).not.toBeNull();
+            expect(editorOf(el, 'title').closest('details.rt-disclosure')).toBe(
+                null
+            );
+        });
+    });
 });

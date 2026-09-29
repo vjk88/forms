@@ -287,22 +287,34 @@
                                                         <template
                                                             lwc:elseif={c.isRichText}
                                                         >
-                                                            <div
-                                                                class="richtext"
+                                                            <details
+                                                                class="richtext rt-disclosure"
                                                             >
-                                                                <label
-                                                                    class="rt-label"
-                                                                    >{c.label}</label
+                                                                <summary
+                                                                    class="rt-summary"
                                                                 >
-                                                                <lightning-input-rich-text
-                                                                    label={c.label}
-                                                                    data-key={c.key}
-                                                                    value={c.value}
-                                                                    placeholder={c.placeholder}
-                                                                    variant="bottom-toolbar"
-                                                                    onchange={handleRichText}
-                                                                ></lightning-input-rich-text>
-                                                            </div>
+                                                                    <span
+                                                                        class="rt-label"
+                                                                        >{c.label}</span
+                                                                    >
+                                                                    <span
+                                                                        class="rt-preview"
+                                                                        >{c.summary}</span
+                                                                    >
+                                                                </summary>
+                                                                <div
+                                                                    class="rt-body"
+                                                                >
+                                                                    <lightning-input-rich-text
+                                                                        label={c.label}
+                                                                        data-key={c.key}
+                                                                        value={c.value}
+                                                                        placeholder={c.placeholder}
+                                                                        variant="bottom-toolbar"
+                                                                        onchange={handleRichText}
+                                                                    ></lightning-input-rich-text>
+                                                                </div>
+                                                            </details>
                                                         </template>
                                                         <template
                                                             lwc:elseif={c.isNumber}
