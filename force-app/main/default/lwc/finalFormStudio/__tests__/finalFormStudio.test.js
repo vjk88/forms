@@ -509,6 +509,7 @@ describe('c-final-form-studio', () => {
         // no CurrentPageReference emission anywhere — the seed did the load
         expect(loadStudio).toHaveBeenCalledWith({ formId: 'a0F7' });
         el.shadowRoot.querySelector('.st-exit').click();
+        await flush(); // exit now finishes any save first
         expect(assign).toHaveBeenCalledWith(
             'https://org.my.salesforce.com/lightning/n/Final_Forms'
         );
@@ -2870,6 +2871,222 @@ describe('c-final-form-studio', () => {
                 element.shadowRoot.querySelector('c-final-design-panel')
             ).not.toBeNull();
             expect(status(element)).toContain('Draft couldn’t be saved');
+        });
+
+        describe('Back to forms (Studio UX plan, Task 6)', () => {
+            const exitButton = (element) =>
+                element.shadowRoot.querySelector('.st-bar .st-exit');
+            const FORMS_URL =
+                'https://org.my.salesforce.com/lightning/n/Final_Forms';
+
+            it('is labelled "← Back to forms"', async () => {
+                const element = await ready();
+                expect(exitButton(element).textContent.trim()).toBe(
+                    '← Back to forms'
+                );
+            });
+
+            it('a clean draft leaves at once without a save request', async () => {
+                const element = await ready();
+                exitButton(element).click();
+                await micro(12);
+                expect(saveDraft).not.toHaveBeenCalled();
+                expect(NAVIGATE.map((n) => n.attributes.apiName)).toEqual([
+                    'Final_Forms'
+                ]);
+            });
+
+            it('an edit inside the autosave debounce window is saved first, then it leaves', async () => {
+                const pending = deferred();
+                saveDraft.mockReturnValueOnce(pending.promise);
+                const element = await ready();
+                edit(element, 'Just typed');
+                exitButton(element).click();
+                await micro(12);
+
+                expect(saveDraft).toHaveBeenCalledTimes(1);
+                expect(
+                    JSON.parse(saveDraft.mock.calls[0][0].specJson).submit.label
+                ).toBe('Just typed');
+                expect(NAVIGATE).toHaveLength(0); // still waiting for the save
+                pending.resolve('a0V2');
+                await micro(12);
+                expect(NAVIGATE).toHaveLength(1);
+                expect(saveDraft).toHaveBeenCalledTimes(1);
+            });
+
+            it('joins a save that is already in flight instead of starting another', async () => {
+                const first = deferred();
+                saveDraft.mockReturnValueOnce(first.promise);
+                const element = await ready();
+                edit(element, 'In flight');
+                jest.advanceTimersByTime(900);
+                expect(saveDraft).toHaveBeenCalledTimes(1);
+
+                exitButton(element).click();
+                await micro(12);
+                expect(saveDraft).toHaveBeenCalledTimes(1);
+                expect(NAVIGATE).toHaveLength(0);
+                first.resolve('a0V2');
+                await micro(12);
+                expect(NAVIGATE).toHaveLength(1);
+            });
+
+            it('an edit that lands while the exit save runs is saved too, never dropped', async () => {
+                const first = deferred();
+                const second = deferred();
+                saveDraft
+                    .mockReturnValueOnce(first.promise)
+                    .mockReturnValueOnce(second.promise);
+                const element = await ready();
+                edit(element, 'First');
+                exitButton(element).click();
+                await micro(12);
+
+                edit(element, 'Late'); // mid-save: must still be recorded
+                first.resolve('a0V2');
+                await micro(12);
+                expect(saveDraft).toHaveBeenCalledTimes(2);
+                expect(
+                    JSON.parse(saveDraft.mock.calls[1][0].specJson).submit.label
+                ).toBe('Late');
+                expect(NAVIGATE).toHaveLength(0);
+                second.resolve('a0V2');
+                await micro(12);
+                expect(NAVIGATE).toHaveLength(1);
+            });
+
+            it('a failed save keeps the editor open, unlocks everything and can be retried', async () => {
+                saveDraft.mockRejectedValueOnce(new Error('offline'));
+                const element = await ready();
+                edit(element, 'Keep me');
+                exitButton(element).click();
+                await micro(12);
+
+                expect(NAVIGATE).toHaveLength(0);
+                expect(status(element)).toContain('Draft couldn’t be saved');
+                expect(exitButton(element).disabled).toBe(false);
+                for (const mode of element.shadowRoot.querySelectorAll(
+                    '.st-mode'
+                )) {
+                    expect(mode.disabled).toBe(false);
+                }
+                expect(
+                    element.shadowRoot
+                        .querySelector('.st-body')
+                        .hasAttribute('inert')
+                ).toBe(false);
+
+                element.shadowRoot
+                    .querySelector('.st-save-status .st-retry')
+                    .click();
+                await micro(12);
+                expect(status(element)).toBe('✓ All changes saved');
+                exitButton(element).click();
+                await micro(12);
+                expect(NAVIGATE).toHaveLength(1);
+            });
+
+            it('locks the conflicting controls while it saves and ignores a second click', async () => {
+                const pending = deferred();
+                saveDraft.mockReturnValueOnce(pending.promise);
+                const element = await ready();
+                edit(element, 'Saving');
+                exitButton(element).click();
+                await micro(6);
+
+                const root = element.shadowRoot;
+                expect(exitButton(element).disabled).toBe(true);
+                for (const mode of root.querySelectorAll('.st-mode')) {
+                    expect(mode.disabled).toBe(true);
+                }
+                expect(root.querySelector('.st-verselect').disabled).toBe(true);
+                expect(
+                    root.querySelector('[data-id="settings-trigger"]').disabled
+                ).toBe(true);
+                expect(
+                    root.querySelector('[data-id="actions-trigger"]').disabled
+                ).toBe(true);
+                expect(
+                    root.querySelector('.st-bar > .st-primary').disabled
+                ).toBe(true);
+                expect(root.querySelector('.st-undo').disabled).toBe(true);
+                expect(
+                    root.querySelector('.st-body').hasAttribute('inert')
+                ).toBe(true);
+
+                exitButton(element).click();
+                pending.resolve('a0V2');
+                await micro(12);
+                expect(saveDraft).toHaveBeenCalledTimes(1);
+                expect(NAVIGATE).toHaveLength(1);
+            });
+
+            it('a different form loading meanwhile means the old exit never navigates', async () => {
+                const pending = deferred();
+                saveDraft.mockReturnValueOnce(pending.promise);
+                const element = await ready();
+                edit(element, 'Old form');
+                exitButton(element).click();
+                await micro(6);
+
+                CurrentPageReference.emit({ state: { c__formId: 'a0F2' } });
+                await micro(12);
+                pending.resolve('oldDraftId');
+                await micro(12);
+                expect(NAVIGATE).toHaveLength(0);
+                expect(exitButton(element).disabled).toBe(false);
+            });
+
+            it('read-only history leaves without saving', async () => {
+                getSpec.mockResolvedValue(JSON.stringify(SPEC));
+                const element = await ready();
+                const picker =
+                    element.shadowRoot.querySelector('.st-verselect');
+                picker.value = 'a0V1';
+                picker.dispatchEvent(new Event('change'));
+                await micro(24);
+                expect(
+                    element.shadowRoot.querySelector('.st-robadge')
+                ).not.toBeNull();
+
+                exitButton(element).click();
+                await micro(12);
+                expect(saveDraft).not.toHaveBeenCalled();
+                expect(NAVIGATE).toHaveLength(1);
+            });
+
+            it('Lightning: the lock clears after navigating, since the page instance can be reused', async () => {
+                const element = await ready();
+                exitButton(element).click();
+                await micro(12);
+                expect(NAVIGATE).toHaveLength(1);
+                expect(exitButton(element).disabled).toBe(false);
+            });
+
+            it('Visualforce: the lock holds until the page unloads and clears if it is restored from the back/forward cache', async () => {
+                const orig = window.location;
+                const assign = jest.fn();
+                delete window.location;
+                window.location = { assign };
+                try {
+                    const element = await ready();
+                    element.exitUrl = FORMS_URL;
+                    await micro(2);
+                    exitButton(element).click();
+                    await micro(12);
+                    expect(assign).toHaveBeenCalledWith(FORMS_URL);
+                    expect(exitButton(element).disabled).toBe(true);
+
+                    const restored = new Event('pageshow');
+                    restored.persisted = true;
+                    window.dispatchEvent(restored);
+                    await micro(4);
+                    expect(exitButton(element).disabled).toBe(false);
+                } finally {
+                    window.location = orig;
+                }
+            });
         });
     });
 
