@@ -234,6 +234,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     async _load() {
         this.previewSession = undefined;
         this.previewExpanded = false;
+        this.toolsCollapsed = false;
         clearTimeout(this._saveTimer);
         const session = {
             formId: this.formId,
@@ -625,12 +626,64 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  zoom live there); the flag just hides the editing panes around it. */
     previewExpanded = false;
 
+    /** The Build tools column (palette ⇄ properties) can fold into a narrow
+     *  strip. Same rules as previewExpanded: a workspace preference, never the
+     *  spec, undo history, autosave or storage; it resets when another form
+     *  loads and survives Build/Design switches for the same form. */
+    toolsCollapsed = false;
+
+    /** Mirrors the template's branch order (read-only → Design → Build) so
+     *  the Build sizing rules never touch Design or history. */
     get bodyClass() {
-        return this.previewExpanded ? 'st-body st-body--expanded' : 'st-body';
+        let cls = 'st-body';
+        if (!this.isReadOnly && !this.isDesign) {
+            cls += ' st-body--build';
+        }
+        if (this.previewExpanded) {
+            cls += ' st-body--expanded';
+        }
+        return cls;
+    }
+
+    get toolsClass() {
+        return this.toolsCollapsed
+            ? 'st-left st-left--build st-left--collapsed'
+            : 'st-left st-left--build';
+    }
+
+    get toolsOpen() {
+        return !this.toolsCollapsed;
+    }
+
+    get toolsExpandedAria() {
+        return String(!this.toolsCollapsed);
+    }
+
+    get toolsToggleLabel() {
+        return this.toolsCollapsed ? 'Show tools' : 'Collapse tools';
+    }
+
+    get toolsGlyph() {
+        return this.toolsCollapsed ? '»' : '«';
+    }
+
+    handleToolsToggle() {
+        this.toolsCollapsed = !this.toolsCollapsed;
     }
 
     handlePreviewExpand(event) {
         this.previewExpanded = Boolean(event.detail?.expanded);
+    }
+
+    /** Show the properties for the current selection. In the normal workspace
+     *  that also reopens a collapsed tools column. While the preview is
+     *  expanded the panes stay hidden and the collapse preference is left
+     *  alone; it comes back with the layout. */
+    _revealProperties() {
+        this.propsOpen = true;
+        if (!this.previewExpanded) {
+            this.toolsCollapsed = false;
+        }
     }
 
     handlePreviewSessionConsumed() {
@@ -1461,7 +1514,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             }
         });
         this.selection = { kind, id };
-        this.propsOpen = true;
+        this._revealProperties();
     }
 
     /** Checks editor emission: the toggle's required entry survives.
@@ -2447,7 +2500,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             }
             this.buildPageIndex = spec.pages.indexOf(page);
             this.selection = { kind: 'section', id: section.id };
-            this.propsOpen = true;
+            this._revealProperties();
             return undefined;
         });
     }
@@ -2584,7 +2637,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             }
         });
         this.selection = { kind: 'element', id };
-        this.propsOpen = true;
+        this._revealProperties();
     }
 
     handleAddPage() {
@@ -2685,7 +2738,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     handleSelect(event) {
         this.selection = event.detail;
-        this.propsOpen = true;
+        this._revealProperties();
     }
 
     handleBuildPageChange(event) {

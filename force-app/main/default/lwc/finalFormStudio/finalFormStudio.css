@@ -307,6 +307,15 @@
 }
 
 /* ----- workspace ----- */
+/* The Build breakpoint asks THIS box how wide the workspace is, not the window.
+   It wraps the body only: the settings drawer, dialogs and menus sit outside it. */
+.st-workspace-container {
+    container: studio-workspace / inline-size;
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
 .st-body {
     display: flex;
     align-items: stretch;
@@ -335,9 +344,65 @@
     padding: 18px;
 }
 
-/* Build mode: palette⇄properties left · blueprint center · live preview right */
+/* Build mode: tools ⇄ properties left · structure center · live preview right.
+   Tools and structure take a quarter each (never under 240px or over 320px);
+   the preview takes the rest and never less than half. Collapsed, the tools
+   fold into a 44px strip and the preview gets the freed width. */
 .st-left--build {
-    width: 320px;
+    display: flex;
+    flex: 0 0 clamp(240px, 25%, 320px);
+    flex-direction: column;
+    box-sizing: border-box;
+    width: auto;
+    overflow: hidden; /* the panel below scrolls, so the toggle never does */
+}
+
+.st-left--build.st-left--collapsed {
+    flex-basis: 44px;
+}
+
+.st-tools-toggle {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 7px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text-weak);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.st-tools-toggle:hover {
+    background: var(--c-studio-hover);
+}
+
+.st-tools-glyph {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.st-left--collapsed .st-tools-toggle {
+    justify-content: center;
+    padding: 10px 0;
+    border-bottom: 0;
+}
+
+.st-tools-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden auto;
+}
+
+.st-tools-panel[hidden] {
+    display: none;
 }
 
 .st-survey-context {
@@ -458,17 +523,20 @@
 }
 
 .st-blueprint {
-    flex: 1;
+    flex: 0 0 clamp(240px, 25%, 320px);
+    box-sizing: border-box;
+    width: auto;
     min-width: 0;
 }
 
 /* Owner ruling (FormBuilder Pro mockup): the preview is at least HALF the
-   workspace — the blueprint takes the rest. (An earlier comment here claimed
-   the owner wanted "roughly a third"; that was a misread.) */
+   workspace — tools and structure share the rest. (An earlier comment here
+   claimed the owner wanted "roughly a third"; that was a misread.) */
 .st-buildpreview {
-    flex: none;
-    width: 50%;
-    min-width: 340px;
+    flex: 1 1 0;
+    box-sizing: border-box;
+    width: auto;
+    min-width: 50%;
     background: var(--c-studio-workspace);
     border-left: 1px solid var(--c-studio-border);
 }
@@ -487,6 +555,54 @@
     width: auto;
     min-width: 0;
     border-left: 0;
+}
+
+/* Narrow workspace (Studio UX plan, Task 2): below 960px the Build panes stack
+   instead of squeezing. The query reads the workspace box, not the window.
+   Expanded mode is excluded so it keeps the whole workspace and the preview's
+   own scroll region. */
+@container studio-workspace (max-width: 959px) {
+    .st-body--build:not(.st-body--expanded) {
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+    }
+
+    .st-body--build:not(.st-body--expanded) > .st-left--build,
+    .st-body--build:not(.st-body--expanded) > .st-blueprint,
+    .st-body--build:not(.st-body--expanded) > .st-buildpreview {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .st-body--build:not(.st-body--expanded) > .st-left--build {
+        height: 320px;
+        border-right: 0;
+        border-bottom: 1px solid var(--c-studio-border);
+    }
+
+    .st-body--build:not(.st-body--expanded)
+        > .st-left--build.st-left--collapsed {
+        height: 44px;
+    }
+
+    .st-body--build:not(.st-body--expanded) > .st-blueprint {
+        height: 360px;
+    }
+
+    /* the preview grows in normal flow; the stage keeps its own horizontal
+       scroll at 100% */
+    .st-body--build:not(.st-body--expanded) > .st-buildpreview {
+        height: auto;
+        border-top: 1px solid var(--c-studio-border);
+        border-left: 0;
+    }
+
+    .st-body--build:not(.st-body--expanded) > .st-buildpreview .st-scroll {
+        height: auto;
+        overflow: visible;
+    }
 }
 
 /* Read-only version viewing: the editing column collapses to a slim notice —
@@ -539,7 +655,8 @@
 
 /* Inset focus stays visible inside the clipped mode selector and settings menu. */
 button.st-mode:focus-visible,
-button.st-settings-item:focus-visible {
+button.st-settings-item:focus-visible,
+button.st-tools-toggle:focus-visible {
     outline: 2px solid var(--c-studio-focus);
     outline-offset: -4px;
 }

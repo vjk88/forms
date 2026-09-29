@@ -1530,7 +1530,7 @@ describe('c-final-form-studio', () => {
         expect(viewer.spec.resolved).toBeUndefined();
     });
 
-    describe('preview expansion', () => {
+    describe('workspace layout (preview expansion and tools panel)', () => {
         const FIELD_SPEC = {
             ...SPEC,
             pages: [
@@ -1718,6 +1718,190 @@ describe('c-final-form-studio', () => {
             ).toEqual({ kind: 'element', id: 'q' });
             expect(isExpanded(el)).toBe(true);
             expect(stage(el).expanded).toBe(true);
+        });
+
+        // ---- collapsible tools panel (Studio UX plan, Task 2) ----
+        const toggle = (el) => el.shadowRoot.querySelector('.st-tools-toggle');
+        const toolsPanel = (el) =>
+            el.shadowRoot.querySelector('.st-tools-panel');
+        const canvas = (el) =>
+            el.shadowRoot.querySelector('c-final-builder-canvas');
+        const propertyPanel = (el) =>
+            el.shadowRoot.querySelector('c-final-property-panel');
+        const canvasSelect = (el, detail) =>
+            canvas(el).dispatchEvent(new CustomEvent('select', { detail }));
+        const previewSelect = (el, elementId) =>
+            stage(el).dispatchEvent(
+                new CustomEvent('elementselect', { detail: { elementId } })
+            );
+
+        it('tools: the toggle collapses and reopens the panel without touching selection, spec or save', async () => {
+            const el = await open('build');
+            canvasSelect(el, { kind: 'element', id: 'q' });
+            await flush();
+            const button = toggle(el);
+            expect(button.getAttribute('aria-expanded')).toBe('true');
+            expect(button.getAttribute('aria-controls')).toBe(
+                toolsPanel(el).getAttribute('id')
+            );
+            expect(button.getAttribute('aria-label')).toBe('Collapse tools');
+            expect(toolsPanel(el).hidden).toBe(false);
+
+            button.click();
+            await flush();
+            // the SAME button, so keyboard focus survives the state change
+            expect(toggle(el)).toBe(button);
+            expect(button.getAttribute('aria-expanded')).toBe('false');
+            expect(button.getAttribute('aria-label')).toBe('Show tools');
+            expect(button.getAttribute('title')).toBe('Show tools');
+            expect(toolsPanel(el).hidden).toBe(true);
+            // hidden, not unmounted: the properties panel keeps its state
+            expect(propertyPanel(el)).not.toBeNull();
+            expect(canvas(el).selection).toEqual({
+                kind: 'element',
+                id: 'q'
+            });
+
+            button.click();
+            await flush();
+            expect(button.getAttribute('aria-expanded')).toBe('true');
+            expect(toolsPanel(el).hidden).toBe(false);
+            expect(saveDraft).not.toHaveBeenCalled();
+            expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(true);
+        });
+
+        it('tools: selecting from the preview, the canvas or the logic rail reopens a collapsed panel', async () => {
+            const el = await open('build');
+            toggle(el).click();
+            await flush();
+            expect(toolsPanel(el).hidden).toBe(true);
+
+            previewSelect(el, 'q');
+            await flush();
+            expect(toolsPanel(el).hidden).toBe(false);
+            expect(propertyPanel(el).node.id).toBe('q');
+
+            toggle(el).click();
+            await flush();
+            canvasSelect(el, { kind: 'section', id: 's' });
+            await flush();
+            expect(toolsPanel(el).hidden).toBe(false);
+            expect(propertyPanel(el).node.id).toBe('s');
+
+            // back to the palette, collapse again, then jump from the logic rail
+            el.shadowRoot.querySelector('.st-back').click();
+            await flush();
+            toggle(el).click();
+            await flush();
+            el.shadowRoot.querySelector('c-final-field-palette').dispatchEvent(
+                new CustomEvent('logicjump', {
+                    detail: { kind: 'element', id: 'q' }
+                })
+            );
+            await flush();
+            expect(toolsPanel(el).hidden).toBe(false);
+            expect(propertyPanel(el).node.id).toBe('q');
+        });
+
+        it('tools: in an expanded preview a click selects but leaves the collapse preference alone', async () => {
+            const el = await open('build');
+            toggle(el).click();
+            await flush();
+            await setExpanded(el, true);
+
+            previewSelect(el, 'q');
+            await flush();
+            expect(isExpanded(el)).toBe(true);
+            expect(toggle(el).getAttribute('aria-expanded')).toBe('false');
+            expect(canvas(el).selection).toEqual({
+                kind: 'element',
+                id: 'q'
+            });
+
+            // returning restores the collapsed strip and keeps the selection
+            await setExpanded(el, false);
+            expect(toolsPanel(el).hidden).toBe(true);
+            expect(canvas(el).selection).toEqual({
+                kind: 'element',
+                id: 'q'
+            });
+            toggle(el).click();
+            await flush();
+            expect(propertyPanel(el).node.id).toBe('q');
+        });
+
+        it('tools: an open panel stays open through an expanded preview', async () => {
+            const el = await open('build');
+            await setExpanded(el, true);
+            previewSelect(el, 'q');
+            await flush();
+            await setExpanded(el, false);
+            expect(toggle(el).getAttribute('aria-expanded')).toBe('true');
+            expect(toolsPanel(el).hidden).toBe(false);
+            expect(propertyPanel(el).node.id).toBe('q');
+        });
+
+        it('tools: the preference survives Build/Design switches and resets when another form loads', async () => {
+            const el = await open('build');
+            toggle(el).click();
+            await flush();
+            el.shadowRoot.querySelectorAll('.st-mode')[1].click(); // Design
+            await flush();
+            el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+            await flush();
+            expect(toggle(el).getAttribute('aria-expanded')).toBe('false');
+            expect(toolsPanel(el).hidden).toBe(true);
+
+            CurrentPageReference.emit({ state: { c__formId: 'a0F2' } });
+            await flush();
+            await flush();
+            el.shadowRoot.querySelectorAll('.st-mode')[0].click();
+            await flush();
+            expect(toggle(el).getAttribute('aria-expanded')).toBe('true');
+        });
+
+        it('tools: only Build has the tools column and the build layout class; the wrapper holds nothing but the body', async () => {
+            const el = await open('build');
+            const wrapper = el.shadowRoot.querySelector(
+                '.st-workspace-container'
+            );
+            const body = el.shadowRoot.querySelector('.st-body');
+            expect(body.classList.contains('st-body--build')).toBe(true);
+            expect([...wrapper.children]).toEqual([body]);
+            expect(
+                wrapper.contains(el.shadowRoot.querySelector('.st-bar'))
+            ).toBe(false);
+
+            // the settings drawer is an overlay: it must live OUTSIDE the wrapper
+            el.shadowRoot.querySelector('[data-id="settings-trigger"]').click();
+            await flush();
+            [...el.shadowRoot.querySelectorAll('.st-settings-item')]
+                .find((item) => item.dataset.section === 'availability')
+                .click();
+            await flush();
+            const drawer = el.shadowRoot.querySelector('.st-drawer-shell');
+            expect(drawer).not.toBeNull();
+            expect(wrapper.contains(drawer)).toBe(false);
+
+            el.shadowRoot.querySelectorAll('.st-mode')[1].click(); // Design
+            await flush();
+            expect(
+                el.shadowRoot
+                    .querySelector('.st-body')
+                    .classList.contains('st-body--build')
+            ).toBe(false);
+            expect(toggle(el)).toBeNull();
+
+            const select = el.shadowRoot.querySelector('.st-verselect');
+            select.value = 'a0V1';
+            select.dispatchEvent(new CustomEvent('change'));
+            await flush();
+            expect(toggle(el)).toBeNull(); // read-only history has no tools
+            expect(
+                el.shadowRoot
+                    .querySelector('.st-body')
+                    .classList.contains('st-body--build')
+            ).toBe(false);
         });
     });
 
