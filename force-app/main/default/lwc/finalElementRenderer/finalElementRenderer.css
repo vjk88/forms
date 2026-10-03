@@ -47,6 +47,14 @@
     flex-direction: var(--c-label-flow, column);
     align-items: var(--c-label-align, stretch);
     gap: var(--c-label-gap, 0);
+    /* Typed text, chips and rows take the layout's ANSWER size (type scale
+       spec). Two mechanisms, both set here: Salesforce hosts (synthetic
+       shadow) inherit font-size, while the public site's native shadow only
+       honors the platform hook. Declared on .field, not on the page frame,
+       because var() substitutes where it is DECLARED and the Single question
+       set redefines --c-fs-answer on the section. */
+    font-size: var(--c-fs-answer);
+    --dxp-s-form-element-text-font-size: var(--c-fs-answer);
 }
 
 .field > lightning-input,
@@ -71,9 +79,11 @@
     align-items: center;
     gap: var(--c-space-1);
     font-family: var(--c-label-font, var(--c-font-body));
-    /* --c-q-* tiers exist only inside .sec-convo sections (conversational
-       scale) — everywhere else the theme's label tokens run unchanged */
-    font-size: var(--c-q-title-size, var(--c-label-size, 0.8125rem));
+    /* Size = the layout's question size times the look's ratio (uppercase
+       looks sit at 0.875). --c-q-* weight/case/tracking exist only inside
+       .sec-convo sections (the headline look) — everywhere else the theme's
+       label tokens run unchanged. */
+    font-size: calc(var(--c-fs-label) * var(--c-label-scale, 1));
     font-weight: var(--c-q-title-weight, var(--c-label-weight, 600));
     text-transform: var(--c-q-title-transform, var(--c-label-transform, none));
     letter-spacing: var(--c-q-title-tracking, var(--c-label-tracking, normal));
@@ -96,7 +106,7 @@
 .label-uppercase {
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    font-size: 0.6875rem;
+    font-size: calc(var(--c-fs-label) * 0.875);
 }
 
 .label-muted {
@@ -140,13 +150,13 @@
     border: 1px dashed var(--c-text-weak);
     border-radius: var(--c-radius);
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 /* ---- content blocks (schema section 4: image / richText / divider / spacer) ---- */
 .block-richtext {
     color: var(--c-text);
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-desc);
     line-height: 1.6;
 }
 
@@ -165,7 +175,7 @@
     border: 1px dashed var(--c-text-weak);
     border-radius: var(--c-radius);
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 .block-richtext-empty,
@@ -179,7 +189,7 @@
     border: 1px dashed var(--c-text-weak);
     border-radius: var(--c-radius);
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 .block-divider {
@@ -202,7 +212,7 @@
     border-radius: var(--c-radius);
     border: 1px solid;
     color: var(--c-text);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-desc);
     line-height: 1.55;
 }
 
@@ -263,7 +273,7 @@
     flex: 1;
     min-width: 0;
     color: var(--c-text);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-desc);
     line-height: 1.55;
 }
 
@@ -288,7 +298,7 @@
     background: var(--c-input-bg, transparent);
     color: var(--c-text-weak);
     font: inherit;
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
     cursor: pointer;
 }
 
@@ -345,13 +355,13 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--c-text);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 .file-item-size {
     flex: 0 0 auto;
     color: var(--c-text-weak);
-    font-size: 0.75rem;
+    font-size: var(--c-fs-secondary);
     font-variant-numeric: tabular-nums;
 }
 
@@ -368,7 +378,7 @@
     border: 0;
     background: none;
     color: var(--c-text-weak);
-    font-size: 1.125rem;
+    font-size: 1.125em;
     line-height: 1;
     cursor: pointer;
 }
@@ -392,7 +402,7 @@
 .field-error {
     margin: 0;
     color: var(--c-field-error, #b42318);
-    font-size: 0.8em;
+    font-size: var(--c-fs-error);
     line-height: 1.45;
 }
 
@@ -407,7 +417,7 @@
    (owner ruling Q2: opt-in semantic red/amber/green) ---- */
 .field-caption {
     margin: 2px 0 6px;
-    font-size: var(--c-q-caption-size, 0.82rem);
+    font-size: var(--c-fs-help);
     color: var(--c-text-weak);
 }
 .scale-row {
@@ -421,12 +431,12 @@
     display: grid;
     place-items: center;
     padding: 0 10px;
-    font-size: var(--c-q-answer-size, inherit);
     border: 1.5px solid var(--c-field-border);
     border-radius: var(--c-input-radius, 8px);
     background: var(--c-input-bg);
     color: var(--c-text);
     font: inherit;
+    font-size: var(--c-fs-answer);
     font-variant-numeric: tabular-nums;
     cursor: pointer;
     /* keycap depth (Card Deck treatment, owner artifact 2026-07-31) */
@@ -461,7 +471,7 @@
        (org QA 2026-07-31 — the chosen face wrapped to a second line) */
     padding: 4px 6px;
     border-radius: 14px;
-    font-size: calc(var(--c-q-answer-size, 1rem) * 2);
+    font-size: calc(var(--c-fs-answer) * 2);
     line-height: 1;
     filter: grayscale(1) opacity(0.55);
     transition:
@@ -495,7 +505,7 @@
     border: none;
     background: none;
     padding: 0 2px;
-    font-size: calc(var(--c-q-answer-size, 1rem) * 1.7);
+    font-size: calc(var(--c-fs-answer) * 1.7);
     line-height: 1;
     color: var(--c-text-weak);
     opacity: 0.4;
@@ -557,7 +567,7 @@
     display: flex;
     justify-content: space-between;
     margin-top: 4px;
-    font-size: 0.75rem;
+    font-size: var(--c-fs-secondary);
     color: var(--c-text-weak);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -609,7 +619,7 @@
     padding: 10px 16px;
 }
 .choice-desc {
-    font-size: 0.8rem;
+    font-size: var(--c-fs-help);
     color: var(--c-text-weak);
 }
 .yn-btn {
@@ -688,7 +698,7 @@
 .ic-label {
     display: block;
     padding: 6px 8px 0;
-    font-size: 0.85rem;
+    font-size: var(--c-fs-answer);
     text-align: center;
 }
 .ic-tile.selected .ic-label::after {
@@ -743,7 +753,7 @@
     border-radius: 50%;
     background: var(--c-accent);
     color: var(--c-on-accent);
-    font-size: 0.72rem;
+    font-size: var(--c-fs-secondary);
     font-weight: 700;
 }
 .rank-label {
@@ -781,7 +791,7 @@
             minmax(70px, 1fr)
         );
     gap: 4px;
-    font-size: 0.72rem;
+    font-size: var(--c-fs-secondary);
     color: var(--c-text-weak);
     margin-bottom: 4px;
 }
@@ -800,7 +810,7 @@
     border-bottom: 1px solid var(--c-field-border);
 }
 .mx-statement {
-    font-size: 0.9rem;
+    font-size: var(--c-fs-answer);
     padding-right: 8px;
 }
 /* Desktop cells are radio DOTS (owner 2026-07-31 — the input-shaped empty
@@ -831,7 +841,7 @@
 }
 .mx-dot .mx-point-label {
     display: none;
-    font-size: 0.72rem;
+    font-size: var(--c-fs-secondary);
 }
 .mx-dot:hover::before {
     border-color: var(--c-accent);
@@ -950,7 +960,11 @@
 /* cqi middle term shrinks long readouts ($100,000 / year) inside narrow
    containers before they wrap; the calc cap keeps wide contexts at 2.2× */
 .slider-val {
-    font-size: clamp(1.25rem, 7cqi, calc(var(--c-q-answer-size, 1rem) * 2.2));
+    font-size: clamp(
+        var(--c-fs-readout-min),
+        7cqi,
+        calc(var(--c-fs-answer) * 2.2)
+    );
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: var(--c-accent);

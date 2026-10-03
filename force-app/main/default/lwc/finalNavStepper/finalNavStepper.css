@@ -104,13 +104,13 @@
     border-radius: 50%;
     background: transparent;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
     font-weight: 600;
 }
 
 .step-label {
     color: var(--c-text-weak);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -180,7 +180,7 @@
 .step-count {
     margin: var(--c-space-2) 0 0;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 /* — Step transition: keyed remount replays the entrance — */

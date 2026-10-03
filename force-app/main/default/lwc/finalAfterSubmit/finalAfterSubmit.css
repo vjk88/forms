@@ -55,12 +55,12 @@
     max-width: 46ch;
     overflow-wrap: anywhere;
     font-family: var(--c-font-display, var(--c-font-body));
-    font-size: 1.375rem;
+    font-size: var(--c-fs-thanks);
     font-weight: 600;
 }
 
 .message {
-    font-size: 1.0625rem;
+    font-size: var(--c-fs-desc);
     line-height: 1.5;
     max-width: 46ch;
 }
@@ -78,7 +78,7 @@
     box-shadow: var(--c-submit-glow, none);
     color: var(--c-submit-text);
     font-family: var(--c-font-body);
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-button);
     font-weight: 600;
     cursor: pointer;
 }
@@ -96,7 +96,7 @@
     border: 1px solid var(--c-field-border);
     border-radius: 999px;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 /* — Toast & go — */
@@ -125,5 +125,5 @@
     border: 1px dashed var(--c-field-border);
     border-radius: var(--c-radius);
     color: var(--c-text-weak);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-secondary);
 }

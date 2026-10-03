@@ -6,7 +6,8 @@
     border-radius: 8px;
     background: #fdf6f5;
     color: #6b2418;
-    font-size: 0.9375rem;
+    /* rendered before any page frame exists, so the role carries a fallback */
+    font-size: var(--c-fs-desc, 1rem);
 }
 
 .viewer-loading {
@@ -49,7 +50,7 @@
     margin: 0;
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
-    font-size: 0.875rem;
+    font-size: var(--c-fs-secondary);
     font-weight: 600;
     color: var(--c-text, inherit);
     background: var(--c-content-bg, #fff);
@@ -67,5 +68,5 @@
         transparent
     );
     color: var(--c-field-error, #b42318);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-error);
 }
