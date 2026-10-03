@@ -11,7 +11,7 @@
 .divider {
     margin: var(--c-space-4) 0 0;
     font-family: var(--c-font-display);
-    font-size: 1.1rem;
+    font-size: var(--c-fs-section);
     font-weight: 600;
     color: var(--c-text-weak);
     border-bottom: 1px solid;

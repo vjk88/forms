@@ -21,7 +21,7 @@
 
 .brand-wordmark {
     font-family: var(--c-font-display);
-    font-size: 1.125rem;
+    font-size: var(--c-fs-brand);
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--c-header-text);
@@ -38,7 +38,7 @@
 .hdr-title {
     margin: 0;
     font-family: var(--c-font-display);
-    font-size: 1.6rem;
+    font-size: var(--c-fs-title);
     font-weight: 700;
     line-height: 1.2;
     color: var(--c-header-title-fill, var(--c-header-text));
@@ -47,13 +47,9 @@
     background-clip: text;
 }
 
-.style-minimal .hdr-title {
-    font-size: 1.3rem;
-}
-
 .hdr-desc {
     margin: var(--c-space-2) 0 0;
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-desc);
     color: var(--c-header-text-weak);
 }
 
@@ -102,7 +98,7 @@
 }
 
 .arr-inline .hdr-title {
-    font-size: 1.3rem;
+    font-size: var(--c-fs-title-compact);
 }
 
 /* centered: everything centered */
@@ -125,9 +121,10 @@
         margin-bottom: min(var(--c-space-5), 16px);
     }
 
-    /* .hdr .hdr-title outranks .arr-inline .hdr-title (both 0,2,0; this is later) */
+    /* The compact title SIZE comes from the type scale (the page frame's phone
+       step sets --c-fs-title to the compact size); only the line height is
+       tightened here. */
     .hdr .hdr-title {
-        font-size: 1.25rem;
         line-height: 1.3;
     }
 

@@ -33,7 +33,7 @@
 .progress-text {
     margin: 0;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
     white-space: nowrap;
 }
 
@@ -61,7 +61,7 @@
 .counter {
     margin: 0;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
 }
@@ -82,6 +82,15 @@
     box-shadow: var(--c-content-shadow);
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));
+}
+
+/* A Single question screen (survey set to "One question per page") on a phone:
+   26px instead of 32px gives the question 12px more width (owner tuning
+   2026-10-03). Keyed on the whole form's width, like every phone step. */
+@container final-form-viewport (max-width: 540px) {
+    .question-card.card-single {
+        padding: 26px;
+    }
 }
 
 /* ---------- screen motion: our own short fade/rise (signature distance) ---------- */
@@ -130,7 +139,7 @@
     background: none;
     color: var(--c-text-weak);
     font-family: var(--c-font-body);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-button);
     cursor: pointer;
 }
 
@@ -158,7 +167,7 @@
     background: var(--c-submit-bg);
     color: var(--c-submit-text);
     font-family: var(--c-font-body);
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-button);
     font-weight: 600;
     cursor: pointer;
 }
@@ -172,7 +181,7 @@
 .key-helper {
     margin: var(--c-space-2) 0 0;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 @media (prefers-reduced-motion: reduce) {
