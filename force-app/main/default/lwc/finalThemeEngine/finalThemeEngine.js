@@ -600,9 +600,16 @@ export function resolveTokens(themeProps, formOverrides) {
         }
     };
     const labelFlow = LABEL_FLOWS[p.labelPosition] || LABEL_FLOWS.top;
+    // `size` is the LEGACY per-look size: contract v1 still emits it so
+    // published snapshots stay valid, but the renderer no longer reads it —
+    // the question size now comes from the layout's type scale and a look only
+    // contributes a RATIO of it (`scale`: the two uppercase looks sit at 0.875
+    // of the question size, the rest at 1). Delete `size` at the next contract
+    // bump.
     const LABEL_LOOKS = {
         default: {
             size: '0.8125rem',
+            scale: '1',
             weight: '600',
             transform: 'none',
             tracking: 'normal',
@@ -611,6 +618,7 @@ export function resolveTokens(themeProps, formOverrides) {
         },
         monoCaps: {
             size: '0.6875rem',
+            scale: '0.875',
             weight: '700',
             transform: 'uppercase',
             tracking: '0.06em',
@@ -619,6 +627,7 @@ export function resolveTokens(themeProps, formOverrides) {
         },
         mutedSm: {
             size: '0.75rem',
+            scale: '1',
             weight: '500',
             transform: 'none',
             tracking: 'normal',
@@ -629,6 +638,7 @@ export function resolveTokens(themeProps, formOverrides) {
         // mono font; muted so the inputs carry the contrast.
         caps: {
             size: '0.74rem',
+            scale: '0.875',
             weight: '600',
             transform: 'uppercase',
             tracking: '0.1em',
@@ -830,7 +840,8 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-label-mb': labelFlow.mb,
         '--c-label-gap': labelFlow.gap,
         '--c-label-align': labelFlow.align,
-        '--c-label-size': labelLook.size,
+        '--c-label-size': labelLook.size, // legacy — nothing reads it (see LABEL_LOOKS)
+        '--c-label-scale': labelLook.scale,
         '--c-label-weight': labelLook.weight,
         '--c-label-transform': labelLook.transform,
         '--c-label-tracking': labelLook.tracking,
