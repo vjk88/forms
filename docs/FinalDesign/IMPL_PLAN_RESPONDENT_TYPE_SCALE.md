@@ -98,7 +98,7 @@
 
 ## 7. Checks (results 2026-10-03)
 
-Done: jest (113 suites, 1,377 tests), eslint, prettier; deploy to `revclouddev`; read-only measure in the Salesforce viewer tab on 9 forms x 3 widths and in the Studio preview. **Every computed size matched the spec tables**, card padding was 26 (One question per page, phone) / 32 (everything else), and the Studio preview agreed with the viewer tab. Not done: Side rail and Accordion (no test form exists), error text (cannot be rendered without a validation rule), the public site (needs a site publish, owner's approval), Firefox / Safari / iPhone, 200% zoom.
+Done: jest (113 suites, 1,377 tests), eslint, prettier; deploy to `revclouddev`; read-only measure in the Salesforce viewer tab on 9 forms x 3 widths and in the Studio preview. **Every computed size matched the spec tables**, card padding was 26 (One question per page, phone) / 32 (everything else), and the Studio preview agreed with the viewer tab. Public site: the owner approved the site publish on 2026-10-03 (and said site publishes no longer need asking); after it landed, 4 public forms x 3 widths were measured as a signed-out visitor and matched the Salesforce numbers, including typed text (16 Standard, 18 One at a time on desktop and tablet). Not done: Side rail and Accordion (no test form exists), error text (cannot be rendered without a validation rule), radio / checkbox / dropdown text on the public site (no public form contains them), Firefox / Safari / iPhone, 200% zoom.
 
 Plan as written:
 

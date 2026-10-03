@@ -1,6 +1,6 @@
 # Published-form text sizes: recommendations
 
-**Status:** APPROVED by the owner on 2026-10-03 ("lets update the code using this one"). In build on branch `feat/respondent-type-scale`; deployed to the dev org (`revclouddev`) for checking. The guest site has NOT been published, so public forms are unchanged until the owner approves a publish. File-by-file trace: `docs/FinalDesign/IMPL_PLAN_RESPONDENT_TYPE_SCALE.md`. No form data, spec or Apex changed.
+**Status:** APPROVED by the owner on 2026-10-03 ("lets update the code using this one"). Built on branch `feat/respondent-type-scale` (PR 370, not merged yet), deployed to the dev org (`revclouddev`), and the guest site was published on 2026-10-03 (the owner said site publishes no longer need asking). The public site was then checked as a signed-out visitor. File-by-file trace: `docs/FinalDesign/IMPL_PLAN_RESPONDENT_TYPE_SCALE.md`. No form data, spec or Apex changed.
 
 **Scope:** the text a respondent sees on a published form (header, questions, answers, help text, buttons, navigation, thank-you screen) and the Studio preview of it. Studio's own screens are out of scope; they stay in the separate app-wide typography pass (`PENDING_WORK.md` section 4.0).
 
@@ -393,9 +393,9 @@ Two sizes stay smooth rather than fixed. They grow with the width of a box, beha
 
 ## 11. Not verified, and risks
 
-**Checked after the build (Salesforce viewer tab and Studio preview, Chromium):** every role in tables 7.1 to 7.3 at 334px, 736px and 1248px forms, the Split hero title (38.4 / 29.4 on a 736px form), stars and emoji (30.6 and 36 on desktop, 27.2 and 32 on phones), and the 26px / 32px card padding. The Studio preview now agrees with the viewer tab (typed text is the same size as the question text in One at a time, where it used to be 3px smaller).
+**Checked after the build (Salesforce viewer tab, Studio preview and, after the publish, the public site as a signed-out visitor; Chromium):** every role in tables 7.1 to 7.3 at 334px, 736px and 1248px forms, the Split hero title (38.4 / 29.4 on a 736px form), stars and emoji (30.6 and 36 on desktop, 27.2 and 32 on phones), and the 26px / 32px card padding. The Studio preview now agrees with the viewer tab (typed text is the same size as the question text in One at a time, where it used to be 3px smaller).
 
-- **Radio buttons, checkboxes, dropdowns, date pickers and record pickers on the public site.** None of the six forms visible to signed-out visitors contain them. Checking needs a disposable public clone (needs your OK first). Typed text in plain text boxes was verified at 18px and 20px.
+- **Radio buttons, checkboxes, dropdowns, date pickers and record pickers on the public site.** None of the six forms visible to signed-out visitors contain them. Checking needs a disposable public clone (creating one needs your OK first). Typed text in plain text boxes is verified on the public site (16, 18).
 - **Firefox, Safari and a real iPhone.** Only Chromium was tested. Check the iPhone zoom behaviour and 200% browser zoom.
 - **Customer sites that change the page's base text size** (some shrink it to 10px). Every `rem` size would scale with it. All three hosts measured here use 16px.
 - **Split hero at tablet width** (form side about half the page).
@@ -415,10 +415,10 @@ Two sizes stay smooth rather than fixed. They grow with the width of a box, beha
 2. Move each component over to the shared sizes, in small separate changes, deploying each to the dev org.
 3. Move the label looks to the ratio rules (section 10).
 4. Browser check: 7 layouts by 3 devices, on the public site (disposable public clone) and inside Salesforce, plus 200% zoom.
-5. Publishing the Experience site is needed for guests to see any change. It needs your approval each time.
+5. Publishing the Experience site is needed for guests to see any change. Done on 2026-10-03; the owner has said site publishes no longer need asking.
 6. Rollback is reverting the stylesheets. Nothing in form data, specs or Apex changes.
 
-**Status, 2026-10-03.** Steps 1 to 3 are built and deployed to the dev org in one go (the guard test needs every stylesheet moved, so there was no useful halfway state). Step 4 is partly done: sizes were measured, read-only, inside the Salesforce viewer tab on 9 forms at 3 widths (6 of the 7 layouts: Continuous scroll, Wizard steps, Tabbed pages, One at a time, Split hero, plus One question per page on Wizard steps and on One at a time) and in the Studio preview. Every measured size matched the tables above. Side rail and Accordion panels have no test form in the dev org, so they are covered by the guard test only. The public site is not checked until the site is published (step 5).
+**Status, 2026-10-03.** Steps 1 to 3 are built and deployed to the dev org in one go (the guard test needs every stylesheet moved, so there was no useful halfway state). Step 4 is partly done: sizes were measured, read-only, inside the Salesforce viewer tab on 9 forms at 3 widths (6 of the 7 layouts: Continuous scroll, Wizard steps, Tabbed pages, One at a time, Split hero, plus One question per page on Wizard steps and on One at a time) and in the Studio preview. Every measured size matched the tables above. Side rail and Accordion panels have no test form in the dev org, so they are covered by the guard test only. After the site publish, the public site was measured the same way as a signed-out visitor on 4 public forms at 3 widths (Continuous scroll, One at a time, a survey with scale, rating, matrix, ranking and emoji questions, and a text form): the sizes are identical to the Salesforce numbers, and typed text in plain boxes follows the answer size on the public site too (16 in Standard, 18 in One at a time on desktop and tablet, 16 on phones). Before this change the public One at a time survey typed at the platform default of 16 on every device.
 
 ---
 
