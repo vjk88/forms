@@ -745,34 +745,36 @@
                     <p class="field-caption">{captionText}</p>
                 </template>
             </template>
-            <div
-                class="scale-row"
-                role="radiogroup"
-                aria-label={scaleGroupAriaLabel}
-                onkeydown={handleScaleKey}
-            >
-                <template for:each={scaleItems} for:item="item">
-                    <button
-                        key={item.value}
-                        type="button"
-                        role="radio"
-                        class={item.cls}
-                        aria-checked={item.ariaChecked}
-                        aria-label={item.ariaLabel}
-                        data-value={item.value}
-                        tabindex={item.tabIndex}
-                        onclick={handleScalePick}
-                    >
-                        {item.display}
-                    </button>
+            <div class="scale-group">
+                <div
+                    class="scale-row"
+                    role="radiogroup"
+                    aria-label={scaleGroupAriaLabel}
+                    onkeydown={handleScaleKey}
+                >
+                    <template for:each={scaleItems} for:item="item">
+                        <button
+                            key={item.value}
+                            type="button"
+                            role="radio"
+                            class={item.cls}
+                            aria-checked={item.ariaChecked}
+                            aria-label={item.ariaLabel}
+                            data-value={item.value}
+                            tabindex={item.tabIndex}
+                            onclick={handleScalePick}
+                        >
+                            {item.display}
+                        </button>
+                    </template>
+                </div>
+                <template lwc:if={hasEndLabels}>
+                    <div class="scale-endlabels" aria-hidden="true">
+                        <span>{cfg.leftLabel}</span>
+                        <span>{cfg.rightLabel}</span>
+                    </div>
                 </template>
             </div>
-            <template lwc:if={hasEndLabels}>
-                <div class="scale-endlabels" aria-hidden="true">
-                    <span>{cfg.leftLabel}</span>
-                    <span>{cfg.rightLabel}</span>
-                </div>
-            </template>
             <template lwc:if={hasErrors}>
                 <div class="field-errors" role="alert">
                     <template for:each={errors} for:item="msg">

@@ -138,6 +138,14 @@ function specHasRecordRules(spec) {
     return false;
 }
 
+// Theme tokens the engine emits ONLY when the author picked a global Section
+// style or a section color/border (token contract v1, the conditional trio).
+const SECTION_STYLE_TOKENS = [
+    '--c-section-bg',
+    '--c-section-border',
+    '--c-section-shadow'
+];
+
 function splitOnePerScreen(pages) {
     const out = [];
     const pageId = (page, suffix) => `${page.id || page.key || 'p'}~${suffix}`;
@@ -835,6 +843,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // An explicit authored false still wins.
             options = { ...options, showStepCount: true };
         }
+        // One at a time: the screen IS the section, so the section's own box
+        // goes away by default (a box inside the page or card was the "double
+        // box" look), on the open page AND inside the card panel. Only a
+        // DELIBERATE global Section style (the engine emits these tokens only
+        // when the author picked one) keeps its boxes.
+        if (layout.ownsAdvance) {
+            options = {
+                ...options,
+                openSections: !SECTION_STYLE_TOKENS.some(
+                    (key) => this.tokens[key] !== undefined
+                )
+            };
+        }
         // splitHero's brand pane replaces formHeader (registry: ownsHeader);
         // its Pane Flow = One at a Time also owns the advance, like oneAtATime.
         const ownsAdvance = Boolean(
@@ -1031,6 +1052,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // oneAtATime), ON by default, reverted with fullBleed === false —
             // the toggle restores the carded render exactly.
             bleed: Boolean(layout.bleed) && options.fullBleed !== false,
+            // One at a time on the open page: a progress strip follows the
+            // header, so the header runs flush with it (finalFormHeader).
+            headerFlush:
+                Boolean(layout.ownsAdvance) &&
+                Boolean(layout.bleed) &&
+                options.fullBleed !== false,
             // Only set when the spec configures the pane EXPLICITLY (above) —
             // then the form side keeps a minimal title lockup for context.
             paneLockup

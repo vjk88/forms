@@ -36,6 +36,12 @@
  * everything else (help, desc, error, secondary, button) is inherited. The
  * 640px measure cap keeps long questions at a readable line length and converts
  * leftover width into deliberate framing instead of stray white space.
+ *
+ * Rhythm (owner 2026-10-03, design-explorations/01-conversational-survey.html):
+ * question, 8px to its help line, 24px to the answers; answers 11px apart in
+ * 560px-max rows; a small eyebrow for the section name. One at a time hands the
+ * column over through the --c-stage-* tokens (left-aligned, no measure cap);
+ * every other layout keeps the centered Card Deck stage.
  */
 .sec-convo {
     --c-fs-section: 0.875rem;
@@ -47,13 +53,46 @@
     --c-q-title-transform: none;
     --c-q-title-tracking: -0.01em;
     --c-q-control-h: calc(var(--c-control-h, 44px) + 6px);
-    max-width: 640px;
-    margin-inline: auto;
+    --c-q-title-lh: 1.2;
+    --c-q-label-mb: 1.5rem; /* question -> answers when there is no help line */
+    --c-q-help-pull: -1.125rem; /* ...pulled up to 8px when there is one */
+    --c-q-caption-mb: 1.5rem; /* help line -> answers */
+    --c-q-gap: 0.7rem; /* between answer rows */
+    --c-q-row-pad: 0.9rem 1.1rem;
+    --c-q-choice-max: 560px;
+    max-width: var(--c-stage-measure, 640px);
+    margin-inline: var(--c-stage-margin, auto);
     /* Card Deck stage (owner 2026-08-01): the lone question reads centered —
        title/caption inherit text-align; answer rows read --c-q-justify.
-       Choice cards re-left-align their own text internally. */
-    text-align: center;
-    --c-q-justify: center;
+       Choice cards re-left-align their own text internally. One at a time
+       overrides both through --c-stage-align / --c-stage-justify. */
+    text-align: var(--c-stage-align, center);
+    --c-q-justify: var(--c-stage-justify, center);
+}
+
+/* The section name becomes a small eyebrow above the question: tracked caps in
+   the muted ink, with an accent dot, instead of a tiny bold serif line. */
+.sec-convo .sec-head {
+    margin-bottom: 1.1rem;
+}
+
+.sec-convo .sec-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--c-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-text-weak);
+}
+
+.sec-convo .sec-title::before {
+    content: '';
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--c-accent);
 }
 
 /* Mobile column of the Single question set: the whole form is 540px wide or

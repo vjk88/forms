@@ -89,6 +89,10 @@
        the reader) — but a short card must not hug the ceiling. ~8% of the
        viewport reads as deliberate placement; bleed layouts zero this out. */
     padding: clamp(32px, 8vh, 96px) var(--c-space-4) var(--c-space-6);
+    /* Side inset shared by full-width chrome strips: in One at a time the header
+       lockup and the progress strip sit on the same edge (design-explorations/01).
+       cqi = 1% of the form's own width, resolved where it is used. */
+    --c-strip-inset: clamp(20px, 4cqi, 35px);
     color: var(--c-text);
     font-family: var(--c-font-body);
     background-color: var(--c-page-bg);

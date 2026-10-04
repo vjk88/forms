@@ -296,3 +296,20 @@ describe('choice family (S3)', () => {
         expect(last[0].detail.value).toBe('chartreuse');
     });
 });
+
+describe('scale end labels', () => {
+    it('travel with the chips as one block, so the labels sit under the ends of the row', () => {
+        const el = mount({
+            id: 'e1',
+            type: 'nps',
+            label: 'Recommend us?',
+            config: { leftLabel: 'Not likely', rightLabel: 'Extremely' }
+        });
+        const group = el.shadowRoot.querySelector('.scale-group');
+        expect(group).not.toBeNull();
+        expect(group.querySelector('.scale-row')).not.toBeNull();
+        expect(group.querySelector('.scale-endlabels').textContent).toContain(
+            'Extremely'
+        );
+    });
+});

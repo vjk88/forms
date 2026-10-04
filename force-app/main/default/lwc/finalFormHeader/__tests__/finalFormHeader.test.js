@@ -107,3 +107,32 @@ describe('c-final-form-header', () => {
         ).toBe('plain subtitle');
     });
 });
+
+describe('c-final-form-header flush mode (One at a time open page)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('adds the flush class only when asked', async () => {
+        const normal = mount({ style: 'standard', title: 'T' });
+        await flush();
+        expect(
+            normal.shadowRoot
+                .querySelector('.hdr')
+                .classList.contains('hdr--flush')
+        ).toBe(false);
+
+        const el = createElement('c-final-form-header', {
+            is: FinalFormHeader
+        });
+        el.header = { style: 'standard', title: 'T' };
+        el.flush = true;
+        document.body.appendChild(el);
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.hdr').classList.contains('hdr--flush')
+        ).toBe(true);
+    });
+});

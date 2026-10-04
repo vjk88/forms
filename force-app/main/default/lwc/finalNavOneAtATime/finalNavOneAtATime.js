@@ -35,13 +35,39 @@ const ARRANGE_CLASS = {
     split: 'arr-split'
 };
 
+// One at a time: the screen IS the section. Unless the author picked a global
+// Section style (the viewer then sends openSections: false) the section drops
+// its default box AND its padding, so the progress, the text, the answers and
+// the buttons share ONE left edge (the column on the open page, the panel
+// inset inside a card). An authored style other than the default card (plain,
+// boxed) and an authored padding still win. Cached per source section so the
+// child's `sections` input keeps a stable identity between renders.
+const OPEN_SECTIONS = new WeakMap();
+
+function openSection(section) {
+    let open = OPEN_SECTIONS.get(section);
+    if (!open) {
+        open = {
+            ...section,
+            style:
+                !section.style || section.style === 'card'
+                    ? 'plain'
+                    : section.style,
+            surface: { padding: 'none', ...(section.surface || {}) }
+        };
+        OPEN_SECTIONS.set(section, open);
+    }
+    return open;
+}
+
 export default class FinalNavOneAtATime extends LightningElement {
     /** The viewer holds the form while Autofill fills it: Enter stays put. */
     @api locked = false;
 
     @api currentPageIndex = 0;
     @api pageValidity = [];
-    /** Spec layout.options: { advanceTrigger, advanceLabel, showProgressBar } */
+    /** Spec layout.options: { advanceTrigger, advanceLabel, showProgressBar },
+     *  plus the viewer-derived openSections (boolean). */
     @api options;
     /** Immersive full-bleed (viewer: layout.bleed && fullBleed !== false). */
     @api bleed = false;
@@ -89,9 +115,20 @@ export default class FinalNavOneAtATime extends LightningElement {
         return screen ? [screen] : [];
     }
 
+    /** The section drops its box (the viewer decides: true unless the author
+     *  picked a global Section style). */
+    get openSections() {
+        return this.opts.openSections === true;
+    }
+
     get currentSections() {
         const screen = this._screens[this.screenIndex];
-        return screen ? [screen.section] : [];
+        if (!screen) {
+            return [];
+        }
+        return [
+            this.openSections ? openSection(screen.section) : screen.section
+        ];
     }
 
     get currentZones() {
@@ -123,23 +160,13 @@ export default class FinalNavOneAtATime extends LightningElement {
     }
 
     get layoutClass() {
-        return this.bleed ? 'oaat mode-bleed' : 'oaat';
+        return this.bleed ? 'oaat mode-bleed' : 'oaat mode-panel';
     }
 
-    /** The current screen is a Single question (survey set to "One question
-     *  per page"): the viewer stamps `convo` on those sections. */
-    get isSingleQuestion() {
-        const screen = this._screens[this.screenIndex];
-        return Boolean(screen && screen.section && screen.section.convo);
-    }
-
+    /** The question column on the open page (Immersive on); no wrapper
+     *  surface otherwise — the page frame's panel is the card. */
     get bodyClass() {
-        if (!this.bleed) {
-            return 'oaat-body';
-        }
-        return this.isSingleQuestion
-            ? 'oaat-body question-card card-single'
-            : 'oaat-body question-card';
+        return this.bleed ? 'oaat-body oaat-column' : 'oaat-body';
     }
 
     get actionRowClass() {
