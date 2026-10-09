@@ -11,7 +11,7 @@
     border-radius: 999px;
     background: var(--c-accent);
     color: var(--c-on-accent);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
     font-weight: 600;
 }
 
@@ -24,14 +24,14 @@
     border-radius: var(--c-radius);
     background: var(--c-accent);
     color: var(--c-on-accent);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-secondary);
     font-weight: 500;
 }
 
 /* Inline — quiet text row on the host surface */
 .hl-inline {
     color: var(--c-header-text-weak, var(--c-text-weak));
-    font-size: 0.875rem;
+    font-size: var(--c-fs-secondary);
 }
 
 .hl-badge .hl-icon,

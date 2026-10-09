@@ -61,7 +61,7 @@
 
 .brand-wordmark {
     font-family: var(--c-font-display);
-    font-size: 1.125rem;
+    font-size: var(--c-fs-brand);
     font-weight: 700;
     letter-spacing: 0.04em;
 }
@@ -89,13 +89,14 @@
 
 .pane-title {
     font-family: var(--c-font-display);
-    font-size: clamp(1.6rem, 4cqw, 2.4rem);
+    /* smooth size: 4% of the whole split page, 25.6 to 38.4px (type scale) */
+    font-size: var(--c-fs-hero);
     font-weight: 700;
     line-height: 1.15;
 }
 
 .pane-subtitle {
-    font-size: 1rem;
+    font-size: var(--c-fs-desc);
     line-height: 1.5;
     opacity: 0.85;
 }
@@ -173,7 +174,7 @@
 
 .progress-text {
     margin: var(--c-space-2) 0 0;
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
     opacity: 0.8;
 }
 
@@ -235,7 +236,7 @@
     background: none;
     color: var(--c-text-weak);
     font-family: var(--c-font-body);
-    font-size: 0.875rem;
+    font-size: var(--c-fs-button);
     cursor: pointer;
 }
 
@@ -264,7 +265,7 @@
     background: var(--c-submit-bg);
     color: var(--c-submit-text);
     font-family: var(--c-font-body);
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-button);
     font-weight: 600;
     cursor: pointer;
 }
@@ -277,7 +278,7 @@
 .key-helper {
     margin: 0;
     color: var(--c-text-weak);
-    font-size: 0.8125rem;
+    font-size: var(--c-fs-secondary);
 }
 
 /* — Immersive full-bleed (default): pane and form own the whole canvas —
@@ -367,7 +368,7 @@ slot[name='actions'] {
 .lockup-title {
     margin: 0;
     font-family: var(--c-font-display);
-    font-size: 1.5rem;
+    font-size: var(--c-fs-title);
     font-weight: 700;
     line-height: 1.2;
     color: var(--c-text);
@@ -375,7 +376,7 @@ slot[name='actions'] {
 
 .lockup-desc {
     margin: var(--c-space-2) 0 0;
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-desc);
     color: var(--c-text-weak);
 }
 
@@ -436,7 +437,7 @@ slot[name='actions'] {
     }
 
     .pane-title {
-        font-size: 1.15rem;
+        font-size: var(--c-fs-hero-compact);
     }
 
     .pane-subtitle {

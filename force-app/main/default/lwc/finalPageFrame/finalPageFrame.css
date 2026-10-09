@@ -104,6 +104,64 @@
 }
 
 /*
+ * Respondent type scale (docs/FinalDesign/specs/RESPONDENT_TYPE_SCALE_RECOMMENDATIONS.md).
+ * The ONE place a text size is declared: every respondent stylesheet reads a
+ * role token (--c-fs-*) and never writes its own number. A jest guard
+ * (__tests__/typeScale.test.js) fails on a hard-coded size anywhere else.
+ *
+ * Why here and not on :host — the narrow-form step below needs a descendant of
+ * the form-width container (an element can never restyle its own container).
+ * Sizes are rem so they follow the visitor's text-size setting; the base is
+ * declared once so unsized text stops borrowing the host page's size (the
+ * Salesforce hosts hand a form 13px, the public site 16px).
+ *
+ * Three size sets, picked by layout (the viewer sets data-size-set / data-single):
+ *   standard (default)           scroll, wizard, tabs, accordion, rail, split hero (all fields)
+ *   [data-size-set='section']    one at a time, split hero (one section at a time)
+ *   .sec-convo (section renderer) surveys set to "One question per page"
+ * Tablet = desktop; the only step is a form 540px wide or narrower.
+ */
+.page {
+    font-size: 1rem;
+
+    --c-fs-title: 1.75rem;
+    --c-fs-title-compact: 1.25rem;
+    /* thank-you headline: 28 / 20 in every layout, even where the form title
+       steps down to 24 (One question per page) */
+    --c-fs-thanks: 1.75rem;
+    --c-fs-section: 1.25rem;
+    --c-fs-label: 1rem;
+    --c-fs-answer: 1rem;
+    --c-fs-desc: 1rem;
+    --c-fs-help: 0.875rem;
+    --c-fs-error: 1rem;
+    --c-fs-secondary: 0.875rem;
+    --c-fs-button: 1rem;
+    --c-fs-nav: 1rem;
+    --c-fs-brand: 1.125rem;
+
+    /* Smooth sizes: custom properties holding cqw/cqi are recipes — they
+       resolve where they are USED (split hero pane title: against the `split`
+       container; slider readout: against the `section` container). */
+    --c-fs-hero: clamp(1.6rem, 4cqw, 2.4rem);
+    --c-fs-hero-compact: 1.15rem;
+    --c-fs-readout-min: 1.25rem;
+}
+
+.page[data-size-set='section'] {
+    --c-fs-section: 1.625rem;
+    --c-fs-label: 1.125rem;
+    --c-fs-answer: 1.125rem;
+}
+
+/* Surveys set to "One question per page": the form title steps down because
+   the question itself becomes the headline (the question sizes live on
+   .sec-convo in the section renderer). */
+.page[data-single] {
+    --c-fs-title: 1.5rem;
+}
+
+/*
  * §2.1 rule 2: mesh + texture live ONLY on these dedicated elements — the
  * user's image never shares a background stack with effects. Texture paints
  * on .fx itself (under the mesh, as before); each mesh token owns ONE child
@@ -233,5 +291,24 @@
 
     .panel:not(.panel--bleed) {
         padding: min(var(--c-space-6), 16px);
+    }
+
+    /* Mobile column of the type scale. Each attribute variant restates its own
+       values: an attribute selector outranks plain .page, so the desktop
+       variant would otherwise win on a phone. */
+    .page {
+        --c-fs-title: 1.25rem;
+        --c-fs-thanks: 1.25rem;
+        --c-fs-section: 1.125rem;
+    }
+
+    .page[data-size-set='section'] {
+        --c-fs-section: 1.25rem;
+        --c-fs-label: 1rem;
+        --c-fs-answer: 1rem;
+    }
+
+    .page[data-single] {
+        --c-fs-title: 1.25rem;
     }
 }

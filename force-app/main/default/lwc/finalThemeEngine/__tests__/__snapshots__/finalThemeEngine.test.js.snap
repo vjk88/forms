@@ -38,6 +38,7 @@ exports[`c-final-theme-engine robustness & determinism full-theme snapshot — a
   "--c-label-flow": "column",
   "--c-label-gap": "0px",
   "--c-label-mb": "4px",
+  "--c-label-scale": "1",
   "--c-label-size": "0.8125rem",
   "--c-label-tracking": "normal",
   "--c-label-transform": "none",

@@ -70,6 +70,21 @@ export default class FinalPageFrame extends LightningElement {
      */
     @api embedded;
 
+    /**
+     * Which text-size set the layout uses (type scale spec): 'section' for
+     * layouts that show one section at a time, anything else = the Standard
+     * set. The viewer decides; this frame only publishes it as an attribute
+     * the stylesheet keys on, so the numbers live in the CSS alone.
+     */
+    @api sizeSet;
+
+    /**
+     * Surveys set to "One question per page": the form title steps down (the
+     * question is the headline). The question sizes themselves are applied
+     * per section by the section renderer.
+     */
+    @api single = false;
+
     _tokens = {};
     _appliedKeys = [];
     _connected = false;
@@ -133,6 +148,15 @@ export default class FinalPageFrame extends LightningElement {
 
     get panelClass() {
         return this.bleed ? 'panel panel--bleed' : 'panel';
+    }
+
+    // null removes the attribute, which leaves the Standard set in force.
+    get sizeSetAttr() {
+        return this.sizeSet === 'section' ? 'section' : null;
+    }
+
+    get singleAttr() {
+        return this.single ? 'true' : null;
     }
 
     get panelStyle() {

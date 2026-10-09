@@ -57,7 +57,7 @@
     background: none;
     color: var(--c-text-weak);
     font-family: var(--c-font-body);
-    font-size: 0.9375rem;
+    font-size: var(--c-fs-nav);
     white-space: nowrap;
     cursor: pointer;
 }

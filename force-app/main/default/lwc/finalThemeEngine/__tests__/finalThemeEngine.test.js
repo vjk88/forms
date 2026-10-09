@@ -67,6 +67,9 @@ const CONTRACT_V1 = [
     '--c-label-gap',
     '--c-label-align',
     '--c-label-size',
+    // type scale (2026-10-03): the look's RATIO of the layout's question size.
+    // --c-label-size above is legacy — still emitted, no longer read.
+    '--c-label-scale',
     '--c-label-weight',
     '--c-label-transform',
     '--c-label-tracking',

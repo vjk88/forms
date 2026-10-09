@@ -9,7 +9,8 @@
 .guest-unavailable__message {
     max-width: 32rem;
     text-align: center;
-    font-size: 1rem;
+    /* shown before any form frame exists, so the role carries a fallback */
+    font-size: var(--c-fs-desc, 1rem);
     color: #444;
 }
 

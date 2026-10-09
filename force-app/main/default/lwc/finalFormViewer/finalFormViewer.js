@@ -755,6 +755,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             };
         }
 
+        // Label looks are STYLE only; their size is a ratio of the layout's
+        // question size (type scale spec rule 6). Snapshots published before
+        // the engine emitted --c-label-scale derive it from the transform they
+        // already carry: the two uppercase looks sit at 0.875, the rest at 1.
+        if (this.tokens['--c-label-scale'] === undefined) {
+            this.tokens = {
+                ...this.tokens,
+                '--c-label-scale':
+                    this.tokens['--c-label-transform'] === 'uppercase'
+                        ? '0.875'
+                        : '1'
+            };
+        }
+
         // Custom brand font: tokens only TYPESET the family — the @font-face
         // must be registered globally (CUSTOM_FONTS.md). Idempotent; also runs
         // for published specs since resolved tokens still name the family.
@@ -1007,6 +1021,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             layoutOptions: options,
             paginates: Boolean(layout.paginates),
             ownsAdvance,
+            // Text-size set (type scale spec section 6): layouts that show one
+            // section at a time get the larger set; "One question per page"
+            // surveys additionally step the form title down. The page frame
+            // publishes both as attributes; the numbers live in its CSS.
+            sizeSet: ownsAdvance ? 'section' : 'standard',
+            single: onePerScreen,
             // Immersive full-bleed: only bleed-capable layouts (splitHero,
             // oneAtATime), ON by default, reverted with fullBleed === false —
             // the toggle restores the carded render exactly.

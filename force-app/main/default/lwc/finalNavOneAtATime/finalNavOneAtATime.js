@@ -126,8 +126,20 @@ export default class FinalNavOneAtATime extends LightningElement {
         return this.bleed ? 'oaat mode-bleed' : 'oaat';
     }
 
+    /** The current screen is a Single question (survey set to "One question
+     *  per page"): the viewer stamps `convo` on those sections. */
+    get isSingleQuestion() {
+        const screen = this._screens[this.screenIndex];
+        return Boolean(screen && screen.section && screen.section.convo);
+    }
+
     get bodyClass() {
-        return this.bleed ? 'oaat-body question-card' : 'oaat-body';
+        if (!this.bleed) {
+            return 'oaat-body';
+        }
+        return this.isSingleQuestion
+            ? 'oaat-body question-card card-single'
+            : 'oaat-body question-card';
     }
 
     get actionRowClass() {

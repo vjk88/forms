@@ -91,7 +91,8 @@
 }
 
 .fl-opt-sub {
-    font-size: 0.75rem;
+    /* also used outside a form frame (Studio), so the roles carry fallbacks */
+    font-size: var(--c-fs-secondary, 0.75rem);
     color: var(--c-field-help-ink, #5c5c5c);
 }
 
@@ -150,6 +151,6 @@
 
 .fl-error {
     margin-top: 0.25rem;
-    font-size: 0.75rem;
+    font-size: var(--c-fs-error, 0.75rem);
     color: var(--c-error-ink, #ba0517);
 }
