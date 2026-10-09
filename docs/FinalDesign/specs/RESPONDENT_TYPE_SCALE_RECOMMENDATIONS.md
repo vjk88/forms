@@ -188,6 +188,8 @@ Chosen in the mock-up in the One question per page look at a 360px phone. Only t
 
 Not tried: the other looks and layouts, tablet and desktop. Whether the 26px card padding should also apply to One at a time on phones is open.
 
+**Update 2026-10-03:** One at a time no longer has a card (it is an open page now, like design-explorations/01), so the 26px card padding no longer exists there. The text column is the form's width minus a 20 to 35px side margin on each side (294px in a 334px-wide form, 350px on a full 390px phone). The other layouts' Single question screens are unchanged. See `docs/FinalDesign/IMPL_PLAN_OAAT_OPEN_PAGE.md`.
+
 ---
 
 ## 8. Layout by layout

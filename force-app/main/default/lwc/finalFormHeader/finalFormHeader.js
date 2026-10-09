@@ -33,6 +33,14 @@ export default class FinalFormHeader extends LightningElement {
     /** Spec `header` block (FORM_SPEC_SCHEMA §3). `style: "none"` is the host's job to not render. */
     @api header;
 
+    /**
+     * Flush mode (One at a time, open page): a progress strip follows the lockup
+     * directly, so the lockup gives up its bottom margin and lines its text up on
+     * the strip's side inset instead of stacking two paddings (about 60px of dead
+     * air between the description and the bar before this).
+     */
+    @api flush = false;
+
     get hdr() {
         return this.header || {};
     }
@@ -46,7 +54,8 @@ export default class FinalFormHeader extends LightningElement {
     get rootClass() {
         // 'minimal' deleted 2026-07-18 (owner ruling — its background:none
         // silently ate the Fill); legacy specs render standard.
-        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}`;
+        const flush = this.flush ? ' hdr--flush' : '';
+        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}${flush}`;
     }
 
     /**

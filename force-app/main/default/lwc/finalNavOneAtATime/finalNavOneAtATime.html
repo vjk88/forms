@@ -6,7 +6,8 @@
         onadvancekey={handleAdvanceKey}
         onadvancefocus={handleAdvanceFocus}
     >
-        <!-- BLEED: page chrome — full-width progress hairline + step counter. -->
+        <!-- OPEN PAGE: a progress strip across the top (shares the header's side
+             inset), then one centered question column — no card. -->
         <template lwc:if={showTopChrome}>
             <div class="top-chrome">
                 <div class="progress-hairline" aria-hidden="true">
@@ -16,7 +17,7 @@
             </div>
         </template>
 
-        <!-- The question surface: a floating card in bleed, plain otherwise. -->
+        <!-- The question column on the open page; plain inside a card panel. -->
         <div class={bodyClass}>
             <template lwc:if={showInlineProgress}>
                 <div class="progress">
@@ -42,7 +43,8 @@
 
             <!-- One action row for every screen: Back + primary, placed by
                  arrangement. The primary is Continue while stepping, Submit on
-                 the last screen — same spot, same style, no jump. -->
+                 the last screen — same spot, same style, no jump. The keyboard
+                 hint rides with the primary, on the same row. -->
             <div class={actionRowClass}>
                 <template lwc:if={showBackLink}>
                     <button
@@ -58,19 +60,20 @@
                         {backButtonLabel}
                     </button>
                 </template>
-                <button
-                    class="primary-btn"
-                    type="button"
-                    onclick={handlePrimary}
-                    disabled={primaryDisabled}
-                >
-                    {primaryLabel}
-                </button>
+                <div class="advance">
+                    <button
+                        class="primary-btn"
+                        type="button"
+                        onclick={handlePrimary}
+                        disabled={primaryDisabled}
+                    >
+                        {primaryLabel}
+                    </button>
+                    <template lwc:if={showHelperRow}>
+                        <p class="key-helper">{keyboardHelperText}</p>
+                    </template>
+                </div>
             </div>
-
-            <template lwc:if={showHelperRow}>
-                <p class="key-helper">{keyboardHelperText}</p>
-            </template>
         </div>
     </div>
 </template>

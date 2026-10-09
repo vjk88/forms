@@ -606,11 +606,13 @@ const AREAS = [
                     {
                         // same option splitHero's pane group exposes — this
                         // layout's carded look existed with no way to reach it
-                        // (audit fix 2026-07-11)
+                        // (audit fix 2026-07-11). Owner 2026-10-03: On is the
+                        // open page of design-explorations/01 (no card around
+                        // the question); Off is the card panel.
                         key: 'oaatBleed',
                         label: 'Immersive full-bleed',
                         type: 'toggle',
-                        hint: 'On: one floating question card owns the screen. Off: sections advance inside the normal panel.',
+                        hint: 'On: the question sits straight on the page, like a conversation. Off: sections advance inside a card.',
                         path: 'layout.options.fullBleed',
                         fallback: true
                     },

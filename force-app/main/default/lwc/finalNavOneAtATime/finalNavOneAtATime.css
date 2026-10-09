@@ -1,9 +1,24 @@
 .oaat {
     width: 100%;
     font-family: var(--c-font-body);
+    /* One at a time reads LEFT-aligned on one edge (design-explorations/01).
+       The section renderer's conversational look reads these (it stays
+       centered in the other layouts), and its 640px measure cap hands over to
+       the column below. */
+    --c-stage-align: left;
+    --c-stage-justify: flex-start;
+    --c-stage-measure: none;
+    --c-stage-margin: 0;
 }
 
-/* ---------- non-bleed inline progress (carded render, in the panel) ---------- */
+/* ---------- inside a card panel (Immersive off): inline progress ----------
+   The panel is the card. Its inset is the same section padding every other
+   layout uses, so the progress, the text, the answers and the buttons share one
+   edge (the sections themselves are open, with no padding of their own). */
+.mode-panel {
+    padding-inline: var(--c-section-pad);
+}
+
 .progress {
     display: flex;
     align-items: center;
@@ -37,18 +52,22 @@
     white-space: nowrap;
 }
 
-/* ---------- BLEED: page chrome + floating question card ---------- */
+/* ---------- OPEN PAGE (Immersive on): strip + one centered column ----------
+   No card and no box around the question (owner 2026-10-03, against
+   design-explorations/01-conversational-survey.html). The page frame dropped
+   its panel, so this sits straight on the page background. */
 .mode-bleed {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    min-height: 64vh;
-    gap: var(--c-space-5);
+    padding-bottom: 3rem;
 }
 
+/* The progress strip shares the header lockup's side inset (--c-strip-inset,
+   declared once on the page frame), so the two read as one top edge. */
 .top-chrome {
     display: flex;
     align-items: center;
     gap: var(--c-space-4);
+    margin: 0 var(--c-strip-inset);
+    padding-top: var(--c-space-4);
 }
 
 .progress-hairline {
@@ -66,30 +85,25 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* The floating card owns the content surface (pageFrame dropped the panel in
-   bleed). Centred in the remaining space via margin:auto. */
-.question-card {
-    align-self: center;
-    width: 100%;
-    /* --frame-max = an explicit Max width choice (pageFrame's tighter bleed
-       scale); unset keeps the locked conversational card. */
-    max-width: var(--frame-max, 540px);
-    margin: 0 auto;
-    padding: var(--c-space-6);
-    background: var(--c-content-bg);
-    border: var(--c-content-border);
-    border-radius: var(--c-radius);
-    box-shadow: var(--c-content-shadow);
-    -webkit-backdrop-filter: blur(var(--c-glass-blur));
-    backdrop-filter: blur(var(--c-glass-blur));
+/* THE question column (named oaat-column, never "stage": LEX ships a global
+   .stage rule that leaks into embedded components): one left edge for the eyebrow, the question, the answers
+   and the buttons. --frame-max is the author's Max content width (480 / 560 /
+   680 / 100%); unset = 640, which sits between Medium and Wide. A fixed offset
+   under the strip — never a window-height minimum, which made a taller window
+   mean more dead air. */
+.oaat-column {
+    width: min(var(--frame-max, 640px), calc(100% - 2 * var(--c-strip-inset)));
+    margin: 2.5rem auto 0;
 }
 
-/* A Single question screen (survey set to "One question per page") on a phone:
-   26px instead of 32px gives the question 12px more width (owner tuning
-   2026-10-03). Keyed on the whole form's width, like every phone step. */
 @container final-form-viewport (max-width: 540px) {
-    .question-card.card-single {
-        padding: 26px;
+    .oaat-column {
+        margin-top: 2rem;
+    }
+
+    /* a phone has no Return key, and the hint would push Back off the Continue row */
+    .key-helper {
+        display: none;
     }
 }
 
@@ -113,9 +127,10 @@
 /* ---------- one action row, arrangement-placed (LAYOUT_REFINEMENTS §3) ---------- */
 .action-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--c-space-4);
-    margin-top: var(--c-space-5);
+    margin-top: 2.4rem;
 }
 
 .action-row.arr-start {
@@ -130,23 +145,32 @@
     justify-content: space-between;
 }
 
+/* The primary and its keyboard hint travel together (the hint reads as part of
+   the button, on the same row). */
+.advance {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-space-4);
+}
+
 .back-link {
     display: inline-flex;
     align-items: center;
     gap: var(--c-space-1);
-    padding: var(--c-space-1) var(--c-space-2);
+    padding: var(--c-space-1) var(--c-space-2) var(--c-space-1) 0;
     border: none;
     background: none;
     color: var(--c-text-weak);
     font-family: var(--c-font-body);
     font-size: var(--c-fs-button);
+    text-decoration: underline;
+    text-underline-offset: 3px;
     cursor: pointer;
 }
 
 .back-link:hover {
     color: var(--c-text);
-    text-decoration: underline;
-    text-underline-offset: 3px;
 }
 
 .back-link:focus-visible {
@@ -160,8 +184,8 @@
 }
 
 .primary-btn {
-    height: var(--c-control-h);
-    padding: 0 var(--c-space-5);
+    height: calc(var(--c-control-h) + 6px);
+    padding: 0 1.5rem;
     border: none;
     border-radius: var(--c-radius);
     background: var(--c-submit-bg);
@@ -179,7 +203,7 @@
 
 /* Plain muted helper text — never a styled key-chip (signature distance). */
 .key-helper {
-    margin: var(--c-space-2) 0 0;
+    margin: 0;
     color: var(--c-text-weak);
     font-size: var(--c-fs-secondary);
 }

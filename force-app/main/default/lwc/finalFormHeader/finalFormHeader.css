@@ -155,3 +155,15 @@
         row-gap: var(--c-space-3);
     }
 }
+
+/*
+ * Flush (One at a time, open page): the progress strip follows directly. No
+ * bottom margin or padding (the strip brings its own breathing room), and the
+ * text sits on the same side inset as the strip (--c-strip-inset, declared once
+ * on the page frame). Doubled class so this outranks the narrow-form rule above.
+ */
+.hdr.hdr--flush {
+    margin-bottom: 0;
+    padding-inline: var(--c-strip-inset);
+    padding-bottom: 0;
+}
