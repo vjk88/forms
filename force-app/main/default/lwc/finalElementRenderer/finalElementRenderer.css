@@ -55,11 +55,6 @@
        set redefines --c-fs-answer on the section. */
     font-size: var(--c-fs-answer);
     --dxp-s-form-element-text-font-size: var(--c-fs-answer);
-    /* Radio and checkbox option text is sized by the platform widget itself, so
-       the font-size above never reaches it (13px inside Salesforce, a fixed 16px
-       on the public site). Each host family reads its own custom property. */
-    --slds-s-label-font-size: var(--c-fs-answer);
-    --dxp-s-form-element-label-font-size: var(--c-fs-answer);
 }
 
 .field > lightning-input,
@@ -68,13 +63,31 @@
     min-width: 0;
 }
 
-/* The open dropdown list is a Salesforce .slds-dropdown drawn at the global
-   scale step neg-1 (12px); the public site already follows the typed-text
-   hook above. Scoped to the combobox on purpose: the same step sizes the date
-   picker, which the public site hard-codes at 12px, so widening the calendar
-   only inside Salesforce would make the Studio preview differ from live. */
+/* Radio and checkbox option text, and the open dropdown list, are sized by the
+   platform widgets themselves, so the font-size on .field never reaches them.
+   Each host family reads its own custom property (measured in the dev org):
+     Lightning Experience           options --slds-s-label-font-size
+                                    list    --slds-g-font-scale-neg-1
+     Visualforce / Lightning Out    options --lwc-fontSize3 (radio, checkbox)
+       (the Studio preview)                 --lwc-fontSize2 (stacked checkbox)
+                                    list    --slds-c-dropdown-font-size
+     public site                    options --dxp-s-form-element-label-font-size
+                                    list    follows the typed-text hook above
+   Set on the widgets, never on .field: the --lwc and scale-neg-1 values are
+   global size steps that also size help text and the date picker, which the
+   public site hard-codes at 12px, so widening those only inside Salesforce
+   would make the Studio preview differ from live. */
+.field lightning-radio-group,
+.field lightning-checkbox-group {
+    --slds-s-label-font-size: var(--c-fs-answer);
+    --lwc-fontSize3: var(--c-fs-answer);
+    --lwc-fontSize2: var(--c-fs-answer);
+    --dxp-s-form-element-label-font-size: var(--c-fs-answer);
+}
+
 .field lightning-combobox {
     --slds-g-font-scale-neg-1: var(--c-fs-answer);
+    --slds-c-dropdown-font-size: var(--c-fs-answer);
 }
 
 /* Label text + (perceivable) helptext, side by side. */
