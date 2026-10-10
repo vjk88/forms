@@ -142,33 +142,59 @@ describe('respondent stylesheets use role tokens, never their own size', () => {
         );
     });
 
-    it('radio and checkbox option text follows the answer size on both hosts (.field)', () => {
+    const answerSize = (name) =>
+        new RegExp(`${name}\\s*:\\s*var\\(--c-fs-answer\\)`);
+
+    it('radio and checkbox option text follows the answer size on every host', () => {
         // The platform widget sizes this text itself, so font-size never reaches
-        // it: 13px inside Salesforce, a fixed 16px on the public site. Each host
-        // family reads its own custom property.
+        // it. One custom property per host family: Lightning Experience reads
+        // --slds-s-label-font-size; Visualforce / Lightning Out (the Studio)
+        // reads --lwc-fontSize3 (radio, checkbox) and --lwc-fontSize2 (stacked
+        // checkbox); the public site reads --dxp-s-form-element-label-font-size.
         const css = read('finalElementRenderer');
-        const field = /\n\.field\s*\{([^}]*)\}/.exec(css)[1];
-        expect(field).toMatch(
-            /--slds-s-label-font-size:\s*var\(--c-fs-answer\)/
-        );
-        expect(field).toMatch(
-            /--dxp-s-form-element-label-font-size:\s*var\(--c-fs-answer\)/
-        );
+        const groups =
+            /\n\.field\s+lightning-radio-group\s*,\s*\.field\s+lightning-checkbox-group\s*\{([^}]*)\}/.exec(
+                css
+            );
+        expect(groups).not.toBeNull();
+        for (const name of [
+            '--slds-s-label-font-size',
+            '--lwc-fontSize3',
+            '--lwc-fontSize2',
+            '--dxp-s-form-element-label-font-size'
+        ]) {
+            expect(groups[1]).toMatch(answerSize(name));
+        }
     });
 
-    it('the open dropdown list follows the answer size, on the combobox only', () => {
-        // Salesforce draws the list at its global scale step neg-1 (12px). The
-        // same step sizes the date picker, which the public site hard-codes at
-        // 12px, so it is scoped to the combobox: widening the calendar only
-        // inside Salesforce would make the Studio preview differ from live.
+    it('the open dropdown list follows the answer size on every host', () => {
+        // Lightning Experience draws the list at its global step neg-1;
+        // Visualforce / Lightning Out reads the component hook
+        // --slds-c-dropdown-font-size; the public site already follows the
+        // typed-text setting on .field.
         const css = read('finalElementRenderer');
         const combo = /\n\.field\s+lightning-combobox\s*\{([^}]*)\}/.exec(css);
         expect(combo).not.toBeNull();
-        expect(combo[1]).toMatch(
-            /--slds-g-font-scale-neg-1:\s*var\(--c-fs-answer\)/
-        );
-        const field = /\n\.field\s*\{([^}]*)\}/.exec(css)[1];
-        expect(field).not.toMatch(/--slds-g-font-scale-neg-1/);
+        for (const name of [
+            '--slds-g-font-scale-neg-1',
+            '--slds-c-dropdown-font-size'
+        ]) {
+            expect(combo[1]).toMatch(answerSize(name));
+        }
+    });
+
+    it('the platform size steps stay off .field', () => {
+        // They are global steps that also size the date picker and help text.
+        // The public site hard-codes the date picker at 12px, so widening it
+        // only inside Salesforce would make the Studio preview differ from live.
+        const field = /\n\.field\s*\{([^}]*)\}/.exec(
+            read('finalElementRenderer')
+        )[1];
+        expect(field).not.toMatch(/--lwc-fontSize/);
+        expect(field).not.toMatch(/--slds-g-font-scale/);
+        expect(field).not.toMatch(/--slds-c-dropdown-font-size/);
+        expect(field).not.toMatch(/--slds-s-label-font-size/);
+        expect(field).not.toMatch(/--dxp-s-form-element-label-font-size/);
     });
 });
 
