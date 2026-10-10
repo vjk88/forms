@@ -375,7 +375,7 @@ Two sizes stay smooth rather than fixed. They grow with the width of a box, beha
 2. **Line heights** have no unit: 1.3 for titles and question text, 1.5 for descriptions, answers and supporting text.
 3. **Reading floor.** At least 14px for anything a respondent must read; at least 16px for typed or chosen text.
 4. **The form declares its own base size.** Text with no size of its own stops borrowing the host page's size. This is what fixes "13px inside Salesforce, 16px on the public site".
-5. **Typed text has two mechanisms.** Inside Salesforce it follows the surrounding size automatically. On the public site it is set by a platform setting, which the form will also set.
+5. **Typed text has two mechanisms.** Inside Salesforce it follows the surrounding size automatically. On the public site it is set by a platform setting, which the form will also set. **Choices and the dropdown list have settings of their own** (section 11): the platform widgets size that text themselves and ignore the surrounding size.
 6. **Label looks** become style only. The size comes from the layout.
 
    | Look | Today | Recommended |
@@ -397,13 +397,24 @@ Two sizes stay smooth rather than fixed. They grow with the width of a box, beha
 
 **Checked after the build (Salesforce viewer tab, Studio preview and, after the publish, the public site as a signed-out visitor; Chromium):** every role in tables 7.1 to 7.3 at 334px, 736px and 1248px forms, the Split hero title (38.4 / 29.4 on a 736px form), stars and emoji (30.6 and 36 on desktop, 27.2 and 32 on phones), and the 26px / 32px card padding. The Studio preview now agrees with the viewer tab (typed text is the same size as the question text in One at a time, where it used to be 3px smaller).
 
-- **Radio buttons, checkboxes, dropdowns, date pickers and record pickers on the public site.** None of the six forms visible to signed-out visitors contain them. Checking needs a disposable public clone (creating one needs your OK first). Typed text in plain text boxes is verified on the public site (16, 18).
+**Choice widgets, checked and fixed 2026-10-09.** The first build left radio buttons, checkboxes and the open dropdown list at the platform's own sizes, because the platform widgets size that text themselves and ignore the surrounding size. Measured on a copy of one form with the widgets swapped in inside the browser (nothing saved), in the Salesforce viewer tab and on the public site as a signed-out visitor, with no disposable form needed:
+
+| Text | Where | Before | After (Standard / One at a time desktop / phone) |
+|---|---|---|---|
+| Radio and checkbox option text | Inside Salesforce | 13 | 16 / 18 / 16 |
+| Radio and checkbox option text | Public site | 16 | 16 / 18 / 16 |
+| Open dropdown list | Inside Salesforce | 12 | 16 / 18 / 16 |
+| Open dropdown list | Public site | already followed the typed-text setting | 16 / 18 / 16 |
+
+Each host family reads its own setting, so the form sets all of them (the `.field` wrapper in `finalElementRenderer.css`): `--slds-s-label-font-size` (option text inside Salesforce), `--dxp-s-form-element-label-font-size` (option text on the public site) and `--slds-g-font-scale-neg-1` (the dropdown list inside Salesforce). The last one is scoped to the dropdown on purpose: the same Salesforce step also sizes the date picker, which the public site hard-codes at 12px, so widening the calendar only inside Salesforce would make the Studio preview differ from live. The guard test pins all three. Deployed and published 2026-10-09, then re-measured on the deployed code with no injected styles.
+
+- **Date picker calendar.** 12px on the public site, and left at 12px inside Salesforce so the preview matches. The platform hard-codes it (`.slds-datepicker { font-size: .75rem }` in the design-system stylesheet the public site loads) and none of the settings above reaches it, so chosen text there sits under the 16px reading floor. Parked as DEFERRED #34; the real fix replaces the platform date picker. **Record pickers** were not part of this check.
 - **Firefox, Safari and a real iPhone.** Only Chromium was tested. Check the iPhone zoom behaviour and 200% browser zoom.
 - **Customer sites that change the page's base text size** (some shrink it to 10px). Every `rem` size would scale with it. All three hosts measured here use 16px.
 - **Split hero at tablet width** (form side about half the page).
 - **Two-column sections and left-aligned labels.** Left labels sit in a fixed 160px column, so 16px bold labels wrap more.
 - **Matrix headings at 14px on phones.**
-- **Error text.** Still not rendered: the test forms have no validation rules, and a required field does not show our error line. The size (16) is read from the stylesheet, not measured.
+- **Error text.** Measured 2026-10-09 on a copy of a form with required fields (nothing saved): 16 in Wizard steps (inside Salesforce and on the public site, desktop and phone) and in One at a time (public site, desktop). Not seen rendered in Side rail, Accordion panels or One at a time inside Salesforce; they use the same stylesheet rule.
 - **The slider value readout.** No test form has a slider; its size comes from the code.
 - **Desktop and tablet sizes for "One question per page"** (question 32, answers and typed text 18, help 14) come from your earlier table and have not been tried; the mock-up only shows phone widths. The phone answer size for choices and rating digits (16) was not tried either.
 - **The 26px card padding** was tried only in One question per page at a 360px phone, with a text box answer.
@@ -421,6 +432,8 @@ Two sizes stay smooth rather than fixed. They grow with the width of a box, beha
 6. Rollback is reverting the stylesheets. Nothing in form data, specs or Apex changes.
 
 **Status, 2026-10-03.** Steps 1 to 3 are built and deployed to the dev org in one go (the guard test needs every stylesheet moved, so there was no useful halfway state). Step 4 is partly done: sizes were measured, read-only, inside the Salesforce viewer tab on 9 forms at 3 widths (6 of the 7 layouts: Continuous scroll, Wizard steps, Tabbed pages, One at a time, Split hero, plus One question per page on Wizard steps and on One at a time) and in the Studio preview. Every measured size matched the tables above. Side rail and Accordion panels have no test form in the dev org, so they are covered by the guard test only. After the site publish, the public site was measured the same way as a signed-out visitor on 4 public forms at 3 widths (Continuous scroll, One at a time, a survey with scale, rating, matrix, ranking and emoji questions, and a text form): the sizes are identical to the Salesforce numbers, and typed text in plain boxes follows the answer size on the public site too (16 in Standard, 18 in One at a time on desktop and tablet, 16 on phones). Before this change the public One at a time survey typed at the platform default of 16 on every device.
+
+**Update, 2026-10-09.** Side rail and Accordion panels were measured by switching an existing multi-page form to those layouts inside the browser (nothing saved): the sizes match the tables. The same check found that radio and checkbox option text and the open dropdown list did not follow the answer size (section 11). That is fixed, deployed, published and re-measured on the deployed code, inside Salesforce and on the public site.
 
 ---
 

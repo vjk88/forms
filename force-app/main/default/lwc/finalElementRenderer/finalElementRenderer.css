@@ -55,12 +55,26 @@
        set redefines --c-fs-answer on the section. */
     font-size: var(--c-fs-answer);
     --dxp-s-form-element-text-font-size: var(--c-fs-answer);
+    /* Radio and checkbox option text is sized by the platform widget itself, so
+       the font-size above never reaches it (13px inside Salesforce, a fixed 16px
+       on the public site). Each host family reads its own custom property. */
+    --slds-s-label-font-size: var(--c-fs-answer);
+    --dxp-s-form-element-label-font-size: var(--c-fs-answer);
 }
 
 .field > lightning-input,
 .field > lightning-textarea {
     flex: 1 1 auto;
     min-width: 0;
+}
+
+/* The open dropdown list is a Salesforce .slds-dropdown drawn at the global
+   scale step neg-1 (12px); the public site already follows the typed-text
+   hook above. Scoped to the combobox on purpose: the same step sizes the date
+   picker, which the public site hard-codes at 12px, so widening the calendar
+   only inside Salesforce would make the Studio preview differ from live. */
+.field lightning-combobox {
+    --slds-g-font-scale-neg-1: var(--c-fs-answer);
 }
 
 /* Label text + (perceivable) helptext, side by side. */

@@ -141,6 +141,35 @@ describe('respondent stylesheets use role tokens, never their own size', () => {
             /--dxp-s-form-element-text-font-size:\s*var\(--c-fs-answer\)/
         );
     });
+
+    it('radio and checkbox option text follows the answer size on both hosts (.field)', () => {
+        // The platform widget sizes this text itself, so font-size never reaches
+        // it: 13px inside Salesforce, a fixed 16px on the public site. Each host
+        // family reads its own custom property.
+        const css = read('finalElementRenderer');
+        const field = /\n\.field\s*\{([^}]*)\}/.exec(css)[1];
+        expect(field).toMatch(
+            /--slds-s-label-font-size:\s*var\(--c-fs-answer\)/
+        );
+        expect(field).toMatch(
+            /--dxp-s-form-element-label-font-size:\s*var\(--c-fs-answer\)/
+        );
+    });
+
+    it('the open dropdown list follows the answer size, on the combobox only', () => {
+        // Salesforce draws the list at its global scale step neg-1 (12px). The
+        // same step sizes the date picker, which the public site hard-codes at
+        // 12px, so it is scoped to the combobox: widening the calendar only
+        // inside Salesforce would make the Studio preview differ from live.
+        const css = read('finalElementRenderer');
+        const combo = /\n\.field\s+lightning-combobox\s*\{([^}]*)\}/.exec(css);
+        expect(combo).not.toBeNull();
+        expect(combo[1]).toMatch(
+            /--slds-g-font-scale-neg-1:\s*var\(--c-fs-answer\)/
+        );
+        const field = /\n\.field\s*\{([^}]*)\}/.exec(css)[1];
+        expect(field).not.toMatch(/--slds-g-font-scale-neg-1/);
+    });
 });
 
 // ---------------------------------------------------------------------------
