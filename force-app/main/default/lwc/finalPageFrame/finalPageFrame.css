@@ -284,17 +284,25 @@
 }
 
 /*
- * Narrow form (Studio UX plan, Task 5A): at 540px or less the outer gutters and
- * card padding give the questions more of the width. Bleed layouts own their
- * canvas and keep zero padding, so they are excluded.
+ * Narrow form (Studio UX plan, Task 5A; padding budget: stage 3 plan, slice S1):
+ * at 540px or less the outer gutters and card padding give the questions more
+ * of the width. Bleed layouts own their canvas and keep zero padding, so they
+ * are excluded.
+ *
+ * The budget, per side: page 4 + form card (1 border + 8) + section card (1
+ * border + 12) = 26px, so a 320px phone keeps 238px for answers (five 44px
+ * buttons need 236). --c-pad-cap is the section's share: a section reads it
+ * with an unreachable fallback, so it exists ONLY here and a form wider than
+ * 540px keeps every padding it has today.
  */
 @container final-form-viewport (max-width: 540px) {
     .page:not(.page--bleed) {
-        padding: 16px 12px 24px;
+        padding: 16px 4px 24px;
+        --c-pad-cap: 12px;
     }
 
     .panel:not(.panel--bleed) {
-        padding: min(var(--c-space-6), 16px);
+        padding: min(var(--c-space-6), 8px);
     }
 
     /* Mobile column of the type scale. Each attribute variant restates its own

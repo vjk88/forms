@@ -417,8 +417,18 @@ slot[name='actions'] {
     }
 
     .mode-bleed .form {
-        padding: var(--c-space-5) var(--c-space-4);
+        padding: var(--c-space-5) 4px;
         overflow-y: visible;
+    }
+
+    /* The same phone budget as every other layout (stage 3, slice S1: page 4 +
+       card 1 + 8 + section 1 + 12 = 26px a side). This layout owns its padding,
+       so it needs its own rule: its form column, floating card and sections used
+       to take 16 + 25 + 21 and left ~194px for answers on a phone. The card hands
+       its sections the cap (--c-pad-cap) through the slot. */
+    .mode-bleed .form-card {
+        padding: min(var(--c-space-6), 8px);
+        --c-pad-cap: 12px;
     }
 
     .brand {
