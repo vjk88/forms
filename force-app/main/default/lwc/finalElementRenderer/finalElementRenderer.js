@@ -1487,6 +1487,12 @@ export default class FinalElementRenderer extends LightningElement {
         if (this.hasErrors) {
             cls += ' has-errors';
         }
+        // The platform paints a disabled dropdown on a fixed light-grey box in
+        // every theme, so CSS keys its text colour off this (see the colour
+        // hooks in finalElementRenderer.css).
+        if (this.el.readOnly) {
+            cls += ' field-readonly';
+        }
         return cls;
     }
 

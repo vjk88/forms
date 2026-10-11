@@ -78,6 +78,9 @@ const CONTRACT_V1 = [
     '--c-field-focus',
     '--c-field-error',
     '--c-field-required',
+    // conditional (contract event 2026-10-11, cross-host audit stage 1): ink for
+    // the platform's small icons, emitted only on DARK surfaces
+    '--c-icon',
     '--c-control-h',
     '--c-text',
     '--c-text-weak',
@@ -145,7 +148,8 @@ describe('c-final-theme-engine', () => {
                 '--c-section-bg',
                 '--c-section-border',
                 '--c-section-shadow',
-                '--c-sec-head-display'
+                '--c-sec-head-display',
+                '--c-icon'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -636,7 +640,8 @@ describe('c-final-theme-engine', () => {
                 '--c-section-bg',
                 '--c-section-border',
                 '--c-section-shadow',
-                '--c-sec-head-display'
+                '--c-sec-head-display',
+                '--c-icon'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

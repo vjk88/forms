@@ -431,6 +431,16 @@ function isLight(hex) {
 }
 
 /**
+ * Ink for the platform's small icons (help, calendar, dropdown arrow) on a DARK
+ * surface. Those icons also appear inside the platform's fixed-white popups (the
+ * date picker's arrows, the list's check mark) and on the white box a focused
+ * dropdown turns into, so the colour has to clear 3 : 1 on the dark field AND on
+ * white. One mid grey does: 3.3 : 1 on white, 3.6 : 1 on the lightest dark field
+ * fill in the catalog (pinned by finalThemeCatalog stateInkContrast.test.js).
+ */
+const ICON_ON_DARK = '#8d8d8d';
+
+/**
  * Do fields sit on a dark surface? Judge by contentBg when it parses as hex —
  * that IS the panel inputs sit on, and colored-text themes (terminal's green)
  * fool a text-based probe. Glass/gradient surfaces fall back to the text ink.
@@ -852,6 +862,10 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-field-focus': focus,
         '--c-field-error': fs.error,
         '--c-field-required': fs.required,
+        // Conditional (null → dropped by the guard below): only dark surfaces
+        // emit it; on light ones the platform's own icon colours already pass
+        // and the CSS hooks that read this token fall back to them.
+        '--c-icon': isDarkSurface(pal) ? ICON_ON_DARK : null,
         '--c-control-h': density.controlH,
 
         // Text & brand

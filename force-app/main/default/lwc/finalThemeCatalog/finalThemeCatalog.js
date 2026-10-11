@@ -17,6 +17,18 @@
  */
 import { resolveTokens, ENGINE_VERSION } from 'c/finalThemeEngine';
 
+/**
+ * Error message, required marker and invalid border on the DARK themes. The
+ * engine's default red (#b42318) is 6.5 : 1 on a light panel but only 1.7 to
+ * 2.5 : 1 on these, against 4.5 : 1 (text) and 3 : 1 (border) required. This
+ * lighter red keeps the hue and clears 4.5 : 1 on the lightest dark panel plus
+ * the 8 % text tint a card section adds, and 3 : 1 on every dark field fill.
+ * One value for all ten keeps their errors looking alike; Neon Nights keeps
+ * its own pinks (nudged lighter). Pinned for all 32 themes by
+ * __tests__/stateInkContrast.test.js (cross-host audit A5 to A7).
+ */
+const ERROR_ON_DARK = '#ff8a80';
+
 const THEMES = {
     editorialIvory: {
         name: 'Editorial Ivory',
@@ -47,10 +59,19 @@ const THEMES = {
         tags: ['light', 'minimalist'],
         layout: 'classic',
         palette: {
-            accent: '#1e3a8a', onAccent: '#ffffff', pageBg: '#f3f4f6', contentBg: '#ffffff',
-            text: '#1f2937', textWeak: '#6b7280', headerBg: 'transparent', borderColor: '#d1d5db'
+            accent: '#1e3a8a',
+            onAccent: '#ffffff',
+            pageBg: '#f3f4f6',
+            contentBg: '#ffffff',
+            text: '#1f2937',
+            textWeak: '#6b7280',
+            headerBg: 'transparent',
+            borderColor: '#d1d5db'
         },
-        typography: 'system', radius: 'soft', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'soft',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -59,10 +80,19 @@ const THEMES = {
         tags: ['light', 'creative'],
         layout: 'classic',
         palette: {
-            accent: '#d946ef', onAccent: '#ffffff', pageBg: '#fef08a', contentBg: '#ffffff',
-            text: '#000000', textWeak: '#4b5563', headerBg: 'transparent', borderColor: '#000000'
+            accent: '#d946ef',
+            onAccent: '#ffffff',
+            pageBg: '#fef08a',
+            contentBg: '#ffffff',
+            text: '#000000',
+            textWeak: '#4b5563',
+            headerBg: 'transparent',
+            borderColor: '#000000'
         },
-        typography: 'system', radius: 'sharp', border: 'bold', density: 'comfortable',
+        typography: 'system',
+        radius: 'sharp',
+        border: 'bold',
+        density: 'comfortable',
         effects: { shadow: 'brutal', glass: false, texture: null, mesh: null }
     },
 
@@ -71,11 +101,26 @@ const THEMES = {
         tags: ['dark', 'creative'],
         layout: 'classic',
         palette: {
-            accent: '#ff79c6', onAccent: '#1e1f29', pageBg: '#1e1f29', contentBg: '#282a36',
-            text: '#f8f8f2', textWeak: '#6272a4', headerBg: 'transparent', borderColor: '#44475a'
+            accent: '#ff79c6',
+            onAccent: '#1e1f29',
+            pageBg: '#1e1f29',
+            contentBg: '#282a36',
+            text: '#f8f8f2',
+            textWeak: '#6272a4',
+            headerBg: 'transparent',
+            borderColor: '#44475a'
         },
-        typography: 'system', radius: 'soft', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'soft',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     terracotta: {
@@ -83,10 +128,19 @@ const THEMES = {
         tags: ['light', 'editorial'],
         layout: 'classic',
         palette: {
-            accent: '#c2410c', onAccent: '#ffffff', pageBg: '#faf7f2', contentBg: '#ffffff',
-            text: '#27272a', textWeak: '#71717a', headerBg: 'transparent', borderColor: '#d4d4d8'
+            accent: '#c2410c',
+            onAccent: '#ffffff',
+            pageBg: '#faf7f2',
+            contentBg: '#ffffff',
+            text: '#27272a',
+            textWeak: '#71717a',
+            headerBg: 'transparent',
+            borderColor: '#d4d4d8'
         },
-        typography: 'system', radius: 'xs', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'xs',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -95,10 +149,19 @@ const THEMES = {
         tags: ['light', 'minimalist'],
         layout: 'classic',
         palette: {
-            accent: '#14532d', onAccent: '#ffffff', pageBg: '#f4f7f5', contentBg: '#ffffff',
-            text: '#1e293b', textWeak: '#64748b', headerBg: 'transparent', borderColor: '#cbd5e1'
+            accent: '#14532d',
+            onAccent: '#ffffff',
+            pageBg: '#f4f7f5',
+            contentBg: '#ffffff',
+            text: '#1e293b',
+            textWeak: '#64748b',
+            headerBg: 'transparent',
+            borderColor: '#cbd5e1'
         },
-        typography: 'system', radius: 'md', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'md',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -107,10 +170,19 @@ const THEMES = {
         tags: ['light', 'minimalist'],
         layout: 'classic',
         palette: {
-            accent: '#0f172a', onAccent: '#ffffff', pageBg: '#f1f5f9', contentBg: '#ffffff',
-            text: '#334155', textWeak: '#64748b', headerBg: 'transparent', borderColor: '#cbd5e1'
+            accent: '#0f172a',
+            onAccent: '#ffffff',
+            pageBg: '#f1f5f9',
+            contentBg: '#ffffff',
+            text: '#334155',
+            textWeak: '#64748b',
+            headerBg: 'transparent',
+            borderColor: '#cbd5e1'
         },
-        typography: 'system', radius: 'soft', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'soft',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -119,11 +191,26 @@ const THEMES = {
         tags: ['dark', 'creative'],
         layout: 'classic',
         palette: {
-            accent: '#06b6d4', onAccent: '#0c0f1d', pageBg: '#0c0f1d', contentBg: '#161b33',
-            text: '#e2e8f0', textWeak: '#64748b', headerBg: 'transparent', borderColor: '#1e293b'
+            accent: '#06b6d4',
+            onAccent: '#0c0f1d',
+            pageBg: '#0c0f1d',
+            contentBg: '#161b33',
+            text: '#e2e8f0',
+            textWeak: '#64748b',
+            headerBg: 'transparent',
+            borderColor: '#1e293b'
         },
-        typography: 'system', radius: 'xs', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'xs',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     sandstone: {
@@ -131,10 +218,19 @@ const THEMES = {
         tags: ['light', 'editorial'],
         layout: 'classic',
         palette: {
-            accent: '#7c2d12', onAccent: '#ffffff', pageBg: '#f5e0d3', contentBg: '#fffdfa',
-            text: '#3c1508', textWeak: '#8c6250', headerBg: 'transparent', borderColor: '#e7d5c7'
+            accent: '#7c2d12',
+            onAccent: '#ffffff',
+            pageBg: '#f5e0d3',
+            contentBg: '#fffdfa',
+            text: '#3c1508',
+            textWeak: '#8c6250',
+            headerBg: 'transparent',
+            borderColor: '#e7d5c7'
         },
-        typography: 'system', radius: 'round', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'round',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -143,11 +239,21 @@ const THEMES = {
         tags: ['dark', 'minimalist'],
         layout: 'classic',
         palette: {
-            accent: '#22c55e', onAccent: '#000000', pageBg: '#000000', contentBg: '#000000',
-            text: '#22c55e', textWeak: '#15803d', headerBg: 'transparent', borderColor: '#22c55e'
+            accent: '#22c55e',
+            onAccent: '#000000',
+            pageBg: '#000000',
+            contentBg: '#000000',
+            text: '#22c55e',
+            textWeak: '#15803d',
+            headerBg: 'transparent',
+            borderColor: '#22c55e'
         },
-        typography: 'system', radius: 'sharp', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'none', glass: false, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'sharp',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: { shadow: 'none', glass: false, texture: null, mesh: null },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     lavender: {
@@ -155,10 +261,19 @@ const THEMES = {
         tags: ['light', 'creative'],
         layout: 'classic',
         palette: {
-            accent: '#7e22ce', onAccent: '#ffffff', pageBg: '#f3e8ff', contentBg: '#ffffff',
-            text: '#3b0764', textWeak: '#7b3a9c', headerBg: 'transparent', borderColor: '#e9d5ff'
+            accent: '#7e22ce',
+            onAccent: '#ffffff',
+            pageBg: '#f3e8ff',
+            contentBg: '#ffffff',
+            text: '#3b0764',
+            textWeak: '#7b3a9c',
+            headerBg: 'transparent',
+            borderColor: '#e9d5ff'
         },
-        typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'lg',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: false, texture: null, mesh: null }
     },
 
@@ -167,10 +282,19 @@ const THEMES = {
         tags: ['light', 'minimalist'],
         layout: 'classic',
         palette: {
-            accent: '#1e40af', onAccent: '#ffffff', pageBg: '#f1f5f9', contentBg: '#ffffff',
-            text: '#0f172a', textWeak: '#475569', headerBg: 'transparent', borderColor: '#cbd5e1'
+            accent: '#1e40af',
+            onAccent: '#ffffff',
+            pageBg: '#f1f5f9',
+            contentBg: '#ffffff',
+            text: '#0f172a',
+            textWeak: '#475569',
+            headerBg: 'transparent',
+            borderColor: '#cbd5e1'
         },
-        typography: 'system', radius: 'soft', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'soft',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -179,10 +303,19 @@ const THEMES = {
         tags: ['light', 'minimalist'],
         layout: 'classic',
         palette: {
-            accent: '#4f46e5', onAccent: '#ffffff', pageBg: '#f8fafc', contentBg: '#ffffff',
-            text: '#0f172a', textWeak: '#64748b', headerBg: 'transparent', borderColor: '#e2e8f0'
+            accent: '#4f46e5',
+            onAccent: '#ffffff',
+            pageBg: '#f8fafc',
+            contentBg: '#ffffff',
+            text: '#0f172a',
+            textWeak: '#64748b',
+            headerBg: 'transparent',
+            borderColor: '#e2e8f0'
         },
-        typography: 'system', radius: 'md', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'md',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: false, texture: null, mesh: null }
     },
 
@@ -192,11 +325,26 @@ const THEMES = {
         tags: ['dark', 'stepped', 'minimalist'],
         layout: 'stepped',
         palette: {
-            accent: '#10b981', onAccent: '#111827', pageBg: '#111827', contentBg: '#1f2937',
-            text: '#f9fafc', textWeak: '#9ca3af', headerBg: 'transparent', borderColor: '#374151'
+            accent: '#10b981',
+            onAccent: '#111827',
+            pageBg: '#111827',
+            contentBg: '#1f2937',
+            text: '#f9fafc',
+            textWeak: '#9ca3af',
+            headerBg: 'transparent',
+            borderColor: '#374151'
         },
-        typography: 'system', radius: 'soft', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'soft',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     retroStepper: {
@@ -204,11 +352,21 @@ const THEMES = {
         tags: ['dark', 'stepped', 'creative'],
         layout: 'stepped',
         palette: {
-            accent: '#f97316', onAccent: '#0c0703', pageBg: '#0c0703', contentBg: '#1a0e05',
-            text: '#fb923c', textWeak: '#c2410c', headerBg: 'transparent', borderColor: '#ea580c'
+            accent: '#f97316',
+            onAccent: '#0c0703',
+            pageBg: '#0c0703',
+            contentBg: '#1a0e05',
+            text: '#fb923c',
+            textWeak: '#c2410c',
+            headerBg: 'transparent',
+            borderColor: '#ea580c'
         },
-        typography: 'system', radius: 'sharp', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'none', glass: false, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'sharp',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: { shadow: 'none', glass: false, texture: null, mesh: null },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     snowStepper: {
@@ -216,10 +374,19 @@ const THEMES = {
         tags: ['light', 'stepped', 'minimalist'],
         layout: 'stepped',
         palette: {
-            accent: '#3b82f6', onAccent: '#ffffff', pageBg: '#f0f4f8', contentBg: '#ffffff',
-            text: '#1e293b', textWeak: '#64748b', headerBg: 'transparent', borderColor: '#cbd5e1'
+            accent: '#3b82f6',
+            onAccent: '#ffffff',
+            pageBg: '#f0f4f8',
+            contentBg: '#ffffff',
+            text: '#1e293b',
+            textWeak: '#64748b',
+            headerBg: 'transparent',
+            borderColor: '#cbd5e1'
         },
-        typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'lg',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -229,12 +396,22 @@ const THEMES = {
         tags: ['light', 'split', 'creative', 'bgimage'],
         layout: 'split',
         palette: {
-            accent: '#d97706', onAccent: '#ffffff', pageBg: '#fafaf9', contentBg: '#ffffff',
-            text: '#1c1917', textWeak: '#78716c',
-            headerBg: "url('/resource/formThemeAssets/marble.jpg') center/cover no-repeat",
-            headerText: '#1c1917', headerTextWeak: '#78716c', borderColor: '#e7e5e4'
+            accent: '#d97706',
+            onAccent: '#ffffff',
+            pageBg: '#fafaf9',
+            contentBg: '#ffffff',
+            text: '#1c1917',
+            textWeak: '#78716c',
+            headerBg:
+                "url('/resource/formThemeAssets/marble.jpg') center/cover no-repeat",
+            headerText: '#1c1917',
+            headerTextWeak: '#78716c',
+            borderColor: '#e7e5e4'
         },
-        typography: 'system', radius: 'xs', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'xs',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: false, texture: null, mesh: null }
     },
 
@@ -243,13 +420,29 @@ const THEMES = {
         tags: ['dark', 'split', 'creative', 'bgimage'],
         layout: 'split',
         palette: {
-            accent: '#ec4899', onAccent: '#ffffff', pageBg: '#09090b', contentBg: '#18181b',
-            text: '#fafafa', textWeak: '#a1a1aa',
-            headerBg: "url('/resource/formThemeAssets/tech.jpg') center/cover no-repeat",
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.7)', borderColor: '#27272a'
+            accent: '#ec4899',
+            onAccent: '#ffffff',
+            pageBg: '#09090b',
+            contentBg: '#18181b',
+            text: '#fafafa',
+            textWeak: '#a1a1aa',
+            headerBg:
+                "url('/resource/formThemeAssets/tech.jpg') center/cover no-repeat",
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.7)',
+            borderColor: '#27272a'
         },
-        typography: 'system', radius: 'xs', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'xs',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     claySplit: {
@@ -257,12 +450,22 @@ const THEMES = {
         tags: ['light', 'split', 'editorial', 'bgimage'],
         layout: 'split',
         palette: {
-            accent: '#c2410c', onAccent: '#ffffff', pageBg: '#fdfbf7', contentBg: '#ffffff',
-            text: '#292524', textWeak: '#78716c',
-            headerBg: "url('/resource/formThemeAssets/desert.jpg') center/cover no-repeat",
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.85)', borderColor: '#e7d5c7'
+            accent: '#c2410c',
+            onAccent: '#ffffff',
+            pageBg: '#fdfbf7',
+            contentBg: '#ffffff',
+            text: '#292524',
+            textWeak: '#78716c',
+            headerBg:
+                "url('/resource/formThemeAssets/desert.jpg') center/cover no-repeat",
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.85)',
+            borderColor: '#e7d5c7'
         },
-        typography: 'system', radius: 'soft', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'soft',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null }
     },
 
@@ -271,12 +474,22 @@ const THEMES = {
         tags: ['light', 'split', 'minimalist', 'bgimage'],
         layout: 'split',
         palette: {
-            accent: '#15803d', onAccent: '#ffffff', pageBg: '#f4f7f5', contentBg: '#ffffff',
-            text: '#1e293b', textWeak: '#64748b',
-            headerBg: "url('/resource/formThemeAssets/forest.jpg') center/cover no-repeat",
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.85)', borderColor: '#e2e8f0'
+            accent: '#15803d',
+            onAccent: '#ffffff',
+            pageBg: '#f4f7f5',
+            contentBg: '#ffffff',
+            text: '#1e293b',
+            textWeak: '#64748b',
+            headerBg:
+                "url('/resource/formThemeAssets/forest.jpg') center/cover no-repeat",
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.85)',
+            borderColor: '#e2e8f0'
         },
-        typography: 'system', radius: 'md', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'md',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: false, texture: null, mesh: null }
     },
 
@@ -285,13 +498,23 @@ const THEMES = {
         tags: ['dark', 'split', 'creative'],
         layout: 'split',
         palette: {
-            accent: '#2dd4bf', onAccent: '#090d16', pageBg: '#090d16', contentBg: 'rgba(255, 255, 255, 0.08)',
-            text: '#f8fafc', textWeak: '#a1a1aa',
+            accent: '#2dd4bf',
+            onAccent: '#090d16',
+            pageBg: '#090d16',
+            contentBg: 'rgba(255, 255, 255, 0.08)',
+            text: '#f8fafc',
+            textWeak: '#a1a1aa',
             headerBg: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.8)', borderColor: 'rgba(255, 255, 255, 0.15)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.15)'
         },
-        typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
-        effects: { shadow: 'floating', glass: true, texture: null, mesh: null }
+        typography: 'system',
+        radius: 'lg',
+        border: 'hairline',
+        density: 'comfortable',
+        effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     // ---- Background-image showcase (page image + frosted glass) --------------
@@ -300,14 +523,28 @@ const THEMES = {
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#f97316', onAccent: '#ffffff', pageBg: '#e8a87c', contentBg: 'rgba(255, 255, 255, 0.78)',
-            text: '#27272a', textWeak: '#52525b',
+            accent: '#f97316',
+            onAccent: '#ffffff',
+            pageBg: '#e8a87c',
+            contentBg: 'rgba(255, 255, 255, 0.78)',
+            text: '#27272a',
+            textWeak: '#52525b',
             headerBg: 'linear-gradient(135deg, #f97316 0%, #facc15 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.8)', borderColor: 'rgba(255, 255, 255, 0.3)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.3)'
         },
-        typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'lg',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/sunset.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/sunset.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     forestMist: {
@@ -315,14 +552,28 @@ const THEMES = {
         tags: ['light', 'editorial', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#15803d', onAccent: '#ffffff', pageBg: '#8ba99b', contentBg: 'rgba(255, 255, 255, 0.85)',
-            text: '#1e293b', textWeak: '#475569',
+            accent: '#15803d',
+            onAccent: '#ffffff',
+            pageBg: '#8ba99b',
+            contentBg: 'rgba(255, 255, 255, 0.85)',
+            text: '#1e293b',
+            textWeak: '#475569',
             headerBg: 'linear-gradient(to right, #052e16 0%, #15803d 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.8)', borderColor: 'rgba(255, 255, 255, 0.3)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.3)'
         },
-        typography: 'system', radius: 'md', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'md',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/forest.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/forest.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     marbleLuxury: {
@@ -330,14 +581,29 @@ const THEMES = {
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#18181b', onAccent: '#ffffff', pageBg: '#e8e6e3', contentBg: '#ffffff',
-            text: '#18181b', textWeak: '#71717a',
-            headerBg: "url('/resource/formThemeAssets/wood.jpg') center/cover no-repeat",
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.9)', borderColor: '#e4e4e7'
+            accent: '#18181b',
+            onAccent: '#ffffff',
+            pageBg: '#e8e6e3',
+            contentBg: '#ffffff',
+            text: '#18181b',
+            textWeak: '#71717a',
+            headerBg:
+                "url('/resource/formThemeAssets/wood.jpg') center/cover no-repeat",
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.9)',
+            borderColor: '#e4e4e7'
         },
-        typography: 'system', radius: 'xs', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'xs',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: false, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/marble.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/marble.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     carbonMatrix: {
@@ -345,14 +611,29 @@ const THEMES = {
         tags: ['dark', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#22c55e', onAccent: '#0f172a', pageBg: '#0a0f18', contentBg: 'rgba(15, 23, 42, 0.88)',
-            text: '#f8fafc', textWeak: '#94a3b8',
+            accent: '#22c55e',
+            onAccent: '#0f172a',
+            pageBg: '#0a0f18',
+            contentBg: 'rgba(15, 23, 42, 0.88)',
+            text: '#f8fafc',
+            textWeak: '#94a3b8',
             headerBg: 'linear-gradient(to right, #090d16 0%, #0f172a 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.7)', borderColor: 'rgba(255, 255, 255, 0.15)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.7)',
+            borderColor: 'rgba(255, 255, 255, 0.15)'
         },
-        typography: 'system', radius: 'xs', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'xs',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/tech.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/tech.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     oceanBreeze: {
@@ -360,14 +641,28 @@ const THEMES = {
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#06b6d4', onAccent: '#ffffff', pageBg: '#7ec8d8', contentBg: 'rgba(255, 255, 255, 0.72)',
-            text: '#0e7490', textWeak: '#4b5563',
+            accent: '#06b6d4',
+            onAccent: '#ffffff',
+            pageBg: '#7ec8d8',
+            contentBg: 'rgba(255, 255, 255, 0.72)',
+            text: '#0e7490',
+            textWeak: '#4b5563',
             headerBg: 'linear-gradient(135deg, #0891b2 0%, #0d9488 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.8)', borderColor: 'rgba(255, 255, 255, 0.35)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.35)'
         },
-        typography: 'system', radius: 'xl', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'xl',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/ocean.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/ocean.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     cosmicVortex: {
@@ -375,14 +670,29 @@ const THEMES = {
         tags: ['dark', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#a855f7', onAccent: '#ffffff', pageBg: '#1a0f2e', contentBg: 'rgba(15, 10, 30, 0.8)',
-            text: '#f3e8ff', textWeak: '#c084fc',
+            accent: '#a855f7',
+            onAccent: '#ffffff',
+            pageBg: '#1a0f2e',
+            contentBg: 'rgba(15, 10, 30, 0.8)',
+            text: '#f3e8ff',
+            textWeak: '#c084fc',
             headerBg: 'linear-gradient(135deg, #7c3aed 0%, #c084fc 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.7)', borderColor: 'rgba(255, 255, 255, 0.15)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.7)',
+            borderColor: 'rgba(255, 255, 255, 0.15)'
         },
-        typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'lg',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/nebula.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/nebula.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     desertOasis: {
@@ -390,14 +700,28 @@ const THEMES = {
         tags: ['light', 'editorial', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#ea580c', onAccent: '#ffffff', pageBg: '#d99b6c', contentBg: 'rgba(253, 251, 247, 0.85)',
-            text: '#3f2b18', textWeak: '#7c5f43',
+            accent: '#ea580c',
+            onAccent: '#ffffff',
+            pageBg: '#d99b6c',
+            contentBg: 'rgba(253, 251, 247, 0.85)',
+            text: '#3f2b18',
+            textWeak: '#7c5f43',
             headerBg: 'linear-gradient(to right, #ea580c 0%, #c2410c 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.8)', borderColor: 'rgba(255, 255, 255, 0.25)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.25)'
         },
-        typography: 'system', radius: 'md', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'md',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/desert.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/desert.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     vintagePaper: {
@@ -405,13 +729,28 @@ const THEMES = {
         tags: ['light', 'minimalist', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#4b5563', onAccent: '#ffffff', pageBg: '#e8e2d5', contentBg: 'rgba(255, 253, 247, 0.95)',
-            text: '#1c1917', textWeak: '#44403c', headerBg: 'transparent',
-            headerText: '#1c1917', headerTextWeak: '#78716c', borderColor: '#78716c'
+            accent: '#4b5563',
+            onAccent: '#ffffff',
+            pageBg: '#e8e2d5',
+            contentBg: 'rgba(255, 253, 247, 0.95)',
+            text: '#1c1917',
+            textWeak: '#44403c',
+            headerBg: 'transparent',
+            headerText: '#1c1917',
+            headerTextWeak: '#78716c',
+            borderColor: '#78716c'
         },
-        typography: 'system', radius: 'sharp', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'sharp',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'soft', glass: false, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/paper.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/paper.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     auroraBorealis: {
@@ -419,14 +758,29 @@ const THEMES = {
         tags: ['dark', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#2dd4bf', onAccent: '#041d1a', pageBg: '#0a1518', contentBg: 'rgba(15, 23, 25, 0.85)',
-            text: '#ccfbf1', textWeak: '#14b8a6',
+            accent: '#2dd4bf',
+            onAccent: '#041d1a',
+            pageBg: '#0a1518',
+            contentBg: 'rgba(15, 23, 25, 0.85)',
+            text: '#ccfbf1',
+            textWeak: '#14b8a6',
             headerBg: 'linear-gradient(to right, #041b18 0%, #155e54 100%)',
-            headerText: '#ffffff', headerTextWeak: 'rgba(255, 255, 255, 0.8)', borderColor: 'rgba(255, 255, 255, 0.15)'
+            headerText: '#ffffff',
+            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.15)'
         },
-        typography: 'system', radius: 'md', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'md',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/aurora.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/aurora.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     silkLuxury: {
@@ -434,14 +788,28 @@ const THEMES = {
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#db2777', onAccent: '#ffffff', pageBg: '#f5d5e0', contentBg: 'rgba(255, 255, 255, 0.85)',
-            text: '#4c0519', textWeak: '#be185d',
+            accent: '#db2777',
+            onAccent: '#ffffff',
+            pageBg: '#f5d5e0',
+            contentBg: 'rgba(255, 255, 255, 0.85)',
+            text: '#4c0519',
+            textWeak: '#be185d',
             headerBg: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%)',
-            headerText: '#4c0519', headerTextWeak: '#9d174d', borderColor: 'rgba(255, 255, 255, 0.4)'
+            headerText: '#4c0519',
+            headerTextWeak: '#9d174d',
+            borderColor: 'rgba(255, 255, 255, 0.4)'
         },
-        typography: 'system', radius: 'lg', border: 'hairline', density: 'comfortable',
+        typography: 'system',
+        radius: 'lg',
+        border: 'hairline',
+        density: 'comfortable',
         effects: { shadow: 'medium', glass: true, texture: null, mesh: null },
-        pageImage: { url: '/resource/formThemeAssets/silk.jpg', fit: 'cover', position: 'center', scrim: 0 }
+        pageImage: {
+            url: '/resource/formThemeAssets/silk.jpg',
+            fit: 'cover',
+            position: 'center',
+            scrim: 0
+        }
     },
 
     // Pixel port of design-explorations/04-glass-event-registration.html
@@ -453,28 +821,52 @@ const THEMES = {
         tags: ['dark', 'creative'],
         layout: 'classic',
         palette: {
-            accent: '#ff2e93', onAccent: '#ffffff', pageBg: '#08060f',
+            accent: '#ff2e93',
+            onAccent: '#ffffff',
+            pageBg: '#08060f',
             contentBg: 'rgba(255, 255, 255, 0.08)',
-            text: '#f3f0ff', textWeak: '#b9b4d6',
-            headerBg: 'transparent', headerText: '#ffffff', headerTextWeak: '#b9b4d6',
-            headerTitleGradient: { angle: 100, stops: ['#ffffff', '#d9ccff 60%', '#16e0c4'] },
+            text: '#f3f0ff',
+            textWeak: '#b9b4d6',
+            headerBg: 'transparent',
+            headerText: '#ffffff',
+            headerTextWeak: '#b9b4d6',
+            headerTitleGradient: {
+                angle: 100,
+                stops: ['#ffffff', '#d9ccff 60%', '#16e0c4']
+            },
             borderColor: 'rgba(255, 255, 255, 0.22)',
             fieldBorderColor: 'rgba(255, 255, 255, 0.22)',
-            submitBg: '#16e0c4', submitText: '#0a0612',
-            submitBgGradient: { type: 'linear', angle: 100, start: '#16e0c4', end: '#7af6e0' },
+            submitBg: '#16e0c4',
+            submitText: '#0a0612',
+            submitBgGradient: {
+                type: 'linear',
+                angle: 100,
+                start: '#16e0c4',
+                end: '#7af6e0'
+            },
             submitGlow: true
         },
         typography: 'geometric',
-        fieldStyle: 'outline', fieldRadius: 'round', labelStyle: 'caps',
-        radius: 'pill', border: 'hairline', density: 'comfortable',
+        fieldStyle: 'outline',
+        fieldRadius: 'round',
+        labelStyle: 'caps',
+        radius: 'pill',
+        border: 'hairline',
+        density: 'comfortable',
         pageRadius: 'xl',
         effects: {
-            shadow: 'deep', glass: 26,
-            texture: 'grain', textureIntensity: 'subtle',
-            mesh: 'neon', meshIntensity: 'subtle',
-            meshAnimate: true, meshBlend: 'screen', meshBlur: 60
+            shadow: 'deep',
+            glass: 26,
+            texture: 'grain',
+            textureIntensity: 'subtle',
+            mesh: 'neon',
+            meshIntensity: 'subtle',
+            meshAnimate: true,
+            meshBlend: 'screen',
+            meshBlur: 60
         },
-        fieldStates: { focus: '#ff2e93', error: '#ff5470', required: '#ff2e93' }
+        // error and required nudged lighter (same hues) to clear 4.5 : 1 on the glass panel
+        fieldStates: { focus: '#ff2e93', error: '#ff617b', required: '#ff59a9' }
     }
 };
 
@@ -498,38 +890,134 @@ export function listBuiltinThemes() {
 // (theme cards, the creation flow's live sample form) shares. Matches the
 // theme-comparison.html identities; unknown keys get the generic lockup.
 const BRAND_COPY = {
-    editorialIvory: { title: 'The Gazette', subtitle: 'Subscribe to our weekly print edition.' },
-    neonNights: { title: 'Neon Nights 2026', subtitle: 'An after-hours showcase of light, sound & code.' },
-    nordic: { title: 'Pre-Flight Manifest', subtitle: 'Verify passenger and crew credentials.' },
-    neoBrutalism: { title: 'Creator Application', subtitle: 'Apply for the early access program.' },
-    dracula: { title: 'Central Core Uplink', subtitle: 'Authorize security token to sync.' },
-    terracotta: { title: 'Workshop Registry', subtitle: 'Join our pottery classes in Austin.' },
-    forest: { title: 'Ranger Application', subtitle: 'Register for conservation patrols.' },
-    slate: { title: 'Customs Declaration', subtitle: 'Declare global freight manifests.' },
-    tokyo: { title: 'Node Connection', subtitle: 'Enter credentials for terminal 4-G.' },
-    sandstone: { title: 'Guest Concierge', subtitle: 'Submit preferences for your stay.' },
-    terminal: { title: 'SYSOP Authentication', subtitle: 'INPUT SECURE TOKENS FOR ACCESS.' },
-    lavender: { title: 'Patient Admittance', subtitle: 'Provide medical information.' },
-    execNav: { title: 'Corporate Onboarding', subtitle: 'Complete compliance checklists.' },
-    startupNav: { title: 'API Key Generation', subtitle: 'Generate production credentials.' },
-    mintStepper: { title: 'Developer Setup', subtitle: 'Initialize environment parameters.' },
-    retroStepper: { title: 'Bootloader Wizard', subtitle: 'Mounting virtual system image.' },
-    snowStepper: { title: 'Flight Check-in', subtitle: 'Confirm seat assignments.' },
-    marbleSplit: { title: 'VIP Lounge Sign-in', subtitle: 'Enter the luxury rewards portal.' },
-    cyberSplit: { title: 'Infiltration Gate', subtitle: 'Establishing remote SSH session.' },
-    claySplit: { title: 'Artisan Membership', subtitle: 'Receive special discounts and invites.' },
-    botanicalSplit: { title: 'Forest Preservation', subtitle: 'Join our carbon offsets program.' },
-    auraSplit: { title: 'Artist Portfolio', subtitle: 'Upload your creative submissions.' },
-    sunsetDunes: { title: 'Desert Expedition', subtitle: 'Book a luxury guided safari.' },
-    forestMist: { title: 'Retreat Enrollment', subtitle: 'Escape to our off-grid cabins.' },
-    marbleLuxury: { title: 'Exhibition RSVP', subtitle: 'Reserve private viewing passes.' },
-    carbonMatrix: { title: 'Threat Assessment', subtitle: 'File an infrastructure hazard report.' },
-    oceanBreeze: { title: 'Dive Charter Signup', subtitle: 'Confirm rental and experience level.' },
-    cosmicVortex: { title: 'Telescope Booking', subtitle: 'Reserve time on deep-space optics.' },
-    desertOasis: { title: 'Booking Request', subtitle: 'Check availability for canvas tents.' },
-    vintagePaper: { title: 'Literary Submission', subtitle: 'Send poems or short stories.' },
-    auroraBorealis: { title: 'Expedition Registry', subtitle: 'Register scientific equipment.' },
-    silkLuxury: { title: 'Atelier Booking', subtitle: 'Schedule a custom fitting.' }
+    editorialIvory: {
+        title: 'The Gazette',
+        subtitle: 'Subscribe to our weekly print edition.'
+    },
+    neonNights: {
+        title: 'Neon Nights 2026',
+        subtitle: 'An after-hours showcase of light, sound & code.'
+    },
+    nordic: {
+        title: 'Pre-Flight Manifest',
+        subtitle: 'Verify passenger and crew credentials.'
+    },
+    neoBrutalism: {
+        title: 'Creator Application',
+        subtitle: 'Apply for the early access program.'
+    },
+    dracula: {
+        title: 'Central Core Uplink',
+        subtitle: 'Authorize security token to sync.'
+    },
+    terracotta: {
+        title: 'Workshop Registry',
+        subtitle: 'Join our pottery classes in Austin.'
+    },
+    forest: {
+        title: 'Ranger Application',
+        subtitle: 'Register for conservation patrols.'
+    },
+    slate: {
+        title: 'Customs Declaration',
+        subtitle: 'Declare global freight manifests.'
+    },
+    tokyo: {
+        title: 'Node Connection',
+        subtitle: 'Enter credentials for terminal 4-G.'
+    },
+    sandstone: {
+        title: 'Guest Concierge',
+        subtitle: 'Submit preferences for your stay.'
+    },
+    terminal: {
+        title: 'SYSOP Authentication',
+        subtitle: 'INPUT SECURE TOKENS FOR ACCESS.'
+    },
+    lavender: {
+        title: 'Patient Admittance',
+        subtitle: 'Provide medical information.'
+    },
+    execNav: {
+        title: 'Corporate Onboarding',
+        subtitle: 'Complete compliance checklists.'
+    },
+    startupNav: {
+        title: 'API Key Generation',
+        subtitle: 'Generate production credentials.'
+    },
+    mintStepper: {
+        title: 'Developer Setup',
+        subtitle: 'Initialize environment parameters.'
+    },
+    retroStepper: {
+        title: 'Bootloader Wizard',
+        subtitle: 'Mounting virtual system image.'
+    },
+    snowStepper: {
+        title: 'Flight Check-in',
+        subtitle: 'Confirm seat assignments.'
+    },
+    marbleSplit: {
+        title: 'VIP Lounge Sign-in',
+        subtitle: 'Enter the luxury rewards portal.'
+    },
+    cyberSplit: {
+        title: 'Infiltration Gate',
+        subtitle: 'Establishing remote SSH session.'
+    },
+    claySplit: {
+        title: 'Artisan Membership',
+        subtitle: 'Receive special discounts and invites.'
+    },
+    botanicalSplit: {
+        title: 'Forest Preservation',
+        subtitle: 'Join our carbon offsets program.'
+    },
+    auraSplit: {
+        title: 'Artist Portfolio',
+        subtitle: 'Upload your creative submissions.'
+    },
+    sunsetDunes: {
+        title: 'Desert Expedition',
+        subtitle: 'Book a luxury guided safari.'
+    },
+    forestMist: {
+        title: 'Retreat Enrollment',
+        subtitle: 'Escape to our off-grid cabins.'
+    },
+    marbleLuxury: {
+        title: 'Exhibition RSVP',
+        subtitle: 'Reserve private viewing passes.'
+    },
+    carbonMatrix: {
+        title: 'Threat Assessment',
+        subtitle: 'File an infrastructure hazard report.'
+    },
+    oceanBreeze: {
+        title: 'Dive Charter Signup',
+        subtitle: 'Confirm rental and experience level.'
+    },
+    cosmicVortex: {
+        title: 'Telescope Booking',
+        subtitle: 'Reserve time on deep-space optics.'
+    },
+    desertOasis: {
+        title: 'Booking Request',
+        subtitle: 'Check availability for canvas tents.'
+    },
+    vintagePaper: {
+        title: 'Literary Submission',
+        subtitle: 'Send poems or short stories.'
+    },
+    auroraBorealis: {
+        title: 'Expedition Registry',
+        subtitle: 'Register scientific equipment.'
+    },
+    silkLuxury: {
+        title: 'Atelier Booking',
+        subtitle: 'Schedule a custom fitting.'
+    }
 };
 
 /** Brand personality lockup for a theme key — always returns { title, subtitle }. */

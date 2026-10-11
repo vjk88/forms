@@ -90,6 +90,61 @@
     --slds-c-dropdown-font-size: var(--c-fs-answer);
 }
 
+/* The COLOUR of the same platform-drawn parts. The widgets paint option text,
+   the dropdown's text and arrow, and the help and calendar icons in fixed greys
+   (brand blue in Lightning), so an inherited colour never reaches them and a
+   dark theme gets dark-grey-on-dark controls (cross-host audit 3A, A1 to A4).
+   Found by setting each candidate to red on the real form on all three hosts:
+     option text    Lightning  --slds-g-color-on-surface-2
+                    Studio     --slds-g-color-neutral-base-30
+                    public     --dxp-s-form-element-label-color
+     dropdown text  Studio and public  --slds-g-color-neutral-base-50
+                    (Lightning follows --slds-c-input-text-color, set on :host)
+     dropdown arrow every host  --slds-c-icon-color-foreground-default
+     help, calendar icons, every host  --slds-c-icon-color-foreground
+       + hover and focus, which the platform colours separately (a dark navy
+         that vanishes on a dark theme):
+         Lightning and Studio  --slds-c-button-text-color-hover
+                               (--sds-c-... is the Studio's older spelling)
+         public, help icon only  --dxp-g-neutral-3
+   Text uses the theme text colour. ICONS use --c-icon, which the engine emits
+   only on dark surfaces: the same icons also sit in the platform's fixed-white
+   popups (date picker arrows, the list's check mark), so on a dark theme they
+   need one mid grey that works on the dark field AND on white. On a light theme
+   --c-icon is undefined, the var() below is invalid, and each hook falls back to
+   the platform's own icon colour, which already passes.
+   Hooks sit on the widgets, never on .field: these are global tokens that the
+   open popups inherit too. The theme's weak text colour is NOT used: it is
+   under 3 : 1 on four dark themes. */
+.field lightning-radio-group,
+.field lightning-checkbox-group {
+    --slds-g-color-on-surface-2: var(--c-text);
+    --slds-g-color-neutral-base-30: var(--c-text);
+    --dxp-s-form-element-label-color: var(--c-text);
+}
+
+.field lightning-combobox {
+    --slds-g-color-neutral-base-50: var(--c-text);
+    --slds-c-icon-color-foreground-default: var(--c-icon);
+}
+
+/* A disabled dropdown keeps the platform's light-grey box in every theme, so
+   light text would vanish on it: give it a dark ink again. */
+.field-readonly lightning-combobox {
+    --slds-g-color-neutral-base-50: #6b6b6b;
+}
+
+.field lightning-input,
+.field-label-row lightning-helptext {
+    --slds-c-icon-color-foreground: var(--c-icon);
+    --slds-c-button-text-color-hover: var(--c-icon);
+    --sds-c-button-text-color-hover: var(--c-icon);
+}
+
+.field-label-row lightning-helptext {
+    --dxp-g-neutral-3: var(--c-icon);
+}
+
 /* Label text + (perceivable) helptext, side by side. */
 .field-label-row {
     display: flex;
@@ -122,10 +177,6 @@
     color: var(--c-field-required);
     text-decoration: none;
     font-weight: 700;
-}
-
-.field-label-row lightning-helptext {
-    --slds-c-icon-color-foreground-default: var(--c-text-weak);
 }
 
 /* labelStyle (catalog §1): default | uppercase | muted */
