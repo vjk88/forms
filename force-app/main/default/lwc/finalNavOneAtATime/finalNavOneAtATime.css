@@ -16,7 +16,7 @@
    layout uses, so the progress, the text, the answers and the buttons share one
    edge (the sections themselves are open, with no padding of their own). */
 .mode-panel {
-    padding-inline: var(--c-section-pad);
+    padding-inline: min(var(--c-section-pad), var(--c-pad-cap, 9999px));
 }
 
 .progress {

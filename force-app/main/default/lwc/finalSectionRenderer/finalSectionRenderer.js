@@ -22,11 +22,18 @@ const KNOWN_STYLES = ['plain', 'card', 'boxed'];
 /** Elements that always span the full grid regardless of width. */
 const FULL_WIDTH_TYPES = new Set(['divider', 'spacer']);
 
+// The Padding choice is written as an INLINE style, which outranks every
+// stylesheet rule, so the narrow-form cap (--c-pad-cap: 12px on a phone, unset
+// everywhere else) has to sit inside the value. `none` stays 0: a cap only
+// ever shrinks a padding.
+const PAD_CAP = 'var(--c-pad-cap, 9999px)';
+const capped = (size) => `min(${size}, ${PAD_CAP})`;
+
 const PAD_SCALE = {
     none: '0',
-    sm: 'var(--c-space-3)',
-    md: 'var(--c-section-pad)',
-    lg: 'var(--c-space-6)'
+    sm: capped('var(--c-space-3)'),
+    md: capped('var(--c-section-pad)'),
+    lg: capped('var(--c-space-6)')
 };
 
 export default class FinalSectionRenderer extends LightningElement {

@@ -108,11 +108,14 @@
     }
 }
 
+/* All three looks cap their padding with --c-pad-cap: the page frame sets it
+   (12px) only on a narrow form, so everywhere else the 9999px fallback can never
+   win and the padding is exactly what it was. */
 .style-plain {
     background: var(--c-section-bg, transparent);
     border: var(--c-section-border, none);
     box-shadow: var(--c-section-shadow, none);
-    padding: var(--c-section-pad);
+    padding: min(var(--c-section-pad), var(--c-pad-cap, 9999px));
 }
 
 .style-card {
@@ -125,7 +128,7 @@
         1px solid color-mix(in srgb, var(--c-text) 12%, transparent)
     );
     box-shadow: var(--c-section-shadow, 0 1px 2px rgba(15, 23, 42, 0.05));
-    padding: var(--c-section-pad);
+    padding: min(var(--c-section-pad), var(--c-pad-cap, 9999px));
 }
 
 .style-boxed {
@@ -135,7 +138,7 @@
     );
     border: var(--c-section-border, none);
     box-shadow: var(--c-section-shadow, none);
-    padding: var(--c-section-pad);
+    padding: min(var(--c-section-pad), var(--c-pad-cap, 9999px));
 }
 
 .sec-head {
