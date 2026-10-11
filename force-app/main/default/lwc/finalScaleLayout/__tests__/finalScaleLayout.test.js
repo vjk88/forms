@@ -377,3 +377,114 @@ describe('scaleRowPlan: squeeze the gaps a little before giving up on one row', 
         }
     });
 });
+
+describe('applyScaleRowLayout in the conversational look: the standard size is tried and measured', () => {
+    // The conversational look makes scale buttons 6px bigger (50px). Eleven of them
+    // need 630px at an 8px gap, and a One at a time column is 560px, so the 0-10
+    // question wrapped on a wide screen. One row matters more than the extra 6px, so
+    // a row that still has to wrap tries the standard size (the row's own
+    // --c-q-control-h, pointed back at the density's control height) and keeps it
+    // only if the buttons REALLY got smaller and then fit. Some do not follow that
+    // size at all (the rating's stars), and counting on them shrinking left a lone
+    // star in a sweep over widths.
+    const real = window.getComputedStyle.bind(window);
+    let field;
+    let row;
+    let column;
+
+    /** `count` buttons; `follows` says whether they follow --c-q-control-h (chips) or not (stars). */
+    const mount = (count, follows) => {
+        field = document.createElement('div');
+        field.className = 'field';
+        const group = document.createElement('div');
+        row = document.createElement('div');
+        row.className = 'scale-row';
+        group.appendChild(row);
+        field.appendChild(group);
+        for (let i = 0; i < count; i++) {
+            row.appendChild(document.createElement('button'));
+        }
+        document.body.appendChild(field);
+        window.getComputedStyle = (node) => {
+            if (node === field) {
+                return {
+                    width: `${column}px`,
+                    boxSizing: 'content-box',
+                    paddingLeft: '0px',
+                    paddingRight: '0px'
+                };
+            }
+            if (node === row) {
+                return {
+                    columnGap:
+                        row.style.getPropertyValue('--scale-row-gap') || '8px'
+                };
+            }
+            if (node.parentNode === row) {
+                const standard = row.style.getPropertyValue('--c-q-control-h');
+                const width = follows && !standard ? 50 : 44;
+                return { width: `${width}px` };
+            }
+            return real(node);
+        };
+    };
+
+    afterEach(() => {
+        window.getComputedStyle = real;
+        document.body.removeChild(field);
+    });
+
+    it('keeps one row at the standard size, with the gaps squeezed if need be, and lets go when the column grows', () => {
+        column = 560;
+        mount(11, true);
+        applyScaleRowLayout(field);
+        expect(row.style.getPropertyValue('--c-q-control-h')).toBe(
+            'var(--c-control-h, 44px)'
+        );
+        // eleven 44px buttons: (560 - 484 - 1) / 10
+        expect(row.style.getPropertyValue('--scale-row-gap')).toBe('7.5px');
+        expect(row.style.getPropertyValue('--scale-row-max')).toBe('');
+        // a second pass measures the nominal 50px buttons again, not its own 44px
+        applyScaleRowLayout(field);
+        expect(row.style.getPropertyValue('--c-q-control-h')).toBe(
+            'var(--c-control-h, 44px)'
+        );
+        expect(row.style.getPropertyValue('--scale-row-gap')).toBe('7.5px');
+        // the column grows to hold the big buttons: everything is let go
+        column = 700;
+        applyScaleRowLayout(field);
+        expect(row.style.getPropertyValue('--c-q-control-h')).toBe('');
+        expect(row.style.getPropertyValue('--scale-row-gap')).toBe('');
+        expect(row.style.getPropertyValue('--scale-row-max')).toBe('');
+    });
+
+    it('squeezes the gaps first and only shrinks the buttons when that is not enough', () => {
+        // eleven 50px buttons with 6.9px gaps fit 620px on their own
+        column = 620;
+        mount(11, true);
+        applyScaleRowLayout(field);
+        expect(row.style.getPropertyValue('--c-q-control-h')).toBe('');
+        expect(row.style.getPropertyValue('--scale-row-gap')).toBe('6.9px');
+    });
+
+    it('does not count on buttons that ignore the conversational size (the rating stars)', () => {
+        // ten stars, 44px either way: 10 * 44 + 9 * 6 = 494 > 436. Shrinking changes
+        // nothing, so the row wraps into balanced rows instead of leaving a lone star.
+        column = 436;
+        mount(10, false);
+        applyScaleRowLayout(field);
+        expect(row.style.getPropertyValue('--c-q-control-h')).toBe('');
+        expect(row.style.getPropertyValue('--scale-row-gap')).toBe('');
+        // five per row: 5 * 44 + 4 * 8 + 2
+        expect(row.style.getPropertyValue('--scale-row-max')).toBe('254px');
+    });
+
+    it('wraps when even the standard size does not fit (and keeps the big buttons)', () => {
+        column = 300;
+        mount(11, true);
+        applyScaleRowLayout(field);
+        expect(row.style.getPropertyValue('--c-q-control-h')).toBe('');
+        expect(row.style.getPropertyValue('--scale-row-gap')).toBe('');
+        expect(row.style.getPropertyValue('--scale-row-max')).not.toBe('');
+    });
+});

@@ -15,11 +15,16 @@
  * Before giving up on one row it squeezes the gaps a little (never below 6px, or
  * the density's own gap if that is smaller): eleven comfortable buttons need 564px
  * with 8px gaps, and a One at a time column is 560px, so 4px short used to mean
- * 6 + 5 on a wide screen.
+ * 6 + 5 on a wide screen. In the conversational look, whose buttons are 6px bigger
+ * (50px), it then shrinks them back to the standard size: eleven of them need
+ * 630px, which no One at a time column offers, and one row matters more than 6px.
+ * That step is tried and MEASURED, never assumed: the rating's stars do not follow
+ * the conversational size, so a plan that counted on them shrinking would leave a
+ * lone star.
  *
  * The cap is written as --scale-row-max on the row (finalElementRenderer.css
- * turns it into max-width) and a squeezed gap as --scale-row-gap. No cap = the
- * property is removed = max-width: none.
+ * turns it into max-width), a squeezed gap as --scale-row-gap and the shrink as
+ * --c-q-control-h. No cap = the property is removed = max-width: none.
  */
 
 /** A hair of room so a button never wraps for want of a sub-pixel. A button is
@@ -97,12 +102,13 @@ export function scaleRowMax(widths, available, gap) {
  * @returns {{max: number|null, gap: number|null}} at most one of them is set
  */
 export function scaleRowPlan(widths, available, gap) {
+    const none = { max: null, gap: null };
     const count = widths.length;
     if (!count || !(available > 0) || widths.some((w) => !(w > 0))) {
-        return { max: null, gap: null };
+        return none;
     }
     if (rowsNeeded(widths, available, gap) <= 1) {
-        return { max: null, gap: null };
+        return none;
     }
     if (count > 1) {
         const floor = Math.min(gap, MIN_SQUEEZED_GAP);
@@ -152,13 +158,38 @@ export function applyScaleRowLayout(field) {
     if (!row) {
         return;
     }
-    // measure the density's gap, not a squeezed one written on an earlier pass
+    // measure the row as the density draws it: its gap and its buttons, not what
+    // an earlier pass wrote
     row.style.removeProperty('--scale-row-gap');
-    const widths = Array.from(row.children).map((button) =>
-        px(window.getComputedStyle(button).width)
-    );
-    const gap = px(window.getComputedStyle(row).columnGap) || 0;
-    const plan = scaleRowPlan(widths, contentWidth(field), gap);
+    row.style.removeProperty('--c-q-control-h');
+    const available = contentWidth(field);
+    const measure = () => ({
+        widths: Array.from(row.children).map((button) =>
+            px(window.getComputedStyle(button).width)
+        ),
+        gap: px(window.getComputedStyle(row).columnGap) || 0
+    });
+    let { widths, gap } = measure();
+    let plan = scaleRowPlan(widths, available, gap);
+    if (plan.max !== null) {
+        // Still has to wrap. The conversational look makes its buttons 6px bigger
+        // (--c-q-control-h); try the standard size and KEEP it only if the buttons
+        // really got smaller and then fit. It is measured, not assumed: some
+        // buttons (the rating's stars) do not follow that size at all.
+        row.style.setProperty('--c-q-control-h', 'var(--c-control-h, 44px)');
+        const smaller = measure();
+        const shrank = smaller.widths.some((w, i) => w < widths[i] - 0.5);
+        const smallerPlan = shrank
+            ? scaleRowPlan(smaller.widths, available, smaller.gap)
+            : plan;
+        if (shrank && smallerPlan.max === null) {
+            plan = smallerPlan;
+            widths = smaller.widths;
+            gap = smaller.gap;
+        } else {
+            row.style.removeProperty('--c-q-control-h');
+        }
+    }
     write(row, '--scale-row-max', plan.max, Math.ceil);
     write(row, '--scale-row-gap', plan.gap, Math.floor);
 }
