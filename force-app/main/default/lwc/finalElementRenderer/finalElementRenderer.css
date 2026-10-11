@@ -521,32 +521,93 @@
     --sds-c-textarea-color-border: var(--c-field-error, #b42318);
 }
 
-/* Radio and checkbox groups have no border of their own (the platform draws
-   only the dots and boxes), so the group gets an outline around its options.
-   Drawn as a block so it wraps the whole list, offset 4px so it clears the
-   options (5px of reach with its 1px stroke, the same stroke as a text box's
-   red border). */
+/* Every control that has no border of its own gets the same 1px red line the
+   text box has, drawn as an outline around the control. ONE list for all of
+   them: the question container already carries `has-errors` while it shows a
+   message, and each control below is a direct child of it (the consent row and
+   the file block are not a `.field`, so they carry `has-errors` themselves).
+     radio and checkbox groups   the platform draws only the dots and boxes
+     chips, cards, likert        .choice-row
+     rating, 0-10, opinion, emoji  .scale-group (the buttons and their end labels)
+     yes / no                    .yn-row
+     image choice                .ic-grid
+     slider                      .slider-wrap
+     matrix                      .mx-table (head and rows share one wrapper)
+     file upload                 the drop button
+     single checkbox, toggle     the lightning-input (.field-checkbox)
+     consent                     the checkbox-and-terms row
+   Offset 4px so the line clears the control (5px of reach with its 1px stroke,
+   the same stroke as a text box's red border). Ranking never fails (its
+   starting order counts as an answer) and the lookup widgets draw their own
+   invalid state, so neither is listed. */
 .has-errors lightning-radio-group,
-.has-errors lightning-checkbox-group {
-    display: block;
+.has-errors lightning-checkbox-group,
+.has-errors > .choice-row,
+.has-errors > .scale-group,
+.has-errors > .yn-row,
+.has-errors > .ic-grid,
+.has-errors > .slider-wrap,
+.has-errors > .mx-table,
+.has-errors > .block-file-frame,
+.has-errors.field-checkbox > lightning-input,
+.block-consent.has-errors {
     outline: 1px solid var(--c-field-error, #b42318);
     outline-offset: 4px;
     border-radius: var(--c-input-radius, var(--c-radius));
 }
 
+/* A group is drawn as a block so the line wraps the whole list. */
+.has-errors lightning-radio-group,
+.has-errors lightning-checkbox-group {
+    display: block;
+}
+
+/* The file drop button is focusable and has its own focus outline; the line
+   above would take that outline over, so the focus ring is restated here. */
+.has-errors > .block-file-frame:focus-visible {
+    outline: 2px solid var(--c-focus-ring, var(--c-accent));
+    outline-offset: 2px;
+}
+
 /* With the label stacked above, there is only 2px (compact) to 4px
-   (comfortable) between the label's box and the options, so a line 5px out
-   ran through the label's lettering (seen 2026-10-11). The group steps down 6px
-   to clear it, and the message steps down by the line's reach plus the usual 4px
-   so it sits 4px under the line, as it does under a text box. A side label has
-   nothing above the group, so it gets no step. */
+   (comfortable) between the label's box and the control, so a line 5px out
+   ran through the label's lettering (seen 2026-10-11). The control steps down
+   6px to clear it. A side label has nothing above the control, and the consent
+   row has no label at all, so neither gets a step. */
 .has-errors:not(.label-left) lightning-radio-group,
-.has-errors:not(.label-left) lightning-checkbox-group {
+.has-errors:not(.label-left) lightning-checkbox-group,
+.has-errors:not(.label-left) > .choice-row,
+.has-errors:not(.label-left) > .scale-group,
+.has-errors:not(.label-left) > .yn-row,
+.has-errors:not(.label-left) > .ic-grid,
+.has-errors:not(.label-left) > .slider-wrap,
+.has-errors:not(.label-left) > .mx-table,
+.has-errors:not(.label-left) > .block-file-frame,
+.has-errors:not(.label-left).field-checkbox > lightning-input {
     margin-top: 6px;
 }
 
+/* A single checkbox or a toggle is a small control in a full-width row: the
+   line hugs the control instead of spanning the field. */
+.has-errors:not(.label-left).field-checkbox > lightning-input {
+    align-self: flex-start;
+}
+
+/* The message steps down by the line's reach plus the usual 4px, so it sits
+   4px under the line, as it does under a text box. A group sits directly
+   before its message (`+`); the others use `~` so an element between them (the
+   chips' "Other" input, the file block's hidden input) does not break it. */
 .has-errors:not(.label-left) lightning-radio-group + .field-errors,
-.has-errors:not(.label-left) lightning-checkbox-group + .field-errors {
+.has-errors:not(.label-left) lightning-checkbox-group + .field-errors,
+.has-errors:not(.label-left) > .choice-row ~ .field-errors,
+.has-errors:not(.label-left) > .scale-group ~ .field-errors,
+.has-errors:not(.label-left) > .yn-row ~ .field-errors,
+.has-errors:not(.label-left) > .ic-grid ~ .field-errors,
+.has-errors:not(.label-left) > .slider-wrap ~ .field-errors,
+.has-errors:not(.label-left) > .mx-table ~ .field-errors,
+.has-errors:not(.label-left) > .block-file-frame ~ .field-errors,
+.has-errors:not(.label-left).field-checkbox > lightning-input ~ .field-errors,
+.block-consent.has-errors + .field-errors {
     margin-top: 9px;
 }
 
@@ -1069,6 +1130,7 @@
 .choice-row,
 .rank-list,
 .ic-grid,
+.mx-table,
 .mx-head,
 .mx-row {
     min-width: 0;

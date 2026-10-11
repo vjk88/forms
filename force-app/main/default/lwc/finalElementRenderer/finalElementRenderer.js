@@ -610,6 +610,15 @@ export default class FinalElementRenderer extends LightningElement {
             : 'block-file-frame';
     }
 
+    /** The file block is not a `.field`, so it carries `has-errors` itself
+     *  while it shows a message (a failed validation OR a rejected file); the
+     *  invalid line is drawn by the same CSS as every other control. */
+    get fileRootClass() {
+        return this.hasErrors || this.fileError
+            ? 'block-file has-errors'
+            : 'block-file';
+    }
+
     handleFileBrowse() {
         const input = this.template.querySelector('.block-file-input');
         if (input) {
@@ -747,6 +756,13 @@ export default class FinalElementRenderer extends LightningElement {
 
     get consentHtml() {
         return this.cfg.html || '';
+    }
+
+    /** The consent row is not a `.field`, so it carries `has-errors` itself
+     *  while its message shows; the invalid line is drawn by the same CSS as
+     *  every other control. */
+    get consentClass() {
+        return this.hasErrors ? 'block-consent has-errors' : 'block-consent';
     }
 
     /**
@@ -1486,6 +1502,12 @@ export default class FinalElementRenderer extends LightningElement {
         }
         if (this.hasErrors) {
             cls += ' has-errors';
+        }
+        // A single checkbox or a toggle is a small control inside a full-width
+        // row, so its invalid line hugs the control instead of spanning the
+        // field (CSS keys off this; a text box shares the same lightning-input).
+        if (this.isToggle || (this.isInput && this.inputType === 'checkbox')) {
+            cls += ' field-checkbox';
         }
         // The platform paints a disabled dropdown on a fixed light-grey box in
         // every theme, so CSS keys its text colour off this (see the colour
