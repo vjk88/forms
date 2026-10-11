@@ -1000,10 +1000,13 @@ export default class FinalElementRenderer extends LightningElement {
 
     /** The 0-10 question lays out differently from the rest of the scale family
      *  (centered, balanced rows, end labels above the 0 and below the 10), so
-     *  its group carries a class of its own. Rating, opinion scale and emoji
-     *  share the markup and keep the plain group. */
+     *  its group carries a class of its own. Every group also carries its size
+     *  (scale-n-5, -7, -10, -11): the CSS ladders pick how many buttons a row
+     *  holds from it, so a long scale wraps into balanced rows. */
     get scaleGroupClass() {
-        return this.isNps ? 'scale-group nps-group' : 'scale-group';
+        const { min, max } = this.scaleBounds;
+        const base = `scale-group scale-n-${max - min + 1}`;
+        return this.isNps ? `${base} nps-group` : base;
     }
 
     get hasEndLabels() {

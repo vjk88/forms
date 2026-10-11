@@ -58,12 +58,12 @@ const rowsFor = (perRow) => {
 
 const GROUP = '.scale-group.nps-group';
 
-/** Every `@container <name> (max-width: X) { .scale-group.nps-group { --nps-n: N } }`. */
+/** Every `@container <name> (max-width: X) { .scale-group.nps-group { --scale-per-row: N } }`. */
 const ladderOf = (name) =>
     [
         ...css.matchAll(
             new RegExp(
-                `@container ${name} \\(max-width:\\s*([\\d.]+)px\\)\\s*\\{\\s*\\.scale-group\\.nps-group\\s*\\{\\s*--nps-n:\\s*(\\d+)\\s*;\\s*\\}\\s*\\}`,
+                `@container ${name} \\(max-width:\\s*([\\d.]+)px\\)\\s*\\{\\s*\\.scale-group\\.nps-group\\s*\\{\\s*--scale-per-row:\\s*(\\d+)\\s*;\\s*\\}\\s*\\}`,
                 'g'
             )
         )
@@ -137,10 +137,12 @@ describe('the 0-10 block is centered, with its labels at the ends', () => {
         expect(body).toMatch(/grid-area\s*:\s*row\s*;/);
         expect(body).toMatch(/justify-content\s*:\s*center\s*;/);
         expect(body).toMatch(/justify-self\s*:\s*center\s*;/);
-        // N buttons plus N - 1 gaps, from the same tokens the buttons use
-        expect(body).toMatch(
-            /max-width\s*:\s*calc\(\s*var\(--nps-n\)\s*\*\s*var\(--c-q-control-h,\s*var\(--c-control-h,\s*44px\)\)\s*\+\s*\(var\(--nps-n\)\s*-\s*1\)\s*\*\s*var\(--c-space-2,\s*6px\)\s*\)/
+        // the cap itself is the shared scale rule (N buttons plus N - 1 gaps, from
+        // the same tokens the buttons use; phoneControls.test.js pins the formula)
+        expect(bodiesFor('.scale-group .scale-row')).toMatch(
+            /max-width\s*:\s*calc\(\s*var\(--scale-per-row\)/
         );
+        expect(body).not.toMatch(/max-width/);
     });
 });
 
@@ -148,7 +150,7 @@ describe('buttons per row follow the width of the section', () => {
     const ladder = ladderOf('section');
 
     it('one row by default, then 6, 4 and 3 per row as the section narrows', () => {
-        expect(bodiesFor(GROUP)).toMatch(/--nps-n\s*:\s*11\s*;/);
+        expect(bodiesFor(GROUP)).toMatch(/--scale-per-row\s*:\s*11\s*;/);
         expect(ladder.map((l) => l.n)).toEqual([6, 4, 3]);
     });
 

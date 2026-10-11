@@ -312,6 +312,13 @@
         --c-fs-title: 1.25rem;
         --c-fs-thanks: 1.25rem;
         --c-fs-section: 1.125rem;
+        /* Phone-sized controls (stage 3, slice S2). Every control that reads the
+           density height is at least 44px, even at the compact density (44 is the
+           tallest density, so this only ever lifts; a jest guard watches that).
+           Scale buttons sit 4px apart, so five 44px buttons (236px) fit the 238px
+           answer column of a 320px phone. */
+        --c-control-h: 44px;
+        --c-scale-gap: 4px;
     }
 
     .page[data-size-set='section'] {

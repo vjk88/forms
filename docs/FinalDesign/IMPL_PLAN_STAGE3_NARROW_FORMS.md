@@ -1,6 +1,6 @@
 # Build plan: stage 3, forms on phones (narrow forms)
 
-Status: building (2026-10-11). Stages 1 and 2 and the 0-10 layout are merged (#374 to #378). The owner said **"Go"** to the plan below, which takes my recommended answer on each open decision of the audit (section 9 of `qa/CROSS_HOST_RENDER_AUDIT_2026-10-10.md`):
+Status: building (2026-10-11). Stages 1 and 2 and the 0-10 layout are merged (#374 to #378). **S0 (probe) is done**, **S1 (padding budget) and S2 (our own controls) are built, deployed and measured**; S3 waits for the owner's decision 6; S4 is next. See "What was built" at the end for where the build differs from the plan as first written. The owner said **"Go"** to the plan below, which takes my recommended answer on each open decision of the audit (section 9 of `qa/CROSS_HOST_RENDER_AUDIT_2026-10-10.md`):
 
 - **Decision 3 (width): yes.** The answer column must be at least 236 px on a 320 px public-site screen, in both densities, with sections as cards and with sections open. Starting budget per side on a narrow form: page padding 4, the form's card 1 + 8, a section's card 1 + 12.
 - **Decision 4 (authored section padding): cap it.** On a narrow form an authored section padding can never exceed the budget (it can still be smaller).
@@ -42,6 +42,17 @@ Answer column at least 236 px at 320 px; no lone button in any scale at any widt
 - Header and progress strips line up with the sections by design; S1 checks the alignment, it does not assume it.
 - Lightning is 26 px narrower than the public site (its own page margin): the budget is a target on the public site, a measured result in Lightning.
 
-## 5. Not in this stage
+## 5. What was built (and where it differs from the plan above)
+
+**S0, the probe** (`qa/STAGE3_PLATFORM_CONTROLS_PROBE_2026-10-11.md`): no styling hook enlarges the platform's controls the same way on all three hosts. Text box, dropdown and date box grow on the public site (`--dxp-s-form-element-spacing-block-*`) and Studio (`--lwc-heightInput`) but not in Lightning; radio and checkbox rows, the single checkbox have no height hook anywhere; help and calendar buttons have hooks on two hosts. So decision 6 is the owner's (leave as is, recommended; grow where a host allows; draw the choice controls ourselves; cards on phones).
+
+**S1, the padding budget** (branch `feat/stage3-narrow-padding`): as planned. Measured on the deployed code: the answer column of the public site went from 190 to **238** px at 320 (both densities), 260 to 308 at 390; Lightning 234 to 282 at 390; the section padding at the compact density is now 12 (was 14).
+
+**S2, our own controls** (branch `feat/stage3-own-controls`, stacked on S1). Three differences from the plan as first written:
+1. *The 44 px floor is one line in the page frame, not a `max()` on every control.* On a narrow form `.page` sets `--c-control-h: 44px` and `--c-scale-gap: 4px`. A self-referencing `max(var(--c-control-h), 44px)` is a cycle in CSS, so the alternative was ten edits across five stylesheets; instead a jest guard asserts that no density is taller than 44 px (there are two: 36 and 44), so the line can only ever lift. Every control that reads the density height (scale chips and stars, chips, cards, yes/no, matrix cells, Next, Back, Submit, the One at a time button) follows with no further edit. Controls with a size of their own get narrow-form rules in `finalElementRenderer.css`: ranking arrows 34 to 44, the slider's touch target 30 to 44, the emoji faces (font 2x to 1.75x answer size, no side padding) so a face is 44 wide, not 60.
+2. *The balanced-row mechanism of the 0-10 question is generalised to every scale.* Five-point scales fit one row at 238 px only with standard buttons; the conversational look (50 px buttons) would still have ended in a lone fifth button (4 + 1). So `--nps-n` became `--scale-per-row`, the cap moved to the shared `.scale-group .scale-row` rule (with deliberately no fallback, so a scale without a ladder keeps `max-width: none` and a wide form computes exactly as before), every group carries `scale-n-5/7/10/11`, and a ladder per size splits a long scale into two balanced rows below the width one row needs: 5 as 3 + 2, 7 as 4 + 3, 10 as 5 + 5, for both the standard (44 px) and conversational (50 px) buttons.
+3. *No separate narrow-form variant of the 0-10 ladder.* The existing thresholds assume an 8 px gap, which needs more width than the phone's 4 px, so they are conservative (never ask for more than fits). The only cost is a 0-10 row that could be 6 + 5 from 284 px showing 4 + 4 + 3 up to 303 px.
+
+## 6. Not in this stage
 
 The layout-cleanliness proposal S1 (sections open by default) stays its own decision; the Studio's 320 px device frame (stage 5, optional); drawing radios, checkboxes or the dropdown ourselves (parked).
