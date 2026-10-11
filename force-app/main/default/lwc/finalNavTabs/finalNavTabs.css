@@ -155,6 +155,11 @@
     .align-full .tab {
         flex: 0 0 auto;
     }
+
+    /* Phone-sized tap target (stage 3): the header was 42px tall. */
+    .tab {
+        min-height: 44px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
