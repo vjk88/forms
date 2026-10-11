@@ -143,3 +143,56 @@ describe('narrow form: the padding budget', () => {
         expect(column(320)).toBeGreaterThanOrEqual(FIVE_BUTTONS);
     });
 });
+
+describe('split hero: it owns its padding, so it follows the same budget on a phone', () => {
+    // Measured on the Lightning viewer at 390px (334px form): the split hero's
+    // answer column was 194px, the only layout under the 236px a five-button scale
+    // needs. Its form column, its floating card and its sections each took their
+    // own side padding (16 + 25 + 21).
+    const SPLIT = '@container split (max-width: 540px)';
+    const split = read('finalNavSplitHero');
+    const narrow = blocksOf(split, SPLIT).join('\n');
+    const wide = blocksOf(split, SPLIT).reduce(
+        (text, body) => text.replace(body, ''),
+        split
+    );
+
+    it('the form column keeps 4px a side', () => {
+        expect(ruleBody(narrow, '.mode-bleed .form')).toContain(
+            'padding: var(--c-space-5) 4px;'
+        );
+    });
+
+    it("the form's card takes 8px a side at most and hands its sections the 12px cap", () => {
+        const card = ruleBody(narrow, '.mode-bleed .form-card');
+        expect(card).toContain('padding: min(var(--c-space-6), 8px);');
+        expect(card).toContain('--c-pad-cap: 12px;');
+    });
+
+    it('the wide split hero is untouched: no cap, the padding it has today', () => {
+        expect(wide).not.toContain('--c-pad-cap');
+        expect(ruleBody(wide, '.mode-bleed .form-card')).toContain(
+            'padding: var(--c-space-6);'
+        );
+        expect(ruleBody(wide, '.mode-bleed .form')).toContain(
+            'padding: var(--c-space-6) var(--c-space-5);'
+        );
+    });
+
+    it('the same 26px a side as every other layout: 4 + (1 + 8) + (1 + 12)', () => {
+        const side = Number(
+            /padding: var\(--c-space-5\) (\d+)px;/.exec(
+                ruleBody(narrow, '.mode-bleed .form')
+            )[1]
+        );
+        const card = Number(
+            /, (\d+)px\)/.exec(ruleBody(narrow, '.mode-bleed .form-card'))[1]
+        );
+        const cap = Number(
+            /--c-pad-cap: (\d+)px;/.exec(
+                ruleBody(narrow, '.mode-bleed .form-card')
+            )[1]
+        );
+        expect(side + 1 + card + 1 + cap).toBe(26);
+    });
+});
