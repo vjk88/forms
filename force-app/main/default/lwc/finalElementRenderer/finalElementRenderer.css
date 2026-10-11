@@ -68,12 +68,15 @@
    taller there and an error message sat 22px under its own box (cross-host
    audit B1, B2). Class-qualified on purpose: a bare tag selector LOSES to the
    site's rule (measured: `lightning-input { margin-bottom: 0 }` left 16px), this
-   one wins without !important and is a no-op where the margin is already 0. */
+   one wins without !important and is a no-op where the margin is already 0.
+   The consent checkbox sits in its own row outside .field (it measured 43px
+   tall on the public site against 27 elsewhere), so it is named too. */
 .field lightning-input,
 .field lightning-textarea,
 .field lightning-combobox,
 .field lightning-radio-group,
-.field lightning-checkbox-group {
+.field lightning-checkbox-group,
+.block-consent lightning-input {
     margin-bottom: 0;
 }
 
@@ -516,19 +519,31 @@
 
 /* Radio and checkbox groups have no border of their own (the platform draws
    only the dots and boxes), so the group gets an outline around its options.
-   Drawn as a block so it wraps the whole list, offset so it clears the options,
-   and the message below gets a little more room so the two never touch. */
+   Drawn as a block so it wraps the whole list, offset 4px so it clears the
+   options (5px of reach with its 1px stroke, the same stroke as a text box's
+   red border). */
 .has-errors lightning-radio-group,
 .has-errors lightning-checkbox-group {
     display: block;
-    outline: 1.5px solid var(--c-field-error, #b42318);
+    outline: 1px solid var(--c-field-error, #b42318);
     outline-offset: 4px;
     border-radius: var(--c-input-radius, var(--c-radius));
 }
 
-.has-errors lightning-radio-group + .field-errors,
-.has-errors lightning-checkbox-group + .field-errors {
-    margin-top: 8px;
+/* With the label stacked above, there is only 2px (compact) to 4px
+   (comfortable) between the label's box and the options, so a line 5px out
+   ran through the label's lettering (seen 2026-10-11). The group steps down 6px
+   to clear it, and the message steps down by the line's reach plus the usual 4px
+   so it sits 4px under the line, as it does under a text box. A side label has
+   nothing above the group, so it gets no step. */
+.has-errors:not(.label-left) lightning-radio-group,
+.has-errors:not(.label-left) lightning-checkbox-group {
+    margin-top: 6px;
+}
+
+.has-errors:not(.label-left) lightning-radio-group + .field-errors,
+.has-errors:not(.label-left) lightning-checkbox-group + .field-errors {
+    margin-top: 9px;
 }
 
 /* ---- survey scale family (S2) — theme tokens ONLY, zero private colors

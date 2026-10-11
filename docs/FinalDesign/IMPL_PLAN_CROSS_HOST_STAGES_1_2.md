@@ -111,7 +111,8 @@ Plain words: on the public site every field built from a platform widget (text b
 
 - **Cause (measured on the public site, 2026-10-11):** the site's stylesheet gives the platform widget wrapper `margin-bottom: 16px`; Lightning and the Studio give 0.
 - **Why a class-qualified selector:** a bare `lightning-input { margin-bottom: 0 }` still left 16 px on the public site (it loses the cascade to the site's rule); `.field lightning-input { margin-bottom: 0 }` wins, with no `!important`. Where the margin is already 0 (Lightning, Studio) the rule changes nothing, so the three hosts end up with the same field pitch (total form height 915.6 px on the test form on each).
-- **The rule:** one list, five widgets (`lightning-input`, `-textarea`, `-combobox`, `-radio-group`, `-checkbox-group`), all under `.field`.
+- **The rule:** one list, five widgets (`lightning-input`, `-textarea`, `-combobox`, `-radio-group`, `-checkbox-group`) under `.field`, plus the consent checkbox (`.block-consent lightning-input`), which sits in its own row outside `.field` and measured 43 px tall on the public site against 27 elsewhere (found when the first deploy was measured; the first version of the rule missed it).
+- **Not covered, on purpose:** the native lookup (`lightning-record-edit-form` and `lightning-input-field`) only renders inside Salesforce, where the margin is already 0.
 
 ### 7.2 Invalid state (audit B4), same file
 
@@ -120,9 +121,11 @@ Plain words: on the public site every field built from a platform widget (text b
 | Text box | red border | unchanged | `--slds-c-input-color-border` (+ the classic `--sds-` spelling) |
 | Dropdown | message only | red border | the same text-box hook (measured on Lightning) |
 | Text area | message only (the old rule set the text-box hook, which the text area never reads) | red border | its own `--slds-c-textarea-color-border` (+ `--sds-`) |
-| Radio group, checkbox group | message only | 1.5 px outline in the error colour around the whole group (`display: block`, offset 4 px, theme corner radius); the message below gets 8 px more room | no platform hook exists, so a plain outline |
+| Radio group, checkbox group | message only | 1 px outline in the error colour (the same stroke as the text box's border) around the whole group (`display: block`, offset 4 px, theme corner radius) | no platform hook exists, so a plain outline |
 
 All four read `var(--c-field-error, #b42318)`, i.e. the stage 1 dark-theme red on dark themes.
+
+**Found by looking at the first deploy (2026-10-11), fixed in the second commit:** the outline reaches 5 px past the options, but the label sits only 2 px (compact density) or 4 px (comfortable) above them (`--c-space-1`), so the line ran straight through the label's lettering ("Radio group" lost the bottoms of its g and p). With a stacked label the group now steps down 6 px (`margin-top`) and the message steps down 9 px (the line's 5 px of reach plus the usual 4 px), so the line clears the label by at least 3 px and the message sits 4 px under the line, as it does under a text box. A side label has nothing above the group, so those two steps are scoped with `:not(.label-left)`. The numbers are tested as arithmetic (the step must cover the reach plus 3 px of clearance at the tightest label gap) rather than hard-coded.
 
 ### 7.3 Tests
 

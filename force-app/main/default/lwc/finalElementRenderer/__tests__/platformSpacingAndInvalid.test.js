@@ -55,6 +55,12 @@ describe('field spacing on platform widgets (B1, B2)', () => {
         }
     });
 
+    it('also zeroes it on the consent checkbox, which sits outside .field (measured 43px tall vs 27 on public)', () => {
+        expect(bodiesFor('.block-consent lightning-input')).toMatch(
+            /margin-bottom\s*:\s*0\s*;/
+        );
+    });
+
     it('never relies on a bare tag selector (it loses to the platform on the public site)', () => {
         for (const widget of WIDGETS) {
             expect(bodiesFor(widget)).not.toMatch(/margin-bottom/);
@@ -87,10 +93,31 @@ describe('invalid border on the text area and the dropdown (B4)', () => {
 });
 
 describe('invalid state of radio and checkbox groups (B4)', () => {
-    const GROUPS = [
-        '.has-errors lightning-radio-group',
-        '.has-errors lightning-checkbox-group'
-    ];
+    const CHOICE_GROUPS = ['lightning-radio-group', 'lightning-checkbox-group'];
+    const GROUPS = CHOICE_GROUPS.map((w) => `.has-errors ${w}`);
+    // Labels stacked above the group: the only case where something sits over it.
+    const STACKED = CHOICE_GROUPS.map(
+        (w) => `.has-errors:not(.label-left) ${w}`
+    );
+
+    /** A px value of one declaration, or null. */
+    const px = (body, prop) => {
+        const m = new RegExp(`(?:^|[\\s;])${prop}\\s*:\\s*(-?[\\d.]+)px`).exec(
+            body
+        );
+        return m ? Number(m[1]) : null;
+    };
+    /** How far the line reaches past the options: its offset plus its stroke. */
+    const reach = (body) =>
+        px(body, 'outline-offset') +
+        Number(/outline\s*:\s*([\d.]+)px/.exec(body)[1]);
+
+    // Space between a label's box and the field below it is --c-space-1: 2px at
+    // compact density, 4px at comfortable (measured 2026-10-11). Take the tighter.
+    const MIN_LABEL_GAP = 2;
+    // Air wanted between the line and the label's box (the lettering's
+    // descenders sit inside that box, so a line touching it cuts the text).
+    const CLEARANCE = 3;
 
     it('gets an outline in the error colour, drawn as a block so it wraps the options', () => {
         for (const selector of GROUPS) {
@@ -102,14 +129,47 @@ describe('invalid state of radio and checkbox groups (B4)', () => {
         }
     });
 
-    it('leaves room between the outline and the message below it', () => {
-        for (const widget of [
-            'lightning-radio-group',
-            'lightning-checkbox-group'
-        ]) {
-            expect(bodiesFor(`.has-errors ${widget} + .field-errors`)).toMatch(
-                /margin-top\s*:\s*\d+px\s*;/
+    it('keeps the line off the label above it (it ran through the lettering at first)', () => {
+        for (const selector of STACKED) {
+            const body = bodiesFor(selector);
+            const step = px(body, 'margin-top');
+            expect(step).not.toBeNull();
+            const lineReach = reach(
+                bodiesFor(selector.replace(':not(.label-left)', ''))
             );
+            expect(MIN_LABEL_GAP + step - lineReach).toBeGreaterThanOrEqual(
+                CLEARANCE
+            );
+        }
+    });
+
+    it('puts the message as far under the line as under a text box', () => {
+        // Under a text box the message sits at the base margin from the border.
+        // The line reaches `reach` below the options, so the message steps down
+        // by that much more.
+        const base = px(bodiesFor('.field-errors'), 'margin-top');
+        for (const widget of CHOICE_GROUPS) {
+            const lineReach = reach(bodiesFor(`.has-errors ${widget}`));
+            const step = px(
+                bodiesFor(
+                    `.has-errors:not(.label-left) ${widget} + .field-errors`
+                ),
+                'margin-top'
+            );
+            expect(step).toBeGreaterThanOrEqual(base + lineReach);
+        }
+    });
+
+    it('adds no vertical step beside a side label (nothing is above the group)', () => {
+        // The step lives only in the :not(.label-left) rules above; the base
+        // rule, which a side-label field also matches, carries none.
+        for (const selector of GROUPS) {
+            expect(bodiesFor(selector)).not.toMatch(/margin-top/);
+        }
+        for (const widget of CHOICE_GROUPS) {
+            expect(
+                bodiesFor(`.has-errors ${widget} + .field-errors`)
+            ).not.toMatch(/margin-top/);
         }
     });
 });
