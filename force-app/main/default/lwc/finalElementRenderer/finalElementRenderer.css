@@ -221,8 +221,12 @@
     margin-bottom: 0;
 }
 
+/* The control takes the width the label column leaves. The dropdown was missing
+   from this list and collapsed to a small stub beside its label (seen
+   2026-10-11, identical on every host). */
 .label-left lightning-input,
-.label-left lightning-textarea {
+.label-left lightning-textarea,
+.label-left lightning-combobox {
     flex: 1;
     min-width: 0;
 }
