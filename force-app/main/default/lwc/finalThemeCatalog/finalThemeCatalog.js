@@ -17,6 +17,18 @@
  */
 import { resolveTokens, ENGINE_VERSION } from 'c/finalThemeEngine';
 
+/**
+ * Error message, required marker and invalid border on the DARK themes. The
+ * engine's default red (#b42318) is 6.5 : 1 on a light panel but only 1.7 to
+ * 2.5 : 1 on these, against 4.5 : 1 (text) and 3 : 1 (border) required. This
+ * lighter red keeps the hue and clears 4.5 : 1 on the lightest dark panel plus
+ * the 8 % text tint a card section adds, and 3 : 1 on every dark field fill.
+ * One value for all ten keeps their errors looking alike; Neon Nights keeps
+ * its own pinks (nudged lighter). Pinned for all 32 themes by
+ * __tests__/stateInkContrast.test.js (cross-host audit A5 to A7).
+ */
+const ERROR_ON_DARK = '#ff8a80';
+
 const THEMES = {
     editorialIvory: {
         name: 'Editorial Ivory',
@@ -102,7 +114,13 @@ const THEMES = {
         radius: 'soft',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     terracotta: {
@@ -186,7 +204,13 @@ const THEMES = {
         radius: 'xs',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     sandstone: {
@@ -228,7 +252,8 @@ const THEMES = {
         radius: 'sharp',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'none', glass: false, texture: null, mesh: null }
+        effects: { shadow: 'none', glass: false, texture: null, mesh: null },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     lavender: {
@@ -313,7 +338,13 @@ const THEMES = {
         radius: 'soft',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     retroStepper: {
@@ -334,7 +365,8 @@ const THEMES = {
         radius: 'sharp',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'none', glass: false, texture: null, mesh: null }
+        effects: { shadow: 'none', glass: false, texture: null, mesh: null },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     snowStepper: {
@@ -404,7 +436,13 @@ const THEMES = {
         radius: 'xs',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'floating', glass: false, texture: null, mesh: null }
+        effects: {
+            shadow: 'floating',
+            glass: false,
+            texture: null,
+            mesh: null
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     claySplit: {
@@ -475,7 +513,8 @@ const THEMES = {
         radius: 'lg',
         border: 'hairline',
         density: 'comfortable',
-        effects: { shadow: 'floating', glass: true, texture: null, mesh: null }
+        effects: { shadow: 'floating', glass: true, texture: null, mesh: null },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     // ---- Background-image showcase (page image + frosted glass) --------------
@@ -593,7 +632,8 @@ const THEMES = {
             fit: 'cover',
             position: 'center',
             scrim: 0
-        }
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     oceanBreeze: {
@@ -651,7 +691,8 @@ const THEMES = {
             fit: 'cover',
             position: 'center',
             scrim: 0
-        }
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     desertOasis: {
@@ -738,7 +779,8 @@ const THEMES = {
             fit: 'cover',
             position: 'center',
             scrim: 0
-        }
+        },
+        fieldStates: { error: ERROR_ON_DARK, required: ERROR_ON_DARK }
     },
 
     silkLuxury: {
@@ -823,7 +865,8 @@ const THEMES = {
             meshBlend: 'screen',
             meshBlur: 60
         },
-        fieldStates: { focus: '#ff2e93', error: '#ff5470', required: '#ff2e93' }
+        // error and required nudged lighter (same hues) to clear 4.5 : 1 on the glass panel
+        fieldStates: { focus: '#ff2e93', error: '#ff617b', required: '#ff59a9' }
     }
 };
 
