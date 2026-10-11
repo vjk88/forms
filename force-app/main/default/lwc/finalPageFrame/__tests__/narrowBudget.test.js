@@ -196,3 +196,26 @@ describe('split hero: it owns its padding, so it follows the same budget on a ph
         expect(side + 1 + card + 1 + cap).toBe(26);
     });
 });
+
+describe('accordion: its panel body took 8px a side more than every other layout', () => {
+    // Found by the all-layouts run of scripts/qa/phone-check.cjs: 222px at 320px,
+    // while every other layout keeps 238px (page 4 + card 1 + 8 + section 1 + 12).
+    // The accordion's panel body adds its own 8px of side padding on top.
+    const HEADER = '@container final-form-viewport (max-width: 540px)';
+    const accordion = read('finalNavAccordion');
+    const narrow = blocksOf(accordion, HEADER).join('\n');
+    const wide = blocksOf(accordion, HEADER).reduce(
+        (text, body) => text.replace(body, ''),
+        accordion
+    );
+
+    it('a narrow form gives the panel body no side padding of its own (the section card inside keeps its 12px)', () => {
+        expect(ruleBody(narrow, '.body')).toContain('padding-inline: 0;');
+    });
+
+    it('a wide form keeps the padding it has today', () => {
+        expect(ruleBody(wide, '.body')).toContain(
+            'padding: var(--c-space-2) var(--c-space-2) var(--c-space-5);'
+        );
+    });
+});

@@ -287,6 +287,24 @@
         height: 1px;
     }
 
+    /* Phone-sized tap targets (stage 3). The marker keeps its size and its look;
+       the button around it grows to 44px and a negative margin gives the room
+       back, so the strip's height and spacing do not change: a 28px numbered
+       marker gets 8px on each side, a 12px dot 16px. The three dot rules are the
+       three ways the strip becomes dots (chosen, measured, narrow). */
+    .step-btn {
+        min-height: 44px;
+        margin-block: -8px;
+    }
+
+    .mode-dots .step-btn,
+    .narrow-dots .step-btn,
+    .fit-collapse.narrow-dots .step-btn {
+        min-width: 44px;
+        justify-content: center;
+        margin: -16px;
+    }
+
     .narrow-bar .step-list {
         display: none;
     }
