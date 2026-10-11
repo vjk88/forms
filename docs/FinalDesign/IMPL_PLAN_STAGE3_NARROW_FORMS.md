@@ -55,6 +55,8 @@ Answer column at least 236 px at 320 px; no lone button in any scale at any widt
 
 **How S2 was verified.** A width sweep over 14 viewport widths (1280 down to 320) for every scale family (rating 5 and 10, opinion scale 5, 7 and 10, emoji, 0-10), standard and conversational, both densities, on the public site, and the same on Lightning and the Studio preview (desktop and mobile frames), asserting two rules at every width: *one row whenever the buttons fit* and *no lone last button*. It found two defects the numbers of the first builds had hidden (the 0-10 four pixels short in a 560 px column; the lone star), both fixed; the final run has zero problems.
 
+**S4, the standing phone-width check** (`scripts/qa/phone-check.cjs`, with `phone-check.md`): the harness's essentials as a committed script: a published public form on the guest site at 320 / 360 / 390 px, both densities, its spec replaced in memory by a kitchen sink (nothing is saved or clicked), asserting no sideways scroll, an answer column of at least 236 px, every scale on one row when it fits / no lone button / centered, and every control of ours at least 44 x 44 px; the platform's controls are listed with their sizes and never fail. `--self-test` (no browser, no org) feeds it nine deliberately bad results and fails unless each is caught. The jest guards for the numbers that matter are the ones that came with S1 and S2 (`narrowBudget`, `phoneControls`, `finalScaleLayout`, `scaleWrap`).
+
 ## 6. Not in this stage
 
 The layout-cleanliness proposal S1 (sections open by default) stays its own decision; the Studio's 320 px device frame (stage 5, optional); drawing radios, checkboxes or the dropdown ourselves (parked).
