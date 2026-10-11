@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+    >Scale rows: measures the buttons, the gap and the column, and caps a row that has to wrap so it splits into the fewest, evenly filled rows (one row whenever everything fits).</description>
+</LightningComponentBundle>

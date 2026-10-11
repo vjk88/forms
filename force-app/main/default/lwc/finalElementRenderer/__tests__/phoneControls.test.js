@@ -8,15 +8,12 @@
  *     fit the 238px answer column of a 320px phone;
  *   - controls with a fixed size of their own (ranking arrows, the slider, the
  *     emoji faces) are 44px too;
- *   - a scale that does not fit on one line wraps into rows that never end in a
- *     lone button (5 as 3 + 2, 7 as 4 + 3, 10 as 5 + 5), by the same
- *     capped-row mechanism as the 0-10 question.
+ *   - every scale (rating, opinion scale, emoji faces, like the 0-10 question)
+ *     is centered: the block in the column, its rows centered, the left label
+ *     above the first button and the right label below the last.
  * Everything is read from the real stylesheets; wide forms are checked to be
- * untouched.
+ * untouched. How a scale wraps is measured, not styled: see finalScaleLayout.
  */
-import { createElement } from 'lwc';
-import FinalElementRenderer from 'c/finalElementRenderer';
-
 const fs = require('fs');
 const path = require('path');
 
@@ -133,128 +130,54 @@ describe('controls with a size of their own are 44px on a narrow form', () => {
     });
 });
 
-describe('every scale row uses the scale gap and a per-row cap', () => {
+describe('every scale row uses the scale gap', () => {
     it('the gap between buttons is --c-scale-gap, falling back to the density gap', () => {
         expect(bodiesFor(css, '.scale-row')).toMatch(
             /gap:\s*var\(--c-scale-gap,\s*var\(--c-space-2,\s*6px\)\);/
         );
     });
-
-    it('the row is capped to N buttons wide (N buttons and N - 1 gaps, from the tokens the buttons use)', () => {
-        expect(bodiesFor(css, '.scale-group .scale-row')).toMatch(
-            /max-width:\s*calc\(\s*var\(--scale-per-row\)\s*\*\s*var\(--c-q-control-h,\s*var\(--c-control-h,\s*44px\)\)\s*\+\s*\(var\(--scale-per-row\)\s*-\s*1\)\s*\*\s*var\(--c-scale-gap,\s*var\(--c-space-2,\s*6px\)\)\s*\)/
-        );
-    });
-
-    it('an unset N has NO fallback, so the declaration is invalid and max-width stays none (a wide form computes exactly as before)', () => {
-        const body = bodiesFor(css, '.scale-group .scale-row');
-        expect(body).not.toMatch(/var\(--scale-per-row\s*,/);
-    });
 });
 
-describe('a scale that does not fit one line wraps without a lone button', () => {
-    // the phone gap and the two button sizes (standard 44px; conversational 44 + 6)
-    const GAP = 4;
-    const STD = 44;
-    const CONVO = 50;
-    const fit = (n, btn) => n * btn + (n - 1) * GAP;
-    /** How a greedy wrap lays out `n` buttons when a row holds `perRow`. */
-    const rowsFor = (n, perRow) => {
-        const rows = [];
-        for (let left = n; left > 0; left -= perRow) {
-            rows.push(Math.min(perRow, left));
-        }
-        return rows;
-    };
-    /** per row, by size of scale (rating 5 / 10, opinion 5 / 7, emoji 5) */
-    const FAMILIES = { 5: 3, 7: 4, 10: 5 };
-
-    const ladderOf = (name) =>
+describe('every scale is centered like the 0-10 question on a narrow form (owner 2026-10-11)', () => {
+    const ZERO_TO_TEN = '.scale-group.nps-group';
+    const ALL = '.scale-group';
+    // the five rules that make the 0-10 look, as [0-10 selector suffix, narrow suffix]
+    const PARTS = [
+        ['', ''],
+        [' .scale-row', ' .scale-row'],
+        [' .scale-endlabels', ' .scale-endlabels'],
         [
-            ...css.matchAll(
-                new RegExp(
-                    `@container ${name} \\(max-width:\\s*([\\d.]+)px\\)\\s*\\{\\s*\\.scale-group\\.scale-n-(\\d+)\\s*\\{\\s*--scale-per-row:\\s*(\\d+)\\s*;\\s*\\}\\s*\\}`,
-                    'g'
-                )
-            )
-        ].map((m) => ({
-            below: Number(m[1]),
-            size: Number(m[2]),
-            per: Number(m[3])
-        }));
+            ' .scale-endlabels > :first-child',
+            ' .scale-endlabels > :first-child'
+        ],
+        [' .scale-endlabels > :last-child', ' .scale-endlabels > :last-child'],
+        [' .scale-endlabels > :empty', ' .scale-endlabels > :empty']
+    ];
 
-    it.each([
-        ['section', STD],
-        ['convo', CONVO]
-    ])(
-        'the %s ladder: one row when it fits, below that the balanced split',
-        (name, btn) => {
-            const ladder = ladderOf(name);
-            expect(ladder.map((l) => l.size)).toEqual([5, 7, 10]);
-            ladder.forEach(({ below, size, per }) => {
-                // starts just below the width a single row needs
-                expect(below).toBeCloseTo(fit(size, btn) - 0.02, 5);
-                expect(per).toBe(FAMILIES[size]);
-            });
-        }
-    );
+    it('the narrow-form block gives EVERY scale group the 0-10 look: the same declarations, rule for rule', () => {
+        PARTS.forEach(([zero, all]) => {
+            const wanted = bodiesFor(wideRenderer, `${ZERO_TO_TEN}${zero}`);
+            const got = bodiesFor(narrowRenderer, `${ALL}${all}`);
+            expect(wanted).not.toBe('');
+            expect(got).toBe(wanted);
+        });
+    });
 
-    it.each(Object.entries(FAMILIES))(
-        'a scale of %s buttons at %s per row has no lone button',
-        (size, per) => {
-            const rows = rowsFor(Number(size), Number(per));
-            expect(rows.reduce((a, b) => a + b, 0)).toBe(Number(size));
-            expect(Math.min(...rows)).toBeGreaterThanOrEqual(2);
-        }
-    );
+    it('so the block is a centered three-row grid, the row is centered, the end labels sit at the ends', () => {
+        const group = bodiesFor(narrowRenderer, ALL);
+        expect(group).toMatch(/display:\s*grid;/);
+        expect(group).toMatch(/align-self:\s*center;/);
+        const row = bodiesFor(narrowRenderer, `${ALL} .scale-row`);
+        expect(row).toMatch(/justify-content:\s*center;/);
+        expect(row).toMatch(/justify-self:\s*center;/);
+    });
 
-    it('the conversational ladders come after the standard ones, so they win inside a conversational section', () => {
-        expect(css.indexOf('@container convo')).toBeGreaterThan(
-            css.lastIndexOf('@container section')
+    it('wide forms keep rating, opinion scale and emoji where they are (left, labels under the row)', () => {
+        expect(bodiesFor(wideRenderer, '.scale-group')).toMatch(
+            /display:\s*flex;[\s\S]*align-self:\s*var\(--c-q-justify,\s*flex-start\);/
         );
-    });
-
-    it('the arithmetic at the real phone widths: 238 / 252 / 278 / 308px', () => {
-        // standard buttons: five fit one row from 236px, so every public phone
-        // width (238, 278, 308) and Lightning (252, 282) shows one row
-        [238, 252, 278, 308].forEach((w) => {
-            expect(w).toBeGreaterThanOrEqual(fit(5, STD));
-        });
-        // conversational buttons: 266px needed, so the 320px phone (238px) wraps
-        // 3 + 2 by the ladder instead of 4 + a lone one
-        expect(238).toBeLessThan(fit(5, CONVO));
-        expect(rowsFor(5, FAMILIES[5])).toEqual([3, 2]);
-        expect(rowsFor(5, Math.floor((238 + GAP) / (CONVO + GAP)))).toEqual([
-            4, 1
-        ]);
-    });
-});
-
-describe('the scale groups carry their size, so the ladder can pick the right row', () => {
-    const mount = (element) => {
-        const el = createElement('c-final-element-renderer', {
-            is: FinalElementRenderer
-        });
-        el.element = element;
-        document.body.appendChild(el);
-        return el;
-    };
-    afterEach(() => {
-        while (document.body.firstChild) {
-            document.body.removeChild(document.body.firstChild);
-        }
-    });
-
-    it.each([
-        [{ type: 'rating' }, 'scale-n-5'],
-        [{ type: 'rating', config: { max: 10 } }, 'scale-n-10'],
-        [{ type: 'scale' }, 'scale-n-5'],
-        [{ type: 'scale', config: { size: 7 } }, 'scale-n-7'],
-        [{ type: 'emojiScale' }, 'scale-n-5'],
-        [{ type: 'nps' }, 'scale-n-11']
-    ])('%j -> %s', (partial, expected) => {
-        const el = mount({ id: 'e1', label: 'Question', ...partial });
-        const group = el.shadowRoot.querySelector('.scale-group');
-        expect(group.classList.contains(expected)).toBe(true);
+        expect(bodiesFor(wideRenderer, '.scale-group .scale-row')).not.toMatch(
+            /justify-self|grid-area/
+        );
     });
 });
