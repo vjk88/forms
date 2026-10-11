@@ -1354,6 +1354,30 @@
     }
 }
 
+/* The conversational look (.sec-convo) makes the buttons 6px bigger
+   (--c-q-control-h = control height + 6px = 50px), so its container carries a
+   second name, `convo`, and gets its own ladder from the width 50px buttons
+   need (11 need 630, 6 need 340, 4 need 224). Without it a conversational row
+   would be asked to hold more than fits and leave a lone "10" on phones. It
+   comes after the ladder above, so inside a conversational section it wins. */
+@container convo (max-width: 629.98px) {
+    .scale-group.nps-group {
+        --nps-n: 6;
+    }
+}
+
+@container convo (max-width: 339.98px) {
+    .scale-group.nps-group {
+        --nps-n: 4;
+    }
+}
+
+@container convo (max-width: 223.98px) {
+    .scale-group.nps-group {
+        --nps-n: 3;
+    }
+}
+
 /* Conversational answer rows cap at 560px like the exploration mock (the column
    itself can be wider). Unset = no cap. */
 .choice-row {

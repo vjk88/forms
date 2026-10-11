@@ -23,9 +23,11 @@ Only the 0-10 question (`nps`). It shares its markup with rating, opinion scale 
 - The row is capped to **N buttons wide** and centered, so the browser wraps it after exactly N buttons: `max-width: N * button + (N - 1) * gap`. The group shrinks to that width, so the labels land on the block's real ends.
 - N comes from a ladder keyed on the section's width (`@container section`, the named container the matrix already uses): 11 (one row) from 564 px, 6 from 304 px, 4 from 200 px, 3 below. The thresholds are the widths that N buttons need at the **comfortable** density (44 px buttons, 8 px gap, which is every theme's default), so a row can never be asked to hold more than fits. Compact buttons are smaller, so they fit with room to spare; the only visible effect is that a compact form switches from one row to 6 + 5 below 564 px instead of 456 px.
 
+- **Conversational sections (found while reviewing, fixed before the PR).** The conversational look (`.sec-convo`, one question on the stage) makes the buttons 6 px bigger (`--c-q-control-h` = control height + 6 px = 50 px). A ladder sized for 44 px buttons would ask a conversational row to hold more than fits: measured on the public site at a phone width, the row came out 5 + 5 + 1, the lone "10" this change exists to remove. The conversational section's container therefore carries a **second name**, `convo` (`container-name: section convo`, one line in `finalSectionRenderer.css`), and the renderer has a second ladder under `@container convo`, sized for 50 px buttons (11 need 630, 6 need 340, 4 need 224). It comes after the standard ladder, so inside a conversational section it wins. After the fix the same phone width gives 4 + 4 + 3.
+
 ## 4. Files
 
-`finalElementRenderer.css` (the block), `finalElementRenderer.html` (`class={scaleGroupClass}`), `finalElementRenderer.js` (one getter), a new test file, this doc.
+`finalElementRenderer.css` (the block and both ladders), `finalSectionRenderer.css` (one line: the second container name), `finalElementRenderer.html` (`class={scaleGroupClass}`), `finalElementRenderer.js` (one getter), a new test file, this doc.
 
 ## 5. Tests (written first, watched failing)
 
@@ -33,6 +35,7 @@ Only the 0-10 question (`nps`). It shares its markup with rating, opinion scale 
 - CSS: centered, grid areas, labels in `left` and `right`, the row cap formula and its centering.
 - The ladder as arithmetic: each threshold equals the width the next larger N needs (at 44 px and 8 px), minus 0.02 px; the default is 11; the wrapping a cap of N produces is balanced (rows differ by at most one) for every N in the ladder.
 - A drift guard: the comfortable density in the theme engine really is 44 px buttons and an 8 px gap, because the ladder is derived from them.
+- The conversational ladder: the section container answers to `convo` and its buttons are control height + 6 px (a drift guard across the two stylesheets); the ladder has the same 6, 4, 3 steps sized for 50 px buttons; it comes after the standard ladder.
 
 ## 6. Verification
 
