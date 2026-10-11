@@ -634,7 +634,7 @@
 }
 .scale-row {
     display: flex;
-    gap: var(--c-scale-gap, var(--c-space-2, 6px));
+    gap: var(--scale-row-gap, var(--c-scale-gap, var(--c-space-2, 6px)));
     flex-wrap: wrap;
 }
 

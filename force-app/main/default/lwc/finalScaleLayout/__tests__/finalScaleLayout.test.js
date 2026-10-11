@@ -1,6 +1,7 @@
 import {
     rowsNeeded,
     scaleRowMax,
+    scaleRowPlan,
     applyScaleRowLayout
 } from 'c/finalScaleLayout';
 
@@ -257,5 +258,122 @@ describe('applyScaleRowLayout: measures the real elements and writes the cap', (
         document.body.appendChild(field);
         expect(() => applyScaleRowLayout(field)).not.toThrow();
         expect(() => applyScaleRowLayout(null)).not.toThrow();
+    });
+});
+
+describe('scaleRowPlan: squeeze the gaps a little before giving up on one row', () => {
+    // Owner 2026-10-11: the 0-10 question showed 6 + 5 in a One at a time column of
+    // 560px, where eleven comfortable buttons (44px, 8px gaps) need 564px: 4px short.
+    // Gaps may shrink from the density's gap down to 6px (never below the phone's
+    // 4px, and never wider than they started) to keep one row.
+    it('keeps one row by shrinking the gaps when that is all it takes', () => {
+        const plan = scaleRowPlan(widths(11), 560, 8);
+        expect(plan.max).toBeNull();
+        // (560 - 11 * 44 - 1px of slack) / 10 gaps
+        expect(plan.gap).toBe(7.5);
+        // eleven buttons and ten gaps really fit
+        expect(11 * 44 + 10 * plan.gap).toBeLessThanOrEqual(560);
+    });
+
+    it('changes nothing when everything already fits at the normal gap', () => {
+        expect(scaleRowPlan(widths(11), 564, 8)).toEqual({
+            max: null,
+            gap: null
+        });
+        expect(scaleRowPlan(widths(11), 900, 8)).toEqual({
+            max: null,
+            gap: null
+        });
+    });
+
+    it('stops at 6px: a narrower column wraps into balanced rows as before', () => {
+        // eleven buttons with 6px gaps need 544px, plus a pixel of slack
+        expect(scaleRowPlan(widths(11), 545, 8).gap).toBe(6);
+        const wrapped = scaleRowPlan(widths(11), 544, 8);
+        expect(wrapped.gap).toBeNull();
+        expect(wrapped.max).toBe(6 * 44 + 5 * 8 + 2);
+    });
+
+    it('never squeezes a gap that is already 6px or less (compact density, a phone)', () => {
+        expect(scaleRowPlan(widths(11, 36), 455, 6).gap).toBeNull();
+        expect(scaleRowPlan(widths(11, 36), 455, 6).max).not.toBeNull();
+        expect(scaleRowPlan(widths(5), 235, 4).gap).toBeNull();
+        expect(scaleRowPlan(widths(5), 235, 4).max).not.toBeNull();
+    });
+
+    it('is always one or the other, a gap never wider than the normal one, and always fits', () => {
+        const wrong = [];
+        for (let available = 100; available <= 900; available += 1) {
+            for (const [count, btn, gap] of [
+                [11, 44, 8],
+                [11, 36, 6],
+                [11, 50, 8],
+                [5, 44, 8],
+                [7, 44, 4],
+                [10, 44, 8]
+            ]) {
+                const w = widths(count, btn);
+                const { max, gap: squeezed } = scaleRowPlan(w, available, gap);
+                const both = max !== null && squeezed !== null;
+                const tooWide = squeezed !== null && squeezed > gap;
+                const tooTight =
+                    squeezed !== null && squeezed < Math.min(gap, 6);
+                const overflows =
+                    squeezed !== null &&
+                    count * btn + (count - 1) * squeezed > available;
+                if (both || tooWide || tooTight || overflows) {
+                    wrong.push({ count, btn, gap, available, max, squeezed });
+                }
+            }
+        }
+        expect(wrong).toEqual([]);
+    });
+
+    it('measures the nominal gap, not one it wrote earlier', () => {
+        const real = window.getComputedStyle.bind(window);
+        const field = document.createElement('div');
+        field.className = 'field';
+        const row = document.createElement('div');
+        row.className = 'scale-row';
+        const group = document.createElement('div');
+        group.appendChild(row);
+        field.appendChild(group);
+        for (let i = 0; i < 11; i++) {
+            row.appendChild(document.createElement('button'));
+        }
+        document.body.appendChild(field);
+        // a column that only fits with squeezed gaps; the row's gap follows the
+        // custom property it was given, like the stylesheet does
+        window.getComputedStyle = (node) => {
+            if (node === field) {
+                return {
+                    width: '560px',
+                    boxSizing: 'content-box',
+                    paddingLeft: '0px',
+                    paddingRight: '0px'
+                };
+            }
+            if (node === row) {
+                return {
+                    columnGap:
+                        row.style.getPropertyValue('--scale-row-gap') || '8px'
+                };
+            }
+            if (node.parentNode === row) {
+                return { width: '44px' };
+            }
+            return real(node);
+        };
+        try {
+            applyScaleRowLayout(field);
+            expect(row.style.getPropertyValue('--scale-row-gap')).toBe('7.5px');
+            // a second pass (a re-render, a resize) must read 8px again, not 7.5px
+            applyScaleRowLayout(field);
+            expect(row.style.getPropertyValue('--scale-row-gap')).toBe('7.5px');
+            expect(row.style.getPropertyValue('--scale-row-max')).toBe('');
+        } finally {
+            window.getComputedStyle = real;
+            document.body.removeChild(field);
+        }
     });
 });

@@ -133,7 +133,14 @@ describe('controls with a size of their own are 44px on a narrow form', () => {
 describe('every scale row uses the scale gap', () => {
     it('the gap between buttons is --c-scale-gap, falling back to the density gap', () => {
         expect(bodiesFor(css, '.scale-row')).toMatch(
-            /gap:\s*var\(--c-scale-gap,\s*var\(--c-space-2,\s*6px\)\);/
+            /gap:\s*var\(--scale-row-gap,\s*var\(--c-scale-gap,\s*var\(--c-space-2,\s*6px\)\)\);/
+        );
+    });
+
+    it('a gap squeezed to keep one row (finalScaleLayout) wins over both', () => {
+        const gap = bodiesFor(css, '.scale-row');
+        expect(gap.indexOf('--scale-row-gap')).toBeLessThan(
+            gap.indexOf('--c-scale-gap')
         );
     });
 });

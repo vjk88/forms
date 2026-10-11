@@ -12,13 +12,27 @@
  * early and showed 6 + 5 where all eleven would have fitted. Here the inputs are
  * the real width of every button, the real gap and the real width of the column.
  *
+ * Before giving up on one row it squeezes the gaps a little (never below 6px, or
+ * the density's own gap if that is smaller): eleven comfortable buttons need 564px
+ * with 8px gaps, and a One at a time column is 560px, so 4px short used to mean
+ * 6 + 5 on a wide screen.
+ *
  * The cap is written as --scale-row-max on the row (finalElementRenderer.css
- * turns it into max-width). No cap = the property is removed = max-width: none.
+ * turns it into max-width) and a squeezed gap as --scale-row-gap. No cap = the
+ * property is removed = max-width: none.
  */
 
 /** A hair of room so a button never wraps for want of a sub-pixel. A button is
  *  never narrower than 36px, so this can never let one more button in. */
 const SLACK = 2;
+
+/** The smallest gap a row will squeeze to rather than wrap. A gap that is already
+ *  smaller (compact density, a phone's 4px) is left alone. */
+const MIN_SQUEEZED_GAP = 6;
+
+/** Room kept when the gaps are squeezed so the last button never wraps for want
+ *  of a sub-pixel. */
+const SQUEEZE_SLACK = 1;
 
 /**
  * How many rows a flex row would make with no cap: buttons are placed greedily
@@ -74,6 +88,35 @@ export function scaleRowMax(widths, available, gap) {
     return widest + (perRow - 1) * gap + SLACK;
 }
 
+/**
+ * What to do with a scale row: nothing (everything fits), squeeze its gaps (it
+ * fits with gaps no smaller than 6px), or cap it so it wraps into balanced rows.
+ * @param {number[]} widths width of each button
+ * @param {number} available width of the column
+ * @param {number} gap the density's gap between buttons
+ * @returns {{max: number|null, gap: number|null}} at most one of them is set
+ */
+export function scaleRowPlan(widths, available, gap) {
+    const count = widths.length;
+    if (!count || !(available > 0) || widths.some((w) => !(w > 0))) {
+        return { max: null, gap: null };
+    }
+    if (rowsNeeded(widths, available, gap) <= 1) {
+        return { max: null, gap: null };
+    }
+    if (count > 1) {
+        const floor = Math.min(gap, MIN_SQUEEZED_GAP);
+        const total = widths.reduce((sum, w) => sum + w, 0);
+        const room = (available - SQUEEZE_SLACK - total) / (count - 1);
+        // the largest gap that fits, to a tenth of a pixel, never above the normal one
+        const squeezed = Math.min(gap, Math.floor(room * 10) / 10);
+        if (squeezed >= floor) {
+            return { max: null, gap: squeezed };
+        }
+    }
+    return { max: scaleRowMax(widths, available, gap), gap: null };
+}
+
 const px = (value) => {
     const n = parseFloat(value);
     return Number.isFinite(n) ? n : NaN;
@@ -109,17 +152,22 @@ export function applyScaleRowLayout(field) {
     if (!row) {
         return;
     }
+    // measure the density's gap, not a squeezed one written on an earlier pass
+    row.style.removeProperty('--scale-row-gap');
     const widths = Array.from(row.children).map((button) =>
         px(window.getComputedStyle(button).width)
     );
     const gap = px(window.getComputedStyle(row).columnGap) || 0;
-    const max = scaleRowMax(widths, contentWidth(field), gap);
-    if (max === null) {
-        row.style.removeProperty('--scale-row-max');
+    const plan = scaleRowPlan(widths, contentWidth(field), gap);
+    write(row, '--scale-row-max', plan.max, Math.ceil);
+    write(row, '--scale-row-gap', plan.gap, Math.floor);
+}
+
+/** Writes a pixel custom property to a tenth of a pixel, rounded the safe way. */
+function write(row, name, value, round) {
+    if (value === null) {
+        row.style.removeProperty(name);
     } else {
-        row.style.setProperty(
-            '--scale-row-max',
-            `${Math.ceil(max * 10) / 10}px`
-        );
+        row.style.setProperty(name, `${round(value * 10) / 10}px`);
     }
 }
