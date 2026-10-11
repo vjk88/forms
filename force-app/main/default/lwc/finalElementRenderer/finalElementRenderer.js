@@ -998,6 +998,14 @@ export default class FinalElementRenderer extends LightningElement {
         this.dispatchValue(v);
     }
 
+    /** The 0-10 question lays out differently from the rest of the scale family
+     *  (centered, balanced rows, end labels above the 0 and below the 10), so
+     *  its group carries a class of its own. Rating, opinion scale and emoji
+     *  share the markup and keep the plain group. */
+    get scaleGroupClass() {
+        return this.isNps ? 'scale-group nps-group' : 'scale-group';
+    }
+
     get hasEndLabels() {
         // Emoji scales never render end labels (owner 2026-07-31) — the faces
         // carry the meaning visually; screen readers get EMOJI_SENTIMENTS.
