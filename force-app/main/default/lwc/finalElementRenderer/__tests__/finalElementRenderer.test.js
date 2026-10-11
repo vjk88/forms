@@ -91,6 +91,42 @@ describe('c-final-element-renderer', () => {
         });
     });
 
+    describe('read-only marker (cross-host audit, stage 1)', () => {
+        const DROPDOWN = (over = {}) =>
+            FIELD({
+                config: {
+                    inputType: 'picklist',
+                    renderAs: 'Dropdown',
+                    options: [
+                        { label: 'First option', value: 'o1' },
+                        { label: 'Second option', value: 'o2' }
+                    ]
+                },
+                ...over
+            });
+
+        it('a read-only dropdown carries field-readonly, so CSS can tell it from an enabled one', async () => {
+            const cmp = await mount(DROPDOWN({ readOnly: true }));
+            expect(
+                cmp.shadowRoot.querySelector('lightning-combobox')
+            ).not.toBeNull();
+            expect(
+                cmp.shadowRoot
+                    .querySelector('.field')
+                    .classList.contains('field-readonly')
+            ).toBe(true);
+        });
+
+        it('an editable dropdown does not', async () => {
+            const cmp = await mount(DROPDOWN());
+            expect(
+                cmp.shadowRoot
+                    .querySelector('.field')
+                    .classList.contains('field-readonly')
+            ).toBe(false);
+        });
+    });
+
     describe('labelStyle (review F15)', () => {
         it.each([
             ['uppercase', 'label-uppercase'],

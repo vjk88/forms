@@ -10,6 +10,8 @@
  *                                          panel plus the 8 % text tint a card
  *                                          or boxed section adds
  *   invalid border (same ink)           >= 3 : 1 on the field fill
+ *   icon ink (--c-icon, dark panels)    >= 3 : 1 on the field fill AND on white
+ *                                          (the platform's popups are white)
  *
  * Translucent "glass" panels are composited over the page colour, and get 0.3
  * of headroom because the backdrop behind them moves.
@@ -104,5 +106,27 @@ describe('error and required inks are legible on every built-in theme', () => {
         expect(contrastRatio(error, field)).toBeGreaterThanOrEqual(
             3 + headroom
         );
+    });
+
+    it.each(keys)('%s: icon ink', (key) => {
+        const theme = getBuiltinTheme(key);
+        const tokens = resolveTokens(theme, null);
+        const { panel, field, glass } = surfacesOf(theme, tokens);
+        const headroom = glass ? 0.3 : 0;
+        const icon = tokens['--c-icon'];
+        // dark panels get a mid grey; light panels get nothing (the platform's
+        // own icon colours already pass there)
+        const darkPanel =
+            contrastRatio(panel, '#ffffff') > contrastRatio(panel, '#000000');
+        expect(Boolean(icon)).toBe(darkPanel);
+        // that grey must clear 3 : 1 on the dark field fill AND on white,
+        // where the platform's popups sit
+        const ratios = icon
+            ? [
+                  contrastRatio(icon, field) - headroom,
+                  contrastRatio(icon, '#ffffff')
+              ]
+            : [];
+        expect(ratios.every((r) => r >= 3)).toBe(true);
     });
 });
