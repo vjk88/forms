@@ -31,6 +31,8 @@ Every question container already gets `has-errors` from `fieldClass` while it ha
 - Line: 1 px, `--c-field-error`, offset 4 px (reach 5 px), corner radius = the theme's input radius.
 - Stacked label: the control steps down 6 px so the line clears the label by at least 3 px (the label is only 2 px above at compact density, 4 px at comfortable); the message steps down 9 px (reach 5 + the usual 4). Side label: no step. Consent has no label above it: no step above, 9 px below.
 - Single checkbox and toggle hug their control (`align-self: flex-start`), everything else spans its natural width.
+- **Found by measuring the first deploy on all three hosts:** every type kept 3 px of clearance between the line and the label except the **file upload, which had 1 px**. The file block is a plain block, not a flex column like `.field`, so the label row's bottom margin and the drop button's top margin *collapse* into the larger of the two instead of adding up; the shared 6 px step gave 6 - 5 = 1 px. The file drop button therefore has its own 8 px step (the line's whole 5 px reach plus 3 px), and the step test gives it no label-gap credit.
+- The file drop button is focusable and has its own 2 px focus outline; the red line would have taken that outline over, so the focus ring is restated for the invalid state (a test pins it).
 
 ## 5. Files
 
