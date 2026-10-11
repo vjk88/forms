@@ -89,6 +89,8 @@ const MESSAGE = [
 // compact density, 4px at comfortable. Take the tighter. The lettering's
 // descenders sit inside the label's box, so keep 3px of air from it.
 const MIN_LABEL_GAP = 2;
+/** Targets whose label sits in a plain block, so margins collapse. */
+const COLLAPSING = ['.has-errors > .block-file-frame'];
 const CLEARANCE = 3;
 
 describe('one rule list draws the invalid line on every target', () => {
@@ -110,9 +112,12 @@ describe('one rule list draws the invalid line on every target', () => {
                 1; /* the 1px stroke, asserted above */
             const step = px(bodiesFor(stacked(selector)), 'margin-top');
             expect(step).not.toBeNull();
-            expect(MIN_LABEL_GAP + step - reach).toBeGreaterThanOrEqual(
-                CLEARANCE
-            );
+            // Inside a flex column (.field) the label row's bottom margin and
+            // the control's top margin ADD UP. The file block is a plain block,
+            // where they COLLAPSE into the larger of the two (measured 2026-10-11:
+            // 1px of clearance with a 6px step), so it gets no label-gap credit.
+            const credit = COLLAPSING.includes(selector) ? 0 : MIN_LABEL_GAP;
+            expect(credit + step - reach).toBeGreaterThanOrEqual(CLEARANCE);
         }
     });
 

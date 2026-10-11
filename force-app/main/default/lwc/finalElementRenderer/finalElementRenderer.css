@@ -582,9 +582,16 @@
 .has-errors:not(.label-left) > .ic-grid,
 .has-errors:not(.label-left) > .slider-wrap,
 .has-errors:not(.label-left) > .mx-table,
-.has-errors:not(.label-left) > .block-file-frame,
 .has-errors:not(.label-left).field-checkbox > lightning-input {
     margin-top: 6px;
+}
+
+/* The file block is a plain block, not a flex column like .field, so the label
+   row's bottom margin and the drop button's top margin COLLAPSE into the larger
+   of the two instead of adding up (measured: 1px of clearance with a 6px step).
+   The step therefore has to cover the line's whole 5px reach plus 3px by itself. */
+.has-errors:not(.label-left) > .block-file-frame {
+    margin-top: 8px;
 }
 
 /* A single checkbox or a toggle is a small control in a full-width row: the
