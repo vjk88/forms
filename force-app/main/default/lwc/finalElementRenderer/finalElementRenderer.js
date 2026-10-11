@@ -4,6 +4,7 @@ import {
     isMultilineTarget,
     resolveAdvanceOrigin
 } from 'c/finalStepFlow';
+import { applyScaleRowLayout } from 'c/finalScaleLayout';
 
 /**
  * finalElementRenderer — one spec element.
@@ -998,12 +999,45 @@ export default class FinalElementRenderer extends LightningElement {
         this.dispatchValue(v);
     }
 
-    /** The 0-10 question lays out differently from the rest of the scale family
-     *  (centered, balanced rows, end labels above the 0 and below the 10), so
-     *  its group carries a class of its own. Rating, opinion scale and emoji
-     *  share the markup and keep the plain group. */
+    /** The 0-10 question lays out centered with its end labels above the 0 and
+     *  below the 10 on every screen, so its group carries a class of its own.
+     *  Rating, opinion scale and emoji share the markup and get the same look on
+     *  a narrow form (finalElementRenderer.css). */
     get scaleGroupClass() {
         return this.isNps ? 'scale-group nps-group' : 'scale-group';
+    }
+
+    /** A scale wraps by what is MEASURED, never by a guess (finalScaleLayout):
+     *  everything fits -> one row; otherwise the fewest, evenly filled rows. It
+     *  is measured after every render and whenever the column changes width
+     *  (resize, a panel or tab opening). */
+    _watchScaleField() {
+        const field = this.isScaleFamily
+            ? this.template.querySelector('.field')
+            : null;
+        if (field !== this._scaleField) {
+            this._unwatchScaleField();
+            this._scaleField = field;
+            if (field && typeof ResizeObserver === 'function') {
+                this._scaleObserver = new ResizeObserver(() =>
+                    applyScaleRowLayout(field)
+                );
+                this._scaleObserver.observe(field);
+            }
+        }
+        applyScaleRowLayout(field);
+    }
+
+    _unwatchScaleField() {
+        if (this._scaleObserver) {
+            this._scaleObserver.disconnect();
+        }
+        this._scaleObserver = null;
+        this._scaleField = null;
+    }
+
+    disconnectedCallback() {
+        this._unwatchScaleField();
     }
 
     get hasEndLabels() {
@@ -1323,6 +1357,7 @@ export default class FinalElementRenderer extends LightningElement {
         ) {
             this._commitRank(this.rankValues);
         }
+        this._watchScaleField();
     }
 
     get chipChoiceItems() {

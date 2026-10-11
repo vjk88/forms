@@ -634,8 +634,18 @@
 }
 .scale-row {
     display: flex;
-    gap: var(--c-space-2, 6px);
+    gap: var(--scale-row-gap, var(--c-scale-gap, var(--c-space-2, 6px)));
     flex-wrap: wrap;
+}
+
+/* A scale row that has to wrap is capped to the width of the buttons it should
+   hold per row, so it splits into the FEWEST, evenly filled rows (11 as 6 + 5,
+   never 10 + a lone one). finalScaleLayout measures the buttons, the gap and the
+   column and writes --scale-row-max; when everything fits on one line it writes
+   nothing, so one row, always. There is deliberately no fallback: unset, the
+   declaration is invalid at computed-value time, which leaves max-width at none. */
+.scale-group .scale-row {
+    max-width: var(--scale-row-max);
 }
 .scale-chip {
     min-width: var(--c-q-control-h, var(--c-control-h, 44px));
@@ -1285,15 +1295,14 @@
 /* The 0-10 question (owner 2026-10-11, from a reference picture). The block of
    buttons is centered in the column (the question text stays left). When the
    buttons do not fit on one line they wrap into BALANCED, centered rows (6 + 5,
-   never 10 + a lone "10"). The left label sits ABOVE the 0 at the left edge of
-   the block and the right label BELOW the 10 at the right edge, on one row too.
-   Balanced wrapping: the row is capped to N buttons wide, so it wraps after
-   exactly N; N comes from the section's width (the ladder below). The group
-   shrinks to the capped row, so the labels land on the block's real ends. The
-   end-label container is display: contents, so its two spans become grid items
-   and the markup does not change. */
+   never 10 + a lone "10"; the cap is the measured --scale-row-max above). The
+   left label sits ABOVE the 0 at the left edge of the block and the right label
+   BELOW the 10 at the right edge, on one row too. The group shrinks to the
+   capped row, so the labels land on the block's real ends. The end-label
+   container is display: contents, so its two spans become grid items and the
+   markup does not change. On a narrow form every scale gets this look (the
+   narrow-form block at the end of this file). */
 .scale-group.nps-group {
-    --nps-n: 11;
     display: grid;
     grid-template-areas:
         'left'
@@ -1306,10 +1315,6 @@
     grid-area: row;
     justify-self: center;
     justify-content: center;
-    max-width: calc(
-        var(--nps-n) * var(--c-q-control-h, var(--c-control-h, 44px)) +
-            (var(--nps-n) - 1) * var(--c-space-2, 6px)
-    );
 }
 
 .scale-group.nps-group .scale-endlabels {
@@ -1332,54 +1337,69 @@
     display: none;
 }
 
-/* Buttons per row by the width of the section. Each step starts just below the
-   width the next larger row needs at the COMFORTABLE density (44px buttons, 8px
-   gap: 11 need 564, 6 need 304, 4 need 200), so a row is never asked to hold
-   more than fits. Compact buttons are smaller and fit with room to spare. */
-@container section (max-width: 563.98px) {
-    .scale-group.nps-group {
-        --nps-n: 6;
-    }
-}
-
-@container section (max-width: 303.98px) {
-    .scale-group.nps-group {
-        --nps-n: 4;
-    }
-}
-
-@container section (max-width: 199.98px) {
-    .scale-group.nps-group {
-        --nps-n: 3;
-    }
-}
-
-/* The conversational look (.sec-convo) makes the buttons 6px bigger
-   (--c-q-control-h = control height + 6px = 50px), so its container carries a
-   second name, `convo`, and gets its own ladder from the width 50px buttons
-   need (11 need 630, 6 need 340, 4 need 224). Without it a conversational row
-   would be asked to hold more than fits and leave a lone "10" on phones. It
-   comes after the ladder above, so inside a conversational section it wins. */
-@container convo (max-width: 629.98px) {
-    .scale-group.nps-group {
-        --nps-n: 6;
-    }
-}
-
-@container convo (max-width: 339.98px) {
-    .scale-group.nps-group {
-        --nps-n: 4;
-    }
-}
-
-@container convo (max-width: 223.98px) {
-    .scale-group.nps-group {
-        --nps-n: 3;
-    }
-}
-
 /* Conversational answer rows cap at 560px like the exploration mock (the column
    itself can be wider). Unset = no cap. */
 .choice-row {
     max-width: min(100%, var(--c-q-choice-max, 100%));
+}
+
+/* Phone-sized controls with a size of their own (stage 3, slice S2): the ranking
+   arrows and the slider's touch target reach 44px, and the emoji faces give up a
+   little size and their side padding so five of them fit one row of the 238px
+   answer column (a face is about 1.4 times its font size wide). Controls that
+   read the density height are lifted by the page frame instead. */
+@container final-form-viewport (max-width: 540px) {
+    .rank-btn {
+        min-width: 44px;
+        height: 44px;
+    }
+
+    .slider-input {
+        height: 44px;
+    }
+
+    .scale-chip.emoji-chip {
+        padding: 4px 0;
+        font-size: calc(var(--c-fs-answer) * 1.75);
+    }
+
+    /* Every scale is centered like the 0-10 question on a narrow form (owner
+       2026-10-11): the block centered in the column, its rows centered and
+       balanced, the left label above the first button at the left edge and the
+       right label below the last at the right edge. The same declarations as
+       .scale-group.nps-group above; a jest test keeps the two in step. */
+    .scale-group {
+        display: grid;
+        grid-template-areas:
+            'left'
+            'row'
+            'right';
+        align-self: center;
+    }
+
+    .scale-group .scale-row {
+        grid-area: row;
+        justify-self: center;
+        justify-content: center;
+    }
+
+    .scale-group .scale-endlabels {
+        display: contents;
+    }
+
+    .scale-group .scale-endlabels > :first-child {
+        grid-area: left;
+        justify-self: start;
+        margin-bottom: 4px;
+    }
+
+    .scale-group .scale-endlabels > :last-child {
+        grid-area: right;
+        justify-self: end;
+        margin-top: 4px;
+    }
+
+    .scale-group .scale-endlabels > :empty {
+        display: none;
+    }
 }
