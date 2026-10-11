@@ -63,6 +63,20 @@
     min-width: 0;
 }
 
+/* The public site gives the platform's widget wrapper margin-bottom: 16px
+   (Lightning and the Studio give 0), so every platform-widget field was 16px
+   taller there and an error message sat 22px under its own box (cross-host
+   audit B1, B2). Class-qualified on purpose: a bare tag selector LOSES to the
+   site's rule (measured: `lightning-input { margin-bottom: 0 }` left 16px), this
+   one wins without !important and is a no-op where the margin is already 0. */
+.field lightning-input,
+.field lightning-textarea,
+.field lightning-combobox,
+.field lightning-radio-group,
+.field lightning-checkbox-group {
+    margin-bottom: 0;
+}
+
 /* Radio and checkbox option text, and the open dropdown list, are sized by the
    platform widgets themselves, so the font-size on .field never reaches them.
    Each host family reads its own custom property (measured in the dev org):
@@ -483,10 +497,38 @@
     line-height: 1.45;
 }
 
+/* Invalid state (cross-host audit B4). The text box turned red; the text area,
+   the dropdown and the choice groups showed only the message. The dropdown
+   reads the text box's border hook; the text area has its own (the old rule set
+   only the input hooks on it, which it never read). The classic stylesheet's
+   older `--sds-` spelling is set alongside each. */
 .has-errors lightning-input,
-.has-errors lightning-textarea {
+.has-errors lightning-textarea,
+.has-errors lightning-combobox {
     --slds-c-input-color-border: var(--c-field-error, #b42318);
     --sds-c-input-color-border: var(--c-field-error, #b42318);
+}
+
+.has-errors lightning-textarea {
+    --slds-c-textarea-color-border: var(--c-field-error, #b42318);
+    --sds-c-textarea-color-border: var(--c-field-error, #b42318);
+}
+
+/* Radio and checkbox groups have no border of their own (the platform draws
+   only the dots and boxes), so the group gets an outline around its options.
+   Drawn as a block so it wraps the whole list, offset so it clears the options,
+   and the message below gets a little more room so the two never touch. */
+.has-errors lightning-radio-group,
+.has-errors lightning-checkbox-group {
+    display: block;
+    outline: 1.5px solid var(--c-field-error, #b42318);
+    outline-offset: 4px;
+    border-radius: var(--c-input-radius, var(--c-radius));
+}
+
+.has-errors lightning-radio-group + .field-errors,
+.has-errors lightning-checkbox-group + .field-errors {
+    margin-top: 8px;
 }
 
 /* ---- survey scale family (S2) — theme tokens ONLY, zero private colors

@@ -152,18 +152,22 @@ describe('respondent stylesheets use role tokens, never their own size', () => {
         // reads --lwc-fontSize3 (radio, checkbox) and --lwc-fontSize2 (stacked
         // checkbox); the public site reads --dxp-s-form-element-label-font-size.
         const css = read('finalElementRenderer');
-        const groups =
-            /\n\.field\s+lightning-radio-group\s*,\s*\.field\s+lightning-checkbox-group\s*\{([^}]*)\}/.exec(
-                css
-            );
-        expect(groups).not.toBeNull();
+        // Every rule that ENDS in this selector pair, in any order: the colour
+        // hooks and the spacing reset share the pair, and a longer selector
+        // list ending in it (the five-widget margin reset) matches too.
+        const bodies = [
+            ...css.matchAll(
+                /\n\.field\s+lightning-radio-group\s*,\s*\.field\s+lightning-checkbox-group\s*\{([^}]*)\}/g
+            )
+        ].map((m) => m[1]);
+        expect(bodies).not.toHaveLength(0);
         for (const name of [
             '--slds-s-label-font-size',
             '--lwc-fontSize3',
             '--lwc-fontSize2',
             '--dxp-s-form-element-label-font-size'
         ]) {
-            expect(groups[1]).toMatch(answerSize(name));
+            expect(bodies.join('\n')).toMatch(answerSize(name));
         }
     });
 

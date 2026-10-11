@@ -103,9 +103,39 @@ Today's colours these replace: dropdown text grey 116,116,116 (Studio, public); 
 - **The lookup widget has its own error ink** (`--c-error-ink`, `#ba0517`), so it will keep the old red on dark themes.
 - None of these is changed here; each would need its own go.
 
-## 7. Stage 2 (details filled in before it starts)
+## 7. Stage 2: spacing and invalid state (branch `fix/spacing-errors-stage2`, stacked on stage 1)
 
-Spacing (B1, B2): neutralise the 16 px the public site adds under platform widgets, with an explicit selector list or a shared class, after finding the exact rule and its specificity on the public site. Invalid styling (B4): text area and dropdown get the same red border as text boxes (today `.has-errors lightning-textarea` sets the input hook, but the text area reads `--slds-c-textarea-color-border`; the dropdown has no rule), and radio and checkbox groups get a group outline in the error colour. Same verification protocol as section 5, plus the field-pitch and error-distance measurements from the audit (3B).
+Plain words: on the public site every field built from a platform widget (text box, text area, dropdown, radio group, checkbox group) is 16 px taller than in Lightning and the Studio, and its error message sits 22 px below its own box instead of a few. And when validation fails, only the text box turns red: the text area, the dropdown and the choice groups show the message alone.
+
+### 7.1 Spacing (audit B1, B2), one file: `finalElementRenderer.css`
+
+- **Cause (measured on the public site, 2026-10-11):** the site's stylesheet gives the platform widget wrapper `margin-bottom: 16px`; Lightning and the Studio give 0.
+- **Why a class-qualified selector:** a bare `lightning-input { margin-bottom: 0 }` still left 16 px on the public site (it loses the cascade to the site's rule); `.field lightning-input { margin-bottom: 0 }` wins, with no `!important`. Where the margin is already 0 (Lightning, Studio) the rule changes nothing, so the three hosts end up with the same field pitch (total form height 915.6 px on the test form on each).
+- **The rule:** one list, five widgets (`lightning-input`, `-textarea`, `-combobox`, `-radio-group`, `-checkbox-group`), all under `.field`.
+
+### 7.2 Invalid state (audit B4), same file
+
+| Control | Before | After | Hook, found by setting candidates to red on the real form |
+|---|---|---|---|
+| Text box | red border | unchanged | `--slds-c-input-color-border` (+ the classic `--sds-` spelling) |
+| Dropdown | message only | red border | the same text-box hook (measured on Lightning) |
+| Text area | message only (the old rule set the text-box hook, which the text area never reads) | red border | its own `--slds-c-textarea-color-border` (+ `--sds-`) |
+| Radio group, checkbox group | message only | 1.5 px outline in the error colour around the whole group (`display: block`, offset 4 px, theme corner radius); the message below gets 8 px more room | no platform hook exists, so a plain outline |
+
+All four read `var(--c-field-error, #b42318)`, i.e. the stage 1 dark-theme red on dark themes.
+
+### 7.3 Tests
+
+- New `finalElementRenderer/__tests__/platformSpacingAndInvalid.test.js`, written first and watched failing (3 failed, 1 passed): the margin rule is class-qualified on all five widgets and no bare tag selector sets a margin; the text area sets its own two hooks; dropdown and text box set the input hooks; the groups get outline and `display: block`; the message gets the extra top margin.
+- One existing guard changed: `finalPageFrame/__tests__/typeScale.test.js` ("radio and checkbox option text follows the answer size on every host") read only the FIRST rule whose selector list ends in the radio/checkbox pair. The new five-widget margin rule ends in that same pair and sits above the size rule, so the guard read the wrong body. It now reads every rule ending in the pair, in any order. No assertion was weakened: the four size hooks must still be present.
+
+### 7.4 Verification (same protocol as section 5, plus the audit 3B measurements)
+
+Deploy to `revclouddev`, site publish, then on **Studio (Visualforce)**, **Lightning** and the **public site**: field pitch (sum of field heights) equal on all three; the gap between a box and its error message at most 8 px; the `errors` and `errorsDark` scenarios show the invalid indicator on text box, text area, dropdown, radio group and checkbox group; the stage 1 matrix re-run for regressions; audit test B re-run on the disposable form with no spec patching.
+
+### 7.5 What this changes for people (flagged for the owner)
+
+After the site publish, **every already-published form that uses these widgets gets 16 px tighter per field on the public site** (it now matches Lightning). That is the point of the fix, but it is a visible change to forms already in the wild, so the PR stays unmerged until the owner has looked.
 
 ## 8. What the first measurement run found (2026-10-11), and what changed
 
