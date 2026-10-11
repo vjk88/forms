@@ -144,6 +144,28 @@ describe('finalElementRenderer — file upload', () => {
         expect(values[values.length - 1].value).toEqual([]);
     });
 
+    it('a refused file also gets the invalid line (the block carries has-errors itself)', async () => {
+        const el = mount(FILE_EL());
+        // a clean block draws no line
+        expect(
+            el.shadowRoot.querySelector('.block-file.has-errors')
+        ).toBeNull();
+
+        const input = el.shadowRoot.querySelector('input[type="file"]');
+        Object.defineProperty(input, 'files', {
+            value: [makeFile('huge.bin', 'x', 99 * 1024 * 1024)],
+            configurable: true
+        });
+        input.dispatchEvent(new CustomEvent('change'));
+        await flush();
+
+        expect(
+            el.shadowRoot.querySelector(
+                '.block-file.has-errors > .block-file-frame'
+            )
+        ).not.toBeNull();
+    });
+
     it('single-file elements replace rather than accumulate', async () => {
         const el = mount(FILE_EL());
         const input = el.shadowRoot.querySelector('input[type="file"]');

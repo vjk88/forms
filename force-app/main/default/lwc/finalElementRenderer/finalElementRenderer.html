@@ -287,7 +287,7 @@
     </template>
     <template lwc:elseif={isConsent}>
         <template lwc:if={hasConsentHtml}>
-            <div class="block-consent">
+            <div class={consentClass}>
                 <lightning-input
                     type="checkbox"
                     label={el.label}
@@ -331,7 +331,7 @@
         <div class="block-emptyspace" aria-hidden="true"></div>
     </template>
     <template lwc:elseif={isFile}>
-        <div class="block-file">
+        <div class={fileRootClass}>
             <template lwc:if={el.label}>
                 <div class="field-label-row">
                     <label class="field-label" for={fileInputId}>
@@ -565,39 +565,47 @@
                 </template>
             </template>
             <template lwc:if={hasMatrixRows}>
-                <div class="mx-head" aria-hidden="true">
-                    <span class="mx-corner"></span>
-                    <template for:each={matrixPoints} for:item="pt">
-                        <span key={pt.value} class="mx-col">{pt.label}</span>
-                    </template>
-                </div>
-                <template for:each={matrixRows} for:item="r">
-                    <div
-                        key={r.key}
-                        class="mx-row"
-                        role="radiogroup"
-                        aria-label={r.label}
-                    >
-                        <span class="mx-statement">{r.label}</span>
-                        <template for:each={r.cells} for:item="c">
-                            <button
-                                key={c.key}
-                                type="button"
-                                role="radio"
-                                class={c.cls}
-                                aria-checked={c.ariaChecked}
-                                aria-label={c.aria}
-                                data-row={c.row}
-                                data-value={c.value}
-                                onclick={handleMatrixPick}
+                <!-- one wrapper around the head and every row, so the invalid
+                     line can be drawn around the whole matrix -->
+                <div class="mx-table">
+                    <div class="mx-head" aria-hidden="true">
+                        <span class="mx-corner"></span>
+                        <template for:each={matrixPoints} for:item="pt">
+                            <span key={pt.value} class="mx-col"
+                                >{pt.label}</span
                             >
-                                <span class="mx-point-label" aria-hidden="true"
-                                    >{c.pointLabel}</span
-                                >
-                            </button>
                         </template>
                     </div>
-                </template>
+                    <template for:each={matrixRows} for:item="r">
+                        <div
+                            key={r.key}
+                            class="mx-row"
+                            role="radiogroup"
+                            aria-label={r.label}
+                        >
+                            <span class="mx-statement">{r.label}</span>
+                            <template for:each={r.cells} for:item="c">
+                                <button
+                                    key={c.key}
+                                    type="button"
+                                    role="radio"
+                                    class={c.cls}
+                                    aria-checked={c.ariaChecked}
+                                    aria-label={c.aria}
+                                    data-row={c.row}
+                                    data-value={c.value}
+                                    onclick={handleMatrixPick}
+                                >
+                                    <span
+                                        class="mx-point-label"
+                                        aria-hidden="true"
+                                        >{c.pointLabel}</span
+                                    >
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+                </div>
             </template>
             <template lwc:else>
                 <div class="block-image-empty">
