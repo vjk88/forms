@@ -7,7 +7,7 @@
 | Sideways scroll | none |
 | Answer column | at least 236px (five 44px buttons and four 4px gaps) |
 | Every scale (rating 5 / 10, opinion scale 5 / 7 / 10, emoji, 0-10, standard and conversational) | **one row whenever its buttons fit**, **no lone last button**, **centered** |
-| Every control of ours | at least 44 x 44px |
+| Every control of ours, in every layout (scrolling page, wizard steps, tabbed pages, side rail, accordion, one at a time, split hero) | at least 44 x 44px |
 
 The platform's own controls (text box, dropdown, radio and checkbox rows, toggle, help and calendar buttons) are **listed with their sizes but never fail the check**: no styling hook enlarges them the same way on all three hosts, so they stay at the platform's size unless the owner chooses otherwise (`docs/FinalDesign/qa/STAGE3_PLATFORM_CONTROLS_PROBE_2026-10-11.md`).
 
@@ -17,7 +17,7 @@ The platform's own controls (text box, dropdown, radio and checkbox rows, toggle
 node scripts/qa/phone-check.cjs --site https://<your-site>.my.site.com --form-id <Form__c Id>
 ```
 
-`--form-id` is any published form with the public link on; its own questions are not used. The spec the guest site hands to the browser is replaced **in memory** by a kitchen sink of every question type, so nothing is saved, clicked, typed or submitted, and the form on the server is never touched. Options: `--widths 320,360,390`, `--densities comfortable,compact`, `--out <folder>` (one JSON per run; default a temp folder). Or set `PHONE_CHECK_SITE` and `PHONE_CHECK_FORM_ID`.
+`--form-id` is any published form with the public link on; its own questions are not used. The spec the guest site hands to the browser is replaced **in memory** by a kitchen sink of every question type, so nothing is saved, clicked, typed or submitted, and the form on the server is never touched. Options: `--widths 320,360,390`, `--densities comfortable,compact`, `--layouts scroll,stepper,tabs,rail,accordion,oneAtATime,splitHero`, `--out <folder>` (one JSON per run; default a temp folder). The first layout gets the full width x density matrix (and the scale checks, since every question is on screen there); the others the narrowest and widest width at the first density, which is where their own navigation and padding show. Or set `PHONE_CHECK_SITE` and `PHONE_CHECK_FORM_ID`.
 
 Exit code 0 = every check passed, 1 = a check failed (each failure is printed as a sentence), 2 = could not run.
 
