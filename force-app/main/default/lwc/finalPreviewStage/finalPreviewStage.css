@@ -20,7 +20,17 @@
     border-bottom: 1px solid var(--c-studio-border-subtle);
 }
 
+/* Screen, phone width and host: one wrapping group, so a narrow pane wraps the
+   toolbar instead of clipping it. */
+.ps-frame {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
 .ps-devices,
+.ps-phones,
 .ps-zooms {
     display: inline-flex;
     border: 1px solid var(--c-studio-border-strong);
@@ -29,6 +39,7 @@
 }
 
 .ps-device,
+.ps-phone,
 .ps-zoom {
     border: 0;
     background: var(--c-studio-surface);
@@ -39,16 +50,44 @@
     cursor: pointer;
 }
 
+.ps-phone {
+    padding-inline: 10px;
+    font-variant-numeric: tabular-nums;
+}
+
 .ps-device + .ps-device,
+.ps-phone + .ps-phone,
 .ps-zoom + .ps-zoom {
     border-left: 1px solid var(--c-studio-border-strong);
 }
 
 .ps-device.on,
+.ps-phone.on,
 .ps-zoom.on {
     background: var(--c-studio-accent);
     color: var(--c-studio-on-accent);
     font-weight: 600;
+}
+
+/* "Shown on": which page the form sits in decides the margin around it. The
+   dropdown wears the same quiet outline as the other toolbar controls. */
+.ps-hostbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--c-studio-text-weak);
+}
+
+.ps-host {
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 8px;
+    background: var(--c-studio-surface);
+    font: inherit;
+    font-size: 12px;
+    color: var(--c-studio-text-weak);
+    padding: 4px 8px;
+    cursor: pointer;
 }
 
 .ps-tools {
@@ -99,7 +138,9 @@
 
 .ps-refresh:hover,
 .ps-expand:hover,
+.ps-host:hover,
 .ps-device:hover:not(.on),
+.ps-phone:hover:not(.on),
 .ps-zoom:hover:not(.on) {
     background: var(--c-studio-hover);
 }
@@ -122,12 +163,45 @@
     transform-origin: top left;
 }
 
+/* The host's margin around the form (the canvas's side padding), drawn as two
+   quiet hatched bands behind the form, so it reads as "the page, not your
+   form". Pseudo-elements, not a canvas background, so the form's own rounded
+   corners never show a hatch behind them; the canvas is a stacking context
+   (transform), so z-index -1 keeps the bands under anything the form overflows. */
+.ps-canvas::before,
+.ps-canvas::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: -1;
+    width: var(--ps-margin, 0);
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--c-studio-border) 0,
+        var(--c-studio-border) 1px,
+        transparent 1px,
+        transparent 6px
+    );
+}
+
+.ps-canvas::before {
+    left: 0;
+}
+
+.ps-canvas::after {
+    right: 0;
+}
+
 button.ps-device:focus-visible,
+button.ps-phone:focus-visible,
 button.ps-zoom:focus-visible,
 .ps-viewport:focus-visible {
     outline-offset: -4px;
 }
 button.ps-device.on:focus-visible,
+button.ps-phone.on:focus-visible,
 button.ps-zoom.on:focus-visible {
     outline-color: var(--c-studio-on-accent);
 }

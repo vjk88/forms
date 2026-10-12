@@ -1,18 +1,50 @@
 <template>
     <div class="ps-bar">
-        <div class="ps-devices" role="group" aria-label="Preview device">
-            <template for:each={deviceButtons} for:item="d">
-                <button
-                    key={d.key}
-                    type="button"
-                    class={d.cls}
-                    aria-pressed={d.pressed}
-                    data-device={d.key}
-                    onclick={handleDevice}
-                >
-                    {d.label}
-                </button>
+        <div class="ps-frame">
+            <div class="ps-devices" role="group" aria-label="Preview device">
+                <template for:each={deviceButtons} for:item="d">
+                    <button
+                        key={d.key}
+                        type="button"
+                        class={d.cls}
+                        aria-pressed={d.pressed}
+                        data-device={d.key}
+                        onclick={handleDevice}
+                    >
+                        {d.label}
+                    </button>
+                </template>
+            </div>
+            <template lwc:if={isMobile}>
+                <div class="ps-phones" role="group" aria-label="Phone width">
+                    <template for:each={phoneButtons} for:item="p">
+                        <button
+                            key={p.key}
+                            type="button"
+                            class={p.cls}
+                            aria-pressed={p.pressed}
+                            data-phone={p.key}
+                            title={p.title}
+                            onclick={handlePhone}
+                        >
+                            {p.label}
+                        </button>
+                    </template>
+                </div>
             </template>
+            <label
+                class="ps-hostbox"
+                title="The page the form is shown on leaves its own margin around the form"
+            >
+                <span class="ps-hostlabel">Shown on</span>
+                <select class="ps-host" onchange={handleHost}>
+                    <template for:each={hostOptions} for:item="h">
+                        <option key={h.key} value={h.key} selected={h.selected}>
+                            {h.label}
+                        </option>
+                    </template>
+                </select>
+            </label>
         </div>
         <div class="ps-tools">
             <div class="ps-zooms" role="group" aria-label="Preview zoom">

@@ -1,6 +1,6 @@
 # Cross-host render audit — does a form look and behave the same in the Studio preview, inside Salesforce and on the public site?
 
-**Date:** 2026-10-10 · **Status:** findings and a plan. Owner's go on 2026-10-10 for stage 1, then stage 2 (and one disposable form for test B); **stage 1 is in build** on branch `fix/legibility-stage1` (file-by-file trace in `docs/FinalDesign/IMPL_PLAN_CROSS_HOST_STAGES_1_2.md`); stage 3 is not started, decisions 3 to 5 are still open · **Revised three times** the same day after reviews (section 0)
+**Date:** 2026-10-10 · **Status (2026-10-11):** findings and a plan, now mostly delivered. Stages 1 and 2 are merged (#374 to #378, trace in `docs/FinalDesign/IMPL_PLAN_CROSS_HOST_STAGES_1_2.md`); stage 3 is merged except the nav-controls follow-up (#383, waiting for the owner; plan in `docs/FinalDesign/IMPL_PLAN_STAGE3_NARROW_FORMS.md`); stage 4 is B3 only (PR 385, waiting for the owner; B5 was skipped by the owner); stage 5, the preview frame, is built (`docs/FinalDesign/IMPL_PLAN_STAGE4_5_TYPED_FONT_AND_PREVIEW_FRAME.md`); stage 6, the standing tests, exists only as test C, the phone check (`scripts/qa/phone-check.cjs`) · **Revised three times** the same day after reviews (section 0)
 
 **The question (owner):** "preview and actual form should display the same sizes. Is there anything else in the UI rendering that works differently in preview / actual form / public site?"
 

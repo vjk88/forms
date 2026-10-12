@@ -382,4 +382,236 @@ describe('c-final-preview-stage', () => {
             expect(session.viewer.answers.q).toBe('Kept');
         });
     });
+
+    describe('frame: screen, phone width and the host margin (stage 5)', () => {
+        const styleOf = (el) =>
+            el.shadowRoot.querySelector('.ps-canvas').getAttribute('style');
+        const hostSelect = (el) => el.shadowRoot.querySelector('.ps-host');
+        const pick = async (el, host) => {
+            const select = hostSelect(el);
+            select.value = host;
+            select.dispatchEvent(new CustomEvent('change'));
+            await flush();
+        };
+
+        it('the canvas is the SCREEN wide and the host margin is padding inside it, so the viewer gets screen minus both margins', async () => {
+            const el = await mount();
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            const style = styleOf(el);
+            expect(style).toContain('width:390px');
+            expect(style).toContain('padding-inline:15px');
+            expect(style).toContain('box-sizing:border-box');
+            expect(style).toContain('--ps-margin:15px');
+            // the synthetic phone screen keeps its height
+            expect(style).toContain('calc(100dvh - 844px)');
+        });
+
+        it('the phone width control shows only on Mobile, defaults to 390 and resizes the screen', async () => {
+            const el = await mount();
+            expect(el.shadowRoot.querySelector('.ps-phones')).toBeNull();
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            const buttons = [
+                ...el.shadowRoot.querySelectorAll('.ps-phones [data-phone]')
+            ];
+            expect(buttons.map((b) => b.textContent.trim())).toEqual([
+                '320',
+                '360',
+                '390'
+            ]);
+            expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual([
+                'false',
+                'false',
+                'true'
+            ]);
+
+            buttons[0].click();
+            await flush();
+            const style = styleOf(el);
+            expect(style).toContain('width:320px');
+            expect(style).toContain('padding-inline:15px');
+            expect(style).toContain('calc(100dvh - 568px)');
+            expect(
+                el.shadowRoot
+                    .querySelector('[data-phone="320"]')
+                    .getAttribute('aria-pressed')
+            ).toBe('true');
+
+            el.shadowRoot.querySelector('[data-device="tablet"]').click();
+            await flush();
+            expect(el.shadowRoot.querySelector('.ps-phones')).toBeNull();
+            expect(styleOf(el)).toContain('width:768px');
+        });
+
+        it('the Shown on dropdown defaults to the Public site and shows the margin each host leaves', async () => {
+            const el = await mount();
+            const select = hostSelect(el);
+            expect(select.tagName).toBe('SELECT');
+            expect(select.value).toBe('public');
+            const options = () =>
+                [...select.querySelectorAll('option')].map((o) => [
+                    o.value,
+                    o.textContent.trim()
+                ]);
+            expect(options()).toEqual([
+                ['public', 'Public site · 15 px'],
+                ['lightning', 'Lightning page · 16 px'],
+                ['none', 'Edge to edge']
+            ]);
+            // Lightning leaves more room on a phone than on a desktop
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            expect(options()[1]).toEqual([
+                'lightning',
+                'Lightning page · 28 px'
+            ]);
+        });
+
+        it('changing the host changes the margin around the same form and nothing else', async () => {
+            const el = await mount();
+            const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            await pick(el, 'lightning');
+            expect(styleOf(el)).toContain('padding-inline:28px');
+            expect(styleOf(el)).toContain('width:390px');
+            await pick(el, 'none');
+            expect(styleOf(el)).toContain('padding-inline:0px');
+            await pick(el, 'public');
+            expect(styleOf(el)).toContain('padding-inline:15px');
+            // the SAME viewer: no remount, so answers and page position survive
+            expect(el.shadowRoot.querySelector('c-final-form-viewer')).toBe(
+                viewer
+            );
+        });
+
+        it('the toolbar controls have names a screen reader can read', async () => {
+            const el = await mount();
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            expect(
+                el.shadowRoot
+                    .querySelector('.ps-phones')
+                    .getAttribute('aria-label')
+            ).toBe('Phone width');
+            const label = hostSelect(el).closest('label');
+            expect(label).not.toBeNull();
+            expect(label.textContent).toContain('Shown on');
+        });
+
+        it('hands the phone and host back in the session and restores them, falling back per key for anything unknown', async () => {
+            const el = await mount();
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            el.shadowRoot.querySelector('[data-phone="360"]').click();
+            await pick(el, 'lightning');
+            const session = el.getSession();
+            expect(session).toMatchObject({
+                device: 'mobile',
+                phone: '360',
+                host: 'lightning'
+            });
+            el.remove();
+
+            const restored = await mount({ session });
+            expect(styleOf(restored)).toContain('width:360px');
+            expect(styleOf(restored)).toContain('padding-inline:28px');
+            expect(hostSelect(restored).value).toBe('lightning');
+
+            const odd = await mount({
+                session: { device: 'mobile', phone: '999', host: 'moon' }
+            });
+            expect(odd.getSession()).toMatchObject({
+                device: 'mobile',
+                phone: '390',
+                host: 'public'
+            });
+            const old = await mount({ session: { device: 'tablet' } });
+            expect(old.getSession()).toMatchObject({
+                device: 'tablet',
+                phone: '390',
+                host: 'public'
+            });
+        });
+
+        it('Restart keeps the phone width and the host', async () => {
+            const el = await mount();
+            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            await flush();
+            el.shadowRoot.querySelector('[data-phone="320"]').click();
+            await pick(el, 'lightning');
+            el.shadowRoot.querySelector('.ps-refresh').click();
+            await flush();
+            expect(el.getSession()).toMatchObject({
+                device: 'mobile',
+                phone: '320',
+                host: 'lightning'
+            });
+            expect(styleOf(el)).toContain('width:320px');
+        });
+
+        describe('fit and centering use the SCREEN width, not the form width', () => {
+            let frames;
+            let observers;
+            let originalResizeObserver;
+
+            beforeEach(() => {
+                observers = [];
+                frames = [];
+                originalResizeObserver = global.ResizeObserver;
+                global.ResizeObserver = jest
+                    .fn()
+                    .mockImplementation((callback) => {
+                        observers.push(callback);
+                        return { observe: jest.fn(), disconnect: jest.fn() };
+                    });
+                jest.spyOn(window, 'requestAnimationFrame').mockImplementation(
+                    (callback) => frames.push(callback)
+                );
+                jest.spyOn(window, 'cancelAnimationFrame').mockImplementation(
+                    () => {}
+                );
+            });
+
+            afterEach(() => {
+                global.ResizeObserver = originalResizeObserver;
+                jest.restoreAllMocks();
+            });
+
+            it('a 320 phone is centered as a 320 screen and a narrow pane scales the whole screen', async () => {
+                const el = await mount();
+                const viewport = el.shadowRoot.querySelector('.ps-viewport');
+                const canvas = el.shadowRoot.querySelector('.ps-canvas');
+                Object.defineProperty(viewport, 'clientWidth', {
+                    configurable: true,
+                    value: 940
+                });
+                Object.defineProperty(canvas, 'offsetHeight', {
+                    configurable: true,
+                    value: 568
+                });
+                el.shadowRoot.querySelector('[data-device="mobile"]').click();
+                await flush();
+                el.shadowRoot.querySelector('[data-phone="320"]').click();
+                observers.forEach((callback) => callback());
+                frames.splice(0).forEach((callback) => callback());
+                await flush();
+                expect(canvas.style.transform).toBe(
+                    'translateX(310px) scale(1)'
+                );
+
+                Object.defineProperty(viewport, 'clientWidth', {
+                    configurable: true,
+                    value: 160
+                });
+                observers.forEach((callback) => callback());
+                frames.splice(0).forEach((callback) => callback());
+                await flush();
+                expect(canvas.style.transform).toBe(
+                    'translateX(0px) scale(0.5)'
+                );
+            });
+        });
+    });
 });
