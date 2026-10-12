@@ -37,7 +37,7 @@ Both exist on the public site only; nothing sets a font on a Lightning widget, s
 | Lightning viewer | 0 | 0 |
 | Studio preview | 1 (a heading inside a Rich text block; needs `--lwc-fontFamily`, Studio only, parked) | 1 |
 
-**Who sees a change.** Of the 32 built-in themes, 30 use the system font stack and the public site's own default is the same stack, so nothing visible changes for them. Neon Nights (geometric: Avenir Next, Century Gothic, Futura, Trebuchet) changes, and so does any form that picked Mono, Geometric or Humanist typography or uploaded a custom font. That is the intended result (answers match the rest of the form), and the reason this waits for the owner.
+**Who sees a change.** Of the 32 built-in themes, 31 have the system font stack as their body font (Editorial Ivory uses a serif for titles only, which this does not touch) and the public site's own default is the same stack, so nothing visible changes for them. Neon Nights (geometric: Avenir Next, Century Gothic, Futura, Trebuchet) changes, and so does any form that picked Mono, Geometric or Humanist typography or uploaded a custom font. That is the intended result (answers match the rest of the form), and the reason this waits for the owner.
 
 **Undo.** Revert the commit (one rule, two lines) and publish the site.
 
