@@ -48,14 +48,14 @@ Both exist on the public site only; nothing sets a font on a Lightning widget, s
 A frame is three independent choices:
 
 - the **screen**: Desktop 1280 x 800, Tablet 768 x 1024, or a phone of **320 x 568, 360 x 800 or 390 x 844** (the phone choice appears when Mobile is selected; 390 stays the default);
-- the **host** the form is shown on, which decides the page margin around it: **Public site**, **Lightning page**, or **Edge to edge** (no margin, what the Studio drew until now);
+- the **page margin**, which depends on the page the form is shown on: **Public site**, **Lightning tab**, or **None (edge to edge)** (no margin, what the Studio drew until now);
 - the zoom (Fit or 100%), unchanged.
 
 **Form width = screen width - 2 x host margin.** The viewer is laid out at exactly that width, so every container query, theme padding and layout rule runs against the width the real page gives the form. No form width is hard-coded anywhere.
 
 ### 3.2 Measured margins (the same in-memory kitchen-sink form, signed-out public site and the Lightning viewer tab, 2026-10-11)
 
-| Screen | Public site: form / answer column | Lightning page: form / answer column |
+| Screen | Public site: form / answer column | Lightning tab: form / answer column |
 |---|---|---|
 | 320 | 290 / 238 | 264 / 212 |
 | 360 | 330 / 278 | 304 / 252 |
@@ -71,7 +71,7 @@ So the **public site leaves 15 px a side at every width**, and **Lightning leave
 - `finalPreviewStage` (js, html, css):
   - the canvas keeps the screen width and gets `padding-inline` = the host margin with `box-sizing: border-box`, so the viewer inside is exactly the form width; the scale, Fit and 100% math still uses the screen width;
   - the margin shows as two quiet hatched bands (pseudo-elements, so the form's own rounded corners never show a hatch behind them);
-  - a **320 | 360 | 390** segmented control while Mobile is selected, and a **Shown on** dropdown (native select, the Studio's existing dropdown style) whose entries carry the number, for example "Public site · 15 px";
+  - a **320 | 360 | 390** segmented control while Mobile is selected, and a **Page margin** dropdown (native select, the Studio's existing dropdown style) whose entries carry the number, for example "Public site · 15 px", with a small swatch of the same stripes in front of its label (so the toolbar is its own legend) and a one-sentence description a screen reader reads ("Preview only, nothing on your form changes. The striped bands show the margin the page leaves around your form.");
   - `getSession()` also hands back `phone` and `host`, and the Studio's Build/Design hand-off restores them.
 - Nothing outside the Studio's preview chrome changes: the viewer, the theme engine and every shared renderer are untouched.
 
@@ -82,17 +82,17 @@ So the **public site leaves 15 px a side at every width**, and **Lightning leave
 
 ### 3.5 Acceptance (measured on the Studio's own host, `/apex/FinalStudio`, with the same in-memory form as the real hosts)
 
-- Mobile + 390 + Public site: the form is **360** wide and the first answer box **308**, as on the public site; Lightning page: **334** and **282**, as in Lightning.
+- Mobile + 390 + Public site: the form is **360** wide and the first answer box **308**, as on the public site; Lightning tab: **334** and **282**, as in Lightning.
 - 320 and 360 match the table within 1 px for both hosts (238 / 278 on the public site, 212 / 252 in Lightning).
 - Tablet and Desktop match the table (738 and 1250 on the public site, 736 and 1248 in Lightning).
-- Edge to edge reproduces the old frame exactly (390 wide).
+- None (edge to edge) reproduces the old frame exactly (390 wide).
 - The toolbar still works in a narrow pane (it wraps instead of clipping), every control has a name for a screen reader, and Restart / Expand / Fit / 100% behave as before.
 
 ### 3.6 Risks
 
 - **Studio-only cache.** The Studio page caches the old component bundle for about a minute after a deploy; measure after it has refreshed.
 - **A stored hand-off.** The session object is in memory only (Build to Design); an old one without `phone` or `host` falls back to the defaults.
-- **Lightning margin is for the viewer tab.** The 28 / 16 px figures are what the app page tab leaves; a Lightning record page can leave a different amount. The dropdown says "Lightning page", and the number is shown, so nobody reads it as a promise about every page.
+- **Lightning margin is for the viewer tab.** The 28 / 16 px figures are what the app page tab leaves; a Lightning record page can leave a different amount. The dropdown says "Lightning tab", and the number is shown, so nobody reads it as a promise about every page.
 - **Embedded surface.** The Studio and Lightning draw the form as an embedded surface (corner rounding, viewport-fill height) and the public site does not (section 4 item 4 of the audit); the Public site profile does not change that, it only fixes the width.
 
 ## 4. What was built
@@ -101,8 +101,10 @@ So the **public site leaves 15 px a side at every width**, and **Lightning leave
 
 **Stage 5: this PR.** As planned (section 3), plus one standing guard.
 
-- `previewFrame.js` (the pure model) and `previewFrame.test.js` (13 tests: the measured form widths, form = screen - 2 x margin for every combination, Edge to edge = the old frame, defaults and per-key fallbacks).
-- `finalPreviewStage`: the canvas is the screen wide with the host margin as `padding-inline`, the hatched bands, the 320 | 360 | 390 control (Mobile only), the "Shown on" dropdown, and a session that carries `phone` and `host`. Eight new stage tests; the 13 existing ones are untouched and green; the Studio suite is green.
+- `previewFrame.js` (the pure model) and `previewFrame.test.js` (13 tests: the measured form widths, form = screen - 2 x margin for every combination, None (edge to edge) = the old frame, defaults and per-key fallbacks).
+- `finalPreviewStage`: the canvas is the screen wide with the host margin as `padding-inline`, the hatched bands, the 320 | 360 | 390 control (Mobile only), the "Page margin" dropdown with its stripes swatch and spoken description, and a session that carries `phone` and `host`. Eight new stage tests; the 13 existing ones are untouched and green; the Studio suite is green.
 - **Standing guard (not in the plan above):** `scripts/qa/phone-check.cjs` now also fails if the public site stops leaving 15 px on each side of the form (rule "page margin", self-test case 10), so a change to the site's page cannot quietly make the Studio's Public-site frame wrong again. Lightning's 28 / 16 px cannot be guarded the same way (it needs a signed-in session), so that column is a dated measurement.
 
-**Measured on the Studio's own host** (`/apex/FinalStudio`, deployed to revclouddev, the same in-memory kitchen-sink form as on the real hosts): 15 frames, Desktop, Tablet and Mobile 320 / 360 / 390, each with Public site, Lightning page and Edge to edge. All ten comparisons with a real host match to the pixel, form width and first answer box (public 290 / 238, 330 / 278, 360 / 308, 738 / 642, 1250 / 688; Lightning 264 / 212, 304 / 252, 334 / 282, 736 / 640, 1248 / 688). Edge to edge reproduces the old frame (390 wide, answer box 338). The toolbar is one row in a wide pane and wraps to two rows in Build mode's narrow pane (763 px) with Mobile selected; nothing is clipped.
+**Measured on the Studio's own host** (`/apex/FinalStudio`, deployed to revclouddev, the same in-memory kitchen-sink form as on the real hosts): 15 frames, Desktop, Tablet and Mobile 320 / 360 / 390, each with Public site, Lightning tab and None (edge to edge). All ten comparisons with a real host match to the pixel, form width and first answer box (public 290 / 238, 330 / 278, 360 / 308, 738 / 642, 1250 / 688; Lightning 264 / 212, 304 / 252, 334 / 282, 736 / 640, 1248 / 688). None (edge to edge) reproduces the old frame (390 wide, answer box 338). The toolbar is one row in a wide pane and wraps to two rows in Build mode's narrow pane (763 px) with Mobile selected; nothing is clipped.
+
+**UX review (the pre-merge gate on UI work): no ship-blockers.** Two should-fix items, both fixed in this PR: (1) the dropdown said "Shown on", which reads like a publishing setting, and "15 px" had no noun, so it is now **Page margin** with options "Public site · 15 px", "Lightning tab · 28 px" and "None (edge to edge)" ("tab" because the numbers were measured on a Lightning tab; a record page can leave a different amount); (2) the hatched bands had no explanation beyond a hover tooltip, so a swatch of the same stripes now sits in front of the label and the sentence is the dropdown's spoken description. Accepted as they are: the toolbar going to two rows (and the preview moving down about 35 px) when Mobile is selected in Build mode's narrow pane, the 9 to 11 px stripes against the pane edges on Desktop at Fit (the same rule on every device, now explained by the legend), and no "px" after 320 | 360 | 390 (the buttons carry it in their tooltips).

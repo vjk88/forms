@@ -444,7 +444,7 @@ describe('c-final-preview-stage', () => {
             expect(styleOf(el)).toContain('width:768px');
         });
 
-        it('the Shown on dropdown defaults to the Public site and shows the margin each host leaves', async () => {
+        it('the Page margin dropdown defaults to the Public site and names the margin each page leaves', async () => {
             const el = await mount();
             const select = hostSelect(el);
             expect(select.tagName).toBe('SELECT');
@@ -456,15 +456,15 @@ describe('c-final-preview-stage', () => {
                 ]);
             expect(options()).toEqual([
                 ['public', 'Public site · 15 px'],
-                ['lightning', 'Lightning page · 16 px'],
-                ['none', 'Edge to edge']
+                ['lightning', 'Lightning tab · 16 px'],
+                ['none', 'None (edge to edge)']
             ]);
             // Lightning leaves more room on a phone than on a desktop
             el.shadowRoot.querySelector('[data-device="mobile"]').click();
             await flush();
             expect(options()[1]).toEqual([
                 'lightning',
-                'Lightning page · 28 px'
+                'Lightning tab · 28 px'
             ]);
         });
 
@@ -497,7 +497,26 @@ describe('c-final-preview-stage', () => {
             ).toBe('Phone width');
             const label = hostSelect(el).closest('label');
             expect(label).not.toBeNull();
-            expect(label.textContent).toContain('Shown on');
+            expect(label.textContent).toContain('Page margin');
+        });
+
+        it('says what the margin is, to a screen reader too: a stripes swatch in front of the label, and a spoken description', async () => {
+            const el = await mount();
+            const label = hostSelect(el).closest('label');
+            // the toolbar is its own legend: a swatch of the same stripes the margin bands use
+            const swatch = label.querySelector('.ps-swatch');
+            expect(swatch).not.toBeNull();
+            expect(swatch.getAttribute('aria-hidden')).toBe('true');
+            // the sentence is the dropdown's description (not a hover-only tooltip)
+            const describedBy = hostSelect(el).getAttribute('aria-describedby');
+            expect(describedBy).toBeTruthy();
+            const help = el.shadowRoot.querySelector(`[id="${describedBy}"]`);
+            expect(help).not.toBeNull();
+            expect(help.textContent).toContain(
+                'Preview only, nothing on your form changes'
+            );
+            expect(help.textContent).toContain('striped');
+            expect(label.getAttribute('title')).toBe(help.textContent.trim());
         });
 
         it('hands the phone and host back in the session and restores them, falling back per key for anything unknown', async () => {

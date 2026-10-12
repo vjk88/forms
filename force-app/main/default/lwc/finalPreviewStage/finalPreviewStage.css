@@ -4,6 +4,16 @@
 :host {
     display: block;
     min-width: 0;
+    /* the stripes of the margin bands (the legend swatch beside the Page margin
+       control draws the same stripes with darker lines: at swatch size the bands' faint
+       ones vanish and the swatch looked like an empty checkbox) */
+    --ps-hatch: repeating-linear-gradient(
+        135deg,
+        var(--c-studio-border) 0,
+        var(--c-studio-border) 1px,
+        transparent 1px,
+        transparent 6px
+    );
 }
 
 .ps-bar {
@@ -69,14 +79,45 @@
     font-weight: 600;
 }
 
-/* "Shown on": which page the form sits in decides the margin around it. The
-   dropdown wears the same quiet outline as the other toolbar controls. */
+/* "Page margin": which page the form sits in decides the margin around it. A
+   swatch of the same stripes the margin bands use makes the toolbar its own
+   legend; the dropdown wears the same quiet outline as the other controls. */
 .ps-hostbox {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 12px;
     color: var(--c-studio-text-weak);
+}
+
+.ps-swatch {
+    flex: none;
+    width: 20px;
+    height: 12px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 2px;
+    background:
+        repeating-linear-gradient(
+            135deg,
+            var(--c-studio-border-strong) 0,
+            var(--c-studio-border-strong) 1px,
+            transparent 1px,
+            transparent 5px
+        ),
+        var(--c-studio-surface);
+}
+
+/* Read by screen readers (the dropdown's description), never seen. */
+.ps-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 .ps-host {
@@ -177,13 +218,7 @@
     z-index: -1;
     width: var(--ps-margin, 0);
     pointer-events: none;
-    background: repeating-linear-gradient(
-        135deg,
-        var(--c-studio-border) 0,
-        var(--c-studio-border) 1px,
-        transparent 1px,
-        transparent 6px
-    );
+    background: var(--ps-hatch);
 }
 
 .ps-canvas::before {

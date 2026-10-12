@@ -100,9 +100,10 @@ change would re-flow the editing surface). So structure and presentation are spl
     (corner rounding, viewport-fill min-height via the `--frame-offset` synthetic device viewport)
     render in previews on any host — the VF studio at /apex/ broke the old URL sniff.
   - **Frame = screen + host margin (2026-10-11, cross-host audit stage 5).** Mobile takes a phone
-    width (320 / 360 / 390, default 390) and a "Shown on" dropdown adds the margin the host page
-    leaves around the form: Public site 15 px a side (default), Lightning page 28 px on a phone and
-    16 px on tablet and desktop, or Edge to edge (none). The viewer is laid out at screen minus both
+    width (320 / 360 / 390, default 390) and a "Page margin" dropdown adds the margin the host page
+    leaves around the form: Public site 15 px a side (default), Lightning tab 28 px on a phone and
+    16 px on tablet and desktop, or None (edge to edge); a stripes swatch in front of the label
+    explains the hatched bands. The viewer is laid out at screen minus both
     margins, the width the real page gives it, so a preview answers the same size as the real page
     (measured on all three hosts). The numbers live in `finalPreviewStage/previewFrame.js`; the
     public-site one is guarded by `scripts/qa/phone-check.cjs`. Plan:

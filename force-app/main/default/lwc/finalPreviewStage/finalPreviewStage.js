@@ -19,7 +19,7 @@ import {
  * canvas trick). No iframe — same component tree, one-parser rule intact.
  *
  * The frame is the SCREEN (Desktop, Tablet, or a 320/360/390 phone) plus the
- * margin the host page leaves around the form (Public site, Lightning page or
+ * margin the host page leaves around the form (Public site, Lightning tab or
  * none); the viewer is laid out at screen minus both margins, exactly the width
  * the real page gives it (previewFrame.js holds the measured numbers).
  *
@@ -130,6 +130,11 @@ export default class FinalPreviewStage extends LightningElement {
                 selected: h.key === this.host
             };
         });
+    }
+
+    /** What the margin control means, for the tooltip AND as its spoken description. */
+    get hostHelp() {
+        return 'Preview only, nothing on your form changes. The striped bands show the margin the page leaves around your form.';
     }
 
     /** The canvas is the screen; the host margin is padding inside it, so the

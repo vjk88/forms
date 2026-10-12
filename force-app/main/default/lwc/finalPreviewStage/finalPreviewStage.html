@@ -32,12 +32,14 @@
                     </template>
                 </div>
             </template>
-            <label
-                class="ps-hostbox"
-                title="The page the form is shown on leaves its own margin around the form"
-            >
-                <span class="ps-hostlabel">Shown on</span>
-                <select class="ps-host" onchange={handleHost}>
+            <label class="ps-hostbox" title={hostHelp}>
+                <span class="ps-swatch" aria-hidden="true"></span>
+                <span class="ps-hostlabel">Page margin</span>
+                <select
+                    class="ps-host"
+                    aria-describedby="ps-host-help"
+                    onchange={handleHost}
+                >
                     <template for:each={hostOptions} for:item="h">
                         <option key={h.key} value={h.key} selected={h.selected}>
                             {h.label}
@@ -45,6 +47,7 @@
                     </template>
                 </select>
             </label>
+            <span id="ps-host-help" class="ps-sr">{hostHelp}</span>
         </div>
         <div class="ps-tools">
             <div class="ps-zooms" role="group" aria-label="Preview zoom">

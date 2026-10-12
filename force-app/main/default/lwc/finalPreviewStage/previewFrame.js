@@ -11,7 +11,7 @@
  * Margins measured 2026-10-11 on the same in-memory form (signed-out public
  * site, Lightning viewer tab); form width, answer column:
  *
- *   screen   public site     Lightning page
+ *   screen   public site     Lightning tab
  *   320      290 / 238       264 / 212
  *   360      330 / 278       304 / 252
  *   390      360 / 308       334 / 282
@@ -62,12 +62,12 @@ export const HOSTS = [
     },
     {
         key: 'lightning',
-        label: 'Lightning page',
+        label: 'Lightning tab',
         margin: { desktop: 16, tablet: 16, mobile: 28 }
     },
     {
         key: 'none',
-        label: 'Edge to edge',
+        label: 'None (edge to edge)',
         margin: { desktop: 0, tablet: 0, mobile: 0 }
     }
 ];
