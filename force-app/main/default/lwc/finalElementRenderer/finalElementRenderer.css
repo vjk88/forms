@@ -55,6 +55,13 @@
        set redefines --c-fs-answer on the section. */
     font-size: var(--c-fs-answer);
     --dxp-s-form-element-text-font-size: var(--c-fs-answer);
+    /* The FONT, the same way (cross-host audit B3, stage 4): Salesforce hosts
+       inherit the form's font into typed text and option labels, the public
+       site's widgets do not (they read their own settings and fall back to the
+       system font), so a brand font was everywhere except in the answers and the
+       radio and checkbox labels. Both settings exist on the public site only. */
+    --dxp-s-form-element-text-font-family: var(--c-font-body);
+    --dxp-s-form-element-label-font-family: var(--c-font-body);
 }
 
 .field > lightning-input,
