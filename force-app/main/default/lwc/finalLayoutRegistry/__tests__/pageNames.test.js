@@ -1,3 +1,5 @@
+import { createElement } from 'lwc';
+import FinalNavScroll from 'c/finalNavScroll';
 import { getLayout, layoutNamesPages } from 'c/finalLayoutRegistry';
 
 /**
@@ -46,5 +48,41 @@ describe('layoutNamesPages', () => {
         );
         expect(layoutNamesPages('nope', {}, 2)).toBe(false);
         expect(getLayout('nope')).toBe(getLayout('scroll'));
+    });
+});
+
+// The viewer decides from layoutNamesPages whether a section title would repeat a
+// page name; Scroll draws its own dividers. Two places must never disagree.
+describe('layoutNamesPages agrees with what Scroll actually draws', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('a divider is on screen exactly when the registry says the pages are named', () => {
+        for (const count of [1, 2, 3]) {
+            for (const options of [
+                undefined,
+                {},
+                { showDividers: false },
+                { showDividers: true }
+            ]) {
+                const el = createElement('c-final-nav-scroll', {
+                    is: FinalNavScroll
+                });
+                el.pages = Array.from({ length: count }, (_, i) => ({
+                    id: 'pg_' + i,
+                    name: 'Page name ' + i,
+                    sections: []
+                }));
+                el.options = options;
+                document.body.appendChild(el);
+                const drawn =
+                    el.shadowRoot.querySelector('h2.divider') !== null;
+                expect(drawn).toBe(layoutNamesPages('scroll', options, count));
+                el.remove();
+            }
+        }
     });
 });
