@@ -41,6 +41,13 @@ export function computeFitTier(width, stepCount) {
     return 'collapse';
 }
 
+/** A section the viewer marked as repeating its step's name, marked no more. */
+function withTitleShown(section) {
+    return section.titleRepeatsPage
+        ? { ...section, titleRepeatsPage: false }
+        : section;
+}
+
 export default class FinalNavStepper extends LightningElement {
     @api pages = [];
     @api currentPageIndex = 0;
@@ -194,9 +201,26 @@ export default class FinalNavStepper extends LightningElement {
     /** One-item list so the keyed template remounts (and animates) per step. */
     get currentPageList() {
         const page = (this.pages || [])[this.currentPageIndex || 0];
-        return page
-            ? [{ ...page, key: page.id || `pg_${this.currentPageIndex}` }]
-            : [];
+        if (!page) {
+            return [];
+        }
+        // The viewer tucks away a lone section title that repeats the step's
+        // name, "while wide" (titleRepeatsPage: 'wide'); the stylesheet gives it
+        // back once the strip drops its labels at 540px. The measured ladder
+        // can drop them at ANY width (a wizard of ten steps or more collapses to
+        // dots in a 560px form), where no step shows its name and the title is
+        // the page's only one: give it back here too.
+        const namesGone = this.fitTier === 'collapse';
+        return [
+            {
+                ...page,
+                key: page.id || `pg_${this.currentPageIndex}`,
+                sections:
+                    namesGone && page.sections
+                        ? page.sections.map(withTitleShown)
+                        : page.sections
+            }
+        ];
     }
 
     handleStepClick(event) {
