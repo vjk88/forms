@@ -29,6 +29,12 @@ export default class FinalNavScroll extends LightningElement {
         return show && (this.pages || []).length > 1;
     }
 
+    /** Under a page divider the sections' titles are subheadings (smaller);
+     *  without dividers they are the top-level headings and keep their size. */
+    get zonesClass() {
+        return this.showPageDividers ? 'zones-under-divider' : '';
+    }
+
     /** Re-emit the answer intent across this shadow boundary (catalog rule:
      *  plain non-composed events — every hop re-dispatches deliberately). */
     handleValueChange(event) {
