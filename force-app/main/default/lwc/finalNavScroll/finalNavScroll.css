@@ -6,15 +6,68 @@
 .page-block {
     display: grid;
     gap: var(--c-space-4);
+    /* A copy of the section size role as this page block inherits it: the zones
+       below redefine --c-fs-section, and a property cannot read itself. */
+    --nav-fs-section: var(--c-fs-section);
 }
 
+/* The page name is the heading: the text colour (it was the weak grey, lighter
+   than the section title inside it), one flat thin line (it was a fading
+   gradient next to the plain lines elsewhere), and bigger than a section title
+   but never bigger than the form title. On a phone the form title is 20px and a
+   section title 18px, so 1.2 x the section would be 21.6px, above the title it
+   sits under. */
 .divider {
     margin: var(--c-space-4) 0 0;
     font-family: var(--c-font-display);
-    font-size: var(--c-fs-section);
-    font-weight: 600;
-    color: var(--c-text-weak);
-    border-bottom: 1px solid;
-    border-image: linear-gradient(to right, currentColor, transparent) 1;
+    font-size: min(calc(var(--c-fs-section) * 1.2), var(--c-fs-title));
+    font-weight: 700;
+    color: var(--c-text);
+    border-bottom: 1px solid color-mix(in srgb, var(--c-text) 18%, transparent);
     padding-bottom: var(--c-space-2);
+}
+
+/* A page still called "Page 3" (the name the Studio gives a new page) has no name
+   worth showing, and as the loudest heading on the page it would outshout the real
+   title under it. Its divider keeps the line that separates the pages and drops the
+   words from sight (they stay in the page for screen readers). The first page has
+   nothing above it to separate from, so it draws no line. */
+.divider-quiet {
+    position: relative;
+    padding-bottom: 0;
+}
+
+.divider-quiet .divider-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.divider-quiet.divider-first {
+    margin: 0;
+    border-bottom: 0;
+}
+
+/* Under a divider a section title is a subheading, so the sections of that page
+   see a smaller section size: 0.9 x, which keeps it above the 16px question
+   labels beneath it (0.8 x was exactly a question's size and weight, so a
+   subheading read like a question that had lost its input box). Only then: a
+   one-page form has no divider and its section titles are the top-level
+   headings. Custom properties inherit through the sections' shadow trees, so no
+   section stylesheet changes. */
+.zones-under-divider {
+    --c-fs-section: calc(var(--nav-fs-section) * 0.9);
+}
+
+/* On a narrow form the section size is already down to 18px, and a further step
+   would put a subheading below the questions' neighbours. It keeps that size. */
+@container final-form-viewport (max-width: 540px) {
+    .zones-under-divider {
+        --c-fs-section: var(--nav-fs-section);
+    }
 }
