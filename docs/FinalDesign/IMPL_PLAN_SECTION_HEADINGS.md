@@ -22,7 +22,7 @@ In a layout that already names each page, a page with **one** section does not s
 |---|---|---|
 | Tabbed pages, Accordion panels | always, at every width | hidden at every width |
 | Side rail, set to "Collapse into a menu" | always (the Pages button names the page) | hidden at every width |
-| Side rail (labels), Wizard steps (numbered) | only while the navigation has room (a form wider than 540px); a narrow form shows chips or dots | hidden while wide, **shown on a phone** |
+| Side rail (labels), Wizard steps (numbered) | only while the navigation has room: a form wider than 540px, and for the strip also while its steps fit (see section 7); a narrow form shows chips or dots | hidden while wide, **shown on a phone** (and when the strip has collapsed) |
 | Wizard steps set to Dots or Progress bar | never | shown, as before |
 | Continuous scroll | only with the page-dividers option on and more than one page | hidden then, shown otherwise |
 | One at a time, Split hero | never | shown, as before |
@@ -76,4 +76,4 @@ See the verification notes added to the PR descriptions (pictures at desktop and
 | 7 | Placeholder-named divider becomes the loudest heading | **Fixed** in PR 2 (section 5) |
 | 8 | Accessibility, already there before: the Tabbed pages content panel is not linked to its tab; in Accordion the hidden section heading is at the same level as the panel heading | **Not done here**, parked as DEFERRED 39 (it is a pre-existing gap, and touching the tab and accordion markup is a separate change) |
 
-Accepted and documented: the wizard strip has an intermediate "compact" tier (labels shortened, still shown) that the 540px switch does not model, so between 540px and the width where the strip compacts the title is hidden while the labels are a little shortened; the name is still there. An inline form header on a very narrow form is the only other edge.
+Found while fixing finding 1, and fixed with it: the wizard strip can also drop its labels at a **wide** width. Its measured fit ladder (`computeFitTier`) shows every label when `steps x 120px` fits, numbers plus the active label when `steps x 44px + 140px` fits (the name is still on screen), and otherwise collapses to dots at any width: ten steps need 580px, so a 560px form of ten steps showed dots and no name, with the title hidden by the rule above. The strip now hands the current page's sections back without the "tucked away" mark when its tier is `collapse` (`finalNavStepper`, `__tests__/titleRepeat.test.js`); the 540px query covers the narrow case and this covers the wide one. Accepted: for a moment on first load of such a form (before the strip has measured itself) the title is hidden, then it appears.
