@@ -367,6 +367,87 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(el.shadowRoot.textContent).not.toContain('Delete');
     });
 
+    describe('a heading the layout tucks away (the page name is already in the navigation)', () => {
+        const SECTION = {
+            id: 'sec_1',
+            title: 'Contact details',
+            elements: []
+        };
+        const hint = (el) =>
+            el.shadowRoot.querySelector('[data-id="header-repeat"]');
+
+        it('says why the heading is not on the preview, and the toggle reads off', async () => {
+            const el = mount({
+                kind: 'section',
+                node: SECTION,
+                headerRepeat: {
+                    pageName: 'Details',
+                    by: 'side rail',
+                    always: false
+                }
+            });
+            await flush();
+            const toggle = el.shadowRoot.querySelector('.pp-toggle');
+            expect(toggle.textContent.trim()).toBe('Header hidden');
+            expect(toggle.classList.contains('on')).toBe(false);
+            const text = hint(el).textContent;
+            expect(text).toContain('The side rail already names this page');
+            expect(text).toContain('“Details”');
+            expect(text).toContain('Screen readers still read it');
+            // 'wide': the phone gets the heading back, and the panel says so
+            expect(text).toContain('On a narrow screen');
+            // no icon picker while the header is off
+            expect(el.shadowRoot.querySelector('.pp-icsearch')).toBeNull();
+        });
+
+        it('"always": no promise about a narrow screen', async () => {
+            const el = mount({
+                kind: 'section',
+                node: SECTION,
+                headerRepeat: { pageName: 'Details', by: 'tab', always: true }
+            });
+            await flush();
+            expect(hint(el).textContent).toContain(
+                'The tab already names this page'
+            );
+            expect(hint(el).textContent).not.toContain('narrow screen');
+        });
+
+        it('the first click switches the header ON (an explicit true), which is what shows it anyway', async () => {
+            const el = mount({
+                kind: 'section',
+                node: SECTION,
+                headerRepeat: { pageName: 'Details', by: 'tab', always: true }
+            });
+            await flush();
+            const events = [];
+            el.addEventListener('propchange', (e) => events.push(e.detail));
+            el.shadowRoot.querySelector('.pp-toggle').click();
+            expect(events).toEqual([{ patch: { showHeader: true } }]);
+        });
+
+        it('no explanation when the heading is on screen, and the toggle says shown', async () => {
+            const el = mount({ kind: 'section', node: SECTION });
+            await flush();
+            expect(hint(el)).toBeNull();
+            expect(
+                el.shadowRoot.querySelector('.pp-toggle').textContent.trim()
+            ).toBe('Header shown');
+        });
+
+        it('a header the author hid by hand shows no explanation (it is simply off)', async () => {
+            const el = mount({
+                kind: 'section',
+                node: { ...SECTION, showHeader: false }
+            });
+            await flush();
+            expect(hint(el)).toBeNull();
+            expect(
+                el.shadowRoot.querySelector('.pp-toggle').textContent.trim()
+            ).toBe('Header hidden');
+        });
+    });
+
     it('repeater inspector stays DEDICATED: legacy labels, max 0 = unlimited, child dedupe', async () => {
         const el = mount({
             kind: 'section',

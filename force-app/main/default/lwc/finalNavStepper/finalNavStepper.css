@@ -3,7 +3,9 @@
    width:100% guards the container-type flex/grid collapse. */
 .stepper {
     container-type: inline-size;
-    container-name: stepper;
+    /* pagenav: the shared name the section title rule listens to (it hides a
+       title that repeats a page name only while the labels are on show) */
+    container-name: stepper pagenav;
     width: 100%;
     font-family: var(--c-font-body);
 }

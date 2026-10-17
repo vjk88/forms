@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+    >Page names: is a name somebody chose or a placeholder ("Page 2", a bare number), and does a section title repeat it? Shared by the viewer, the Studio and the Scroll layout. No DOM.</description>
+</LightningComponentBundle>
