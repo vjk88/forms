@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { isRealPageName } from 'c/finalPageName';
 
 /**
  * finalNavScroll — continuous-flow nav primitive (catalog §2 contract).
@@ -17,22 +18,33 @@ export default class FinalNavScroll extends LightningElement {
     @api options;
 
     get pageList() {
-        return (this.pages || []).map((page, index) => ({
-            ...page,
-            key: page.id || `pg_${index}`,
-            sections: page.sections || []
-        }));
+        const dividers = this.showPageDividers;
+        return (this.pages || []).map((page, index) => {
+            // A divider heads a page only when the page has a name somebody
+            // chose. A placeholder ("Page 3") would become the loudest heading
+            // there is, so that divider keeps its line, drops the words from
+            // sight, and the section titles under it keep their full size.
+            const named = dividers && isRealPageName(page.name);
+            return {
+                ...page,
+                key: page.id || `pg_${index}`,
+                sections: page.sections || [],
+                named,
+                quietClass:
+                    index === 0
+                        ? 'divider divider-quiet divider-first'
+                        : 'divider divider-quiet',
+                // Under a real divider the sections' titles are subheadings
+                // (smaller); otherwise they are the top-level headings and
+                // keep their size.
+                zonesClass: named ? 'zones-under-divider' : ''
+            };
+        });
     }
 
     get showPageDividers() {
         const show = Boolean(this.options && this.options.showDividers);
         return show && (this.pages || []).length > 1;
-    }
-
-    /** Under a page divider the sections' titles are subheadings (smaller);
-     *  without dividers they are the top-level headings and keep their size. */
-    get zonesClass() {
-        return this.showPageDividers ? 'zones-under-divider' : '';
     }
 
     /** Re-emit the answer intent across this shadow boundary (catalog rule:
