@@ -144,6 +144,21 @@
     margin-bottom: var(--c-space-4);
 }
 
+/* A lone section whose title would repeat the page name that the layout already
+   shows (the side rail's "1 Details", a tab, a step, an accordion panel title):
+   out of sight, but still in the page, so a screen reader finds the heading.
+   Not display:none, which would take it out of the accessibility tree. */
+.sec-head.sec-head-repeat {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 .sec-title-row {
     display: flex;
     align-items: center;

@@ -220,6 +220,15 @@ export default class FinalSectionRenderer extends LightningElement {
         );
     }
 
+    /** The viewer marks a lone section whose title would repeat the page name the
+     *  layout already shows (finalFormViewer/sectionTitleRepeat.js). The heading
+     *  stays in the page for screen readers and is taken out of sight by CSS. */
+    get headClass() {
+        return this.sec.titleRepeatsPage
+            ? 'sec-head sec-head-repeat'
+            : 'sec-head';
+    }
+
     get headerIcon() {
         return this.sec.icon || null;
     }

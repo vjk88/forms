@@ -16,6 +16,9 @@ export const LAYOUTS = {
         // multi-page spec — scroll flattens pages with dividers (ARCH §2.2).
         paginates: false,
         gating: false,
+        // Names each page with a divider heading, but only when the design
+        // option is on and there is more than one page (layoutNamesPages).
+        pageNames: 'dividers',
         // Default action-row arrangement (LAYOUT_REFINEMENTS_SPEC §3): submit
         // only → sit it in the conventional primary corner (right).
         buttonArrangement: 'together-right'
@@ -25,6 +28,7 @@ export const LAYOUTS = {
         load: () => import('c/finalNavStepper'),
         paginates: true,
         gating: true,
+        pageNames: 'nav',
         // Wizard convention: Back one end, Next the other.
         buttonArrangement: 'split'
     },
@@ -33,6 +37,7 @@ export const LAYOUTS = {
         load: () => import('c/finalNavTabs'),
         paginates: true,
         gating: false,
+        pageNames: 'nav',
         buttonArrangement: 'split'
     },
     accordion: {
@@ -42,6 +47,7 @@ export const LAYOUTS = {
         // submitBar renders once below (like scroll), never per panel.
         paginates: false,
         gating: false,
+        pageNames: 'nav',
         buttonArrangement: 'together-right'
     },
     rail: {
@@ -49,6 +55,7 @@ export const LAYOUTS = {
         load: () => import('c/finalNavRail'),
         paginates: true,
         gating: false,
+        pageNames: 'nav',
         buttonArrangement: 'split'
     },
     oneAtATime: {
@@ -86,4 +93,23 @@ const DEFAULT_TYPE = 'scroll';
 /** Registry row for a spec `layout.type` — unknown types fall back to scroll. */
 export function getLayout(type) {
     return LAYOUTS[type] || LAYOUTS[DEFAULT_TYPE];
+}
+
+/**
+ * Does this layout already put each page's NAME on screen? Side rail, Tabbed
+ * pages, Wizard steps and Accordion always do (a nav item, tab, step or panel
+ * title); Continuous scroll draws a divider heading per page only when the
+ * page-dividers option is on and there is more than one page; One at a time and
+ * Split hero show no page name. A section title that would repeat the page name
+ * in a layout that names pages is hidden (finalFormViewer/sectionTitleRepeat).
+ */
+export function layoutNamesPages(type, options, pageCount) {
+    const names = getLayout(type).pageNames;
+    if (names === 'nav') {
+        return true;
+    }
+    if (names === 'dividers') {
+        return Boolean(options && options.showDividers) && pageCount > 1;
+    }
+    return false;
 }
