@@ -147,8 +147,10 @@
 /* A lone section whose title would repeat the page name that the layout already
    shows (the side rail's "1 Details", a tab, a step, an accordion panel title):
    out of sight, but still in the page, so a screen reader finds the heading.
-   Not display:none, which would take it out of the accessibility tree. */
-.sec-head.sec-head-repeat {
+   Not display:none, which would take it out of the accessibility tree.
+   'always': the name is on screen at every width (tabs, accordion, scroll
+   dividers, the rail's Pages menu). */
+.sec-head.sec-head-repeat-always {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -157,6 +159,24 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+}
+
+/* 'wide': the side rail's labels become numbered chips and the wizard strip's
+   become dots on a narrow form, so there the title is the only name the page has
+   and it stays. Both navigations name the container `pagenav` and collapse at
+   540px (their own queries use max-width: 540px), so this is exactly the other
+   side of their switch. */
+@container pagenav (width > 540px) {
+    .sec-head.sec-head-repeat-wide {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
 }
 
 .sec-title-row {

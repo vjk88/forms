@@ -1,6 +1,5 @@
 import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
-import { repeatsPageName } from '../sectionTitleRepeat';
 
 jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
@@ -11,82 +10,23 @@ jest.mock('c/finalThemeCatalog', () => ({
  * docs/FinalDesign/IMPL_PLAN_SECTION_HEADINGS.md).
  *
  * Side rail, Tabs, Wizard steps and Accordion name every page in the navigation
- * ("1 Details"), and then the section card under it said "Details" (or "Contact
- * details") again. Measured on the 60 form versions in the dev org: a page has
- * exactly one titled section in 65 cases, the title is the page name in 1 and a
- * different phrase in 64 (the starter is page "Details" + section
+ * ("1 Details"), and the one section card under it then said "Details" (or
+ * "Contact details") again. Measured on the 60 form versions in the dev org: a
+ * page has exactly one titled section in 65 cases, the title is the page name in
+ * 1 and a different phrase in 64 (the starter is page "Details" + section
  * "<Object> details"), so the rule cannot wait for an exact match.
  *
  * THE RULE: in a layout that names its pages, a page with ONE section does not
  * show that section's title as a second heading. The page name in the navigation
- * is the heading. It is hidden visually, not removed (screen readers keep it).
- * Not applied when it would lose something: the page has no real name (the
- * navigation says "Page 2"), the header carries a description or an icon, the
- * section folds, or the author switched the header on by hand.
+ * is the heading. It is hidden visually, not removed (screen readers keep it),
+ * and only where the name really is on screen: always for Tabs, Accordion and
+ * Scroll dividers, and only while wide for the side rail and the wizard strip,
+ * whose labels give way to chips and dots on a phone (UX review 2026-10-16).
+ * Not applied when it would lose something: the page has no real name, the
+ * header carries a description or an icon, the section folds, or the author
+ * switched the header on by hand. Decided from the sections the author BUILT,
+ * so a section that appears after an answer cannot make a title pop in.
  */
-const page = (name, sections) => ({ id: 'pg', name, sections });
-const sec = (extra = {}) => ({
-    id: 's1',
-    title: 'Contact details',
-    elements: [],
-    ...extra
-});
-
-describe('repeatsPageName (the rule, one page at a time)', () => {
-    it('hides the title of a lone section when the page has a real name, whatever the title says', () => {
-        expect(repeatsPageName(page('Details', [sec()]))).toBe(true);
-        expect(
-            repeatsPageName(page('Details', [sec({ title: 'Details' })]))
-        ).toBe(true);
-        expect(repeatsPageName(page('More', [sec({ title: 'Address' })]))).toBe(
-            true
-        );
-    });
-
-    it('never when the page has several sections: their titles tell them apart', () => {
-        expect(
-            repeatsPageName(page('Details', [sec(), sec({ id: 's2' })]))
-        ).toBe(false);
-    });
-
-    it('never without a real page name: the navigation says "Page N", so the title is the only name', () => {
-        expect(repeatsPageName(page('', [sec()]))).toBe(false);
-        expect(repeatsPageName(page(undefined, [sec()]))).toBe(false);
-        expect(repeatsPageName(page('   ', [sec()]))).toBe(false);
-        expect(repeatsPageName(page('Page 2', [sec()]))).toBe(false);
-        expect(repeatsPageName(page('page 12', [sec()]))).toBe(false);
-        // "Page" followed by words is a real name
-        expect(repeatsPageName(page('Page break', [sec()]))).toBe(true);
-    });
-
-    it('never when hiding the title would lose something', () => {
-        expect(
-            repeatsPageName(page('Details', [sec({ description: 'Why' })]))
-        ).toBe(false);
-        expect(
-            repeatsPageName(page('Details', [sec({ icon: 'utility:user' })]))
-        ).toBe(false);
-        expect(
-            repeatsPageName(page('Details', [sec({ collapsible: true })]))
-        ).toBe(false);
-        expect(
-            repeatsPageName(page('Details', [sec({ repeat: { min: 1 } })]))
-        ).toBe(false);
-    });
-
-    it('respects the author: an untitled section has nothing to hide, a hidden header is already hidden, and a header switched ON by hand stays', () => {
-        expect(repeatsPageName(page('Details', [sec({ title: '' })]))).toBe(
-            false
-        );
-        expect(
-            repeatsPageName(page('Details', [sec({ showHeader: false })]))
-        ).toBe(false);
-        expect(
-            repeatsPageName(page('Details', [sec({ showHeader: true })]))
-        ).toBe(false);
-    });
-});
-
 const el = (id) => ({
     id,
     type: 'field',
@@ -163,35 +103,57 @@ describe('the viewer marks the repeats it hands to the layout', () => {
         }
     });
 
-    it.each(['rail', 'tabs', 'stepper', 'accordion'])(
-        '%s: the lone section is marked, the page with two sections is not',
-        async (type) => {
-            const pages = pagesOf(await mount(SPEC(type, {})));
-            expect(pages[0].sections[0].titleRepeatsPage).toBe(true);
+    it.each([
+        ['tabs', {}, 'always'],
+        ['accordion', {}, 'always'],
+        ['rail', {}, 'wide'],
+        ['rail', { narrowBehavior: 'drawer' }, 'always'],
+        ['stepper', {}, 'wide'],
+        ['scroll', { showDividers: true }, 'always']
+    ])(
+        '%s %j: the lone section is marked "%s", the page with two sections is not',
+        async (type, options, mode) => {
+            const pages = pagesOf(await mount(SPEC(type, options)));
+            expect(pages[0].sections[0].titleRepeatsPage).toBe(mode);
             expect(pages[1].sections[0].titleRepeatsPage).toBeFalsy();
             expect(pages[1].sections[1].titleRepeatsPage).toBeFalsy();
         }
     );
 
-    it('scroll: marked only when the page dividers are on (and there is more than one page)', async () => {
-        const withDividers = pagesOf(
-            await mount(SPEC('scroll', { showDividers: true }))
-        );
-        expect(withDividers[0].sections[0].titleRepeatsPage).toBe(true);
-        const without = pagesOf(await mount(SPEC('scroll', {})));
-        expect(without[0].sections[0].titleRepeatsPage).toBeFalsy();
+    it.each([
+        ['scroll', {}],
+        ['scroll', { showDividers: false }],
+        ['oneAtATime', {}],
+        ['splitHero', {}],
+        ['stepper', { mode: 'dots' }],
+        ['stepper', { mode: 'progressBar' }]
+    ])('%s %j names no page, so nothing is marked', async (type, options) => {
+        const pages = pagesOf(await mount(SPEC(type, options)));
+        expect(pages[0].sections[0].titleRepeatsPage).toBeFalsy();
     });
-
-    it.each(['oneAtATime', 'splitHero'])(
-        '%s names no pages, so nothing is marked',
-        async (type) => {
-            const pages = pagesOf(await mount(SPEC(type, {})));
-            expect(pages[0].sections[0].titleRepeatsPage).toBeFalsy();
-        }
-    );
 
     it('one question per screen (virtual pages) is left alone', async () => {
         const pages = pagesOf(await mount(SPEC('stepper', {}, true)));
         expect(pages.every((p) => !p.sections[0].titleRepeatsPage)).toBe(true);
+    });
+
+    it('decided from the sections the author built: a second section that is hidden by a rule right now keeps the first title steady, so nothing pops in when it appears', async () => {
+        const spec = SPEC('tabs', {});
+        // page 1 gets a second section that a rule hides until "el_a" is answered
+        spec.pages[0].sections.push({
+            id: 'sec_late',
+            title: 'Partner',
+            style: 'card',
+            columns: 1,
+            visibility: {
+                action: 'show',
+                logic: 'all',
+                rules: [{ source: 'el_a', operator: 'equals', value: 'Yes' }]
+            },
+            elements: [el('el_p')]
+        });
+        const pages = pagesOf(await mount(spec));
+        expect(pages[0].sections).toHaveLength(1); // the rule hides "Partner" for now
+        expect(pages[0].sections[0].titleRepeatsPage).toBeFalsy();
     });
 });

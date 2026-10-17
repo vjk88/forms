@@ -13,11 +13,15 @@ import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkCont
 import getUserValues from '@salesforce/apex/FinalAutofillController.getUserValues';
 import getUserPreviewValues from '@salesforce/apex/FinalAutofillController.getUserPreviewValues';
 import { resolveTokens } from 'c/finalThemeEngine';
-import { getLayout, layoutNamesPages } from 'c/finalLayoutRegistry';
+import {
+    getLayout,
+    isOnePerScreen,
+    layoutNamesPages
+} from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
-import { repeatsPageName } from './sectionTitleRepeat';
+import { repeatsPageName } from 'c/finalPageName';
 import {
     // The engine's two-argument reconcile, as the call below always meant:
     // previewSession's three-argument copy was imported by mistake and,
@@ -802,13 +806,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const preview = this.preservePreview ? this.getPreviewState() : null;
         // One question per screen (Design → Paging, surveys only): the split
         // rides paginating layouts — scroll has no paging machinery to ride.
-        const onePerScreen = Boolean(
-            spec.form &&
-            spec.form.type === 'survey' &&
-            spec.settings &&
-            spec.settings.onePerScreen &&
-            layout.paginates
-        );
+        const onePerScreen = isOnePerScreen(spec);
         this._onePerScreen = onePerScreen;
         const effectivePages = onePerScreen
             ? splitOnePerScreen(spec.pages || [])
@@ -1982,8 +1980,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         // A layout that already names each page (rail, tabs, steps, accordion
         // panels, scroll dividers) does not need the lone section's title as a
-        // second heading (sectionTitleRepeat.js). Virtual one-question pages
-        // are left alone: their section title is the context line.
+        // second heading (sectionTitleRepeat.js). The answer says WHEN the name is
+        // on screen: 'always', or only while 'wide' (the rail and the wizard strip
+        // drop their labels on a phone). Virtual one-question pages are left
+        // alone: their section title is the context line.
         const namesPages =
             !this._onePerScreen &&
             layoutNamesPages(
@@ -1997,14 +1997,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             const shownSections = (page.sections || []).filter(
                 (s) => !this._hasRules || evaluateVisibility(s.visibility, ctx)
             );
-            const titleRepeats =
-                namesPages &&
-                repeatsPageName({ ...page, sections: shownSections });
+            // decided from the sections the author built, never the ones a rule
+            // shows right now (a section that appears after an answer would make
+            // the first one's title pop in)
+            const titleRepeats = namesPages && repeatsPageName(page);
             return {
                 ...page,
                 sections: shownSections.map((s) => ({
                     ...s,
-                    ...(titleRepeats ? { titleRepeatsPage: true } : {}),
+                    ...(titleRepeats ? { titleRepeatsPage: namesPages } : {}),
                     ...(this.preservePreview
                         ? {
                               previewEntries:

@@ -2,7 +2,9 @@
    style its own container). width:100% guards container-type collapse. */
 .railnav {
     container-type: inline-size;
-    container-name: railnav;
+    /* pagenav: the shared name the section title rule listens to (it hides a
+       title that repeats a page name only while the labels below are on show) */
+    container-name: railnav pagenav;
     width: 100%;
     font-family: var(--c-font-body);
 }

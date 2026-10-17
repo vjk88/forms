@@ -19,6 +19,7 @@ export const LAYOUTS = {
         // Names each page with a divider heading, but only when the design
         // option is on and there is more than one page (layoutNamesPages).
         pageNames: 'dividers',
+        pageNameBy: 'page divider',
         // Default action-row arrangement (LAYOUT_REFINEMENTS_SPEC §3): submit
         // only → sit it in the conventional primary corner (right).
         buttonArrangement: 'together-right'
@@ -28,7 +29,10 @@ export const LAYOUTS = {
         load: () => import('c/finalNavStepper'),
         paginates: true,
         gating: true,
-        pageNames: 'nav',
+        // The step labels give way to dots or a bar on a narrow form, or when
+        // the strip is set to dots or a bar (layoutNamesPages).
+        pageNames: 'wide',
+        pageNameBy: 'step bar',
         // Wizard convention: Back one end, Next the other.
         buttonArrangement: 'split'
     },
@@ -37,7 +41,9 @@ export const LAYOUTS = {
         load: () => import('c/finalNavTabs'),
         paginates: true,
         gating: false,
-        pageNames: 'nav',
+        // A tab strip that scrolls but never drops its labels.
+        pageNames: 'always',
+        pageNameBy: 'tab',
         buttonArrangement: 'split'
     },
     accordion: {
@@ -47,7 +53,9 @@ export const LAYOUTS = {
         // submitBar renders once below (like scroll), never per panel.
         paginates: false,
         gating: false,
-        pageNames: 'nav',
+        // Every panel title is on screen at every width.
+        pageNames: 'always',
+        pageNameBy: 'panel title',
         buttonArrangement: 'together-right'
     },
     rail: {
@@ -55,7 +63,10 @@ export const LAYOUTS = {
         load: () => import('c/finalNavRail'),
         paginates: true,
         gating: false,
-        pageNames: 'nav',
+        // The rail's labels give way to numbered chips on a narrow form, unless
+        // the narrow behaviour is the Pages menu (layoutNamesPages).
+        pageNames: 'wide',
+        pageNameBy: 'side rail',
         buttonArrangement: 'split'
     },
     oneAtATime: {
@@ -96,20 +107,54 @@ export function getLayout(type) {
 }
 
 /**
- * Does this layout already put each page's NAME on screen? Side rail, Tabbed
- * pages, Wizard steps and Accordion always do (a nav item, tab, step or panel
- * title); Continuous scroll draws a divider heading per page only when the
- * page-dividers option is on and there is more than one page; One at a time and
- * Split hero show no page name. A section title that would repeat the page name
- * in a layout that names pages is hidden (finalFormViewer/sectionTitleRepeat).
+ * One question per screen (Design → Paging, surveys only): the split rides
+ * paginating layouts, scroll has no paging machinery to ride. The viewer splits
+ * the pages on this; the Studio asks it too, so both agree on what a "page" is.
+ */
+export function isOnePerScreen(spec) {
+    const form = (spec && spec.form) || {};
+    const settings = (spec && spec.settings) || {};
+    return Boolean(
+        form.type === 'survey' &&
+        settings.onePerScreen &&
+        getLayout(spec && spec.layout ? spec.layout.type : undefined).paginates
+    );
+}
+
+/**
+ * Does this layout put each page's NAME on screen, and when? Answers
+ *   'always'  at every width: Tabbed pages, Accordion panels, Continuous scroll
+ *             with its page dividers (option on, more than one page), and the side
+ *             rail set to collapse into a Pages menu (the button names the page)
+ *   'wide'    only while the navigation has room: the side rail's labels become
+ *             numbered chips, and the wizard strip's labels become dots or a bar,
+ *             on a narrow form (a container 540px wide or narrower)
+ *   false     never: One at a time, Split hero, a wizard strip set to dots or a
+ *             progress bar, Scroll without dividers
+ * A section title that would repeat a page name is hidden only where that name
+ * is on screen (c/finalPageName repeatsPageName; `pageNameBy` on the rows above
+ * says what to call the thing that shows it).
  */
 export function layoutNamesPages(type, options, pageCount) {
     const names = getLayout(type).pageNames;
-    if (names === 'nav') {
-        return true;
+    const opts = options || {};
+    if (names === 'always') {
+        return 'always';
     }
     if (names === 'dividers') {
-        return Boolean(options && options.showDividers) && pageCount > 1;
+        return opts.showDividers && pageCount > 1 ? 'always' : false;
+    }
+    if (names === 'wide') {
+        if (type === 'rail' && opts.narrowBehavior === 'drawer') {
+            return 'always';
+        }
+        if (
+            type === 'stepper' &&
+            (opts.mode === 'dots' || opts.mode === 'progressBar')
+        ) {
+            return false;
+        }
+        return 'wide';
     }
     return false;
 }

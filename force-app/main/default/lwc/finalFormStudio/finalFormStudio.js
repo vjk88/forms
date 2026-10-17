@@ -34,6 +34,12 @@ import {
 } from 'c/finalSurveyMapping';
 import { createHistory } from 'c/finalHistoryManager';
 import { usesQuestions, FREEFORM } from 'c/finalFormTypes';
+import {
+    getLayout,
+    isOnePerScreen,
+    layoutNamesPages
+} from 'c/finalLayoutRegistry';
+import { repeatsPageName } from 'c/finalPageName';
 
 /**
  * finalFormStudio — the builder shell (FORM_STUDIO_IA §2–4, P3 slice 1).
@@ -1376,6 +1382,40 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             return t.section.repeat.childObject;
         }
         return this.objectApi;
+    }
+
+    /**
+     * Why the selected section's heading is not on the preview (DEFERRED 37).
+     * A lone section whose title would repeat a page name that the layout
+     * already shows is tucked away by the viewer; without this the panel says
+     * "Header shown" next to a preview with no header. Asks the viewer's own
+     * three questions of the authored spec (isOnePerScreen, layoutNamesPages,
+     * repeatsPageName) and answers `{ pageName, by, always }` or null.
+     */
+    get selectionHeaderRepeat() {
+        const t = this.selectedTarget;
+        const spec = this.spec;
+        if (!t || t.kind !== 'section' || !spec || isOnePerScreen(spec)) {
+            return null;
+        }
+        const pages = spec.pages || [];
+        const page = pages.find((p) =>
+            (p.sections || []).some((s) => s.id === t.node.id)
+        );
+        const layout = spec.layout || {};
+        const names = layoutNamesPages(
+            layout.type,
+            layout.options,
+            pages.length
+        );
+        if (!page || !names || !repeatsPageName(page)) {
+            return null;
+        }
+        return {
+            pageName: String(page.name).trim(),
+            by: getLayout(layout.type).pageNameBy || 'layout',
+            always: names === 'always'
+        };
     }
 
     /** The hosting section's column count — the panel's Width control scope
