@@ -13,10 +13,15 @@ import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkCont
 import getUserValues from '@salesforce/apex/FinalAutofillController.getUserValues';
 import getUserPreviewValues from '@salesforce/apex/FinalAutofillController.getUserPreviewValues';
 import { resolveTokens } from 'c/finalThemeEngine';
-import { getLayout } from 'c/finalLayoutRegistry';
+import {
+    getLayout,
+    isOnePerScreen,
+    layoutNamesPages
+} from 'c/finalLayoutRegistry';
 import { ensureFont } from 'c/finalFontLoader';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
+import { repeatsPageName } from 'c/finalPageName';
 import {
     // The engine's two-argument reconcile, as the call below always meant:
     // previewSession's three-argument copy was imported by mistake and,
@@ -801,13 +806,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const preview = this.preservePreview ? this.getPreviewState() : null;
         // One question per screen (Design → Paging, surveys only): the split
         // rides paginating layouts — scroll has no paging machinery to ride.
-        const onePerScreen = Boolean(
-            spec.form &&
-            spec.form.type === 'survey' &&
-            spec.settings &&
-            spec.settings.onePerScreen &&
-            layout.paginates
-        );
+        const onePerScreen = isOnePerScreen(spec);
         this._onePerScreen = onePerScreen;
         const effectivePages = onePerScreen
             ? splitOnePerScreen(spec.pages || [])
@@ -1979,136 +1978,145 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 );
             }
         }
+        // A layout that already names each page (rail, tabs, steps, accordion
+        // panels, scroll dividers) does not need the lone section's title as a
+        // second heading (sectionTitleRepeat.js). The answer says WHEN the name is
+        // on screen: 'always', or only while 'wide' (the rail and the wizard strip
+        // drop their labels on a phone). Virtual one-question pages are left
+        // alone: their section title is the context line.
+        const namesPages =
+            !this._onePerScreen &&
+            layoutNamesPages(
+                this._appliedLayoutType,
+                this.model.layoutOptions,
+                pages.length
+            );
         return pages.map((page) => {
             const reveal =
                 needErrors && this._revealed.includes(page.revealKey);
+            const shownSections = (page.sections || []).filter(
+                (s) => !this._hasRules || evaluateVisibility(s.visibility, ctx)
+            );
+            // decided from the sections the author built, never the ones a rule
+            // shows right now (a section that appears after an answer would make
+            // the first one's title pop in)
+            const titleRepeats = namesPages && repeatsPageName(page);
             return {
                 ...page,
-                sections: (page.sections || [])
-                    .filter(
-                        (s) =>
-                            !this._hasRules ||
-                            evaluateVisibility(s.visibility, ctx)
-                    )
-                    .map((s) => ({
-                        ...s,
-                        ...(this.preservePreview
-                            ? {
-                                  previewEntries:
-                                      this.answers[`repeat:${s.id}`] || [],
-                                  previewRevision: this._previewRevision
-                              }
-                            : {}),
-                        elements: (s.elements || [])
-                            .filter(
-                                (el) =>
-                                    !this._hasRules ||
-                                    evaluateVisibility(el.visibility, ctx)
-                            )
-                            .map((el) => {
-                                // hydrate the element with its live answer —
-                                // stateful widgets (S2 scale family) repaint
-                                // their selection from el.value after any
-                                // model rebuild; native inputs ignore it
-                                const answered = this.answers[el.id];
-                                let base =
-                                    answered !== undefined && !s.repeat
-                                        ? { ...el, value: answered }
-                                        : el;
-                                // R4 — on the guest host the projection strips
-                                // bindings, so a lookup element arrives with no
-                                // target object and the picker cannot render.
-                                // The server-validated plan supplies it.
-                                const planObject = this._lookupObjects[el.id];
-                                if (planObject && !base.config?.referenceTo) {
-                                    base = {
-                                        ...base,
-                                        config: {
-                                            ...(base.config || {}),
-                                            referenceTo: planObject
-                                        }
-                                    };
-                                }
-                                // Form-level "Display as" default for this
-                                // field type. The element's own choice still
-                                // wins; this only fills the gap.
-                                const typeDefault =
-                                    fieldDefaults[
-                                        (base.config &&
-                                            base.config.inputType) ||
-                                            ''
-                                    ];
-                                if (typeDefault && !base.config?.renderAs) {
-                                    base = {
-                                        ...base,
-                                        renderDefault: typeDefault
-                                    };
-                                }
-                                // Our lookup needs a little runtime context.
-                                // Stamping it on the element beats threading
-                                // four more props through every layout layer.
-                                if (base.lookupConfig) {
-                                    base = {
-                                        ...base,
-                                        lookup: {
-                                            formId:
-                                                this.effectiveFormId || null,
-                                            versionId:
-                                                this.effectiveVersionId || null,
-                                            // the Studio preview searches
-                                            // the draft, not a published copy
-                                            previewConfig:
-                                                this.preservePreview ||
-                                                this.authoring
-                                                    ? base.lookupConfig
-                                                    : null,
-                                            answers: this.answers,
-                                            filterKey: lookupFilterKey(
-                                                base,
-                                                this.answers
-                                            ),
-                                            displayLabel:
-                                                this._lookupLabels[el.id] || '',
-                                            error:
-                                                this._lookupStale[el.id] || ''
-                                        }
-                                    };
-                                }
-                                if (this.preservePreview) {
-                                    base = {
-                                        ...base,
-                                        value: s.repeat ? undefined : answered,
-                                        previewRevision: this._previewRevision
-                                    };
-                                }
-                                // repeat entries answer as ONE consolidated
-                                // value — per-entry failure display is
-                                // DEFERRED, so never annotate inside
-                                // Server rejections bypass the reveal gate:
-                                // the respondent has already submitted, so
-                                // there is nothing left to "reveal", and a
-                                // form with no client validation at all must
-                                // still be able to show what the save refused.
-                                const fromServer =
-                                    this._serverFieldErrors[el.id] || [];
-                                if (!reveal || s.repeat) {
-                                    return fromServer.length
-                                        ? { ...base, errors: fromServer }
-                                        : base;
-                                }
-                                const errors = [
-                                    ...validateElement(
-                                        base,
-                                        this.answers[el.id],
-                                        ctx
-                                    ),
-                                    ...fromServer
+                sections: shownSections.map((s) => ({
+                    ...s,
+                    ...(titleRepeats ? { titleRepeatsPage: namesPages } : {}),
+                    ...(this.preservePreview
+                        ? {
+                              previewEntries:
+                                  this.answers[`repeat:${s.id}`] || [],
+                              previewRevision: this._previewRevision
+                          }
+                        : {}),
+                    elements: (s.elements || [])
+                        .filter(
+                            (el) =>
+                                !this._hasRules ||
+                                evaluateVisibility(el.visibility, ctx)
+                        )
+                        .map((el) => {
+                            // hydrate the element with its live answer —
+                            // stateful widgets (S2 scale family) repaint
+                            // their selection from el.value after any
+                            // model rebuild; native inputs ignore it
+                            const answered = this.answers[el.id];
+                            let base =
+                                answered !== undefined && !s.repeat
+                                    ? { ...el, value: answered }
+                                    : el;
+                            // R4 — on the guest host the projection strips
+                            // bindings, so a lookup element arrives with no
+                            // target object and the picker cannot render.
+                            // The server-validated plan supplies it.
+                            const planObject = this._lookupObjects[el.id];
+                            if (planObject && !base.config?.referenceTo) {
+                                base = {
+                                    ...base,
+                                    config: {
+                                        ...(base.config || {}),
+                                        referenceTo: planObject
+                                    }
+                                };
+                            }
+                            // Form-level "Display as" default for this
+                            // field type. The element's own choice still
+                            // wins; this only fills the gap.
+                            const typeDefault =
+                                fieldDefaults[
+                                    (base.config && base.config.inputType) || ''
                                 ];
-                                return errors.length
-                                    ? { ...base, errors }
+                            if (typeDefault && !base.config?.renderAs) {
+                                base = {
+                                    ...base,
+                                    renderDefault: typeDefault
+                                };
+                            }
+                            // Our lookup needs a little runtime context.
+                            // Stamping it on the element beats threading
+                            // four more props through every layout layer.
+                            if (base.lookupConfig) {
+                                base = {
+                                    ...base,
+                                    lookup: {
+                                        formId: this.effectiveFormId || null,
+                                        versionId:
+                                            this.effectiveVersionId || null,
+                                        // the Studio preview searches
+                                        // the draft, not a published copy
+                                        previewConfig:
+                                            this.preservePreview ||
+                                            this.authoring
+                                                ? base.lookupConfig
+                                                : null,
+                                        answers: this.answers,
+                                        filterKey: lookupFilterKey(
+                                            base,
+                                            this.answers
+                                        ),
+                                        displayLabel:
+                                            this._lookupLabels[el.id] || '',
+                                        error: this._lookupStale[el.id] || ''
+                                    }
+                                };
+                            }
+                            if (this.preservePreview) {
+                                base = {
+                                    ...base,
+                                    value: s.repeat ? undefined : answered,
+                                    previewRevision: this._previewRevision
+                                };
+                            }
+                            // repeat entries answer as ONE consolidated
+                            // value — per-entry failure display is
+                            // DEFERRED, so never annotate inside
+                            // Server rejections bypass the reveal gate:
+                            // the respondent has already submitted, so
+                            // there is nothing left to "reveal", and a
+                            // form with no client validation at all must
+                            // still be able to show what the save refused.
+                            const fromServer =
+                                this._serverFieldErrors[el.id] || [];
+                            if (!reveal || s.repeat) {
+                                return fromServer.length
+                                    ? { ...base, errors: fromServer }
                                     : base;
-                            })
-                    }))
+                            }
+                            const errors = [
+                                ...validateElement(
+                                    base,
+                                    this.answers[el.id],
+                                    ctx
+                                ),
+                                ...fromServer
+                            ];
+                            return errors.length ? { ...base, errors } : base;
+                        })
+                }))
             };
         });
     }

@@ -1154,6 +1154,159 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    describe('the heading a layout tucks away is explained to the author (DEFERRED 37)', () => {
+        afterEach(async () => {
+            jest.useRealTimers();
+            await flush();
+            await flush();
+        });
+
+        // page "Details" + ONE section "Contact details"; page two has two sections
+        const build = (layout, extra = {}) => {
+            const structured = JSON.parse(JSON.stringify(SPEC));
+            structured.layout = layout;
+            Object.assign(structured, extra);
+            structured.pages = [
+                {
+                    id: 'pg_1',
+                    name: 'Details',
+                    sections: [
+                        {
+                            id: 'sec_1',
+                            title: 'Contact details',
+                            elements: []
+                        }
+                    ]
+                },
+                {
+                    id: 'pg_2',
+                    name: 'Preferences',
+                    sections: [
+                        { id: 'sec_2', title: 'Mail', elements: [] },
+                        { id: 'sec_3', title: 'Phone', elements: [] }
+                    ]
+                }
+            ];
+            return structured;
+        };
+
+        async function panelFor(structured, sectionId) {
+            jest.useFakeTimers();
+            loadStudio.mockResolvedValue({
+                name: 'Headings',
+                objectApi: 'Contact',
+                specJson: JSON.stringify(structured),
+                draftVersionId: 'a0V1',
+                versionNumber: 2,
+                activeVersionNumber: 1
+            });
+            saveDraft.mockResolvedValue('a0V1');
+            const el = mount();
+            CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+            await micro(4);
+            el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+            await Promise.resolve();
+            el.shadowRoot.querySelector('c-final-builder-canvas').dispatchEvent(
+                new CustomEvent('select', {
+                    detail: { kind: 'section', id: sectionId }
+                })
+            );
+            await Promise.resolve();
+            return el.shadowRoot.querySelector('c-final-property-panel');
+        }
+
+        it.each([
+            ['rail', {}, { by: 'side rail', always: false }],
+            [
+                'rail',
+                { narrowBehavior: 'drawer' },
+                { by: 'side rail', always: true }
+            ],
+            ['stepper', {}, { by: 'step bar', always: false }],
+            ['tabs', {}, { by: 'tab', always: true }],
+            ['accordion', {}, { by: 'panel title', always: true }],
+            [
+                'scroll',
+                { showDividers: true },
+                { by: 'page divider', always: true }
+            ]
+        ])(
+            '%s %j: the panel is told the page name, what shows it, and whether it is there at every width',
+            async (type, options, expected) => {
+                const panel = await panelFor(build({ type, options }), 'sec_1');
+                expect(panel.headerRepeat).toEqual({
+                    pageName: 'Details',
+                    ...expected
+                });
+            }
+        );
+
+        it.each([
+            [
+                'a page with two sections',
+                { type: 'tabs', options: {} },
+                'sec_2'
+            ],
+            [
+                'a layout that names no page',
+                { type: 'oneAtATime', options: {} },
+                'sec_1'
+            ],
+            [
+                'scroll without dividers',
+                { type: 'scroll', options: {} },
+                'sec_1'
+            ],
+            [
+                'a wizard strip set to dots',
+                { type: 'stepper', options: { mode: 'dots' } },
+                'sec_1'
+            ]
+        ])('%s: nothing to explain', async (_label, layout, sectionId) => {
+            const panel = await panelFor(build(layout), sectionId);
+            expect(panel.headerRepeat).toBeNull();
+        });
+
+        it('one question per screen is left alone (its section title is the context line)', async () => {
+            const panel = await panelFor(
+                build(
+                    { type: 'stepper', options: {} },
+                    {
+                        form: { name: 'S', type: 'survey' },
+                        settings: { onePerScreen: true }
+                    }
+                ),
+                'sec_1'
+            );
+            expect(panel.headerRepeat).toBeNull();
+        });
+
+        it('a header the author switched on by hand is not "tucked away"', async () => {
+            const structured = build({ type: 'tabs', options: {} });
+            structured.pages[0].sections[0].showHeader = true;
+            const panel = await panelFor(structured, 'sec_1');
+            expect(panel.headerRepeat).toBeNull();
+        });
+
+        it('the explanation goes away the moment a description brings the heading back', async () => {
+            const panel = await panelFor(
+                build({ type: 'tabs', options: {} }),
+                'sec_1'
+            );
+            expect(panel.headerRepeat).not.toBeNull();
+            panel.dispatchEvent(
+                new CustomEvent('propchange', {
+                    detail: { patch: { description: 'How we reach you' } }
+                })
+            );
+            await Promise.resolve();
+            const again = document.body
+                .querySelector('c-final-form-studio')
+                .shadowRoot.querySelector('c-final-property-panel');
+            expect(again.headerRepeat).toBeNull();
+        });
+    });
+
     it('rules slice: Logic index aggregates rules + checks; jump selects and opens props; checks merge keeps required', async () => {
         jest.useFakeTimers();
         const structured = JSON.parse(JSON.stringify(SPEC));

@@ -176,6 +176,10 @@ export default class FinalPropertyPanel extends LightningElement {
     @api bindingObjectApi;
     /** The hosting section's column count (Width control scope). */
     @api sectionColumns = 1;
+    /** Set when the layout already shows this section's page name, so the
+     *  viewer tucks the section's heading away: { pageName, by, always }
+     *  (Studio selectionHeaderRepeat). null when the heading is on screen. */
+    @api headerRepeat = null;
     /** Wrapper style when the node is a STANDALONE content block, else null. */
     @api blockStyle;
     /** The form record Id — uploads link their file to it. */
@@ -1276,7 +1280,25 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get showHeader() {
-        return this.n.showHeader !== false;
+        // a heading the layout tucks away counts as off: the toggle matches the
+        // preview, and the first click (an explicit true) shows it anyway
+        return this.n.showHeader !== false && !this.headerRepeat;
+    }
+
+    get hasHeaderRepeat() {
+        return Boolean(this.headerRepeat);
+    }
+
+    /** Why the heading is not on the preview, in the words a person would use. */
+    get headerRepeatHint() {
+        const r = this.headerRepeat;
+        if (!r) {
+            return '';
+        }
+        const back = r.always
+            ? ''
+            : ' On a narrow screen, where those labels shrink to numbers or dots, it comes back.';
+        return `The ${r.by} already names this page “${r.pageName}”, so this heading would say it twice. Screen readers still read it.${back} Switch the header on to show it anyway.`;
     }
 
     get headerToggleLabel() {
