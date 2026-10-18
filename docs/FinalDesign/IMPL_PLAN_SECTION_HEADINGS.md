@@ -57,7 +57,9 @@ UX review fixes (2026-10-16):
 
 - **Finding 2, the subheading must not look like a question.** First version: 0.8x, which is 16px semibold on desktop (the same as a question label, which is why "Mail" read like a question that lost its input box) and 14.4px on a phone (smaller than the questions under it). Now 0.9x on desktop and 1x on a narrow form (container 540px or narrower), so a section title is never below 18px.
 - **Finding 5, the page heading must not outgrow the form title.** First version: 1.2x the section size, which on a phone (21.6px) is bigger than the form title (20px). Now `min(1.2 x section, the title size)`: desktop 28 / 24 / 18 / 16 and phone 20 / 20 / 18 / 16 (title / page / section / question).
-- **Finding 7, a placeholder name must not become the loudest heading.** A page still called "Page 3" showed a big bold "Page 3" over a shrunken real title. Now a divider with a placeholder name draws the rule line without the words, and the section titles under it keep their full size (uses `isRealPageName`).
+- **Finding 7, a placeholder name must not become the loudest heading.** A page still called "Page 3" showed a big bold "Page 3" over a shrunken real title. Now a divider with a placeholder name draws the rule line without the words (the words stay in the page, clipped, for screen readers), and the section titles under it keep their full size (uses `isRealPageName`). A placeholder-named FIRST page draws no line at all, because there is nothing above it to separate from.
+
+The resulting ladder (title / page / section / question), pinned by a test that reads the real stylesheets: wide form 28 / 24 / 18 / 16 px, phone 20 / 20 / 18 / 16 px.
 
 ## 6. Verified (revclouddev, deployed and the site published)
 
