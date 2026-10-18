@@ -6,6 +6,7 @@
 | --- | --- |
 | Sideways scroll | none |
 | Answer column | at least 236px (five 44px buttons and four 4px gaps) |
+| Page margin | the public site leaves 15px on each side of the form, the number the Studio's "Public site" preview frame draws (`previewFrame.js`) |
 | Every scale (rating 5 / 10, opinion scale 5 / 7 / 10, emoji, 0-10, standard and conversational) | **one row whenever its buttons fit**, **no lone last button**, **centered** |
 | Every control of ours, in every layout (scrolling page, wizard steps, tabbed pages, side rail, accordion, one at a time, split hero) | at least 44 x 44px |
 
@@ -29,10 +30,11 @@ Run it **after a deploy and a site publish** (a metadata deploy alone never reac
 node scripts/qa/phone-check.cjs --self-test
 ```
 
-Needs no browser and no org. It feeds the rules a clean result (must pass) and nine deliberately bad ones (sideways scroll, a 190px column, no scale found, a row that fits but wraps, a lone button, an off-center scale, a 36px button, a 34px arrow, a page that did not render) and fails unless every one is caught.
+Needs no browser and no org. It feeds the rules a clean result (must pass) and ten deliberately bad ones (sideways scroll, a 190px column, a page margin the Studio frame does not draw, no scale found, a row that fits but wraps, a lone button, an off-center scale, a 36px button, a 34px arrow, a page that did not render) and fails unless every one is caught.
 
 ## When it fails
 
 - *answer column*: some layer of padding grew back; the budget per side is page 4 + form card 1 + 8 + section card 1 + 12 (`finalPageFrame.css`, `--c-pad-cap`).
+- *page margin*: the public site's page now leaves a different amount beside the form, so the Studio's "Public site" frame (`HOSTS` in `finalPreviewStage/previewFrame.js`, measured 2026-10-11) draws the wrong width again. Re-measure the form width at 320, 360, 390, 768 and 1280px, update the table in that file and `PAGE_MARGIN` here.
 - *wraps though it fits one row* / *lone button*: `finalScaleLayout` did not run or a stylesheet fights its `--scale-row-max`, `--scale-row-gap` or `--c-q-control-h`.
 - *our control is smaller than 44px*: something stopped reading `--c-control-h` on a narrow form, or a fixed size was added outside the narrow-form rule in `finalElementRenderer.css`.

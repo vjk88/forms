@@ -303,6 +303,13 @@ function measure() {
     ).find((n) => n.getBoundingClientRect().width > 20);
     const answerColumn = input ? r1(input.getBoundingClientRect().width) : null;
 
+    // 1b. the page's own margin beside the form (what the Studio's "Public site" preview frame draws)
+    const viewerBox = viewer.getBoundingClientRect();
+    const sideMargin = [
+        r1(viewerBox.left),
+        r1(document.documentElement.clientWidth - viewerBox.right)
+    ];
+
     // 2. scales
     const labelOf = (row) => {
         for (let n = row, i = 0; n && i < 14; n = hostOf(n), i++) {
@@ -429,6 +436,7 @@ function measure() {
         vw: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
         answerColumn,
+        sideMargin,
         scales: scalesOut,
         own,
         platform
@@ -438,6 +446,9 @@ function measure() {
 // ---- the rules (pure: --self-test feeds them bad results) -------------------------
 const MIN_COLUMN = 236;
 const MIN_TARGET = 43.5;
+// What the public site's own page leaves beside the form. The Studio's preview frame draws the same
+// number (previewFrame.js, HOSTS "public"); if this fails, the preview is lying again: update both.
+const PAGE_MARGIN = 15;
 
 /**
  * The failures of one measured run, as readable sentences. Scales are only
@@ -457,6 +468,14 @@ function evaluate(run, result, requireScales = true) {
     }
     if (result.answerColumn === null || result.answerColumn < MIN_COLUMN) {
         fail(`answer column ${result.answerColumn}px, needs ${MIN_COLUMN}`);
+    }
+    if (
+        !result.sideMargin ||
+        result.sideMargin.some((m) => Math.abs(m - PAGE_MARGIN) > 0.5)
+    ) {
+        fail(
+            `the site leaves ${result.sideMargin} px beside the form, the Studio's "Public site" preview frame draws ${PAGE_MARGIN} px (previewFrame.js)`
+        );
     }
     if (requireScales && !result.scales.length) {
         fail('no scale found');
@@ -489,6 +508,7 @@ function selfTest() {
         vw: 320,
         scrollWidth: 320,
         answerColumn: 238,
+        sideMargin: [15, 15],
         scales: [
             {
                 name: 'Rating 5',
@@ -509,6 +529,9 @@ function selfTest() {
         },
         'a narrow answer column': (r) => {
             r.answerColumn = 190;
+        },
+        'a page margin the Studio frame does not draw': (r) => {
+            r.sideMargin = [5, 5];
         },
         'no scale found': (r) => {
             r.scales = [];
