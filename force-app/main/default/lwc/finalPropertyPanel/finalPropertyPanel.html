@@ -1105,6 +1105,11 @@
                         {headerToggleLabel}
                     </button>
                 </div>
+                <template lwc:if={hasHeaderRepeat}>
+                    <p class="pp-hint" data-id="header-repeat">
+                        {headerRepeatHint}
+                    </p>
+                </template>
 
                 <template lwc:if={showHeader}>
                     <div class="pp-fld">
