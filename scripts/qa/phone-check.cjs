@@ -14,7 +14,10 @@
  *   3. every scale (rating 5 / 10, opinion scale 5 / 7 / 10, emoji faces, 0-10),
  *      standard and conversational: ONE ROW whenever its buttons fit, NO LONE
  *      last button, and CENTERED (a phone is a narrow form);
- *   4. every control of OURS is at least 44 x 44px. The platform's own controls
+ *   4. every control of OURS is at least 44 x 44px, in every layout (wizard
+ *      steps, tabbed pages, side rail, accordion, one at a time and split hero as
+ *      well as the scrolling page); the scale checks (3) run on the scrolling
+ *      page, where every question is on screen. The platform's own controls
  *      (text box, dropdown, radio and checkbox rows, toggle, help and calendar
  *      buttons) are listed with their sizes but never fail the check: no styling
  *      hook enlarges them the same way on every host (see
@@ -22,6 +25,9 @@
  *
  * Exit code 0 = every check passed, 1 = a check failed, 2 = could not run.
  * Options: --widths 320,360,390  --densities comfortable,compact  --out <dir>
+ * --layouts scroll,stepper,tabs,rail,accordion,oneAtATime,splitHero (the first
+ * runs the full width x density matrix, the others the narrowest and widest width
+ * at the first density).
  * (JSON per run; default: a temp folder). Needs the dev dependency playwright
  * and its Chromium (`npx playwright install chromium`).
  *
@@ -46,6 +52,10 @@ const SITE = (arg('site', process.env.PHONE_CHECK_SITE) || '').replace(
 const FORM_ID = arg('form-id', process.env.PHONE_CHECK_FORM_ID);
 const WIDTHS = arg('widths', '320,360,390').split(',').map(Number);
 const DENSITIES = arg('densities', 'comfortable,compact').split(',');
+const LAYOUTS = arg(
+    'layouts',
+    'scroll,stepper,tabs,rail,accordion,oneAtATime,splitHero'
+).split(',');
 const OUT = arg('out', fs.mkdtempSync(path.join(os.tmpdir(), 'phone-check-')));
 if (!SELF_TEST && (!SITE || !FORM_ID)) {
     console.error(
@@ -189,7 +199,16 @@ const sections = () => [
         ]
     }
 ];
-const mutate = (spec, density) => {
+/** The kitchen sink as three pages, so a layout with navigation (steps, tabs, rail) draws real navigation. */
+const pages = () => {
+    const [basics, choices, scalesStandard, scalesConvo, more] = sections();
+    return [
+        { id: 'pg1', name: 'About you', sections: [basics, choices] },
+        { id: 'pg2', name: 'Scales', sections: [scalesStandard, scalesConvo] },
+        { id: 'pg3', name: 'More', sections: [more] }
+    ];
+};
+const mutate = (spec, density, layout) => {
     // a published guest spec carries pre-baked tokens that win over spec.theme
     delete spec.resolved;
     spec.theme = {
@@ -203,14 +222,14 @@ const mutate = (spec, density) => {
         style: 'standard'
     };
     spec.layout = {
-        type: 'scroll',
+        type: layout,
         maxWidth: 'medium',
         zonesDefault: { gap: 'md', arrangement: 'single' }
     };
-    spec.pages = [{ id: 'pg1', name: 'Check', sections: sections() }];
+    spec.pages = pages();
     delete spec.mapping;
 };
-const patchNode = (node, density) => {
+const patchNode = (node, density, layout) => {
     if (typeof node === 'string') {
         if (
             node.startsWith('{') &&
@@ -219,7 +238,7 @@ const patchNode = (node, density) => {
         ) {
             try {
                 const spec = JSON.parse(node);
-                mutate(spec, density);
+                mutate(spec, density, layout);
                 return JSON.stringify(spec);
             } catch {
                 /* not a spec */
@@ -228,15 +247,18 @@ const patchNode = (node, density) => {
         return node;
     }
     if (Array.isArray(node)) {
-        return node.map((n) => patchNode(n, density));
+        return node.map((n) => patchNode(n, density, layout));
     }
     if (node && typeof node === 'object') {
         if (node.specVersion !== undefined && Array.isArray(node.pages)) {
-            mutate(node, density);
+            mutate(node, density, layout);
             return node;
         }
         return Object.fromEntries(
-            Object.entries(node).map(([k, v]) => [k, patchNode(v, density)])
+            Object.entries(node).map(([k, v]) => [
+                k,
+                patchNode(v, density, layout)
+            ])
         );
     }
     return node;
@@ -428,8 +450,12 @@ const MIN_TARGET = 43.5;
 // number (previewFrame.js, HOSTS "public"); if this fails, the preview is lying again: update both.
 const PAGE_MARGIN = 15;
 
-/** The failures of one measured run, as readable sentences. */
-function evaluate(run, result) {
+/**
+ * The failures of one measured run, as readable sentences. Scales are only
+ * required where every question is on screen (the scrolling page): a layout that
+ * shows one page at a time cannot show them all.
+ */
+function evaluate(run, result, requireScales = true) {
     if (result.error) {
         return [`${run}: ${result.error}`];
     }
@@ -451,7 +477,7 @@ function evaluate(run, result) {
             `the site leaves ${result.sideMargin} px beside the form, the Studio's "Public site" preview frame draws ${PAGE_MARGIN} px (previewFrame.js)`
         );
     }
-    if (!result.scales.length) {
+    if (requireScales && !result.scales.length) {
         fail('no scale found');
     }
     for (const s of result.scales) {
@@ -538,6 +564,20 @@ function selfTest() {
     if (evaluate('good', good()).length) {
         problems.push('a clean result was reported as failing');
     }
+    const noScales = good();
+    noScales.scales = [];
+    if (evaluate('one page at a time', noScales, false).length) {
+        problems.push(
+            'a layout that shows one page was failed for having no scales on screen'
+        );
+    }
+    const tinyDot = good();
+    tinyDot.own['step-btn'] = { w: 12, h: 12 };
+    if (!evaluate('wizard steps', tinyDot, false).length) {
+        problems.push(
+            'a 12px step dot was NOT caught in a layout without scales'
+        );
+    }
     for (const [name, breakIt] of Object.entries(bad)) {
         const result = good();
         breakIt(result);
@@ -557,8 +597,8 @@ function selfTest() {
 // ---- run ------------------------------------------------------------------------
 const failures = [];
 
-async function check(browser, width, density) {
-    const run = `${width}px ${density}`;
+async function check(browser, width, density, layout) {
+    const run = `${layout} ${width}px ${density}`;
     const context = await browser.newContext({
         viewport: { width, height: 2200 }
     });
@@ -570,7 +610,7 @@ async function check(browser, width, density) {
         try {
             const response = await route.fetch();
             const patched = JSON.stringify(
-                patchNode(JSON.parse(await response.text()), density)
+                patchNode(JSON.parse(await response.text()), density, layout)
             );
             return await route.fulfill({ response, body: patched });
         } catch {
@@ -590,10 +630,10 @@ async function check(browser, width, density) {
     const result = await page.evaluate(measure);
     await context.close();
     fs.writeFileSync(
-        path.join(OUT, `phone-${width}-${density}.json`),
+        path.join(OUT, `phone-${layout}-${width}-${density}.json`),
         JSON.stringify(result, null, 2)
     );
-    failures.push(...evaluate(run, result));
+    failures.push(...evaluate(run, result, layout === 'scroll'));
     if (result.error) {
         return;
     }
@@ -601,9 +641,10 @@ async function check(browser, width, density) {
         Object.entries(bucket)
             .map(([n, b]) => `${n.replace('lightning-', '')} ${b.w}x${b.h}`)
             .join(', ');
-    console.log(
-        `  ${run}: column ${result.answerColumn}px, ${result.scales.length} scale rows [${result.scales.map((s) => s.rows.join('+')).join(' ')}]`
-    );
+    const rows = result.scales.length
+        ? `, ${result.scales.length} scale rows [${result.scales.map((s) => s.rows.join('+')).join(' ')}]`
+        : '';
+    console.log(`  ${run}: column ${result.answerColumn}px${rows}`);
     console.log(`      ours (smallest): ${sizes(result.own)}`);
     console.log(
         `      platform (informational, never fails): ${sizes(result.platform)}`
@@ -623,14 +664,24 @@ async function main() {
     }
     const browser = await chromium.launch({ headless: true });
     console.log(
-        `phone-check: ${SITE}/form?formId=${FORM_ID}  widths ${WIDTHS.join(',')}  densities ${DENSITIES.join(',')}`
+        `phone-check: ${SITE}/form?formId=${FORM_ID}  layouts ${LAYOUTS.join(',')}  widths ${WIDTHS.join(',')}  densities ${DENSITIES.join(',')}`
     );
     try {
-        for (const density of DENSITIES) {
-            for (const width of WIDTHS) {
-                // one page load per run, in order: the guest site throttles nothing here
-                // eslint-disable-next-line no-await-in-loop
-                await check(browser, width, density);
+        for (const [index, layout] of LAYOUTS.entries()) {
+            // the first layout gets the full matrix; the others the narrowest and
+            // widest width at the first density (their navigation does not change
+            // with the density)
+            const densities = index === 0 ? DENSITIES : DENSITIES.slice(0, 1);
+            const widths =
+                index === 0
+                    ? WIDTHS
+                    : [Math.min(...WIDTHS), Math.max(...WIDTHS)];
+            for (const density of densities) {
+                for (const width of widths) {
+                    // one page load per run, in order
+                    // eslint-disable-next-line no-await-in-loop
+                    await check(browser, width, density, layout);
+                }
             }
         }
     } finally {

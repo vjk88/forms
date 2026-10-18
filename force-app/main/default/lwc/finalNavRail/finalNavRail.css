@@ -247,6 +247,16 @@
         flex: 0 0 auto;
     }
 
+    /* Phone-sized tap targets (stage 3): a link was 38px tall, the Pages toggle
+       about the same. */
+    .rail-link {
+        min-height: 44px;
+    }
+
+    .narrow-drawer .drawer-toggle {
+        min-height: 44px;
+    }
+
     .narrow-topbar .rail-label {
         position: absolute;
         width: 1px;

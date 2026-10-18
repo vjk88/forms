@@ -62,6 +62,17 @@
     padding: var(--c-space-2) var(--c-space-2) var(--c-space-5);
 }
 
+/* Phone budget (stage 3): every other layout keeps 238px of a 320px screen for
+   answers (page 4 + card 1 + 8 + section 1 + 12 a side). The panel body added 8px
+   a side of its own on top, which left 222px, so on a narrow form the section card
+   inside sits on the panel's edge and keeps its own padding. The heading keeps its
+   inset. */
+@container final-form-viewport (max-width: 540px) {
+    .body {
+        padding-inline: 0;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .chevron {
         transition: none;
