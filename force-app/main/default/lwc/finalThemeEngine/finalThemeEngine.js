@@ -336,6 +336,32 @@ function gradientLayer(g, fillOpacity) {
     return `linear-gradient(${angle}deg, ${start}, ${end})`;
 }
 
+/**
+ * Banner image layer (header + split-hero pane, owner bug 2026-10-18). The
+ * banner paints on its OWN element behind the content, with real CSS opacity,
+ * so the surface's fill (solid + gradient, each at Fill opacity) shows through
+ * as the image fades. The old recipe faked the fade with a --c-header-bg veil
+ * over the image: a no-op on the 18 themes whose header fill is transparent,
+ * blind to the gradient fill, and invalid CSS when the fill is a gradient
+ * string. Returns '' when there is no image (callers render no layer).
+ */
+export function bannerLayerStyle(image) {
+    const img = image && image.url;
+    if (!img) {
+        return '';
+    }
+    const url = String(img).replace(/"/g, '%22');
+    // Only a real number counts: Number(null) and Number('') are 0, which
+    // would hide the banner for a blank saved value.
+    const o = image.opacity;
+    const raw =
+        typeof o === 'number' || (typeof o === 'string' && o.trim() !== '')
+            ? Number(o)
+            : NaN;
+    const pct = Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 100) : 100;
+    return `background-image: url("${url}"); opacity: ${pct / 100};`;
+}
+
 // Fill opacity (owner QA 2026-07-08): each surface FILL can go translucent so
 // the layers behind show through (card/header over the page backdrop). Wraps
 // at token emission only — ink derivation (borders, onColor, the page veil)

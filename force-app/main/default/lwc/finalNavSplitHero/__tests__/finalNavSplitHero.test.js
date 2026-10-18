@@ -75,18 +75,27 @@ describe('c-final-nav-split-hero', () => {
         expect(pane.getAttribute('style')).not.toContain('rgba(255');
     });
 
-    it('mapped banner image layers under a header-fill veil at (100 − opacity)%', async () => {
+    it('mapped banner image paints on its own layer at the image opacity; the pane keeps the fill', async () => {
         const cmp = await mount({
             paneImage: { url: 'https://x/img.png', opacity: 40 }
         });
-        const style = cmp.shadowRoot
-            .querySelector('.pane')
-            .getAttribute('style');
-        expect(style).toContain('url("https://x/img.png")');
-        expect(style).toContain(
-            'color-mix(in srgb, var(--c-header-bg) 60%, transparent)'
-        );
+        const pane = cmp.shadowRoot.querySelector('.pane');
+        const style = pane.getAttribute('style');
+        expect(style).toContain('var(--c-header-bg)');
+        expect(style).toContain('var(--c-header-bg-gradient, none)');
         expect(style).toContain('var(--c-header-text)');
+        expect(style).not.toContain('url(');
+        const layer = pane.querySelector('.banner-layer');
+        expect(layer.getAttribute('aria-hidden')).toBe('true');
+        expect(layer.getAttribute('style')).toContain(
+            'url("https://x/img.png")'
+        );
+        expect(layer.getAttribute('style')).toContain('opacity: 0.4');
+    });
+
+    it('no mapped banner → no banner layer', async () => {
+        const cmp = await mount({});
+        expect(cmp.shadowRoot.querySelector('.pane .banner-layer')).toBeNull();
     });
 
     it('viewer bleed prop wins over options; options stay the direct-mount fallback', async () => {

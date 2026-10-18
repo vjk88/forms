@@ -1,6 +1,9 @@
-/* The header surface: --c-header-bg is the veil — over the page when there is no
-   bgImage, over the image (via surfaceStyle's gradient layer) when there is one. */
+/* The header surface: the FILL (--c-header-bg + gradient) paints on the box;
+   a banner image sits on .banner-layer above the fill and behind the content.
+   isolation keeps the layer's negative z-index inside this box. */
 .hdr {
+    position: relative;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -11,6 +14,18 @@
     background-color: var(--c-header-bg);
     background-image: var(--c-header-bg-gradient, none);
     font-family: var(--c-font-body);
+}
+
+/* Real opacity (bannerLayerStyle sets background-image + opacity inline):
+   fading the banner reveals the fill underneath. */
+.banner-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-position: center;
+    background-size: cover;
+    pointer-events: none;
 }
 
 .brand-logo {

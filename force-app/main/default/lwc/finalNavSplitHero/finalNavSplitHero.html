@@ -2,6 +2,13 @@
     <div class="split">
         <div class={layoutClass}>
             <aside class="pane" style={paneStyle}>
+                <template lwc:if={paneBannerStyle}>
+                    <div
+                        class="banner-layer"
+                        style={paneBannerStyle}
+                        aria-hidden="true"
+                    ></div>
+                </template>
                 <div class="brand">
                     <template lwc:if={logoUrl}>
                         <img class="brand-logo" src={logoUrl} alt={logoAlt} />

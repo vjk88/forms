@@ -17,7 +17,7 @@ describe('c-final-form-header', () => {
         }
     });
 
-    it('standard: fill under the banner; full-opacity image gets a 0% veil', async () => {
+    it('banner paints on its own layer at full opacity; the header box keeps only the fill', async () => {
         const el = mount({
             style: 'standard',
             title: 'T',
@@ -25,23 +25,57 @@ describe('c-final-form-header', () => {
         });
         await flush();
         const hdr = el.shadowRoot.querySelector('.hdr');
-        const style = hdr.getAttribute('style');
+        // the fill (--c-header-bg + gradient) stays on the box via CSS — no inline override
+        expect(hdr.getAttribute('style')).toBeNull();
+        const layer = hdr.querySelector('.banner-layer');
+        expect(layer).not.toBeNull();
+        expect(layer.getAttribute('aria-hidden')).toBe('true');
+        const style = layer.getAttribute('style');
         expect(style).toContain('url("/sfc/banner")');
-        expect(style).toContain(
-            'color-mix(in srgb, var(--c-header-bg) 0%, transparent)'
-        );
+        expect(style).toContain('opacity: 1');
+        // no fake veil: the old recipe tinted with --c-header-bg, which is
+        // transparent on 18 themes and a gradient (invalid in color-mix) on 10
+        expect(style).not.toContain('color-mix');
     });
 
-    it('image opacity 30 → a 70% fill-tinted veil OVER the image (fade into the fill)', async () => {
+    it('image opacity 30 → the banner layer itself is 0.3 opaque (fill shows through)', async () => {
         const el = mount({
             style: 'standard',
             title: 'T',
             bgImage: { url: '/sfc/banner', opacity: 30 }
         });
         await flush();
-        expect(
-            el.shadowRoot.querySelector('.hdr').getAttribute('style')
-        ).toContain('var(--c-header-bg) 70%, transparent');
+        const layer = el.shadowRoot.querySelector('.hdr .banner-layer');
+        expect(layer.getAttribute('style')).toContain('opacity: 0.3');
+    });
+
+    it.each([
+        [-20, 'opacity: 0;'],
+        [250, 'opacity: 1;'],
+        ['abc', 'opacity: 1;'],
+        [null, 'opacity: 1;'],
+        ['', 'opacity: 1;'],
+        ['40', 'opacity: 0.4;']
+    ])(
+        'opacity %p is clamped to 0-100 (junk or blank → 100)',
+        async (raw, want) => {
+            const el = mount({
+                title: 'T',
+                bgImage: { url: '/b', opacity: raw }
+            });
+            await flush();
+            expect(
+                el.shadowRoot
+                    .querySelector('.banner-layer')
+                    .getAttribute('style')
+            ).toContain(want);
+        }
+    );
+
+    it('no banner → no banner layer', async () => {
+        const el = mount({ style: 'standard', title: 'T' });
+        await flush();
+        expect(el.shadowRoot.querySelector('.banner-layer')).toBeNull();
     });
 
     it("legacy 'minimal' renders as standard (option deleted 2026-07-18 — it silently ate the Fill)", async () => {
@@ -55,8 +89,10 @@ describe('c-final-form-header', () => {
         const hdr = el.shadowRoot.querySelector('.hdr');
         expect(hdr.className).toContain('style-standard');
         expect(hdr.className).not.toContain('style-minimal');
-        // the surface paints (banner + veil), the brand row shows
-        expect(hdr.getAttribute('style')).toContain('url("/sfc/banner")');
+        // the banner layer paints, the brand row shows
+        expect(
+            hdr.querySelector('.banner-layer').getAttribute('style')
+        ).toContain('url("/sfc/banner")');
         expect(el.shadowRoot.querySelector('.brand-wordmark')).not.toBeNull();
     });
 

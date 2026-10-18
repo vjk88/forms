@@ -1,5 +1,12 @@
 <template>
-    <header class={rootClass} style={surfaceStyle}>
+    <header class={rootClass}>
+        <template lwc:if={bannerStyle}>
+            <div
+                class="banner-layer"
+                style={bannerStyle}
+                aria-hidden="true"
+            ></div>
+        </template>
         <template lwc:if={showLogo}>
             <img class="brand-logo" src={logoUrl} alt={logoAlt} />
         </template>
