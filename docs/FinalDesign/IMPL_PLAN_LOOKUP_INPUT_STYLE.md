@@ -1,6 +1,6 @@
 # Build plan: the custom lookup follows the Input style (DEFERRED 35)
 
-Status: built, deployed to the dev org, measured on the Studio, Lightning and the public site (2026-10-16). One PR. Waits for the owner's test before it merges, because it changes how every lookup on a published form looks (see section 5).
+Status: built, deployed to the dev org, measured on the Studio, Lightning and the public site (2026-10-16). One PR, merged to main 2026-10-18 (PR #387) at the owner's word; it changes how every lookup on a published form looks (see section 5).
 
 Owner, 2026-10-11: "Custom Lookup with filters styling sucks and doesn't follow Input style in Advanced Design -> Fields & Sections". "Custom lookup with filters" is the lookup whose Display as is **Filtered search** (our own search box; the default is the platform's own field). Source note: `qa/OWNER_ISSUES_2026-10-11.md` item 35.
 
