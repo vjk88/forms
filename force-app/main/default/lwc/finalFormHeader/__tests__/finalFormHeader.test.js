@@ -52,14 +52,25 @@ describe('c-final-form-header', () => {
     it.each([
         [-20, 'opacity: 0;'],
         [250, 'opacity: 1;'],
-        ['abc', 'opacity: 1;']
-    ])('opacity %p is clamped to 0-100 (junk → 100)', async (raw, want) => {
-        const el = mount({ title: 'T', bgImage: { url: '/b', opacity: raw } });
-        await flush();
-        expect(
-            el.shadowRoot.querySelector('.banner-layer').getAttribute('style')
-        ).toContain(want);
-    });
+        ['abc', 'opacity: 1;'],
+        [null, 'opacity: 1;'],
+        ['', 'opacity: 1;'],
+        ['40', 'opacity: 0.4;']
+    ])(
+        'opacity %p is clamped to 0-100 (junk or blank → 100)',
+        async (raw, want) => {
+            const el = mount({
+                title: 'T',
+                bgImage: { url: '/b', opacity: raw }
+            });
+            await flush();
+            expect(
+                el.shadowRoot
+                    .querySelector('.banner-layer')
+                    .getAttribute('style')
+            ).toContain(want);
+        }
+    );
 
     it('no banner → no banner layer', async () => {
         const el = mount({ style: 'standard', title: 'T' });

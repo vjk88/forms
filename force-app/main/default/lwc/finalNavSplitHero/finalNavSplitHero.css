@@ -37,8 +37,8 @@
     align-self: start;
 }
 
-/* — The brand pane: the product's hero. Config paints it (image + composed
-     veil via paneStyle); type sits on it in hero white. — */
+/* — The brand pane: the product's hero. Config paints it (fill via paneStyle,
+     banner on .banner-layer); type sits on it in hero white. — */
 .pane {
     display: flex;
     flex-direction: column;

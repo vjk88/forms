@@ -351,7 +351,13 @@ export function bannerLayerStyle(image) {
         return '';
     }
     const url = String(img).replace(/"/g, '%22');
-    const raw = Number(image.opacity);
+    // Only a real number counts: Number(null) and Number('') are 0, which
+    // would hide the banner for a blank saved value.
+    const o = image.opacity;
+    const raw =
+        typeof o === 'number' || (typeof o === 'string' && o.trim() !== '')
+            ? Number(o)
+            : NaN;
     const pct = Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 100) : 100;
     return `background-image: url("${url}"); opacity: ${pct / 100};`;
 }
