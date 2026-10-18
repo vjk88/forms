@@ -10,6 +10,7 @@ import {
     isMultilineTarget,
     isTouchOnly
 } from 'c/finalStepFlow';
+import { bannerLayerStyle } from 'c/finalThemeEngine';
 
 /**
  * finalNavSplitHero — brand pane + form pane (catalog §2).
@@ -151,35 +152,22 @@ export default class FinalNavSplitHero extends LightningElement {
 
     /**
      * The THEME dresses the pane: its header surface + header ink. A mapped
-     * banner image (viewer: header.bgImage → paneImage) layers UNDER a
-     * header-fill veil whose strength is (100 − image opacity) — the exact
-     * finalFormHeader.surfaceStyle recipe, so the banner behaves identically
-     * on both hosts. (The paneBg/paneBgOpacity legacy veil was deleted
-     * 2026-07-18 — sweep slice 3 option (a).)
+     * banner image (viewer: header.bgImage → paneImage) paints on its own
+     * layer over that fill with real opacity — the same bannerLayerStyle as
+     * finalFormHeader, so the banner behaves identically on both hosts. (The
+     * paneBg/paneBgOpacity legacy veil was deleted 2026-07-18 — sweep slice 3
+     * option (a); the --c-header-bg image veil was replaced 2026-10-18.)
      */
     get paneStyle() {
-        const base =
-            'background-color: var(--c-header-bg);' +
-            ' color: var(--c-header-text);';
-        const img = this.opts.paneImage && this.opts.paneImage.url;
-        if (!img) {
-            return (
-                base + ' background-image: var(--c-header-bg-gradient, none);'
-            );
-        }
-        const url = String(img).replace(/"/g, '%22');
-        const raw = Number(this.opts.paneImage.opacity);
-        const opacity = Number.isFinite(raw)
-            ? Math.min(Math.max(raw, 0), 100)
-            : 100;
-        const veil = `color-mix(in srgb, var(--c-header-bg) ${100 - opacity}%, transparent)`;
         return (
-            base +
-            ` background-image: linear-gradient(${veil}, ${veil}), url("${url}"),` +
-            ' var(--c-header-bg-gradient, none);' +
-            ' background-size: auto, cover, auto;' +
-            ' background-position: center, center, center;'
+            'background-color: var(--c-header-bg);' +
+            ' background-image: var(--c-header-bg-gradient, none);' +
+            ' color: var(--c-header-text);'
         );
+    }
+
+    get paneBannerStyle() {
+        return bannerLayerStyle(this.opts.paneImage);
     }
 
     // ---- brand + hero blocks ----

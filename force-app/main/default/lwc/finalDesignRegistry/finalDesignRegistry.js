@@ -815,7 +815,7 @@ const AREAS = [
                         key: 'bannerOpacity',
                         label: 'Image opacity',
                         type: 'range',
-                        hint: 'Lower fades the banner into the header fill color.',
+                        hint: 'Lower lets the header fill show through the banner — or the page, if the fill is clear.',
                         path: 'header.bgImage.opacity',
                         needsValueOf: 'bannerImage',
                         min: 0,

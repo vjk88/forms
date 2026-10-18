@@ -47,6 +47,22 @@
     border-radius: var(--c-radius);
     color: #fff;
     overflow: hidden;
+    /* Anchors .banner-layer and keeps its negative z-index inside the pane
+       whatever position the sticky rule resolves to (static inside LEX). The
+       pane already clips (overflow: hidden), so paint containment adds none. */
+    contain: paint;
+}
+
+/* Banner image on its own layer, above the pane's fill, behind the content,
+   at real opacity (bannerLayerStyle sets background-image + opacity inline). */
+.banner-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-position: center;
+    background-size: cover;
+    pointer-events: none;
 }
 
 .brand {
