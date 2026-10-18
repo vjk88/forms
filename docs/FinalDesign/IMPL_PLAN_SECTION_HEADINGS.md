@@ -1,6 +1,6 @@
 # Build plan: the section name shown twice (DEFERRED 37) and the Scroll headings (DEFERRED 38)
 
-Status: PR 1 (the repeated name) is built, reviewed by the UX reviewer (2026-10-16, findings 1, 3, 4 and 6 fixed, see section 7), deployed, and measured on the Studio, Lightning and the public site. PR 2 (the Scroll heading look) is its own PR so it can be merged or held on its own; its review fixes (findings 2, 5, 7) are in section 5. Both wait for the owner's test, because they change how existing published forms look.
+Status: PR 1 (the repeated name) is built, reviewed by the UX reviewer (2026-10-16, findings 1, 3, 4 and 6 fixed, see section 7), deployed, and measured on the Studio, Lightning and the public site. PR 2 (the Scroll heading look) is its own PR so it can be merged or held on its own; its review fixes (findings 2, 5, 7) are in section 5. Both were merged to main on 2026-10-18 at the owner's word (PRs #388 and #389, #389 through #388); they change how existing published forms look.
 
 Owner, 2026-10-11: "Why the hell are we displaying this section name 'Details' again when the tab or accordion or Stepper info show the section name? ... the same thing is happening for every layout except for one at a time." And, 2026-10-16, with a screenshot of the Side Nav form: "section name is still an issue for some layouts". Source note: `qa/OWNER_ISSUES_2026-10-11.md` items 37 and 38.
 

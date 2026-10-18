@@ -1,6 +1,6 @@
 # Build plan: stages 4 and 5, the form's font on the public site and an honest Studio preview frame
 
-Status: building (2026-10-11). Stages 1 to 3 are merged (#374 to #382; #383 waits for the owner). **Stage 4 (B3) is built, deployed, measured and open as PR 385, waiting for the owner's word.** **Stage 5 is built, deployed to the dev org and measured on the Studio's own host (this PR).**
+Status: building (2026-10-11). Stages 1 to 3 are merged (#374 to #382; #383 merged 2026-10-18). **Stage 4 (B3) is built, deployed, measured and merged as PR 385 on 2026-10-18 at the owner's word.** **Stage 5 is built, deployed to the dev org and measured on the Studio's own host (this PR).**
 
 Source: `qa/CROSS_HOST_RENDER_AUDIT_2026-10-10.md` (3B for B3, 3E and section 9 decision 7 for the preview frame).
 
