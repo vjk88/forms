@@ -547,6 +547,64 @@ describe('c-final-form-studio', () => {
         );
     });
 
+    it('Advanced toolbar edits update preview, autosave and undo; search is navigation only', async () => {
+        jest.useFakeTimers();
+        loadStudio.mockResolvedValue({
+            name: 'Toolbar',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(40);
+        const root = el.shadowRoot;
+        expect(root.querySelector('c-final-design-toolbar')).toBeNull();
+        const panel = root.querySelector('c-final-design-panel');
+        panel.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+        await micro(20);
+        const toolbar = root.querySelector('c-final-design-toolbar');
+        expect(toolbar).not.toBeNull();
+        toolbar.dispatchEvent(
+            new CustomEvent('settingselect', { detail: { key: 'typography' } })
+        );
+        await micro(20);
+        expect(
+            panel.shadowRoot
+                .querySelector('[data-control="typography"]')
+                .closest('details').open
+        ).toBe(true);
+        expect(root.querySelector('.st-undo').disabled).toBe(true);
+        expect(saveDraft).not.toHaveBeenCalled();
+        toolbar.dispatchEvent(
+            new CustomEvent('controlchange', {
+                detail: { key: 'labelColor', kind: 'color', value: '#123456' }
+            })
+        );
+        await micro(20);
+        expect(previewViewer(el).spec.theme.overrides.palette.labelColor).toBe(
+            '#123456'
+        );
+        jest.advanceTimersByTime(1000);
+        await micro(30);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        expect(
+            JSON.parse(saveDraft.mock.calls[0][0].specJson).theme.overrides
+                .palette.labelColor
+        ).toBe('#123456');
+        root.querySelector('.st-undo').click();
+        await micro(20);
+        expect(
+            previewViewer(el).spec.theme.overrides.palette?.labelColor
+        ).toBeUndefined();
+        root.querySelectorAll('.st-mode')[0].click();
+        await micro(20);
+        expect(root.querySelector('c-final-design-toolbar')).toBeNull();
+        expect(root.querySelector('c-final-builder-canvas')).not.toBeNull();
+    });
+
     it('specchange autosaves ONCE after the debounce window', async () => {
         jest.useFakeTimers();
         loadStudio.mockResolvedValue({

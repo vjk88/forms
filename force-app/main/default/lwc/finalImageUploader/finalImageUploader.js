@@ -17,6 +17,11 @@ const DEFAULT_ACCEPT = 'image/png,image/jpeg,image/gif,image/webp';
  * this control performs the storage side-effects but stores no design state.
  */
 export default class FinalImageUploader extends LightningElement {
+    @api
+    focus() {
+        this.template.querySelector('button.btn')?.focus();
+    }
+
     @api label;
     /** Current stored image (parent-echoed). */
     @api url;

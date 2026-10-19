@@ -142,6 +142,9 @@
                                             class="group"
                                             key={g.key}
                                             open={g.open}
+                                            data-area={s.key}
+                                            data-disclosure-group={g.key}
+                                            ontoggle={handleGroupToggle}
                                         >
                                             <summary class="group-head">
                                                 <span>{g.label}</span
@@ -169,7 +172,13 @@
                                                     for:each={g.controls}
                                                     for:item="c"
                                                 >
-                                                    <div key={c.key}>
+                                                    <div
+                                                        key={c.key}
+                                                        class={c.wrapperClass}
+                                                        data-control={c.key}
+                                                        tabindex="-1"
+                                                        aria-label={c.label}
+                                                    >
                                                         <template
                                                             lwc:if={c.isColor}
                                                         >

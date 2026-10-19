@@ -658,6 +658,40 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  storage. The ONE preview stage stays mounted (its answers, device and
      *  zoom live there); the flag just hides the editing panes around it. */
     previewExpanded = false;
+    designToolbarState;
+
+    get showDesignToolbar() {
+        return (
+            this.isDesign &&
+            !this.isReadOnly &&
+            !this.previewExpanded &&
+            Boolean(this.designToolbarState?.advanced)
+        );
+    }
+
+    get workspaceClass() {
+        return this.showDesignToolbar
+            ? 'st-workspace-container st-workspace-container--toolbar'
+            : 'st-workspace-container';
+    }
+
+    handleDesignToolbarState(event) {
+        this.designToolbarState = event.detail;
+    }
+
+    handleDesignToolbarChange(event) {
+        if (!this.showDesignToolbar || this.editorLocked) return;
+        this.template
+            .querySelector('c-final-design-panel')
+            ?.applyToolbarChange(event.detail);
+    }
+
+    handleDesignSettingSelect(event) {
+        if (!this.showDesignToolbar || this.editorLocked) return;
+        this.template
+            .querySelector('c-final-design-panel')
+            ?.revealControl(event.detail.key);
+    }
 
     /** The Build tools column (palette ⇄ properties) can fold into a narrow
      *  strip. Same rules as previewExpanded: a workspace preference, never the
