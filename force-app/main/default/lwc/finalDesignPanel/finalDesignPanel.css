@@ -1,5 +1,27 @@
 @import 'c/finalStudioStyles';
 
+.control-target:focus {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 4px;
+}
+.control-target--focused {
+    animation: setting-found 1.6s ease-out;
+}
+@keyframes setting-found {
+    from {
+        background: var(--c-studio-accent-surface);
+    }
+    to {
+        background: transparent;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .control-target--focused {
+        animation: none;
+        outline: 2px solid var(--c-studio-focus);
+    }
+}
+
 /* Builder chrome — neutral, self-contained; NOT the form's --c-* tokens. */
 :host {
     display: block;

@@ -1,0 +1,194 @@
+<template>
+    <section
+        class="dt-root"
+        aria-label="Advanced design shortcuts"
+        onkeydown={handleKeydown}
+    >
+        <div class="dt-row">
+            <div class="dt-font">
+                <label for="design-font">Font pairing</label>
+                <select
+                    id="design-font"
+                    disabled={fontDisabled}
+                    onchange={handleFont}
+                >
+                    <template for:each={fontOptions} for:item="option">
+                        <option
+                            key={option.value}
+                            value={option.value}
+                            selected={option.selected}
+                        >
+                            {option.label}
+                        </option>
+                    </template>
+                </select>
+            </div>
+            <button
+                type="button"
+                class="dt-button dt-colors-trigger"
+                disabled={disabled}
+                aria-expanded={colorsOpen}
+                aria-controls="design-colors"
+                onclick={handleColors}
+            >
+                Colors
+            </button>
+            <div class="dt-search" onfocusout={handleSearchFocusOut}>
+                <label class="slds-assistive-text" for="design-search"
+                    >Find a design setting</label
+                >
+                <input
+                    id="design-search"
+                    class="dt-search-input"
+                    type="search"
+                    placeholder="Find a setting…"
+                    value={query}
+                    disabled={disabled}
+                    autocomplete="off"
+                    aria-controls="design-results"
+                    oninput={handleQuery}
+                    onfocus={handleSearchFocus}
+                    onkeydown={handleSearchKeydown}
+                />
+                <template lwc:if={hasQuery}>
+                    <button
+                        type="button"
+                        class="dt-clear"
+                        title="Clear search"
+                        aria-label="Clear search"
+                        onclick={clearSearch}
+                    >
+                        ×
+                    </button>
+                </template>
+                <template lwc:if={showResults}>
+                    <div
+                        id="design-results"
+                        class="dt-results"
+                        onmousedown={keepSearchFocus}
+                    >
+                        <p class="dt-summary" role="status">{resultSummary}</p>
+                        <template lwc:if={hasResults}>
+                            <ul>
+                                <template for:each={results} for:item="result">
+                                    <li key={result.key}>
+                                        <button
+                                            type="button"
+                                            class="dt-result"
+                                            data-key={result.key}
+                                            aria-disabled={result.unavailable}
+                                            onclick={handleResult}
+                                            onkeydown={handleResultKeydown}
+                                        >
+                                            <strong>{result.label}</strong>
+                                            <span>{result.path}</span>
+                                            <template
+                                                lwc:if={result.unavailable}
+                                                ><span class="dt-reason"
+                                                    >{result.reason}</span
+                                                ></template
+                                            >
+                                        </button>
+                                    </li>
+                                </template>
+                            </ul>
+                        </template>
+                        <template lwc:else
+                            ><p class="dt-summary">
+                                Try “font”, “border”, “background”, or “button”.
+                            </p></template
+                        >
+                    </div>
+                </template>
+            </div>
+            <span class="dt-scope">Form-wide design</span>
+        </div>
+        <template lwc:if={colorsOpen}>
+            <section
+                id="design-colors"
+                class="dt-colors"
+                aria-label="Form colors"
+            >
+                <header class="dt-colors-head">
+                    <div>
+                        <h2>Form colors</h2>
+                        <p>Changes apply immediately to this form.</p>
+                    </div>
+                    <button
+                        type="button"
+                        class="dt-button"
+                        onclick={closeColors}
+                    >
+                        Done
+                    </button>
+                </header>
+                <div class="dt-color-grid">
+                    <template for:each={colorGroups} for:item="group">
+                        <section key={group.key} class="dt-color-group">
+                            <h3>{group.label}</h3>
+                            <template
+                                for:each={group.controls}
+                                for:item="control"
+                            >
+                                <div key={control.key} class="dt-color-control">
+                                    <template
+                                        lwc:if={control.isGradientSurface}
+                                    >
+                                        <c-final-gradient-control
+                                            data-key={control.key}
+                                            label={control.label}
+                                            solid={control.value}
+                                            gradient={control.gradient}
+                                            edited={control.edited}
+                                            disabled={disabled}
+                                            onchange={handleGradient}
+                                        ></c-final-gradient-control>
+                                    </template>
+                                    <template lwc:elseif={control.isMeshColors}>
+                                        <p>{control.label}</p>
+                                        <template
+                                            for:each={control.colors}
+                                            for:item="blob"
+                                        >
+                                            <c-final-color-control
+                                                key={blob.idx}
+                                                data-idx={blob.idx}
+                                                label={blob.label}
+                                                value={blob.value}
+                                                disabled={disabled}
+                                                onchange={handleMesh}
+                                            ></c-final-color-control>
+                                        </template>
+                                    </template>
+                                    <template lwc:else>
+                                        <c-final-color-control
+                                            data-key={control.key}
+                                            label={control.label}
+                                            value={control.value}
+                                            contrast-with={control.contrastWith}
+                                            subject={control.subject}
+                                            edited={control.edited}
+                                            disabled={disabled}
+                                            onchange={handleColor}
+                                        ></c-final-color-control>
+                                    </template>
+                                    <template lwc:if={control.edited}
+                                        ><button
+                                            type="button"
+                                            class="dt-reset"
+                                            data-key={control.key}
+                                            disabled={disabled}
+                                            onclick={handleReset}
+                                        >
+                                            Reset to theme
+                                        </button></template
+                                    >
+                                </div>
+                            </template>
+                        </section>
+                    </template>
+                </div>
+            </section>
+        </template>
+    </section>
+</template>

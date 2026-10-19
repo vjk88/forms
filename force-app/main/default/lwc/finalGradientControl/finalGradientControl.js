@@ -22,6 +22,11 @@ const PRESETS = [
 ];
 
 export default class FinalGradientControl extends LightningElement {
+    @api
+    focus() {
+        this.template.querySelector('button')?.focus();
+    }
+
     @api label;
     @api edited = false;
     @api disabled = false;
