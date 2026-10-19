@@ -1322,6 +1322,9 @@ function over(fg, bg) {
  * The form's card as a person sees it, as opaque hex: the content fill
  * composited over the page fill (over white). Frosted themes paint an rgba
  * card, so judging an accent against the raw token would lie.
+ * Approximation: page images and gradients are ignored (treated as the solid
+ * page fill). All nine gallery themes have solid pages; on a hidden image
+ * theme the dimming can be off.
  */
 function cardColor(tokens) {
     const white = { r: 255, g: 255, b: 255, a: 1 };

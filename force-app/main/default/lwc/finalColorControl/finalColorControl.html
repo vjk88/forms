@@ -46,9 +46,9 @@
                 >
             </template>
         </div>
-        <template lwc:if={noteText}>
-            <p class="swatch-note" aria-live="polite">{noteText}</p>
-        </template>
+        <!-- always mounted: reserved height (no badge jump) and a live
+             region that exists before its text changes -->
+        <p class="swatch-note" aria-live="polite">{noteText}</p>
     </template>
     <template lwc:if={showBadge}>
         <div class="badge-row">

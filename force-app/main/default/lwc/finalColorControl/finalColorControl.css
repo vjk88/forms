@@ -72,7 +72,7 @@
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 0 0 1px var(--c-studio-border-strong);
 }
 
 .swatch:hover .chip {
@@ -87,7 +87,7 @@
 
 .swatch:focus-visible {
     outline: 2px solid var(--c-studio-accent);
-    outline-offset: -4px;
+    outline-offset: -2px;
 }
 
 /* dimmed, still focusable so its reason can be read */
@@ -111,6 +111,7 @@
 }
 
 .swatch-note {
+    min-height: 16px;
     margin: 0 0 6px;
     font-size: 11px;
     color: var(--c-studio-text-weak);

@@ -88,10 +88,12 @@ export default class FinalColorControl extends LightningElement {
             const ratio = this.presetBackground
                 ? contrastRatio(value, this.presetBackground)
                 : null;
-            const usable = this.disabled
-                ? false
-                : ratio === null || ratio >= PRESET_MIN;
             const checked = value !== '' && value === current;
+            // dimming is for colors you'd switch TO; the one the form already
+            // uses is never shown as "too faint" (UX review)
+            const usable =
+                !this.disabled &&
+                (checked || ratio === null || ratio >= PRESET_MIN);
             const key = `p${i}`;
             const reason = usable
                 ? ''
@@ -120,9 +122,11 @@ export default class FinalColorControl extends LightningElement {
             rows.find((r) => r.key === this._focusKey) ||
             rows.find((r) => r.checked) ||
             rows[0];
+        // disabled: no tab stop at all, like the picker beside it
         return rows.map((r) => ({
             ...r,
-            tabindex: anchor && r.key === anchor.key ? '0' : '-1'
+            tabindex:
+                !this.disabled && anchor && r.key === anchor.key ? '0' : '-1'
         }));
     }
 
@@ -162,8 +166,13 @@ export default class FinalColorControl extends LightningElement {
         this._noteKey = s && !s.usable ? key : '';
     }
 
-    handleSwatchBlur() {
+    handleSwatchBlur(event) {
         this._noteKey = '';
+        // leaving the group: the tab stop goes back to the checked swatch
+        const next = event.relatedTarget;
+        if (!next || next.getAttribute?.('role') !== 'radio') {
+            this._focusKey = '';
+        }
     }
 
     handleSwatchKeydown(event) {

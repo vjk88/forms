@@ -6,6 +6,7 @@ import { ACCENT_PRESETS } from 'c/finalDesignRegistry';
 
 const flush = () => Promise.resolve();
 const DRACULA_CARD = '#282a36';
+const DRACULA_ACCENT = '#ff79c6';
 
 function mount(props) {
     const el = createElement('c-final-color-control', {
@@ -57,7 +58,10 @@ describe('finalColorControl presets', () => {
     });
 
     it('dims the 7 swatches under 3:1 on Dracula Dark and keeps them focusable', () => {
-        const el = mount({ presetBackground: DRACULA_CARD });
+        const el = mount({
+            value: DRACULA_ACCENT,
+            presetBackground: DRACULA_CARD
+        });
         const off = radios(el)
             .filter((b) => b.getAttribute('aria-disabled') === 'true')
             .map((b) => b.getAttribute('aria-label'));
@@ -74,6 +78,21 @@ describe('finalColorControl presets', () => {
         expect(byName(el, 'Navy').disabled).toBe(false);
     });
 
+    it('never dims the colour the form already uses', () => {
+        // Navy is under 3:1 on Dracula, but it is the current value here
+        const el = mount({ value: '#1e3a8a', presetBackground: DRACULA_CARD });
+        const navy = byName(el, 'Navy');
+        expect(navy.getAttribute('aria-checked')).toBe('true');
+        expect(navy.getAttribute('aria-disabled')).toBeNull();
+    });
+
+    it('has no tab stop while disabled', () => {
+        const el = mount({ disabled: true });
+        expect(
+            radios(el).filter((b) => b.getAttribute('tabindex') === '0')
+        ).toHaveLength(0);
+    });
+
     it('clicking a usable swatch emits presetpick with its color', async () => {
         const el = mount({ presetBackground: '#ffffff' });
         const handler = jest.fn();
@@ -85,7 +104,10 @@ describe('finalColorControl presets', () => {
     });
 
     it('clicking or tapping a dimmed swatch explains instead of applying', async () => {
-        const el = mount({ presetBackground: DRACULA_CARD });
+        const el = mount({
+            value: DRACULA_ACCENT,
+            presetBackground: DRACULA_CARD
+        });
         const handler = jest.fn();
         el.addEventListener('presetpick', handler);
         byName(el, 'Navy').click();
@@ -96,7 +118,10 @@ describe('finalColorControl presets', () => {
     });
 
     it('keyboard focus on a dimmed swatch shows its reason', async () => {
-        const el = mount({ presetBackground: DRACULA_CARD });
+        const el = mount({
+            value: DRACULA_ACCENT,
+            presetBackground: DRACULA_CARD
+        });
         byName(el, 'Forest').dispatchEvent(new CustomEvent('focus'));
         await flush();
         expect(el.shadowRoot.querySelector('.swatch-note').textContent).toMatch(
