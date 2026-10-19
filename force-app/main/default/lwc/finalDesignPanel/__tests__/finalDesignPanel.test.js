@@ -79,6 +79,162 @@ async function pickLayout(el, layout, paneFlow) {
 }
 
 describe('c-final-design-panel', () => {
+    describe('Advanced toolbar bridge', () => {
+        it('indexes every control with the same availability as the rendered panel', async () => {
+            const el = mount();
+            const state = jest.fn();
+            el.addEventListener('toolbarstate', state);
+            await goAdvanced(el);
+            const latest = () => state.mock.calls.at(-1)[0].detail;
+            expect(latest().searchEntries).toHaveLength(
+                flattenControls().length
+            );
+            const entries = latest().searchEntries;
+            expect(
+                entries.find((entry) => entry.key === 'pageScrim')
+            ).toMatchObject({
+                available: false,
+                reason: 'Add a page background image first.'
+            });
+            for (const section of DESIGN_SECTIONS) {
+                // The same panel must navigate sequentially through its sections.
+                // eslint-disable-next-line no-await-in-loop
+                await openArea(el, section.key);
+                for (const entry of entries.filter(
+                    (item) => item.section === section.key
+                )) {
+                    expect(
+                        Boolean(
+                            el.shadowRoot.querySelector(
+                                `[data-control="${entry.key}"]`
+                            )
+                        )
+                    ).toBe(entry.available);
+                }
+            }
+            const changed = jest.fn();
+            el.addEventListener('specchange', changed);
+            expect(el.revealControl('pageScrim')).toBe(false);
+            expect(
+                el.applyToolbarChange({
+                    key: 'pageScrim',
+                    kind: 'color',
+                    value: '#123456'
+                })
+            ).toBe(false);
+            expect(changed).not.toHaveBeenCalled();
+        });
+
+        it('applies custom fonts and gradients through the existing specchange path and resets sparse overrides', async () => {
+            listFonts.mockResolvedValueOnce([
+                {
+                    key: 'Brand',
+                    family: 'Brand',
+                    resource: 'brand_font',
+                    fallback: 'serif'
+                }
+            ]);
+            const el = mount();
+            const changed = jest.fn();
+            el.addEventListener('specchange', changed);
+            await flush();
+            await goAdvanced(el);
+            expect(
+                el.applyToolbarChange({
+                    key: 'typography',
+                    kind: 'font',
+                    value: 'custom:Brand'
+                })
+            ).toBe(true);
+            expect(lastSpec(changed).theme.overrides.customFont.resource).toBe(
+                'brand_font'
+            );
+            el.applyToolbarChange({
+                key: 'typography',
+                kind: 'font',
+                value: 'editorial'
+            });
+            expect(
+                lastSpec(changed).theme.overrides.customFont
+            ).toBeUndefined();
+            expect(lastSpec(changed).theme.overrides.typography).toBe(
+                'editorial'
+            );
+            const gradient = {
+                type: 'linear',
+                angle: 90,
+                start: '#112233',
+                end: '#445566'
+            };
+            el.applyToolbarChange({
+                key: 'pageBg',
+                kind: 'gradient',
+                solid: '#123456',
+                gradient
+            });
+            expect(
+                lastSpec(changed).theme.overrides.palette.pageBgGradient
+            ).toEqual(gradient);
+            el.applyToolbarChange({ key: 'pageBg', kind: 'reset' });
+            expect(
+                lastSpec(changed).theme.overrides.palette?.pageBgGradient
+            ).toBeUndefined();
+            expect(
+                lastSpec(changed).theme.overrides.palette?.pageBg
+            ).toBeUndefined();
+            expect(lastSpec(changed).theme.overrides.typography).toBe(
+                'editorial'
+            );
+        });
+
+        it('reveals and focuses a collapsed group without editing the spec', async () => {
+            const el = mount();
+            const changed = jest.fn();
+            el.addEventListener('specchange', changed);
+            await goAdvanced(el);
+            expect(el.revealControl('typography')).toBe(true);
+            await flush();
+            const wrapper = el.shadowRoot.querySelector(
+                '[data-control="typography"]'
+            );
+            expect(wrapper.closest('details.group').open).toBe(true);
+            expect(wrapper.classList.contains('control-target--focused')).toBe(
+                true
+            );
+            expect(el.shadowRoot.activeElement).toBe(
+                wrapper.querySelector('select')
+            );
+            expect(changed).not.toHaveBeenCalled();
+        });
+
+        it('resetting mesh colors restores the theme mesh as well as its colors', async () => {
+            const spec = buildSampleSpec({
+                layout: 'stepper',
+                themeKey: 'nordic'
+            });
+            spec.theme.overrides = {
+                effects: {
+                    mesh: 'custom',
+                    meshColors: ['#112233', '#445566']
+                }
+            };
+            const el = mount(spec);
+            const changed = jest.fn();
+            el.addEventListener('specchange', changed);
+            await goAdvanced(el);
+            expect(
+                el.applyToolbarChange({ key: 'meshColors', kind: 'reset' })
+            ).toBe(true);
+            expect(
+                lastSpec(changed).theme.overrides.effects?.mesh
+            ).toBeUndefined();
+            expect(
+                lastSpec(changed).theme.overrides.effects?.meshColors
+            ).toBeUndefined();
+            expect(changed).toHaveBeenCalledTimes(1);
+        });
+    });
+
     afterEach(() => {
         while (document.body.firstChild) {
             document.body.removeChild(document.body.firstChild);

@@ -42,6 +42,170 @@ export default class FinalDesignPanel extends LightningElement {
     @track _customProps = null;
     _customPropsId = null;
     _spec = {};
+    _toolbarSignature;
+    _pendingControlFocus;
+    focusedControlKey;
+    expandedGroups = {};
+
+    /** UI-only bridge to the shell; never enters the form spec or history. */
+    renderedCallback() {
+        const signature = JSON.stringify(this.toolbarState);
+        if (signature !== this._toolbarSignature) {
+            this._toolbarSignature = signature;
+            this.dispatchEvent(
+                new CustomEvent('toolbarstate', {
+                    detail: JSON.parse(signature)
+                })
+            );
+        }
+        this._focusPendingControl();
+    }
+
+    get toolbarState() {
+        if (!this.advanced) return { advanced: false };
+        const controls = this.controlsVM;
+        const byKey = new Map(
+            controls.map((control) => [control.key, control])
+        );
+        const searchEntries = [];
+        const colorGroups = [];
+        for (const section of DESIGN_SECTIONS) {
+            for (const group of section.groups) {
+                const colors = [];
+                for (const key of group.controls) {
+                    const entry = this._controlDef(key);
+                    const c = entry.control;
+                    const reason = this._unavailableReason(entry);
+                    searchEntries.push({
+                        key,
+                        label: c.label,
+                        section: section.key,
+                        group: group.key,
+                        path: `${section.label} › ${group.label}`,
+                        hint: c.hint || '',
+                        choices: (c.options || [])
+                            .map((option) => option.label)
+                            .join(' '),
+                        available: !reason,
+                        reason
+                    });
+                    const vm = byKey.get(key);
+                    if (
+                        vm &&
+                        (vm.isColor || vm.isGradientSurface || vm.isMeshColors)
+                    )
+                        colors.push(vm);
+                }
+                if (colors.length)
+                    colorGroups.push({
+                        key: `${section.key}-${group.key}`,
+                        label: `${section.label} › ${group.label}`,
+                        controls: colors
+                    });
+            }
+        }
+        return {
+            advanced: this.advanced,
+            font: byKey.get('typography'),
+            colorGroups,
+            searchEntries
+        };
+    }
+
+    @api
+    applyToolbarChange(change) {
+        if (!this.advanced || !change) return false;
+        const entry = this._controlDef(change.key);
+        if (!entry || this._unavailableReason(entry)) return false;
+        const c = entry.control;
+        const target = {
+            dataset: { key: c.key, idx: change.idx },
+            value: change.value
+        };
+        if (change.kind === 'font' && c.key === 'typography') {
+            const options =
+                this.controlsVM.find((vm) => vm.key === c.key)?.options || [];
+            if (!options.some((option) => option.value === change.value))
+                return false;
+            this.handleSelect({ target });
+        } else if (change.kind === 'color' && c.type === 'color') {
+            this.handleColor({ target, detail: { value: change.value } });
+        } else if (change.kind === 'gradient' && c.type === 'gradientSurface') {
+            this.handleGradientSurface({
+                target,
+                detail: { solid: change.solid, gradient: change.gradient }
+            });
+        } else if (change.kind === 'mesh' && c.type === 'meshColors') {
+            const index = Number(change.idx);
+            if (
+                !Number.isInteger(index) ||
+                index < 0 ||
+                index >= this._meshColorRows(this._effective(c)).length
+            )
+                return false;
+            this.handleMeshColor({ target, detail: { value: change.value } });
+        } else if (
+            change.kind === 'reset' &&
+            ['color', 'gradientSurface', 'meshColors'].includes(c.type)
+        ) {
+            const overrides = this._ensureOverrides();
+            deleteAt(overrides, c.themePath);
+            if (c.gradientPath) deleteAt(overrides, c.gradientPath);
+            if (c.type === 'meshColors')
+                deleteAt(overrides, this._controlDef('mesh').control.themePath);
+            this._spec = { ...this._spec };
+            this._emit();
+        } else return false;
+        return true;
+    }
+
+    @api
+    revealControl(key) {
+        const entry = this._controlDef(key);
+        if (!entry || this._unavailableReason(entry)) return false;
+        const section = DESIGN_SECTIONS.find((s) =>
+            s.groups.some((g) => g.controls.includes(key))
+        );
+        const group = section.groups.find((g) => g.controls.includes(key));
+        this.advanced = true;
+        this.activeAreaKey = section.key;
+        this.expandedGroups = {
+            ...this.expandedGroups,
+            [`${section.key}:${group.key}`]: true
+        };
+        this.focusedControlKey = key;
+        this._pendingControlFocus = key;
+        // Also covers selecting an already-open result with no reactive change.
+        Promise.resolve().then(() => {
+            if (this.isConnected) this._focusPendingControl();
+        });
+        return true;
+    }
+
+    _focusPendingControl() {
+        if (!this._pendingControlFocus) return;
+        const wrapper = [
+            ...this.template.querySelectorAll('[data-control]')
+        ].find((node) => node.dataset.control === this._pendingControlFocus);
+        if (!wrapper) return;
+        this._pendingControlFocus = null;
+        const disclosure = wrapper.querySelector('details');
+        if (disclosure) disclosure.open = true;
+        wrapper.scrollIntoView?.({ block: 'nearest' });
+        const input = wrapper.querySelector(
+            'input, select, textarea, lightning-input-rich-text, c-final-color-control, c-final-gradient-control, c-final-image-uploader'
+        );
+        if (input?.focus) input.focus();
+        else wrapper.focus();
+    }
+
+    handleGroupToggle(event) {
+        const { area, disclosureGroup: group } = event.currentTarget.dataset;
+        const key = `${area}:${group}`;
+        const open = event.currentTarget.open;
+        if (this.expandedGroups[key] !== open)
+            this.expandedGroups = { ...this.expandedGroups, [key]: open };
+    }
 
     connectedCallback() {
         // imperative (cacheable) — custom Form_Font__mdt entries for the picker
@@ -217,6 +381,70 @@ export default class FinalDesignPanel extends LightningElement {
         return Boolean(def && this._effective(def.control));
     }
 
+    _gateReason(gate) {
+        if (!gate || this._applies({ appliesTo: gate })) return '';
+        const names = (layouts) =>
+            layouts
+                .map(
+                    (key) =>
+                        layoutCardName(key, '') || getLayout(key)?.label || key
+                )
+                .join(' / ');
+        if (gate.layouts && !gate.layouts.includes(this.layoutType))
+            return `Available with ${names(gate.layouts)}.`;
+        if (gate.notLayouts?.includes(this.layoutType))
+            return `Not available with ${names([this.layoutType])}.`;
+        if (gate.formTypes && !gate.formTypes.includes(this.formType))
+            return `Available for ${gate.formTypes.join(' / ')} forms.`;
+        if (gate.notFormTypes?.includes(this.formType))
+            return `Not available for ${this.formType} forms.`;
+        if (gate.paginated && !this.layoutInfo.paginates)
+            return 'Choose a paginated layout first.';
+        if (gate.ownsAdvance && !this.ownsAdvance)
+            return 'Available with One at a Time or conversational Split Hero.';
+        return 'Available when the layout uses shared Next / Back navigation.';
+    }
+
+    /** Shared by rendering and search so hidden settings cannot be edited by shortcuts. */
+    _unavailableReason(entry) {
+        const c = entry.control;
+        const gate =
+            this._gateReason(entry.groupAppliesTo) ||
+            this._gateReason(c.appliesTo);
+        if (gate) return gate;
+        if (c.needsImage && !this._hasPageImage())
+            return 'Add a page background image first.';
+        for (const key of [c.needsEffect, c.needsValueOf].filter(Boolean)) {
+            const dependency = this._controlDef(key)?.control;
+            if (!dependency || !this._effective(dependency))
+                return `Set ${dependency?.label || key} first.`;
+        }
+        for (const condition of c.needsValue || []) {
+            const dependency = this._controlDef(condition.key)?.control;
+            if (!dependency) return 'Required setting is unavailable.';
+            const current = this._effective(dependency);
+            const notEqual = condition.notEquals !== undefined;
+            const expected = notEqual ? condition.notEquals : condition.equals;
+            if (notEqual ? current === expected : current !== expected) {
+                const label =
+                    dependency.options?.find(
+                        (option) => option.value === expected
+                    )?.label ??
+                    (expected === true
+                        ? 'On'
+                        : expected === false
+                          ? 'Off'
+                          : expected === ''
+                            ? 'empty'
+                            : String(expected));
+                return notEqual
+                    ? `${dependency.label} must not be ${label}.`
+                    : `Set ${dependency.label} to ${label} first.`;
+            }
+        }
+        return '';
+    }
+
     // ----------------------------------------------------------- view models
 
     get controlsVM() {
@@ -228,45 +456,7 @@ export default class FinalDesignPanel extends LightningElement {
         const out = [];
         for (const entry of entries) {
             const c = entry.control;
-            if (
-                !this._applies(entry) ||
-                !this._applies({ appliesTo: entry.groupAppliesTo })
-            ) {
-                continue;
-            }
-            if (c.needsImage && !this._hasPageImage()) {
-                continue;
-            }
-            if (c.needsEffect) {
-                const def = this._controlDef(c.needsEffect);
-                if (!def || !this._effective(def.control)) {
-                    continue;
-                }
-            }
-            if (c.needsValueOf) {
-                const def = this._controlDef(c.needsValueOf);
-                if (!def || !this._effective(def.control)) {
-                    continue;
-                }
-            }
-            // Equality gates: [{ key, equals }] or [{ key, notEquals }] —
-            // ALL must match. Render-only: hidden controls always keep
-            // their values (IA §6).
-            if (c.needsValue) {
-                const ok = c.needsValue.every((g) => {
-                    const def = this._controlDef(g.key);
-                    if (!def) {
-                        return false;
-                    }
-                    const eff = this._effective(def.control);
-                    return g.notEquals !== undefined
-                        ? eff !== g.notEquals
-                        : eff === g.equals;
-                });
-                if (!ok) {
-                    continue;
-                }
-            }
+            if (this._unavailableReason(entry)) continue;
             const value = this._effective(c);
             const vm = {
                 key: c.key,
@@ -385,7 +575,14 @@ export default class FinalDesignPanel extends LightningElement {
                 .map((group) => {
                     const controls = group.controls
                         .map((key) => all.find((c) => c.key === key))
-                        .filter(Boolean);
+                        .filter(Boolean)
+                        .map((control) => ({
+                            ...control,
+                            wrapperClass:
+                                control.key === this.focusedControlKey
+                                    ? 'control-target control-target--focused'
+                                    : 'control-target'
+                        }));
                     return {
                         ...group,
                         controls,
@@ -400,7 +597,9 @@ export default class FinalDesignPanel extends LightningElement {
                 summary: this._sectionSummary(section.key),
                 groups: groups.map((group, index) => ({
                     ...group,
-                    open: index === 0
+                    open:
+                        this.expandedGroups[`${section.key}:${group.key}`] ??
+                        index === 0
                 }))
             };
         });

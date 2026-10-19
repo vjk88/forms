@@ -17,6 +17,11 @@ import { contrastRatio } from 'c/finalThemeEngine';
  * - Badge semantics (FORM_STUDIO_IA §7): ≥4.5 AA pass · ≥3 large-text-only · <3 fail.
  */
 export default class FinalColorControl extends LightningElement {
+    @api
+    focus() {
+        this.template.querySelector('input')?.focus();
+    }
+
     /** Row label, e.g. "Accent". */
     @api label;
     /** Optional reference color; when set, the WCAG badge renders for the pair. */

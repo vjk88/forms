@@ -36,13 +36,14 @@
                         data-start={p.start}
                         data-end={p.end}
                         title="Preset"
+                        disabled={disabled}
                         onclick={handlePreset}
                     ></button>
                 </template>
             </div>
             <div class="grow">
                 <label>Type</label>
-                <select onchange={handleType}>
+                <select disabled={disabled} onchange={handleType}>
                     <template for:each={typeOptions} for:item="o">
                         <option
                             key={o.value}
@@ -59,6 +60,7 @@
                     <label>Angle</label>
                     <input
                         type="range"
+                        disabled={disabled}
                         min="0"
                         max="360"
                         value={angle}
@@ -69,9 +71,19 @@
             </template>
             <div class="grow">
                 <label>Start</label>
-                <input type="color" value={start} oninput={handleStart} />
+                <input
+                    type="color"
+                    value={start}
+                    disabled={disabled}
+                    oninput={handleStart}
+                />
                 <label class="end-label">End</label>
-                <input type="color" value={end} oninput={handleEnd} />
+                <input
+                    type="color"
+                    value={end}
+                    disabled={disabled}
+                    oninput={handleEnd}
+                />
             </div>
         </div>
     </template>

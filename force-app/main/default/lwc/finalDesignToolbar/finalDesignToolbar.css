@@ -1,0 +1,210 @@
+@import 'c/finalStudioStyles';
+:host {
+    display: block;
+    color: var(--c-studio-text);
+    font-size: 13px;
+}
+.dt-root {
+    position: relative;
+    background: var(--c-studio-surface);
+    border-bottom: 1px solid var(--c-studio-border);
+}
+.dt-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 10px 14px;
+}
+.dt-font {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.dt-font label {
+    white-space: nowrap;
+}
+select,
+input {
+    font: inherit;
+    color: inherit;
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 6px;
+    padding: 7px 10px;
+    min-height: 34px;
+    box-sizing: border-box;
+}
+select {
+    max-width: 240px;
+}
+.dt-button {
+    font: inherit;
+    color: inherit;
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+}
+button:disabled,
+select:disabled,
+input:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+.dt-search {
+    position: relative;
+    flex: 1 1 220px;
+    max-width: 430px;
+    min-width: 0;
+}
+.dt-search input {
+    width: 100%;
+    padding-right: 32px;
+}
+.dt-clear {
+    position: absolute;
+    right: 3px;
+    top: 3px;
+    padding: 3px 8px;
+    border: 0;
+    background: transparent;
+    font-size: 20px;
+    color: var(--c-studio-text-weak);
+    cursor: pointer;
+}
+.dt-scope {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--c-studio-text-weak);
+}
+.dt-results,
+.dt-colors {
+    position: absolute;
+    z-index: 20;
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px var(--c-studio-shadow, #0002);
+}
+.dt-results {
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 55vh;
+    overflow: auto;
+}
+.dt-results ul {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+}
+.dt-summary {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--c-studio-text-weak);
+}
+.dt-result {
+    width: 100%;
+    display: grid;
+    gap: 3px;
+    text-align: left;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 10px;
+    cursor: pointer;
+}
+.dt-result:hover {
+    background: var(--c-studio-hover);
+}
+.dt-result span {
+    font-size: 12px;
+    color: var(--c-studio-text-weak);
+}
+.dt-result[aria-disabled='true'] {
+    cursor: default;
+}
+.dt-result .dt-reason {
+    font-style: italic;
+}
+.dt-colors {
+    top: calc(100% + 6px);
+    left: 14px;
+    right: 14px;
+    max-height: 65vh;
+    overflow: auto;
+}
+.dt-colors-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--c-studio-border);
+}
+.dt-colors-head h2 {
+    font-size: 16px;
+    margin: 0;
+}
+.dt-colors-head p {
+    font-size: 12px;
+    margin: 4px 0 0;
+    color: var(--c-studio-text-weak);
+}
+.dt-color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 20px;
+    padding: 18px;
+}
+.dt-color-group {
+    min-width: 0;
+}
+.dt-color-group h3 {
+    font-size: 13px;
+    margin: 0 0 12px;
+}
+.dt-color-control {
+    padding: 10px 0;
+    border-top: 1px solid var(--c-studio-border-subtle);
+}
+.dt-reset {
+    background: transparent;
+    border: 0;
+    color: var(--c-studio-accent-text);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 5px 0;
+}
+@media (max-width: 600px) {
+    .dt-row {
+        gap: 10px;
+    }
+    .dt-search {
+        flex-basis: 100%;
+        max-width: none;
+    }
+    .dt-scope {
+        display: none;
+    }
+    .dt-font {
+        flex: 1;
+        min-width: 0;
+    }
+    select {
+        min-width: 0;
+        width: 100%;
+    }
+}
