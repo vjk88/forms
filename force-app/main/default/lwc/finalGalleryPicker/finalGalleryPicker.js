@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { LAYOUT_GROUPS } from 'c/finalLayoutCards';
 
 /**
  * finalGalleryPicker — the Design panel's "Change…" popup: ONE fixed-overlay
@@ -16,51 +17,8 @@ import { LightningElement, api } from 'lwc';
  * reconciliation). `close` on scrim / X / Escape.
  */
 
-// The 8 gallery choices in the creation flow's 3 groups (finalCreationGallery
-// keeps its LAYOUT_GROUPS module-private — keep the rosters in step when a
-// layout lands). Conversational = splitHero + layout.options.paneFlow.
-const LAYOUT_GROUPS = [
-    {
-        id: 'continuous',
-        title: 'Continuous flow',
-        hint: 'One page, scrolls top to bottom',
-        cards: [{ layout: 'scroll', themeKey: 'terracotta', name: 'Scroll' }]
-    },
-    {
-        id: 'paginated',
-        title: 'Paginated / Nav-driven',
-        hint: 'Steps, side panels, one section at a time',
-        cards: [
-            { layout: 'stepper', themeKey: 'mintStepper', name: 'Stepper' },
-            {
-                layout: 'splitHero',
-                themeKey: 'marbleSplit',
-                name: 'Split Hero'
-            },
-            {
-                layout: 'splitHero',
-                paneFlow: 'oneAtATime',
-                themeKey: 'auraSplit',
-                name: 'Split Hero · Conversational'
-            },
-            { layout: 'rail', themeKey: 'execNav', name: 'Side Nav' },
-            {
-                layout: 'oneAtATime',
-                themeKey: 'lavender',
-                name: 'One at a Time'
-            }
-        ]
-    },
-    {
-        id: 'tabbedAcc',
-        title: 'Tabbed & Accordion',
-        hint: 'Content grouped into panels',
-        cards: [
-            { layout: 'tabs', themeKey: 'nordic', name: 'Tabbed' },
-            { layout: 'accordion', themeKey: 'sandstone', name: 'Accordion' }
-        ]
-    }
-];
+// The 8 layout cards come from c/finalLayoutCards, the same list the creation
+// flow shows. Conversational = splitHero + layout.options.paneFlow.
 
 /**
  * The card vocabulary IS the user-facing layout name — whatever surface

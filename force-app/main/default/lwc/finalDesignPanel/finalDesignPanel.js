@@ -130,6 +130,9 @@ export default class FinalDesignPanel extends LightningElement {
             this.handleSelect({ target });
         } else if (change.kind === 'color' && c.type === 'color') {
             this.handleColor({ target, detail: { value: change.value } });
+        } else if (change.kind === 'preset' && c.presets) {
+            if (!c.presets.some((p) => p.value === change.value)) return false;
+            this.handlePresetPick({ detail: { value: change.value } });
         } else if (change.kind === 'gradient' && c.type === 'gradientSurface') {
             this.handleGradientSurface({
                 target,
@@ -153,6 +156,7 @@ export default class FinalDesignPanel extends LightningElement {
             if (c.gradientPath) deleteAt(overrides, c.gradientPath);
             if (c.type === 'meshColors')
                 deleteAt(overrides, this._controlDef('mesh').control.themePath);
+            this._syncInkMode();
             this._spec = { ...this._spec };
             this._emit();
         } else return false;
@@ -494,6 +498,12 @@ export default class FinalDesignPanel extends LightningElement {
                     ? tokens[c.contrastToken]
                     : undefined;
                 vm.subject = c.subject;
+                if (c.presets) {
+                    vm.presets = c.presets;
+                    // judged against the card as painted: a frosted (rgba)
+                    // card over its page, never the raw token
+                    vm.presetBackground = cardColor(tokens);
+                }
             } else if (c.type === 'gradientSurface') {
                 vm.value = typeof value === 'string' ? value : '';
                 const g = getAt(this.overrides, c.gradientPath);
@@ -690,7 +700,11 @@ export default class FinalDesignPanel extends LightningElement {
             return t ? `${t.name} · custom` : 'Custom theme';
         }
         const t = listBuiltinThemes().find((x) => x.key === this.themeKey);
-        return t ? t.name : this.themeKey || '—';
+        if (!t) {
+            return this.themeKey || '—';
+        }
+        // a form can stay on a theme the gallery no longer offers (catalog cut)
+        return t.hidden ? `${t.name} · no longer in the gallery` : t.name;
     }
 
     get layoutLabel() {
@@ -828,12 +842,51 @@ export default class FinalDesignPanel extends LightningElement {
         } else {
             setAt(this._spec, c.path, value);
         }
+        if (key === 'accent') {
+            this._syncInkMode();
+        }
         this._spec = { ...this._spec };
         this._emit();
     }
 
     handleColor(event) {
         this._apply(event.target.dataset.key, event.detail.value);
+    }
+
+    /**
+     * A brand preset (IMPL_PLAN_THEME_CATALOG_CUT P5): ONE mutation, so one
+     * undo step. Sets the accent and, unless the theme recipe already does,
+     * turns on readable ink so labels on the new color stay legible. Never
+     * writes onAccent / submitText / submitBg: inks and button colors the
+     * author chose keep winning (finalThemeEngine inkOn).
+     */
+    handlePresetPick(event) {
+        const value = event.detail.value;
+        const overrides = this._ensureOverrides();
+        if (value === getAt(this.themeProps, 'palette.accent')) {
+            deleteAt(overrides, 'palette.accent');
+        } else {
+            setAt(overrides, 'palette.accent', value);
+        }
+        if (getAt(this.themeProps, 'palette.inkMode') !== 'contrast') {
+            setAt(overrides, 'palette.inkMode', 'contrast');
+        }
+        this._syncInkMode();
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    /**
+     * An inkMode override only ever comes from a preset and only means
+     * something next to an accent override. When the accent goes back to the
+     * theme's (picker, group reset), drop it too, so the form looks exactly
+     * as it did before the preset.
+     */
+    _syncInkMode() {
+        const overrides = this._ensureOverrides();
+        if (getAt(overrides, 'palette.accent') === undefined) {
+            deleteAt(overrides, 'palette.inkMode');
+        }
     }
 
     // ----- custom mesh (plan B4; UX reworked per owner 2026-07-08) -----
@@ -1199,6 +1252,7 @@ export default class FinalDesignPanel extends LightningElement {
                 }
             }
         }
+        this._syncInkMode();
         this._spec = { ...this._spec };
         this._emit();
     }
@@ -1216,4 +1270,68 @@ export default class FinalDesignPanel extends LightningElement {
             this._emit();
         }
     }
+}
+
+/** '#abc' / '#aabbcc' / 'rgb(a)(…)' → { r, g, b, a }; anything else → null. */
+function parseColor(v) {
+    if (typeof v !== 'string') {
+        return null;
+    }
+    const s = v.trim();
+    const rgb = s.match(
+        /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/i
+    );
+    if (rgb) {
+        return {
+            r: Number(rgb[1]),
+            g: Number(rgb[2]),
+            b: Number(rgb[3]),
+            a: rgb[4] === undefined ? 1 : Number(rgb[4])
+        };
+    }
+    let h = s.replace(/^#/, '');
+    if (h.length === 3) {
+        h = h
+            .split('')
+            .map((c) => c + c)
+            .join('');
+    }
+    if (!/^[0-9a-f]{6}$/i.test(h)) {
+        return null;
+    }
+    return {
+        r: parseInt(h.slice(0, 2), 16),
+        g: parseInt(h.slice(2, 4), 16),
+        b: parseInt(h.slice(4, 6), 16),
+        a: 1
+    };
+}
+
+/** `fg` painted over opaque `bg`, as an opaque color. */
+function over(fg, bg) {
+    const mixCh = (f, b) => Math.round(f * fg.a + b * (1 - fg.a));
+    return {
+        r: mixCh(fg.r, bg.r),
+        g: mixCh(fg.g, bg.g),
+        b: mixCh(fg.b, bg.b),
+        a: 1
+    };
+}
+
+/**
+ * The form's card as a person sees it, as opaque hex: the content fill
+ * composited over the page fill (over white). Frosted themes paint an rgba
+ * card, so judging an accent against the raw token would lie.
+ * Approximation: page images and gradients are ignored (treated as the solid
+ * page fill). All nine gallery themes have solid pages; on a hidden image
+ * theme the dimming can be off.
+ */
+function cardColor(tokens) {
+    const white = { r: 255, g: 255, b: 255, a: 1 };
+    const page = parseColor(tokens['--c-page-bg']);
+    const pageOpaque = page ? over(page, white) : white;
+    const card = parseColor(tokens['--c-content-bg']);
+    const c = card ? over(card, pageOpaque) : pageOpaque;
+    const hex = (n) => n.toString(16).padStart(2, '0');
+    return `#${hex(c.r)}${hex(c.g)}${hex(c.b)}`;
 }

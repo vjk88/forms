@@ -1,9 +1,11 @@
 import { LightningElement, api, track } from 'lwc';
-import { listBuiltinThemes } from 'c/finalThemeCatalog';
+import { listGalleryThemes } from 'c/finalThemeCatalog';
 
 /**
  * finalThemeGallery — the "Pick a theme" step (ported from formStudio's
- * formCreationGallery theme step). Filter pills + a grid of finalThemeCard.
+ * formCreationGallery theme step). A grid of finalThemeCard for the gallery
+ * themes; the category filter pills went with the catalog cut (nine cards fit
+ * on one screen, IMPL_PLAN_THEME_CATALOG_CUT P2).
  *
  * The `layout` picked in step 1 drives every card's preview SHAPE — so all
  * themes preview in the layout you chose (owner request), not the theme's own
@@ -12,17 +14,6 @@ import { listBuiltinThemes } from 'c/finalThemeCatalog';
  *
  * Emits `themeselect` { themeKey }.
  */
-
-const FILTERS = [
-    { value: '', label: 'All' },
-    { value: 'minimalist', label: 'Minimalist' },
-    { value: 'creative', label: 'Creative' },
-    { value: 'editorial', label: 'Editorial' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'bgimage', label: 'Background image' },
-    { value: 'stepped', label: 'Stepper' },
-    { value: 'split', label: 'Split' }
-];
 
 // "Preview in" chips — the 8 step-1 choices (7 layouts + splitHero's
 // Conversational pane-flow variant, keyed `layout:paneFlow`).
@@ -48,7 +39,6 @@ export default class FinalThemeGallery extends LightningElement {
     @api paneFlow = '';
     @api selectedThemeKey = '';
 
-    @track _filter = '';
     @track _previewKey = '';
     /** Local pick (an @api prop must not be reassigned); wins over the prop. */
     @track _pickedThemeKey = '';
@@ -67,13 +57,6 @@ export default class FinalThemeGallery extends LightningElement {
         return this.previewKey.split(':')[1] || '';
     }
 
-    get filterPills() {
-        return FILTERS.map((f) => ({
-            ...f,
-            cls: this._filter === f.value ? 'pill is-on' : 'pill'
-        }));
-    }
-
     get layoutChips() {
         return LAYOUTS.map((l) => ({
             ...l,
@@ -83,18 +66,12 @@ export default class FinalThemeGallery extends LightningElement {
 
     get cards() {
         const sel = this._pickedThemeKey || this.selectedThemeKey;
-        return listBuiltinThemes()
-            .filter((t) => !this._filter || (t.tags || []).includes(this._filter))
-            .map((t) => ({
-                key: t.key,
-                label: t.name,
-                description: (t.tags || []).map(cap).join(' · '),
-                selected: t.key === sel
-            }));
-    }
-
-    handleFilter(e) {
-        this._filter = e.currentTarget.dataset.value || '';
+        return listGalleryThemes().map((t) => ({
+            key: t.key,
+            label: t.name,
+            description: (t.tags || []).map(cap).join(' · '),
+            selected: t.key === sel
+        }));
     }
 
     handleLayout(e) {

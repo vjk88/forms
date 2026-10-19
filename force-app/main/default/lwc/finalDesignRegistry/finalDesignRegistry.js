@@ -26,6 +26,31 @@ export const RADIUS_ORDER = [
     'pill'
 ];
 
+/**
+ * One-click brand colors on the Accent control (IMPL_PLAN_THEME_CATALOG_CUT
+ * P5). Most come from the accents of the themes the catalog cut hid, so their
+ * look stays one click away; Lilac, Mint and Gold give dark themes as many
+ * usable choices as light ones. Picking one also turns on readable ink
+ * (palette.inkMode, see finalThemeEngine inkOn).
+ */
+export const ACCENT_PRESETS = [
+    { name: 'Navy', value: '#1e3a8a' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Indigo', value: '#4f46e5' },
+    { name: 'Purple', value: '#7e22ce' },
+    { name: 'Pink', value: '#db2777' },
+    { name: 'Teal', value: '#0f766e' },
+    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Forest', value: '#14532d' },
+    { name: 'Terracotta', value: '#c2410c' },
+    { name: 'Orange', value: '#ea580c' },
+    { name: 'Graphite', value: '#18181b' },
+    { name: 'Lilac', value: '#c4b5fd' },
+    { name: 'Mint', value: '#6ee7b7' },
+    { name: 'Gold', value: '#fbbf24' }
+];
+
 const RADIUS_OPTIONS = [
     { value: 'sharp', label: 'Sharp' },
     { value: 'xs', label: 'Crisp' },
@@ -57,6 +82,7 @@ const AREAS = [
                         fallbackToken: '--c-accent',
                         contrastToken: '--c-on-accent',
                         subject: 'Button labels',
+                        presets: ACCENT_PRESETS,
                         hint: 'Your brand color. Buttons, the glow when you click into a field, active steps and progress bars all use it unless you override them.'
                     },
                     {

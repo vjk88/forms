@@ -36,6 +36,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#0f766e',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             pageBg: '#f6f4ee',
             contentBg: '#fffdf8',
             text: '#232019',
@@ -60,6 +62,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#1e3a8a',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#ffffff',
             pageBg: '#f3f4f6',
             contentBg: '#ffffff',
@@ -81,6 +85,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#d946ef',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#ffffff',
             pageBg: '#fef08a',
             contentBg: '#ffffff',
@@ -102,6 +108,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#ff79c6',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#1e1f29',
             pageBg: '#1e1f29',
             contentBg: '#282a36',
@@ -219,6 +227,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#7c2d12',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#ffffff',
             pageBg: '#f5e0d3',
             contentBg: '#fffdfa',
@@ -240,6 +250,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#22c55e',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#000000',
             pageBg: '#000000',
             contentBg: '#000000',
@@ -642,14 +654,26 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#06b6d4',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#ffffff',
             pageBg: '#7ec8d8',
             contentBg: 'rgba(255, 255, 255, 0.72)',
             text: '#0e7490',
             textWeak: '#4b5563',
-            headerBg: 'linear-gradient(135deg, #0891b2 0%, #0d9488 100%)',
+            // The header paints headerBg as a background COLOR, so a gradient
+            // string there was dropped and the white title vanished on the
+            // card. Gradient in headerBgGradient, solid start as the fallback;
+            // darker stops so title and description reach 4.5 : 1 (P6).
+            headerBg: '#0e7490',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 135,
+                start: '#0e7490',
+                end: '#0f766e'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            headerTextWeak: '#ecfeff',
             borderColor: 'rgba(255, 255, 255, 0.35)'
         },
         typography: 'system',
@@ -701,14 +725,24 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#ea580c',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#ffffff',
             pageBg: '#d99b6c',
             contentBg: 'rgba(253, 251, 247, 0.85)',
             text: '#3f2b18',
             textWeak: '#7c5f43',
-            headerBg: 'linear-gradient(to right, #ea580c 0%, #c2410c 100%)',
+            // Same fix as Ocean Breeze: gradient moved to headerBgGradient,
+            // darker stops for 4.5 : 1 (P6).
+            headerBg: '#c2410c',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 90,
+                start: '#c2410c',
+                end: '#9a3412'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            headerTextWeak: '#fff7ed',
             borderColor: 'rgba(255, 255, 255, 0.25)'
         },
         typography: 'system',
@@ -822,6 +856,8 @@ const THEMES = {
         layout: 'classic',
         palette: {
             accent: '#ff2e93',
+            // readable ink on coloured controls (IMPL_PLAN_THEME_CATALOG_CUT P4)
+            inkMode: 'contrast',
             onAccent: '#ffffff',
             pageBg: '#08060f',
             contentBg: 'rgba(255, 255, 255, 0.08)',
@@ -876,14 +912,54 @@ export function getBuiltinTheme(key) {
     return theme ? JSON.parse(JSON.stringify(theme)) : null;
 }
 
-/** Gallery listing: [{ key, name, tags, layout }] — never the recipes themselves. */
+/**
+ * Themes kept for existing forms but no longer offered in any picker
+ * (IMPL_PLAN_THEME_CATALOG_CUT P1). The 2026-10-19 audit found these render as
+ * recolours of the nine gallery themes. Their recipes above stay byte-identical
+ * so drafts, published snapshots and republishes keep their exact look; this
+ * list only decides what the pickers show.
+ */
+const HIDDEN_THEMES = new Set([
+    'terracotta',
+    'forest',
+    'slate',
+    'tokyo',
+    'lavender',
+    'execNav',
+    'startupNav',
+    'mintStepper',
+    'retroStepper',
+    'snowStepper',
+    'marbleSplit',
+    'cyberSplit',
+    'claySplit',
+    'botanicalSplit',
+    'auraSplit',
+    'sunsetDunes',
+    'forestMist',
+    'marbleLuxury',
+    'carbonMatrix',
+    'cosmicVortex',
+    'vintagePaper',
+    'auroraBorealis',
+    'silkLuxury'
+]);
+
+/** Every theme: [{ key, name, tags, layout, hidden }] — never the recipes.
+ *  Use for lookups by key (a form can still be on a hidden theme). */
 export function listBuiltinThemes() {
     return Object.entries(THEMES).map(([key, t]) => ({
         key,
         name: t.name,
         tags: [...t.tags],
-        layout: t.layout || 'classic'
+        layout: t.layout || 'classic',
+        hidden: HIDDEN_THEMES.has(key)
     }));
+}
+
+/** The themes a person can pick: listBuiltinThemes() minus the hidden ones. */
+export function listGalleryThemes() {
+    return listBuiltinThemes().filter((t) => !t.hidden);
 }
 
 // Sample brand copy per theme — the personality lines every preview surface

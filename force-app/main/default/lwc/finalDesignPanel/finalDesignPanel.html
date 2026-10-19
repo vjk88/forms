@@ -189,7 +189,10 @@
                                                                 contrast-with={c.contrastWith}
                                                                 subject={c.subject}
                                                                 edited={c.edited}
+                                                                presets={c.presets}
+                                                                preset-background={c.presetBackground}
                                                                 onchange={handleColor}
+                                                                onpresetpick={handlePresetPick}
                                                             ></c-final-color-control>
                                                             <template
                                                                 lwc:if={c.hint}
@@ -550,7 +553,10 @@
                                     contrast-with={simpleVM.accent.contrastWith}
                                     subject={simpleVM.accent.subject}
                                     edited={simpleVM.accent.edited}
+                                    presets={simpleVM.accent.presets}
+                                    preset-background={simpleVM.accent.presetBackground}
                                     onchange={handleColor}
+                                    onpresetpick={handlePresetPick}
                                 ></c-final-color-control
                             ></template>
                         </div>
