@@ -5,6 +5,7 @@ import createSurveyFromTemplate from '@salesforce/apex/FinalFormCreateController
 import createFreeformFromTemplate from '@salesforce/apex/FinalFormCreateController.createFreeformFromTemplate';
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
+import { LAYOUT_GROUPS } from 'c/finalLayoutCards';
 import { studioUrl } from 'c/finalStudioLink';
 
 /**
@@ -22,53 +23,8 @@ import { studioUrl } from 'c/finalStudioLink';
  * Emits `formcreated` { formId, versionId } + `close`.
  */
 
-// The 8 step-1 choices in the old gallery's 3 groups. Old-style short names
-// (owner picked); each card's mockup tinted by a DISTINCT builtin theme.
-// The Conversational card = splitHero + layout.options.paneFlow (catalog §2).
-const LAYOUT_GROUPS = [
-    {
-        id: 'continuous',
-        title: 'Continuous flow',
-        hint: 'One page, scrolls top to bottom',
-        cards: [{ layout: 'scroll', themeKey: 'terracotta', name: 'Scroll' }]
-    },
-    {
-        id: 'paginated',
-        title: 'Paginated / Nav-driven',
-        hint: 'Steps, side panels, one section at a time',
-        cards: [
-            { layout: 'stepper', themeKey: 'mintStepper', name: 'Stepper' },
-            {
-                layout: 'splitHero',
-                themeKey: 'marbleSplit',
-                name: 'Split Hero'
-            },
-            {
-                layout: 'splitHero',
-                paneFlow: 'oneAtATime',
-                themeKey: 'auraSplit',
-                name: 'Split Hero · Conversational',
-                description:
-                    'Start from the Split Hero layout, one section at a time.'
-            },
-            { layout: 'rail', themeKey: 'execNav', name: 'Side Nav' },
-            {
-                layout: 'oneAtATime',
-                themeKey: 'lavender',
-                name: 'One at a Time'
-            }
-        ]
-    },
-    {
-        id: 'tabbedAcc',
-        title: 'Tabbed & Accordion',
-        hint: 'Content grouped into panels',
-        cards: [
-            { layout: 'tabs', themeKey: 'nordic', name: 'Tabbed' },
-            { layout: 'accordion', themeKey: 'sandstone', name: 'Accordion' }
-        ]
-    }
-];
+// The 8 step-1 layout cards live in c/finalLayoutCards (shared with the
+// Design panel's layout picker).
 
 // Real device widths (old gallery: the frame renders at device width and the
 // form reflows via its own container queries — no scale transform).

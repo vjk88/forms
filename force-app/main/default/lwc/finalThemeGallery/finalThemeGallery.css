@@ -24,7 +24,6 @@
     border-bottom: 1px solid var(--c-studio-border-subtle);
 }
 
-.gal-filters,
 .gal-layout {
     display: flex;
     flex-wrap: wrap;
@@ -41,7 +40,6 @@
     margin-right: 0.25rem;
 }
 
-.pill,
 .lchip {
     border: 1px solid var(--c-studio-border);
     background: var(--c-studio-surface-subtle);
@@ -58,15 +56,8 @@
         color 0.15s ease;
 }
 
-.pill:hover,
 .lchip:hover {
     border-color: var(--c-studio-accent);
-}
-
-.pill.is-on {
-    background: var(--c-studio-accent-surface);
-    border-color: var(--c-studio-accent);
-    color: var(--c-studio-accent);
 }
 
 .lchip {

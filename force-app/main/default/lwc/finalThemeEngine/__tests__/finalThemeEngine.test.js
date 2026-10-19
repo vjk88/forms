@@ -678,7 +678,7 @@ describe('c-final-theme-catalog', () => {
         expect(getBuiltinTheme('nope')).toBeNull();
     });
 
-    it('listing exposes key/name/tags/layout only — never recipes', () => {
+    it('listing exposes key/name/tags/layout/hidden only — never recipes', () => {
         const list = listBuiltinThemes();
         expect(list.length).toBe(32); // 31 + neonNights (immersive pass)
         const ivory = list.find((t) => t.key === 'editorialIvory');
@@ -686,7 +686,9 @@ describe('c-final-theme-catalog', () => {
             key: 'editorialIvory',
             name: 'Editorial Ivory',
             tags: ['light', 'editorial'],
-            layout: 'classic'
+            layout: 'classic',
+            // gallery vs kept-for-existing-forms (catalog cut)
+            hidden: false
         });
         // recipes never leak; every row carries a valid layout affinity
         const valid = new Set(['classic', 'stepped', 'split']);

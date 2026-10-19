@@ -15,6 +15,41 @@
             oninput={handleInput}
         />
     </div>
+    <template lwc:if={hasPresets}>
+        <div
+            class="swatches"
+            role="radiogroup"
+            aria-label={presetGroupLabel}
+            onkeydown={handleSwatchKeydown}
+        >
+            <template for:each={swatches} for:item="s">
+                <button
+                    key={s.key}
+                    type="button"
+                    class={s.cls}
+                    role="radio"
+                    aria-checked={s.ariaChecked}
+                    aria-disabled={s.ariaDisabled}
+                    aria-label={s.name}
+                    aria-describedby={s.reasonId}
+                    title={s.title}
+                    tabindex={s.tabindex}
+                    data-key={s.key}
+                    onclick={handleSwatchClick}
+                    onfocus={handleSwatchFocus}
+                    onblur={handleSwatchBlur}
+                >
+                    <span class="chip" style={s.chipStyle}></span>
+                </button>
+                <span key={s.reasonKey} id={s.reasonId} class="sr-only"
+                    >{s.reason}</span
+                >
+            </template>
+        </div>
+        <template lwc:if={noteText}>
+            <p class="swatch-note" aria-live="polite">{noteText}</p>
+        </template>
+    </template>
     <template lwc:if={showBadge}>
         <div class="badge-row">
             <span class={badgeClass} role="status">{badgeLabel}</span>

@@ -447,6 +447,40 @@ function onColor(hex) {
     return yiq >= 150 ? '#111827' : '#ffffff';
 }
 
+/** The minimum WCAG ratio for normal-size text. */
+const TEXT_CONTRAST = 4.5;
+
+/** Of dark #111827 and white, the ink with the higher measured contrast on
+ *  `fill`. Falls back to onColor() when the fill isn't a hex color. */
+function bestInk(fill) {
+    const dark = contrastRatio('#111827', fill);
+    const light = contrastRatio('#ffffff', fill);
+    if (dark === null || light === null) {
+        return onColor(fill);
+    }
+    return dark >= light ? '#111827' : '#ffffff';
+}
+
+/**
+ * Text color for a colored fill (`palette[key]` on `fill`). Without
+ * palette.inkMode this is today's rule exactly: the palette value, else the
+ * YIQ guess. With inkMode 'contrast' (IMPL_PLAN_THEME_CATALOG_CUT P4) an ink
+ * the USER set in the form's overrides always wins; an ink from the theme
+ * recipe is kept only when it reaches 4.5 : 1 on the fill; anything else gets
+ * bestInk(). Opt-in so hidden themes resolve byte-identically.
+ */
+function inkOn(pal, userPal, key, fill) {
+    if (pal.inkMode !== 'contrast') {
+        return pal[key] || onColor(fill);
+    }
+    if (userPal[key]) {
+        return userPal[key];
+    }
+    const themeInk = pal[key];
+    const ratio = themeInk ? contrastRatio(themeInk, fill) : null;
+    return ratio !== null && ratio >= TEXT_CONTRAST ? themeInk : bestInk(fill);
+}
+
 /** Is this a light color? (Non-hex → treated as light — the neutral default.) */
 function isLight(hex) {
     const c = hexToRgb(hex);
@@ -556,6 +590,8 @@ export function resolveTokens(themeProps, formOverrides) {
     }
     const p = mergeProps(DEFAULT_PROPS, themeProps, formOverrides);
     const pal = p.palette;
+    // inks the form author set themselves (inkOn: they always win)
+    const userPal = (formOverrides && formOverrides.palette) || {};
     const fx = p.effects;
     const fs = p.fieldStates;
     const img = p.pageImage;
@@ -898,7 +934,7 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-text': pal.text,
         '--c-text-weak': pal.textWeak,
         '--c-accent': pal.accent,
-        '--c-on-accent': pal.onAccent || onColor(pal.accent),
+        '--c-on-accent': inkOn(pal, userPal, 'onAccent', pal.accent),
         '--c-focus-ring': `0 0 0 3px ${rgba(focus, 0.55)}`,
 
         // Header
@@ -916,7 +952,7 @@ export function resolveTokens(themeProps, formOverrides) {
 
         // Actions
         '--c-submit-bg': submitBg,
-        '--c-submit-text': pal.submitText || onColor(submitBg),
+        '--c-submit-text': inkOn(pal, userPal, 'submitText', submitBg),
         // Gradient paints ABOVE the solid (same layering rule as the surface
         // fills); glow derives from the gradient's start (else the solid).
         '--c-submit-bg-gradient': gradientLayer(pal.submitBgGradient),

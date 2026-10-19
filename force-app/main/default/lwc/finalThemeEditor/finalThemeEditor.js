@@ -130,11 +130,15 @@ export default class FinalThemeEditor extends LightningElement {
     }
 
     get startOptions() {
-        return listBuiltinThemes().map((t) => ({
-            value: t.key,
-            label: t.name,
-            selected: t.key === this.baseKey
-        }));
+        // gallery themes only; a hidden base this theme already started from
+        // stays listed so the select never shows a value it can't name
+        return listBuiltinThemes()
+            .filter((t) => !t.hidden || t.key === this.baseKey)
+            .map((t) => ({
+                value: t.key,
+                label: t.name,
+                selected: t.key === this.baseKey
+            }));
     }
 
     get colorRows() {

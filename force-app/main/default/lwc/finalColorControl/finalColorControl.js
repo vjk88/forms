@@ -1,6 +1,9 @@
 import { LightningElement, api } from 'lwc';
 import { contrastRatio } from 'c/finalThemeEngine';
 
+/** WCAG non-text minimum: an accent must reach this against its surface. */
+const PRESET_MIN = 3;
+
 /**
  * finalColorControl — reusable color input row (catalog §6).
  *
@@ -26,8 +29,17 @@ export default class FinalColorControl extends LightningElement {
     /** Parent-owned cascade marker — shows the edited dot. */
     @api edited = false;
     @api disabled = false;
+    /** Optional one-click colors: [{ name, value }] (Accent's brand presets). */
+    @api presets;
+    /** The surface the color sits on (opaque hex). A preset reaching under
+     *  3 : 1 against it is shown but can't be applied. Unset = all usable. */
+    @api presetBackground;
 
     _value = '';
+    /** Key of the swatch whose "why it's dimmed" note is showing. */
+    _noteKey = '';
+    /** Roving focus target inside the radiogroup. */
+    _focusKey = '';
 
     @api
     get value() {
@@ -51,6 +63,143 @@ export default class FinalColorControl extends LightningElement {
 
     get pickerAria() {
         return this.label ? `${this.label} color` : 'Color';
+    }
+
+    // ----- presets (radiogroup of swatches) -----
+
+    get hasPresets() {
+        return Array.isArray(this.presets) && this.presets.length > 0;
+    }
+
+    get presetGroupLabel() {
+        return `${this.label || 'Color'} presets`;
+    }
+
+    get swatches() {
+        const list = this.hasPresets ? this.presets : [];
+        const current = this._value;
+        const rows = list.map((p, i) => {
+            const value = normalizeHex(p.value) || '';
+            const ratio = this.presetBackground
+                ? contrastRatio(value, this.presetBackground)
+                : null;
+            const usable = this.disabled
+                ? false
+                : ratio === null || ratio >= PRESET_MIN;
+            const checked = value !== '' && value === current;
+            const key = `p${i}`;
+            const reason = usable
+                ? ''
+                : this.disabled
+                  ? `${p.name} is unavailable`
+                  : `${p.name} is too faint on this theme (${ratio.toFixed(1)}:1)`;
+            return {
+                key,
+                reasonKey: `${key}-r`,
+                reasonId: usable ? null : `${key}-reason`,
+                name: p.name,
+                value,
+                usable,
+                checked,
+                reason,
+                title: usable ? `${p.name} ${value}` : reason,
+                ariaChecked: checked ? 'true' : 'false',
+                ariaDisabled: usable ? null : 'true',
+                chipStyle: `background-color: ${value};`,
+                cls: `swatch${checked ? ' is-on' : ''}${usable ? '' : ' is-off'}`
+            };
+        });
+        // roving tabindex: the focused swatch, else the checked one, else
+        // the first — exactly one tab stop for the whole group
+        const anchor =
+            rows.find((r) => r.key === this._focusKey) ||
+            rows.find((r) => r.checked) ||
+            rows[0];
+        return rows.map((r) => ({
+            ...r,
+            tabindex: anchor && r.key === anchor.key ? '0' : '-1'
+        }));
+    }
+
+    get noteText() {
+        if (!this._noteKey) {
+            return '';
+        }
+        const s = this.swatches.find((x) => x.key === this._noteKey);
+        return s && !s.usable ? s.reason : '';
+    }
+
+    _pick(key) {
+        const s = this.swatches.find((x) => x.key === key);
+        if (!s) {
+            return;
+        }
+        if (!s.usable) {
+            // tap or click on a dimmed swatch explains instead of applying
+            this._noteKey = key;
+            return;
+        }
+        this._noteKey = '';
+        this._value = s.value;
+        this.dispatchEvent(
+            new CustomEvent('presetpick', { detail: { value: s.value } })
+        );
+    }
+
+    handleSwatchClick(event) {
+        this._pick(event.currentTarget.dataset.key);
+    }
+
+    handleSwatchFocus(event) {
+        const key = event.currentTarget.dataset.key;
+        this._focusKey = key;
+        const s = this.swatches.find((x) => x.key === key);
+        this._noteKey = s && !s.usable ? key : '';
+    }
+
+    handleSwatchBlur() {
+        this._noteKey = '';
+    }
+
+    handleSwatchKeydown(event) {
+        const rows = this.swatches;
+        const i = rows.findIndex((r) => r.key === this._focusKey);
+        let next = -1;
+        switch (event.key) {
+            case 'ArrowRight':
+            case 'ArrowDown':
+                next = (i + 1) % rows.length;
+                break;
+            case 'ArrowLeft':
+            case 'ArrowUp':
+                next = (i - 1 + rows.length) % rows.length;
+                break;
+            case 'Home':
+                next = 0;
+                break;
+            case 'End':
+                next = rows.length - 1;
+                break;
+            case ' ':
+            case 'Enter':
+                event.preventDefault();
+                if (i >= 0) {
+                    this._pick(rows[i].key);
+                }
+                return;
+            default:
+                return;
+        }
+        event.preventDefault();
+        // arrows move focus only; Space/Enter applies (each apply is an undo
+        // step, so browsing the row must not write the spec)
+        this._focusKey = rows[next].key;
+        const btn = this.template.querySelector(
+            `button[data-key="${rows[next].key}"]`
+        );
+        if (btn) {
+            btn.focus();
+        }
     }
 
     // ----- badge (3-state, keyed to the consumer) -----
