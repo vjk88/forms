@@ -154,6 +154,60 @@ describe('accent presets in the Design panel', () => {
     });
 });
 
+describe('toolbar presets (applyToolbarChange)', () => {
+    async function advanced(themeKey) {
+        const el = mount(themeKey);
+        el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+        await flush();
+        return el;
+    }
+
+    it('a toolbar pick is one spec change with accent + ink flag', async () => {
+        const el = await advanced('mintStepper');
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        expect(
+            el.applyToolbarChange({
+                key: 'accent',
+                kind: 'preset',
+                value: '#6ee7b7'
+            })
+        ).toBe(true);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(lastSpec(handler).theme.overrides.palette).toEqual({
+            accent: '#6ee7b7',
+            inkMode: 'contrast'
+        });
+    });
+
+    it('rejects a value that is not one of the presets', async () => {
+        const el = await advanced('mintStepper');
+        expect(
+            el.applyToolbarChange({
+                key: 'accent',
+                kind: 'preset',
+                value: '#123456'
+            })
+        ).toBe(false);
+    });
+
+    it('the toolbar reset on Accent also drops the ink flag', async () => {
+        const el = await advanced('mintStepper');
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        el.applyToolbarChange({
+            key: 'accent',
+            kind: 'preset',
+            value: '#6ee7b7'
+        });
+        el.applyToolbarChange({ key: 'accent', kind: 'reset' });
+        const overrides = lastSpec(handler).theme.overrides;
+        expect(
+            resolveTokens(getBuiltinTheme('mintStepper'), overrides)
+        ).toEqual(BEFORE.hidden.mintStepper);
+    });
+});
+
 describe('a form on a hidden theme', () => {
     it('names its theme with "no longer in the gallery"', () => {
         const el = mount('silkLuxury');

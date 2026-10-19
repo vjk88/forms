@@ -130,6 +130,9 @@ export default class FinalDesignPanel extends LightningElement {
             this.handleSelect({ target });
         } else if (change.kind === 'color' && c.type === 'color') {
             this.handleColor({ target, detail: { value: change.value } });
+        } else if (change.kind === 'preset' && c.presets) {
+            if (!c.presets.some((p) => p.value === change.value)) return false;
+            this.handlePresetPick({ detail: { value: change.value } });
         } else if (change.kind === 'gradient' && c.type === 'gradientSurface') {
             this.handleGradientSurface({
                 target,
@@ -153,6 +156,7 @@ export default class FinalDesignPanel extends LightningElement {
             if (c.gradientPath) deleteAt(overrides, c.gradientPath);
             if (c.type === 'meshColors')
                 deleteAt(overrides, this._controlDef('mesh').control.themePath);
+            this._syncInkMode();
             this._spec = { ...this._spec };
             this._emit();
         } else return false;

@@ -99,9 +99,9 @@ describe('finalColorControl presets', () => {
         const el = mount({ presetBackground: DRACULA_CARD });
         byName(el, 'Forest').dispatchEvent(new CustomEvent('focus'));
         await flush();
-        expect(
-            el.shadowRoot.querySelector('.swatch-note').textContent
-        ).toMatch(/Forest is too faint/);
+        expect(el.shadowRoot.querySelector('.swatch-note').textContent).toMatch(
+            /Forest is too faint/
+        );
         // and the reason is wired as the swatch's description
         const forest = byName(el, 'Forest');
         expect(forest.getAttribute('aria-describedby')).toBeTruthy();

@@ -169,7 +169,10 @@
                                             subject={control.subject}
                                             edited={control.edited}
                                             disabled={disabled}
+                                            presets={control.presets}
+                                            preset-background={control.presetBackground}
                                             onchange={handleColor}
+                                            onpresetpick={handlePreset}
                                         ></c-final-color-control>
                                     </template>
                                     <template lwc:if={control.edited}

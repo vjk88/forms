@@ -136,6 +136,14 @@ export default class FinalDesignToolbar extends LightningElement {
         });
     }
 
+    handlePreset(event) {
+        this.emitChange({
+            key: event.target.dataset.key,
+            kind: 'preset',
+            value: event.detail.value
+        });
+    }
+
     handleGradient(event) {
         this.emitChange({
             key: event.target.dataset.key,
