@@ -11,6 +11,13 @@ jest.mock('c/finalThemeCatalog', () => ({
     }))
 }));
 
+// A subscriber org's real photo bundle address (namespace + cache-buster).
+jest.mock(
+    '@salesforce/resourceUrl/formThemeAssets',
+    () => ({ default: '/resource/1719444000000/acme__formThemeAssets' }),
+    { virtual: true }
+);
+
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 const baseSpec = () => ({
@@ -52,6 +59,29 @@ describe('resolved-spec render path (resolve-at-publish gate)', () => {
         expect(frame).not.toBeNull();
         // pageFrame writes tokens as inline custom properties on its host
         expect(frame.style.getPropertyValue('--c-accent')).toBe('#b34700');
+    });
+
+    it('published spec: a frozen theme photo paints at this org’s real address, snapshot untouched', async () => {
+        const spec = baseSpec();
+        spec.resolved = {
+            tokens: {
+                '--c-page-bg-image':
+                    'url("/resource/formThemeAssets/ocean.jpg")'
+            },
+            engineVersion: 1,
+            resolvedAt: '2026-07-06T00:00:00Z'
+        };
+        const el = mount(spec);
+        await flush();
+        await flush();
+        const frame = el.shadowRoot.querySelector('c-final-page-frame');
+        expect(frame.style.getPropertyValue('--c-page-bg-image')).toBe(
+            'url("/resource/1719444000000/acme__formThemeAssets/ocean.jpg")'
+        );
+        // the stored snapshot keeps the portable address
+        expect(spec.resolved.tokens['--c-page-bg-image']).toBe(
+            'url("/resource/formThemeAssets/ocean.jpg")'
+        );
     });
 
     it('draft spec: the catalog loads and the engine runs live', async () => {

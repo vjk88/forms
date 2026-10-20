@@ -13,6 +13,7 @@ import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkCont
 import getUserValues from '@salesforce/apex/FinalAutofillController.getUserValues';
 import getUserPreviewValues from '@salesforce/apex/FinalAutofillController.getUserPreviewValues';
 import { resolveTokens } from 'c/finalThemeEngine';
+import { localizeAssetUrls } from 'c/finalThemeAssets';
 import {
     getLayout,
     isOnePerScreen,
@@ -748,9 +749,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 }
             }
         }
-        this.tokens =
+        // Theme photos are stored by their portable address; swap in this
+        // org's real one before painting (namespace, site prefix). Published
+        // snapshots are fixed too, with no republish.
+        this.tokens = localizeAssetUrls(
             (spec.resolved && spec.resolved.tokens) ||
-            resolveTokens(theme, spec.theme ? spec.theme.overrides : null);
+                resolveTokens(theme, spec.theme ? spec.theme.overrides : null)
+        );
 
         // Surveys are ALWAYS top-labeled (owner 2026-07-31): a theme carrying
         // labelPosition 'left' must not sneak sideways labels in. Patched on
