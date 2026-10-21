@@ -5,6 +5,7 @@ import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomTh
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
+import { localizeAssetUrl } from 'c/finalThemeAssets';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { layoutCardName } from 'c/finalGalleryPicker';
 import {
@@ -563,7 +564,9 @@ export default class FinalDesignPanel extends LightningElement {
                 // _effective already applied theme default + fallback
                 vm.checked = Boolean(value);
             } else if (c.type === 'image') {
-                vm.value = value || null;
+                // display only: the thumbnail needs this org's real photo
+                // address; what gets saved still comes from the uploader
+                vm.value = localizeAssetUrl(value) || null;
                 vm.versionId = c.versionPath
                     ? c.themePath
                         ? getAt(this.overrides, c.versionPath)

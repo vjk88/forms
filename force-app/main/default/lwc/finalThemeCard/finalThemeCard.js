@@ -1,6 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import { getBuiltinTheme, getBrandCopy } from 'c/finalThemeCatalog';
 import { resolveTokens, tokensToStyle } from 'c/finalThemeEngine';
+import { localizeAssetUrls } from 'c/finalThemeAssets';
 
 /**
  * finalThemeCard — one theme preview card (ported from formStudio's formThemeCard).
@@ -48,7 +49,7 @@ export default class FinalThemeCard extends LightningElement {
     /** Every --c-* the mock reads, as an inline style string. */
     get tokenStyle() {
         try {
-            return tokensToStyle(resolveTokens(this._theme));
+            return tokensToStyle(localizeAssetUrls(resolveTokens(this._theme)));
         } catch {
             return '';
         }

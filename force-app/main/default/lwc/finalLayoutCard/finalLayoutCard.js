@@ -1,6 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import { resolveTokens, tokensToStyle } from 'c/finalThemeEngine';
+import { localizeAssetUrls } from 'c/finalThemeAssets';
 
 /**
  * finalLayoutCard — one layout choice in the creation flow's step 1.
@@ -63,7 +64,9 @@ export default class FinalLayoutCard extends LightningElement {
     /** The mockup rides the representative theme's full token contract. */
     get tokenStyle() {
         try {
-            return tokensToStyle(resolveTokens(getBuiltinTheme(this.themeKey)));
+            return tokensToStyle(
+                localizeAssetUrls(resolveTokens(getBuiltinTheme(this.themeKey)))
+            );
         } catch {
             return '';
         }
