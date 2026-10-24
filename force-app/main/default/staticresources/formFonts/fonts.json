@@ -1,6 +1,6 @@
 {
     "generatedBy": "scripts/fonts/build-font-bundle.mjs",
-    "source": "Google Fonts (css2 API, Latin subset) + google/fonts licence files",
+    "source": "Google Fonts (css2 API, Latin subset) + google/fonts licence and METADATA files",
     "families": [
         {
             "key": "inter",
@@ -12,11 +12,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "inter/OFL.txt",
+            "copyright": "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)",
+            "source": "google/fonts ofl/inter",
             "faces": [
                 {
                     "file": "inter/Inter-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 48256
+                    "bytes": 48256,
+                    "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
                 }
             ]
         },
@@ -30,11 +33,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "roboto/OFL.txt",
+            "copyright": "Copyright 2011 The Roboto Project Authors (https://github.com/googlefonts/roboto-classic)",
+            "source": "google/fonts ofl/roboto",
             "faces": [
                 {
                     "file": "roboto/Roboto-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 43136
+                    "bytes": 43136,
+                    "sha256": "1404ca348bd75ef836f4dd8b6f2cc719458642d1237c368296b2fc652dca47dc"
                 }
             ]
         },
@@ -48,11 +54,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "opensans/OFL.txt",
+            "copyright": "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)",
+            "source": "google/fonts ofl/opensans",
             "faces": [
                 {
                     "file": "opensans/OpenSans-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 48320
+                    "bytes": 48320,
+                    "sha256": "d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0"
                 }
             ]
         },
@@ -66,16 +75,20 @@
             "shape": "static",
             "licence": "OFL-1.1",
             "licenceFile": "lato/OFL.txt",
+            "copyright": "Copyright (c) 2011-2015 by tyPoland Lukasz Dziedzic (http://www.typoland.com/) with Reserved Font Name \\",
+            "source": "google/fonts ofl/lato",
             "faces": [
                 {
                     "file": "lato/Lato-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 23580
+                    "bytes": 23580,
+                    "sha256": "918b7dc3e2e2d015c16ce08b57bcb64d2253bafc1707658f361e72865498e537"
                 },
                 {
                     "file": "lato/Lato-latin-700.woff2",
                     "weight": "700",
-                    "bytes": 23040
+                    "bytes": 23040,
+                    "sha256": "c447dd7677b419db7b21dbdfc6277c7816a913ffda76fd2e52702df538de0e49"
                 }
             ]
         },
@@ -89,11 +102,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "sourcesans3/OFL.txt",
+            "copyright": "© 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’",
+            "source": "google/fonts ofl/sourcesans3",
             "faces": [
                 {
                     "file": "sourcesans3/SourceSans3-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 28872
+                    "bytes": 28872,
+                    "sha256": "19143dca075972bc84e3fd9eab7416dd40cc565dccb2435a044bdfabe060c7d5"
                 }
             ]
         },
@@ -107,11 +123,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "notosans/OFL.txt",
+            "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+            "source": "google/fonts ofl/notosans",
             "faces": [
                 {
                     "file": "notosans/NotoSans-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 35820
+                    "bytes": 35820,
+                    "sha256": "51ca196f49a33e79e7870ff88ebd2829a3f627a51e7d690986618f0e7ad2b52d"
                 }
             ]
         },
@@ -125,11 +144,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "publicsans/OFL.txt",
+            "copyright": "Copyright 2015 The Public Sans Project Authors (https://github.com/uswds/public-sans)",
+            "source": "google/fonts ofl/publicsans",
             "faces": [
                 {
                     "file": "publicsans/PublicSans-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 26832
+                    "bytes": 26832,
+                    "sha256": "5ed4d31c988e73b258894244f209069ebe77dc7e564861954b21198b6de90d68"
                 }
             ]
         },
@@ -143,16 +165,20 @@
             "shape": "static",
             "licence": "OFL-1.1",
             "licenceFile": "poppins/OFL.txt",
+            "copyright": "Copyright 2020 The Poppins Project Authors (https://github.com/itfoundry/Poppins)",
+            "source": "google/fonts ofl/poppins",
             "faces": [
                 {
                     "file": "poppins/Poppins-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 7884
+                    "bytes": 7884,
+                    "sha256": "7d93459d86585bfcdbb7e0376056226adb25821ee54b96236fe2123e9560929f"
                 },
                 {
                     "file": "poppins/Poppins-latin-700.woff2",
                     "weight": "700",
-                    "bytes": 7816
+                    "bytes": 7816,
+                    "sha256": "9338e65fc077355c7a87ae0d64cc101e23b9bf8ad78ae65f0f319c857311b526"
                 }
             ]
         },
@@ -166,11 +192,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "montserrat/OFL.txt",
+            "copyright": "Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)",
+            "source": "google/fonts ofl/montserrat",
             "faces": [
                 {
                     "file": "montserrat/Montserrat-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 37956
+                    "bytes": 37956,
+                    "sha256": "06b16db7a969135d48d38c49183be7fb88d4452e2a3011957c7851941f4e4879"
                 }
             ]
         },
@@ -184,11 +213,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "dmsans/OFL.txt",
+            "copyright": "Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)",
+            "source": "google/fonts ofl/dmsans",
             "faces": [
                 {
                     "file": "dmsans/DMSans-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 36932
+                    "bytes": 36932,
+                    "sha256": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
                 }
             ]
         },
@@ -202,11 +234,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "manrope/OFL.txt",
+            "copyright": "Copyright 2019 The Manrope Project Authors (https://github.com/googlefonts/manrope)",
+            "source": "google/fonts ofl/manrope",
             "faces": [
                 {
                     "file": "manrope/Manrope-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 24836
+                    "bytes": 24836,
+                    "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972"
                 }
             ]
         },
@@ -220,11 +255,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "plusjakartasans/OFL.txt",
+            "copyright": "Copyright 2020 The Plus Jakarta Sans Project Authors (https://github.com/tokotype/PlusJakartaSans)",
+            "source": "google/fonts ofl/plusjakartasans",
             "faces": [
                 {
                     "file": "plusjakartasans/PlusJakartaSans-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 27348
+                    "bytes": 27348,
+                    "sha256": "153fc85b70298beeb1d61a5f723331649e7f23bb77302a66e61cb3e2fbdb5e79"
                 }
             ]
         },
@@ -238,11 +276,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "outfit/OFL.txt",
+            "copyright": "Copyright 2021 The Outfit Project Authors (https://github.com/Outfitio/Outfit-Fonts)",
+            "source": "google/fonts ofl/outfit",
             "faces": [
                 {
                     "file": "outfit/Outfit-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 32292
+                    "bytes": 32292,
+                    "sha256": "6c18d579fd87c3776be068b762cbc83fde3acb543d49eabd3ade842eb987e887"
                 }
             ]
         },
@@ -256,11 +297,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "figtree/OFL.txt",
+            "copyright": "Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)",
+            "source": "google/fonts ofl/figtree",
             "faces": [
                 {
                     "file": "figtree/Figtree-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 20156
+                    "bytes": 20156,
+                    "sha256": "4ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd"
                 }
             ]
         },
@@ -274,11 +318,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "spacegrotesk/OFL.txt",
+            "copyright": "Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)",
+            "source": "google/fonts ofl/spacegrotesk",
             "faces": [
                 {
                     "file": "spacegrotesk/SpaceGrotesk-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 22288
+                    "bytes": 22288,
+                    "sha256": "0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d"
                 }
             ]
         },
@@ -292,11 +339,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "nunito/OFL.txt",
+            "copyright": "Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)",
+            "source": "google/fonts ofl/nunito",
             "faces": [
                 {
                     "file": "nunito/Nunito-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 39128
+                    "bytes": 39128,
+                    "sha256": "ba344451eab25b217a165363b1982048a5e5830a0daf36577973955a04cac793"
                 }
             ]
         },
@@ -310,11 +360,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "nunitosans/OFL.txt",
+            "copyright": "Copyright 2016 The Nunito Sans Project Authors (https://github.com/Fonthausen/NunitoSans)",
+            "source": "google/fonts ofl/nunitosans",
             "faces": [
                 {
                     "file": "nunitosans/NunitoSans-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 31076
+                    "bytes": 31076,
+                    "sha256": "29e3890496844a9ea81975c52771c587c872b4eb317026422d1995b88d21b57d"
                 }
             ]
         },
@@ -328,11 +381,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "quicksand/OFL.txt",
+            "copyright": "Copyright 2019 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily.git), with Reserved Font Name \\",
+            "source": "google/fonts ofl/quicksand",
             "faces": [
                 {
                     "file": "quicksand/Quicksand-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 28244
+                    "bytes": 28244,
+                    "sha256": "2add7d60b1cd2ab84c9967e23d5ec08eb3fc9635c46855b17d59404dec6b410e"
                 }
             ]
         },
@@ -346,11 +402,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "rubik/OFL.txt",
+            "copyright": "Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik)",
+            "source": "google/fonts ofl/rubik",
             "faces": [
                 {
                     "file": "rubik/Rubik-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 35348
+                    "bytes": 35348,
+                    "sha256": "691cd1d9b4c0cdf31a1dcf04259c86f92c85e69f6622abab7964d81e36890691"
                 }
             ]
         },
@@ -364,11 +423,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "comfortaa/OFL.txt",
+            "copyright": "Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfortaa), with Reserved Font Name \\",
+            "source": "google/fonts ofl/comfortaa",
             "faces": [
                 {
                     "file": "comfortaa/Comfortaa-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 22984
+                    "bytes": 22984,
+                    "sha256": "6c73b639fbea04e658ae383a352904d2ef3b0e0810043c78a04455d0fc3759a5"
                 }
             ]
         },
@@ -382,11 +444,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "playfairdisplay/OFL.txt",
+            "copyright": "Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name \\",
+            "source": "google/fonts ofl/playfairdisplay",
             "faces": [
                 {
                     "file": "playfairdisplay/PlayfairDisplay-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 38404
+                    "bytes": 38404,
+                    "sha256": "e0c764a8e9e1cce92163c55bac4b2ad6cd4cf8c696ce2289ab5c41565e65b7e2"
                 }
             ]
         },
@@ -400,11 +465,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "lora/OFL.txt",
+            "copyright": "Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \\",
+            "source": "google/fonts ofl/lora",
             "faces": [
                 {
                     "file": "lora/Lora-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 37788
+                    "bytes": 37788,
+                    "sha256": "ddb8c66035104e233fc024669183aad3738b6daa16deee2ebb1241bd0f98ace1"
                 }
             ]
         },
@@ -418,11 +486,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "merriweather/OFL.txt",
+            "copyright": "Copyright 2024 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name \\",
+            "source": "google/fonts ofl/merriweather",
             "faces": [
                 {
                     "file": "merriweather/Merriweather-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 97548
+                    "bytes": 97548,
+                    "sha256": "4fbe8dd9c23b1fd62a988bb8a69b8e692d810f773d9ef6ebca2ba2760c7b11ee"
                 }
             ]
         },
@@ -436,11 +507,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "librebaskerville/OFL.txt",
+            "copyright": "Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)",
+            "source": "google/fonts ofl/librebaskerville",
             "faces": [
                 {
                     "file": "librebaskerville/LibreBaskerville-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 33872
+                    "bytes": 33872,
+                    "sha256": "22219fb90e3b9bd28debd1825fe8d9a0154a0e31f8b3fa601ac1a0a5aa5e6d1b"
                 }
             ]
         },
@@ -454,11 +528,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "sourceserif4/OFL.txt",
+            "copyright": "© 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’.",
+            "source": "google/fonts ofl/sourceserif4",
             "faces": [
                 {
                     "file": "sourceserif4/SourceSerif4-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 50936
+                    "bytes": 50936,
+                    "sha256": "382475f38242c52d42a3e5ff8dc69b5d73f10d0d21e4550b5fe232984688779a"
                 }
             ]
         },
@@ -472,11 +549,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "notoserif/OFL.txt",
+            "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+            "source": "google/fonts ofl/notoserif",
             "faces": [
                 {
                     "file": "notoserif/NotoSerif-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 36756
+                    "bytes": 36756,
+                    "sha256": "46281456234014ceb2a79bff447245de0f76b8d803be0738972ed374c3206c5b"
                 }
             ]
         },
@@ -490,11 +570,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "cormorantgaramond/OFL.txt",
+            "copyright": "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)",
+            "source": "google/fonts ofl/cormorantgaramond",
             "faces": [
                 {
                     "file": "cormorantgaramond/CormorantGaramond-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 37640
+                    "bytes": 37640,
+                    "sha256": "d80df8ff5aecd299a61549f9e29ab1ed0b9b05f4ea71d50fe978e07d5240b235"
                 }
             ]
         },
@@ -508,11 +591,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "ebgaramond/OFL.txt",
+            "copyright": "Copyright 2017 The EB Garamond Project Authors (https://github.com/octaviopardo/EBGaramond12)",
+            "source": "google/fonts ofl/ebgaramond",
             "faces": [
                 {
                     "file": "ebgaramond/EBGaramond-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 44336
+                    "bytes": 44336,
+                    "sha256": "88603384163d301aebd5bd769832a8bfe3c9004ec24178417b9817f0ad32c63b"
                 }
             ]
         },
@@ -526,11 +612,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "fraunces/OFL.txt",
+            "copyright": "Copyright 2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces)",
+            "source": "google/fonts ofl/fraunces",
             "faces": [
                 {
                     "file": "fraunces/Fraunces-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 36620
+                    "bytes": 36620,
+                    "sha256": "7f9d191d999336d3b9790afa72e1358e50a13b06d4f289341e92a311967a80f9"
                 }
             ]
         },
@@ -544,11 +633,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "oswald/OFL.txt",
+            "copyright": "Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)",
+            "source": "google/fonts ofl/oswald",
             "faces": [
                 {
                     "file": "oswald/Oswald-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 21472
+                    "bytes": 21472,
+                    "sha256": "571f3457dab507b6f2ce5394d593ca015251b69fea81ab7a546bd2368e9fc3ed"
                 }
             ]
         },
@@ -562,16 +654,20 @@
             "shape": "static",
             "licence": "OFL-1.1",
             "licenceFile": "barlowcondensed/OFL.txt",
+            "copyright": "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)",
+            "source": "google/fonts ofl/barlowcondensed",
             "faces": [
                 {
                     "file": "barlowcondensed/BarlowCondensed-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 21164
+                    "bytes": 21164,
+                    "sha256": "7fff1bb22e5773f0d1a55d3093068b6dac4539e8bb3ac23fb9f0a729df2c7bb4"
                 },
                 {
                     "file": "barlowcondensed/BarlowCondensed-latin-700.woff2",
                     "weight": "700",
-                    "bytes": 22444
+                    "bytes": 22444,
+                    "sha256": "3787a5a419171630e6890cfa47c4da067474d005cd0ff8dc11ec090fdc3ee2b8"
                 }
             ]
         },
@@ -585,11 +681,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "robotocondensed/OFL.txt",
+            "copyright": "Copyright 2011 Google Inc. All Rights Reserved.",
+            "source": "google/fonts ofl/robotocondensed",
             "faces": [
                 {
                     "file": "robotocondensed/RobotoCondensed-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 51412
+                    "bytes": 51412,
+                    "sha256": "8d230115e58faa2ed303bee567b91d1a792e0c958a0118998b53648b2ab7c057"
                 }
             ]
         },
@@ -603,11 +702,14 @@
             "shape": "single",
             "licence": "OFL-1.1",
             "licenceFile": "archivoblack/OFL.txt",
+            "copyright": "Copyright 2017 The Archivo Black Project Authors (https://github.com/Omnibus-Type/ArchivoBlack)",
+            "source": "google/fonts ofl/archivoblack",
             "faces": [
                 {
                     "file": "archivoblack/ArchivoBlack-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 18604
+                    "bytes": 18604,
+                    "sha256": "25f33e61cf995abd6be62931cf03bf427286259177b43618cc410ee0157cfd30"
                 }
             ]
         },
@@ -621,11 +723,14 @@
             "shape": "single",
             "licence": "OFL-1.1",
             "licenceFile": "anton/OFL.txt",
+            "copyright": "Copyright 2020 The Anton Project Authors (https://github.com/googlefonts/AntonFont.git)",
+            "source": "google/fonts ofl/anton",
             "faces": [
                 {
                     "file": "anton/Anton-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 18612
+                    "bytes": 18612,
+                    "sha256": "d0fa07ff63dd60cbc0e2f58e29c802dca2a5ae0276c999f59c6111ab7bbaec3b"
                 }
             ]
         },
@@ -639,11 +744,14 @@
             "shape": "single",
             "licence": "OFL-1.1",
             "licenceFile": "bebasneue/OFL.txt",
+            "copyright": "Copyright 2019 The Bebas Neue Project Authors (https://github.com/dharmatype/Bebas-Neue)",
+            "source": "google/fonts ofl/bebasneue",
             "faces": [
                 {
                     "file": "bebasneue/BebasNeue-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 13768
+                    "bytes": 13768,
+                    "sha256": "a7c90c89240c134f7fdd33d40c000ec90b79d675ea53e8cc5a6d423c073de412"
                 }
             ]
         },
@@ -657,11 +765,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "jetbrainsmono/OFL.txt",
+            "copyright": "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)",
+            "source": "google/fonts ofl/jetbrainsmono",
             "faces": [
                 {
                     "file": "jetbrainsmono/JetBrainsMono-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 31432
+                    "bytes": 31432,
+                    "sha256": "83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be"
                 }
             ]
         },
@@ -675,16 +786,20 @@
             "shape": "static",
             "licence": "OFL-1.1",
             "licenceFile": "ibmplexmono/OFL.txt",
+            "copyright": "Copyright 2017 IBM Corp. All rights reserved.",
+            "source": "google/fonts ofl/ibmplexmono",
             "faces": [
                 {
                     "file": "ibmplexmono/IBMPlexMono-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 14708
+                    "bytes": 14708,
+                    "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
                 },
                 {
                     "file": "ibmplexmono/IBMPlexMono-latin-700.woff2",
                     "weight": "700",
-                    "bytes": 14908
+                    "bytes": 14908,
+                    "sha256": "4f84d86cfd060f4ded334358ff8a4c81d4db2ed5addd568359d693f44a87765a"
                 }
             ]
         },
@@ -698,11 +813,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "robotomono/OFL.txt",
+            "copyright": "Copyright 2015 The Roboto Mono Project Authors (https://github.com/googlefonts/robotomono)",
+            "source": "google/fonts ofl/robotomono",
             "faces": [
                 {
                     "file": "robotomono/RobotoMono-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 32796
+                    "bytes": 32796,
+                    "sha256": "b81cd55177300649be8f95b3b747d721ce607e8ed2856e25bd0c630cfd631faf"
                 }
             ]
         },
@@ -716,11 +834,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "sourcecodepro/OFL.txt",
+            "copyright": "© 2010 - 2020 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’.",
+            "source": "google/fonts ofl/sourcecodepro",
             "faces": [
                 {
                     "file": "sourcecodepro/SourceCodePro-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 22044
+                    "bytes": 22044,
+                    "sha256": "8b774aaa5137a38ef40f4ac9d36db9a5eee152b2f66589dfdc82ff007fc87135"
                 }
             ]
         },
@@ -734,16 +855,20 @@
             "shape": "static",
             "licence": "OFL-1.1",
             "licenceFile": "spacemono/OFL.txt",
+            "copyright": "Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono)",
+            "source": "google/fonts ofl/spacemono",
             "faces": [
                 {
                     "file": "spacemono/SpaceMono-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 16520
+                    "bytes": 16520,
+                    "sha256": "fb4a81a2d0a893e5c38c394a7e716a1cef0b24610a0af49c96f6d529bd66bf2b"
                 },
                 {
                     "file": "spacemono/SpaceMono-latin-700.woff2",
                     "weight": "700",
-                    "bytes": 16724
+                    "bytes": 16724,
+                    "sha256": "2d46bd159b53f55c41167a4f1540a074649464194fd1e416f5b4694a6c0f282c"
                 }
             ]
         },
@@ -757,11 +882,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "firacode/OFL.txt",
+            "copyright": "Copyright 2014-2020 The Fira Code Project Authors (https://github.com/tonsky/FiraCode)",
+            "source": "google/fonts ofl/firacode",
             "faces": [
                 {
                     "file": "firacode/FiraCode-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 36276
+                    "bytes": 36276,
+                    "sha256": "771bf4b79a97fc005d12866168bd39d868a9dd3d5903008fe8b796723c8a56f4"
                 }
             ]
         },
@@ -775,11 +903,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "caveat/OFL.txt",
+            "copyright": "Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)",
+            "source": "google/fonts ofl/caveat",
             "faces": [
                 {
                     "file": "caveat/Caveat-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 74932
+                    "bytes": 74932,
+                    "sha256": "891951df5e8b5b0f0bc760d31375405e795c666b5add70437de12d4a6482b33f"
                 }
             ]
         },
@@ -793,11 +924,14 @@
             "shape": "variable",
             "licence": "OFL-1.1",
             "licenceFile": "dancingscript/OFL.txt",
+            "copyright": "Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name \\'Dancing Script\\'.",
+            "source": "google/fonts ofl/dancingscript",
             "faces": [
                 {
                     "file": "dancingscript/DancingScript-latin-wght.woff2",
                     "weight": "400 700",
-                    "bytes": 42708
+                    "bytes": 42708,
+                    "sha256": "51acdc0e009e1d84cca6b654c4218275d8ee33dd243f3df25f7412a824a78d99"
                 }
             ]
         },
@@ -811,11 +945,14 @@
             "shape": "single",
             "licence": "OFL-1.1",
             "licenceFile": "pacifico/OFL.txt",
+            "copyright": "Copyright 2018 The Pacifico Project Authors (https://github.com/googlefonts/Pacifico)",
+            "source": "google/fonts ofl/pacifico",
             "faces": [
                 {
                     "file": "pacifico/Pacifico-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 32280
+                    "bytes": 32280,
+                    "sha256": "99ec044ad9040a708e38f90ebd5984ca03fc46afeee26d5c77c4769c66ed89e2"
                 }
             ]
         },
@@ -829,11 +966,14 @@
             "shape": "single",
             "licence": "OFL-1.1",
             "licenceFile": "patrickhand/OFL.txt",
+            "copyright": "Copyright (c) 2010-2012 Patrick Wagesreiter (mail@patrickwagesreiter.at)",
+            "source": "google/fonts ofl/patrickhand",
             "faces": [
                 {
                     "file": "patrickhand/PatrickHand-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 23944
+                    "bytes": 23944,
+                    "sha256": "ac5bc9033b2572bf84d39f7150c1634e37ed16e8dbee632d6d0bceac0bbf0199"
                 }
             ]
         },
@@ -847,11 +987,14 @@
             "shape": "single",
             "licence": "Apache-2.0",
             "licenceFile": "satisfy/LICENSE.txt",
+            "copyright": "Copyright (c) 2011 by Font Diner, Inc. All rights reserved.",
+            "source": "google/fonts apache/satisfy",
             "faces": [
                 {
                     "file": "satisfy/Satisfy-latin-400.woff2",
                     "weight": "400",
-                    "bytes": 22724
+                    "bytes": 22724,
+                    "sha256": "efed75fb59ebfac3006c1a815cef791a300d1a4f7e75b0bf0654fa4f6884098e"
                 }
             ]
         }

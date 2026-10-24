@@ -42,7 +42,9 @@ const pair = (display, body) => ({
 
 /**
  * Named pairings (plan §A.2): a font reference per side. `system` is "Device
- * default", today's installed-font stack (no download).
+ * default", today's installed-font stack (no download). No other key reuses a
+ * legacy `typography` value (editorial, mono, geometric, humanist): those
+ * mean the old installed-font stacks, so `geometricSans` / `editorialSerif`.
  */
 export const FONT_PAIRINGS = deepFreeze({
     system: {
@@ -50,11 +52,11 @@ export const FONT_PAIRINGS = deepFreeze({
         body: { source: 'stack', key: 'system' }
     },
     modern: pair('inter', 'inter'),
-    geometric: pair('poppins', 'inter'),
+    geometricSans: pair('poppins', 'inter'),
     startup: pair('plusJakartaSans', 'plusJakartaSans'),
     friendly: pair('nunito', 'nunito'),
     classic: pair('fraunces', 'sourceSans3'),
-    editorial: pair('playfairDisplay', 'lora'),
+    editorialSerif: pair('playfairDisplay', 'lora'),
     bold: pair('oswald', 'sourceSans3'),
     poster: pair('bebasNeue', 'inter'),
     tech: pair('spaceGrotesk', 'inter'),

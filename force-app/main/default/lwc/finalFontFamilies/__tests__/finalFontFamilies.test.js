@@ -61,11 +61,11 @@ const SAVED_NAMES = {
 const SAVED_PAIRINGS = {
     system: ['stack:system', 'stack:system'],
     modern: ['bundled:inter', 'bundled:inter'],
-    geometric: ['bundled:poppins', 'bundled:inter'],
+    geometricSans: ['bundled:poppins', 'bundled:inter'],
     startup: ['bundled:plusJakartaSans', 'bundled:plusJakartaSans'],
     friendly: ['bundled:nunito', 'bundled:nunito'],
     classic: ['bundled:fraunces', 'bundled:sourceSans3'],
-    editorial: ['bundled:playfairDisplay', 'bundled:lora'],
+    editorialSerif: ['bundled:playfairDisplay', 'bundled:lora'],
     bold: ['bundled:oswald', 'bundled:sourceSans3'],
     poster: ['bundled:bebasNeue', 'bundled:inter'],
     tech: ['bundled:spaceGrotesk', 'bundled:inter'],
@@ -73,6 +73,102 @@ const SAVED_PAIRINGS = {
     handwritten: ['bundled:caveat', 'bundled:nunito']
 };
 
+// Plan §A.1: display-only faces (13), never offered as body text.
+const HEADINGS_ONLY = [
+    'anton',
+    'archivoBlack',
+    'barlowCondensed',
+    'bebasNeue',
+    'caveat',
+    'cormorantGaramond',
+    'dancingScript',
+    'oswald',
+    'pacifico',
+    'patrickHand',
+    'playfairDisplay',
+    'robotoCondensed',
+    'satisfy'
+];
+
+// The picker groups by these (A3).
+const GROUPS = {
+    everyday: [
+        'inter',
+        'roboto',
+        'openSans',
+        'lato',
+        'sourceSans3',
+        'notoSans',
+        'publicSans'
+    ],
+    modern: [
+        'poppins',
+        'montserrat',
+        'dmSans',
+        'manrope',
+        'plusJakartaSans',
+        'outfit',
+        'figtree',
+        'spaceGrotesk'
+    ],
+    friendly: ['nunito', 'nunitoSans', 'quicksand', 'rubik', 'comfortaa'],
+    editorial: [
+        'playfairDisplay',
+        'lora',
+        'merriweather',
+        'libreBaskerville',
+        'sourceSerif4',
+        'notoSerif',
+        'cormorantGaramond',
+        'ebGaramond',
+        'fraunces'
+    ],
+    bold: [
+        'oswald',
+        'barlowCondensed',
+        'robotoCondensed',
+        'archivoBlack',
+        'anton',
+        'bebasNeue'
+    ],
+    mono: [
+        'jetbrainsMono',
+        'ibmPlexMono',
+        'robotoMono',
+        'sourceCodePro',
+        'spaceMono',
+        'firaCode'
+    ],
+    handwritten: [
+        'caveat',
+        'dancingScript',
+        'pacifico',
+        'patrickHand',
+        'satisfy'
+    ]
+};
+
+// File shapes: a family that silently lost its bold (a flaky build) would
+// show up here and in NO_BOLD.
+const TWO_FILES = [
+    'lato',
+    'poppins',
+    'barlowCondensed',
+    'ibmPlexMono',
+    'spaceMono'
+];
+const NO_BOLD = [
+    'anton',
+    'archivoBlack',
+    'bebasNeue',
+    'pacifico',
+    'patrickHand',
+    'satisfy'
+];
+
+const LEGACY_TYPOGRAPHY = ['editorial', 'mono', 'geometric', 'humanist'];
+
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const RESOURCE = path.join(
@@ -166,6 +262,9 @@ describe('finalFontFamilies data', () => {
                 const buf = fs.readFileSync(path.join(RESOURCE, face.file));
                 expect(buf.subarray(0, 4).toString('latin1')).toBe('wOF2');
                 expect(buf.length).toBe(face.bytes);
+                expect(
+                    crypto.createHash('sha256').update(buf).digest('hex')
+                ).toBe(face.sha256);
             });
             const licence = fs.readFileSync(
                 path.join(RESOURCE, f.licenceFile),
@@ -178,6 +277,86 @@ describe('finalFontFamilies data', () => {
             );
         }
     );
+
+    it('the 13 headings-only families, by name', () => {
+        const notBody = Object.keys(BUNDLED_FONTS)
+            .filter((k) => !BUNDLED_FONTS[k].bodySafe)
+            .sort();
+        expect(notBody).toEqual([...HEADINGS_ONLY].sort());
+    });
+
+    it.each(Object.entries(GROUPS))(
+        'group %s holds exactly its families',
+        (group, keys) => {
+            const inGroup = Object.keys(BUNDLED_FONTS)
+                .filter((k) => BUNDLED_FONTS[k].group === group)
+                .sort();
+            expect(inGroup).toEqual([...keys].sort());
+        }
+    );
+
+    it('file shapes: only the expected families are split or have no bold', () => {
+        const shapes = Object.fromEntries(
+            JSON_FILE.families.map((f) => [f.key, f.shape])
+        );
+        Object.entries(shapes).forEach(([key, shape]) => {
+            let want = 'variable';
+            if (TWO_FILES.includes(key)) {
+                want = 'static';
+            } else if (NO_BOLD.includes(key)) {
+                want = 'single';
+            }
+            expect(`${key}:${shape}`).toBe(`${key}:${want}`);
+        });
+        const noBold = Object.keys(BUNDLED_FONTS)
+            .filter((k) => headingWeight(k))
+            .sort();
+        expect(noBold).toEqual([...NO_BOLD].sort());
+    });
+
+    it('pairing keys never reuse a legacy typography value', () => {
+        LEGACY_TYPOGRAPHY.forEach((k) => {
+            expect(Object.keys(FONT_PAIRINGS)).not.toContain(k);
+        });
+    });
+
+    it('the resource holds exactly the listed files: no stale extras', () => {
+        const onDisk = [];
+        const walk = (dir, rel = '') => {
+            fs.readdirSync(dir, { withFileTypes: true }).forEach((d) => {
+                const r = rel ? `${rel}/${d.name}` : d.name;
+                if (d.isDirectory()) {
+                    walk(path.join(dir, d.name), r);
+                } else {
+                    onDisk.push(r);
+                }
+            });
+        };
+        walk(RESOURCE);
+        const expected = [
+            'fonts.json',
+            'THIRD-PARTY-NOTICES.txt',
+            ...JSON_FILE.families.flatMap((f) => [
+                f.licenceFile,
+                ...f.faces.map((x) => x.file)
+            ])
+        ];
+        expect(onDisk.sort()).toEqual(expected.sort());
+    });
+
+    it('the notices name every family with its copyright and licence', () => {
+        const notices = fs.readFileSync(
+            path.join(RESOURCE, 'THIRD-PARTY-NOTICES.txt'),
+            'utf8'
+        );
+        JSON_FILE.families.forEach((f) => {
+            expect(f.copyright).toMatch(/copyright|©/i);
+            expect(notices).toContain(`${f.name}\n  ${f.copyright}`);
+            expect(notices).toContain(
+                `Licence: ${f.licence} (${f.licenceFile})`
+            );
+        });
+    });
 
     it('the data is frozen, all the way down', () => {
         expect(Object.isFrozen(BUNDLED_FONTS)).toBe(true);
