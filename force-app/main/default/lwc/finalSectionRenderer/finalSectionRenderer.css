@@ -194,7 +194,7 @@
     margin: 0;
     font-family: var(--c-font-display);
     font-size: var(--c-fs-section);
-    font-weight: 600;
+    font-weight: var(--c-font-display-weight, 600);
     color: var(--c-text);
 }
 

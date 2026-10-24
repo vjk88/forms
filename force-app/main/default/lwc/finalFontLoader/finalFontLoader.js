@@ -11,7 +11,9 @@
 const loadedIds = new Set();
 
 function styleId(key) {
-    return `final-font-${String(key).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    return `final-font-${String(key)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')}`;
 }
 
 function faceRule(family, url, weight) {
@@ -25,29 +27,53 @@ function faceRule(family, url, weight) {
     );
 }
 
+// A face's weight: one weight ('400', 'bold') or a variable file's range
+// ('400 700'). Anything else would break the @font-face block.
+const WEIGHT = /^(normal|bold|\d{1,3}( \d{1,3})?)$/;
+
 /**
- * Registers a custom font once per document.
- * @param {object} font { key, family, resource, regularPath, boldPath }
+ * Registers a font once per document. Two call shapes:
+ * - uploaded font (Form_Font__mdt): { key, family, resource, regularPath, boldPath }
+ *   — the address is built from the static resource name, as it always was;
+ * - resolved faces (bundled fonts): { key, family, faces: [{ url, weight }] }
+ *   — `url` is already this org's address, `weight` may be a range.
  * @returns {boolean} true when a style tag is present after the call
  */
 export function ensureFont(font) {
-    if (!font || !font.family || !font.resource) {
+    const faces =
+        font && Array.isArray(font.faces)
+            ? font.faces.filter(
+                  (f) => f && f.url && WEIGHT.test(String(f.weight))
+              )
+            : null;
+    if (!font || !font.family || (faces ? !faces.length : !font.resource)) {
         return false;
     }
     const id = styleId(font.key || font.family);
+    // The global head IS this module's job: @font-face only registers there.
+    // eslint-disable-next-line @lwc/lwc/no-document-query
     if (loadedIds.has(id) || document.getElementById(id)) {
         loadedIds.add(id);
         return true;
     }
-    const base = `/resource/${font.resource}`;
-    const regularUrl = font.regularPath
-        ? `${base}/${font.regularPath.replace(/^\//, '')}`
-        : base;
-    const rules = [faceRule(font.family, regularUrl, 'normal')];
-    if (font.boldPath) {
-        rules.push(
-            faceRule(font.family, `${base}/${font.boldPath.replace(/^\//, '')}`, 'bold')
-        );
+    let rules;
+    if (faces) {
+        rules = faces.map((f) => faceRule(font.family, f.url, f.weight));
+    } else {
+        const base = `/resource/${font.resource}`;
+        const regularUrl = font.regularPath
+            ? `${base}/${font.regularPath.replace(/^\//, '')}`
+            : base;
+        rules = [faceRule(font.family, regularUrl, 'normal')];
+        if (font.boldPath) {
+            rules.push(
+                faceRule(
+                    font.family,
+                    `${base}/${font.boldPath.replace(/^\//, '')}`,
+                    'bold'
+                )
+            );
+        }
     }
     const style = document.createElement('style');
     style.id = id;

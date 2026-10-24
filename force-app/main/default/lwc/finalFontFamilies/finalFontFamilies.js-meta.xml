@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Runtime (rebuild): data for the fonts bundled in formFonts (private aliases, faces, pairings). Pure, read by the theme engine.</description>
+</LightningComponentBundle>

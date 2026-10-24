@@ -21,7 +21,7 @@
     margin: var(--c-space-4) 0 0;
     font-family: var(--c-font-display);
     font-size: min(calc(var(--c-fs-section) * 1.2), var(--c-fs-title));
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     color: var(--c-text);
     border-bottom: 1px solid color-mix(in srgb, var(--c-text) 18%, transparent);
     padding-bottom: var(--c-space-2);

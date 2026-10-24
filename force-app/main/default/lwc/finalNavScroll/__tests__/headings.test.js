@@ -60,7 +60,10 @@ describe('the page divider heading', () => {
         const d = bodyOf(wideCss, '.divider');
         expect(d).toMatch(/color:\s*var\(--c-text\)/);
         expect(d).not.toMatch(/--c-text-weak/);
-        expect(d).toMatch(/font-weight:\s*700/);
+        // bold by default; a single-weight display font sets its own weight
+        expect(d).toMatch(
+            /font-weight:\s*var\(--c-font-display-weight,\s*700\)/
+        );
     });
 
     it('is bigger than a section title (1.2x) but never bigger than the form title', () => {

@@ -78,7 +78,7 @@
 .brand-wordmark {
     font-family: var(--c-font-display);
     font-size: var(--c-fs-brand);
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     letter-spacing: 0.04em;
 }
 
@@ -107,7 +107,7 @@
     font-family: var(--c-font-display);
     /* smooth size: 4% of the whole split page, 25.6 to 38.4px (type scale) */
     font-size: var(--c-fs-hero);
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     line-height: 1.15;
 }
 
@@ -385,7 +385,7 @@ slot[name='actions'] {
     margin: 0;
     font-family: var(--c-font-display);
     font-size: var(--c-fs-title);
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     line-height: 1.2;
     color: var(--c-text);
 }

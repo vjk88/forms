@@ -15,7 +15,11 @@
  * the `formThemeAssets` static resource (guest-safe). Split themes paint their brand pane
  * via `palette.headerBg` (finalNavSplitHero consumes --c-header-bg when unconfigured).
  */
-import { resolveTokens, ENGINE_VERSION } from 'c/finalThemeEngine';
+import {
+    resolveTokens,
+    fontManifest,
+    ENGINE_VERSION
+} from 'c/finalThemeEngine';
 
 /**
  * Error message, required marker and invalid border on the DARK themes. The
@@ -1214,10 +1218,18 @@ export function resolveSpecForPublish(spec, customThemeProps) {
         }
         theme = customThemeProps;
     }
+    const overrides = out.theme ? out.theme.overrides : null;
     out.resolved = {
-        tokens: resolveTokens(theme, out.theme ? out.theme.overrides : null),
+        tokens: resolveTokens(theme, overrides),
         engineVersion: ENGINE_VERSION,
         resolvedAt: new Date().toISOString()
     };
+    // The fonts the published form must load (bundled by key, uploaded with
+    // their file info): the published viewer never sees the theme recipe, so
+    // a font named only inside it would otherwise never register for guests.
+    const fonts = fontManifest(theme, overrides);
+    if (fonts.length) {
+        out.resolved.fonts = fonts;
+    }
     return out;
 }

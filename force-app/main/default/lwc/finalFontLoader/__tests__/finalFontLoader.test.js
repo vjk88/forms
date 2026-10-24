@@ -36,9 +36,41 @@ describe('finalFontLoader.ensureFont', () => {
     it('is idempotent — one tag per font', () => {
         ensureFont({ key: 'Dup', family: 'Dup', resource: 'r' });
         ensureFont({ key: 'Dup', family: 'Dup', resource: 'r' });
+        expect(document.querySelectorAll('#final-font-dup').length).toBe(1);
+    });
+
+    it('resolved faces: url used as given, one rule per face, weight ranges kept', () => {
+        ensureFont({
+            key: 'Faces',
+            family: 'Faces',
+            faces: [
+                {
+                    url: '/resource/123/ns__formFonts/a.woff2',
+                    weight: '400 700'
+                },
+                { url: '/resource/123/ns__formFonts/b.woff2', weight: '700' }
+            ]
+        });
+        const css = document.getElementById('final-font-faces').textContent;
+        expect(css.match(/@font-face/g)).toHaveLength(2);
+        expect(css).toContain("url('/resource/123/ns__formFonts/a.woff2')");
+        expect(css).toContain('font-weight: 400 700');
+        expect(css).toContain('font-weight: 700');
+        expect(css).not.toContain('/resource/undefined');
+    });
+
+    it('resolved faces: bad weights and empty urls are dropped; nothing left → false', () => {
         expect(
-            document.querySelectorAll('#final-font-dup').length
-        ).toBe(1);
+            ensureFont({
+                key: 'Bad',
+                family: 'Bad',
+                faces: [
+                    { url: '', weight: '400' },
+                    { url: '/x.woff2', weight: '400; color: red' }
+                ]
+            })
+        ).toBe(false);
+        expect(document.getElementById('final-font-bad')).toBeNull();
     });
 
     it('rejects incomplete configs', () => {
