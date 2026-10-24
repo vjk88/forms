@@ -12,7 +12,12 @@
     border-radius: var(--c-radius);
     margin-bottom: var(--c-space-5);
     background-color: var(--c-header-bg);
-    background-image: var(--c-header-bg-gradient, none);
+    /* theme photo (+ veil) over the theme gradient over the solid fill; a
+       form's own banner switches the photo off (rootStyle) */
+    background-image:
+        var(--c-header-bg-image, none), var(--c-header-bg-gradient, none);
+    background-position: var(--c-header-bg-position, center);
+    background-size: cover;
     font-family: var(--c-font-body);
 }
 

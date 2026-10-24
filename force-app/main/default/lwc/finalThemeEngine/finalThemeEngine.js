@@ -323,6 +323,24 @@ const DEFAULT_PROPS = {
 // palette.pageBgGradient / contentBgGradient / headerBgGradient. It paints as
 // a background-image layer ABOVE the surface's solid color (which stays the
 // fallback + the ink-derivation base for borders/contrast).
+/**
+ * A theme's header photo as background layers (palette.headerImage, a
+ * portable `/resource/formThemeAssets/…` address that finalThemeAssets swaps
+ * at paint time). `veil` 0–1 lays a black wash over the photo so white header
+ * text stays readable; each photo theme's veil is measured against its image.
+ * Null when there's no photo, so the token is dropped and CSS uses `none`.
+ */
+function headerImageLayer(url, veil) {
+    if (typeof url !== 'string' || !url) {
+        return null;
+    }
+    const v = Math.min(Math.max(Number(veil) || 0, 0), 1);
+    const photo = `url("${url}")`;
+    return v > 0
+        ? `linear-gradient(rgba(0, 0, 0, ${v}), rgba(0, 0, 0, ${v})), ${photo}`
+        : photo;
+}
+
 function gradientLayer(g, fillOpacity) {
     if (!g || !g.start || !g.end) {
         return 'none';
@@ -943,6 +961,19 @@ export function resolveTokens(themeProps, formOverrides) {
             pal.headerBgGradient,
             pal.headerBgOpacity
         ),
+        // Conditional (null → dropped by the guard below, CSS falls back to
+        // none): a THEME's header photo, part of the header fill — a form's
+        // own banner (header.bgImage) still paints above it.
+        '--c-header-bg-image': headerImageLayer(
+            pal.headerImage,
+            pal.headerImageVeil
+        ),
+        // Conditional: where the photo crops (CSS background-position), for a
+        // photo whose centre is empty sky or mist. CSS falls back to center.
+        '--c-header-bg-position':
+            pal.headerImage && typeof pal.headerImagePosition === 'string'
+                ? pal.headerImagePosition
+                : null,
         '--c-header-text': pal.headerText || pal.text,
         '--c-header-text-weak': pal.headerTextWeak || pal.textWeak,
         // Conditional pair (null → dropped by the guard below, CSS falls back

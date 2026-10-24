@@ -68,6 +68,14 @@ export default class FinalFormHeader extends LightningElement {
         return bannerLayerStyle(this.hdr.bgImage);
     }
 
+    /**
+     * A form's own banner REPLACES the theme's header photo (PR 396 review):
+     * a faded banner over the photo would read as a double exposure.
+     */
+    get rootStyle() {
+        return this.bannerStyle ? '--c-header-bg-image: none;' : null;
+    }
+
     get showBranding() {
         return this.arrangement !== 'textOnly';
     }

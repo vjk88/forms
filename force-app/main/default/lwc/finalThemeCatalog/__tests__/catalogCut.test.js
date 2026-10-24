@@ -49,6 +49,37 @@ const ALLOWED_CHANGES = {
 
 const HIDDEN = Object.keys(BEFORE.hidden);
 
+// Header fix (owner 2026-10-24, "do #1"): these hidden themes had a photo or
+// gradient in the headerBg COLOR slot, which the header drops, so titles
+// vanished. They may change their header tokens, and nothing else.
+const HEADER_TOKENS = [
+    '--c-header-bg',
+    '--c-header-bg-gradient',
+    '--c-header-bg-image',
+    '--c-header-bg-position',
+    '--c-header-text-weak'
+];
+const HEADER_FIXED = [
+    'marbleSplit',
+    'cyberSplit',
+    'claySplit',
+    'botanicalSplit',
+    'marbleLuxury',
+    'auraSplit',
+    'sunsetDunes',
+    'forestMist',
+    'carbonMatrix',
+    'cosmicVortex',
+    'auroraBorealis',
+    'silkLuxury'
+];
+
+function changedTokens(now, before) {
+    return Object.keys({ ...before, ...now }).filter(
+        (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
+    );
+}
+
 describe('catalog cut: gallery vs hidden themes', () => {
     it('the gallery offers exactly the nine kept themes', () => {
         expect(listGalleryThemes().map((t) => t.key)).toEqual(GALLERY);
@@ -63,7 +94,7 @@ describe('catalog cut: gallery vs hidden themes', () => {
         expect(all.filter((t) => t.hidden)).toHaveLength(23);
     });
 
-    it.each(HIDDEN)(
+    it.each(HIDDEN.filter((k) => !HEADER_FIXED.includes(k)))(
         'hidden theme %s resolves to exactly the same tokens as before',
         (key) => {
             expect(resolveTokens(getBuiltinTheme(key), null)).toEqual(
@@ -72,13 +103,25 @@ describe('catalog cut: gallery vs hidden themes', () => {
         }
     );
 
+    it.each(HEADER_FIXED)(
+        'hidden theme %s changes only its header tokens (header fix)',
+        (key) => {
+            const changed = changedTokens(
+                resolveTokens(getBuiltinTheme(key), null),
+                BEFORE.hidden[key]
+            );
+            expect(changed.length).toBeGreaterThan(0);
+            changed.forEach((t) => expect(HEADER_TOKENS).toContain(t));
+        }
+    );
+
     it('a hidden theme still publishes with the same snapshot', () => {
         const spec = {
             specVersion: 1,
-            theme: { source: 'builtin', name: 'silkLuxury' }
+            theme: { source: 'builtin', name: 'mintStepper' }
         };
         expect(resolveSpecForPublish(spec).resolved.tokens).toEqual(
-            BEFORE.hidden.silkLuxury
+            BEFORE.hidden.mintStepper
         );
     });
 

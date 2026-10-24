@@ -25,8 +25,9 @@ describe('c-final-form-header', () => {
         });
         await flush();
         const hdr = el.shadowRoot.querySelector('.hdr');
-        // the fill (--c-header-bg + gradient) stays on the box via CSS — no inline override
-        expect(hdr.getAttribute('style')).toBeNull();
+        // the fill (--c-header-bg + gradient) stays on the box via CSS; the
+        // only inline override switches the THEME photo off under a banner
+        expect(hdr.getAttribute('style')).toBe('--c-header-bg-image: none;');
         const layer = hdr.querySelector('.banner-layer');
         expect(layer).not.toBeNull();
         expect(layer.getAttribute('aria-hidden')).toBe('true');
@@ -76,6 +77,10 @@ describe('c-final-form-header', () => {
         const el = mount({ style: 'standard', title: 'T' });
         await flush();
         expect(el.shadowRoot.querySelector('.banner-layer')).toBeNull();
+        // ...and the theme's header photo (if any) paints
+        expect(
+            el.shadowRoot.querySelector('.hdr').getAttribute('style')
+        ).toBeNull();
     });
 
     it("legacy 'minimal' renders as standard (option deleted 2026-07-18 — it silently ate the Fill)", async () => {
