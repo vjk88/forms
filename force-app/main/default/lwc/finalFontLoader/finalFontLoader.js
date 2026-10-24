@@ -10,11 +10,19 @@
 
 const loadedIds = new Set();
 
-function styleId(key) {
-    return `final-font-${String(key)
+// Uploaded fonts keep their ids (final-font-<key>); resolved-face fonts get
+// their own prefix, so an uploaded key such as Bundled_Inter can never take
+// a bundled font's id and stop it registering.
+function styleId(key, prefix = 'final-font-') {
+    return `${prefix}${String(key)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')}`;
 }
+
+// Text that ends up inside the global @font-face block. A quote, bracket,
+// semicolon, backslash or line break could close the rule and add CSS of its
+// own to every page, so such a family or address is refused outright.
+const UNSAFE = /['"\\(){};<>\r\n]/;
 
 function faceRule(family, url, weight) {
     return (
@@ -49,32 +57,38 @@ export function ensureFont(font) {
     if (!font || !font.family || (faces ? !faces.length : !font.resource)) {
         return false;
     }
-    const id = styleId(font.key || font.family);
+    const id = faces
+        ? styleId(font.key || font.family, 'final-fontb-')
+        : styleId(font.key || font.family);
     // The global head IS this module's job: @font-face only registers there.
     // eslint-disable-next-line @lwc/lwc/no-document-query
     if (loadedIds.has(id) || document.getElementById(id)) {
         loadedIds.add(id);
         return true;
     }
-    let rules;
+    let list;
     if (faces) {
-        rules = faces.map((f) => faceRule(font.family, f.url, f.weight));
+        list = faces.map((f) => [f.url, f.weight]);
     } else {
         const base = `/resource/${font.resource}`;
-        const regularUrl = font.regularPath
-            ? `${base}/${font.regularPath.replace(/^\//, '')}`
-            : base;
-        rules = [faceRule(font.family, regularUrl, 'normal')];
+        list = [
+            [
+                font.regularPath
+                    ? `${base}/${font.regularPath.replace(/^\//, '')}`
+                    : base,
+                'normal'
+            ]
+        ];
         if (font.boldPath) {
-            rules.push(
-                faceRule(
-                    font.family,
-                    `${base}/${font.boldPath.replace(/^\//, '')}`,
-                    'bold'
-                )
-            );
+            list.push([`${base}/${font.boldPath.replace(/^\//, '')}`, 'bold']);
         }
     }
+    if (UNSAFE.test(font.family) || list.some(([url]) => UNSAFE.test(url))) {
+        return false;
+    }
+    const rules = list.map(([url, weight]) =>
+        faceRule(font.family, url, weight)
+    );
     const style = document.createElement('style');
     style.id = id;
     style.textContent = rules.join('\n');

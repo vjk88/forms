@@ -9,7 +9,7 @@ jest.mock(
 );
 
 const tags = () => [
-    ...document.head.querySelectorAll('style[id^="final-font-"]')
+    ...document.head.querySelectorAll('style[id^="final-font"]')
 ];
 
 describe('finalFontBundle', () => {
@@ -28,7 +28,7 @@ describe('finalFontBundle', () => {
     it('a variable family registers ONE face with its weight range, under its alias', () => {
         expect(ensureFontRef({ source: 'bundled', key: 'inter' })).toBe(true);
         const css = document.getElementById(
-            'final-font-bundled-inter'
+            'final-fontb-bundled-inter'
         ).textContent;
         expect(css).toContain("font-family: 'FormsBundledInter'");
         expect(css).toContain('font-weight: 400 700');
@@ -39,7 +39,7 @@ describe('finalFontBundle', () => {
     it('a single-weight family registers its one real weight', () => {
         ensureFontRef({ source: 'bundled', key: 'bebasNeue' });
         const css = document.getElementById(
-            'final-font-bundled-bebasneue'
+            'final-fontb-bundled-bebasneue'
         ).textContent;
         expect(css).toContain("font-family: 'FormsBundledBebasNeue'");
         expect(css).toContain('font-weight: 400;');
@@ -57,12 +57,31 @@ describe('finalFontBundle', () => {
         expect(css).toContain("url('/resource/brand_q/r.woff2')");
     });
 
+    it('an uploaded reference cannot bring its own addresses', () => {
+        ensureFontRef({
+            source: 'uploaded',
+            key: 'Sneaky',
+            family: 'Sneaky',
+            resource: 'sneaky_font',
+            faces: [{ url: 'https://evil.example/x.woff2', weight: '400' }]
+        });
+        const css = document.getElementById('final-font-sneaky').textContent;
+        expect(css).toContain("url('/resource/sneaky_font')");
+        expect(css).not.toContain('evil.example');
+    });
+
     it('installed stacks and junk load nothing', () => {
         expect(ensureFontRef({ source: 'stack', key: 'system' })).toBe(false);
         expect(ensureFontRef({ source: 'bundled', key: 'missing' })).toBe(
             false
         );
         expect(ensureFontRef(null)).toBe(false);
+        expect(ensureFontRef({ source: 'bundled', key: 'constructor' })).toBe(
+            false
+        );
+        expect(ensureFontRef({ source: 'bundled', key: 'toString' })).toBe(
+            false
+        );
         ensureFontRefs('nope');
         ensureFontRefs([null, 42, { source: 'stack', key: 'mono' }]);
         expect(tags()).toHaveLength(0);

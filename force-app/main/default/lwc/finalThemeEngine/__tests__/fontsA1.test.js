@@ -46,13 +46,13 @@ const fontsOf = (t) => [t['--c-font-display'], t['--c-font-body']];
 describe('fonts A1: legacy regime is byte-for-byte unchanged', () => {
     it.each(BEFORE.cases.map((c) => [c.name, c]))('%s', (name, c) => {
         const theme = c.base ? nordicWith(c.themePatch) : null;
-        expect(resolveTokens(theme, c.overrides)).toEqual(c.tokens);
+        expect(resolveTokens(theme, c.overrides)).toStrictEqual(c.tokens);
     });
 
     it.each(listBuiltinThemes().map((t) => t.key))(
         'theme %s resolves exactly as before',
         (key) => {
-            expect(resolveTokens(getBuiltinTheme(key), null)).toEqual(
+            expect(resolveTokens(getBuiltinTheme(key), null)).toStrictEqual(
                 BEFORE.themes[key]
             );
         }
@@ -156,6 +156,73 @@ describe('fonts A1: new regime (a `fonts` setting exists)', () => {
             }
         });
         expect(fontsOf(t)).toEqual([SYSTEM, SYSTEM]);
+    });
+});
+
+describe('fonts A1: hardening (PR 398 review)', () => {
+    const X = { key: 'X', family: 'Brand X', fallback: 'serif', resource: 'x' };
+
+    it.each([
+        ['an empty fonts setting', {}],
+        ['an unknown pairing', { pairing: 'nope' }],
+        [
+            'a broken reference',
+            { display: { source: 'bundled', key: 'missing' } }
+        ]
+    ])(
+        '%s keeps the legacy rules (theme Brand X beats form mono)',
+        (label, fonts) => {
+            const legacy = resolveTokens(nordicWith({ customFont: X }), {
+                typography: 'mono'
+            });
+            const withFonts = resolveTokens(nordicWith({ customFont: X }), {
+                typography: 'mono',
+                fonts
+            });
+            expect(withFonts).toStrictEqual(legacy);
+            expect(withFonts['--c-font-body']).toBe("'Brand X', serif");
+        }
+    );
+
+    it.each(['constructor', 'toString', '__proto__', 'hasOwnProperty'])(
+        'bundled key %s neither throws nor reaches the manifest',
+        (key) => {
+            const o = {
+                fonts: {
+                    display: { source: 'bundled', key },
+                    body: { source: 'bundled', key },
+                    pairing: key
+                }
+            };
+            expect(() => resolveTokens(nordicWith({}), o)).not.toThrow();
+            expect(fontsOf(resolveTokens(nordicWith({}), o))).toEqual([
+                SYSTEM,
+                SYSTEM
+            ]);
+            expect(fontManifest(nordicWith({}), o)).toEqual([]);
+        }
+    );
+
+    it('a display-only face is never used for the body', () => {
+        const t = resolveTokens(nordicWith({}), {
+            fonts: {
+                display: { source: 'bundled', key: 'bebasNeue' },
+                body: { source: 'bundled', key: 'bebasNeue' }
+            }
+        });
+        expect(t['--c-font-display']).toBe(BEBAS);
+        expect(t['--c-font-body']).toBe(SYSTEM);
+    });
+
+    it('returned references are copies, never the shared pairing data', () => {
+        const refs = resolveFontRefs(nordicWith({}), {
+            fonts: { pairing: 'modern' }
+        });
+        refs.display.key = 'changed';
+        const again = resolveFontRefs(nordicWith({}), {
+            fonts: { pairing: 'modern' }
+        });
+        expect(again.display.key).toBe('inter');
     });
 });
 

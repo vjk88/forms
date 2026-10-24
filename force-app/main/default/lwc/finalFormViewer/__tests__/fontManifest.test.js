@@ -67,7 +67,7 @@ async function mount(spec) {
 }
 
 const fontTags = () => [
-    ...document.head.querySelectorAll('style[id^="final-font-"]')
+    ...document.head.querySelectorAll('style[id^="final-font"]')
 ];
 
 describe('published form fonts come from the snapshot manifest', () => {
@@ -104,7 +104,7 @@ describe('published form fonts come from the snapshot manifest', () => {
             })
         );
         const css = document.getElementById(
-            'final-font-bundled-inter'
+            'final-fontb-bundled-inter'
         ).textContent;
         expect(css).toContain("'FormsBundledInter'");
         expect(css).toContain('/resource/1719444000000/acme__formFonts/inter/');

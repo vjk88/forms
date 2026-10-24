@@ -56,7 +56,7 @@
     overflow-wrap: anywhere;
     font-family: var(--c-font-display, var(--c-font-body));
     font-size: var(--c-fs-thanks);
-    font-weight: 600;
+    font-weight: var(--c-font-display-weight, 600);
 }
 
 .message {

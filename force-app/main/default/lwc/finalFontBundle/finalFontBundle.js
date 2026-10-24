@@ -11,12 +11,12 @@
  * reason as c/finalThemeAssets.
  */
 import FONTS_URL from '@salesforce/resourceUrl/formFonts';
-import { BUNDLED_FONTS } from 'c/finalFontFamilies';
+import { bundledFont } from 'c/finalFontFamilies';
 import { ensureFont } from 'c/finalFontLoader';
 
 /** A bundled family's faces with this org's real addresses, or []. */
 export function bundledFaces(key) {
-    const font = BUNDLED_FONTS[key];
+    const font = bundledFont(key);
     if (!font || !FONTS_URL) {
         return [];
     }
@@ -37,7 +37,7 @@ export function ensureFontRef(ref) {
         return false;
     }
     if (ref.source === 'bundled') {
-        const font = BUNDLED_FONTS[ref.key];
+        const font = bundledFont(ref.key);
         if (!font) {
             return false;
         }
@@ -48,7 +48,17 @@ export function ensureFontRef(ref) {
         });
     }
     if (ref.source === 'uploaded') {
-        return ensureFont(ref);
+        // Only the Form_Font__mdt fields: a reference carrying its own `faces`
+        // (Import, a crafted snapshot) must never pick its own addresses.
+        const { key, family, fallback, resource, regularPath, boldPath } = ref;
+        return ensureFont({
+            key,
+            family,
+            fallback,
+            resource,
+            regularPath,
+            boldPath
+        });
     }
     return false;
 }

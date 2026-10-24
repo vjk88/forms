@@ -15,9 +15,21 @@
  * A family with ONE face of ONE weight is single-weight: headings use that
  * weight instead of a browser-thickened fake bold.
  *
+ * Keys and aliases are SAVED: keys in font references and published
+ * manifests, aliases inside published `--c-font-*` tokens. Never rename one
+ * (finalFontFamilies.test.js pins them). All data here is frozen.
+ *
  * A1 ships two families (one variable, one single-weight); A2 adds the rest.
  */
-export const BUNDLED_FONTS = {
+function deepFreeze(value) {
+    if (value && typeof value === 'object') {
+        Object.values(value).forEach(deepFreeze);
+        Object.freeze(value);
+    }
+    return value;
+}
+
+export const BUNDLED_FONTS = deepFreeze({
     inter: {
         name: 'Inter',
         alias: 'FormsBundledInter',
@@ -34,13 +46,13 @@ export const BUNDLED_FONTS = {
         bodySafe: false,
         faces: [{ file: 'bebasneue/BebasNeue-latin-400.woff2', weight: '400' }]
     }
-};
+});
 
 /**
  * Named pairings: a font reference per side. `system` is "Device default",
  * today's installed-font stack (no download).
  */
-export const FONT_PAIRINGS = {
+export const FONT_PAIRINGS = deepFreeze({
     system: {
         display: { source: 'stack', key: 'system' },
         body: { source: 'stack', key: 'system' }
@@ -53,14 +65,31 @@ export const FONT_PAIRINGS = {
         display: { source: 'bundled', key: 'bebasNeue' },
         body: { source: 'bundled', key: 'inter' }
     }
-};
+});
 
-/** The one weight a single-weight family has, else null. */
-export function singleWeight(key) {
-    const font = BUNDLED_FONTS[key];
-    if (!font || font.faces.length !== 1) {
+/** Own keys only: 'constructor' or 'toString' must never find a family. */
+export function bundledFont(key) {
+    return typeof key === 'string' &&
+        Object.prototype.hasOwnProperty.call(BUNDLED_FONTS, key)
+        ? BUNDLED_FONTS[key]
+        : undefined;
+}
+
+/**
+ * The weight headings should use for a family that has no bold: its heaviest
+ * real weight (Bebas Neue → '400'; a variable file covering '100 400' →
+ * '400'). Null when the family reaches 700, so headings keep their own weight.
+ */
+export function headingWeight(key) {
+    const font = bundledFont(key);
+    if (!font) {
         return null;
     }
-    const w = String(font.faces[0].weight);
-    return /^\d{1,3}$/.test(w) ? w : null;
+    const tops = font.faces.map((f) =>
+        Math.max(...String(f.weight).split(' ').map(Number))
+    );
+    const heaviest = Math.max(...tops);
+    return Number.isFinite(heaviest) && heaviest < 700
+        ? String(heaviest)
+        : null;
 }

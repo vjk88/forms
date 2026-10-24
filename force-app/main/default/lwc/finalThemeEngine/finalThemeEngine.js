@@ -20,7 +20,7 @@
 import {
     BUNDLED_FONTS,
     FONT_PAIRINGS,
-    singleWeight
+    headingWeight
 } from 'c/finalFontFamilies';
 
 export const ENGINE_VERSION = 1;
@@ -91,15 +91,17 @@ const FONT_STACKS = {
 //   { source: 'uploaded', key, family, fallback, resource, regularPath, boldPath }
 //                                 — a Form_Font__mdt font, file info carried along
 //
-// Two regimes. LEGACY (no `fonts` setting at either level — every form and
-// theme saved before fonts A1): today's rules exactly, a merged `customFont`
-// beats a merged `typography`. NEW (`fonts` at either level): each side takes
-// the first reference set, form before theme:
+// Two regimes. LEGACY (no usable `fonts` setting at either level — every form
+// and theme saved before fonts A1, and an empty `fonts: {}`): today's rules
+// exactly, a merged `customFont` beats a merged `typography`. NEW (a `fonts`
+// setting that resolves, at either level): each side takes the first usable
+// reference, form before theme:
 //   form fonts.<side> → form fonts.pairing → form customFont → form typography
 //   → theme fonts.<side> → theme fonts.pairing → theme customFont → theme
 //   typography → system.
-// An explicit form `customFont: null` hides an inherited theme customFont in
-// both regimes.
+// In the new regime only an explicit form `customFont: null` hides an
+// inherited theme customFont (legacy also hid it behind '' or a family-less
+// object, through the merge).
 // ---------------------------------------------------------------------------
 
 // Same-kind fallbacks after a bundled font's alias, so a failed download
@@ -114,6 +116,15 @@ const KIND_FALLBACKS = {
 
 function isPlainObject(v) {
     return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+// Own keys only: a saved key such as 'constructor' or 'toString' (Import,
+// crafted JSON) must miss, never reach Object.prototype.
+function ownEntry(map, key) {
+    return typeof key === 'string' &&
+        Object.prototype.hasOwnProperty.call(map, key)
+        ? map[key]
+        : undefined;
 }
 
 function uploadedRef(customFont) {
@@ -131,7 +142,7 @@ function refStack(ref, side) {
         return FONT_STACKS[ref.key] ? FONT_STACKS[ref.key][side] : null;
     }
     if (ref.source === 'bundled') {
-        const font = BUNDLED_FONTS[ref.key];
+        const font = ownEntry(BUNDLED_FONTS, ref.key);
         return font
             ? `'${font.alias}', ${KIND_FALLBACKS[font.kind] || KIND_FALLBACKS.sans}`
             : null;
@@ -142,22 +153,51 @@ function refStack(ref, side) {
     return null;
 }
 
-/** First resolvable reference for one side of one level (new regime). */
+// A reference this side can actually use. Display-only bundled faces
+// (bodySafe: false — condensed, all-caps, script) never set the body, even
+// when imported or generated data asks for it.
+function usableRef(ref, side) {
+    if (!refStack(ref, side)) {
+        return false;
+    }
+    if (side === 'body' && ref.source === 'bundled') {
+        return ownEntry(BUNDLED_FONTS, ref.key).bodySafe !== false;
+    }
+    return true;
+}
+
+// The new-regime part of one level, as candidates for one side.
+function fontsCandidates(level, side) {
+    const fonts = isPlainObject(level.fonts) ? level.fonts : {};
+    const pairing = ownEntry(FONT_PAIRINGS, fonts.pairing);
+    return [fonts[side], pairing && pairing[side]];
+}
+
+/** First usable reference for one side of one level (new regime). */
 function levelRef(level, side, hideCustomFont) {
     if (!isPlainObject(level)) {
         return null;
     }
-    const fonts = isPlainObject(level.fonts) ? level.fonts : {};
-    const pairing = FONT_PAIRINGS[fonts.pairing];
     const candidates = [
-        fonts[side],
-        pairing && pairing[side],
+        ...fontsCandidates(level, side),
         hideCustomFont ? null : uploadedRef(level.customFont),
         typeof level.typography === 'string'
             ? { source: 'stack', key: level.typography }
             : null
     ];
-    return candidates.find((ref) => refStack(ref, side)) || null;
+    const ref = candidates.find((r) => usableRef(r, side));
+    // a copy: shared pairing data must never be changed downstream
+    return ref ? { ...ref } : null;
+}
+
+// A level is in the new regime only when its `fonts` setting resolves to a
+// usable font. An empty or broken `fonts` ({}, an unknown pairing) leaves
+// the legacy rules in charge, so a reset that leaves `{}` behind changes
+// nothing.
+function hasUsableFonts(level) {
+    return ['display', 'body'].some((side) =>
+        fontsCandidates(level, side).some((r) => usableRef(r, side))
+    );
 }
 
 /**
@@ -167,7 +207,7 @@ function levelRef(level, side, hideCustomFont) {
 export function resolveFontRefs(themeProps, formOverrides) {
     const theme = isPlainObject(themeProps) ? themeProps : {};
     const form = isPlainObject(formOverrides) ? formOverrides : {};
-    if (!isPlainObject(theme.fonts) && !isPlainObject(form.fonts)) {
+    if (!hasUsableFonts(theme) && !hasUsableFonts(form)) {
         // Legacy: the merged values, exactly as before fonts A1.
         const pick = (key) => {
             return form[key] !== undefined ? form[key] : theme[key];
@@ -887,11 +927,12 @@ export function resolveTokens(themeProps, formOverrides) {
         body: refStack(fontRefs.body, 'body'),
         display: refStack(fontRefs.display, 'display')
     };
-    // A single-weight display face (Bebas Neue…) sets its real weight, so
-    // headings never get a browser-thickened fake bold. Conditional token.
+    // A display face with no bold (Bebas Neue is 400 only) sets its heaviest
+    // real weight, so headings never get a browser-thickened fake bold.
+    // Conditional token.
     const displayWeight =
         fontRefs.display.source === 'bundled'
-            ? singleWeight(fontRefs.display.key)
+            ? headingWeight(fontRefs.display.key)
             : null;
     const fit = PAGE_FIT[img.fit] || PAGE_FIT.cover;
     const mesh =
