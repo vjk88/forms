@@ -1,0 +1,102 @@
+<template>
+    <div class="fp">
+        <div class="fp-row">
+            <template lwc:if={edited}>
+                <span class="dot" title="Customized"></span>
+            </template>
+            <label for="fp-pairing">{label}</label>
+            <select
+                id="fp-pairing"
+                data-role="pairing"
+                disabled={disabled}
+                onchange={handlePairing}
+            >
+                <template for:each={pairingGroups} for:item="g">
+                    <optgroup key={g.key} label={g.label}>
+                        <template for:each={g.options} for:item="o">
+                            <option
+                                key={o.value}
+                                value={o.value}
+                                selected={o.selected}
+                            >
+                                {o.label}
+                            </option>
+                        </template>
+                    </optgroup>
+                </template>
+            </select>
+        </div>
+        <div class="fp-sample" aria-hidden="true">
+            <span class="fp-sample-heading" style={headingSampleStyle}
+                >Aa Heading</span
+            >
+            <span class="fp-sample-body" style={bodySampleStyle}
+                >The quick brown fox jumps over the lazy dog.</span
+            >
+        </div>
+        <button
+            type="button"
+            class="fp-link"
+            aria-expanded={customizeOpen}
+            aria-controls="fp-custom"
+            disabled={disabled}
+            onclick={toggleCustomize}
+        >
+            {customizeLabel}
+        </button>
+        <template lwc:if={customizeOpen}>
+            <div id="fp-custom" class="fp-custom">
+                <div class="fp-row">
+                    <label for="fp-display">Heading font</label>
+                    <select
+                        id="fp-display"
+                        data-side="display"
+                        disabled={disabled}
+                        onchange={handleSide}
+                    >
+                        <template for:each={displayGroups} for:item="g">
+                            <optgroup key={g.key} label={g.label}>
+                                <template for:each={g.options} for:item="o">
+                                    <option
+                                        key={o.value}
+                                        value={o.value}
+                                        selected={o.selected}
+                                    >
+                                        {o.label}
+                                    </option>
+                                </template>
+                            </optgroup>
+                        </template>
+                    </select>
+                </div>
+                <div class="fp-row">
+                    <label for="fp-body">Body font</label>
+                    <select
+                        id="fp-body"
+                        data-side="body"
+                        disabled={disabled}
+                        onchange={handleSide}
+                    >
+                        <template for:each={bodyGroups} for:item="g">
+                            <optgroup key={g.key} label={g.label}>
+                                <template for:each={g.options} for:item="o">
+                                    <option
+                                        key={o.value}
+                                        value={o.value}
+                                        selected={o.selected}
+                                    >
+                                        {o.label}
+                                    </option>
+                                </template>
+                            </optgroup>
+                        </template>
+                    </select>
+                </div>
+                <p class="fp-note">
+                    Display-only fonts (condensed, all-caps, handwritten) are
+                    offered for headings only.
+                </p>
+            </div>
+        </template>
+    </div>
+</template>

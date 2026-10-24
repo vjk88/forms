@@ -3,7 +3,13 @@ import LightningConfirm from 'lightning/confirm';
 import listFonts from '@salesforce/apex/FinalFontController.listFonts';
 import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
-import { resolveTokens, MESH_SEEDS } from 'c/finalThemeEngine';
+import { resolveTokens, resolveFontRefs, MESH_SEEDS } from 'c/finalThemeEngine';
+import {
+    pairingOptions,
+    pairingPatch,
+    applyFontPatch,
+    refsLabel
+} from 'c/finalFontChoices';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { localizeAssetUrl } from 'c/finalThemeAssets';
 import { getLayout } from 'c/finalLayoutRegistry';
@@ -84,7 +90,13 @@ export default class FinalDesignPanel extends LightningElement {
                         group: group.key,
                         path: `${section.label} › ${group.label}`,
                         hint: c.hint || '',
-                        choices: (c.options || [])
+                        // the font picker builds its choices (pairings and
+                        // the fonts in them), so search reads those
+                        choices: (
+                            (c.type === 'fontPicker'
+                                ? byKey.get(key)?.options
+                                : c.options) || []
+                        )
                             .map((option) => option.label)
                             .join(' '),
                         available: !reason,
@@ -128,7 +140,11 @@ export default class FinalDesignPanel extends LightningElement {
                 this.controlsVM.find((vm) => vm.key === c.key)?.options || [];
             if (!options.some((option) => option.value === change.value))
                 return false;
-            this.handleSelect({ target });
+            const patch = pairingPatch(change.value, {
+                uploadedFonts: this._fonts
+            });
+            if (!patch) return false;
+            this._applyFontPatch(patch);
         } else if (change.kind === 'color' && c.type === 'color') {
             this.handleColor({ target, detail: { value: change.value } });
         } else if (change.kind === 'preset' && c.presets) {
@@ -198,7 +214,7 @@ export default class FinalDesignPanel extends LightningElement {
         if (disclosure) disclosure.open = true;
         wrapper.scrollIntoView?.({ block: 'nearest' });
         const input = wrapper.querySelector(
-            'input, select, textarea, lightning-input-rich-text, c-final-color-control, c-final-gradient-control, c-final-image-uploader'
+            'input, select, textarea, lightning-input-rich-text, c-final-color-control, c-final-gradient-control, c-final-image-uploader, c-final-font-picker'
         );
         if (input?.focus) input.focus();
         else wrapper.focus();
@@ -375,10 +391,40 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     _isEdited(control) {
+        if (control.dynamicOptions === 'fonts') {
+            return this._formHasFonts();
+        }
         return (
             Boolean(control.themePath) &&
             getAt(this.overrides, control.themePath) !== undefined
         );
+    }
+
+    // Any font setting at the form level: the new `fonts`, or legacy
+    // `typography` / `customFont` (null included — it hides the theme font).
+    _formHasFonts() {
+        return ['fonts', 'typography', 'customFont'].some(
+            (k) => getAt(this.overrides, k) !== undefined
+        );
+    }
+
+    _fontLevel() {
+        const level = {};
+        ['fonts', 'typography', 'customFont'].forEach((k) => {
+            const v = getAt(this.overrides, k);
+            if (v !== undefined) level[k] = v;
+        });
+        return level;
+    }
+
+    _applyFontPatch(patch) {
+        applyFontPatch(this._ensureOverrides(), patch);
+        this._spec = { ...this._spec };
+        this._emit();
+    }
+
+    handleFontChange(event) {
+        this._applyFontPatch(event.detail && event.detail.patch);
     }
 
     _hasPageImage() {
@@ -481,6 +527,7 @@ export default class FinalDesignPanel extends LightningElement {
                 isTiles: c.type === 'tiles',
                 isRichText: c.type === 'richtext',
                 isNumber: c.type === 'number',
+                isFontPicker: c.type === 'fontPicker',
                 placeholder: c.placeholder || '',
                 // registry-authored helper line (the glass select's derived
                 // hint overwrites this below — it stays the more specific one)
@@ -539,27 +586,26 @@ export default class FinalDesignPanel extends LightningElement {
                 if (c.key === 'glass') {
                     vm.hint = this._glassHint(current);
                 }
-                let options = c.options;
-                if (c.dynamicOptions === 'fonts') {
-                    options = [
-                        ...options,
-                        ...this._fonts.map((f) => ({
-                            value: `custom:${f.key}`,
-                            label: `${f.family} · custom`
-                        }))
-                    ];
-                    const cf = getAt(this.overrides, 'customFont');
-                    if (cf && cf.key) {
-                        current = `custom:${cf.key}`;
-                    }
-                    vm.edited =
-                        vm.edited ||
-                        getAt(this.overrides, 'customFont') !== undefined;
-                }
-                vm.options = options.map((o) => ({
+                vm.options = c.options.map((o) => ({
                     ...o,
                     selected: o.value === current
                 }));
+            } else if (c.type === 'fontPicker') {
+                // form level vs theme: "From theme" names the theme's fonts
+                const level = this._fontLevel();
+                vm.fontLevel = level;
+                vm.fontEffective = resolveFontRefs(this.themeProps, level);
+                vm.fontInherit = refsLabel(
+                    resolveFontRefs(this.themeProps, null)
+                );
+                vm.uploadedFonts = this._fonts;
+                // the toolbar's dropdown: the same choices, flat
+                vm.options = pairingOptions({
+                    level,
+                    uploadedFonts: this._fonts,
+                    allowInherit: true,
+                    inheritLabel: vm.fontInherit
+                }).flat;
             } else if (c.type === 'toggle') {
                 // _effective already applied theme default + fallback
                 vm.checked = Boolean(value);
@@ -734,8 +780,7 @@ export default class FinalDesignPanel extends LightningElement {
                 this._isEdited(c) ||
                 (c.gradientPath &&
                     getAt(this.overrides, c.gradientPath) !== undefined) ||
-                (c.dynamicOptions === 'fonts' &&
-                    getAt(this.overrides, 'customFont') !== undefined)
+                (c.dynamicOptions === 'fonts' && this._formHasFonts())
         );
     }
 
@@ -994,29 +1039,6 @@ export default class FinalDesignPanel extends LightningElement {
         const key = event.target.dataset.key;
         const def = this._controlDef(key);
         let v = event.target.value;
-        // custom font route: the picker value custom:<key> becomes a
-        // customFont override object; picking a built-in pairing clears it
-        if (def && def.control.dynamicOptions === 'fonts') {
-            const overrides = this._ensureOverrides();
-            if (v.startsWith('custom:')) {
-                const font = this._fonts.find((f) => `custom:${f.key}` === v);
-                if (font) {
-                    setAt(overrides, 'customFont', {
-                        key: font.key,
-                        family: font.family,
-                        fallback: font.fallback,
-                        resource: font.resource,
-                        regularPath: font.regularPath,
-                        boldPath: font.boldPath
-                    });
-                    deleteAt(overrides, 'typography');
-                    this._spec = { ...this._spec };
-                    this._emit();
-                }
-                return;
-            }
-            deleteAt(overrides, 'customFont');
-        }
         if (def && def.control.emptyAsNull && v === '') {
             v = null;
         }
@@ -1252,6 +1274,7 @@ export default class FinalDesignPanel extends LightningElement {
                 }
                 if (entry.control.dynamicOptions === 'fonts') {
                     deleteAt(overrides, 'customFont');
+                    deleteAt(overrides, 'fonts');
                 }
             }
         }

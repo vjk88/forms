@@ -135,21 +135,14 @@ const AREAS = [
                     {
                         key: 'typography',
                         label: 'Font pairing',
-                        type: 'select',
+                        // c/finalFontPicker: pairings, live sample, Customize
+                        // (IMPL_PLAN_FONTS_AND_BRAND_THEME §A.4). Picks write
+                        // overrides.fonts and clear the legacy typography /
+                        // customFont keys; the 5 legacy stacks still show,
+                        // as "older option", on forms that use them.
+                        type: 'fontPicker',
                         themePath: 'typography',
-                        // panel appends Form_Font__mdt entries as custom:<key>
-                        // options and routes them to overrides.customFont
-                        dynamicOptions: 'fonts',
-                        options: [
-                            { value: 'system', label: 'System' },
-                            {
-                                value: 'editorial',
-                                label: 'Editorial (serif display)'
-                            },
-                            { value: 'mono', label: 'Mono' },
-                            { value: 'geometric', label: 'Geometric' },
-                            { value: 'humanist', label: 'Humanist' }
-                        ]
+                        dynamicOptions: 'fonts'
                     }
                 ]
             }

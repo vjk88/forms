@@ -3,6 +3,9 @@ import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { getAt, setAt } from 'c/finalDesignRegistry';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import saveCustomTheme from '@salesforce/apex/FinalThemeController.saveCustomTheme';
+import listFonts from '@salesforce/apex/FinalFontController.listFonts';
+import { resolveFontRefs } from 'c/finalThemeEngine';
+import { applyFontPatch } from 'c/finalFontChoices';
 
 /**
  * finalThemeEditor — create/edit a CUSTOM theme (catalog §6).
@@ -18,62 +21,108 @@ import saveCustomTheme from '@salesforce/apex/FinalThemeController.saveCustomThe
  */
 
 const COLOR_ROWS = [
-    { key: 'accent', label: 'Accent', path: 'palette.accent', contrast: 'palette.onAccent', subject: 'Button labels' },
-    { key: 'onAccent', label: 'Button text', path: 'palette.onAccent', fallback: '#ffffff' },
-    { key: 'text', label: 'Text', path: 'palette.text', contrast: 'palette.contentBg', subject: 'Body text' },
-    { key: 'textWeak', label: 'Muted text', path: 'palette.textWeak', contrast: 'palette.contentBg', subject: 'Muted text' },
+    {
+        key: 'accent',
+        label: 'Accent',
+        path: 'palette.accent',
+        contrast: 'palette.onAccent',
+        subject: 'Button labels'
+    },
+    {
+        key: 'onAccent',
+        label: 'Button text',
+        path: 'palette.onAccent',
+        fallback: '#ffffff'
+    },
+    {
+        key: 'text',
+        label: 'Text',
+        path: 'palette.text',
+        contrast: 'palette.contentBg',
+        subject: 'Body text'
+    },
+    {
+        key: 'textWeak',
+        label: 'Muted text',
+        path: 'palette.textWeak',
+        contrast: 'palette.contentBg',
+        subject: 'Muted text'
+    },
     { key: 'pageBg', label: 'Page fill', path: 'palette.pageBg' },
     { key: 'contentBg', label: 'Panel fill', path: 'palette.contentBg' },
     { key: 'headerBg', label: 'Header fill', path: 'palette.headerBg' },
     { key: 'focus', label: 'Focus color', path: 'fieldStates.focus' },
-    { key: 'error', label: 'Error color', path: 'fieldStates.error', fallback: '#b42318' },
-    { key: 'required', label: 'Required marker', path: 'fieldStates.required', fallback: '#b42318' }
+    {
+        key: 'error',
+        label: 'Error color',
+        path: 'fieldStates.error',
+        fallback: '#b42318'
+    },
+    {
+        key: 'required',
+        label: 'Required marker',
+        path: 'fieldStates.required',
+        fallback: '#b42318'
+    }
 ];
 
+// Fonts are not a select row: c/finalFontPicker (theme mode) edits them.
 const SELECT_ROWS = [
     {
-        key: 'typography', label: 'Font pairing', path: 'typography', fallback: 'system',
+        key: 'radius',
+        label: 'Corner rounding',
+        path: 'radius',
+        fallback: 'soft',
         options: [
-            { value: 'system', label: 'System' },
-            { value: 'editorial', label: 'Editorial (serif display)' },
-            { value: 'mono', label: 'Mono' },
-            { value: 'geometric', label: 'Geometric' },
-            { value: 'humanist', label: 'Humanist' }
+            { value: 'sharp', label: 'Sharp' },
+            { value: 'xs', label: 'Crisp' },
+            { value: 'soft', label: 'Soft' },
+            { value: 'md', label: 'Rounded' },
+            { value: 'round', label: 'Round' },
+            { value: 'lg', label: 'Extra round' },
+            { value: 'xl', label: 'Curvy' },
+            { value: 'pill', label: 'Pill' }
         ]
     },
     {
-        key: 'radius', label: 'Corner rounding', path: 'radius', fallback: 'soft',
-        options: [
-            { value: 'sharp', label: 'Sharp' }, { value: 'xs', label: 'Crisp' },
-            { value: 'soft', label: 'Soft' }, { value: 'md', label: 'Rounded' },
-            { value: 'round', label: 'Round' }, { value: 'lg', label: 'Extra round' },
-            { value: 'xl', label: 'Curvy' }, { value: 'pill', label: 'Pill' }
-        ]
-    },
-    {
-        key: 'border', label: 'Border weight', path: 'border', fallback: 'hairline',
+        key: 'border',
+        label: 'Border weight',
+        path: 'border',
+        fallback: 'hairline',
         options: [
             { value: 'hairline', label: 'Hairline' },
             { value: 'bold', label: 'Bold' }
         ]
     },
     {
-        key: 'density', label: 'Density', path: 'density', fallback: 'comfortable',
+        key: 'density',
+        label: 'Density',
+        path: 'density',
+        fallback: 'comfortable',
         options: [
             { value: 'comfortable', label: 'Comfortable' },
             { value: 'compact', label: 'Compact' }
         ]
     },
     {
-        key: 'shadow', label: 'Shadow', path: 'effects.shadow', fallback: 'soft',
+        key: 'shadow',
+        label: 'Shadow',
+        path: 'effects.shadow',
+        fallback: 'soft',
         options: [
-            { value: 'none', label: 'None' }, { value: 'soft', label: 'Soft' },
-            { value: 'medium', label: 'Medium' }, { value: 'floating', label: 'Floating' },
+            { value: 'none', label: 'None' },
+            { value: 'soft', label: 'Soft' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'floating', label: 'Floating' },
             { value: 'brutal', label: 'Hard offset' }
         ]
     },
     {
-        key: 'texture', label: 'Texture', path: 'effects.texture', fallback: '', emptyAsNull: true,
+        key: 'texture',
+        label: 'Texture',
+        path: 'effects.texture',
+        fallback: '',
+        emptyAsNull: true,
         options: [
             { value: '', label: 'None' },
             { value: 'dots', label: 'Dots' },
@@ -81,7 +130,11 @@ const SELECT_ROWS = [
         ]
     },
     {
-        key: 'mesh', label: 'Mesh', path: 'effects.mesh', fallback: '', emptyAsNull: true,
+        key: 'mesh',
+        label: 'Mesh',
+        path: 'effects.mesh',
+        fallback: '',
+        emptyAsNull: true,
         options: [
             { value: '', label: 'None' },
             { value: 'aurora', label: 'Aurora' },
@@ -101,8 +154,16 @@ export default class FinalThemeEditor extends LightningElement {
     @track saving = false;
     @track error = '';
     @track _props = null;
+    uploadedFonts = [];
 
     connectedCallback() {
+        listFonts()
+            .then((fonts) => {
+                this.uploadedFonts = fonts || [];
+            })
+            .catch(() => {
+                this.uploadedFonts = [];
+            });
         if (this.themeId) {
             getCustomTheme({ themeId: this.themeId })
                 .then((json) => {
@@ -174,6 +235,26 @@ export default class FinalThemeEditor extends LightningElement {
         });
     }
 
+    /** The theme's own font keys, for the picker. */
+    get fontLevel() {
+        const props = this._props || {};
+        const level = {};
+        ['fonts', 'typography', 'customFont'].forEach((k) => {
+            if (props[k] !== undefined) level[k] = props[k];
+        });
+        return level;
+    }
+
+    get fontEffective() {
+        return resolveFontRefs(this._props || {}, null);
+    }
+
+    handleFontChange(event) {
+        const next = JSON.parse(JSON.stringify(this._props || {}));
+        applyFontPatch(next, event.detail && event.detail.patch);
+        this._props = next;
+    }
+
     get glassChecked() {
         return Boolean(getAt(this._props, 'effects.glass'));
     }
@@ -204,9 +285,7 @@ export default class FinalThemeEditor extends LightningElement {
     }
 
     handleSelect(event) {
-        const row = SELECT_ROWS.find(
-            (r) => r.key === event.target.dataset.key
-        );
+        const row = SELECT_ROWS.find((r) => r.key === event.target.dataset.key);
         let v = event.target.value;
         if (row && row.emptyAsNull && v === '') {
             v = null;

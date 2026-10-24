@@ -18,6 +18,17 @@ jest.mock(
     { virtual: true }
 );
 
+jest.mock(
+    '@salesforce/apex/FinalFontController.listFonts',
+    () => ({ default: jest.fn(() => Promise.resolve([])) }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/resourceUrl/formFonts',
+    () => ({ default: '/resource/1/formFonts' }),
+    { virtual: true }
+);
+
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function mount(props = {}) {
@@ -57,6 +68,34 @@ describe('c-final-theme-editor', () => {
             'c-final-color-control[data-path="palette.accent"]'
         );
         expect(accent.value).toBe('#111111');
+    });
+
+    it('the font picker edits the theme recipe: fonts written, legacy typography gone', async () => {
+        const el = mount({ startFrom: 'editorialIvory' });
+        await flush();
+        const picker = el.shadowRoot.querySelector('c-final-font-picker');
+        expect(picker.mode).toBe('theme');
+        // the base theme's legacy stack is what the theme holds today
+        expect(picker.level).toEqual({ typography: 'editorial' });
+        picker.dispatchEvent(
+            new CustomEvent('fontchange', {
+                detail: { patch: { fonts: { pairing: 'editorialSerif' } } }
+            })
+        );
+        await flush();
+        const name = el.shadowRoot.querySelector('.te-row input[type="text"]');
+        name.value = 'Brand Serif';
+        name.dispatchEvent(new CustomEvent('input'));
+        await flush();
+        el.shadowRoot.querySelector('.te-btn.primary').click();
+        await flush();
+        const saved = JSON.parse(saveCustomTheme.mock.calls[0][0].themeJson);
+        expect(saved.fonts).toEqual({ pairing: 'editorialSerif' });
+        expect('typography' in saved).toBe(false);
+        // the old five-option select row is gone
+        expect(
+            el.shadowRoot.querySelector('select[data-key="typography"]')
+        ).toBeNull();
     });
 
     it('save requires a name', async () => {
