@@ -12,15 +12,19 @@
  *
  * `kind` picks the fallback stack the engine appends. `bodySafe: false` keeps
  * display-only faces (condensed, all-caps, script) out of the Body list.
- * A family with ONE face of ONE weight is single-weight: headings use that
- * weight instead of a browser-thickened fake bold.
+ * A family without a bold (one 400 face) gives headings that weight instead
+ * of a browser-thickened fake bold.
+ *
+ * The families come from `bundledFontData.js`, GENERATED with fonts.json by
+ * scripts/fonts/build-font-bundle.mjs — edit the script, not the data.
  *
  * Keys and aliases are SAVED: keys in font references and published
- * manifests, aliases inside published `--c-font-*` tokens. Never rename one
- * (finalFontFamilies.test.js pins them). All data here is frozen.
- *
- * A1 ships two families (one variable, one single-weight); A2 adds the rest.
+ * manifests, aliases inside published `--c-font-*` tokens; pairing keys in
+ * `fonts.pairing`. Never rename one (finalFontFamilies.test.js pins them).
+ * All data here is frozen.
  */
+import FONT_DATA from './bundledFontData';
+
 function deepFreeze(value) {
     if (value && typeof value === 'object') {
         Object.values(value).forEach(deepFreeze);
@@ -29,42 +33,33 @@ function deepFreeze(value) {
     return value;
 }
 
-export const BUNDLED_FONTS = deepFreeze({
-    inter: {
-        name: 'Inter',
-        alias: 'FormsBundledInter',
-        kind: 'sans',
-        group: 'everyday',
-        bodySafe: true,
-        faces: [{ file: 'inter/Inter-latin-wght.woff2', weight: '400 700' }]
-    },
-    bebasNeue: {
-        name: 'Bebas Neue',
-        alias: 'FormsBundledBebasNeue',
-        kind: 'condensed',
-        group: 'bold',
-        bodySafe: false,
-        faces: [{ file: 'bebasneue/BebasNeue-latin-400.woff2', weight: '400' }]
-    }
+export const BUNDLED_FONTS = deepFreeze(FONT_DATA);
+
+const pair = (display, body) => ({
+    display: { source: 'bundled', key: display },
+    body: { source: 'bundled', key: body }
 });
 
 /**
- * Named pairings: a font reference per side. `system` is "Device default",
- * today's installed-font stack (no download).
+ * Named pairings (plan §A.2): a font reference per side. `system` is "Device
+ * default", today's installed-font stack (no download).
  */
 export const FONT_PAIRINGS = deepFreeze({
     system: {
         display: { source: 'stack', key: 'system' },
         body: { source: 'stack', key: 'system' }
     },
-    modern: {
-        display: { source: 'bundled', key: 'inter' },
-        body: { source: 'bundled', key: 'inter' }
-    },
-    poster: {
-        display: { source: 'bundled', key: 'bebasNeue' },
-        body: { source: 'bundled', key: 'inter' }
-    }
+    modern: pair('inter', 'inter'),
+    geometric: pair('poppins', 'inter'),
+    startup: pair('plusJakartaSans', 'plusJakartaSans'),
+    friendly: pair('nunito', 'nunito'),
+    classic: pair('fraunces', 'sourceSans3'),
+    editorial: pair('playfairDisplay', 'lora'),
+    bold: pair('oswald', 'sourceSans3'),
+    poster: pair('bebasNeue', 'inter'),
+    tech: pair('spaceGrotesk', 'inter'),
+    code: pair('jetbrainsMono', 'jetbrainsMono'),
+    handwritten: pair('caveat', 'nunito')
 });
 
 /** Own keys only: 'constructor' or 'toString' must never find a family. */
