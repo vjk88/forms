@@ -68,4 +68,13 @@ describe('theme header fill', () => {
         const nordic = resolveTokens(getBuiltinTheme('nordic'), null);
         expect('--c-header-bg-image' in nordic).toBe(false);
     });
+
+    it('a photo can set its crop; no crop (or no photo) means no token', () => {
+        const clay = resolveTokens(getBuiltinTheme('claySplit'), null);
+        expect(clay['--c-header-bg-position']).toBe('center 70%');
+        const marble = resolveTokens(getBuiltinTheme('marbleSplit'), null);
+        expect('--c-header-bg-position' in marble).toBe(false);
+        const nordic = resolveTokens(getBuiltinTheme('nordic'), null);
+        expect('--c-header-bg-position' in nordic).toBe(false);
+    });
 });

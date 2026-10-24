@@ -482,6 +482,8 @@ const THEMES = {
             headerBg: '#454846',
             headerImage: '/resource/formThemeAssets/desert.jpg',
             headerImageVeil: 0.55,
+            // the photo's top half is mist; a short header band shows trees
+            headerImagePosition: 'center 70%',
             headerText: '#ffffff',
             headerTextWeak: '#ffffff',
             borderColor: '#e7d5c7'

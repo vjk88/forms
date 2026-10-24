@@ -56,6 +56,7 @@ const HEADER_TOKENS = [
     '--c-header-bg',
     '--c-header-bg-gradient',
     '--c-header-bg-image',
+    '--c-header-bg-position',
     '--c-header-text-weak'
 ];
 const HEADER_FIXED = [

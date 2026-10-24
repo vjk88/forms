@@ -968,6 +968,12 @@ export function resolveTokens(themeProps, formOverrides) {
             pal.headerImage,
             pal.headerImageVeil
         ),
+        // Conditional: where the photo crops (CSS background-position), for a
+        // photo whose centre is empty sky or mist. CSS falls back to center.
+        '--c-header-bg-position':
+            pal.headerImage && typeof pal.headerImagePosition === 'string'
+                ? pal.headerImagePosition
+                : null,
         '--c-header-text': pal.headerText || pal.text,
         '--c-header-text-weak': pal.headerTextWeak || pal.textWeak,
         // Conditional pair (null → dropped by the guard below, CSS falls back

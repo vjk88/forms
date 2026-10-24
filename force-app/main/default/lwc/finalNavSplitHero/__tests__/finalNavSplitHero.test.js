@@ -85,6 +85,9 @@ describe('c-final-nav-split-hero', () => {
         expect(style).toContain('var(--c-header-bg-gradient, none)');
         expect(style).toContain('var(--c-header-text)');
         expect(style).not.toContain('url(');
+        // the banner replaces the theme's header photo
+        expect(style).not.toContain('--c-header-bg-image');
+        expect(style).toContain('background-image: none,');
         const layer = pane.querySelector('.banner-layer');
         expect(layer.getAttribute('aria-hidden')).toBe('true');
         expect(layer.getAttribute('style')).toContain(
@@ -96,6 +99,9 @@ describe('c-final-nav-split-hero', () => {
     it('no mapped banner → no banner layer', async () => {
         const cmp = await mount({});
         expect(cmp.shadowRoot.querySelector('.pane .banner-layer')).toBeNull();
+        expect(
+            cmp.shadowRoot.querySelector('.pane').getAttribute('style')
+        ).toContain('var(--c-header-bg-image, none)');
     });
 
     it('viewer bleed prop wins over options; options stay the direct-mount fallback', async () => {

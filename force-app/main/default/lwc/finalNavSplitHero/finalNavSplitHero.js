@@ -157,13 +157,18 @@ export default class FinalNavSplitHero extends LightningElement {
      * finalFormHeader, so the banner behaves identically on both hosts. (The
      * paneBg/paneBgOpacity legacy veil was deleted 2026-07-18 — sweep slice 3
      * option (a); the --c-header-bg image veil was replaced 2026-10-18.)
+     * A mapped banner REPLACES the theme's header photo, as in finalFormHeader.
      */
     get paneStyle() {
+        const photo = this.paneBannerStyle
+            ? 'none'
+            : 'var(--c-header-bg-image, none)';
         return (
             'background-color: var(--c-header-bg);' +
-            ' background-image: var(--c-header-bg-image, none),' +
+            ` background-image: ${photo},` +
             ' var(--c-header-bg-gradient, none);' +
-            ' background-position: center; background-size: cover;' +
+            ' background-position: var(--c-header-bg-position, center);' +
+            ' background-size: cover;' +
             ' color: var(--c-header-text);'
         );
     }
