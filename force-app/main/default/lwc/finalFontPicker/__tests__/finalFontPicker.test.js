@@ -103,12 +103,16 @@ describe('c-final-font-picker', () => {
             effective: resolveFontRefs(null, {})
         });
         await flush();
-        expect(q(el, 'select[data-side="display"]')).toBeNull();
+        const region = q(el, '.fp-custom');
         const link = q(el, '.fp-link');
+        // the region stays in the page (aria-controls always resolves), hidden
+        expect(region.hidden).toBe(true);
+        expect(link.getAttribute('aria-controls')).toBe(region.id);
         expect(link.getAttribute('aria-expanded')).toBe('false');
         link.click();
         await flush();
         expect(link.getAttribute('aria-expanded')).toBe('true');
+        expect(region.hidden).toBe(false);
         const display = q(el, 'select[data-side="display"]');
         const body = q(el, 'select[data-side="body"]');
         const values = (s) =>
@@ -156,6 +160,30 @@ describe('c-final-font-picker', () => {
         expect(q(el, 'select[data-role="pairing"]').value).toBe('custom');
         expect(q(el, 'select[data-side="display"]').value).toBe(
             'bundled:oswald'
+        );
+        expect(q(el, '.fp-custom').hidden).toBe(false);
+        // "Hide heading and body" really hides it, even on a custom split
+        const link = q(el, '.fp-link');
+        expect(link.textContent.trim()).toBe('Hide heading and body');
+        link.click();
+        await flush();
+        expect(q(el, '.fp-custom').hidden).toBe(true);
+        expect(link.getAttribute('aria-expanded')).toBe('false');
+        link.click();
+        await flush();
+        expect(q(el, '.fp-custom').hidden).toBe(false);
+    });
+
+    it('the sample names the fonts, so they survive any select width', async () => {
+        const level = { fonts: { pairing: 'editorialSerif' } };
+        const el = mount({
+            mode: 'form',
+            level,
+            effective: resolveFontRefs(null, level)
+        });
+        await flush();
+        expect(q(el, '.fp-sample-caption').textContent).toBe(
+            'Playfair Display + Lora'
         );
     });
 

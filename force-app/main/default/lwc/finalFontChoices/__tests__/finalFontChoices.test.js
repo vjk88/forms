@@ -7,7 +7,10 @@ import {
     applyFontPatch,
     refFromValue,
     refValue,
-    refsLabel
+    refsLabel,
+    sideValue,
+    levelHasFonts,
+    allFontNames
 } from 'c/finalFontChoices';
 import { resolveTokens, resolveFontRefs } from 'c/finalThemeEngine';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
@@ -33,7 +36,10 @@ describe('currentChoice', () => {
     it.each([
         [{}, 'inherit'],
         [{ fonts: { pairing: 'modern' } }, 'pairing:modern'],
-        [{ typography: 'system' }, 'pairing:system'],
+        [{ typography: 'system' }, 'legacy:system'],
+        [{ customFont: null }, 'legacy:hidden'],
+        [{ fonts: {} }, 'inherit'],
+        [{ fonts: { pairing: 'nope' } }, 'inherit'],
         [{ typography: 'geometric' }, 'legacy:geometric'],
         [{ customFont: BRAND_X }, 'uploaded:Brand_X'],
         [
@@ -91,7 +97,7 @@ describe('pairingOptions', () => {
         expect(legacy.groups[0].key).toBe('current');
         expect(legacy.flat[0]).toMatchObject({
             value: 'legacy:humanist',
-            label: 'Humanist · older option',
+            label: 'Seravek / Gill Sans (installed) · older option',
             selected: true
         });
     });
@@ -147,8 +153,11 @@ describe('familyOptions', () => {
 
     it('a current value the lists do not offer stays visible', () => {
         const groups = familyOptions('display', {
-            selected: 'stack:geometric'
+            selectedRef: { source: 'stack', key: 'geometric' }
         });
+        expect(groups[0].options[0].label).toBe(
+            'Avenir / Century Gothic (installed) · current'
+        );
         expect(groups[0].key).toBe('current');
         expect(groups[0].options[0].selected).toBe(true);
     });
@@ -303,5 +312,150 @@ describe('ref values and labels', () => {
                 body: { source: 'stack', key: 'system' }
             })
         ).toBe('Device default');
+    });
+});
+
+describe('PR 400 review fixes', () => {
+    const bebas = { source: 'bundled', key: 'bebasNeue' };
+    const oswald = { source: 'bundled', key: 'oswald' };
+    const lora = { source: 'bundled', key: 'lora' };
+
+    function edit(theme, form, side, ref) {
+        const patch = sidePatch(form, side, ref, resolveFontRefs(theme, form));
+        return afterPatch(form, patch);
+    }
+
+    it('two heading edits from "From theme" never pin the body (B1)', () => {
+        const theme = { ...nordic(), typography: 'mono' };
+        let form = edit(theme, {}, 'display', bebas);
+        form = edit(theme, form, 'display', oswald);
+        expect(form.fonts).toEqual({ display: oswald });
+        // the body keeps following the theme, including a theme change
+        const switched = { ...nordic(), typography: 'editorial' };
+        expect(resolveTokens(switched, form)['--c-font-body']).toBe(
+            resolveTokens(switched, {})['--c-font-body']
+        );
+    });
+
+    it('two body edits likewise leave the heading to the theme', () => {
+        const theme = { ...nordic(), typography: 'editorial' };
+        let form = edit(theme, {}, 'body', lora);
+        form = edit(theme, form, 'body', { source: 'bundled', key: 'inter' });
+        expect(Object.keys(form.fonts)).toEqual(['body']);
+    });
+
+    it.each([
+        [
+            'an unusable body next to a legacy key',
+            { fonts: { body: bebas }, typography: 'mono' },
+            'display',
+            oswald,
+            '--c-font-body'
+        ],
+        [
+            'a missing heading next to a legacy key',
+            {
+                fonts: { display: { source: 'bundled', key: 'gone' } },
+                typography: 'mono'
+            },
+            'body',
+            lora,
+            '--c-font-display'
+        ]
+    ])(
+        '%s: the untouched side keeps rendering as before',
+        (label, form, side, ref, token) => {
+            const theme = nordic();
+            const before = resolveTokens(theme, form)[token];
+            const after = resolveTokens(theme, edit(theme, form, side, ref))[
+                token
+            ];
+            expect(after).toBe(before);
+        }
+    );
+
+    it('an unusable pick writes nothing', () => {
+        expect(
+            sidePatch({}, 'body', bebas, resolveFontRefs(nordic(), {}))
+        ).toBeNull();
+    });
+
+    it('legacy stacks are named for what each side really uses (S2)', () => {
+        const ed = { source: 'stack', key: 'editorial' };
+        expect(refsLabel({ display: ed, body: ed })).toBe(
+            'Georgia serif (installed) + Device default'
+        );
+        const opts = pairingOptions({
+            level: {},
+            inheritLabel: refsLabel({ display: ed, body: ed })
+        });
+        expect(opts.flat[0].label).toBe(
+            'From theme · Georgia serif (installed) + Device default'
+        );
+        // no "Editorial" twice
+        expect(
+            opts.flat.filter((o) => /^Editorial/.test(o.label))
+        ).toHaveLength(1);
+    });
+
+    it('Customize shows a legacy body that is just the device font as Device default', () => {
+        const groups = familyOptions('body', {
+            selectedRef: { source: 'stack', key: 'editorial' }
+        });
+        expect(groups[0].key).toBe('device');
+        expect(groups[0].options[0]).toMatchObject({
+            value: 'stack:system',
+            selected: true
+        });
+        expect(
+            sideValue({ source: 'stack', key: 'editorial' }, 'display')
+        ).toBe('stack:editorial');
+    });
+
+    it('"theme font turned off" is an older option, not From theme (S3)', () => {
+        const { flat } = pairingOptions({
+            level: { customFont: null },
+            inheritLabel: 'Brand X'
+        });
+        expect(flat.find((o) => o.selected)).toMatchObject({
+            value: 'legacy:hidden',
+            label: 'Theme’s uploaded font turned off · older option'
+        });
+    });
+
+    it('the dot rule: empty or broken fonts are no setting; null and legacy are', () => {
+        expect(levelHasFonts({})).toBe(false);
+        expect(levelHasFonts({ fonts: {} })).toBe(false);
+        expect(levelHasFonts({ fonts: { pairing: 'nope' } })).toBe(false);
+        expect(levelHasFonts({ fonts: { pairing: 'modern' } })).toBe(true);
+        expect(levelHasFonts({ customFont: null })).toBe(true);
+        expect(levelHasFonts({ typography: 'system' })).toBe(true);
+    });
+
+    it('a removed upload reads by family, and not before the list has loaded', () => {
+        const level = { customFont: BRAND_X };
+        const loading = pairingOptions({
+            level,
+            uploadedFonts: [],
+            fontsLoaded: false
+        });
+        expect(loading.flat.find((o) => o.selected).label).toBe(
+            'Brand X · uploaded'
+        );
+        const gone = pairingOptions({
+            level,
+            uploadedFonts: [],
+            fontsLoaded: true
+        });
+        expect(gone.flat.find((o) => o.selected).label).toBe(
+            'Brand X · removed from Setup (still in use)'
+        );
+    });
+
+    it('Device default reads short; every family name is searchable', () => {
+        const { groups } = pairingOptions({ level: {} });
+        expect(groups[1].options[0].label).toBe('Device default · no download');
+        expect(allFontNames()).toHaveLength(46);
+        expect(allFontNames()).toContain('Montserrat');
     });
 });

@@ -155,11 +155,13 @@ export default class FinalThemeEditor extends LightningElement {
     @track error = '';
     @track _props = null;
     uploadedFonts = [];
+    fontsLoaded = false;
 
     connectedCallback() {
         listFonts()
             .then((fonts) => {
                 this.uploadedFonts = fonts || [];
+                this.fontsLoaded = true;
             })
             .catch(() => {
                 this.uploadedFonts = [];

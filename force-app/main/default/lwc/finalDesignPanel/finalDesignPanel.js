@@ -8,7 +8,9 @@ import {
     pairingOptions,
     pairingPatch,
     applyFontPatch,
-    refsLabel
+    refsLabel,
+    levelHasFonts,
+    allFontNames
 } from 'c/finalFontChoices';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { localizeAssetUrl } from 'c/finalThemeAssets';
@@ -45,6 +47,9 @@ export default class FinalDesignPanel extends LightningElement {
     /** 'theme' | 'layout' | null — which gallery popup is open. */
     @track galleryMode = null;
     @track _fonts = [];
+    // false until listFonts answers: a form's uploaded font must not read as
+    // "removed from Setup" while the list is still on its way
+    _fontsLoaded = false;
     @track _customThemes = [];
     @track _customProps = null;
     _customPropsId = null;
@@ -92,13 +97,15 @@ export default class FinalDesignPanel extends LightningElement {
                         hint: c.hint || '',
                         // the font picker builds its choices (pairings and
                         // the fonts in them), so search reads those
-                        choices: (
-                            (c.type === 'fontPicker'
-                                ? byKey.get(key)?.options
-                                : c.options) || []
-                        )
-                            .map((option) => option.label)
-                            .join(' '),
+                        choices: [
+                            ...(
+                                (c.type === 'fontPicker'
+                                    ? byKey.get(key)?.options
+                                    : c.options) || []
+                            ).map((option) => option.label),
+                            // and every family, so "Montserrat" finds it too
+                            ...(c.type === 'fontPicker' ? allFontNames() : [])
+                        ].join(' '),
                         available: !reason,
                         reason
                     });
@@ -233,6 +240,7 @@ export default class FinalDesignPanel extends LightningElement {
         listFonts()
             .then((fonts) => {
                 this._fonts = fonts || [];
+                this._fontsLoaded = true;
             })
             .catch(() => {
                 this._fonts = [];
@@ -400,12 +408,10 @@ export default class FinalDesignPanel extends LightningElement {
         );
     }
 
-    // Any font setting at the form level: the new `fonts`, or legacy
-    // `typography` / `customFont` (null included — it hides the theme font).
+    // A font setting at the form level that does something (an empty or
+    // broken `fonts` does not light the dot) — see levelHasFonts.
     _formHasFonts() {
-        return ['fonts', 'typography', 'customFont'].some(
-            (k) => getAt(this.overrides, k) !== undefined
-        );
+        return levelHasFonts(this._fontLevel());
     }
 
     _fontLevel() {
@@ -599,12 +605,14 @@ export default class FinalDesignPanel extends LightningElement {
                     resolveFontRefs(this.themeProps, null)
                 );
                 vm.uploadedFonts = this._fonts;
+                vm.fontsLoaded = this._fontsLoaded;
                 // the toolbar's dropdown: the same choices, flat
                 vm.options = pairingOptions({
                     level,
                     uploadedFonts: this._fonts,
                     allowInherit: true,
-                    inheritLabel: vm.fontInherit
+                    inheritLabel: vm.fontInherit,
+                    fontsLoaded: this._fontsLoaded
                 }).flat;
             } else if (c.type === 'toggle') {
                 // _effective already applied theme default + fallback

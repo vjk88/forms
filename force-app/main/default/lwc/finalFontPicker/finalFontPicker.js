@@ -8,7 +8,8 @@ import {
     currentChoice,
     pairingPatch,
     sidePatch,
-    refValue,
+    sideValue,
+    refsLabel,
     refFromValue
 } from 'c/finalFontChoices';
 
@@ -31,6 +32,8 @@ export default class FinalFontPicker extends LightningElement {
     @api effective;
     /** Form_Font__mdt rows from FinalFontController.listFonts. */
     @api uploadedFonts = [];
+    /** False until the org's uploaded-font list has arrived. */
+    @api fontsLoaded = false;
     /** 'form' (Design panel: offers "From theme") or 'theme' (theme editor). */
     @api mode = 'theme';
     /** Shows the panel's "Customized" dot. */
@@ -40,7 +43,9 @@ export default class FinalFontPicker extends LightningElement {
     @api label = 'Font pairing';
     @api disabled = false;
 
-    _open = false;
+    // null = automatic (open while the level holds a custom split); once the
+    // person toggles, their choice wins, so "Hide" always hides.
+    _open = null;
 
     get allowInherit() {
         return this.mode === 'form';
@@ -51,7 +56,8 @@ export default class FinalFontPicker extends LightningElement {
             level: this.level,
             uploadedFonts: this.uploadedFonts || [],
             allowInherit: this.allowInherit,
-            inheritLabel: this.inheritLabel
+            inheritLabel: this.inheritLabel,
+            fontsLoaded: this.fontsLoaded
         });
     }
 
@@ -67,7 +73,11 @@ export default class FinalFontPicker extends LightningElement {
     }
 
     get customizeOpen() {
-        return this._open || this.isCustom;
+        return this._open === null ? this.isCustom : this._open;
+    }
+
+    get customizeHidden() {
+        return !this.customizeOpen;
     }
 
     get customizeLabel() {
@@ -79,15 +89,20 @@ export default class FinalFontPicker extends LightningElement {
     get displayGroups() {
         return familyOptions('display', {
             uploadedFonts: this.uploadedFonts || [],
-            selected: refValue(this.effective && this.effective.display)
+            selectedRef: this.effective && this.effective.display
         });
     }
 
     get bodyGroups() {
         return familyOptions('body', {
             uploadedFonts: this.uploadedFonts || [],
-            selected: refValue(this.effective && this.effective.body)
+            selectedRef: this.effective && this.effective.body
         });
+    }
+
+    /** The fonts by name, so they survive any select width. */
+    get sampleCaption() {
+        return refsLabel(this.effective);
     }
 
     get headingSampleStyle() {
@@ -117,11 +132,11 @@ export default class FinalFontPicker extends LightningElement {
         this._sync('[data-role="pairing"]', this.pairing.current);
         this._sync(
             '[data-side="display"]',
-            refValue(this.effective && this.effective.display)
+            sideValue(this.effective && this.effective.display, 'display')
         );
         this._sync(
             '[data-side="body"]',
-            refValue(this.effective && this.effective.body)
+            sideValue(this.effective && this.effective.body, 'body')
         );
     }
 

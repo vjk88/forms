@@ -1,9 +1,17 @@
-/* Matches the Design panel's rows: label left, native select right. */
+/* The Typography group's main control: label above a full-width select, so
+   pairing names are not cut off. Colors come from the Studio tokens the host
+   panel defines (they cross into this shadow tree). */
 .fp {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     padding: 6px 0;
+}
+
+.fp-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .fp-row {
@@ -17,22 +25,32 @@
     min-width: 0;
 }
 
-.fp-row select {
+select {
     font: inherit;
-    border: 1px solid var(--c-studio-border-strong, #8c8c8c);
+    border: 1px solid var(--c-studio-border-strong);
     border-radius: 6px;
     padding: 4px 8px;
-    background: var(--c-studio-surface, #fff);
-    color: var(--c-studio-text, #181818);
-    max-width: 200px;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
 }
 
-/* Same "Customized" marker as the panel's other rows. */
+.fp-pairing {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Customize: one fixed width so Heading and Body line up. */
+.fp-row select {
+    flex: none;
+    width: 200px;
+    max-width: 60%;
+}
+
 .dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--c-studio-accent-text, #0b5cab);
+    background: var(--c-studio-accent-text);
     flex: none;
 }
 
@@ -42,10 +60,10 @@
     flex-direction: column;
     gap: 2px;
     padding: 8px 10px;
-    border: 1px solid var(--c-studio-border, #e5e5e5);
+    border: 1px solid var(--c-studio-border);
     border-radius: 6px;
-    background: var(--c-studio-surface, #fff);
-    color: var(--c-studio-text, #181818);
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
     overflow: hidden;
 }
 
@@ -60,6 +78,13 @@
     overflow-wrap: anywhere;
 }
 
+.fp-sample-caption {
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--c-studio-text-weak);
+}
+
 .fp-link {
     align-self: flex-start;
     min-height: 32px;
@@ -67,13 +92,13 @@
     border: 0;
     background: none;
     font: inherit;
-    color: var(--c-studio-accent-text, #0b5cab);
+    color: var(--c-studio-accent-text);
     text-decoration: underline;
     cursor: pointer;
 }
 
 .fp-link:focus-visible {
-    outline: 2px solid var(--c-studio-accent-text, #0b5cab);
+    outline: 2px solid var(--c-studio-focus);
     outline-offset: 2px;
 }
 
@@ -82,17 +107,27 @@
     opacity: 0.6;
 }
 
+@media (pointer: coarse) {
+    .fp-link {
+        min-height: 44px;
+    }
+}
+
 .fp-custom {
     display: flex;
     flex-direction: column;
     gap: 4px;
     padding-left: 10px;
-    border-left: 2px solid var(--c-studio-border, #e5e5e5);
+    border-left: 2px solid var(--c-studio-border);
+}
+
+.fp-custom[hidden] {
+    display: none;
 }
 
 .fp-note {
     margin: 2px 0 0;
     font-size: 11.5px;
     line-height: 1.4;
-    color: var(--c-studio-text-weak, #5c5c5c);
+    color: var(--c-studio-text-weak);
 }

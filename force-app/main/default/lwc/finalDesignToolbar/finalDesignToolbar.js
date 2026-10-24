@@ -109,6 +109,13 @@ export default class FinalDesignToolbar extends LightningElement {
     }
 
     renderedCallback() {
+        // A native select can keep a stale choice after its options change
+        // (uploaded fonts arrive later): set the value outright.
+        const select = this.template.querySelector('[data-role="font"]');
+        const current = this.fontOptions.find((o) => o.selected);
+        if (select && current && select.value !== current.value) {
+            select.value = current.value;
+        }
         if (this._focusResult) {
             this._focusResult = false;
             this.template.querySelector('.dt-result')?.focus();
