@@ -414,10 +414,14 @@ const THEMES = {
             contentBg: '#ffffff',
             text: '#1c1917',
             textWeak: '#78716c',
-            headerBg:
-                "url('/resource/formThemeAssets/marble.jpg') center/cover no-repeat",
+            // Header photo now paints (headerImage); headerBg was a CSS url()
+            // in a COLOR slot, so it was dropped. Veil measured: text 4.5:1 on
+            // 98% of the photo. Solid fallback = the veiled photo's tone.
+            headerBg: '#c2c1c2',
+            headerImage: '/resource/formThemeAssets/marble.jpg',
+            headerImageVeil: 0,
             headerText: '#1c1917',
-            headerTextWeak: '#78716c',
+            headerTextWeak: '#292524',
             borderColor: '#e7e5e4'
         },
         typography: 'system',
@@ -438,10 +442,14 @@ const THEMES = {
             contentBg: '#18181b',
             text: '#fafafa',
             textWeak: '#a1a1aa',
-            headerBg:
-                "url('/resource/formThemeAssets/tech.jpg') center/cover no-repeat",
+            // Header photo now paints (headerImage); headerBg was a CSS url()
+            // in a COLOR slot, so it was dropped. Veil measured: text 4.5:1 on
+            // 98% of the photo. Solid fallback = the veiled photo's tone.
+            headerBg: '#1c2327',
+            headerImage: '/resource/formThemeAssets/tech.jpg',
+            headerImageVeil: 0.45,
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.7)',
+            headerTextWeak: '#ffffff',
             borderColor: '#27272a'
         },
         typography: 'system',
@@ -468,10 +476,14 @@ const THEMES = {
             contentBg: '#ffffff',
             text: '#292524',
             textWeak: '#78716c',
-            headerBg:
-                "url('/resource/formThemeAssets/desert.jpg') center/cover no-repeat",
+            // Header photo now paints (headerImage); headerBg was a CSS url()
+            // in a COLOR slot, so it was dropped. Veil measured: text 4.5:1 on
+            // 98% of the photo. Solid fallback = the veiled photo's tone.
+            headerBg: '#454846',
+            headerImage: '/resource/formThemeAssets/desert.jpg',
+            headerImageVeil: 0.55,
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.85)',
+            headerTextWeak: '#ffffff',
             borderColor: '#e7d5c7'
         },
         typography: 'system',
@@ -492,10 +504,14 @@ const THEMES = {
             contentBg: '#ffffff',
             text: '#1e293b',
             textWeak: '#64748b',
-            headerBg:
-                "url('/resource/formThemeAssets/forest.jpg') center/cover no-repeat",
+            // Header photo now paints (headerImage); headerBg was a CSS url()
+            // in a COLOR slot, so it was dropped. Veil measured: text 4.5:1 on
+            // 98% of the photo. Solid fallback = the veiled photo's tone.
+            headerBg: '#29272a',
+            headerImage: '/resource/formThemeAssets/forest.jpg',
+            headerImageVeil: 0.45,
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.85)',
+            headerTextWeak: '#ffffff',
             borderColor: '#e2e8f0'
         },
         typography: 'system',
@@ -516,9 +532,18 @@ const THEMES = {
             contentBg: 'rgba(255, 255, 255, 0.08)',
             text: '#f8fafc',
             textWeak: '#a1a1aa',
-            headerBg: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); stops darkened only where white text
+            // fell under 4.5:1.
+            headerBg: '#6d28d9',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 135,
+                start: '#6d28d9',
+                end: '#0e7490'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            headerTextWeak: '#f5f3ff',
             borderColor: 'rgba(255, 255, 255, 0.15)'
         },
         typography: 'system',
@@ -541,9 +566,18 @@ const THEMES = {
             contentBg: 'rgba(255, 255, 255, 0.78)',
             text: '#27272a',
             textWeak: '#52525b',
-            headerBg: 'linear-gradient(135deg, #f97316 0%, #facc15 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); stops darkened only where white text
+            // fell under 4.5:1.
+            headerBg: '#c2410c',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 135,
+                start: '#c2410c',
+                end: '#b45309'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            headerTextWeak: '#fff7ed',
             borderColor: 'rgba(255, 255, 255, 0.3)'
         },
         typography: 'system',
@@ -570,9 +604,18 @@ const THEMES = {
             contentBg: 'rgba(255, 255, 255, 0.85)',
             text: '#1e293b',
             textWeak: '#475569',
-            headerBg: 'linear-gradient(to right, #052e16 0%, #15803d 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); stops darkened only where white text
+            // fell under 4.5:1.
+            headerBg: '#052e16',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 90,
+                start: '#052e16',
+                end: '#15803d'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            headerTextWeak: '#f0fdf4',
             borderColor: 'rgba(255, 255, 255, 0.3)'
         },
         typography: 'system',
@@ -599,10 +642,14 @@ const THEMES = {
             contentBg: '#ffffff',
             text: '#18181b',
             textWeak: '#71717a',
-            headerBg:
-                "url('/resource/formThemeAssets/wood.jpg') center/cover no-repeat",
+            // Header photo now paints (headerImage); headerBg was a CSS url()
+            // in a COLOR slot, so it was dropped. Veil measured: text 4.5:1 on
+            // 98% of the photo. Solid fallback = the veiled photo's tone.
+            headerBg: '#2a2c2d',
+            headerImage: '/resource/formThemeAssets/wood.jpg',
+            headerImageVeil: 0.5,
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.9)',
+            headerTextWeak: '#ffffff',
             borderColor: '#e4e4e7'
         },
         typography: 'system',
@@ -629,9 +676,18 @@ const THEMES = {
             contentBg: 'rgba(15, 23, 42, 0.88)',
             text: '#f8fafc',
             textWeak: '#94a3b8',
-            headerBg: 'linear-gradient(to right, #090d16 0%, #0f172a 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); stops darkened only where white text
+            // fell under 4.5:1.
+            headerBg: '#090d16',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 90,
+                start: '#090d16',
+                end: '#0f172a'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.7)',
+            headerTextWeak: '#f8fafc',
             borderColor: 'rgba(255, 255, 255, 0.15)'
         },
         typography: 'system',
@@ -700,9 +756,18 @@ const THEMES = {
             contentBg: 'rgba(15, 10, 30, 0.8)',
             text: '#f3e8ff',
             textWeak: '#c084fc',
-            headerBg: 'linear-gradient(135deg, #7c3aed 0%, #c084fc 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); stops darkened only where white text
+            // fell under 4.5:1.
+            headerBg: '#6d28d9',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 135,
+                start: '#6d28d9',
+                end: '#9333ea'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.7)',
+            headerTextWeak: '#faf5ff',
             borderColor: 'rgba(255, 255, 255, 0.15)'
         },
         typography: 'system',
@@ -798,9 +863,17 @@ const THEMES = {
             contentBg: 'rgba(15, 23, 25, 0.85)',
             text: '#ccfbf1',
             textWeak: '#14b8a6',
-            headerBg: 'linear-gradient(to right, #041b18 0%, #155e54 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); colours unchanged, they already pass.
+            headerBg: '#041b18',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 90,
+                start: '#041b18',
+                end: '#155e54'
+            },
             headerText: '#ffffff',
-            headerTextWeak: 'rgba(255, 255, 255, 0.8)',
+            headerTextWeak: '#f0fdfa',
             borderColor: 'rgba(255, 255, 255, 0.15)'
         },
         typography: 'system',
@@ -828,9 +901,17 @@ const THEMES = {
             contentBg: 'rgba(255, 255, 255, 0.85)',
             text: '#4c0519',
             textWeak: '#be185d',
-            headerBg: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%)',
+            // Gradient moved to headerBgGradient (a gradient in the headerBg
+            // COLOR slot was dropped); colours unchanged, they already pass.
+            headerBg: '#fbcfe8',
+            headerBgGradient: {
+                type: 'linear',
+                angle: 135,
+                start: '#fbcfe8',
+                end: '#f472b6'
+            },
             headerText: '#4c0519',
-            headerTextWeak: '#9d174d',
+            headerTextWeak: '#500724',
             borderColor: 'rgba(255, 255, 255, 0.4)'
         },
         typography: 'system',

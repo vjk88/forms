@@ -161,7 +161,9 @@ export default class FinalNavSplitHero extends LightningElement {
     get paneStyle() {
         return (
             'background-color: var(--c-header-bg);' +
-            ' background-image: var(--c-header-bg-gradient, none);' +
+            ' background-image: var(--c-header-bg-image, none),' +
+            ' var(--c-header-bg-gradient, none);' +
+            ' background-position: center; background-size: cover;' +
             ' color: var(--c-header-text);'
         );
     }
