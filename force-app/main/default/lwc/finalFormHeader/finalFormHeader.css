@@ -42,7 +42,7 @@
 .brand-wordmark {
     font-family: var(--c-font-display);
     font-size: var(--c-fs-brand);
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     letter-spacing: 0.04em;
     color: var(--c-header-text);
 }
@@ -59,7 +59,7 @@
     margin: 0;
     font-family: var(--c-font-display);
     font-size: var(--c-fs-title);
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     line-height: 1.2;
     color: var(--c-header-title-fill, var(--c-header-text));
     background-image: var(--c-header-title-gradient, none);

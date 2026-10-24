@@ -12,14 +12,14 @@ import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRe
 import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkContext';
 import getUserValues from '@salesforce/apex/FinalAutofillController.getUserValues';
 import getUserPreviewValues from '@salesforce/apex/FinalAutofillController.getUserPreviewValues';
-import { resolveTokens } from 'c/finalThemeEngine';
+import { resolveTokens, fontManifest } from 'c/finalThemeEngine';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
 import {
     getLayout,
     isOnePerScreen,
     layoutNamesPages
 } from 'c/finalLayoutRegistry';
-import { ensureFont } from 'c/finalFontLoader';
+import { ensureFontRefs } from 'c/finalFontBundle';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 import { repeatsPageName } from 'c/finalPageName';
@@ -787,18 +787,30 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             };
         }
 
-        // Custom brand font: tokens only TYPESET the family — the @font-face
-        // must be registered globally (CUSTOM_FONTS.md). Idempotent; also runs
-        // for published specs since resolved tokens still name the family.
-        const customFont =
-            (spec.theme &&
+        // Fonts: tokens only TYPESET a family — its @font-face must be
+        // registered globally (CUSTOM_FONTS.md). Loaded ONLY from explicit
+        // references, never guessed from a family name in the tokens:
+        // - published with a manifest → resolved.fonts (the theme recipe is
+        //   never fetched here, so it must carry every font);
+        // - published before the manifest → the form's own customFont, exactly
+        //   as before fonts A1 (no bundled font can be in such a snapshot);
+        // - draft → the engine's live manifest. Idempotent.
+        let fontRefs;
+        if (spec.resolved && spec.resolved.tokens) {
+            const legacy =
+                spec.theme &&
                 spec.theme.overrides &&
-                spec.theme.overrides.customFont) ||
-            (theme && theme.customFont) ||
-            null;
-        if (customFont) {
-            ensureFont(customFont);
+                spec.theme.overrides.customFont;
+            fontRefs = Array.isArray(spec.resolved.fonts)
+                ? spec.resolved.fonts
+                : [legacy && { ...legacy, source: 'uploaded' }];
+        } else {
+            fontRefs = fontManifest(
+                theme,
+                spec.theme ? spec.theme.overrides : null
+            );
         }
+        ensureFontRefs(fontRefs.filter(Boolean));
 
         const layout = getLayout(spec.layout ? spec.layout.type : undefined);
         const module = await layout.load();

@@ -17,6 +17,12 @@
  *   explicit value (e.g. `effects.mesh: null` turns the mesh off) and wins like any other.
  */
 
+import {
+    BUNDLED_FONTS,
+    FONT_PAIRINGS,
+    headingWeight
+} from 'c/finalFontFamilies';
+
 export const ENGINE_VERSION = 1;
 
 // ---------------------------------------------------------------------------
@@ -75,6 +81,184 @@ const FONT_STACKS = {
         display: "Seravek, 'Gill Sans', 'Segoe UI', Verdana, sans-serif"
     }
 };
+
+// ---------------------------------------------------------------------------
+// Fonts (IMPL_PLAN_FONTS_AND_BRAND_THEME §A.3b)
+//
+// A font REFERENCE is one of:
+//   { source: 'stack', key }      — a FONT_STACKS key (installed fonts)
+//   { source: 'bundled', key }    — a c/finalFontFamilies family
+//   { source: 'uploaded', key, family, fallback, resource, regularPath, boldPath }
+//                                 — a Form_Font__mdt font, file info carried along
+//
+// Two regimes. LEGACY (no usable `fonts` setting at either level — every form
+// and theme saved before fonts A1, and an empty `fonts: {}`): today's rules
+// exactly, a merged `customFont` beats a merged `typography`. NEW (a `fonts`
+// setting that resolves, at either level): each side takes the first usable
+// reference, form before theme:
+//   form fonts.<side> → form fonts.pairing → form customFont → form typography
+//   → theme fonts.<side> → theme fonts.pairing → theme customFont → theme
+//   typography → system.
+// In the new regime only an explicit form `customFont: null` hides an
+// inherited theme customFont (legacy also hid it behind '' or a family-less
+// object, through the merge).
+// ---------------------------------------------------------------------------
+
+// Same-kind fallbacks after a bundled font's alias, so a failed download
+// still looks close.
+const KIND_FALLBACKS = {
+    sans: FONT_STACKS.system.body,
+    serif: "Georgia, 'Times New Roman', serif",
+    mono: FONT_STACKS.mono.body,
+    condensed: "Impact, 'Arial Narrow', sans-serif",
+    cursive: "'Segoe Script', 'Brush Script MT', cursive"
+};
+
+function isPlainObject(v) {
+    return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+// Own keys only: a saved key such as 'constructor' or 'toString' (Import,
+// crafted JSON) must miss, never reach Object.prototype.
+function ownEntry(map, key) {
+    return typeof key === 'string' &&
+        Object.prototype.hasOwnProperty.call(map, key)
+        ? map[key]
+        : undefined;
+}
+
+function uploadedRef(customFont) {
+    return isPlainObject(customFont) && customFont.family
+        ? { ...customFont, source: 'uploaded' }
+        : null;
+}
+
+/** The CSS font stack for a reference, or null when it can't be resolved. */
+function refStack(ref, side) {
+    if (!isPlainObject(ref)) {
+        return null;
+    }
+    if (ref.source === 'stack') {
+        return FONT_STACKS[ref.key] ? FONT_STACKS[ref.key][side] : null;
+    }
+    if (ref.source === 'bundled') {
+        const font = ownEntry(BUNDLED_FONTS, ref.key);
+        return font
+            ? `'${font.alias}', ${KIND_FALLBACKS[font.kind] || KIND_FALLBACKS.sans}`
+            : null;
+    }
+    if (ref.source === 'uploaded' && ref.family) {
+        return `'${ref.family}', ${ref.fallback || 'sans-serif'}`;
+    }
+    return null;
+}
+
+// A reference this side can actually use. Display-only bundled faces
+// (bodySafe: false — condensed, all-caps, script) never set the body, even
+// when imported or generated data asks for it.
+function usableRef(ref, side) {
+    if (!refStack(ref, side)) {
+        return false;
+    }
+    if (side === 'body' && ref.source === 'bundled') {
+        return ownEntry(BUNDLED_FONTS, ref.key).bodySafe !== false;
+    }
+    return true;
+}
+
+// The new-regime part of one level, as candidates for one side.
+function fontsCandidates(level, side) {
+    const fonts = isPlainObject(level.fonts) ? level.fonts : {};
+    const pairing = ownEntry(FONT_PAIRINGS, fonts.pairing);
+    return [fonts[side], pairing && pairing[side]];
+}
+
+/** First usable reference for one side of one level (new regime). */
+function levelRef(level, side, hideCustomFont) {
+    if (!isPlainObject(level)) {
+        return null;
+    }
+    const candidates = [
+        ...fontsCandidates(level, side),
+        hideCustomFont ? null : uploadedRef(level.customFont),
+        typeof level.typography === 'string'
+            ? { source: 'stack', key: level.typography }
+            : null
+    ];
+    const ref = candidates.find((r) => usableRef(r, side));
+    // a copy: shared pairing data must never be changed downstream
+    return ref ? { ...ref } : null;
+}
+
+// A level is in the new regime only when its `fonts` setting resolves to a
+// usable font. An empty or broken `fonts` ({}, an unknown pairing) leaves
+// the legacy rules in charge, so a reset that leaves `{}` behind changes
+// nothing.
+function hasUsableFonts(level) {
+    return ['display', 'body'].some((side) =>
+        fontsCandidates(level, side).some((r) => usableRef(r, side))
+    );
+}
+
+/**
+ * The font reference for each side: { display, body }. Exported for the
+ * publish manifest and the Studio; resolveTokens turns them into stacks.
+ */
+export function resolveFontRefs(themeProps, formOverrides) {
+    const theme = isPlainObject(themeProps) ? themeProps : {};
+    const form = isPlainObject(formOverrides) ? formOverrides : {};
+    if (!hasUsableFonts(theme) && !hasUsableFonts(form)) {
+        // Legacy: the merged values, exactly as before fonts A1.
+        const pick = (key) => {
+            return form[key] !== undefined ? form[key] : theme[key];
+        };
+        const custom = uploadedRef(pick('customFont'));
+        if (custom) {
+            return { display: custom, body: custom };
+        }
+        const typography = pick('typography');
+        const ref = {
+            source: 'stack',
+            key: FONT_STACKS[typography] ? typography : 'system'
+        };
+        return { display: ref, body: ref };
+    }
+    const hideThemeCustom = form.customFont === null;
+    const system = { source: 'stack', key: 'system' };
+    const side = (s) =>
+        levelRef(form, s, false) ||
+        levelRef(theme, s, hideThemeCustom) ||
+        system;
+    return { display: side('display'), body: side('body') };
+}
+
+/**
+ * Every font a form must LOAD (bundled or uploaded; installed stacks need
+ * nothing), deduplicated. Publishing freezes this into `resolved.fonts`,
+ * because a published form never sees its theme recipe.
+ */
+export function fontManifest(themeProps, formOverrides) {
+    if (!themeProps && !formOverrides) {
+        return [];
+    }
+    const refs = resolveFontRefs(themeProps, formOverrides);
+    const seen = new Set();
+    const out = [];
+    for (const ref of [refs.display, refs.body]) {
+        if (ref.source === 'stack') {
+            continue;
+        }
+        const id =
+            ref.source === 'bundled'
+                ? `bundled:${ref.key}`
+                : `uploaded:${ref.key || ref.family}`;
+        if (!seen.has(id)) {
+            seen.add(id);
+            out.push(ref);
+        }
+    }
+    return out;
+}
 
 // Curated shadow scale (§3.3). `soft`/`floating` unchanged (editorialIvory uses
 // `soft`); `medium` fills the gap, `brutal` is the flat offset the Neo-Brutalism
@@ -738,11 +922,18 @@ export function resolveTokens(themeProps, formOverrides) {
     };
     const labelLook = LABEL_LOOKS[p.labelStyle] || LABEL_LOOKS.default;
 
-    let fonts = FONT_STACKS[p.typography] || FONT_STACKS.system;
-    if (p.customFont && p.customFont.family) {
-        const stack = `'${p.customFont.family}', ${p.customFont.fallback || 'sans-serif'}`;
-        fonts = { body: stack, display: stack };
-    }
+    const fontRefs = resolveFontRefs(themeProps, formOverrides);
+    const fonts = {
+        body: refStack(fontRefs.body, 'body'),
+        display: refStack(fontRefs.display, 'display')
+    };
+    // A display face with no bold (Bebas Neue is 400 only) sets its heaviest
+    // real weight, so headings never get a browser-thickened fake bold.
+    // Conditional token.
+    const displayWeight =
+        fontRefs.display.source === 'bundled'
+            ? headingWeight(fontRefs.display.key)
+            : null;
     const fit = PAGE_FIT[img.fit] || PAGE_FIT.cover;
     const mesh =
         fx.mesh === 'custom'
@@ -1004,7 +1195,8 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-space-5': density.space[4],
         '--c-space-6': density.space[5],
         '--c-font-body': fonts.body,
-        '--c-font-display': fonts.display
+        '--c-font-display': fonts.display,
+        '--c-font-display-weight': displayWeight
     };
 
     // Guard: an explicit `null`/empty palette value must never emit invalid
