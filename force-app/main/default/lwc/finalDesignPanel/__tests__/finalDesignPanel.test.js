@@ -143,23 +143,34 @@ describe('c-final-design-panel', () => {
                 el.applyToolbarChange({
                     key: 'typography',
                     kind: 'font',
-                    value: 'custom:Brand'
+                    value: 'uploaded:Brand'
                 })
             ).toBe(true);
-            expect(lastSpec(changed).theme.overrides.customFont.resource).toBe(
-                'brand_font'
-            );
-            el.applyToolbarChange({
-                key: 'typography',
-                kind: 'font',
-                value: 'editorial'
-            });
+            // an uploaded font sets both sides, with its file info
             expect(
-                lastSpec(changed).theme.overrides.customFont
-            ).toBeUndefined();
-            expect(lastSpec(changed).theme.overrides.typography).toBe(
-                'editorial'
+                lastSpec(changed).theme.overrides.fonts.display.resource
+            ).toBe('brand_font');
+            expect(lastSpec(changed).theme.overrides.fonts.body.family).toBe(
+                'Brand'
             );
+            expect(
+                el.applyToolbarChange({
+                    key: 'typography',
+                    kind: 'font',
+                    value: 'pairing:editorialSerif'
+                })
+            ).toBe(true);
+            expect(lastSpec(changed).theme.overrides.fonts).toEqual({
+                pairing: 'editorialSerif'
+            });
+            // values the dropdown does not offer are refused
+            expect(
+                el.applyToolbarChange({
+                    key: 'typography',
+                    kind: 'font',
+                    value: 'editorial'
+                })
+            ).toBe(false);
             const gradient = {
                 type: 'linear',
                 angle: 90,
@@ -182,9 +193,9 @@ describe('c-final-design-panel', () => {
             expect(
                 lastSpec(changed).theme.overrides.palette?.pageBg
             ).toBeUndefined();
-            expect(lastSpec(changed).theme.overrides.typography).toBe(
-                'editorial'
-            );
+            expect(lastSpec(changed).theme.overrides.fonts).toEqual({
+                pairing: 'editorialSerif'
+            });
         });
 
         it('reveals and focuses a collapsed group without editing the spec', async () => {
@@ -202,7 +213,7 @@ describe('c-final-design-panel', () => {
                 true
             );
             expect(el.shadowRoot.activeElement).toBe(
-                wrapper.querySelector('select')
+                wrapper.querySelector('c-final-font-picker')
             );
             expect(changed).not.toHaveBeenCalled();
         });
@@ -870,7 +881,7 @@ describe('c-final-design-panel', () => {
         expect(handler).not.toHaveBeenCalled();
     });
 
-    it('custom font pick writes overrides.customFont; built-in pick clears it', async () => {
+    it('font picker: uploaded and pairing picks write overrides.fonts and clear legacy keys', async () => {
         listFonts.mockResolvedValueOnce([
             {
                 key: 'Sample_Brand',
@@ -887,25 +898,98 @@ describe('c-final-design-panel', () => {
         await flush();
         await goAdvanced(el);
         await openArea(el, 'brand');
-        const select = el.shadowRoot.querySelector(
-            'select[data-key="typography"]'
+        const picker = el.shadowRoot.querySelector(
+            'c-final-font-picker[data-key="typography"]'
         );
-        expect(
-            [...select.querySelectorAll('option')].map((o) => o.value)
-        ).toContain('custom:Sample_Brand');
-        select.value = 'custom:Sample_Brand';
+        const select = picker.shadowRoot.querySelector(
+            'select[data-role="pairing"]'
+        );
+        const values = [...select.querySelectorAll('option')].map(
+            (o) => o.value
+        );
+        expect(values).toContain('uploaded:Sample_Brand');
+        expect(values).toContain('pairing:editorialSerif');
+        // nothing set at the form level yet: "From theme" is chosen
+        expect(select.value).toBe('inherit');
+
+        select.value = 'uploaded:Sample_Brand';
         select.dispatchEvent(new CustomEvent('change'));
         await flush();
         let theme = lastSpec(handler).theme;
-        expect(theme.overrides.customFont.family).toBe('Sample Brand');
-        expect(theme.overrides.customFont.resource).toBe('sample_brand_font');
+        expect(theme.overrides.fonts.display.family).toBe('Sample Brand');
+        expect(theme.overrides.fonts.body.resource).toBe('sample_brand_font');
+        expect(theme.overrides.customFont).toBeUndefined();
 
-        select.value = 'editorial';
+        select.value = 'pairing:editorialSerif';
         select.dispatchEvent(new CustomEvent('change'));
         await flush();
         theme = lastSpec(handler).theme;
-        expect(theme.overrides.customFont).toBeUndefined();
-        expect(theme.overrides.typography).toBe('editorial');
+        expect(theme.overrides.fonts).toEqual({ pairing: 'editorialSerif' });
+
+        select.value = 'inherit';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        theme = lastSpec(handler).theme;
+        expect(theme.overrides.fonts).toBeUndefined();
+    });
+
+    it('font picker: a legacy choice shows as an older option until a new pick replaces it', async () => {
+        const spec = buildSampleSpec({
+            layout: 'stepper',
+            themeKey: 'editorialIvory'
+        });
+        spec.theme.overrides = { typography: 'geometric' };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await flush();
+        await goAdvanced(el);
+        await openArea(el, 'brand');
+        const picker = el.shadowRoot.querySelector(
+            'c-final-font-picker[data-key="typography"]'
+        );
+        const select = picker.shadowRoot.querySelector(
+            'select[data-role="pairing"]'
+        );
+        const chosen = select.querySelector('option:checked');
+        expect(chosen.value).toBe('legacy:geometric');
+        expect(chosen.textContent).toContain('older option');
+        expect(picker.edited).toBe(true);
+
+        select.value = 'pairing:modern';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        const overrides = lastSpec(handler).theme.overrides;
+        expect(overrides.typography).toBeUndefined();
+        expect(overrides.fonts).toEqual({ pairing: 'modern' });
+    });
+
+    it('font group reset removes every form-level font key', async () => {
+        const spec = buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
+        spec.theme.overrides = {
+            fonts: { pairing: 'modern' },
+            typography: 'mono',
+            customFont: null
+        };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await flush();
+        await goAdvanced(el);
+        await openArea(el, 'brand');
+        const picker = el.shadowRoot.querySelector(
+            'c-final-font-picker[data-key="typography"]'
+        );
+        const reset = picker
+            .closest('details.group')
+            .querySelector('.resetchip');
+        expect(reset).not.toBeNull();
+        reset.click();
+        await flush();
+        const overrides = lastSpec(handler).theme.overrides;
+        expect(overrides.fonts).toBeUndefined();
+        expect(overrides.typography).toBeUndefined();
+        expect(overrides.customFont).toBeUndefined();
     });
 
     it('custom themes flow into the gallery; picking one switches source + fetches props', async () => {

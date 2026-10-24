@@ -80,7 +80,7 @@
     margin: 0;
     font-family: var(--c-font-display, inherit);
     font-size: 0.82rem;
-    font-weight: 700;
+    font-weight: var(--c-font-display-weight, 700);
     line-height: 1.2;
     color: var(--c-text, #1f2937);
 }

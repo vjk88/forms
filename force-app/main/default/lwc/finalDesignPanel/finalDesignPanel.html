@@ -349,6 +349,22 @@
                                                             </div>
                                                         </template>
                                                         <template
+                                                            lwc:elseif={c.isFontPicker}
+                                                        >
+                                                            <c-final-font-picker
+                                                                data-key={c.key}
+                                                                mode="form"
+                                                                label={c.label}
+                                                                edited={c.edited}
+                                                                level={c.fontLevel}
+                                                                effective={c.fontEffective}
+                                                                uploaded-fonts={c.uploadedFonts}
+                                                                fonts-loaded={c.fontsLoaded}
+                                                                inherit-label={c.fontInherit}
+                                                                onfontchange={handleFontChange}
+                                                            ></c-final-font-picker>
+                                                        </template>
+                                                        <template
                                                             lwc:elseif={c.isSelect}
                                                         >
                                                             <div class="row">

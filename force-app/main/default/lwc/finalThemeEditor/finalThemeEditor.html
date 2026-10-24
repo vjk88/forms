@@ -57,6 +57,15 @@
                 </template>
 
                 <h2 class="te-sect">Shape &amp; type</h2>
+                <c-final-font-picker
+                    mode="theme"
+                    label="Font pairing"
+                    level={fontLevel}
+                    effective={fontEffective}
+                    uploaded-fonts={uploadedFonts}
+                    fonts-loaded={fontsLoaded}
+                    onfontchange={handleFontChange}
+                ></c-final-font-picker>
                 <template for:each={selectRows} for:item="s">
                     <div class="te-row" key={s.key}>
                         <label>{s.label}</label>

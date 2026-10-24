@@ -233,6 +233,14 @@ export function resolveFontRefs(themeProps, formOverrides) {
 }
 
 /**
+ * The CSS stack the engine writes for one reference and side (the Studio's
+ * font sample shows exactly what the form will use). Null when unusable.
+ */
+export function fontRefStack(ref, side) {
+    return usableRef(ref, side) ? refStack(ref, side) : null;
+}
+
+/**
  * Every font a form must LOAD (bundled or uploaded; installed stacks need
  * nothing), deduplicated. Publishing freezes this into `resolved.fonts`,
  * because a published form never sees its theme recipe.

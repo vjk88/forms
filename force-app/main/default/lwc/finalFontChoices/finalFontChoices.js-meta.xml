@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Studio: what the font pickers offer and the patch each pick writes (pure; IMPL_PLAN_FONTS_AND_BRAND_THEME A.3b/A.4).</description>
+</LightningComponentBundle>
