@@ -59,6 +59,7 @@
                             class="bd-swatches"
                             role="group"
                             aria-label="Colours from your logo"
+                            aria-describedby="bd-second-hint"
                         >
                             <template for:each={swatches} for:item="s">
                                 <button
@@ -84,13 +85,18 @@
                             </template>
                         </div>
                         <template lwc:if={secondHint}>
-                            <p class="bd-hint bd-second-hint">{secondHint}</p>
+                            <p
+                                id="bd-second-hint"
+                                class="bd-hint bd-second-hint"
+                            >
+                                {secondHint}
+                            </p>
                         </template>
                     </template>
                     <template lwc:if={noSuggestions}>
                         <p class="bd-hint">
                             No clear colours in that logo (it may be black,
-                            white or grey). Pick your colour below.
+                            white or grey). Pick your main colour below.
                         </p>
                     </template>
                     <template lwc:if={hasLogo}>
@@ -181,6 +187,15 @@
                         role="alert"
                     >
                         {secondError}
+                    </p>
+                    <template lwc:if={sameAsMain}>
+                        <p class="bd-hint bd-same">
+                            Same as your main colour. Pick another, or leave it
+                            empty.
+                        </p>
+                    </template>
+                    <p class="bd-sr" role="status" aria-live="polite">
+                        {announce}
                     </p>
                     <template lwc:if={canSwap}>
                         <button
@@ -290,7 +305,7 @@
                 </template>
                 <template lwc:else>
                     <p class="bd-empty">
-                        Upload your logo or pick a colour to start.
+                        Upload your logo or pick a main colour to start.
                     </p>
                 </template>
                 <!-- always in the page, so a new warning is announced -->

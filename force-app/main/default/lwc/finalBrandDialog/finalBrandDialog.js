@@ -111,6 +111,7 @@ export default class FinalBrandDialog extends LightningElement {
     secondText = '';
     secondError = '';
     _secondFromLogo = false;
+    announce = ''; // read out when a tap changes a role nobody pressed
     style = 'clean';
     fontLevel = {};
     name = '';
@@ -222,7 +223,7 @@ export default class FinalBrandDialog extends LightningElement {
         const tryThis = others.length
             ? `Try ${others.join(' or ')}, or a deeper shade.`
             : 'Try a deeper shade.';
-        return `Your colour is close to the card colour, so the Submit button may not stand out. ${tryThis}`;
+        return `Your main colour is close to the card colour, so the Submit button may not stand out. ${tryThis}`;
     }
 
     get checkedNote() {
@@ -251,14 +252,14 @@ export default class FinalBrandDialog extends LightningElement {
                 name: 'Main',
                 does:
                     this.style === 'boldHeader'
-                        ? 'Submit button and header'
-                        : 'Submit button',
+                        ? 'Submit button, header and page tint'
+                        : 'Submit button and page tint',
                 style: `background:${r.palette.submitBg};`
             },
             {
                 key: 'second',
                 name: this.second ? 'Second' : 'Highlights',
-                does: `Selected answers, progress and step numbers${secondNote}`,
+                does: `Selected answers, progress, step numbers and focus outlines${secondNote}`,
                 style: `background:${accent};`
             }
         ];
@@ -418,6 +419,13 @@ export default class FinalBrandDialog extends LightningElement {
     }
 
     get swatches() {
+        // what tapping an unchosen swatch does (see handleSwatch)
+        let next = 'main colour';
+        if (this.color) {
+            next = this.second
+                ? 'second colour, replacing the current one'
+                : 'second colour';
+        }
         return this.suggestions.map((s) => {
             let role = '';
             if (s.hex === this.color) {
@@ -430,19 +438,26 @@ export default class FinalBrandDialog extends LightningElement {
                 role,
                 pressed: role ? 'true' : 'false',
                 label: role
-                    ? `${s.hex}, ${role.toLowerCase()} colour`
-                    : `Use ${s.hex}`,
+                    ? `${s.hex}, ${role.toLowerCase()} colour. Press to remove`
+                    : `Use ${s.hex} as ${next}`,
                 style: `background:${s.hex};`,
                 cls: role ? 'bd-swatch is-on' : 'bd-swatch'
             };
         });
     }
 
-    /** After a logo picks Main: say how to add the optional Second. */
+    /** How the swatches work, for whatever is chosen now. */
     get secondHint() {
-        return this.suggestions.length > 1 && this.color && !this.second
-            ? 'Tap another colour to add it as your second colour.'
-            : '';
+        if (this.suggestions.length < 2 || !this.color) {
+            return '';
+        }
+        return this.second
+            ? 'Pick a chosen colour again to remove it.'
+            : 'Pick another logo colour to add a second colour.';
+    }
+
+    get sameAsMain() {
+        return Boolean(this.second && this.second === this.color);
     }
 
     /**
@@ -455,11 +470,13 @@ export default class FinalBrandDialog extends LightningElement {
             if (this.second) {
                 this._applyColor(this.second, this._secondFromLogo);
                 this._setSecond('', false);
+                this.announce = `Main colour is now ${this.color}.`;
             } else {
                 this.color = '';
                 this.colorText = '';
                 this.colorError = '';
                 this._colorFromLogo = false;
+                this.announce = 'Main colour removed.';
             }
         } else if (hex === this.second) {
             this._setSecond('', false);
@@ -569,6 +586,7 @@ export default class FinalBrandDialog extends LightningElement {
         const main = { hex: this.color, fromLogo: this._colorFromLogo };
         this._applyColor(this.second, this._secondFromLogo);
         this._setSecond(main.hex, main.fromLogo);
+        this.announce = `Main colour is now ${this.color}, second colour ${this.second}.`;
     }
 
     // ------------------------------------------------------- style, fonts
@@ -597,7 +615,11 @@ export default class FinalBrandDialog extends LightningElement {
         }
         this.saveError = '';
         if (!this.color) {
-            this.colorError = 'Pick a colour first.';
+            this.colorError = 'Pick a main colour first.';
+            this.template.querySelector('.bd-hex').focus();
+            return;
+        }
+        if (this.colorError) {
             this.template.querySelector('.bd-hex').focus();
             return;
         }

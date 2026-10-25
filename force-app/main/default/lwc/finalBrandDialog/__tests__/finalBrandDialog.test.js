@@ -257,7 +257,9 @@ describe('c-final-brand-dialog', () => {
         const el = await mount();
         await confirm(el);
         expect(saveCustomTheme).not.toHaveBeenCalled();
-        expect(q(el, '.bd-color-err').textContent).toContain('Pick a colour');
+        expect(q(el, '.bd-color-err').textContent).toContain(
+            'Pick a main colour'
+        );
     });
 
     it('a failed save shows the server message and emits nothing', async () => {
@@ -428,7 +430,7 @@ describe('c-final-brand-dialog', () => {
         // the logo picks Main only, and says how to add Second
         expect(roles(el)).toEqual(['Main', '', '']);
         expect(q(el, '.bd-second-hint').textContent).toContain(
-            'Tap another colour'
+            'Pick another logo colour'
         );
         expect(q(el, '.bd-hex2').value).toBe('');
         let sw = qa(el, '.bd-swatch');
@@ -436,11 +438,20 @@ describe('c-final-brand-dialog', () => {
         await flush();
         expect(roles(el)).toEqual(['Main', 'Second', '']);
         expect(q(el, '.bd-hex2').value).toBe('#1e3a8a');
-        expect(q(el, '.bd-second-hint')).toBeNull();
+        expect(q(el, '.bd-second-hint').textContent).toContain(
+            'Pick a chosen colour again'
+        );
         sw = qa(el, '.bd-swatch');
         expect(sw[1].getAttribute('aria-pressed')).toBe('true');
-        expect(sw[1].getAttribute('aria-label')).toBe('#1e3a8a, second colour');
-        expect(sw[0].getAttribute('aria-label')).toBe('#e11d48, main colour');
+        expect(sw[1].getAttribute('aria-label')).toBe(
+            '#1e3a8a, second colour. Press to remove'
+        );
+        expect(sw[0].getAttribute('aria-label')).toBe(
+            '#e11d48, main colour. Press to remove'
+        );
+        expect(sw[2].getAttribute('aria-label')).toBe(
+            'Use #16a34a as second colour, replacing the current one'
+        );
         sw[2].click();
         await flush();
         expect(roles(el)).toEqual(['Main', '', 'Second']);
@@ -455,6 +466,9 @@ describe('c-final-brand-dialog', () => {
         qa(el, '.bd-swatch')[0].click(); // unpick Main
         await flush();
         expect(roles(el)).toEqual(['', 'Main', '']);
+        expect(q(el, '.bd-sr').textContent).toContain(
+            'Main colour is now #1e3a8a'
+        );
         expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
         expect(q(el, '.bd-hex2').value).toBe('');
         qa(el, '.bd-swatch')[2].click(); // a new Second
@@ -562,5 +576,32 @@ describe('c-final-brand-dialog', () => {
         });
         expect(saved.palette.submitBg).toBe('#e11d48');
         expect(saved.palette.accent).toBe('#1e3a8a');
+    });
+
+    it('a bad Main hex blocks Save, like a bad Second', async () => {
+        const el = await mount();
+        await typeHex(el, '#e11d48');
+        await typeHex(el, '#zz');
+        await confirm(el);
+        expect(saveCustomTheme).not.toHaveBeenCalled();
+        expect(q(el, '.bd-color-err').textContent).toContain('hex colour');
+    });
+
+    it('a Second equal to Main says so', async () => {
+        const el = await mount();
+        await typeHex(el, '#e11d48');
+        await typeHex2(el, '#e11d48');
+        expect(q(el, '.bd-same').textContent).toContain('Same as your main');
+    });
+
+    it('Swap is announced', async () => {
+        const el = await mount();
+        await typeHex(el, '#e11d48');
+        await typeHex2(el, '#1e3a8a');
+        q(el, '.bd-swap').click();
+        await flush();
+        expect(q(el, '.bd-sr').textContent).toContain(
+            'Main colour is now #1e3a8a, second colour #e11d48'
+        );
     });
 });

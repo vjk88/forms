@@ -123,7 +123,14 @@ export default class FinalThemeCard extends LightningElement {
 
     get swatches() {
         const p = this._pal;
+        const twoColour =
+            this.themeProps &&
+            this.themeProps.brand &&
+            this.themeProps.brand.secondColor;
+        // a two-colour brand: its main colour lives on the button
+        const lead = twoColour ? [['Button', p.submitBg]] : [];
         return [
+            ...lead,
             ['Accent', p.accent],
             ['Surface', p.contentBg],
             ['Page', p.pageBg],
