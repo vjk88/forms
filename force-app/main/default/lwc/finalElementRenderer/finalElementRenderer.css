@@ -726,7 +726,7 @@
 }
 .scale-chip:focus-visible,
 .scale-icon:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
 .scale-icon {
@@ -886,7 +886,7 @@
 .choice-card:focus-visible,
 .yn-btn:focus-visible,
 .ic-tile:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
 .choice-other {
@@ -1012,7 +1012,7 @@
     cursor: default;
 }
 .rank-btn:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
 /* matrix: grid on wide screens, stacked cards on narrow */
@@ -1083,7 +1083,7 @@
     border-color: var(--c-accent);
 }
 .mx-dot:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
 }
 .mx-dot:focus-visible::before {
     box-shadow: var(--c-focus-ring);
@@ -1132,7 +1132,7 @@
 
 /* S4 gate finding #7: the Other input joins the focus-ring family */
 .choice-other:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
 

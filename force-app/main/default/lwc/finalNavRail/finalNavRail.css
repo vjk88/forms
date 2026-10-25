@@ -100,7 +100,7 @@
 }
 
 .drawer-toggle:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
 
@@ -130,7 +130,10 @@
 }
 
 .rail-link:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
+    /* inside the link: the rail scrolls (dock, narrow top bar), which clips
+       anything drawn outside */
+    outline-offset: -2px;
     box-shadow: var(--c-focus-ring);
 }
 
