@@ -62,11 +62,21 @@
     padding: 12px 12px 0;
 }
 
+/* The header surface, stacked as finalFormHeader stacks it: the theme's
+   photo (+ veil) over its gradient over its solid fill. */
 .tc-banner {
     padding: 12px;
-    background: var(--c-header-bg);
+    background-color: var(--c-header-bg);
+    background-image:
+        var(--c-header-bg-image, none), var(--c-header-bg-gradient, none);
     background-size: cover;
-    background-position: center;
+    background-position: var(--c-header-bg-position, center);
+}
+
+/* One at a time: the thin header band above the floating question */
+.tc-strip {
+    padding: 0;
+    height: 10px;
 }
 
 .tc-banner .tc-h {
@@ -288,9 +298,11 @@
 }
 
 .tc-rail {
-    background: var(--c-header-bg, var(--c-accent, #6366f1));
+    background-color: var(--c-header-bg, var(--c-accent, #6366f1));
+    background-image:
+        var(--c-header-bg-image, none), var(--c-header-bg-gradient, none);
     background-size: cover;
-    background-position: center;
+    background-position: var(--c-header-bg-position, center);
     padding: 12px;
     display: flex;
     align-items: center;

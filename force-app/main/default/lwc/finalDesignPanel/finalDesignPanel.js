@@ -12,7 +12,11 @@ import {
     levelHasFonts,
     allFontNames
 } from 'c/finalFontChoices';
-import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
+import {
+    getBuiltinTheme,
+    listBuiltinThemes,
+    listThemeFamilies
+} from 'c/finalThemeCatalog';
 import { localizeAssetUrl } from 'c/finalThemeAssets';
 import { getLayout } from 'c/finalLayoutRegistry';
 import { layoutCardName } from 'c/finalGalleryPicker';
@@ -761,7 +765,17 @@ export default class FinalDesignPanel extends LightningElement {
             return this.themeKey || '—';
         }
         // a form can stay on a theme the gallery no longer offers (catalog cut)
-        return t.hidden ? `${t.name} · no longer in the gallery` : t.name;
+        if (t.hidden) {
+            return `${t.name} · no longer in the gallery`;
+        }
+        // the family it was picked from ("Scenic · Misty Pines"); a family
+        // with one look is just its name
+        const family = listThemeFamilies().find((f) =>
+            f.members.some((m) => m.key === t.key)
+        );
+        return family && family.members.length > 1
+            ? `${family.name} · ${t.name}`
+            : t.name;
     }
 
     get layoutLabel() {

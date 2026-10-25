@@ -149,3 +149,64 @@ describe('c-final-theme-card: colour dots', () => {
         expect(dots(one)[0]).toBe('Accent');
     });
 });
+
+// IMPL_PLAN_THEME_FAMILIES step 4: the preview draws the theme's header
+// surface (photo + veil, gradient, colour) in EVERY layout it can preview.
+describe('c-final-theme-card: header surface in every layout', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    const LAYOUTS = [
+        ['scroll', '', '.tc-banner'],
+        ['stepper', '', '.tc-banner'],
+        ['tabs', '', '.tc-banner'],
+        ['accordion', '', '.tc-banner'],
+        ['rail', '', '.tc-banner'],
+        ['oneAtATime', '', '.tc-banner.tc-strip'],
+        ['splitHero', '', '.tc-rail'],
+        ['splitHero', 'oneAtATime', '.tc-rail']
+    ];
+
+    it.each(LAYOUTS)(
+        '%s %s: a photo-header theme draws its header surface with the photo token',
+        async (layout, paneFlow, sel) => {
+            const el = mount({
+                themeKey: 'marbleSplit',
+                label: 'Quiet Studio',
+                layout,
+                paneFlow
+            });
+            await flush();
+            expect(el.shadowRoot.querySelector(sel)).not.toBeNull();
+            const style = el.shadowRoot
+                .querySelector('.tc-preview')
+                .getAttribute('style');
+            expect(style).toContain('--c-header-bg-image');
+            expect(style).toContain('marble.jpg');
+        }
+    );
+
+    it.each(['scroll', 'stepper', 'tabs', 'accordion', 'rail', 'oneAtATime'])(
+        '%s: a gradient-header theme draws a banner carrying its gradient',
+        async (layout) => {
+            const el = mount({ themeKey: 'auraSplit', label: 'B', layout });
+            await flush();
+            expect(el.shadowRoot.querySelector('.tc-banner')).not.toBeNull();
+            expect(
+                el.shadowRoot.querySelector('.tc-preview').getAttribute('style')
+            ).toMatch(/--c-header-bg-gradient:\s*linear-gradient/);
+        }
+    );
+
+    it.each(['scroll', 'stepper', 'tabs', 'accordion', 'rail', 'oneAtATime'])(
+        '%s: a theme with no header surface keeps the plain title',
+        async (layout) => {
+            const el = mount({ themeKey: 'nordic', label: 'N', layout });
+            await flush();
+            expect(el.shadowRoot.querySelector('.tc-banner')).toBeNull();
+        }
+    );
+});

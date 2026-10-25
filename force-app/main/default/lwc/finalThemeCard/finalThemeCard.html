@@ -94,10 +94,18 @@
                                 <span class="tc-slabel">Review</span>
                             </div>
                         </div>
-                        <div class="tc-head">
-                            <h4 class="tc-h">{brand.title}</h4>
-                            <p class="tc-p">{brand.subtitle}</p>
-                        </div>
+                        <template lwc:if={hasBanner}>
+                            <div class="tc-banner">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <div class="tc-head">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
                         <div class="tc-body">
                             <div class="tc-field">
                                 <span class="tc-flabel">Full name</span>
@@ -122,10 +130,18 @@
                             <span class="tc-tab">Details</span>
                             <span class="tc-tab">Review</span>
                         </div>
-                        <div class="tc-head">
-                            <h4 class="tc-h">{brand.title}</h4>
-                            <p class="tc-p">{brand.subtitle}</p>
-                        </div>
+                        <template lwc:if={hasBanner}>
+                            <div class="tc-banner">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <div class="tc-head">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
                         <div class="tc-body">
                             <div class="tc-field">
                                 <span class="tc-flabel">Full name</span>
@@ -141,10 +157,18 @@
                 <!-- ACCORDION -->
                 <template lwc:elseif={isAccordion}>
                     <div class="tc-card">
-                        <div class="tc-head">
-                            <h4 class="tc-h">{brand.title}</h4>
-                            <p class="tc-p">{brand.subtitle}</p>
-                        </div>
+                        <template lwc:if={hasBanner}>
+                            <div class="tc-banner">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
+                        <template lwc:else>
+                            <div class="tc-head">
+                                <h4 class="tc-h">{brand.title}</h4>
+                                <p class="tc-p">{brand.subtitle}</p>
+                            </div>
+                        </template>
                         <div class="tc-body">
                             <div class="tc-acc open">
                                 <span class="tc-acc-title">Contact</span>
@@ -180,10 +204,18 @@
                             <span class="tc-nav-item"></span>
                         </div>
                         <div class="tc-fields">
-                            <div class="tc-head">
-                                <h4 class="tc-h">{brand.title}</h4>
-                                <p class="tc-p">{brand.subtitle}</p>
-                            </div>
+                            <template lwc:if={hasBanner}>
+                                <div class="tc-banner">
+                                    <h4 class="tc-h">{brand.title}</h4>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </div>
+                            </template>
+                            <template lwc:else>
+                                <div class="tc-head">
+                                    <h4 class="tc-h">{brand.title}</h4>
+                                    <p class="tc-p">{brand.subtitle}</p>
+                                </div>
+                            </template>
                             <div class="tc-body">
                                 <div class="tc-field">
                                     <span class="tc-flabel">Email</span>
@@ -204,6 +236,11 @@
                 <!-- SINGLE (oneAtATime — full-bleed floating question) -->
                 <template lwc:elseif={isSingle}>
                     <div class="tc-card tc-floating">
+                        <!-- the open page shows the header flush above the
+                             progress strip: a thin band of it -->
+                        <template lwc:if={hasBanner}>
+                            <div class="tc-banner tc-strip"></div>
+                        </template>
                         <div class="tc-body tc-body-center">
                             <div class="tc-progress">
                                 <span class="tc-progress-fill"></span>
@@ -273,7 +310,7 @@
                 ></lightning-icon>
             </div>
             <p class="tc-desc">{description}</p>
-            <div class="tc-swatches" aria-hidden="true">
+            <div class="tc-swatches" aria-hidden="true" lwc:if={showSwatches}>
                 <template for:each={swatches} for:item="sw">
                     <span
                         key={sw.key}

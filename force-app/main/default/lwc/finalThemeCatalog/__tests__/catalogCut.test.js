@@ -2,11 +2,17 @@ import {
     getBuiltinTheme,
     listBuiltinThemes,
     listGalleryThemes,
+    listThemeFamilies,
     resolveSpecForPublish
 } from 'c/finalThemeCatalog';
 import { resolveTokens, contrastRatio } from 'c/finalThemeEngine';
 import BEFORE from './__fixtures__/tokensBeforeCatalogCut.json';
 import { withoutFocus } from '../../finalThemeEngine/__tests__/focusContract';
+import {
+    RESTORED,
+    familiesAllowed,
+    withoutFamiliesChanges
+} from './familiesContract';
 
 // IMPL_PLAN_THEME_CATALOG_CUT. The fixture is resolveTokens() for every theme,
 // captured on main BEFORE the cut (P1 / tests §4).
@@ -75,34 +81,51 @@ const HEADER_FIXED = [
     'silkLuxury'
 ];
 
-function changedTokens(nowAll, beforeAll) {
-    const now = withoutFocus(nowAll);
-    const before = withoutFocus(beforeAll);
+function changedTokens(nowAll, beforeAll, key) {
+    const now = withoutFamiliesChanges(key, withoutFocus(nowAll));
+    const before = withoutFamiliesChanges(key, withoutFocus(beforeAll));
     return Object.keys({ ...before, ...now }).filter(
         (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
     );
 }
 
 describe('catalog cut: gallery vs hidden themes', () => {
-    it('the gallery offers exactly the nine kept themes', () => {
-        expect(listGalleryThemes().map((t) => t.key)).toEqual(GALLERY);
+    it('the nine kept themes are still offered (now as family heads or variants)', () => {
+        const offered = listGalleryThemes().map((t) => t.key);
+        GALLERY.forEach((k) => expect(offered).toContain(k));
     });
 
-    it('every theme is still listed for lookups, 23 of them hidden', () => {
+    it('every theme is still listed for lookups; after the families build 6 are hidden', () => {
         const all = listBuiltinThemes();
         expect(all).toHaveLength(32);
-        expect(all.filter((t) => t.hidden).map((t) => t.key)).toEqual(
-            expect.arrayContaining(HIDDEN)
+        expect(
+            all
+                .filter((t) => t.hidden)
+                .map((t) => t.key)
+                .sort()
+        ).toEqual(
+            [
+                'execNav',
+                'forest',
+                'mintStepper',
+                'slate',
+                'snowStepper',
+                'startupNav'
+            ].sort()
         );
-        expect(all.filter((t) => t.hidden)).toHaveLength(23);
     });
 
     it.each(HIDDEN.filter((k) => !HEADER_FIXED.includes(k)))(
-        'hidden theme %s resolves to exactly the same tokens as before',
+        'theme %s (hidden at the cut) resolves to the same tokens, except the families allowlist',
         (key) => {
             expect(
-                withoutFocus(resolveTokens(getBuiltinTheme(key), null))
-            ).toEqual(withoutFocus(BEFORE.hidden[key]));
+                withoutFamiliesChanges(
+                    key,
+                    withoutFocus(resolveTokens(getBuiltinTheme(key), null))
+                )
+            ).toEqual(
+                withoutFamiliesChanges(key, withoutFocus(BEFORE.hidden[key]))
+            );
         }
     );
 
@@ -111,7 +134,8 @@ describe('catalog cut: gallery vs hidden themes', () => {
         (key) => {
             const changed = changedTokens(
                 resolveTokens(getBuiltinTheme(key), null),
-                BEFORE.hidden[key]
+                BEFORE.hidden[key],
+                key
             );
             expect(changed.length).toBeGreaterThan(0);
             changed.forEach((t) => expect(HEADER_TOKENS).toContain(t));
@@ -192,4 +216,124 @@ describe('catalog cut: titles on Ocean Breeze and Desert Oasis (P6)', () => {
             expect(t['--c-header-bg-gradient']).toMatch(/^linear-gradient\(/);
         }
     );
+});
+
+// IMPL_PLAN_THEME_FAMILIES (agreed 2026-10-25): 9 families, 26 themes.
+describe('theme families', () => {
+    const families = listThemeFamilies();
+    const members = families.flatMap((f) => f.members.map((m) => m.key));
+
+    it('nine families, 26 themes, no theme in two families', () => {
+        expect(families.map((f) => f.key)).toEqual([
+            'clean',
+            'editorial',
+            'dark',
+            'photoHeader',
+            'scenic',
+            'darkGlass',
+            'terminal',
+            'neonNights',
+            'neoBrutalism'
+        ]);
+        expect(members).toHaveLength(26);
+        expect(new Set(members).size).toBe(26);
+    });
+
+    it('the gallery is exactly the family members, and every member resolves', () => {
+        expect(
+            listGalleryThemes()
+                .map((t) => t.key)
+                .sort()
+        ).toEqual([...members].sort());
+        members.forEach((k) => expect(getBuiltinTheme(k)).not.toBeNull());
+    });
+
+    it('the 10 renamed themes keep their keys', () => {
+        const name = (k) => listBuiltinThemes().find((t) => t.key === k).name;
+        expect(name('desertOasis')).toBe('Misty Pines');
+        expect(name('auroraBorealis')).toBe('Palm Dusk');
+        expect(name('silkLuxury')).toBe('Rose & Leaf');
+        expect(name('marbleSplit')).toBe('Quiet Studio');
+        expect(name('marbleLuxury')).toBe('Modern Home');
+        expect(name('claySplit')).toBe('Pine Header');
+        expect(name('retroStepper')).toBe('Amber Terminal');
+        expect(name('cyberSplit')).toBe('Cyber Midnight');
+        expect(name('botanicalSplit')).toBe('Botanical');
+        expect(name('auraSplit')).toBe('Bioluminescent');
+    });
+
+    it.each(members)(
+        '%s: Submit text and selected-answer text reach 4.5:1',
+        (key) => {
+            const t = resolveTokens(getBuiltinTheme(key), null);
+            expect(
+                contrastRatio(t['--c-submit-text'], t['--c-submit-bg'])
+            ).toBeGreaterThanOrEqual(4.5);
+            expect(
+                contrastRatio(t['--c-on-accent'], t['--c-accent'])
+            ).toBeGreaterThanOrEqual(4.5);
+        }
+    );
+
+    it.each(RESTORED)(
+        '%s changes nothing outside the families allowlist',
+        (key) => {
+            // focus tokens moved with the focus fix (PR 405); header tokens
+            // with the header fix (PR 396); the rest must be on the list
+            const before = withoutFocus(BEFORE.hidden[key]);
+            const now = withoutFocus(resolveTokens(getBuiltinTheme(key), null));
+            const changed = Object.keys({ ...before, ...now })
+                .filter(
+                    (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
+                )
+                .filter(
+                    (t) =>
+                        !(
+                            HEADER_FIXED.includes(key) &&
+                            HEADER_TOKENS.includes(t)
+                        )
+                );
+            changed.forEach((t) => expect(familiesAllowed(key)).toContain(t));
+        }
+    );
+});
+
+// PR 406 review: compare each restored theme WITH and WITHOUT its families
+// edit, so every token (focus tokens included) is held to the allowlist, and
+// exactly the expected themes change.
+describe('theme families: the recipe edits, token by token', () => {
+    const undo = (key) => {
+        const r = JSON.parse(JSON.stringify(getBuiltinTheme(key)));
+        delete r.palette.inkMode;
+        if (key === 'cosmicVortex') {
+            r.palette.accent = '#a855f7';
+        }
+        return r;
+    };
+    const diff = (key) => {
+        const before = resolveTokens(undo(key), null);
+        const now = resolveTokens(getBuiltinTheme(key), null);
+        return Object.keys({ ...before, ...now }).filter(
+            (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
+        );
+    };
+
+    it.each(RESTORED)('%s: every changed token is on the allowlist', (key) => {
+        diff(key).forEach((t) => expect(familiesAllowed(key)).toContain(t));
+    });
+
+    it('exactly these themes change ink, and Cosmic Vortex its accent', () => {
+        const changed = RESTORED.filter((k) => diff(k).length).sort();
+        expect(changed).toEqual(
+            [
+                'carbonMatrix',
+                'cosmicVortex',
+                'cyberSplit',
+                'marbleSplit',
+                'retroStepper',
+                'sunsetDunes',
+                'tokyo'
+            ].sort()
+        );
+    });
 });

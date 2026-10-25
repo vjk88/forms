@@ -55,6 +55,12 @@ export default class FinalThemeCard extends LightningElement {
      * second colour).
      */
     @api accentSample = false;
+    /**
+     * Leave out the colour squares under the name: the theme families picker
+     * shows a family's looks as dots below the card, and squares inside the
+     * clickable card would read as more looks (a click on them picks).
+     */
+    @api hideSwatches = false;
 
     get _theme() {
         if (this.themeProps && typeof this.themeProps === 'object') {
@@ -111,9 +117,13 @@ export default class FinalThemeCard extends LightningElement {
         return this.shape === 'single';
     }
 
+    /** The theme has a header surface: a colour, a photo or a gradient. */
     get hasBanner() {
-        const h = this._pal.headerBg;
-        return Boolean(h) && h !== 'transparent' && h !== 'none';
+        const p = this._pal;
+        const h = p.headerBg;
+        const colour = Boolean(h) && h !== 'transparent' && h !== 'none';
+        const g = p.headerBgGradient;
+        return Boolean(colour || p.headerImage || (g && g.start && g.end));
     }
 
     get brand() {
@@ -140,6 +150,10 @@ export default class FinalThemeCard extends LightningElement {
             name,
             style: `background:${val || '#cccccc'};`
         }));
+    }
+
+    get showSwatches() {
+        return !this.hideSwatches;
     }
 
     get rootClass() {

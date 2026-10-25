@@ -133,6 +133,7 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalSubmissionReader',
         'finalThemeCard',
         'finalThemeEditor',
+        'finalThemeGallery',
         'finalTypeahead',
         'finalValidationEditor'
     ];

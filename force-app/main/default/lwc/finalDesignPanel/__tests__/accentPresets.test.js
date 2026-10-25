@@ -217,9 +217,9 @@ describe('toolbar presets (applyToolbarChange)', () => {
 
 describe('a form on a hidden theme', () => {
     it('names its theme with "no longer in the gallery"', () => {
-        const el = mount('silkLuxury');
+        const el = mount('mintStepper');
         expect(
             el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
-        ).toBe('Silk Luxury · no longer in the gallery');
+        ).toBe('Neo-Mint Stepper · no longer in the gallery');
     });
 });

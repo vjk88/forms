@@ -7,6 +7,7 @@ import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { BUNDLED_FONTS } from 'c/finalFontFamilies';
 import BEFORE from './__fixtures__/fontsLegacyBeforeA1.json';
 import { withoutFocus } from './focusContract';
+import { withoutFamiliesChanges } from '../../finalThemeCatalog/__tests__/familiesContract';
 
 // IMPL_PLAN_FONTS_AND_BRAND_THEME §A.3b. The fixture is resolveTokens() for
 // every legacy theme × form font combination and all 32 themes, captured on
@@ -56,8 +57,13 @@ describe('fonts A1: legacy regime is byte-for-byte unchanged', () => {
         'theme %s resolves exactly as before',
         (key) => {
             expect(
-                withoutFocus(resolveTokens(getBuiltinTheme(key), null))
-            ).toStrictEqual(withoutFocus(BEFORE.themes[key]));
+                withoutFamiliesChanges(
+                    key,
+                    withoutFocus(resolveTokens(getBuiltinTheme(key), null))
+                )
+            ).toStrictEqual(
+                withoutFamiliesChanges(key, withoutFocus(BEFORE.themes[key]))
+            );
         }
     );
 
