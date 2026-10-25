@@ -81,3 +81,66 @@ describe('shadow tokens are only ever used as shadows', () => {
         expect(files.length).toBeGreaterThan(20);
     });
 });
+
+/**
+ * Windows High Contrast (forced colours) drops every box-shadow, so a focus
+ * rule that removes the outline and draws only a shadow ring leaves keyboard
+ * users with NO focus mark there (IMPL_PLAN_FOCUS_CONTRAST §2). Such rules
+ * keep a transparent outline instead: invisible normally, repainted in a
+ * system colour in High Contrast.
+ */
+describe('focus stays visible in Windows High Contrast', () => {
+    // The stylesheets a respondent sees (Studio-only screens are out of scope).
+    const RESPONDENT = [
+        'finalAfterSubmit',
+        'finalElementRenderer',
+        'finalFormViewer',
+        'finalLookup',
+        'finalNavAccordion',
+        'finalNavOneAtATime',
+        'finalNavRail',
+        'finalNavSplitHero',
+        'finalNavStepper',
+        'finalNavTabs',
+        'finalPageFrame',
+        'finalSectionRenderer',
+        'finalSubmitBar'
+    ];
+    // Allowed, with the reason: the slider draws a real outline on its thumb
+    // (::-webkit-slider-thumb / ::-moz-range-thumb), which forced colours keep.
+    const ALLOWED = ['.slider-input:focus-visible'];
+
+    function focusRules(name) {
+        const css = fs
+            .readFileSync(path.join(LWC, name, `${name}.css`), 'utf8')
+            .replace(/\r\n/g, '\n')
+            .replace(/\/\*[\s\S]*?\*\//g, '');
+        return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+            .map((m) => ({
+                file: name,
+                selector: m[1].replace(/\s+/g, ' ').trim(),
+                body: m[2]
+            }))
+            .filter((r) => r.selector.includes(':focus'));
+    }
+
+    it('no respondent focus rule removes the outline', () => {
+        const bad = RESPONDENT.flatMap(focusRules)
+            .filter((r) => /\boutline:\s*(none|0)\s*(;|$)/.test(r.body))
+            .filter((r) => !ALLOWED.includes(r.selector))
+            .map((r) => `${r.file}.css: ${r.selector}`);
+        expect(bad).toEqual([]);
+    });
+
+    it('the scan finds the focus rules it is meant to guard', () => {
+        const rules = RESPONDENT.flatMap(focusRules);
+        const transparent = rules.filter((r) =>
+            /outline:\s*2px solid transparent/.test(r.body)
+        );
+        // 17 rules switched in PR A, plus the lookup's two
+        expect(transparent.length).toBeGreaterThanOrEqual(19);
+        expect(rules.map((r) => r.selector)).toContain(
+            '.scale-chip:focus-visible, .scale-icon:focus-visible'
+        );
+    });
+});

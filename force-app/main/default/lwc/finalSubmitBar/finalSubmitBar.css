@@ -120,7 +120,7 @@
 }
 
 .btn:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
 
@@ -151,7 +151,7 @@
 }
 
 .back-link:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
     border-radius: var(--c-radius);
 }
