@@ -13,7 +13,7 @@
             <div class="bd-form">
                 <section class="bd-step" aria-labelledby="bd-logo-h">
                     <h2 id="bd-logo-h" class="bd-h">
-                        Your logo <span class="bd-opt">(optional)</span>
+                        Your logo&nbsp;<span class="bd-opt">(optional)</span>
                     </h2>
                     <p class="bd-hint">
                         We suggest colours from it. PNG, JPG, GIF or WebP, up to
@@ -75,9 +75,17 @@
                                         class="bd-swatch-chip"
                                         style={s.style}
                                     ></span>
+                                    <span
+                                        class="bd-swatch-role"
+                                        aria-hidden="true"
+                                        >{s.role}</span
+                                    >
                                 </button>
                             </template>
                         </div>
+                        <template lwc:if={secondHint}>
+                            <p class="bd-hint bd-second-hint">{secondHint}</p>
+                        </template>
                     </template>
                     <template lwc:if={noSuggestions}>
                         <p class="bd-hint">
@@ -101,17 +109,17 @@
                 </section>
 
                 <section class="bd-step" aria-labelledby="bd-color-h">
-                    <h2 id="bd-color-h" class="bd-h">Your colour</h2>
+                    <h2 id="bd-color-h" class="bd-h">Your colours</h2>
                     <div class="bd-row">
                         <input
                             class={pickerClass}
                             type="color"
-                            aria-label="Pick a colour"
+                            aria-label="Pick the main colour"
                             value={pickerValue}
                             oninput={handleColorPicker}
                         />
                         <label class="bd-hexlabel">
-                            <span>Hex</span>
+                            <span class="bd-colorname">Main colour</span>
                             <input
                                 class="bd-hex"
                                 type="text"
@@ -124,9 +132,65 @@
                             />
                         </label>
                     </div>
-                    <p id="bd-color-err" class="bd-error bd-color-err" role="alert">
+                    <p
+                        id="bd-color-err"
+                        class="bd-error bd-color-err"
+                        role="alert"
+                    >
                         {colorError}
                     </p>
+                    <div class="bd-row">
+                        <input
+                            class={secondPickerClass}
+                            type="color"
+                            aria-label="Pick the second colour"
+                            value={secondPickerValue}
+                            oninput={handleSecondPicker}
+                        />
+                        <label class="bd-hexlabel">
+                            <span class="bd-colorname"
+                                >Second colour&nbsp;<span class="bd-opt"
+                                    >(optional)</span
+                                ></span
+                            >
+                            <input
+                                class="bd-hex bd-hex2"
+                                type="text"
+                                placeholder="e.g. #f59e0b"
+                                value={secondText}
+                                aria-invalid={secondInvalid}
+                                aria-describedby="bd-second-err"
+                                oninput={handleSecondText}
+                                onchange={handleSecondTextDone}
+                            />
+                        </label>
+                        <template lwc:if={second}>
+                            <button
+                                type="button"
+                                class="bd-link bd-clear"
+                                aria-label="Clear the second colour"
+                                onclick={handleSecondClear}
+                            >
+                                Clear
+                            </button>
+                        </template>
+                    </div>
+                    <p
+                        id="bd-second-err"
+                        class="bd-error bd-second-err"
+                        role="alert"
+                    >
+                        {secondError}
+                    </p>
+                    <template lwc:if={canSwap}>
+                        <button
+                            type="button"
+                            class="bd-link bd-swap"
+                            onclick={handleSwap}
+                        >
+                            Swap main and second
+                        </button>
+                    </template>
                 </section>
 
                 <section class="bd-step" aria-labelledby="bd-style-h">
@@ -145,6 +209,7 @@
                                     label={s.label}
                                     description={s.hint}
                                     layout="scroll"
+                                    accent-sample={yes}
                                     selected={s.selected}
                                     onselect={handleStyle}
                                 ></c-final-theme-card>
@@ -158,7 +223,7 @@
 
                 <section class="bd-step" aria-labelledby="bd-font-h">
                     <h2 id="bd-font-h" class="bd-h">
-                        Fonts <span class="bd-opt">(optional)</span>
+                        Fonts&nbsp;<span class="bd-opt">(optional)</span>
                     </h2>
                     <c-final-font-picker
                         mode="theme"
@@ -183,7 +248,11 @@
                         placeholder="e.g. Acme brand"
                         oninput={handleName}
                     />
-                    <p id="bd-name-err" class="bd-error bd-name-err" role="alert">
+                    <p
+                        id="bd-name-err"
+                        class="bd-error bd-name-err"
+                        role="alert"
+                    >
                         {nameError}
                     </p>
                     <p class="bd-hint">
@@ -203,7 +272,20 @@
                         layout={layout}
                         pane-flow={paneFlow}
                         picture={yes}
+                        accent-sample={yes}
                     ></c-final-theme-card>
+                    <ul class="bd-roles" aria-label="What each colour paints">
+                        <template for:each={colorRoles} for:item="r">
+                            <li key={r.key} class="bd-role">
+                                <span
+                                    class="bd-role-chip"
+                                    style={r.style}
+                                    aria-hidden="true"
+                                ></span>
+                                <span><strong>{r.name}</strong>: {r.does}</span>
+                            </li>
+                        </template>
+                    </ul>
                     <p class="bd-hint">{checkedNote}</p>
                 </template>
                 <template lwc:else>

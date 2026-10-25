@@ -194,11 +194,16 @@ export function brandSurfaces({ pageBg, contentBg, text, fieldBg }) {
 }
 
 /**
- * @param {{color: string, style?: string, fonts?: object, name?: string}} input
+ * @param {{color: string, secondColor?: string, style?: string, fonts?: object, name?: string}} input
+ *   `color` is the MAIN brand colour: the submit button, the Bold header and
+ *   the page tint. `secondColor` (optional, plan §B.4) takes the accent role:
+ *   selected answers, progress, step numbers, highlights and the focus ring.
+ *   Without it the accent comes from the main colour, exactly as before.
  * @returns {object|null} a theme recipe, or null for a colour that is not hex
  */
 export function buildBrandTheme({
     color,
+    secondColor = null,
     style = 'clean',
     fonts = null,
     name = ''
@@ -216,8 +221,15 @@ export function buildBrandTheme({
     const all = s.all.map(([, hex]) => hex);
     const toward = base.dark ? '#ffffff' : '#000000';
 
-    // accent: the brand hue, moved until it reads as text on every surface
-    const accent = adjust(brand, toward, (c) => worst(c, all) >= TEXT_AIM);
+    // accent: the second colour's hue (else the main one), moved until it
+    // reads as text on every surface
+    const secondRgb = parseHex(secondColor);
+    const second = secondRgb ? toHex(secondRgb) : null;
+    const accent = adjust(
+        second || brand,
+        toward,
+        (c) => worst(c, all) >= TEXT_AIM
+    );
 
     // focus: the painted ring (55% over each surface) reaches 3:1
     const focus = adjust(accent, toward, (c) =>
@@ -288,7 +300,9 @@ export function buildBrandTheme({
             texture: null,
             mesh: null
         },
-        brand: { color: brand, style }
+        brand: second
+            ? { color: brand, secondColor: second, style }
+            : { color: brand, style }
     };
     if (fonts && typeof fonts === 'object') {
         recipe.fonts = { ...fonts };

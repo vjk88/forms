@@ -93,3 +93,29 @@ describe('c-final-theme-card: picture mode', () => {
         expect(el.shadowRoot.textContent).toContain('Registration');
     });
 });
+
+describe('c-final-theme-card: accent sample (brand dialog)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it.each(['scroll', 'splitHero', 'accordion'])(
+        '%s: a chosen answer only when asked for',
+        async (layout) => {
+            const plain = mount({ themeKey: 'nordic', label: 'A', layout });
+            const sampled = mount({
+                themeKey: 'nordic',
+                label: 'B',
+                layout,
+                accentSample: true
+            });
+            await flush();
+            expect(plain.shadowRoot.querySelector('.tc-choice')).toBeNull();
+            expect(
+                sampled.shadowRoot.querySelector('.tc-choice .tc-radio')
+            ).not.toBeNull();
+        }
+    );
+});

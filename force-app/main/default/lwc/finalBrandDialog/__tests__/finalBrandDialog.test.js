@@ -73,6 +73,16 @@ async function typeHex(el, value, { leave = true } = {}) {
     await flush();
 }
 
+async function typeHex2(el, value, { leave = true } = {}) {
+    const hex = q(el, '.bd-hex2');
+    hex.value = value;
+    hex.dispatchEvent(new CustomEvent('input'));
+    if (leave) {
+        hex.dispatchEvent(new CustomEvent('change'));
+    }
+    await flush();
+}
+
 async function uploadLogo(el, pixels) {
     readImagePixels.mockResolvedValueOnce(pixels);
     const input = q(el, '.bd-file');
@@ -157,7 +167,7 @@ describe('c-final-brand-dialog', () => {
         expect(q(el, '.bd-warn').textContent.trim()).toBe('');
     });
 
-    it('a logo suggests its colours and the first one is taken', async () => {
+    it('a logo suggests its colours and the first one is Main', async () => {
         const el = await mount();
         await uploadLogo(el, [
             ...px('#ffffff', 500),
@@ -170,7 +180,9 @@ describe('c-final-brand-dialog', () => {
         expect(q(el, '.bd-hex').value).toBe('#e11d48');
         swatches[1].click();
         await flush();
-        expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
+        // the next tap adds a second colour, Main stays
+        expect(q(el, '.bd-hex').value).toBe('#e11d48');
+        expect(q(el, '.bd-hex2').value).toBe('#1e3a8a');
     });
 
     it('a black-only logo says there is nothing to suggest', async () => {
@@ -397,5 +409,158 @@ describe('c-final-brand-dialog', () => {
             'Your logo couldn’t be uploaded'
         );
         expect(saveCustomTheme).not.toHaveBeenCalled();
+    });
+
+    // ------------------------------------------- second colour (§B.4, B3)
+
+    const twoColourLogo = () => [
+        ...px('#ffffff', 500),
+        ...px('#e11d48', 300),
+        ...px('#1e3a8a', 200),
+        ...px('#16a34a', 150)
+    ];
+    const roles = (el) => qa(el, '.bd-swatch').map((s) => s.textContent.trim());
+    const brandOf = (el) => q(el, '.bd-preview c-final-theme-card').themeProps;
+
+    it('taps: first is Main, next is Second, a third replaces Second', async () => {
+        const el = await mount();
+        await uploadLogo(el, twoColourLogo());
+        // the logo picks Main only, and says how to add Second
+        expect(roles(el)).toEqual(['Main', '', '']);
+        expect(q(el, '.bd-second-hint').textContent).toContain(
+            'Tap another colour'
+        );
+        expect(q(el, '.bd-hex2').value).toBe('');
+        let sw = qa(el, '.bd-swatch');
+        sw[1].click();
+        await flush();
+        expect(roles(el)).toEqual(['Main', 'Second', '']);
+        expect(q(el, '.bd-hex2').value).toBe('#1e3a8a');
+        expect(q(el, '.bd-second-hint')).toBeNull();
+        sw = qa(el, '.bd-swatch');
+        expect(sw[1].getAttribute('aria-pressed')).toBe('true');
+        expect(sw[1].getAttribute('aria-label')).toBe('#1e3a8a, second colour');
+        expect(sw[0].getAttribute('aria-label')).toBe('#e11d48, main colour');
+        sw[2].click();
+        await flush();
+        expect(roles(el)).toEqual(['Main', '', 'Second']);
+        expect(q(el, '.bd-hex').value).toBe('#e11d48');
+    });
+
+    it('tapping a chosen swatch unpicks it; unpicking Main promotes Second', async () => {
+        const el = await mount();
+        await uploadLogo(el, twoColourLogo());
+        qa(el, '.bd-swatch')[1].click();
+        await flush();
+        qa(el, '.bd-swatch')[0].click(); // unpick Main
+        await flush();
+        expect(roles(el)).toEqual(['', 'Main', '']);
+        expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
+        expect(q(el, '.bd-hex2').value).toBe('');
+        qa(el, '.bd-swatch')[2].click(); // a new Second
+        await flush();
+        qa(el, '.bd-swatch')[2].click(); // and unpicked again
+        await flush();
+        expect(roles(el)).toEqual(['', 'Main', '']);
+        qa(el, '.bd-swatch')[1].click(); // unpick the only colour
+        await flush();
+        expect(roles(el)).toEqual(['', '', '']);
+        expect(q(el, '.bd-empty')).not.toBeNull();
+        qa(el, '.bd-swatch')[2].click(); // nothing chosen: the tap is Main
+        await flush();
+        expect(roles(el)).toEqual(['', '', 'Main']);
+    });
+
+    it('Second paints the highlights; Main keeps the button', async () => {
+        const el = await mount();
+        await typeHex(el, '#e11d48');
+        const before = brandOf(el);
+        expect(before.brand.secondColor).toBeUndefined();
+        expect(q(el, '.bd-roles').textContent).toContain(
+            'made from your main colour'
+        );
+        await typeHex2(el, '#1e3a8a');
+        const after = brandOf(el);
+        expect(after.palette.submitBg).toBe('#e11d48');
+        expect(after.palette.accent).toBe('#1e3a8a');
+        expect(after.brand.secondColor).toBe('#1e3a8a');
+        // the style cards are drawn with both colours too
+        qa(el, '.bd-styles c-final-theme-card').forEach((c) =>
+            expect(c.themeProps.brand.secondColor).toBe('#1e3a8a')
+        );
+        const text = q(el, '.bd-roles').textContent;
+        expect(text).toContain('Second');
+        expect(text).not.toContain('made from your main colour');
+    });
+
+    it('a light Second is shaded until it reads, and the preview says so', async () => {
+        const el = await mount();
+        await typeHex(el, '#1e3a8a');
+        await typeHex2(el, '#fde047');
+        expect(brandOf(el).palette.accent).not.toBe('#fde047');
+        expect(q(el, '.bd-roles').textContent).toContain('adjusted');
+    });
+
+    it('the second hex box: live on 6 digits, emptying removes it, junk says so', async () => {
+        const el = await mount();
+        await typeHex(el, '#e11d48');
+        await typeHex2(el, '#1e3a8a', { leave: false });
+        expect(brandOf(el).brand.secondColor).toBe('#1e3a8a');
+        await typeHex2(el, '');
+        expect(brandOf(el).brand.secondColor).toBeUndefined();
+        await typeHex2(el, '#12');
+        expect(q(el, '.bd-second-err').textContent).toContain('hex colour');
+        expect(q(el, '.bd-hex2').getAttribute('aria-invalid')).toBe('true');
+        // Save waits until it is fixed or emptied
+        await confirm(el);
+        expect(saveCustomTheme).not.toHaveBeenCalled();
+        await typeHex2(el, '#0f0');
+        expect(brandOf(el).brand.secondColor).toBe('#00ff00');
+    });
+
+    it('Swap trades the two; Clear removes Second', async () => {
+        const el = await mount();
+        await typeHex(el, '#e11d48');
+        expect(q(el, '.bd-swap')).toBeNull();
+        expect(q(el, '.bd-clear')).toBeNull();
+        await typeHex2(el, '#1e3a8a');
+        q(el, '.bd-swap').click();
+        await flush();
+        expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
+        expect(q(el, '.bd-hex2').value).toBe('#e11d48');
+        expect(brandOf(el).palette.submitBg).toBe('#1e3a8a');
+        q(el, '.bd-clear').click();
+        await flush();
+        expect(q(el, '.bd-hex2').value).toBe('');
+        expect(brandOf(el).brand.secondColor).toBeUndefined();
+        expect(q(el, '.bd-swap')).toBeNull();
+    });
+
+    it('a new logo drops a Second tapped on the old one, keeps a typed one', async () => {
+        const el = await mount();
+        await uploadLogo(el, twoColourLogo());
+        qa(el, '.bd-swatch')[1].click();
+        await flush();
+        await uploadLogo(el, [...px('#16a34a', 300), ...px('#7c3aed', 200)]);
+        expect(q(el, '.bd-hex2').value).toBe('');
+        await typeHex2(el, '#f59e0b');
+        await uploadLogo(el, twoColourLogo());
+        expect(q(el, '.bd-hex2').value).toBe('#f59e0b');
+    });
+
+    it('Save records both colours in the theme', async () => {
+        const el = await mount();
+        await uploadLogo(el, twoColourLogo());
+        qa(el, '.bd-swatch')[1].click();
+        await flush();
+        await confirm(el);
+        const saved = JSON.parse(saveCustomTheme.mock.calls[0][0].themeJson);
+        expect(saved.brand).toEqual({
+            color: '#e11d48',
+            secondColor: '#1e3a8a',
+            style: 'clean'
+        });
+        expect(saved.palette.submitBg).toBe('#e11d48');
+        expect(saved.palette.accent).toBe('#1e3a8a');
     });
 });
