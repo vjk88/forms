@@ -30,6 +30,14 @@
                                     <span class="tc-flabel">Email</span>
                                     <div class="tc-input"></div>
                                 </div>
+                                <template lwc:if={accentSample}>
+                                    <div class="tc-choice">
+                                        <span class="tc-radio"></span>
+                                        <span class="tc-choice-label"
+                                            >Yes, keep me posted</span
+                                        >
+                                    </div>
+                                </template>
                                 <button
                                     class="tc-btn"
                                     type="button"
@@ -144,6 +152,14 @@
                                     <span class="tc-flabel">Full name</span>
                                     <div class="tc-input"></div>
                                 </div>
+                                <template lwc:if={accentSample}>
+                                    <div class="tc-choice">
+                                        <span class="tc-radio"></span>
+                                        <span class="tc-choice-label"
+                                            >Yes, keep me posted</span
+                                        >
+                                    </div>
+                                </template>
                             </div>
                             <div class="tc-acc">
                                 <span class="tc-acc-title">Address</span>
@@ -228,6 +244,14 @@
                                 <span class="tc-flabel">Email</span>
                                 <div class="tc-input"></div>
                             </div>
+                            <template lwc:if={accentSample}>
+                                <div class="tc-choice">
+                                    <span class="tc-radio"></span>
+                                    <span class="tc-choice-label"
+                                        >Yes, keep me posted</span
+                                    >
+                                </div>
+                            </template>
                             <button class="tc-btn" type="button" tabindex="-1">
                                 Submit
                             </button>

@@ -93,3 +93,59 @@ describe('c-final-theme-card: picture mode', () => {
         expect(el.shadowRoot.textContent).toContain('Registration');
     });
 });
+
+describe('c-final-theme-card: accent sample (brand dialog)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it.each(['scroll', 'splitHero', 'accordion'])(
+        '%s: a chosen answer only when asked for',
+        async (layout) => {
+            const plain = mount({ themeKey: 'nordic', label: 'A', layout });
+            const sampled = mount({
+                themeKey: 'nordic',
+                label: 'B',
+                layout,
+                accentSample: true
+            });
+            await flush();
+            expect(plain.shadowRoot.querySelector('.tc-choice')).toBeNull();
+            expect(
+                sampled.shadowRoot.querySelector('.tc-choice .tc-radio')
+            ).not.toBeNull();
+        }
+    );
+});
+
+describe('c-final-theme-card: colour dots', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('a two-colour brand leads with its button (main) colour', async () => {
+        const palette = { submitBg: '#e11d48', accent: '#1e3a8a' };
+        const two = mount({
+            label: 'Two',
+            themeProps: {
+                palette,
+                brand: { color: '#e11d48', secondColor: '#1e3a8a' }
+            }
+        });
+        const one = mount({
+            label: 'One',
+            themeProps: { palette, brand: { color: '#e11d48' } }
+        });
+        await flush();
+        const dots = (el) =>
+            [...el.shadowRoot.querySelectorAll('.tc-swatch')].map(
+                (d) => d.title
+            );
+        expect(dots(two)[0]).toBe('Button');
+        expect(dots(one)[0]).toBe('Accent');
+    });
+});

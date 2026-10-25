@@ -82,26 +82,39 @@
 }
 
 .bd-swatch {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border: 2px solid transparent;
-    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 44px;
+    padding: 4px 2px 2px;
+    border: 0;
+    border-radius: 8px;
     background: none;
+    color: var(--c-studio-text);
     cursor: pointer;
 }
 
-.bd-swatch.is-on {
-    border-color: var(--c-studio-text);
-}
-
 .bd-swatch-chip {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+}
+
+/* chosen: a ring around the chip, and its role in words below it */
+.bd-swatch.is-on .bd-swatch-chip {
+    box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 20%),
+        0 0 0 2px var(--c-studio-surface),
+        0 0 0 4px var(--c-studio-text);
+}
+
+.bd-swatch-role {
+    min-height: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 14px;
 }
 
 .bd-check {
@@ -225,4 +238,54 @@
 .bd-picker:not(.is-set) {
     border-style: dashed;
     opacity: 0.55;
+}
+
+/* one fixed width, so the two hex boxes line up */
+.bd-colorname {
+    flex: none;
+    width: 168px;
+}
+
+/* read by screen readers only */
+.bd-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.bd-swap {
+    align-self: flex-start;
+}
+
+/* What each colour paints, under the preview */
+.bd-roles {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.bd-role {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.bd-role-chip {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
 }

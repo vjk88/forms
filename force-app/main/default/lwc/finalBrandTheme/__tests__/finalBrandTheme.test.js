@@ -60,7 +60,7 @@ describe('finalBrandTheme: the contrast matrix', () => {
             const recipe = buildBrandTheme({ color, style });
             const report = brandContrastReport(recipe);
             // advisory rows (the button fill) are reported, not required
-        const failing = report.checks.filter((c) => !c.pass && !c.advisory);
+            const failing = report.checks.filter((c) => !c.pass && !c.advisory);
             expect(failing).toEqual([]);
             // and the report really checked the surfaces it claims
             expect(report.checks.length).toBeGreaterThan(40);
@@ -309,4 +309,86 @@ describe('PR 401 review: surfaces, fields, borders, header, advisory', () => {
         expect(pairs).not.toMatch(/\d\.\d{5,}%/);
         expect(pairs).toContain('accent tint 14% on page');
     });
+});
+
+// ------------------------------------------------- second colour (plan §B.4)
+
+describe('finalBrandTheme: optional second colour (B3)', () => {
+    const BEFORE = require('./__fixtures__/brandBeforeSecondColour.json');
+
+    it.each(Object.keys(BEFORE.recipes))(
+        'no second colour: %s is byte-identical to before B3',
+        (key) => {
+            const [color, style, extra] = key.split('|');
+            const input =
+                extra === 'fonts'
+                    ? {
+                          color,
+                          fonts: { pairing: 'editorialSerif' },
+                          name: 'Acme brand'
+                      }
+                    : { color, style };
+            expect(buildBrandTheme(input)).toStrictEqual(BEFORE.recipes[key]);
+        }
+    );
+
+    it('main keeps the button, header and page tint; second takes the accent and focus', () => {
+        const one = buildBrandTheme({ color: '#e11d48', style: 'boldHeader' });
+        const two = buildBrandTheme({
+            color: '#e11d48',
+            secondColor: '#1E3A8A',
+            style: 'boldHeader'
+        });
+        expect(two.palette.submitBg).toBe('#e11d48');
+        expect(two.palette.headerBg).toBe('#e11d48');
+        expect(two.palette.pageBg).toBe(one.palette.pageBg);
+        expect(two.palette.accent).toBe('#1e3a8a');
+        expect(two.palette.accent).not.toBe(one.palette.accent);
+        expect(two.fieldStates.focus).not.toBe(one.fieldStates.focus);
+        expect(two.brand).toEqual({
+            color: '#e11d48',
+            secondColor: '#1e3a8a',
+            style: 'boldHeader'
+        });
+    });
+
+    it('a second colour that is not hex is ignored (main-only, as before)', () => {
+        expect(
+            buildBrandTheme({ color: '#e11d48', secondColor: 'navy' })
+        ).toStrictEqual(buildBrandTheme({ color: '#e11d48' }));
+    });
+
+    const SECONDS = [
+        '#1e3a8a',
+        '#fbbf24',
+        '#84cc16',
+        '#fafafa',
+        '#0a0a0a',
+        '#808080',
+        '#06b6d4',
+        '#7c3aed',
+        '#e11d48',
+        '#16a34a',
+        '#f472b6',
+        '#777777'
+    ];
+    it.each(BRAND_STYLES)(
+        '%s: 51 main x 12 second colours, every pair passes on every surface',
+        (style) => {
+            const failing = [];
+            COLORS.forEach((color) =>
+                SECONDS.forEach((secondColor) => {
+                    const r = buildBrandTheme({ color, secondColor, style });
+                    brandContrastReport(r)
+                        .checks.filter((c) => !c.pass && !c.advisory)
+                        .forEach((c) =>
+                            failing.push(
+                                `${color}+${secondColor}: ${c.pair} ${c.ratio}`
+                            )
+                        );
+                })
+            );
+            expect(failing).toEqual([]);
+        }
+    );
 });

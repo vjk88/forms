@@ -49,6 +49,12 @@ export default class FinalThemeCard extends LightningElement {
      * role, no tab stop, no selection check, clicks do nothing.
      */
     @api picture = false;
+    /**
+     * Draw a chosen answer in the highlight colour where the layout's mock
+     * has nothing in it (the brand dialog, where the accent can be its own
+     * second colour).
+     */
+    @api accentSample = false;
 
     get _theme() {
         if (this.themeProps && typeof this.themeProps === 'object') {
@@ -117,7 +123,14 @@ export default class FinalThemeCard extends LightningElement {
 
     get swatches() {
         const p = this._pal;
+        const twoColour =
+            this.themeProps &&
+            this.themeProps.brand &&
+            this.themeProps.brand.secondColor;
+        // a two-colour brand: its main colour lives on the button
+        const lead = twoColour ? [['Button', p.submitBg]] : [];
         return [
+            ...lead,
             ['Accent', p.accent],
             ['Surface', p.contentBg],
             ['Page', p.pageBg],
