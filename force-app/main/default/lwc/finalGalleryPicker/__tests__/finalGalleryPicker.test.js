@@ -124,3 +124,55 @@ describe('c-final-gallery-picker', () => {
         expect(handler).toHaveBeenCalledTimes(3);
     });
 });
+
+describe('c-final-gallery-picker: brand themes (B2)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('the theme step opens with "Create from your brand"', async () => {
+        const el = mount({ mode: 'theme', themeValue: 'nordic' });
+        await flush();
+        const handler = jest.fn();
+        el.addEventListener('brandcreate', handler);
+        const brand = el.shadowRoot.querySelector('.gal-brand');
+        expect(brand.textContent).toContain('Create from your brand');
+        brand.click();
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('custom themes preview their own recipe, not their base theme', async () => {
+        const recipe = { palette: { accent: '#e11d48', pageBg: '#fef2f4' } };
+        const el = mount({
+            mode: 'theme',
+            themeValue: 'nordic',
+            customThemes: [
+                {
+                    id: 'a0A1',
+                    name: 'Acme brand',
+                    baseTheme: 'nordic',
+                    themeJson: JSON.stringify(recipe)
+                },
+                {
+                    id: 'a0A2',
+                    name: 'Broken',
+                    baseTheme: 'dracula',
+                    themeJson: '{not json'
+                }
+            ]
+        });
+        await flush();
+        const cards = [
+            ...el.shadowRoot.querySelectorAll('c-final-theme-card[data-id]')
+        ];
+        expect(cards[0].themeProps).toEqual(recipe);
+        // a broken recipe falls back to its base theme
+        expect(cards[1].themeProps).toBeNull();
+        expect(cards[1].themeKey).toBe('dracula');
+        expect(el.shadowRoot.textContent).not.toContain(
+            "Previewed on their base theme's palette"
+        );
+    });
+});

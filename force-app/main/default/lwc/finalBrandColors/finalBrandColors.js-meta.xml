@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Studio: colour suggestions from a logo (canvas read of the chosen file, then a pure ranking). IMPL_PLAN_FONTS_AND_BRAND_THEME B.3.</description>
+</LightningComponentBundle>

@@ -1,7 +1,8 @@
 import { LightningElement, api } from 'lwc';
 import { getBuiltinTheme, getBrandCopy } from 'c/finalThemeCatalog';
-import { resolveTokens, tokensToStyle } from 'c/finalThemeEngine';
+import { resolveTokens, tokensToStyle, fontManifest } from 'c/finalThemeEngine';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
+import { ensureFontRefs } from 'c/finalFontBundle';
 
 /**
  * finalThemeCard — one theme preview card (ported from formStudio's formThemeCard).
@@ -30,6 +31,12 @@ function mockShape(layout, paneFlow) {
 
 export default class FinalThemeCard extends LightningElement {
     @api themeKey;
+    /**
+     * A custom theme's own recipe (Theme_Definition__c JSON, parsed). When
+     * set it wins over the built-in lookup, so a brand theme previews as
+     * itself, not as its base theme.
+     */
+    @api themeProps;
     @api label;
     @api description;
     /** The layout picked in step 1 — drives the mock's SHAPE. */
@@ -39,7 +46,20 @@ export default class FinalThemeCard extends LightningElement {
     @api selected = false;
 
     get _theme() {
+        if (this.themeProps && typeof this.themeProps === 'object') {
+            return this.themeProps;
+        }
         return getBuiltinTheme(this.themeKey) || {};
+    }
+
+    renderedCallback() {
+        // a theme on bundled or uploaded fonts previews in them (DEFERRED 42);
+        // registration is idempotent and loads only what the theme uses
+        try {
+            ensureFontRefs(fontManifest(this._theme, null));
+        } catch {
+            // a broken recipe still renders the card in fallback fonts
+        }
     }
 
     get _pal() {

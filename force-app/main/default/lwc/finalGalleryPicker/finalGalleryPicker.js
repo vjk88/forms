@@ -39,6 +39,19 @@ export function layoutCardName(layoutType, paneFlow) {
     return null;
 }
 
+// A custom theme's saved recipe; a broken one falls back to its base theme.
+function parseRecipe(json) {
+    if (!json) {
+        return null;
+    }
+    try {
+        const recipe = JSON.parse(json);
+        return recipe && typeof recipe === 'object' ? recipe : null;
+    } catch {
+        return null;
+    }
+}
+
 export default class FinalGalleryPicker extends LightningElement {
     /** 'theme' | 'layout' — which roster the shell shows. */
     @api mode = 'theme';
@@ -105,6 +118,7 @@ export default class FinalGalleryPicker extends LightningElement {
             id: t.id,
             name: t.name,
             baseTheme: t.baseTheme,
+            themeProps: parseRecipe(t.themeJson),
             selected: `custom:${t.id}` === this.themeValue
         }));
     }
@@ -135,6 +149,11 @@ export default class FinalGalleryPicker extends LightningElement {
 
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
+    }
+
+    /** "Create from your brand": the host opens the brand dialog. */
+    handleBrandCreate() {
+        this.dispatchEvent(new CustomEvent('brandcreate'));
     }
 
     handleClose() {
