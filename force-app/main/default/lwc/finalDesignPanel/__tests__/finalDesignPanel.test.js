@@ -533,7 +533,7 @@ describe('c-final-design-panel', () => {
         const el = mount();
         expect(
             el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
-        ).toBe('Nordic Minimalist');
+        ).toBe('Clean · Nordic Minimalist');
         const gallery = await openGallery(el, 'theme');
         expect(gallery).not.toBeNull();
         expect(gallery.mode).toBe('theme');

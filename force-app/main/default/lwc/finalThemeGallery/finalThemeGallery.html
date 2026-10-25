@@ -18,17 +18,51 @@
         </div>
 
         <div class="gal-grid">
-            <template for:each={cards} for:item="c">
-                <c-final-theme-card
-                    key={c.key}
-                    theme-key={c.key}
-                    label={c.label}
-                    description={c.description}
-                    layout={previewLayout}
-                    pane-flow={previewPaneFlow}
-                    selected={c.selected}
-                    onselect={handleSelect}
-                ></c-final-theme-card>
+            <template for:each={families} for:item="f">
+                <div key={f.key} class="fam" data-family={f.key}>
+                    <c-final-theme-card
+                        theme-key={f.themeKey}
+                        label={f.label}
+                        description={f.description}
+                        layout={previewLayout}
+                        pane-flow={previewPaneFlow}
+                        selected={f.selected}
+                        onselect={handleSelect}
+                    ></c-final-theme-card>
+                    <template lwc:if={f.many}>
+                        <!-- outside the card: a dot changes the preview only -->
+                        <div
+                            class="fam-dots"
+                            role="radiogroup"
+                            aria-label={f.groupLabel}
+                        >
+                            <template for:each={f.dots} for:item="d">
+                                <button
+                                    key={d.key}
+                                    type="button"
+                                    role="radio"
+                                    class={d.cls}
+                                    aria-checked={d.checked}
+                                    aria-label={d.name}
+                                    title={d.name}
+                                    tabindex={d.tabindex}
+                                    data-family={f.key}
+                                    data-key={d.key}
+                                    onclick={handleDot}
+                                    onkeydown={handleDotKey}
+                                >
+                                    <span
+                                        class="fam-chip"
+                                        style={d.style}
+                                    ></span>
+                                </button>
+                            </template>
+                        </div>
+                        <p class="fam-showing" aria-live="polite">
+                            {f.showing}
+                        </p>
+                    </template>
+                </div>
             </template>
         </div>
     </div>

@@ -141,6 +141,7 @@ const THEMES = {
         tags: ['light', 'editorial'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#c2410c',
             onAccent: '#ffffff',
             pageBg: '#faf7f2',
@@ -204,6 +205,7 @@ const THEMES = {
         tags: ['dark', 'creative'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#06b6d4',
             onAccent: '#0c0f1d',
             pageBg: '#0c0f1d',
@@ -278,6 +280,7 @@ const THEMES = {
         tags: ['light', 'creative'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#7e22ce',
             onAccent: '#ffffff',
             pageBg: '#f3e8ff',
@@ -365,10 +368,11 @@ const THEMES = {
     },
 
     retroStepper: {
-        name: 'Amber Terminal Stepper',
+        name: 'Amber Terminal',
         tags: ['dark', 'stepped', 'creative'],
         layout: 'stepped',
         palette: {
+            inkMode: 'contrast',
             accent: '#f97316',
             onAccent: '#0c0703',
             pageBg: '#0c0703',
@@ -409,10 +413,11 @@ const THEMES = {
 
     // ---- Split-hero family (pane painted via headerBg) ----------------------
     marbleSplit: {
-        name: 'Marble Split-Hero',
+        name: 'Quiet Studio',
         tags: ['light', 'split', 'creative', 'bgimage'],
         layout: 'split',
         palette: {
+            inkMode: 'contrast',
             accent: '#d97706',
             onAccent: '#ffffff',
             pageBg: '#fafaf9',
@@ -437,10 +442,11 @@ const THEMES = {
     },
 
     cyberSplit: {
-        name: 'Cyber Midnight Split-Hero',
+        name: 'Cyber Midnight',
         tags: ['dark', 'split', 'creative', 'bgimage'],
         layout: 'split',
         palette: {
+            inkMode: 'contrast',
             accent: '#ec4899',
             onAccent: '#ffffff',
             pageBg: '#09090b',
@@ -471,10 +477,11 @@ const THEMES = {
     },
 
     claySplit: {
-        name: 'Terracotta Split-Hero',
+        name: 'Pine Header',
         tags: ['light', 'split', 'editorial', 'bgimage'],
         layout: 'split',
         palette: {
+            inkMode: 'contrast',
             accent: '#c2410c',
             onAccent: '#ffffff',
             pageBg: '#fdfbf7',
@@ -501,10 +508,11 @@ const THEMES = {
     },
 
     botanicalSplit: {
-        name: 'Botanical Split-Hero',
+        name: 'Botanical',
         tags: ['light', 'split', 'minimalist', 'bgimage'],
         layout: 'split',
         palette: {
+            inkMode: 'contrast',
             accent: '#15803d',
             onAccent: '#ffffff',
             pageBg: '#f4f7f5',
@@ -529,10 +537,11 @@ const THEMES = {
     },
 
     auraSplit: {
-        name: 'Bioluminescent Split',
+        name: 'Bioluminescent',
         tags: ['dark', 'split', 'creative'],
         layout: 'split',
         palette: {
+            inkMode: 'contrast',
             accent: '#2dd4bf',
             onAccent: '#090d16',
             pageBg: '#090d16',
@@ -567,6 +576,7 @@ const THEMES = {
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#f97316',
             onAccent: '#ffffff',
             pageBg: '#e8a87c',
@@ -605,6 +615,7 @@ const THEMES = {
         tags: ['light', 'editorial', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#15803d',
             onAccent: '#ffffff',
             pageBg: '#8ba99b',
@@ -639,10 +650,11 @@ const THEMES = {
     },
 
     marbleLuxury: {
-        name: 'Marble Luxury',
+        name: 'Modern Home',
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#18181b',
             onAccent: '#ffffff',
             pageBg: '#e8e6e3',
@@ -677,6 +689,7 @@ const THEMES = {
         tags: ['dark', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#22c55e',
             onAccent: '#0f172a',
             pageBg: '#0a0f18',
@@ -757,7 +770,10 @@ const THEMES = {
         tags: ['dark', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
-            accent: '#a855f7',
+            inkMode: 'contrast',
+            // 2% lighter than #a855f7: near-black ink reaches 4.6:1 (4.48
+            // before; theme families plan step 3)
+            accent: '#aa58f7',
             onAccent: '#ffffff',
             pageBg: '#1a0f2e',
             contentBg: 'rgba(15, 10, 30, 0.8)',
@@ -792,7 +808,7 @@ const THEMES = {
     },
 
     desertOasis: {
-        name: 'Desert Oasis',
+        name: 'Misty Pines',
         tags: ['light', 'editorial', 'bgimage'],
         layout: 'classic',
         palette: {
@@ -835,6 +851,7 @@ const THEMES = {
         tags: ['light', 'minimalist', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#4b5563',
             onAccent: '#ffffff',
             pageBg: '#e8e2d5',
@@ -860,10 +877,11 @@ const THEMES = {
     },
 
     auroraBorealis: {
-        name: 'Northern Lights',
+        name: 'Palm Dusk',
         tags: ['dark', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#2dd4bf',
             onAccent: '#041d1a',
             pageBg: '#0a1518',
@@ -898,10 +916,11 @@ const THEMES = {
     },
 
     silkLuxury: {
-        name: 'Silk Luxury',
+        name: 'Rose & Leaf',
         tags: ['light', 'creative', 'bgimage'],
         layout: 'classic',
         palette: {
+            inkMode: 'contrast',
             accent: '#db2777',
             onAccent: '#ffffff',
             pageBg: '#f5d5e0',
@@ -1001,36 +1020,21 @@ export function getBuiltinTheme(key) {
 }
 
 /**
- * Themes kept for existing forms but no longer offered in any picker
- * (IMPL_PLAN_THEME_CATALOG_CUT P1). The 2026-10-19 audit found these render as
- * recolours of the nine gallery themes. Their recipes above stay byte-identical
- * so drafts, published snapshots and republishes keep their exact look; this
- * list only decides what the pickers show.
+ * Themes kept for existing forms but no longer offered in any picker. The
+ * catalog cut (IMPL_PLAN_THEME_CATALOG_CUT P1) hid 23; the theme families
+ * re-measure (IMPL_PLAN_THEME_FAMILIES, 2026-10-25) brought 17 back as family
+ * variants. These six differ from their family head only in accent, a barely
+ * visible page tint, corners or shadow. Their recipes stay byte-identical, so
+ * forms already on them keep their exact look; this list only decides what
+ * the pickers show.
  */
 const HIDDEN_THEMES = new Set([
-    'terracotta',
-    'forest',
     'slate',
-    'tokyo',
-    'lavender',
     'execNav',
     'startupNav',
-    'mintStepper',
-    'retroStepper',
+    'forest',
     'snowStepper',
-    'marbleSplit',
-    'cyberSplit',
-    'claySplit',
-    'botanicalSplit',
-    'auraSplit',
-    'sunsetDunes',
-    'forestMist',
-    'marbleLuxury',
-    'carbonMatrix',
-    'cosmicVortex',
-    'vintagePaper',
-    'auroraBorealis',
-    'silkLuxury'
+    'mintStepper'
 ]);
 
 /** Every theme: [{ key, name, tags, layout, hidden }] — never the recipes.
@@ -1048,6 +1052,77 @@ export function listBuiltinThemes() {
 /** The themes a person can pick: listBuiltinThemes() minus the hidden ones. */
 export function listGalleryThemes() {
     return listBuiltinThemes().filter((t) => !t.hidden);
+}
+
+/**
+ * The theme picker shows FAMILIES (IMPL_PLAN_THEME_FAMILIES): one card per
+ * family, with a dot per variant. A variant is here only when it looks
+ * clearly different from its family head at a glance (measured 2026-10-25:
+ * page or card colour, a photo, the header, light vs dark, text colour or
+ * font). The first member is the head.
+ */
+const THEME_FAMILIES = Object.freeze([
+    {
+        key: 'clean',
+        name: 'Clean',
+        members: ['nordic', 'lavender', 'terracotta']
+    },
+    {
+        key: 'editorial',
+        name: 'Editorial',
+        members: ['editorialIvory', 'sandstone', 'vintagePaper']
+    },
+    { key: 'dark', name: 'Dark', members: ['dracula', 'tokyo'] },
+    {
+        key: 'photoHeader',
+        name: 'Photo header',
+        members: [
+            'marbleSplit',
+            'claySplit',
+            'botanicalSplit',
+            'cyberSplit',
+            'marbleLuxury'
+        ]
+    },
+    {
+        key: 'scenic',
+        name: 'Scenic',
+        members: [
+            'oceanBreeze',
+            'desertOasis',
+            'sunsetDunes',
+            'forestMist',
+            'silkLuxury'
+        ]
+    },
+    {
+        key: 'darkGlass',
+        name: 'Dark glass',
+        members: ['carbonMatrix', 'cosmicVortex', 'auroraBorealis', 'auraSplit']
+    },
+    {
+        key: 'terminal',
+        name: 'Terminal',
+        members: ['terminal', 'retroStepper']
+    },
+    { key: 'neonNights', name: 'Neon Nights', members: ['neonNights'] },
+    { key: 'neoBrutalism', name: 'Neo-Brutalism', members: ['neoBrutalism'] }
+]);
+
+/** The families, in picker order: [{ key, name, members: [{ key, name, tags }] }]. */
+export function listThemeFamilies() {
+    const byKey = Object.fromEntries(
+        listBuiltinThemes().map((t) => [t.key, t])
+    );
+    return THEME_FAMILIES.map((f) => ({
+        key: f.key,
+        name: f.name,
+        members: f.members.map((k) => ({
+            key: k,
+            name: byKey[k].name,
+            tags: byKey[k].tags
+        }))
+    }));
 }
 
 // Sample brand copy per theme — the personality lines every preview surface

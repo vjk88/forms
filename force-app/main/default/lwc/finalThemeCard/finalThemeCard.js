@@ -111,9 +111,13 @@ export default class FinalThemeCard extends LightningElement {
         return this.shape === 'single';
     }
 
+    /** The theme has a header surface: a colour, a photo or a gradient. */
     get hasBanner() {
-        const h = this._pal.headerBg;
-        return Boolean(h) && h !== 'transparent' && h !== 'none';
+        const p = this._pal;
+        const h = p.headerBg;
+        const colour = Boolean(h) && h !== 'transparent' && h !== 'none';
+        const g = p.headerBgGradient;
+        return Boolean(colour || p.headerImage || (g && g.start && g.end));
     }
 
     get brand() {
