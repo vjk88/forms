@@ -164,9 +164,15 @@
     margin: 0;
     padding: 24px 16px;
     border: 1.5px dashed var(--c-studio-border-strong);
-    border-radius: 10px;
+    border-radius: var(--c-studio-radius-lg, 10px);
     color: var(--c-studio-text-weak);
     text-align: center;
+}
+
+.bd-warn:empty,
+.bd-error:empty,
+.bd-save-error:empty {
+    display: none;
 }
 
 .bd-warn {
@@ -182,5 +188,41 @@
 .bd-error {
     margin: 0;
     font-size: 12.5px;
-    color: var(--c-studio-error-text, #b42318);
+    color: var(--c-studio-error-text);
+}
+
+.bd-save-error {
+    margin: 0;
+    max-width: 52ch;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--c-studio-error-text);
+}
+
+.bd-opt {
+    font-weight: 400;
+    color: var(--c-studio-text-weak);
+}
+
+.bd-link {
+    min-height: 32px;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--c-studio-accent-text);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.bd-link:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* No colour yet: the picker reads as empty, not as a chosen navy. */
+.bd-picker:not(.is-set) {
+    border-style: dashed;
+    opacity: 0.55;
 }

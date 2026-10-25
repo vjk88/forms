@@ -56,3 +56,40 @@ describe('c-final-theme-card', () => {
         ).not.toBeNull();
     });
 });
+
+describe('c-final-theme-card: picture mode', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('is not a control: no button role, no tab stop, no check, no select', async () => {
+        const el = mount({
+            themeKey: 'nordic',
+            label: 'Preview',
+            selected: true,
+            picture: true
+        });
+        const handler = jest.fn();
+        el.addEventListener('select', handler);
+        await flush();
+        const root = el.shadowRoot.querySelector('.tc');
+        expect(root.getAttribute('role')).toBe('img');
+        expect(root.hasAttribute('tabindex')).toBe(false);
+        expect(root.hasAttribute('aria-pressed')).toBe(false);
+        expect(el.shadowRoot.querySelector('.tc-check')).toBeNull();
+        root.click();
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('a custom recipe uses the neutral sample copy, not its base theme’s', async () => {
+        const el = mount({
+            themeKey: 'nordic',
+            label: 'Acme',
+            themeProps: { palette: { accent: '#e11d48' } }
+        });
+        await flush();
+        expect(el.shadowRoot.textContent).toContain('Registration');
+    });
+});

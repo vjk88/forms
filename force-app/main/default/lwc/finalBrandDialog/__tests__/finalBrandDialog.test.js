@@ -3,6 +3,7 @@ import FinalBrandDialog from 'c/finalBrandDialog';
 import saveCustomTheme from '@salesforce/apex/FinalThemeController.saveCustomTheme';
 import orgName from '@salesforce/apex/FinalThemeController.orgName';
 import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
+import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { readImagePixels } from 'c/finalBrandColors';
 
 jest.mock(
@@ -29,10 +30,19 @@ jest.mock(
     () => ({ default: '/resource/1/formFonts' }),
     { virtual: true }
 );
-// The canvas read needs a real browser; the ranking is the real one.
+jest.mock(
+    '@salesforce/apex/FinalAssetController.deleteImage',
+    () => ({ default: jest.fn(() => Promise.resolve()) }),
+    { virtual: true }
+);
+// The canvas work needs a real browser; the ranking is the real one.
 jest.mock('c/finalBrandColors', () => {
     const actual = jest.requireActual('c/finalBrandColors');
-    return { ...actual, readImagePixels: jest.fn() };
+    return {
+        ...actual,
+        readImagePixels: jest.fn(),
+        logoForUpload: jest.fn((d) => Promise.resolve(d))
+    };
 });
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -53,10 +63,13 @@ async function mount(props = {}) {
 const q = (el, sel) => el.shadowRoot.querySelector(sel);
 const qa = (el, sel) => [...el.shadowRoot.querySelectorAll(sel)];
 
-async function typeHex(el, value) {
+async function typeHex(el, value, { leave = true } = {}) {
     const hex = q(el, '.bd-hex');
     hex.value = value;
     hex.dispatchEvent(new CustomEvent('input'));
+    if (leave) {
+        hex.dispatchEvent(new CustomEvent('change'));
+    }
     await flush();
 }
 
@@ -124,16 +137,24 @@ describe('c-final-brand-dialog', () => {
     it('a bad hex says so and draws nothing', async () => {
         const el = await mount();
         await typeHex(el, '#12');
-        expect(q(el, '.bd-error').textContent).toContain('hex colour');
+        expect(q(el, '.bd-color-err').textContent).toContain('hex colour');
+        expect(q(el, '.bd-hex').getAttribute('aria-invalid')).toBe('true');
         expect(q(el, '.bd-empty')).not.toBeNull();
     });
 
     it('a light colour warns that the Submit button may not stand out', async () => {
         const el = await mount();
         await typeHex(el, '#fafafa');
-        expect(q(el, '.bd-warn').textContent).toContain('Submit button');
+        const warn = q(el, '.bd-warn').textContent;
+        expect(warn).toContain('Submit button');
+        // only a style that really fixes it is named (Bold header does not)
+        expect(warn).toContain('Try Dark');
+        expect(warn).not.toContain('Bold header');
+        expect(el.shadowRoot.textContent).toContain(
+            'Text and focus outlines are checked'
+        );
         await typeHex(el, '#1e3a8a');
-        expect(q(el, '.bd-warn')).toBeNull();
+        expect(q(el, '.bd-warn').textContent.trim()).toBe('');
     });
 
     it('a logo suggests its colours and the first one is taken', async () => {
@@ -145,7 +166,7 @@ describe('c-final-brand-dialog', () => {
         ]);
         const swatches = qa(el, '.bd-swatch');
         expect(swatches.map((s) => s.title)).toEqual(['#e11d48', '#1e3a8a']);
-        expect(swatches[0].getAttribute('aria-checked')).toBe('true');
+        expect(swatches[0].getAttribute('aria-pressed')).toBe('true');
         expect(q(el, '.bd-hex').value).toBe('#e11d48');
         swatches[1].click();
         await flush();
@@ -224,7 +245,7 @@ describe('c-final-brand-dialog', () => {
         const el = await mount();
         await confirm(el);
         expect(saveCustomTheme).not.toHaveBeenCalled();
-        expect(q(el, '.bd-error').textContent).toContain('Pick a colour');
+        expect(q(el, '.bd-color-err').textContent).toContain('Pick a colour');
     });
 
     it('a failed save shows the server message and emits nothing', async () => {
@@ -237,7 +258,9 @@ describe('c-final-brand-dialog', () => {
         await typeHex(el, '#1e3a8a');
         await confirm(el);
         expect(saved).not.toHaveBeenCalled();
-        expect(q(el, '.bd-preview .bd-error').textContent).toBe('Name taken');
+        expect(q(el, '.bd-save-error').textContent).toContain(
+            'The theme couldn’t be saved: Name taken'
+        );
     });
 
     it('dismissing cancels', async () => {
@@ -248,5 +271,131 @@ describe('c-final-brand-dialog', () => {
             new CustomEvent('dismiss')
         );
         expect(cancel).toHaveBeenCalled();
+    });
+
+    it('typing a colour key by key never rewrites the field (PR 402 B1)', async () => {
+        const el = await mount();
+        const hex = q(el, '.bd-hex');
+        let text = '';
+        for (const ch of '#1e3a8a') {
+            text += ch;
+            hex.value = text;
+            hex.dispatchEvent(new CustomEvent('input'));
+            // eslint-disable-next-line no-await-in-loop
+            await flush();
+            expect(hex.value).toBe(text);
+            expect(q(el, '.bd-color-err').textContent.trim()).toBe('');
+        }
+        expect(
+            q(el, '.bd-preview c-final-theme-card').themeProps.brand.color
+        ).toBe('#1e3a8a');
+    });
+
+    it('a 3-digit colour counts once you leave the box', async () => {
+        const el = await mount();
+        await typeHex(el, '#f00', { leave: false });
+        expect(q(el, '.bd-empty')).not.toBeNull();
+        q(el, '.bd-hex').dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(q(el, '.bd-hex').value).toBe('#ff0000');
+    });
+
+    it('the preview is a picture, not a control', async () => {
+        const el = await mount();
+        await typeHex(el, '#1e3a8a');
+        expect(q(el, '.bd-preview c-final-theme-card').picture).toBe(true);
+    });
+
+    it('a retry after a failed save reuses the uploaded logo', async () => {
+        saveCustomTheme.mockRejectedValueOnce({ body: { message: 'Busy' } });
+        const el = await mount();
+        await uploadLogo(el, px('#e11d48', 500));
+        await confirm(el);
+        await confirm(el);
+        expect(uploadImage).toHaveBeenCalledTimes(1);
+        expect(saveCustomTheme).toHaveBeenCalledTimes(2);
+    });
+
+    it('Cancel after an upload that was never saved removes the file', async () => {
+        saveCustomTheme.mockRejectedValueOnce({ body: { message: 'Busy' } });
+        const el = await mount();
+        await uploadLogo(el, px('#e11d48', 500));
+        await confirm(el);
+        q(el, 'c-final-studio-dialog').dispatchEvent(
+            new CustomEvent('dismiss')
+        );
+        expect(deleteImage).toHaveBeenCalledWith({
+            contentVersionId: '068XX01',
+            formId: 'a05XX0000001'
+        });
+    });
+
+    it('busy while saving, and a second click shows no false error', async () => {
+        let release;
+        saveCustomTheme.mockImplementationOnce(
+            () =>
+                new Promise((r) => {
+                    release = r;
+                })
+        );
+        const el = await mount();
+        await typeHex(el, '#1e3a8a');
+        const shell = q(el, 'c-final-studio-dialog');
+        shell.dispatchEvent(new CustomEvent('confirm'));
+        await flush();
+        expect(shell.busy).toBe(true);
+        shell.dispatchEvent(new CustomEvent('confirm'));
+        await flush();
+        expect(q(el, '.bd-name-err').textContent.trim()).toBe('');
+        release('a0AXX0000010');
+        await flush();
+        await flush();
+        expect(shell.busy).toBe(false);
+    });
+
+    it('an existing logo: the option replaces it and starts unticked', async () => {
+        const el = await mount({ currentLogoUrl: '/sfc/old' });
+        await uploadLogo(el, px('#e11d48', 500));
+        expect(q(el, '.bd-check').textContent).toContain(
+            'Replace this form’s logo'
+        );
+        expect(q(el, '.bd-check input').checked).toBe(false);
+    });
+
+    it('a text-only header says the logo will not show', async () => {
+        const el = await mount({ headerArrangement: 'textOnly' });
+        await uploadLogo(el, px('#e11d48', 500));
+        expect(el.shadowRoot.textContent).toContain('show text only');
+    });
+
+    it('a second logo moves a colour taken from the first; Remove clears it', async () => {
+        const el = await mount();
+        await uploadLogo(el, px('#e11d48', 500));
+        await uploadLogo(el, px('#16a34a', 500));
+        expect(q(el, '.bd-hex').value).toBe('#16a34a');
+        q(el, '.bd-link').click();
+        await flush();
+        expect(q(el, '.bd-logo')).toBeNull();
+        expect(qa(el, '.bd-swatch')).toHaveLength(0);
+    });
+
+    it('a colour typed by hand stays when a logo arrives', async () => {
+        const el = await mount();
+        await typeHex(el, '#1e3a8a');
+        await uploadLogo(el, px('#e11d48', 500));
+        expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
+    });
+
+    it('an upload failure explains that nothing was saved', async () => {
+        uploadImage.mockRejectedValueOnce({
+            body: { message: 'Disconnected or Canceled' }
+        });
+        const el = await mount();
+        await uploadLogo(el, px('#e11d48', 500));
+        await confirm(el);
+        expect(q(el, '.bd-save-error').textContent).toContain(
+            'Your logo couldn’t be uploaded'
+        );
+        expect(saveCustomTheme).not.toHaveBeenCalled();
     });
 });

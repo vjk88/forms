@@ -20,6 +20,7 @@
                     size="large"
                     alternative-text="Close"
                     title="Close"
+                    disabled={busy}
                     onclick={handleDismiss}
                 ></lightning-button-icon>
             </header>
@@ -31,12 +32,14 @@
                 <span class="sd-spacer"></span>
                 <lightning-button
                     label="Cancel"
+                    disabled={busy}
                     onclick={handleDismiss}
                 ></lightning-button>
                 <lightning-button
                     class="sd-confirm"
                     variant="brand"
                     label={confirmLabel}
+                    disabled={busy}
                     onclick={handleConfirm}
                 ></lightning-button>
             </footer>

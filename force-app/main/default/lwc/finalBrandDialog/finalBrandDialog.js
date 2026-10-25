@@ -2,28 +2,33 @@ import { LightningElement, api } from 'lwc';
 import saveCustomTheme from '@salesforce/apex/FinalThemeController.saveCustomTheme';
 import orgName from '@salesforce/apex/FinalThemeController.orgName';
 import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
+import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { buildBrandTheme, brandContrastReport } from 'c/finalBrandTheme';
-import { suggestColors, readImagePixels } from 'c/finalBrandColors';
+import {
+    suggestColors,
+    readImagePixels,
+    logoForUpload
+} from 'c/finalBrandColors';
 import { resolveFontRefs } from 'c/finalThemeEngine';
 import { applyFontPatch } from 'c/finalFontChoices';
 
 /**
  * finalBrandDialog — "Create from your brand"
  * (IMPL_PLAN_FONTS_AND_BRAND_THEME §B.1). One screen, live preview on the
- * right:
- *   1. Logo (PNG, JPG, GIF, WebP — the types the uploader and Apex accept):
- *      up to 5 colours suggested from it, or a plain message and the hex box;
- *   2. Brand colour (picker + hex);
- *   3. Style: Clean, Bold header, Dark — each card drawn from its real recipe;
- *   4. Fonts: the font picker (theme level);
- *   5. Name, and "Also use as this form's logo".
- * Save creates a Theme_Definition__c (saveCustomTheme), then emits
- * `save` { id, name, logo? } for the host to apply; `cancel` otherwise.
+ * right: logo (optional, suggests colours), colour, style (Clean / Bold
+ * header / Dark drawn from the real recipes), fonts (optional), name, and
+ * whether the logo also goes on this form.
+ *
+ * Save: upload the logo once (a retry reuses it), save a Theme_Definition__c,
+ * emit `save` { id, name, logo? }. While saving the dialog is busy (no way
+ * out). Cancel after an upload that was never saved removes that file.
+ * Emits `cancel` otherwise.
  */
 
 const ACCEPT = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const MAX_MB = 5;
-const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const FULL_HEX = /^#?([0-9a-f]{6})$/i;
+const ANY_HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 const STYLES = [
     { value: 'clean', label: 'Clean', hint: 'White card, brand buttons' },
@@ -51,21 +56,57 @@ function readAsDataUrl(file) {
     });
 }
 
+function normalizeHex(text) {
+    const m = ANY_HEX.exec(String(text || '').trim());
+    if (!m) {
+        return null;
+    }
+    const h =
+        m[1].length === 3
+            ? m[1]
+                  .split('')
+                  .map((c) => c + c)
+                  .join('')
+            : m[1];
+    return `#${h.toLowerCase()}`;
+}
+
+// A failed request in words a person can act on.
+function friendly(error, stage) {
+    const raw = (error && error.body && error.body.message) || '';
+    const transport =
+        !raw || /disconnect|cancel|network|timed? ?out/i.test(raw);
+    if (stage === 'upload') {
+        return transport
+            ? 'Your logo couldn’t be uploaded (we couldn’t reach Salesforce), so nothing was saved. Try again, or untick the logo option.'
+            : 'Your logo couldn’t be uploaded, so nothing was saved. Try again, or untick the logo option.';
+    }
+    if (transport) {
+        return 'We couldn’t reach Salesforce. Check your connection and try again.';
+    }
+    return `The theme couldn’t be saved: ${raw.replace(/^Error[^:]*:\s*/, '')}`;
+}
+
 export default class FinalBrandDialog extends LightningElement {
     /** The form being edited (a logo upload is attached to it). */
     @api formId;
     /** The form's layout, so the preview shows the theme in it. */
     @api layout = 'scroll';
     @api paneFlow = '';
+    /** The form's current logo, if any: the logo option then REPLACES it. */
+    @api currentLogoUrl = '';
+    /** The header arrangement ('textOnly' shows no logo). */
+    @api headerArrangement = '';
 
     color = '';
     colorText = '';
     colorError = '';
+    _colorFromLogo = false;
     style = 'clean';
     fontLevel = {};
     name = '';
+    nameError = '';
     _nameTouched = false;
-    _orgName = '';
 
     logoDataUrl = null;
     logoFileName = '';
@@ -73,51 +114,86 @@ export default class FinalBrandDialog extends LightningElement {
     logoReading = false;
     suggestions = [];
     noSuggestions = false;
-    useAsLogo = true;
+    _useAsLogo = null; // null = the default for this form
 
     saving = false;
     saveError = '';
+    _uploaded = null; // { dataUrl, url, versionId } — reused on a retry
+    _saved = false;
+    _memo = { key: '', cards: null, recipe: null, passing: [] };
 
     connectedCallback() {
         orgName()
             .then((n) => {
-                this._orgName = n || '';
-                if (!this._nameTouched && !this.name) {
-                    this.name = this._orgName ? `${this._orgName} brand` : '';
+                if (!this._nameTouched && !this.name && n) {
+                    this.name = `${n} brand`;
                 }
             })
             .catch(() => {});
     }
 
+    disconnectedCallback() {
+        // an uploaded logo whose theme was never saved: remove the file
+        if (this._uploaded && !this._saved) {
+            this._discardUpload();
+        }
+    }
+
     // ----------------------------------------------------------- recipe
+
+    /** For boolean child properties (bare attributes do not set true). */
+    get yes() {
+        return true;
+    }
 
     get hasColor() {
         return Boolean(this.color);
     }
 
-    get recipe() {
-        if (!this.color) {
-            return null;
+    // One build per colour/style/fonts, not per render (name typing reuses).
+    _recipes() {
+        const fonts = this.fontLevel.fonts || null;
+        const key = `${this.color}|${this.style}|${JSON.stringify(fonts)}`;
+        if (this._memo.key !== key) {
+            const cards = STYLES.map((s) => ({
+                ...s,
+                recipe: this.color
+                    ? buildBrandTheme({
+                          color: this.color,
+                          style: s.value,
+                          fonts
+                      })
+                    : null
+            }));
+            const chosen = cards.find((c) => c.value === this.style);
+            this._memo = {
+                key,
+                cards,
+                recipe: chosen ? chosen.recipe : null,
+                passing: cards
+                    .filter((c) => c.recipe && this._buttonStandsOut(c.recipe))
+                    .map((c) => c.label)
+            };
         }
-        return buildBrandTheme({
-            color: this.color,
-            style: this.style,
-            fonts: this.fontLevel.fonts || null,
-            name: this.name
-        });
+        return this._memo;
+    }
+
+    _buttonStandsOut(recipe) {
+        const fill = brandContrastReport(recipe).checks.find(
+            (c) => c.pair === 'button fill on card'
+        );
+        return !fill || fill.pass;
+    }
+
+    get recipe() {
+        const r = this._recipes().recipe;
+        return r ? { ...r, name: this.name || r.name } : null;
     }
 
     get styleCards() {
-        return STYLES.map((s) => ({
-            ...s,
-            selected: s.value === this.style,
-            recipe: this.color
-                ? buildBrandTheme({
-                      color: this.color,
-                      style: s.value,
-                      fonts: this.fontLevel.fonts || null
-                  })
-                : null
+        return this._recipes().cards.map((c) => ({
+            ...c,
+            selected: c.value === this.style
         }));
     }
 
@@ -125,41 +201,84 @@ export default class FinalBrandDialog extends LightningElement {
         return resolveFontRefs(this.fontLevel, null);
     }
 
-    /** Light brands blend into the card: the button loses its shape. */
+    /** Light brands blend into the card: name only the styles that fix it. */
     get buttonWarning() {
-        const recipe = this.recipe;
-        if (!recipe) {
+        const memo = this._recipes();
+        if (!memo.recipe || this._buttonStandsOut(memo.recipe)) {
             return '';
         }
-        const fill = brandContrastReport(recipe).checks.find(
-            (c) => c.pair === 'button fill on card'
-        );
-        return fill && !fill.pass
-            ? 'Your colour is close to the card colour, so the Submit button may not stand out. Try Bold header or Dark, or a deeper shade.'
-            : '';
+        const current = STYLES.find((s) => s.value === this.style).label;
+        const others = memo.passing.filter((label) => label !== current);
+        const tryThis = others.length
+            ? `Try ${others.join(' or ')}, or a deeper shade.`
+            : 'Try a deeper shade.';
+        return `Your colour is close to the card colour, so the Submit button may not stand out. ${tryThis}`;
+    }
+
+    get checkedNote() {
+        return this.buttonWarning
+            ? 'Text and focus outlines are checked to stay readable on every background.'
+            : 'Text, buttons and focus outlines are checked to stay readable on every background.';
     }
 
     get dirty() {
-        return Boolean(this.color || this.logoDataUrl);
+        return Boolean(
+            this.color ||
+            this.logoDataUrl ||
+            this._nameTouched ||
+            this.fontLevel.fonts
+        );
     }
 
     get confirmLabel() {
         return this.saving ? 'Saving…' : 'Save theme';
     }
 
-    get saveDisabled() {
-        return this.saving || !this.color || !this.name.trim();
-    }
-
-    get showUseAsLogo() {
-        return Boolean(this.logoDataUrl);
-    }
-
     get previewLabel() {
         return this.name || 'Your brand';
     }
 
+    get pickerValue() {
+        return this.color || '#888888';
+    }
+
+    get pickerClass() {
+        return this.color ? 'bd-picker is-set' : 'bd-picker';
+    }
+
+    get hexInvalid() {
+        return this.colorError ? 'true' : 'false';
+    }
+
+    get nameInvalid() {
+        return this.nameError ? 'true' : 'false';
+    }
+
     // ------------------------------------------------------------- logo
+
+    get hasLogo() {
+        return Boolean(this.logoDataUrl);
+    }
+
+    get replacesLogo() {
+        return Boolean(this.currentLogoUrl);
+    }
+
+    get useAsLogo() {
+        return this._useAsLogo === null ? !this.replacesLogo : this._useAsLogo;
+    }
+
+    get useAsLogoLabel() {
+        return this.replacesLogo
+            ? 'Replace this form’s logo with it'
+            : 'Also use as this form’s logo';
+    }
+
+    get logoHiddenHint() {
+        return this.useAsLogo && this.headerArrangement === 'textOnly'
+            ? 'This form’s header is set to show text only, so the logo won’t appear until you change Header → Arrangement.'
+            : '';
+    }
 
     handleLogoPick() {
         this.template.querySelector('.bd-file').click();
@@ -185,19 +304,18 @@ export default class FinalBrandDialog extends LightningElement {
         try {
             const dataUrl = await readAsDataUrl(file);
             const pixels = await readImagePixels(dataUrl);
-            this.logoDataUrl = dataUrl;
-            this.logoFileName = file.name;
+            this._replaceLogo(dataUrl, file.name);
             this.suggestions = suggestColors(pixels, { max: 5 }).map(
-                (s, i) => ({
-                    ...s,
-                    key: `${s.hex}-${i}`,
-                    label: `Use ${s.hex}`,
-                    style: `background:${s.hex};`
-                })
+                (s, i) => ({ ...s, key: `${s.hex}-${i}` })
             );
             this.noSuggestions = this.suggestions.length === 0;
-            if (this.suggestions.length && !this.color) {
-                this._setColor(this.suggestions[0].hex);
+            // a colour picked by hand stays; one taken from the last logo
+            // follows the new logo
+            if (
+                this.suggestions.length &&
+                (!this.color || this._colorFromLogo)
+            ) {
+                this._applyColor(this.suggestions[0].hex, true);
             }
         } catch {
             this.logoError = 'That image could not be read. Try another file.';
@@ -206,57 +324,93 @@ export default class FinalBrandDialog extends LightningElement {
         }
     }
 
+    _replaceLogo(dataUrl, fileName) {
+        if (this._uploaded && !this._saved) {
+            this._discardUpload();
+        }
+        this.logoDataUrl = dataUrl;
+        this.logoFileName = fileName;
+    }
+
+    handleLogoRemove() {
+        this._replaceLogo(null, '');
+        this.suggestions = [];
+        this.noSuggestions = false;
+        this.logoError = '';
+    }
+
+    _discardUpload() {
+        const up = this._uploaded;
+        this._uploaded = null;
+        if (up && up.versionId) {
+            deleteImage({
+                contentVersionId: up.versionId,
+                formId: this.formId || null
+            }).catch(() => {});
+        }
+    }
+
     get swatches() {
         return this.suggestions.map((s) => ({
             ...s,
-            checked: s.hex === this.color ? 'true' : 'false',
+            pressed: s.hex === this.color ? 'true' : 'false',
+            label: `Use ${s.hex}`,
+            style: `background:${s.hex};`,
             cls: s.hex === this.color ? 'bd-swatch is-on' : 'bd-swatch'
         }));
     }
 
     handleSwatch(event) {
-        this._setColor(event.currentTarget.dataset.hex);
+        this._applyColor(event.currentTarget.dataset.hex, true);
     }
 
     handleUseAsLogo(event) {
-        this.useAsLogo = event.target.checked;
+        this._useAsLogo = event.target.checked;
     }
 
     // ------------------------------------------------------------ colour
 
-    _setColor(hex) {
-        const m = HEX.exec(String(hex || '').trim());
-        if (!m) {
+    _applyColor(hex, fromLogo) {
+        const normal = normalizeHex(hex);
+        if (!normal) {
             return false;
         }
-        const h =
-            m[1].length === 3
-                ? m[1]
-                      .split('')
-                      .map((c) => c + c)
-                      .join('')
-                : m[1];
-        this.color = `#${h.toLowerCase()}`;
-        this.colorText = this.color;
+        this.color = normal;
+        this.colorText = normal;
         this.colorError = '';
+        this._colorFromLogo = Boolean(fromLogo);
         return true;
     }
 
+    /** Live as the picker moves. */
     handleColorPicker(event) {
-        this._setColor(event.target.value);
+        this._applyColor(event.target.value, false);
     }
 
+    /**
+     * While typing: keep exactly what was typed, and only a complete 6-digit
+     * colour takes effect (a 3-digit one is complete only on leaving).
+     */
     handleColorText(event) {
         this.colorText = event.target.value;
-        if (!this._setColor(this.colorText)) {
-            this.colorError = this.colorText.trim()
-                ? 'Use a hex colour such as #1e3a8a.'
-                : '';
+        this.colorError = '';
+        const m = FULL_HEX.exec(this.colorText.trim());
+        if (m) {
+            this.color = `#${m[1].toLowerCase()}`;
+            this._colorFromLogo = false;
         }
     }
 
-    get pickerValue() {
-        return this.color || '#1e3a8a';
+    /** On leaving the box: accept #abc, tidy the text, or say what's wrong. */
+    handleColorTextDone(event) {
+        const text = event.target.value.trim();
+        if (!text) {
+            this.colorError = '';
+            return;
+        }
+        if (!this._applyColor(text, false)) {
+            this.colorError = 'Use a hex colour such as #1e3a8a.';
+        }
     }
 
     // ------------------------------------------------------- style, fonts
@@ -274,50 +428,77 @@ export default class FinalBrandDialog extends LightningElement {
     handleName(event) {
         this._nameTouched = true;
         this.name = event.target.value;
+        this.nameError = '';
     }
 
     // -------------------------------------------------------------- save
 
     async handleConfirm() {
-        if (this.saveDisabled) {
-            this.saveError = !this.color
-                ? 'Pick a colour first.'
-                : 'Give the theme a name.';
+        if (this.saving) {
+            return;
+        }
+        this.saveError = '';
+        if (!this.color) {
+            this.colorError = 'Pick a colour first.';
+            this.template.querySelector('.bd-hex').focus();
+            return;
+        }
+        if (!this.name.trim()) {
+            this.nameError = 'Give the theme a name.';
+            this.template.querySelector('.bd-name').focus();
             return;
         }
         this.saving = true;
-        this.saveError = '';
+        let stage = 'upload';
         try {
             let logo = null;
             if (this.logoDataUrl && this.useAsLogo) {
-                const res = await uploadImage({
-                    base64Data: this.logoDataUrl,
-                    fileName: this.logoFileName,
-                    formId: this.formId || null
-                });
-                logo = { url: res.url, versionId: res.contentVersionId };
+                if (
+                    !this._uploaded ||
+                    this._uploaded.dataUrl !== this.logoDataUrl
+                ) {
+                    const body = await logoForUpload(this.logoDataUrl);
+                    const res = await uploadImage({
+                        base64Data: body,
+                        fileName:
+                            this.logoFileName.replace(/\.[^.]+$/, '') + '.png',
+                        formId: this.formId || null
+                    });
+                    this._uploaded = {
+                        dataUrl: this.logoDataUrl,
+                        url: res.url,
+                        versionId: res.contentVersionId
+                    };
+                }
+                logo = {
+                    url: this._uploaded.url,
+                    versionId: this._uploaded.versionId
+                };
             }
+            stage = 'save';
             const id = await saveCustomTheme({
                 themeId: null,
                 name: this.name.trim(),
                 baseTheme: BASE_FOR_STYLE[this.style] || 'nordic',
                 themeJson: JSON.stringify(this.recipe)
             });
+            this._saved = true;
             this.dispatchEvent(
                 new CustomEvent('save', {
                     detail: { id, name: this.name.trim(), logo }
                 })
             );
         } catch (e) {
-            this.saveError =
-                (e && e.body && e.body.message) ||
-                'The theme could not be saved. Try again.';
+            this.saveError = friendly(e, stage);
         } finally {
             this.saving = false;
         }
     }
 
     handleDismiss() {
+        if (this._uploaded && !this._saved) {
+            this._discardUpload();
+        }
         this.dispatchEvent(new CustomEvent('cancel'));
     }
 }

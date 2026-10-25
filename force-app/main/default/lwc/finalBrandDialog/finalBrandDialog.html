@@ -5,6 +5,7 @@
         confirm-label={confirmLabel}
         discard-text="Your brand theme hasn’t been saved yet."
         dirty={dirty}
+        busy={saving}
         onconfirm={handleConfirm}
         ondismiss={handleDismiss}
     >
@@ -12,7 +13,7 @@
             <div class="bd-form">
                 <section class="bd-step" aria-labelledby="bd-logo-h">
                     <h2 id="bd-logo-h" class="bd-h">
-                        1 · Your logo (optional)
+                        Your logo <span class="bd-opt">(optional)</span>
                     </h2>
                     <p class="bd-hint">
                         We suggest colours from it. PNG, JPG, GIF or WebP, up to
@@ -27,12 +28,19 @@
                         >
                             Upload logo…
                         </button>
-                        <template lwc:if={logoDataUrl}>
+                        <template lwc:if={hasLogo}>
                             <img
                                 class="bd-logo"
                                 src={logoDataUrl}
                                 alt="Your logo"
                             />
+                            <button
+                                type="button"
+                                class="bd-link"
+                                onclick={handleLogoRemove}
+                            >
+                                Remove
+                            </button>
                         </template>
                         <input
                             class="bd-file"
@@ -49,15 +57,14 @@
                     <template lwc:if={suggestions.length}>
                         <div
                             class="bd-swatches"
-                            role="radiogroup"
+                            role="group"
                             aria-label="Colours from your logo"
                         >
                             <template for:each={swatches} for:item="s">
                                 <button
                                     key={s.key}
                                     type="button"
-                                    role="radio"
-                                    aria-checked={s.checked}
+                                    aria-pressed={s.pressed}
                                     aria-label={s.label}
                                     title={s.hex}
                                     class={s.cls}
@@ -78,48 +85,58 @@
                             white or grey). Pick your colour below.
                         </p>
                     </template>
-                    <template lwc:if={showUseAsLogo}>
+                    <template lwc:if={hasLogo}>
                         <label class="bd-check">
                             <input
                                 type="checkbox"
                                 checked={useAsLogo}
                                 onchange={handleUseAsLogo}
                             />
-                            Also use as this form’s logo
+                            {useAsLogoLabel}
                         </label>
+                        <template lwc:if={logoHiddenHint}>
+                            <p class="bd-hint">{logoHiddenHint}</p>
+                        </template>
                     </template>
                 </section>
 
                 <section class="bd-step" aria-labelledby="bd-color-h">
-                    <h2 id="bd-color-h" class="bd-h">2 · Your colour</h2>
+                    <h2 id="bd-color-h" class="bd-h">Your colour</h2>
                     <div class="bd-row">
                         <input
-                            class="bd-picker"
+                            class={pickerClass}
                             type="color"
                             aria-label="Pick a colour"
                             value={pickerValue}
-                            onchange={handleColorPicker}
+                            oninput={handleColorPicker}
                         />
                         <label class="bd-hexlabel">
                             <span>Hex</span>
                             <input
                                 class="bd-hex"
                                 type="text"
-                                placeholder="#1e3a8a"
+                                placeholder="e.g. #1e3a8a"
                                 value={colorText}
+                                aria-invalid={hexInvalid}
+                                aria-describedby="bd-color-err"
                                 oninput={handleColorText}
+                                onchange={handleColorTextDone}
                             />
                         </label>
                     </div>
-                    <template lwc:if={colorError}>
-                        <p class="bd-error" role="alert">{colorError}</p>
-                    </template>
+                    <p id="bd-color-err" class="bd-error bd-color-err" role="alert">
+                        {colorError}
+                    </p>
                 </section>
 
                 <section class="bd-step" aria-labelledby="bd-style-h">
-                    <h2 id="bd-style-h" class="bd-h">3 · Style</h2>
+                    <h2 id="bd-style-h" class="bd-h">Style</h2>
                     <template lwc:if={hasColor}>
-                        <div class="bd-styles">
+                        <div
+                            class="bd-styles"
+                            role="group"
+                            aria-labelledby="bd-style-h"
+                        >
                             <template for:each={styleCards} for:item="s">
                                 <c-final-theme-card
                                     key={s.value}
@@ -140,27 +157,35 @@
                 </section>
 
                 <section class="bd-step" aria-labelledby="bd-font-h">
-                    <h2 id="bd-font-h" class="bd-h">4 · Fonts</h2>
+                    <h2 id="bd-font-h" class="bd-h">
+                        Fonts <span class="bd-opt">(optional)</span>
+                    </h2>
                     <c-final-font-picker
                         mode="theme"
                         label="Font pairing"
                         level={fontLevel}
                         effective={fontEffective}
-                        fonts-loaded
+                        fonts-loaded={yes}
                         onfontchange={handleFontChange}
                     ></c-final-font-picker>
                 </section>
 
                 <section class="bd-step" aria-labelledby="bd-name-h">
-                    <h2 id="bd-name-h" class="bd-h">5 · Name</h2>
+                    <h2 id="bd-name-h" class="bd-h">Name</h2>
                     <input
                         class="bd-name"
                         type="text"
+                        maxlength="80"
                         aria-labelledby="bd-name-h"
+                        aria-invalid={nameInvalid}
+                        aria-describedby="bd-name-err"
                         value={name}
-                        placeholder="Acme brand"
+                        placeholder="e.g. Acme brand"
                         oninput={handleName}
                     />
+                    <p id="bd-name-err" class="bd-error bd-name-err" role="alert">
+                        {nameError}
+                    </p>
                     <p class="bd-hint">
                         Saved for your whole organization, next to the other
                         themes.
@@ -177,25 +202,23 @@
                         description="Your brand theme"
                         layout={layout}
                         pane-flow={paneFlow}
-                        selected
+                        picture={yes}
                     ></c-final-theme-card>
-                    <template lwc:if={buttonWarning}>
-                        <p class="bd-warn" role="status">{buttonWarning}</p>
-                    </template>
-                    <p class="bd-hint">
-                        Text, buttons and focus outlines are checked to stay
-                        readable on every background.
-                    </p>
+                    <p class="bd-hint">{checkedNote}</p>
                 </template>
                 <template lwc:else>
                     <p class="bd-empty">
                         Upload your logo or pick a colour to start.
                     </p>
                 </template>
-                <template lwc:if={saveError}>
-                    <p class="bd-error" role="alert">{saveError}</p>
-                </template>
+                <!-- always in the page, so a new warning is announced -->
+                <p class="bd-warn" role="status" aria-live="polite">
+                    {buttonWarning}
+                </p>
             </aside>
         </div>
+        <p slot="footer-start" class="bd-save-error" role="alert">
+            {saveError}
+        </p>
     </c-final-studio-dialog>
 </template>

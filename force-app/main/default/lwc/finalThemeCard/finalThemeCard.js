@@ -44,6 +44,11 @@ export default class FinalThemeCard extends LightningElement {
     /** splitHero pane flow ('oneAtATime' → conversational shape). */
     @api paneFlow;
     @api selected = false;
+    /**
+     * A picture, not a control (the brand dialog's live preview): no button
+     * role, no tab stop, no selection check, clicks do nothing.
+     */
+    @api picture = false;
 
     get _theme() {
         if (this.themeProps && typeof this.themeProps === 'object') {
@@ -106,7 +111,8 @@ export default class FinalThemeCard extends LightningElement {
     }
 
     get brand() {
-        return getBrandCopy(this.themeKey);
+        // a custom recipe is not its base theme: use the neutral sample copy
+        return getBrandCopy(this.themeProps ? '' : this.themeKey);
     }
 
     get swatches() {
@@ -124,10 +130,22 @@ export default class FinalThemeCard extends LightningElement {
     }
 
     get rootClass() {
-        return this.selected ? 'tc is-on' : 'tc';
+        return this.selected && !this.picture ? 'tc is-on' : 'tc';
+    }
+    get rootRole() {
+        return this.picture ? 'img' : 'button';
+    }
+    get rootTabindex() {
+        return this.picture ? null : '0';
     }
     get pressed() {
+        if (this.picture) {
+            return null;
+        }
         return this.selected ? 'true' : 'false';
+    }
+    get showCheck() {
+        return this.selected && !this.picture;
     }
 
     _emit() {
@@ -136,9 +154,14 @@ export default class FinalThemeCard extends LightningElement {
         );
     }
     handleClick() {
-        this._emit();
+        if (!this.picture) {
+            this._emit();
+        }
     }
     handleKey(e) {
+        if (this.picture) {
+            return;
+        }
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             this._emit();
