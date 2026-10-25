@@ -132,3 +132,24 @@
     background: var(--c-studio-accent-hover);
     border-color: var(--c-studio-accent-hover);
 }
+
+/* "Start from your brand…": swaps this editor for the brand dialog. */
+.te-or {
+    color: var(--c-studio-text-weak, #526071);
+}
+
+.te-brand {
+    min-height: 32px;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--c-studio-accent-text, #115e59);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.te-brand:focus-visible {
+    outline: 2px solid var(--c-studio-focus, #0f766e);
+    outline-offset: 2px;
+}

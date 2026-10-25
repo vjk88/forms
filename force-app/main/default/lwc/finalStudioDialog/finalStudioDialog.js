@@ -24,6 +24,11 @@ export default class FinalStudioDialog extends LightningElement {
     @api confirmLabel = 'Done';
     /** Unsaved changes: leaving asks first. */
     @api dirty = false;
+    /**
+     * Work in flight (a save): every way out and the brand button are inert
+     * until the host clears it, so nothing is discarded half-done.
+     */
+    @api busy = false;
     /** What the "Discard your changes?" question says under its title. */
     @api discardText = 'Your changes haven’t been applied yet.';
 
@@ -82,6 +87,10 @@ export default class FinalStudioDialog extends LightningElement {
         if (event.key !== 'Escape' || event.defaultPrevented) {
             return;
         }
+        if (this.busy) {
+            event.stopPropagation();
+            return;
+        }
         if (this.confirming) {
             // Escape answers the question the safe way.
             event.stopPropagation();
@@ -104,14 +113,14 @@ export default class FinalStudioDialog extends LightningElement {
     }
 
     handleConfirm() {
-        if (this.confirming) {
+        if (this.confirming || this.busy) {
             return;
         }
         this.dispatchEvent(new CustomEvent('confirm'));
     }
 
     handleDismiss() {
-        if (this.confirming) {
+        if (this.confirming || this.busy) {
             return;
         }
         if (this.dirty) {

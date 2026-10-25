@@ -1,0 +1,95 @@
+import { createElement } from 'lwc';
+import FinalThemeCard from 'c/finalThemeCard';
+
+jest.mock(
+    '@salesforce/resourceUrl/formFonts',
+    () => ({ default: '/resource/1/formFonts' }),
+    { virtual: true }
+);
+
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+function mount(props) {
+    const el = createElement('c-final-theme-card', { is: FinalThemeCard });
+    Object.assign(el, props);
+    document.body.appendChild(el);
+    return el;
+}
+
+describe('c-final-theme-card', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        document.head
+            .querySelectorAll('style[id^="final-font"]')
+            .forEach((s) => s.remove());
+    });
+
+    it('a built-in key paints that theme', async () => {
+        const el = mount({ themeKey: 'nordic', label: 'Nordic' });
+        await flush();
+        const root = el.shadowRoot.querySelector('.tc-preview');
+        expect(root.getAttribute('style')).toContain('--c-accent: #1e3a8a');
+    });
+
+    it('a custom recipe wins over the key and its fonts load (DEFERRED 42)', async () => {
+        const el = mount({
+            themeKey: 'nordic',
+            label: 'Acme brand',
+            themeProps: {
+                palette: { accent: '#e11d48' },
+                fonts: { pairing: 'editorialSerif' }
+            }
+        });
+        await flush();
+        const style = el.shadowRoot
+            .querySelector('.tc-preview')
+            .getAttribute('style');
+        expect(style).toContain('--c-accent: #e11d48');
+        expect(style).toContain('FormsBundledPlayfairDisplay');
+        expect(
+            document.getElementById('final-fontb-bundled-playfairdisplay')
+        ).not.toBeNull();
+        expect(
+            document.getElementById('final-fontb-bundled-lora')
+        ).not.toBeNull();
+    });
+});
+
+describe('c-final-theme-card: picture mode', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('is not a control: no button role, no tab stop, no check, no select', async () => {
+        const el = mount({
+            themeKey: 'nordic',
+            label: 'Preview',
+            selected: true,
+            picture: true
+        });
+        const handler = jest.fn();
+        el.addEventListener('select', handler);
+        await flush();
+        const root = el.shadowRoot.querySelector('.tc');
+        expect(root.getAttribute('role')).toBe('img');
+        expect(root.hasAttribute('tabindex')).toBe(false);
+        expect(root.hasAttribute('aria-pressed')).toBe(false);
+        expect(el.shadowRoot.querySelector('.tc-check')).toBeNull();
+        root.click();
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('a custom recipe uses the neutral sample copy, not its base theme’s', async () => {
+        const el = mount({
+            themeKey: 'nordic',
+            label: 'Acme',
+            themeProps: { palette: { accent: '#e11d48' } }
+        });
+        await flush();
+        expect(el.shadowRoot.textContent).toContain('Registration');
+    });
+});

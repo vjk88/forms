@@ -1152,6 +1152,18 @@ export default class FinalDesignPanel extends LightningElement {
         this.galleryMode = event.currentTarget.dataset.gallery;
     }
 
+    /** Back to the theme gallery (the brand dialog's Cancel returns here). */
+    @api
+    openThemeGallery() {
+        this.galleryMode = 'theme';
+    }
+
+    /** "Create from your brand" in the theme gallery: the Studio hosts it. */
+    handleBrandCreate() {
+        this.galleryMode = null;
+        this.dispatchEvent(new CustomEvent('brandcreate'));
+    }
+
     handleGalleryClose() {
         this.galleryMode = null;
     }

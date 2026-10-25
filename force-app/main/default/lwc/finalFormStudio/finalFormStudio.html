@@ -304,6 +304,7 @@
                             form-id={formId}
                             onspecchange={handleSpecChange}
                             onthemeedit={handleThemeEdit}
+                            onbrandcreate={handleBrandCreate}
                             ontoolbarstate={handleDesignToolbarState}
                         ></c-final-design-panel>
                     </aside>
@@ -578,7 +579,20 @@
                 start-from={editorStartFrom}
                 onsave={handleThemeSaved}
                 oncancel={handleEditorCancel}
+                onbrandstart={handleBrandStart}
             ></c-final-theme-editor>
+        </template>
+
+        <template lwc:if={brandOpen}>
+            <c-final-brand-dialog
+                form-id={formId}
+                layout={brandLayout}
+                pane-flow={brandPaneFlow}
+                current-logo-url={brandLogoUrl}
+                header-arrangement={brandHeaderArrangement}
+                onsave={handleBrandSaved}
+                oncancel={handleBrandCancel}
+            ></c-final-brand-dialog>
         </template>
 
         <template lwc:if={autofillOpen}>

@@ -19,8 +19,21 @@ private class FinalThemeControllerTest {
         System.assertEquals('nordic', all[0].baseTheme);
         System.assertEquals(
             THEME_JSON,
+            all[0].themeJson,
+            'the list carries the recipe so gallery cards draw it'
+        );
+        System.assertEquals(
+            THEME_JSON,
             FinalThemeController.getCustomTheme(themeId),
             'JSON round-trips untouched'
+        );
+    }
+
+    @IsTest
+    static void orgNameIsTheRunningOrg() {
+        System.assertEquals(
+            UserInfo.getOrganizationName(),
+            FinalThemeController.orgName()
         );
     }
 

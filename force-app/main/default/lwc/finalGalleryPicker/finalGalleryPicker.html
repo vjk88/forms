@@ -22,6 +22,17 @@
 
         <div class="gal-body">
             <template lwc:if={isTheme}>
+                <button
+                    type="button"
+                    class="gal-brand"
+                    onclick={handleBrandCreate}
+                >
+                    <span class="gal-brand-title">Create from your brand</span>
+                    <span class="gal-brand-sub"
+                        >Upload your logo or pick your colour. We build a
+                        readable theme your whole org can use.</span
+                    >
+                </button>
                 <c-final-theme-gallery
                     layout={layout}
                     pane-flow={paneFlow}
@@ -33,7 +44,7 @@
                     <div class="gal-group-head">
                         <h2 class="gal-group-title">Your custom themes</h2>
                         <span class="gal-group-hint"
-                            >Previewed on their base theme's palette.</span
+                            >Saved for your whole organization.</span
                         >
                     </div>
                     <div class="gal-grid">
@@ -42,6 +53,7 @@
                                 key={t.id}
                                 data-id={t.id}
                                 theme-key={t.baseTheme}
+                                theme-props={t.themeProps}
                                 label={t.name}
                                 description="Custom theme"
                                 layout={layout}

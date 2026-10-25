@@ -144,3 +144,27 @@ describe('c-final-studio-dialog', () => {
         expect(got).toEqual([]);
     });
 });
+
+describe('c-final-studio-dialog: busy', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('while busy, no way out and no second confirm', async () => {
+        const { el, got } = mount({ busy: true, confirmLabel: 'Save' });
+        await flush();
+        expect(button(el, 'Cancel').disabled).toBe(true);
+        expect(button(el, 'Save').disabled).toBe(true);
+        button(el, 'Cancel').click();
+        button(el, 'Save').click();
+        escape(el);
+        await flush();
+        expect(got).toEqual([]);
+        el.busy = false;
+        await flush();
+        escape(el);
+        expect(got).toEqual(['dismiss']);
+    });
+});

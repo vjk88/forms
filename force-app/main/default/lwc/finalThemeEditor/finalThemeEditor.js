@@ -303,6 +303,11 @@ export default class FinalThemeEditor extends LightningElement {
         this.dispatchEvent(new CustomEvent('cancel'));
     }
 
+    /** "Start from brand": the host swaps this editor for the brand dialog. */
+    handleStartFromBrand() {
+        this.dispatchEvent(new CustomEvent('brandstart'));
+    }
+
     async handleSave() {
         await this._persist(this.isEdit ? this.themeId : null);
     }

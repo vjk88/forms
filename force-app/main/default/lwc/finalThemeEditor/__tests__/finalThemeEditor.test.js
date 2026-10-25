@@ -98,6 +98,15 @@ describe('c-final-theme-editor', () => {
         ).toBeNull();
     });
 
+    it('"Start from your brand…" hands over to the brand dialog', async () => {
+        const el = mount({ startFrom: 'nordic' });
+        await flush();
+        const handler = jest.fn();
+        el.addEventListener('brandstart', handler);
+        el.shadowRoot.querySelector('.te-brand').click();
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
     it('save requires a name', async () => {
         const el = mount({ startFrom: 'nordic' });
         await flush();

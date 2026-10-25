@@ -1,8 +1,8 @@
 <template>
     <div
         class={rootClass}
-        role="button"
-        tabindex="0"
+        role={rootRole}
+        tabindex={rootTabindex}
         aria-pressed={pressed}
         aria-label={label}
         onclick={handleClick}
@@ -30,7 +30,11 @@
                                     <span class="tc-flabel">Email</span>
                                     <div class="tc-input"></div>
                                 </div>
-                                <button class="tc-btn" type="button" tabindex="-1">
+                                <button
+                                    class="tc-btn"
+                                    type="button"
+                                    tabindex="-1"
+                                >
                                     Submit
                                 </button>
                             </div>
@@ -56,7 +60,11 @@
                                     <span class="tc-flabel">Full name</span>
                                     <div class="tc-input"></div>
                                 </div>
-                                <button class="tc-btn" type="button" tabindex="-1">
+                                <button
+                                    class="tc-btn"
+                                    type="button"
+                                    tabindex="-1"
+                                >
                                     Continue
                                 </button>
                             </div>
@@ -165,7 +173,11 @@
                                     <span class="tc-flabel">Email</span>
                                     <div class="tc-input"></div>
                                 </div>
-                                <button class="tc-btn" type="button" tabindex="-1">
+                                <button
+                                    class="tc-btn"
+                                    type="button"
+                                    tabindex="-1"
+                                >
                                     Next
                                 </button>
                             </div>
@@ -230,7 +242,7 @@
             <div class="tc-meta-top">
                 <span class="tc-name">{label}</span>
                 <lightning-icon
-                    lwc:if={selected}
+                    lwc:if={showCheck}
                     icon-name="utility:check"
                     size="xx-small"
                     class="tc-check"

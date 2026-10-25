@@ -3232,6 +3232,79 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.editorOpen = false;
     }
 
+    // ----- "Create from your brand" (IMPL_PLAN_FONTS_AND_BRAND_THEME §B.1) -----
+
+    @track brandOpen = false;
+
+    get brandLayout() {
+        return (
+            (this.spec && this.spec.layout && this.spec.layout.type) || 'scroll'
+        );
+    }
+
+    get brandPaneFlow() {
+        const o =
+            (this.spec && this.spec.layout && this.spec.layout.options) || {};
+        return o.paneFlow || '';
+    }
+
+    get brandLogoUrl() {
+        const h = (this.spec && this.spec.header) || {};
+        return (h.logo && h.logo.url) || '';
+    }
+
+    get brandHeaderArrangement() {
+        return ((this.spec && this.spec.header) || {}).arrangement || '';
+    }
+
+    // where the dialog was opened from, so Cancel goes back there
+    _brandOrigin = null;
+
+    handleBrandCreate() {
+        this._brandOrigin = 'gallery';
+        this.brandOpen = true;
+    }
+
+    /** The theme editor's "Start from brand" swaps one dialog for the other. */
+    handleBrandStart() {
+        this._brandOrigin = 'editor';
+        this.editorOpen = false;
+        this.brandOpen = true;
+    }
+
+    handleBrandCancel() {
+        this.brandOpen = false;
+        if (this._brandOrigin === 'editor') {
+            this.editorOpen = true;
+        } else if (this._brandOrigin === 'gallery') {
+            const panel = this.template.querySelector('c-final-design-panel');
+            if (panel) {
+                panel.openThemeGallery();
+            }
+        }
+        this._brandOrigin = null;
+    }
+
+    /** Saved: the form takes the new org theme (and the logo, if asked). */
+    async handleBrandSaved(event) {
+        this.brandOpen = false;
+        this._brandOrigin = null;
+        const { id, logo } = event.detail || {};
+        const next = JSON.parse(JSON.stringify(this.spec));
+        next.theme = { source: 'custom', name: id, overrides: {} };
+        if (logo && logo.url) {
+            next.header = {
+                ...(next.header || {}),
+                logo: { url: logo.url, versionId: logo.versionId }
+            };
+        }
+        this.handleSpecChange({ detail: { spec: next } });
+        const panel = this.template.querySelector('c-final-design-panel');
+        if (panel) {
+            await panel.refreshThemes();
+        }
+    }
+
     async handleThemeSaved(event) {
         this.editorOpen = false;
         const next = JSON.parse(JSON.stringify(this.spec));

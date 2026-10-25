@@ -1,7 +1,8 @@
 import { LightningElement, api } from 'lwc';
 import { getBuiltinTheme, getBrandCopy } from 'c/finalThemeCatalog';
-import { resolveTokens, tokensToStyle } from 'c/finalThemeEngine';
+import { resolveTokens, tokensToStyle, fontManifest } from 'c/finalThemeEngine';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
+import { ensureFontRefs } from 'c/finalFontBundle';
 
 /**
  * finalThemeCard — one theme preview card (ported from formStudio's formThemeCard).
@@ -30,6 +31,12 @@ function mockShape(layout, paneFlow) {
 
 export default class FinalThemeCard extends LightningElement {
     @api themeKey;
+    /**
+     * A custom theme's own recipe (Theme_Definition__c JSON, parsed). When
+     * set it wins over the built-in lookup, so a brand theme previews as
+     * itself, not as its base theme.
+     */
+    @api themeProps;
     @api label;
     @api description;
     /** The layout picked in step 1 — drives the mock's SHAPE. */
@@ -37,9 +44,27 @@ export default class FinalThemeCard extends LightningElement {
     /** splitHero pane flow ('oneAtATime' → conversational shape). */
     @api paneFlow;
     @api selected = false;
+    /**
+     * A picture, not a control (the brand dialog's live preview): no button
+     * role, no tab stop, no selection check, clicks do nothing.
+     */
+    @api picture = false;
 
     get _theme() {
+        if (this.themeProps && typeof this.themeProps === 'object') {
+            return this.themeProps;
+        }
         return getBuiltinTheme(this.themeKey) || {};
+    }
+
+    renderedCallback() {
+        // a theme on bundled or uploaded fonts previews in them (DEFERRED 42);
+        // registration is idempotent and loads only what the theme uses
+        try {
+            ensureFontRefs(fontManifest(this._theme, null));
+        } catch {
+            // a broken recipe still renders the card in fallback fonts
+        }
     }
 
     get _pal() {
@@ -86,7 +111,8 @@ export default class FinalThemeCard extends LightningElement {
     }
 
     get brand() {
-        return getBrandCopy(this.themeKey);
+        // a custom recipe is not its base theme: use the neutral sample copy
+        return getBrandCopy(this.themeProps ? '' : this.themeKey);
     }
 
     get swatches() {
@@ -104,10 +130,22 @@ export default class FinalThemeCard extends LightningElement {
     }
 
     get rootClass() {
-        return this.selected ? 'tc is-on' : 'tc';
+        return this.selected && !this.picture ? 'tc is-on' : 'tc';
+    }
+    get rootRole() {
+        return this.picture ? 'img' : 'button';
+    }
+    get rootTabindex() {
+        return this.picture ? null : '0';
     }
     get pressed() {
+        if (this.picture) {
+            return null;
+        }
         return this.selected ? 'true' : 'false';
+    }
+    get showCheck() {
+        return this.selected && !this.picture;
     }
 
     _emit() {
@@ -116,9 +154,14 @@ export default class FinalThemeCard extends LightningElement {
         );
     }
     handleClick() {
-        this._emit();
+        if (!this.picture) {
+            this._emit();
+        }
     }
     handleKey(e) {
+        if (this.picture) {
+            return;
+        }
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             this._emit();

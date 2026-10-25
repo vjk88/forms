@@ -18,6 +18,10 @@ public with sharing class FinalThemeController {
         public String name;
         @AuraEnabled
         public String baseTheme;
+        // the recipe itself, so gallery cards draw the theme as it really is
+        // (a brand theme is not its base theme's palette)
+        @AuraEnabled
+        public String themeJson;
     }
 
     // not cacheable: the editor saves then immediately re-lists/re-fetches
@@ -25,7 +29,7 @@ public with sharing class FinalThemeController {
     public static List<ThemeSummary> listCustomThemes() {
         List<ThemeSummary> out = new List<ThemeSummary>();
         for (Theme_Definition__c t : [
-            SELECT Id, Name, Base_Theme__c
+            SELECT Id, Name, Base_Theme__c, Theme_JSON__c
             FROM Theme_Definition__c
             WITH USER_MODE
             ORDER BY Name
@@ -35,9 +39,16 @@ public with sharing class FinalThemeController {
             s.id = t.Id;
             s.name = t.Name;
             s.baseTheme = t.Base_Theme__c;
+            s.themeJson = t.Theme_JSON__c;
             out.add(s);
         }
         return out;
+    }
+
+    /** The org's name, for a brand theme's default name ("Acme brand"). */
+    @AuraEnabled(cacheable=true)
+    public static String orgName() {
+        return UserInfo.getOrganizationName();
     }
 
     /** The theme-property JSON for one custom theme (draft-path resolution). */

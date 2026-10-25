@@ -1,0 +1,228 @@
+/* Form on the left, live preview on the right; one column on narrow
+   windows. Colours come from the Studio tokens (they cross shadow trees). */
+.bd {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, 1fr);
+    gap: 24px;
+    align-items: start;
+    color: var(--c-studio-text);
+}
+
+@media (max-width: 860px) {
+    .bd {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.bd-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.bd-step {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bd-h {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.bd-hint {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--c-studio-text-weak);
+}
+
+.bd-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.bd-btn {
+    min-height: 32px;
+    padding: 4px 14px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 6px;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.bd-btn:focus-visible,
+.bd-swatch:focus-visible,
+.bd-picker:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+.bd-file {
+    display: none;
+}
+
+.bd-logo {
+    max-height: 40px;
+    max-width: 160px;
+    object-fit: contain;
+}
+
+.bd-swatches {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.bd-swatch {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+}
+
+.bd-swatch.is-on {
+    border-color: var(--c-studio-text);
+}
+
+.bd-swatch-chip {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+}
+
+.bd-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.bd-picker {
+    width: 44px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+}
+
+.bd-hexlabel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.bd-hex,
+.bd-name {
+    font: inherit;
+    padding: 4px 8px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 6px;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
+}
+
+.bd-hex {
+    width: 110px;
+}
+
+.bd-name {
+    max-width: 320px;
+}
+
+.bd-styles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.bd-preview {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bd-empty {
+    margin: 0;
+    padding: 24px 16px;
+    border: 1.5px dashed var(--c-studio-border-strong);
+    border-radius: var(--c-studio-radius-lg, 10px);
+    color: var(--c-studio-text-weak);
+    text-align: center;
+}
+
+.bd-warn:empty,
+.bd-error:empty,
+.bd-save-error:empty {
+    display: none;
+}
+
+.bd-warn {
+    margin: 0;
+    padding: 8px 10px;
+    border-left: 3px solid var(--c-studio-warning-text);
+    background: var(--c-studio-surface);
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--c-studio-warning-text);
+}
+
+.bd-error {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--c-studio-error-text);
+}
+
+.bd-save-error {
+    margin: 0;
+    max-width: 52ch;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--c-studio-error-text);
+}
+
+.bd-opt {
+    font-weight: 400;
+    color: var(--c-studio-text-weak);
+}
+
+.bd-link {
+    min-height: 32px;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--c-studio-accent-text);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.bd-link:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* No colour yet: the picker reads as empty, not as a chosen navy. */
+.bd-picker:not(.is-set) {
+    border-style: dashed;
+    opacity: 0.55;
+}
