@@ -90,7 +90,7 @@ describe('shadow tokens are only ever used as shadows', () => {
  * system colour in High Contrast.
  */
 describe('focus stays visible in Windows High Contrast', () => {
-    // The stylesheets a respondent sees (Studio-only screens are out of scope).
+    // The stylesheets a respondent sees.
     const RESPONDENT = [
         'finalAfterSubmit',
         'finalElementRenderer',
@@ -106,40 +106,110 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalSectionRenderer',
         'finalSubmitBar'
     ];
-    // Allowed, with the reason: the slider draws a real outline on its thumb
-    // (::-webkit-slider-thumb / ::-moz-range-thumb), which forced colours keep.
-    const ALLOWED = ['.slider-input:focus-visible'];
+    // Studio and admin screens: out of scope (IMPL_PLAN_FOCUS_CONTRAST §0).
+    // Every final* stylesheet with a :focus rule must be in one of the lists.
+    const STUDIO_ONLY = [
+        'finalBrandDialog',
+        'finalBuilderCanvas',
+        'finalColorControl',
+        'finalConnectedObjectCard',
+        'finalCreationGallery',
+        'finalDesignPanel',
+        'finalDesignToolbar',
+        'finalFontPicker',
+        'finalFormStudio',
+        'finalGalleryPicker',
+        'finalGradientControl',
+        'finalLayoutCard',
+        'finalMappingSoql',
+        'finalPreviewStage',
+        'finalPropertyPanel',
+        'finalStudioStyles',
+        'finalSubmissionReader',
+        'finalThemeCard',
+        'finalThemeEditor',
+        'finalTypeahead',
+        'finalValidationEditor'
+    ];
+    // Rules that may remove the outline, each with its reason.
+    const ALLOWED = [
+        // the slider draws a real outline on its thumb (::-webkit-slider-thumb,
+        // ::-moz-range-thumb), which forced colours keep
+        '.slider-input:focus-visible',
+        // programmatic focus targets (tabindex="-1", moved to on page change),
+        // never reached with Tab (.page-panel has no tabindex at all)
+        '.screen-panel',
+        '.page-panel, .screen-panel'
+    ];
+    // outline: none / 0 / 0px (with or without more values or !important),
+    // and the longhands outline-style: none and outline-width: 0
+    const REMOVES_OUTLINE =
+        /\boutline(-style|-width)?\s*:\s*(none|0(px)?)(?![\w.%-])/;
 
-    function focusRules(name) {
+    function rules(name) {
         const css = fs
             .readFileSync(path.join(LWC, name, `${name}.css`), 'utf8')
             .replace(/\r\n/g, '\n')
             .replace(/\/\*[\s\S]*?\*\//g, '');
-        return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-            .map((m) => ({
-                file: name,
-                selector: m[1].replace(/\s+/g, ' ').trim(),
-                body: m[2]
-            }))
-            .filter((r) => r.selector.includes(':focus'));
+        return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+            file: name,
+            selector: m[1].replace(/\s+/g, ' ').trim(),
+            body: m[2]
+        }));
     }
 
-    it('no respondent focus rule removes the outline', () => {
-        const bad = RESPONDENT.flatMap(focusRules)
-            .filter((r) => /\boutline:\s*(none|0)\s*(;|$)/.test(r.body))
+    it('no respondent rule removes the outline (focus or base rule)', () => {
+        const bad = RESPONDENT.flatMap(rules)
+            .filter((r) => REMOVES_OUTLINE.test(r.body))
             .filter((r) => !ALLOWED.includes(r.selector))
             .map((r) => `${r.file}.css: ${r.selector}`);
         expect(bad).toEqual([]);
     });
 
+    it.each([
+        'outline: none;',
+        'outline: 0;',
+        'outline: 0px;',
+        'outline: none !important;',
+        'outline: 0 none;',
+        'outline-style: none;',
+        'outline-width: 0;'
+    ])('the check catches "%s"', (decl) => {
+        expect(REMOVES_OUTLINE.test(decl)).toBe(true);
+    });
+
+    it.each([
+        'outline: 2px solid transparent;',
+        'outline-offset: -2px;',
+        'outline: 2px solid var(--c-field-focus);'
+    ])('the check allows "%s"', (decl) => {
+        expect(REMOVES_OUTLINE.test(decl)).toBe(false);
+    });
+
+    it('every stylesheet with a focus rule is sorted: respondent or Studio', () => {
+        const withFocus = fs
+            .readdirSync(LWC)
+            .filter((dir) => dir.startsWith('final'))
+            .filter((dir) => fs.existsSync(path.join(LWC, dir, `${dir}.css`)))
+            .filter((dir) =>
+                rules(dir).some((r) => r.selector.includes(':focus'))
+            );
+        const unsorted = withFocus.filter(
+            (dir) => !RESPONDENT.includes(dir) && !STUDIO_ONLY.includes(dir)
+        );
+        expect(unsorted).toEqual([]);
+    });
+
     it('the scan finds the focus rules it is meant to guard', () => {
-        const rules = RESPONDENT.flatMap(focusRules);
-        const transparent = rules.filter((r) =>
+        const focus = RESPONDENT.flatMap(rules).filter((r) =>
+            r.selector.includes(':focus')
+        );
+        const transparent = focus.filter((r) =>
             /outline:\s*2px solid transparent/.test(r.body)
         );
         // 17 rules switched in PR A, plus the lookup's two
         expect(transparent.length).toBeGreaterThanOrEqual(19);
-        expect(rules.map((r) => r.selector)).toContain(
+        expect(focus.map((r) => r.selector)).toContain(
             '.scale-chip:focus-visible, .scale-icon:focus-visible'
         );
     });
