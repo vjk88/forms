@@ -82,8 +82,8 @@ function composite(value, under) {
         return toHex(parseHex(v));
     }
     const m = /^rgba?\(([^)]+)\)$/i.exec(v);
-    if (!m) {
-        return under;
+    if (!m || !under) {
+        return null;
     }
     const parts = m[1]
         .split(/[\s,/]+/)
@@ -147,29 +147,50 @@ const BASES = {
         dark: false,
         header: brand
     }),
-    dark: (brand) => {
-        const contentBg = mix(brand, '#161a22', 0.08);
-        return {
-            pageBg: mix(brand, '#0b0d12', 0.08),
-            contentBg,
-            fieldBg: mix('#ffffff', contentBg, 0.06),
-            text: '#f1f5f9',
-            textWeak: '#aab4c3',
-            error: '#ff8a80',
-            shadow: 'floating',
-            dark: true
-        };
-    }
+    // Dark leaves the field to the engine's see-through wash (the same as the
+    // built-in dark themes), so a field always reads lighter than whatever
+    // section or page it sits on; an opaque fill vanished inside a boxed
+    // section (PR 401 review).
+    dark: (brand) => ({
+        pageBg: mix(brand, '#0b0d12', 0.08),
+        contentBg: mix(brand, '#161a22', 0.08),
+        fieldBg: null,
+        text: '#f1f5f9',
+        textWeak: '#aab4c3',
+        error: '#ff8a80',
+        shadow: 'floating',
+        dark: true
+    })
 };
 
-// Every surface text and marks can sit on: page, card, each section look
-// over the card, the field.
-function surfacesOf(b) {
-    return [
-        b.pageBg,
-        ...SECTION_TINTS.map((t) => mix(b.text, b.contentBg, t)),
-        b.fieldBg
+// The engine's dark-field wash (finalThemeEngine outlineBg).
+const DARK_FIELD = 'rgba(255, 255, 255, 0.06)';
+
+/**
+ * Every surface a form can paint, as [label, hex]. Containers: the page, the
+ * card, and each section look over the card AND over the page (One at a
+ * time's open page and full-bleed layouts draw sections straight on the
+ * page). Fields: the field over every container. Shared by the generator
+ * and the report; the test pins the labels so a surface cannot silently
+ * drop out of both.
+ */
+export function brandSurfaces({ pageBg, contentBg, text, fieldBg }) {
+    const page = composite(pageBg, '#ffffff');
+    const card = composite(contentBg, page);
+    const ink = composite(text, card);
+    const containers = [
+        ['page', page],
+        ['card', card],
+        ...SECTION_TINTS.flatMap((t) => [
+            [`section ${Math.round(t * 100)}% on card`, mix(ink, card, t)],
+            [`section ${Math.round(t * 100)}% on page`, mix(ink, page, t)]
+        ])
     ];
+    const fields = containers.map(([label, bg]) => [
+        `field on ${label}`,
+        composite(fieldBg, bg)
+    ]);
+    return { page, card, containers, fields, all: [...containers, ...fields] };
 }
 
 /**
@@ -188,27 +209,40 @@ export function buildBrandTheme({
     }
     const brand = toHex(rgb);
     const base = (BASES[style] || BASES.clean)(brand);
-    const surfaces = surfacesOf(base);
+    const s = brandSurfaces({
+        ...base,
+        fieldBg: base.fieldBg || DARK_FIELD
+    });
+    const all = s.all.map(([, hex]) => hex);
     const toward = base.dark ? '#ffffff' : '#000000';
 
     // accent: the brand hue, moved until it reads as text on every surface
-    const accent = adjust(brand, toward, (c) => worst(c, surfaces) >= TEXT_AIM);
+    const accent = adjust(brand, toward, (c) => worst(c, all) >= TEXT_AIM);
 
     // focus: the painted ring (55% over each surface) reaches 3:1
     const focus = adjust(accent, toward, (c) =>
-        surfaces.every((s) => ratio(mix(c, s, FOCUS_ALPHA), s) >= MARK_AIM)
+        all.every((bg) => ratio(mix(c, bg, FOCUS_ALPHA), bg) >= MARK_AIM)
     );
 
-    // body text and errors, also over the light accent tints
+    // body text and errors, also over the light accent tints (card and page)
     const textSurfaces = [
-        ...surfaces,
-        ...ACCENT_TINTS.map((t) => mix(accent, base.contentBg, t))
+        ...all,
+        ...ACCENT_TINTS.flatMap((t) => [
+            mix(accent, s.card, t),
+            mix(accent, s.page, t)
+        ])
     ];
-    const textToward = base.dark ? '#ffffff' : '#000000';
     const readable = (c) => worst(c, textSurfaces) >= TEXT_AIM;
-    const text = adjust(base.text, textToward, readable);
-    const textWeak = adjust(base.textWeak, textToward, readable);
-    const error = adjust(base.error, textToward, readable);
+    const text = adjust(base.text, toward, readable);
+    const textWeak = adjust(base.textWeak, toward, readable);
+    const error = adjust(base.error, toward, readable);
+
+    // input edges (WCAG 1.4.11): 3:1 against the field and what surrounds it
+    const fieldBorderColor = adjust(
+        mix(text, base.contentBg, 0.3),
+        toward,
+        (c) => worst(c, all) >= MARK_AIM
+    );
 
     const palette = {
         accent,
@@ -217,17 +251,26 @@ export function buildBrandTheme({
         submitText: inkFor(brand),
         pageBg: base.pageBg,
         contentBg: base.contentBg,
-        fieldBg: base.fieldBg,
         text,
         textWeak,
         labelColor: text,
         borderColor: mix(text, base.contentBg, 0.18),
+        fieldBorderColor,
         headerBg: base.header || 'transparent'
     };
+    if (base.fieldBg) {
+        palette.fieldBg = base.fieldBg;
+    }
     if (base.header) {
         const ink = inkFor(base.header);
         palette.headerText = ink;
-        palette.headerTextWeak = ink;
+        // a softer description ink that still reads, so title and
+        // description keep their hierarchy
+        palette.headerTextWeak = adjust(
+            mix(ink, base.header, 0.8),
+            ink,
+            (c) => ratio(c, base.header) >= TEXT_AIM
+        );
     }
 
     const recipe = {
@@ -257,36 +300,40 @@ export function buildBrandTheme({
 
 /**
  * Every contrast pair of a recipe, judged on the RESOLVED tokens with
- * see-through values composited over what they sit on.
- * @returns {{ checks: Array<{pair, ratio, min, pass}>, pass: boolean }}
+ * see-through values composited over what they sit on (page at the bottom,
+ * then the card, then sections and fields). A value that cannot be measured
+ * (a gradient, color-mix) FAILS as "unmeasurable" rather than passing.
+ * Advisory rows (the button's fill against its surroundings) are reported
+ * but do not decide `pass`.
+ * @returns {{ checks: Array<{pair, ratio, min, pass, advisory?}>, pass: boolean }}
  */
 export function brandContrastReport(recipe) {
     const t = resolveTokens(recipe, null);
-    const card = composite(t['--c-content-bg'], '#ffffff');
-    const page = composite(t['--c-page-bg'], card);
-    const text = composite(t['--c-text'], card);
-    const surfaces = [
-        ['page', page],
-        ...SECTION_TINTS.map((p) => [
-            `section ${p * 100}%`,
-            mix(text, card, p)
-        ]),
-        ['field', composite(t['--c-field-bg'], card)]
-    ];
-    const accent = composite(t['--c-accent'], card);
-    const tinted = ACCENT_TINTS.map((p) => [
-        `accent tint ${p * 100}%`,
-        mix(accent, card, p)
+    const s = brandSurfaces({
+        pageBg: t['--c-page-bg'],
+        contentBg: t['--c-content-bg'],
+        text: t['--c-text'],
+        fieldBg: t['--c-field-bg']
+    });
+    const accent = composite(t['--c-accent'], s.card);
+    const tinted = ACCENT_TINTS.flatMap((p) => [
+        [`accent tint ${Math.round(p * 100)}% on card`, mix(accent, s.card, p)],
+        [`accent tint ${Math.round(p * 100)}% on page`, mix(accent, s.page, p)]
     ]);
     const checks = [];
-    const add = (pair, fg, bg, min) => {
-        const r = ratio(fg, bg);
-        checks.push({
-            pair,
+    const add = (pair, fg, bg, min, advisory = false) => {
+        const measurable = Boolean(fg && bg);
+        const r = measurable ? ratio(fg, bg) : 0;
+        const row = {
+            pair: measurable ? pair : `${pair} (unmeasurable)`,
             ratio: Math.round(r * 100) / 100,
             min,
-            pass: r >= min
-        });
+            pass: measurable && r >= min
+        };
+        if (advisory) {
+            row.advisory = true;
+        }
+        checks.push(row);
     };
     for (const [token, label] of [
         ['--c-text', 'text'],
@@ -294,28 +341,32 @@ export function brandContrastReport(recipe) {
         ['--c-label-color', 'labels'],
         ['--c-field-error', 'error text']
     ]) {
-        const fg = composite(t[token], card);
-        [...surfaces, ...tinted].forEach(([s, bg]) =>
-            add(`${label} on ${s}`, fg, bg, TEXT)
+        const fg = composite(t[token], s.card);
+        [...s.all, ...tinted].forEach(([where, bg]) =>
+            add(`${label} on ${where}`, fg, bg, TEXT)
         );
     }
-    surfaces.forEach(([s, bg]) => add(`accent on ${s}`, accent, bg, TEXT));
+    s.all.forEach(([where, bg]) => add(`accent on ${where}`, accent, bg, TEXT));
     add(
         'on-accent on accent',
         composite(t['--c-on-accent'], accent),
         accent,
         TEXT
     );
-    const submitBg = composite(t['--c-submit-bg'], card);
+    const submitBg = composite(t['--c-submit-bg'], s.card);
     add(
         'button text on button',
         composite(t['--c-submit-text'], submitBg),
         submitBg,
         TEXT
     );
+    // advisory: a button that blends into the card loses its shape (the
+    // label still reads); B2 warns or adds an outline
+    add('button fill on card', submitBg, s.card, MARK, true);
+    add('button fill on page', submitBg, s.page, MARK, true);
     const headerBg = t['--c-header-bg'];
     if (headerBg && headerBg !== 'transparent') {
-        const hb = composite(headerBg, page);
+        const hb = composite(headerBg, s.page);
         add(
             'header title on header',
             composite(t['--c-header-text'], hb),
@@ -329,9 +380,21 @@ export function brandContrastReport(recipe) {
             TEXT
         );
     }
-    const focus = composite(t['--c-field-focus'], card);
-    surfaces.forEach(([s, bg]) =>
-        add(`focus ring on ${s}`, mix(focus, bg, FOCUS_ALPHA), bg, MARK)
+    const focus = composite(t['--c-field-focus'], s.card);
+    s.all.forEach(([where, bg]) =>
+        add(
+            `focus ring on ${where}`,
+            focus && bg ? mix(focus, bg, FOCUS_ALPHA) : null,
+            bg,
+            MARK
+        )
     );
-    return { checks, pass: checks.every((c) => c.pass) };
+    const border = composite(t['--c-field-border'], s.card);
+    s.all.forEach(([where, bg]) =>
+        add(`input border on ${where}`, border, bg, MARK)
+    );
+    return {
+        checks,
+        pass: checks.filter((c) => !c.advisory).every((c) => c.pass)
+    };
 }

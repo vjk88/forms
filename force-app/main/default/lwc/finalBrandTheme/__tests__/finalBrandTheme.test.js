@@ -2,7 +2,8 @@ import {
     buildBrandTheme,
     brandContrastReport,
     inkFor,
-    BRAND_STYLES
+    BRAND_STYLES,
+    brandSurfaces
 } from 'c/finalBrandTheme';
 import { contrastRatio, resolveTokens, fontManifest } from 'c/finalThemeEngine';
 
@@ -58,7 +59,8 @@ describe('finalBrandTheme: the contrast matrix', () => {
         (color, style) => {
             const recipe = buildBrandTheme({ color, style });
             const report = brandContrastReport(recipe);
-            const failing = report.checks.filter((c) => !c.pass);
+            // advisory rows (the button fill) are reported, not required
+        const failing = report.checks.filter((c) => !c.pass && !c.advisory);
             expect(failing).toEqual([]);
             // and the report really checked the surfaces it claims
             expect(report.checks.length).toBeGreaterThan(40);
@@ -165,10 +167,11 @@ describe('finalBrandTheme: the recipe', () => {
         });
         expect(r.fonts).toEqual({ pairing: 'editorialSerif' });
         expect('typography' in r).toBe(false);
-        expect(fontManifest(r, null)).toEqual([
-            { source: 'bundled', key: 'playfairDisplay' },
-            { source: 'bundled', key: 'lora' }
-        ]);
+        // the regime only: the pairing's own fonts are A2's data
+        expect(fontManifest(r, null).length).toBeGreaterThan(0);
+        fontManifest(r, null).forEach((ref) =>
+            expect(ref.source).toBe('bundled')
+        );
     });
 
     it('is deterministic, and an unknown style falls back to Clean', () => {
@@ -193,5 +196,117 @@ describe('finalBrandTheme: the recipe', () => {
         expect(buildBrandTheme({ color: '#f00' }).palette.submitBg).toBe(
             '#ff0000'
         );
+    });
+});
+
+// The surfaces the audit says text, marks and focus can sit on, written out
+// by hand (not imported from the generator), so a surface missing from the
+// model cannot pass by being missing from the check too (PR 401 review).
+const AUDITED_SURFACES = [
+    'page',
+    'card',
+    'section 0% on card',
+    'section 0% on page',
+    'section 3% on card',
+    'section 3% on page',
+    'section 4% on card',
+    'section 4% on page',
+    'section 7% on card',
+    'section 7% on page'
+];
+
+describe('PR 401 review: surfaces, fields, borders, header, advisory', () => {
+    it('the report covers exactly the audited containers and a field on each', () => {
+        const r = buildBrandTheme({ color: '#e11d48' });
+        const s = brandSurfaces({
+            pageBg: r.palette.pageBg,
+            contentBg: r.palette.contentBg,
+            text: r.palette.text,
+            fieldBg: r.palette.fieldBg
+        });
+        const labels = s.all.map(([label]) => label);
+        expect(labels).toEqual([
+            ...AUDITED_SURFACES,
+            ...AUDITED_SURFACES.map((l) => `field on ${l}`)
+        ]);
+        const pairs = brandContrastReport(r).checks.map((c) => c.pair);
+        AUDITED_SURFACES.forEach((l) => {
+            expect(pairs).toContain(`accent on ${l}`);
+            expect(pairs).toContain(`focus ring on ${l}`);
+            expect(pairs).toContain(`input border on ${l}`);
+            expect(pairs).toContain(`muted text on field on ${l}`);
+        });
+    });
+
+    it.each([
+        ['#e11d48', 'clean'],
+        ['#808080', 'boldHeader'],
+        ['#707070', 'boldHeader']
+    ])(
+        '%s %s: accent text passes on sections drawn over the page',
+        (color, style) => {
+            const checks = brandContrastReport(
+                buildBrandTheme({ color, style })
+            ).checks;
+            checks
+                .filter((c) => /^accent on section \d+% on page$/.test(c.pair))
+                .forEach((c) => expect(c.ratio).toBeGreaterThanOrEqual(4.5));
+        }
+    );
+
+    it('input borders reach 3:1 (WCAG 1.4.11) on every style', () => {
+        BRAND_STYLES.forEach((style) => {
+            const r = buildBrandTheme({ color: '#06b6d4', style });
+            const t = resolveTokens(r, null);
+            expect(t['--c-field-border']).toBe(r.palette.fieldBorderColor);
+            brandContrastReport(r)
+                .checks.filter((c) => c.pair.startsWith('input border'))
+                .forEach((c) => expect(c.ratio).toBeGreaterThanOrEqual(3));
+        });
+    });
+
+    it('Dark leaves the field see-through, so it reads lighter than any section', () => {
+        const r = buildBrandTheme({ color: '#1e3a8a', style: 'dark' });
+        expect('fieldBg' in r.palette).toBe(false);
+        expect(resolveTokens(r, null)['--c-field-bg']).toBe(
+            'rgba(255, 255, 255, 0.06)'
+        );
+    });
+
+    it('Bold header keeps a softer description ink that still reads', () => {
+        const r = buildBrandTheme({ color: '#7c3aed', style: 'boldHeader' });
+        expect(r.palette.headerTextWeak).not.toBe(r.palette.headerText);
+        expect(
+            contrastRatio(r.palette.headerTextWeak, '#7c3aed')
+        ).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('a button that blends into the card is flagged as advisory, not a failure', () => {
+        const report = brandContrastReport(
+            buildBrandTheme({ color: '#ffffff' })
+        );
+        const fill = report.checks.find(
+            (c) => c.pair === 'button fill on card'
+        );
+        expect(fill).toMatchObject({ advisory: true, pass: false });
+        expect(report.pass).toBe(true);
+    });
+
+    it('a value it cannot measure fails as unmeasurable instead of passing', () => {
+        const r = buildBrandTheme({ color: '#e11d48' });
+        r.palette.textWeak = 'color-mix(in srgb, red 50%, blue)';
+        const report = brandContrastReport(r);
+        expect(report.pass).toBe(false);
+        expect(
+            report.checks.some((c) => c.pair.endsWith('(unmeasurable)'))
+        ).toBe(true);
+    });
+
+    it('labels are rounded percentages', () => {
+        const pairs = brandContrastReport(buildBrandTheme({ color: '#e11d48' }))
+            .checks.map((c) => c.pair)
+            .join(' ');
+        expect(pairs).not.toMatch(/\d\.\d{5,}%/);
+        expect(pairs).toContain('accent tint 14% on page');
     });
 });
