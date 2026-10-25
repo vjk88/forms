@@ -296,6 +296,10 @@ export function focusTokens(treatment, style) {
         '--c-focus-partner': treatment.partner,
         '--c-focus-ring': treatment.ring,
         '--c-focus-shadow': treatment.ring,
+        // the same two rings drawn INSIDE the control, for controls whose
+        // container clips (scrolling tab and rail strips): focus colour at
+        // the edge, partner inside it
+        '--c-focus-ring-inset': `inset 0 0 0 2px ${treatment.focus}, inset 0 0 0 4px ${treatment.partner}`,
         '--c-focus-outline': 'transparent',
         '--c-input-shadow-focus': underline
             ? treatment.underline
@@ -305,6 +309,16 @@ export function focusTokens(treatment, style) {
 }
 
 // ------------------------------------------------------------- placements
+
+// The page frame's no-theme colours (finalPageFrame.css :host).
+const NEUTRAL = {
+    page: '#f4f7f5',
+    card: '#ffffff',
+    field: '#ffffff',
+    base: '#4b5563',
+    text: '#1f2937',
+    submit: '#374151'
+};
 
 /**
  * A section's own background (surface.bg), painted by the section renderer
@@ -319,12 +333,18 @@ export function sectionFocusStyle(tokens, surfaceBg) {
     const under = rangeFromToken(t['--c-focus-under']);
     const canJudge = under && parseColor(surfaceBg);
     const sec = canJudge ? over(surfaceBg, under) : null;
+    // a form with no theme carries only the focus tokens: the rest is the
+    // page frame's neutral defaults
+    const pick = (key, neutral) => t[key] || neutral;
     const treatment = canJudge
         ? focusTreatment({
               base: t['--c-focus-base'],
-              toward: t['--c-text'],
-              outside: [sec, over(t['--c-field-bg'], sec)],
-              inside: [exact(t['--c-submit-bg']), exact(t['--c-accent'])]
+              toward: pick('--c-text', NEUTRAL.text),
+              outside: [sec, over(pick('--c-field-bg', NEUTRAL.field), sec)],
+              inside: [
+                  exact(pick('--c-submit-bg', NEUTRAL.submit)),
+                  exact(pick('--c-accent', NEUTRAL.base))
+              ]
           })
         : fallbackTreatment();
     const vars = {
@@ -355,16 +375,6 @@ export function openPageTokens(tokens) {
     };
 }
 
-// The page frame's no-theme colours (finalPageFrame.css :host).
-const NEUTRAL = {
-    page: '#f4f7f5',
-    card: '#ffffff',
-    field: '#ffffff',
-    base: '#4b5563',
-    text: '#1f2937',
-    submit: '#374151'
-};
-
 /** The focus tokens for a form with no theme (§6b). */
 export function neutralFocusTokens() {
     const card = exact(NEUTRAL.card);
@@ -384,6 +394,8 @@ export function neutralFocusTokens() {
     });
     return {
         ...focusTokens(t, 'outline'),
+        '--c-focus-idle-filter': 'none',
+        '--c-focus-idle-opacity': '1',
         '--c-focus-base': NEUTRAL.base,
         '--c-focus-under': rangeToken(card),
         '--c-focus-page-field': p.focus,

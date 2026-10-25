@@ -1250,6 +1250,10 @@ export function resolveTokens(themeProps, formOverrides) {
         // old forms drawing exactly as before.
         '--c-focus-partner': focusOut['--c-focus-partner'],
         '--c-focus-shadow': focusOut['--c-focus-shadow'],
+        '--c-focus-ring-inset': focusOut['--c-focus-ring-inset'],
+        // focused idle emoji faces and stars show at full strength
+        '--c-focus-idle-filter': 'none',
+        '--c-focus-idle-opacity': '1',
         '--c-focus-outline': focusOut['--c-focus-outline'],
         '--c-input-focus-style': focusOut['--c-input-focus-style'],
         '--c-focus-base': focusBase,

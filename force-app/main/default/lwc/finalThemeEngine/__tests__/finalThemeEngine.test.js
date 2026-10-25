@@ -92,6 +92,9 @@ const CONTRACT_V1 = [
     // and the open-page variants the viewer swaps in
     '--c-focus-partner',
     '--c-focus-shadow',
+    '--c-focus-ring-inset',
+    '--c-focus-idle-filter',
+    '--c-focus-idle-opacity',
     '--c-focus-outline',
     '--c-input-focus-style',
     '--c-focus-base',

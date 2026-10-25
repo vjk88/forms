@@ -202,6 +202,14 @@ describe('a section with its own background (§6)', () => {
         );
     });
 
+    it('a form with no theme: a light section keeps the neutral grey, not the fallback', () => {
+        // the no-theme bag carries only focus tokens; the rest is the page
+        // frame's neutral defaults (PR 405 review)
+        const v = vars(sectionFocusStyle(neutralFocusTokens(), '#eef2ff'));
+        expect(v['--c-field-focus']).toBe('#4b5563');
+        expect(v['--c-focus-partner']).toBe('#ffffff');
+    });
+
     it('an old snapshot (no focus tokens) leaves sections untouched', () => {
         expect(sectionFocusStyle({ '--c-text': '#000' }, '#0b1020')).toBe('');
         expect(sectionFocusStyle(bag, '')).toBe('');

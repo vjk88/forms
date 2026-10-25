@@ -66,7 +66,9 @@
     outline: 2px solid transparent;
     /* inside the tab: .tab-list scrolls, which clips anything drawn outside */
     outline-offset: -2px;
-    box-shadow: var(--c-focus-ring);
+    /* drawn inside too: the new engine's inset ring; an old snapshot keeps
+       its glow */
+    box-shadow: var(--c-focus-ring-inset, var(--c-focus-ring));
     border-radius: var(--c-radius);
 }
 

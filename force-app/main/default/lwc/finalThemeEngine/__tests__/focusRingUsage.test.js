@@ -19,6 +19,7 @@ const LWC = path.join(__dirname, '..', '..');
 const SHADOW_TOKENS = [
     '--c-focus-ring',
     '--c-focus-shadow',
+    '--c-focus-ring-inset',
     '--c-focus-page-ring',
     '--c-focus-page-input',
     '--c-input-shadow-focus',

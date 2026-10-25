@@ -11,6 +11,9 @@ export const FOCUS_TOKENS = [
     // added (the gate: never given a CSS default)
     '--c-focus-partner',
     '--c-focus-shadow',
+    '--c-focus-ring-inset',
+    '--c-focus-idle-filter',
+    '--c-focus-idle-opacity',
     '--c-focus-outline',
     '--c-input-focus-style',
     '--c-focus-base',

@@ -397,11 +397,17 @@ export function brandContrastReport(recipe) {
             TEXT
         );
     }
-    // the focus ring's outer colour, drawn at full strength (the two-colour
-    // ring of IMPL_PLAN_FOCUS_CONTRAST v5 §4)
+    // the two-colour focus ring at full strength (IMPL_PLAN_FOCUS_CONTRAST
+    // v5 §4): it reads when either ring reaches 3:1 against the background
     const focus = composite(t['--c-field-focus'], s.card);
+    const partner = composite(t['--c-focus-partner'], s.card);
+    const ring = (bg) => {
+        const partnerWins =
+            partner && focus && bg && ratio(partner, bg) > ratio(focus, bg);
+        return partnerWins ? partner : focus;
+    };
     s.all.forEach(([where, bg]) =>
-        add(`focus ring on ${where}`, focus, bg, MARK)
+        add(`focus ring on ${where}`, ring(bg), bg, MARK)
     );
     const border = composite(t['--c-field-border'], s.card);
     s.all.forEach(([where, bg]) =>
