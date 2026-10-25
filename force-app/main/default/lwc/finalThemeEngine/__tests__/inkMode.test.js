@@ -2,6 +2,7 @@ import { resolveTokens, contrastRatio } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listGalleryThemes } from 'c/finalThemeCatalog';
 import { ACCENT_PRESETS } from 'c/finalDesignRegistry';
 import BEFORE from '../../finalThemeCatalog/__tests__/__fixtures__/tokensBeforeCatalogCut.json';
+import { withoutFocus } from './focusContract';
 
 // palette.inkMode 'contrast' (IMPL_PLAN_THEME_CATALOG_CUT P4).
 
@@ -15,7 +16,9 @@ describe('inkMode off: today exactly', () => {
         // Neo-Mint Stepper: white on emerald today (2.54:1), unchanged
         const t = resolveTokens(getBuiltinTheme('mintStepper'), null);
         expect(t['--c-submit-text']).toBe('#ffffff');
-        expect(t).toEqual(BEFORE.hidden.mintStepper);
+        expect(withoutFocus(t)).toEqual(
+            withoutFocus(BEFORE.hidden.mintStepper)
+        );
     });
 });
 
@@ -77,8 +80,8 @@ describe('hidden theme: preset, then reset', () => {
     });
 
     it('removing both overrides restores the exact starting tokens', () => {
-        expect(resolveTokens(getBuiltinTheme('mintStepper'), {})).toEqual(
-            BEFORE.hidden.mintStepper
-        );
+        expect(
+            withoutFocus(resolveTokens(getBuiltinTheme('mintStepper'), {}))
+        ).toEqual(withoutFocus(BEFORE.hidden.mintStepper));
     });
 });

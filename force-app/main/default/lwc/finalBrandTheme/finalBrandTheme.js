@@ -32,7 +32,10 @@ const MARK = 3;
 // rounding in color-mix / compositing can never tip a pair under.
 const TEXT_AIM = 4.6;
 const MARK_AIM = 3.1;
-const FOCUS_ALPHA = 0.55; // --c-focus-ring paints the focus colour at 55%
+// The generator still picks a focus colour that would pass even as the old
+// 55% glow (kept so brand recipes stay byte-identical, focus plan V5); the
+// ring itself is now drawn at full strength (IMPL_PLAN_FOCUS_CONTRAST v5).
+const FOCUS_ALPHA = 0.55;
 // Section looks paint this share of the text colour over the card.
 const SECTION_TINTS = [0, 0.03, 0.04, 0.07];
 // Light accent tints behind text (emoji chip 12%, thank-you check 14%).
@@ -394,14 +397,17 @@ export function brandContrastReport(recipe) {
             TEXT
         );
     }
+    // the two-colour focus ring at full strength (IMPL_PLAN_FOCUS_CONTRAST
+    // v5 §4): it reads when either ring reaches 3:1 against the background
     const focus = composite(t['--c-field-focus'], s.card);
+    const partner = composite(t['--c-focus-partner'], s.card);
+    const ring = (bg) => {
+        const partnerWins =
+            partner && focus && bg && ratio(partner, bg) > ratio(focus, bg);
+        return partnerWins ? partner : focus;
+    };
     s.all.forEach(([where, bg]) =>
-        add(
-            `focus ring on ${where}`,
-            focus && bg ? mix(focus, bg, FOCUS_ALPHA) : null,
-            bg,
-            MARK
-        )
+        add(`focus ring on ${where}`, ring(bg), bg, MARK)
     );
     const border = composite(t['--c-field-border'], s.card);
     s.all.forEach(([where, bg]) =>

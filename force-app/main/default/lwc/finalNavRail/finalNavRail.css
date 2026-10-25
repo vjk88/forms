@@ -134,7 +134,7 @@
     /* inside the link: the rail scrolls (dock, narrow top bar), which clips
        anything drawn outside */
     outline-offset: -2px;
-    box-shadow: var(--c-focus-ring);
+    box-shadow: var(--c-focus-ring-inset, var(--c-focus-ring));
 }
 
 /* Gated mode: locked pages read as parked, not broken (stepper parity). */

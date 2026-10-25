@@ -20,6 +20,7 @@ import {
     fontManifest,
     ENGINE_VERSION
 } from 'c/finalThemeEngine';
+import { neutralFocusTokens } from 'c/finalFocusTreatment';
 
 /**
  * Error message, required marker and invalid border on the DARK themes. The
@@ -1219,8 +1220,11 @@ export function resolveSpecForPublish(spec, customThemeProps) {
         theme = customThemeProps;
     }
     const overrides = out.theme ? out.theme.overrides : null;
+    const tokens = resolveTokens(theme, overrides);
     out.resolved = {
-        tokens: resolveTokens(theme, overrides),
+        // no theme and no overrides: freeze the focus tokens for the page
+        // frame's neutral colours (IMPL_PLAN_FOCUS_CONTRAST v5 §6b)
+        tokens: Object.keys(tokens).length ? tokens : neutralFocusTokens(),
         engineVersion: ENGINE_VERSION,
         resolvedAt: new Date().toISOString()
     };

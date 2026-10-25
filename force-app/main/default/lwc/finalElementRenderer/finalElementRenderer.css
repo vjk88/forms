@@ -415,8 +415,14 @@
 }
 
 .block-file-frame:focus-visible {
-    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    /* Focus contract (IMPL_PLAN_FOCUS_CONTRAST v5 §3): the new engine sets
+       --c-focus-outline (transparent, kept for High Contrast) and
+       --c-focus-shadow (the two-colour ring); an old published snapshot
+       has neither and keeps today's solid outline. */
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
     outline-offset: 2px;
+    box-shadow: var(--c-focus-shadow, none);
 }
 
 .block-file-prompt {
@@ -472,6 +478,7 @@
 
 /* 44px hit area (WCAG 2.5.5) without a 44px-looking button. */
 .file-item-x {
+    position: relative;
     flex: 0 0 auto;
     display: flex;
     align-items: center;
@@ -496,9 +503,22 @@
    the inset follows the density: the ring's outer edge lands 2px inside the
    row's outer edge (Comfortable 30px ring, Compact 26px). */
 .file-item-x:focus-visible {
-    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    /* focus contract: see .block-file-frame:focus-visible */
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
     outline-offset: calc(var(--c-space-1) - 13px);
     border-radius: var(--c-radius);
+}
+/* The new two-colour ring, drawn where the old outline sat: a box-shadow
+   ignores outline-offset, so it rides an inset layer whose 4px ring ends on
+   the same line as the outline's outer edge (inside the row). */
+.file-item-x:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: calc(15px - var(--c-space-1));
+    border-radius: var(--c-radius);
+    box-shadow: var(--c-focus-shadow, none);
+    pointer-events: none;
 }
 
 /* Validation failures (annotated by the viewer post-reveal) — themed via
@@ -575,8 +595,11 @@
 /* The file drop button is focusable and has its own focus outline; the line
    above would take that outline over, so the focus ring is restated here. */
 .has-errors > .block-file-frame:focus-visible {
-    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    /* focus contract: see .block-file-frame:focus-visible */
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
     outline-offset: 2px;
+    box-shadow: var(--c-focus-shadow, none);
 }
 
 /* With the label stacked above, there is only 2px (compact) to 4px
@@ -728,6 +751,18 @@
 .scale-icon:focus-visible {
     outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
+}
+/* Keyboard focus shows an idle face or star at full strength, as hover
+   does: the idle grey/dim filter and opacity would fade the focus ring with
+   it. Gated (focus contract, see .block-file-frame:focus-visible): the new
+   engine writes --c-focus-idle-filter / --c-focus-idle-opacity, and a form
+   published before keeps today's idle look. Selected, filled and hovered
+   faces and stars keep their own rules. */
+.scale-chip.emoji-chip:not(.selected):not(:hover):focus-visible {
+    filter: var(--c-focus-idle-filter, grayscale(1) opacity(0.55));
+}
+.scale-row:not(:hover) .scale-icon:not(.filled):focus-visible {
+    opacity: var(--c-focus-idle-opacity, 0.4);
 }
 .scale-icon {
     min-width: var(--c-control-h, 44px);
@@ -1251,8 +1286,14 @@
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
 }
 .slider-input:focus-visible::-webkit-slider-thumb {
-    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    /* focus contract: see .block-file-frame:focus-visible */
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
     outline-offset: 2px;
+    /* the thumb keeps its drop shadow under the ring */
+    box-shadow:
+        0 1px 4px rgba(15, 23, 42, 0.35),
+        var(--c-focus-shadow, 0 0 transparent);
 }
 .slider-input::-moz-range-track {
     height: 8px;
@@ -1273,8 +1314,13 @@
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
 }
 .slider-input:focus-visible::-moz-range-thumb {
-    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    /* focus contract: see .block-file-frame:focus-visible */
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
     outline-offset: 2px;
+    box-shadow:
+        0 1px 4px rgba(15, 23, 42, 0.35),
+        var(--c-focus-shadow, 0 0 transparent);
 }
 
 /* centered conversational stage: rows follow the section's centering cue

@@ -4,6 +4,7 @@ import { buildSampleSpec } from 'c/finalSampleSpec';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import BEFORE from '../../finalThemeCatalog/__tests__/__fixtures__/tokensBeforeCatalogCut.json';
+import { withoutFocus } from '../../finalThemeEngine/__tests__/focusContract';
 
 // Accent presets + hidden-theme label (IMPL_PLAN_THEME_CATALOG_CUT P1, P5).
 
@@ -132,8 +133,10 @@ describe('accent presets in the Design panel', () => {
         const overrides = lastSpec(handler).theme.overrides;
         expect((overrides.palette || {}).inkMode).toBeUndefined();
         expect(
-            resolveTokens(getBuiltinTheme('mintStepper'), overrides)
-        ).toEqual(BEFORE.hidden.mintStepper);
+            withoutFocus(
+                resolveTokens(getBuiltinTheme('mintStepper'), overrides)
+            )
+        ).toEqual(withoutFocus(BEFORE.hidden.mintStepper));
     });
 
     it('"Reset to theme" on Palette removes the preset and its ink flag', async () => {
@@ -149,8 +152,10 @@ describe('accent presets in the Design panel', () => {
         const overrides = lastSpec(handler).theme.overrides;
         expect((overrides.palette || {}).inkMode).toBeUndefined();
         expect(
-            resolveTokens(getBuiltinTheme('mintStepper'), overrides)
-        ).toEqual(BEFORE.hidden.mintStepper);
+            withoutFocus(
+                resolveTokens(getBuiltinTheme('mintStepper'), overrides)
+            )
+        ).toEqual(withoutFocus(BEFORE.hidden.mintStepper));
     });
 });
 
@@ -203,8 +208,10 @@ describe('toolbar presets (applyToolbarChange)', () => {
         el.applyToolbarChange({ key: 'accent', kind: 'reset' });
         const overrides = lastSpec(handler).theme.overrides;
         expect(
-            resolveTokens(getBuiltinTheme('mintStepper'), overrides)
-        ).toEqual(BEFORE.hidden.mintStepper);
+            withoutFocus(
+                resolveTokens(getBuiltinTheme('mintStepper'), overrides)
+            )
+        ).toEqual(withoutFocus(BEFORE.hidden.mintStepper));
     });
 });
 

@@ -6,6 +6,7 @@ import {
 } from 'c/finalThemeCatalog';
 import { resolveTokens, contrastRatio } from 'c/finalThemeEngine';
 import BEFORE from './__fixtures__/tokensBeforeCatalogCut.json';
+import { withoutFocus } from '../../finalThemeEngine/__tests__/focusContract';
 
 // IMPL_PLAN_THEME_CATALOG_CUT. The fixture is resolveTokens() for every theme,
 // captured on main BEFORE the cut (P1 / tests §4).
@@ -74,7 +75,9 @@ const HEADER_FIXED = [
     'silkLuxury'
 ];
 
-function changedTokens(now, before) {
+function changedTokens(nowAll, beforeAll) {
+    const now = withoutFocus(nowAll);
+    const before = withoutFocus(beforeAll);
     return Object.keys({ ...before, ...now }).filter(
         (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
     );
@@ -97,9 +100,9 @@ describe('catalog cut: gallery vs hidden themes', () => {
     it.each(HIDDEN.filter((k) => !HEADER_FIXED.includes(k)))(
         'hidden theme %s resolves to exactly the same tokens as before',
         (key) => {
-            expect(resolveTokens(getBuiltinTheme(key), null)).toEqual(
-                BEFORE.hidden[key]
-            );
+            expect(
+                withoutFocus(resolveTokens(getBuiltinTheme(key), null))
+            ).toEqual(withoutFocus(BEFORE.hidden[key]));
         }
     );
 
@@ -120,16 +123,16 @@ describe('catalog cut: gallery vs hidden themes', () => {
             specVersion: 1,
             theme: { source: 'builtin', name: 'mintStepper' }
         };
-        expect(resolveSpecForPublish(spec).resolved.tokens).toEqual(
-            BEFORE.hidden.mintStepper
-        );
+        expect(
+            withoutFocus(resolveSpecForPublish(spec).resolved.tokens)
+        ).toEqual(withoutFocus(BEFORE.hidden.mintStepper));
     });
 
     it.each(GALLERY)(
         'kept theme %s changes only the tokens the plan names',
         (key) => {
-            const now = resolveTokens(getBuiltinTheme(key), null);
-            const before = BEFORE.kept[key];
+            const now = withoutFocus(resolveTokens(getBuiltinTheme(key), null));
+            const before = withoutFocus(BEFORE.kept[key]);
             const changed = Object.keys({ ...before, ...now }).filter(
                 (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
             );
