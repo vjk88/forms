@@ -55,6 +55,12 @@ export default class FinalThemeCard extends LightningElement {
      * second colour).
      */
     @api accentSample = false;
+    /**
+     * Leave out the colour squares under the name: the theme families picker
+     * shows a family's looks as dots below the card, and squares inside the
+     * clickable card would read as more looks (a click on them picks).
+     */
+    @api hideSwatches = false;
 
     get _theme() {
         if (this.themeProps && typeof this.themeProps === 'object') {
@@ -144,6 +150,10 @@ export default class FinalThemeCard extends LightningElement {
             name,
             style: `background:${val || '#cccccc'};`
         }));
+    }
+
+    get showSwatches() {
+        return !this.hideSwatches;
     }
 
     get rootClass() {

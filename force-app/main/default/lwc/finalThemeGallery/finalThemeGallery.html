@@ -15,6 +15,9 @@
                     </button>
                 </template>
             </div>
+            <p class="gal-hint">
+                Dots show each look. Click a preview to use it.
+            </p>
         </div>
 
         <div class="gal-grid">
@@ -24,6 +27,7 @@
                         theme-key={f.themeKey}
                         label={f.label}
                         description={f.description}
+                        hide-swatches={f.many}
                         layout={previewLayout}
                         pane-flow={previewPaneFlow}
                         selected={f.selected}
@@ -44,7 +48,7 @@
                                     class={d.cls}
                                     aria-checked={d.checked}
                                     aria-label={d.name}
-                                    title={d.name}
+                                    title={d.title}
                                     tabindex={d.tabindex}
                                     data-family={f.key}
                                     data-key={d.key}
@@ -58,9 +62,9 @@
                                 </button>
                             </template>
                         </div>
-                        <p class="fam-showing" aria-live="polite">
-                            {f.showing}
-                        </p>
+                        <template lwc:if={f.yours}>
+                            <p class="fam-yours">{f.yours}</p>
+                        </template>
                     </template>
                 </div>
             </template>

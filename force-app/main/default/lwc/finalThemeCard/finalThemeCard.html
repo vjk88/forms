@@ -310,7 +310,7 @@
                 ></lightning-icon>
             </div>
             <p class="tc-desc">{description}</p>
-            <div class="tc-swatches" aria-hidden="true">
+            <div class="tc-swatches" aria-hidden="true" lwc:if={showSwatches}>
                 <template for:each={swatches} for:item="sw">
                     <span
                         key={sw.key}

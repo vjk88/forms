@@ -297,3 +297,43 @@ describe('theme families', () => {
         }
     );
 });
+
+// PR 406 review: compare each restored theme WITH and WITHOUT its families
+// edit, so every token (focus tokens included) is held to the allowlist, and
+// exactly the expected themes change.
+describe('theme families: the recipe edits, token by token', () => {
+    const undo = (key) => {
+        const r = JSON.parse(JSON.stringify(getBuiltinTheme(key)));
+        delete r.palette.inkMode;
+        if (key === 'cosmicVortex') {
+            r.palette.accent = '#a855f7';
+        }
+        return r;
+    };
+    const diff = (key) => {
+        const before = resolveTokens(undo(key), null);
+        const now = resolveTokens(getBuiltinTheme(key), null);
+        return Object.keys({ ...before, ...now }).filter(
+            (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
+        );
+    };
+
+    it.each(RESTORED)('%s: every changed token is on the allowlist', (key) => {
+        diff(key).forEach((t) => expect(familiesAllowed(key)).toContain(t));
+    });
+
+    it('exactly these themes change ink, and Cosmic Vortex its accent', () => {
+        const changed = RESTORED.filter((k) => diff(k).length).sort();
+        expect(changed).toEqual(
+            [
+                'carbonMatrix',
+                'cosmicVortex',
+                'cyberSplit',
+                'marbleSplit',
+                'retroStepper',
+                'sunsetDunes',
+                'tokyo'
+            ].sort()
+        );
+    });
+});

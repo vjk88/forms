@@ -74,7 +74,8 @@
 
 .gal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    /* never wider than the dialog: a phone gets one full-width column */
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 1.25rem;
 }
 
@@ -94,6 +95,7 @@
 }
 
 .fam-dot {
+    position: relative;
     display: grid;
     place-items: center;
     width: 32px;
@@ -109,13 +111,31 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+    box-shadow: inset 0 0 0 1px var(--c-studio-border);
+}
+
+/* the form's current look: a small check badge on its dot */
+.fam-dot.is-current::after {
+    content: '✓';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    place-items: center;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
 }
 
 /* the look being shown: a ring around its chip */
 .fam-dot.is-on .fam-chip {
     box-shadow:
-        inset 0 0 0 1px rgb(0 0 0 / 20%),
+        inset 0 0 0 1px var(--c-studio-border),
         0 0 0 2px var(--c-studio-surface),
         0 0 0 4px var(--c-studio-text);
 }
@@ -125,8 +145,14 @@
     outline-offset: 1px;
 }
 
-.fam-showing {
+.fam-yours {
     margin: 0;
     font-size: 0.75rem;
+    color: var(--c-studio-text-weak);
+}
+
+.gal-hint {
+    margin: 0;
+    font-size: 0.8rem;
     color: var(--c-studio-text-weak);
 }

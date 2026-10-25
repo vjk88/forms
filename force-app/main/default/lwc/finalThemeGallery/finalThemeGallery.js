@@ -39,7 +39,7 @@ const LAYOUTS = [
 const dotStyles = new Map();
 function dotStyle(key) {
     if (!dotStyles.has(key)) {
-        let style = 'background:#cccccc;';
+        let style = 'background:var(--c-studio-border);';
         try {
             const t = resolveTokens(getBuiltinTheme(key), null);
             const photos = [t['--c-page-bg-image'], t['--c-header-bg-image']]
@@ -108,15 +108,27 @@ export default class FinalThemeGallery extends LightningElement {
                 selected: shown.key === sel,
                 many,
                 groupLabel: `${f.name} looks`,
-                showing: `Showing ${shown.name}`,
+                // after a dot moved away from the form's look, say which is theirs
+                yours:
+                    keys.includes(sel) && shownKey !== sel
+                        ? `Yours: ${f.members.find((m) => m.key === sel).name}`
+                        : '',
                 dots: f.members.map((m) => {
                     const on = m.key === shownKey;
+                    const current = m.key === sel;
+                    let cls = on ? 'fam-dot is-on' : 'fam-dot';
+                    if (current) {
+                        cls += ' is-current';
+                    }
                     return {
                         key: m.key,
-                        name: m.name,
+                        name: current
+                            ? `${m.name}, your current theme`
+                            : m.name,
+                        title: m.name,
                         checked: on ? 'true' : 'false',
                         tabindex: on ? '0' : '-1',
-                        cls: on ? 'fam-dot is-on' : 'fam-dot',
+                        cls,
                         style: dotStyle(m.key)
                     };
                 })

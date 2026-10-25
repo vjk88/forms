@@ -73,9 +73,8 @@ describe('c-final-theme-gallery: families', () => {
         expect(card(el, 'scenic').themeKey).toBe('desertOasis');
         expect(card(el, 'scenic').label).toBe('Misty Pines');
         expect(dots(el, 'scenic')[1].getAttribute('aria-checked')).toBe('true');
-        expect(
-            fam(el, 'scenic').querySelector('.fam-showing').textContent
-        ).toContain('Showing Misty Pines');
+        // the card title already names the look: no separate "Showing" line
+        expect(fam(el, 'scenic').querySelector('.fam-showing')).toBeNull();
         expect(handler).not.toHaveBeenCalled();
     });
 
@@ -151,5 +150,44 @@ describe('c-final-theme-gallery: families', () => {
             dots(el, key)[i].querySelector('.fam-chip').getAttribute('style');
         expect(style('scenic', 0)).toContain('ocean.jpg');
         expect(style('clean', 0)).toContain('linear-gradient');
+    });
+});
+
+describe('c-final-theme-gallery: review follow-ups (PR 406)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it('a family with several looks hides the card squares; a single look keeps them', async () => {
+        const el = await mount();
+        expect(card(el, 'scenic').hideSwatches).toBe(true);
+        expect(card(el, 'neonNights').hideSwatches).toBe(false);
+    });
+
+    it("marks the form's current look on its dot, and says so after a dot moves away", async () => {
+        const el = await mount({ selectedThemeKey: 'sandstone' });
+        let d = dots(el, 'editorial');
+        expect(d[1].classList.contains('is-current')).toBe(true);
+        expect(d[1].getAttribute('aria-label')).toBe(
+            'Sandstone & Copper, your current theme'
+        );
+        expect(fam(el, 'editorial').querySelector('.fam-yours')).toBeNull();
+        d[0].click();
+        await flush();
+        d = dots(el, 'editorial');
+        expect(d[1].classList.contains('is-current')).toBe(true);
+        expect(card(el, 'editorial').selected).toBe(false);
+        expect(
+            fam(el, 'editorial').querySelector('.fam-yours').textContent
+        ).toBe('Yours: Sandstone & Copper');
+    });
+
+    it('says once how dots and previews differ', async () => {
+        const el = await mount();
+        expect(el.shadowRoot.querySelector('.gal-hint').textContent).toContain(
+            'Dots show each look. Click a preview to use it.'
+        );
     });
 });
