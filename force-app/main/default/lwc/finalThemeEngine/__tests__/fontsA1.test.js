@@ -6,6 +6,7 @@ import {
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { BUNDLED_FONTS } from 'c/finalFontFamilies';
 import BEFORE from './__fixtures__/fontsLegacyBeforeA1.json';
+import { withoutFocus } from './focusContract';
 
 // IMPL_PLAN_FONTS_AND_BRAND_THEME §A.3b. The fixture is resolveTokens() for
 // every legacy theme × form font combination and all 32 themes, captured on
@@ -46,15 +47,17 @@ const fontsOf = (t) => [t['--c-font-display'], t['--c-font-body']];
 describe('fonts A1: legacy regime is byte-for-byte unchanged', () => {
     it.each(BEFORE.cases.map((c) => [c.name, c]))('%s', (name, c) => {
         const theme = c.base ? nordicWith(c.themePatch) : null;
-        expect(resolveTokens(theme, c.overrides)).toStrictEqual(c.tokens);
+        expect(withoutFocus(resolveTokens(theme, c.overrides))).toStrictEqual(
+            withoutFocus(c.tokens)
+        );
     });
 
     it.each(listBuiltinThemes().map((t) => t.key))(
         'theme %s resolves exactly as before',
         (key) => {
-            expect(resolveTokens(getBuiltinTheme(key), null)).toStrictEqual(
-                BEFORE.themes[key]
-            );
+            expect(
+                withoutFocus(resolveTokens(getBuiltinTheme(key), null))
+            ).toStrictEqual(withoutFocus(BEFORE.themes[key]));
         }
     );
 

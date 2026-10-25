@@ -87,6 +87,20 @@ const CONTRACT_V1 = [
     '--c-accent',
     '--c-on-accent',
     '--c-focus-ring',
+    // the focus contract (contract event 2026-10-25, IMPL_PLAN_FOCUS_CONTRAST
+    // v5 Part B): the two-colour ring, the gate tokens old snapshots lack,
+    // and the open-page variants the viewer swaps in
+    '--c-focus-partner',
+    '--c-focus-shadow',
+    '--c-focus-outline',
+    '--c-input-focus-style',
+    '--c-focus-base',
+    '--c-focus-under',
+    '--c-focus-page-field',
+    '--c-focus-page-partner',
+    '--c-focus-page-ring',
+    '--c-focus-page-input',
+    '--c-focus-page-under',
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
@@ -538,9 +552,11 @@ describe('c-final-theme-engine', () => {
             expect(pinned['--c-submit-text']).toBe('#fefefe');
         });
 
-        it('focus ring is an rgba of the focus color', () => {
+        it('focus ring is two solid rings: partner inside, focus colour outside', () => {
             const t = resolveTokens(theme(), null);
-            expect(t['--c-focus-ring']).toMatch(/^0 0 0 3px rgba\(/);
+            expect(t['--c-focus-ring']).toBe(
+                `0 0 0 2px ${t['--c-focus-partner']}, 0 0 0 4px ${t['--c-field-focus']}`
+            );
         });
 
         it('header text falls back to body text; weak falls back to textWeak', () => {

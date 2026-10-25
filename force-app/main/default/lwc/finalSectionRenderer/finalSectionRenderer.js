@@ -89,6 +89,11 @@ export default class FinalSectionRenderer extends LightningElement {
         if (surface.padding && PAD_SCALE[surface.padding]) {
             parts.push(`padding: ${PAD_SCALE[surface.padding]}`);
         }
+        // its own focus treatment, computed by the viewer from this
+        // background (IMPL_PLAN_FOCUS_CONTRAST v5 §6)
+        if (this.sec.focusStyle) {
+            parts.push(this.sec.focusStyle);
+        }
         return parts.join('; ');
     }
 

@@ -18,6 +18,16 @@
  */
 
 import {
+    focusTreatment,
+    focusTokens,
+    stackRange,
+    over,
+    exact,
+    parseColor,
+    rangeToken,
+    FOCUS_DARK
+} from 'c/finalFocusTreatment';
+import {
     BUNDLED_FONTS,
     FONT_PAIRINGS,
     headingWeight
@@ -814,7 +824,6 @@ export function resolveTokens(themeProps, formOverrides) {
     const outlineBg =
         pal.fieldBg ||
         (isDarkSurface(pal) ? 'rgba(255, 255, 255, 0.06)' : '#ffffff');
-    const focusColor = fs.focus || pal.accent;
     // `swatch` = the guaranteed-HEX companion the panel's Input fill picker
     // shows (round-2 audit): the painted bg can be a keyword or a translucent
     // rgba the picker can't honestly parse — so each shell composites its
@@ -825,7 +834,6 @@ export function resolveTokens(themeProps, formOverrides) {
             border: fieldBorderColor,
             radius: null, // falls through to --c-radius via the CSS fallback
             shadow: 'none',
-            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.55)}`,
             swatch:
                 pal.fieldBg ||
                 (isDarkSurface(pal)
@@ -841,7 +849,6 @@ export function resolveTokens(themeProps, formOverrides) {
             border: 'transparent',
             radius: '0px',
             shadow: `inset 0 -1.5px 0 0 ${fieldBorderColor}`,
-            shadowFocus: `inset 0 -2px 0 0 ${focusColor}`,
             // transparent shows the panel through — that IS the color you see
             swatch: pal.fieldBg || pal.contentBg
         },
@@ -855,7 +862,6 @@ export function resolveTokens(themeProps, formOverrides) {
             border: 'transparent',
             radius: null,
             shadow: 'none',
-            shadowFocus: `0 0 0 3px ${rgba(focusColor, 0.55)}`,
             swatch:
                 pal.fieldBg ||
                 (isDarkSurface(pal)
@@ -947,7 +953,6 @@ export function resolveTokens(themeProps, formOverrides) {
         fx.mesh === 'custom'
             ? customMesh(fx.meshColors, Number(fx.meshBlur) > 0)
             : MESHES[fx.mesh] || [];
-    const focus = fs.focus || pal.accent;
     const submitBg = pal.submitBg || pal.accent;
     const sectionLook = SECTION_LOOKS[p.sectionStyle] || null;
     // Swatch basis: unset global style = each section's default preset (card).
@@ -982,6 +987,93 @@ export function resolveTokens(themeProps, formOverrides) {
         : 100;
     const veilAlpha = img.url ? (100 - imgOpacity) / 100 : 0;
     const veilColor = veilAlpha > 0 ? rgba(pal.pageBg, veilAlpha) : null;
+
+    // Focus (IMPL_PLAN_FOCUS_CONTRAST v5 Part B, c/finalFocusTreatment).
+    // Backgrounds are ranges: anything the engine can't see (the host under a
+    // translucent page, a gradient, a photo, glow layers, texture) is black to
+    // white, and each known layer painted above narrows it. Paint order is
+    // finalPageFrame's: page fill, gradient, image, veil, scrim, then .fx
+    // (mesh, texture) ABOVE that stack, then the card.
+    const focusBase = fs.focus || pal.accent;
+    const fillLayer = (color, pct) => {
+        const c = parseColor(color);
+        if (!c) {
+            return { unknown: true };
+        }
+        const n = Number(pct);
+        const a =
+            c.a * (Number.isFinite(n) && n < 100 ? Math.max(n, 0) / 100 : 1);
+        return { color: `rgba(${c.r}, ${c.g}, ${c.b}, ${a})` };
+    };
+    const pageLayers = [
+        fillLayer(pal.pageBg, pal.pageBgOpacity),
+        gradientLayer(pal.pageBgGradient) !== 'none' ? { unknown: true } : null,
+        img.url ? { unknown: true } : null,
+        veilColor ? { color: veilColor } : null,
+        scrim ? { color: `rgba(0, 0, 0, ${scrim})` } : null,
+        mesh.length || textureLayer(fx.texture, fx.textureIntensity)
+            ? { unknown: true }
+            : null
+    ];
+    const pageRange = stackRange(pageLayers);
+    const cardRange = stackRange([
+        ...pageLayers,
+        fillLayer(pal.contentBg, pal.contentBgOpacity)
+    ]);
+    const cardGradient =
+        gradientLayer(pal.contentBgGradient, pal.contentBgOpacity) !== 'none';
+    // what the outer ring can sit on, over a given background: the background
+    // itself, every section look's tint, the theme's own section colour, and
+    // the field fill (an underline is judged against it)
+    const focusOutside = (under) => [
+        under,
+        ...Object.values(SECTION_LOOKS).map((look) =>
+            over(rgba(pal.text, look.bgPct), under)
+        ),
+        ...(pal.sectionBg
+            ? [
+                  over(
+                      fillLayer(pal.sectionBg, pal.sectionBgOpacity).color,
+                      under
+                  )
+              ]
+            : []),
+        over(shell.bg, under),
+        // the form's field fill too: choice chips and other fields paint it
+        // even when the input style is a bare underline
+        over(outlineBg, under)
+    ];
+    // the fills the inner ring touches: the button (and its gradient stops)
+    // and the accent (selected tiles)
+    const focusInside = [
+        exact(submitBg),
+        ...(pal.submitBgGradient &&
+        pal.submitBgGradient.start &&
+        pal.submitBgGradient.end
+            ? [
+                  exact(pal.submitBgGradient.start),
+                  exact(pal.submitBgGradient.end)
+              ]
+            : []),
+        exact(pal.accent)
+    ];
+    const focusToward = parseColor(pal.text) ? pal.text : FOCUS_DARK;
+    const cardFocus = focusTreatment({
+        base: focusBase,
+        toward: focusToward,
+        outside: focusOutside(cardRange),
+        inside: focusInside,
+        fallback: cardGradient
+    });
+    // the One at a time open page: no card, controls sit on the page
+    const pageFocus = focusTreatment({
+        base: focusBase,
+        toward: focusToward,
+        outside: focusOutside(pageRange),
+        inside: focusInside
+    });
+    const focusOut = focusTokens(cardFocus, p.fieldStyle);
+    const pageFocusOut = focusTokens(pageFocus, p.fieldStyle);
 
     const tokens = {
         // Page (finalPageFrame .page — fixed 4-layer stack, top to bottom:
@@ -1118,7 +1210,7 @@ export function resolveTokens(themeProps, formOverrides) {
         // else absent → the CSS fallback chain lands on --c-radius.
         '--c-input-radius': shell.radius ?? RADIUS[p.fieldRadius],
         '--c-input-shadow': shell.shadow,
-        '--c-input-shadow-focus': shell.shadowFocus,
+        '--c-input-shadow-focus': focusOut['--c-input-shadow-focus'],
         // Panel-only swatch companion (guaranteed hex) — no CSS consumes it.
         '--c-input-bg-swatch': shell.swatch,
 
@@ -1138,7 +1230,7 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-label-color': pal.labelColor || labelLook.color,
         '--c-label-font': labelLook.font,
 
-        '--c-field-focus': focus,
+        '--c-field-focus': focusOut['--c-field-focus'],
         '--c-field-error': fs.error,
         '--c-field-required': fs.required,
         // Conditional (null → dropped by the guard below): only dark surfaces
@@ -1152,7 +1244,21 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-text-weak': pal.textWeak,
         '--c-accent': pal.accent,
         '--c-on-accent': inkOn(pal, userPal, 'onAccent', pal.accent),
-        '--c-focus-ring': `0 0 0 3px ${rgba(focus, 0.55)}`,
+        '--c-focus-ring': focusOut['--c-focus-ring'],
+        // The focus contract (Part B). NEVER give these a CSS default: an
+        // old published snapshot lacks them, and that absence is what keeps
+        // old forms drawing exactly as before.
+        '--c-focus-partner': focusOut['--c-focus-partner'],
+        '--c-focus-shadow': focusOut['--c-focus-shadow'],
+        '--c-focus-outline': focusOut['--c-focus-outline'],
+        '--c-input-focus-style': focusOut['--c-input-focus-style'],
+        '--c-focus-base': focusBase,
+        '--c-focus-under': rangeToken(cardGradient ? null : cardRange),
+        '--c-focus-page-field': pageFocusOut['--c-field-focus'],
+        '--c-focus-page-partner': pageFocusOut['--c-focus-partner'],
+        '--c-focus-page-ring': pageFocusOut['--c-focus-ring'],
+        '--c-focus-page-input': pageFocusOut['--c-input-shadow-focus'],
+        '--c-focus-page-under': rangeToken(pageRange),
 
         // Header
         '--c-header-bg': withFillOpacity(pal.headerBg, pal.headerBgOpacity),

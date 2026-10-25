@@ -15,6 +15,11 @@ import getUserPreviewValues from '@salesforce/apex/FinalAutofillController.getUs
 import { resolveTokens, fontManifest } from 'c/finalThemeEngine';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
 import {
+    neutralFocusTokens,
+    openPageTokens,
+    sectionFocusStyle
+} from 'c/finalFocusTreatment';
+import {
     getLayout,
     isOnePerScreen,
     layoutNamesPages
@@ -752,10 +757,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Theme photos are stored by their portable address; swap in this
         // org's real one before painting (namespace, site prefix). Published
         // snapshots are fixed too, with no republish.
-        this.tokens = localizeAssetUrls(
-            (spec.resolved && spec.resolved.tokens) ||
-                resolveTokens(theme, spec.theme ? spec.theme.overrides : null)
-        );
+        let drawn =
+            spec.resolved && spec.resolved.tokens
+                ? spec.resolved.tokens
+                : resolveTokens(
+                      theme,
+                      spec.theme ? spec.theme.overrides : null
+                  );
+        // No theme and no overrides: the engine returns nothing and the page
+        // frame's own defaults paint the form. Their focus glow is faint, so
+        // new and draft forms get the focus tokens for those neutral colours
+        // (IMPL_PLAN_FOCUS_CONTRAST v5 §6b). A published snapshot is used as
+        // frozen, even an empty one.
+        if (!(spec.resolved && spec.resolved.tokens)) {
+            if (Object.keys(drawn).length === 0) {
+                drawn = neutralFocusTokens();
+            }
+        }
+        this.tokens = localizeAssetUrls(drawn);
 
         // Surveys are ALWAYS top-labeled (owner 2026-07-31): a theme carrying
         // labelPosition 'left' must not sneak sideways labels in. Patched on
@@ -1019,6 +1038,33 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._userTypes = null;
             this._userFailed = false;
         }
+        // Focus (IMPL_PLAN_FOCUS_CONTRAST v5 Part B). On the One at a time
+        // open page the controls sit on the page, not a card, so the page's
+        // focus treatment replaces the card's. A section with its own
+        // background gets its own treatment, computed here from the token
+        // bag (the section renderer paints it). Both are no-ops on an old
+        // snapshot, which carries none of the focus tokens.
+        if (layout.ownsAdvance && layout.bleed && options.fullBleed !== false) {
+            this.tokens = openPageTokens(this.tokens);
+        }
+        const withFocus = (page) => {
+            if (!Array.isArray(page.sections)) {
+                return page.sections;
+            }
+            let changed = false;
+            const sections = page.sections.map((sec) => {
+                const focusStyle = sectionFocusStyle(
+                    this.tokens,
+                    sec && sec.surface && sec.surface.bg
+                );
+                if (!focusStyle) {
+                    return sec;
+                }
+                changed = true;
+                return { ...sec, focusStyle };
+            });
+            return changed ? sections : page.sections;
+        };
         this.model = {
             // RAW (may be undefined): pageFrame falls back to medium for the
             // carded panel, while bleed layouts keep their locked column
@@ -1040,6 +1086,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // schema'd but no writer ever existed.)
             pages: effectivePages.map((page, i) => ({
                 ...page,
+                sections: withFocus(page),
                 // Reveal identity: authored id / split key, else full-list
                 // position. Reveal bookkeeping must never use the FILTERED
                 // index — visibility rules renumber that list live and

@@ -214,8 +214,14 @@
 }
 
 .sec-fold:focus-visible {
-    outline: 2px solid var(--c-field-focus, var(--c-accent));
+    /* Focus contract (IMPL_PLAN_FOCUS_CONTRAST v5 §3): the new engine sets
+       --c-focus-outline (transparent, kept for High Contrast) and
+       --c-focus-shadow (the two-colour ring); an old published snapshot
+       has neither and keeps today's solid outline. */
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
     outline-offset: 1px;
+    box-shadow: var(--c-focus-shadow, none);
 }
 
 .sec-desc {

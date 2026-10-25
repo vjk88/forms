@@ -8,6 +8,7 @@
  */
 import { resolveTokens } from 'c/finalThemeEngine';
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
+import { FOCUS_TOKENS } from './focusContract';
 
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +18,9 @@ const LWC = path.join(__dirname, '..', '..');
 // Tokens whose value is a box-shadow, never usable as a colour.
 const SHADOW_TOKENS = [
     '--c-focus-ring',
+    '--c-focus-shadow',
+    '--c-focus-page-ring',
+    '--c-focus-page-input',
     '--c-input-shadow-focus',
     '--c-input-shadow',
     '--c-section-shadow'
@@ -212,5 +216,39 @@ describe('focus stays visible in Windows High Contrast', () => {
         expect(focus.map((r) => r.selector)).toContain(
             '.scale-chip:focus-visible, .scale-icon:focus-visible'
         );
+    });
+});
+
+/**
+ * The gate (IMPL_PLAN_FOCUS_CONTRAST v5 §3): an old published snapshot has
+ * none of the new focus tokens, and that absence is what keeps it drawing
+ * exactly as before. A CSS default for any of them (in finalPageFrame's
+ * :host, or anywhere) would be inherited by every old form and switch the
+ * new treatment on silently.
+ */
+describe('the new focus tokens never get a CSS default', () => {
+    const ADDED = FOCUS_TOKENS.filter(
+        (t) =>
+            ![
+                '--c-field-focus',
+                '--c-focus-ring',
+                '--c-input-shadow-focus'
+            ].includes(t)
+    );
+
+    it('no final* stylesheet declares one', () => {
+        const declared = finalStylesheets()
+            .flatMap(declarations)
+            .filter((d) => ADDED.includes(`--${d.property.replace(/^--/, '')}`))
+            .map((d) => `${d.file}: ${d.property}`);
+        expect(declared).toEqual([]);
+    });
+
+    it('the list covers every focus token the engine adds', () => {
+        const t = resolveTokens(getBuiltinTheme('nordic'), null);
+        const engineFocus = Object.keys(t).filter((k) =>
+            /^--c-(focus-|input-focus-)/.test(k)
+        );
+        engineFocus.forEach((k) => expect(FOCUS_TOKENS).toContain(k));
     });
 });
