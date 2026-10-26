@@ -95,7 +95,16 @@ export const LAYOUTS = {
         // May run full-bleed (Immersive toggle, default ON): pageFrame drops
         // the panel surface and the primitive owns the canvas edge-to-edge.
         bleed: true,
-        buttonArrangement: 'split'
+        buttonArrangement: 'split',
+        // A NEW Split form (created, or switched to in Studio) starts carded
+        // and Wide, the look the theme and layout previews draw (owner
+        // 2026-10-25). Saved forms keep their own settings: an unset
+        // fullBleed still means ON. `widthIsStart` marks that Wide as the
+        // untouched start (settleStartWidth).
+        newForm: {
+            options: { fullBleed: false, widthIsStart: true },
+            maxWidth: 'wide'
+        }
     }
 };
 
@@ -157,4 +166,93 @@ export function layoutNamesPages(type, options, pageCount) {
         return 'wide';
     }
     return false;
+}
+
+/** Width every other layout starts with (FinalFormCreateController too). */
+const NEW_FORM_MAX_WIDTH = 'medium';
+
+/**
+ * The layout block a brand-new form starts with. FinalFormCreateController
+ * writes the same thing (its `layoutBlock`); a jest test and an Apex test pin
+ * the two to one table so the new-form preview never differs from the form.
+ */
+export function newLayoutDefaults(type, paneFlow) {
+    const row = LAYOUTS[type] ? LAYOUTS[type].newForm : null;
+    const options = { ...((row && row.options) || {}) };
+    if (type === 'splitHero' && paneFlow === 'oneAtATime') {
+        options.paneFlow = 'oneAtATime';
+    }
+    return {
+        type: type || DEFAULT_TYPE,
+        options,
+        maxWidth: (row && row.maxWidth) || NEW_FORM_MAX_WIDTH,
+        zonesDefault: { arrangement: 'single', gap: 'md' }
+    };
+}
+
+/**
+ * The layout block after Studio switches a form to `type` (+ paneFlow).
+ * Options are layout-specific, so they are rebuilt: a stale splitHero
+ * paneFlow must never ride into a stepper spec. Layout-agnostic keys
+ * (maxWidth, zonesDefault) carry over. Coming INTO Split from another layout
+ * takes Split's new-form start (carded, Wide); a Split ↔ Conversational switch
+ * keeps the form's own full-bleed and width.
+ */
+export function layoutAfterSwitch(prev, type, paneFlow) {
+    const before = prev || {};
+    const options = {};
+    let maxWidth = before.maxWidth;
+    if (type === 'splitHero') {
+        if (paneFlow === 'oneAtATime') {
+            options.paneFlow = 'oneAtATime';
+        }
+        if (before.type === 'splitHero') {
+            const opts = before.options || {};
+            if (opts.fullBleed !== undefined) {
+                options.fullBleed = opts.fullBleed;
+            }
+            if (opts.widthIsStart) {
+                options.widthIsStart = true;
+            }
+        } else {
+            const start = LAYOUTS.splitHero.newForm;
+            Object.assign(options, start.options);
+            maxWidth = start.maxWidth;
+        }
+    }
+    const next = {
+        ...before,
+        type,
+        options,
+        zonesDefault: before.zonesDefault || {
+            arrangement: 'single',
+            gap: 'md'
+        }
+    };
+    if (maxWidth !== undefined) {
+        next.maxWidth = maxWidth;
+    }
+    return next;
+}
+
+/**
+ * A new Split form's untouched Wide is for the carded split. Once Immersive
+ * full-bleed is on, Wide would push the form side past half the screen and
+ * shrink the photo side (owner 2026-10-25), so the width goes back to Layout
+ * default. A width the author picked (any change to it drops the mark) is
+ * never touched. Returns the layout unchanged, or a settled copy.
+ */
+export function settleStartWidth(layout) {
+    const opts = (layout && layout.options) || {};
+    if (!opts.widthIsStart) {
+        return layout;
+    }
+    const options = { ...opts };
+    delete options.widthIsStart;
+    const next = { ...layout, options };
+    if (layout.maxWidth === 'wide' && opts.fullBleed !== false) {
+        delete next.maxWidth;
+        return next;
+    }
+    return layout.maxWidth === 'wide' ? layout : next;
 }

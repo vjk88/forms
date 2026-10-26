@@ -147,6 +147,121 @@ private class FinalFormCreateControllerTest {
             options.get('paneFlow'),
             'Conversational card must ride layout.options.paneFlow'
         );
+        // a new Split form starts carded and Wide (owner 2026-10-25)
+        Assert.areEqual(false, options.get('fullBleed'), 'starts carded');
+        Assert.areEqual('wide', layout.get('maxWidth'), 'starts Wide');
+    }
+
+    // The table every new form starts from. finalLayoutRegistry's jest test
+    // (newLayoutDefaults.test.js) pins the SAME literal, so the new-form
+    // preview and the created form cannot drift apart.
+    private static final String NEW_LAYOUT_TABLE =
+        'scroll:medium:-|stepper:medium:-|tabs:medium:-|accordion:medium:-|' +
+        'rail:medium:-|oneAtATime:medium:-|splitHero:wide:false';
+
+    @IsTest
+    static void layoutBlock_matchesTheSharedTable() {
+        List<String> rows = new List<String>();
+        for (
+            String layout : new List<String>{
+                'scroll',
+                'stepper',
+                'tabs',
+                'accordion',
+                'rail',
+                'oneAtATime',
+                'splitHero'
+            }
+        ) {
+            Map<String, Object> block = FinalFormCreateController.layoutBlock(
+                layout,
+                null
+            );
+            Map<String, Object> options = (Map<String, Object>) block.get(
+                'options'
+            );
+            Object bleed = options.get('fullBleed');
+            rows.add(
+                layout +
+                    ':' +
+                    block.get('maxWidth') +
+                    ':' +
+                    (bleed == null ? '-' : String.valueOf(bleed))
+            );
+        }
+        Assert.areEqual(NEW_LAYOUT_TABLE, String.join(rows, '|'), 'table');
+    }
+
+    @IsTest
+    static void createForm_plainSplitHero_startsCardedAndWide() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createForm(
+            'Split Start',
+            'Contact',
+            'splitHero',
+            'marbleSplit',
+            null
+        );
+        Test.stopTest();
+        Map<String, Object> layout = specLayout((Id) res.get('versionId'));
+        Map<String, Object> options = (Map<String, Object>) layout.get(
+            'options'
+        );
+        Assert.areEqual(false, options.get('fullBleed'), 'starts carded');
+        Assert.areEqual('wide', layout.get('maxWidth'), 'starts Wide');
+        Assert.areEqual(true, options.get('widthIsStart'), 'Wide is marked');
+        Assert.isFalse(options.containsKey('paneFlow'), 'no pane flow');
+    }
+
+    @IsTest
+    static void createForm_otherLayouts_startMediumWithoutBleedChoice() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createForm(
+            'OAAT Start',
+            'Contact',
+            'oneAtATime',
+            'sandstone',
+            null
+        );
+        Test.stopTest();
+        Map<String, Object> layout = specLayout((Id) res.get('versionId'));
+        Map<String, Object> options = (Map<String, Object>) layout.get(
+            'options'
+        );
+        Assert.areEqual('medium', layout.get('maxWidth'), 'Medium');
+        // unset = One at a time keeps its open page (full-bleed default ON)
+        Assert.isFalse(options.containsKey('fullBleed'), 'no bleed choice');
+    }
+
+    @IsTest
+    static void createFreeform_splitHero_startsCardedAndWide() {
+        Test.startTest();
+        Map<String, Object> res = FinalFormCreateController.createFreeformFromTemplate(
+            'blank',
+            'Split freeform',
+            'marbleSplit',
+            'splitHero',
+            null
+        );
+        Test.stopTest();
+        Map<String, Object> layout = specLayout((Id) res.get('versionId'));
+        Map<String, Object> options = (Map<String, Object>) layout.get(
+            'options'
+        );
+        Assert.areEqual(false, options.get('fullBleed'), 'starts carded');
+        Assert.areEqual('wide', layout.get('maxWidth'), 'starts Wide');
+    }
+
+    private static Map<String, Object> specLayout(Id versionId) {
+        Form_Version__c v = [
+            SELECT Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Id = :versionId
+        ];
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            v.Spec_JSON__c
+        );
+        return (Map<String, Object>) spec.get('layout');
     }
 
     @isTest

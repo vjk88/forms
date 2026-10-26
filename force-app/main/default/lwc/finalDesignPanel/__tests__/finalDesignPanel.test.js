@@ -1060,7 +1060,7 @@ describe('c-final-design-panel', () => {
 
     it('layout pick emits specchange with the new type + reconciled options', async () => {
         const spec = buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
-        spec.layout.maxWidth = 'wide';
+        spec.layout.maxWidth = 'narrow';
         const el = mount(spec);
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
@@ -1070,10 +1070,86 @@ describe('c-final-design-panel', () => {
         ).toBeNull();
         const next = lastSpec(handler).layout;
         expect(next.type).toBe('splitHero');
-        expect(next.options).toEqual({ paneFlow: 'oneAtATime' });
-        // layout-agnostic knobs carry over untouched
+        // coming INTO Split starts carded and Wide, like a new Split form
+        // (owner 2026-10-25), even over the old layout's Narrow
+        expect(next.options).toEqual({
+            paneFlow: 'oneAtATime',
+            fullBleed: false,
+            widthIsStart: true
+        });
         expect(next.maxWidth).toBe('wide');
         expect(next.zonesDefault).toEqual({ arrangement: 'single', gap: 'md' });
+    });
+
+    const setToggle = async (el, key, on) => {
+        const input = el.shadowRoot.querySelector(`input[data-key="${key}"]`);
+        input.checked = on;
+        input.dispatchEvent(new CustomEvent('change'));
+        await flush();
+    };
+    const setSelect = async (el, key, value) => {
+        const sel = el.shadowRoot.querySelector(`select[data-key="${key}"]`);
+        sel.value = value;
+        sel.dispatchEvent(new CustomEvent('change'));
+        await flush();
+    };
+
+    it("turning Immersive on drops a new Split form's untouched Wide (owner 2026-10-25)", async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
+        );
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await goAdvanced(el);
+        await openArea(el, 'page');
+        await setToggle(el, 'fullBleed', true);
+        const next = lastSpec(handler).layout;
+        expect(next.options.fullBleed).toBe(true);
+        expect('maxWidth' in next).toBe(false);
+        expect(next.options.widthIsStart).toBeUndefined();
+    });
+
+    it('a Wide the author picked stays Wide when Immersive goes on', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
+        );
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await goAdvanced(el);
+        await openArea(el, 'page');
+        await setSelect(el, 'maxWidth', 'wide');
+        expect(lastSpec(handler).layout.options.widthIsStart).toBeUndefined();
+        await setToggle(el, 'fullBleed', true);
+        expect(lastSpec(handler).layout.maxWidth).toBe('wide');
+    });
+
+    it('leaving Split keeps its width (owner 2026-10-25)', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
+        );
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'scroll');
+        const next = lastSpec(handler).layout;
+        expect(next.options).toEqual({});
+        expect(next.maxWidth).toBe('wide');
+    });
+
+    it('a saved Split form keeps its own full-bleed and width on a variant switch', async () => {
+        // an existing form: full-bleed never chosen (= ON), width Narrow
+        const spec = buildSampleSpec({
+            layout: 'splitHero',
+            themeKey: 'nordic'
+        });
+        spec.layout.options = {};
+        spec.layout.maxWidth = 'narrow';
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'splitHero', 'oneAtATime');
+        const next = lastSpec(handler).layout;
+        expect(next.options).toEqual({ paneFlow: 'oneAtATime' });
+        expect(next.maxWidth).toBe('narrow');
     });
 
     it('leaving splitHero drops its layout-specific options', async () => {
@@ -1104,7 +1180,8 @@ describe('c-final-design-panel', () => {
         await pickLayout(el, 'splitHero', 'oneAtATime');
         expect(lastSpec(handler).layout.options).toEqual({
             paneFlow: 'oneAtATime',
-            fullBleed: false
+            fullBleed: false,
+            widthIsStart: true
         });
         handler.mockClear();
         await pickLayout(el, 'splitHero', 'oneAtATime');

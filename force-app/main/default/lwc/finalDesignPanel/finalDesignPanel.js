@@ -18,7 +18,11 @@ import {
     listThemeFamilies
 } from 'c/finalThemeCatalog';
 import { localizeAssetUrl } from 'c/finalThemeAssets';
-import { getLayout } from 'c/finalLayoutRegistry';
+import {
+    getLayout,
+    layoutAfterSwitch,
+    settleStartWidth
+} from 'c/finalLayoutRegistry';
 import { layoutCardName } from 'c/finalGalleryPicker';
 import {
     DESIGN_SECTIONS,
@@ -871,6 +875,10 @@ export default class FinalDesignPanel extends LightningElement {
     // ---------------------------------------------------------------- events
 
     _emit() {
+        if (this._spec.layout) {
+            // a new Split form's Wide gives way once full-bleed is on
+            this._spec.layout = settleStartWidth(this._spec.layout);
+        }
         this.dispatchEvent(
             new CustomEvent('specchange', {
                 detail: { spec: JSON.parse(JSON.stringify(this._spec)) }
@@ -914,6 +922,14 @@ export default class FinalDesignPanel extends LightningElement {
         }
         if (key === 'accent') {
             this._syncInkMode();
+        }
+        if (
+            c.path === 'layout.maxWidth' &&
+            this._spec.layout &&
+            this._spec.layout.options
+        ) {
+            // the author picked a width: it is theirs now, Wide included
+            delete this._spec.layout.options.widthIsStart;
         }
         this._spec = { ...this._spec };
         this._emit();
@@ -1247,36 +1263,16 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     /**
-     * Options are rebuilt the way the creation flow builds a spec's layout
-     * (buildSampleSpec/FinalFormCreateController): they are layout-specific,
-     * so a stale splitHero paneFlow must never ride into a stepper spec.
-     * Layout-agnostic keys (maxWidth) and zonesDefault carry over; fullBleed
-     * survives a splitHero→splitHero variant switch — set on THIS layout.
+     * The rules live in c/finalLayoutRegistry layoutAfterSwitch: options are
+     * rebuilt per layout, maxWidth and zonesDefault carry over, and coming
+     * INTO Split starts carded and Wide like a new Split form.
      */
     _switchLayout(type, paneFlow) {
-        const prev = this._spec.layout || {};
-        const options = {};
-        if (type === 'splitHero') {
-            if (paneFlow === 'oneAtATime') {
-                options.paneFlow = 'oneAtATime';
-            }
-            if (
-                prev.type === 'splitHero' &&
-                prev.options &&
-                prev.options.fullBleed !== undefined
-            ) {
-                options.fullBleed = prev.options.fullBleed;
-            }
-        }
-        this._spec.layout = {
-            ...prev,
+        this._spec.layout = layoutAfterSwitch(
+            this._spec.layout,
             type,
-            options,
-            zonesDefault: prev.zonesDefault || {
-                arrangement: 'single',
-                gap: 'md'
-            }
-        };
+            paneFlow
+        );
         this._spec = { ...this._spec };
         this._emit();
     }

@@ -1,4 +1,5 @@
 import { getBrandCopy } from 'c/finalThemeCatalog';
+import { newLayoutDefaults } from 'c/finalLayoutRegistry';
 
 /**
  * finalSampleSpec — the canned FORM_SPEC_SCHEMA v1 spec every pre-save preview
@@ -92,24 +93,24 @@ function field(key, label, inputType, required) {
  * @param {string} [opts.themeKey]  builtin theme catalog key
  * @param {string} [opts.title]     live title (the typed form name) — falls
  *                                  back to the theme's brand copy
+ * @param {boolean} [opts.survey]   a new SURVEY's preview: its template
+ *                                  (createSurveyFromTemplate) writes no width,
+ *                                  so neither does the preview
  */
-export function buildSampleSpec({ layout, paneFlow, themeKey, title } = {}) {
+export function buildSampleSpec({
+    layout,
+    paneFlow,
+    themeKey,
+    title,
+    survey = false
+} = {}) {
     const brand = getBrandCopy(themeKey);
-    const options = {};
-    if (layout === 'splitHero' && paneFlow === 'oneAtATime') {
-        options.paneFlow = 'oneAtATime';
-    }
     const spec = {
         specVersion: 1,
         form: { name: title || brand.title, type: 'form' },
-        layout: {
-            type: layout || 'scroll',
-            options,
-            // no maxWidth: unset = "Layout default" (carded panels read
-            // medium; bleed layouts keep their locked column) — pinning
-            // 'medium' here made the harness silently pick FOR the user
-            zonesDefault: { arrangement: 'single', gap: 'md' }
-        },
+        // exactly what FinalFormCreateController writes for this layout, so
+        // the new-form preview is the form you get (owner 2026-10-25)
+        layout: newLayoutDefaults(layout || 'scroll', paneFlow),
         header: {
             style: 'standard',
             arrangement: 'stacked',
@@ -119,6 +120,9 @@ export function buildSampleSpec({ layout, paneFlow, themeKey, title } = {}) {
         submit: { label: 'Submit' },
         pages: JSON.parse(JSON.stringify(SAMPLE_PAGES))
     };
+    if (survey) {
+        delete spec.layout.maxWidth;
+    }
     if (themeKey) {
         spec.theme = { source: 'builtin', name: themeKey };
     }
