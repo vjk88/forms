@@ -209,6 +209,7 @@ private class FinalFormCreateControllerTest {
         );
         Assert.areEqual(false, options.get('fullBleed'), 'starts carded');
         Assert.areEqual('wide', layout.get('maxWidth'), 'starts Wide');
+        Assert.areEqual(true, options.get('widthIsStart'), 'Wide is marked');
         Assert.isFalse(options.containsKey('paneFlow'), 'no pane flow');
     }
 

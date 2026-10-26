@@ -93,8 +93,17 @@ function field(key, label, inputType, required) {
  * @param {string} [opts.themeKey]  builtin theme catalog key
  * @param {string} [opts.title]     live title (the typed form name) — falls
  *                                  back to the theme's brand copy
+ * @param {boolean} [opts.survey]   a new SURVEY's preview: its template
+ *                                  (createSurveyFromTemplate) writes no width,
+ *                                  so neither does the preview
  */
-export function buildSampleSpec({ layout, paneFlow, themeKey, title } = {}) {
+export function buildSampleSpec({
+    layout,
+    paneFlow,
+    themeKey,
+    title,
+    survey = false
+} = {}) {
     const brand = getBrandCopy(themeKey);
     const spec = {
         specVersion: 1,
@@ -111,6 +120,9 @@ export function buildSampleSpec({ layout, paneFlow, themeKey, title } = {}) {
         submit: { label: 'Submit' },
         pages: JSON.parse(JSON.stringify(SAMPLE_PAGES))
     };
+    if (survey) {
+        delete spec.layout.maxWidth;
+    }
     if (themeKey) {
         spec.theme = { source: 'builtin', name: themeKey };
     }

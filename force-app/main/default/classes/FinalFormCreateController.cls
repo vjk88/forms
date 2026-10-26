@@ -166,7 +166,8 @@ public with sharing class FinalFormCreateController {
      * newLayoutDefaults builds the same thing for the new-form preview; an
      * Apex test and a jest test pin both to one table. A new Split form starts
      * carded and Wide, the look the previews draw (owner 2026-10-25); every
-     * other layout starts Medium.
+     * other layout starts Medium. `widthIsStart` marks that Wide as untouched,
+     * so the Studio can drop it if full-bleed is turned on later.
      */
     @TestVisible
     private static Map<String, Object> layoutBlock(
@@ -177,6 +178,7 @@ public with sharing class FinalFormCreateController {
         String maxWidth = 'medium';
         if (layout == 'splitHero') {
             options.put('fullBleed', false);
+            options.put('widthIsStart', true);
             maxWidth = 'wide';
         }
         if (String.isNotBlank(paneFlow)) {

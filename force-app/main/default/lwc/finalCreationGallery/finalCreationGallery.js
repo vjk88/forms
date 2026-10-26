@@ -367,7 +367,8 @@ export default class FinalCreationGallery extends LightningElement {
                 layout,
                 paneFlow: paneFlow || undefined,
                 themeKey: this.chosenThemeKey,
-                title: name || undefined
+                title: name || undefined,
+                survey: this.isSurveyType
             });
         }
         return this._specCache;

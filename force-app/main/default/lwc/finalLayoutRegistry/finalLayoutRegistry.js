@@ -99,8 +99,12 @@ export const LAYOUTS = {
         // A NEW Split form (created, or switched to in Studio) starts carded
         // and Wide, the look the theme and layout previews draw (owner
         // 2026-10-25). Saved forms keep their own settings: an unset
-        // fullBleed still means ON.
-        newForm: { options: { fullBleed: false }, maxWidth: 'wide' }
+        // fullBleed still means ON. `widthIsStart` marks that Wide as the
+        // untouched start (settleStartWidth).
+        newForm: {
+            options: { fullBleed: false, widthIsStart: true },
+            maxWidth: 'wide'
+        }
     }
 };
 
@@ -203,8 +207,12 @@ export function layoutAfterSwitch(prev, type, paneFlow) {
             options.paneFlow = 'oneAtATime';
         }
         if (before.type === 'splitHero') {
-            if (before.options && before.options.fullBleed !== undefined) {
-                options.fullBleed = before.options.fullBleed;
+            const opts = before.options || {};
+            if (opts.fullBleed !== undefined) {
+                options.fullBleed = opts.fullBleed;
+            }
+            if (opts.widthIsStart) {
+                options.widthIsStart = true;
             }
         } else {
             const start = LAYOUTS.splitHero.newForm;
@@ -225,4 +233,26 @@ export function layoutAfterSwitch(prev, type, paneFlow) {
         next.maxWidth = maxWidth;
     }
     return next;
+}
+
+/**
+ * A new Split form's untouched Wide is for the carded split. Once Immersive
+ * full-bleed is on, Wide would push the form side past half the screen and
+ * shrink the photo side (owner 2026-10-25), so the width goes back to Layout
+ * default. A width the author picked (any change to it drops the mark) is
+ * never touched. Returns the layout unchanged, or a settled copy.
+ */
+export function settleStartWidth(layout) {
+    const opts = (layout && layout.options) || {};
+    if (!opts.widthIsStart) {
+        return layout;
+    }
+    const options = { ...opts };
+    delete options.widthIsStart;
+    const next = { ...layout, options };
+    if (layout.maxWidth === 'wide' && opts.fullBleed !== false) {
+        delete next.maxWidth;
+        return next;
+    }
+    return layout.maxWidth === 'wide' ? layout : next;
 }
