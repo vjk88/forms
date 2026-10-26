@@ -161,6 +161,38 @@ public with sharing class FinalFormCreateController {
 
     // ---- spec assembly (FORM_SPEC_SCHEMA v1) --------------------------------
 
+    /**
+     * The layout block a brand-new form starts with. c/finalLayoutRegistry
+     * newLayoutDefaults builds the same thing for the new-form preview; an
+     * Apex test and a jest test pin both to one table. A new Split form starts
+     * carded and Wide, the look the previews draw (owner 2026-10-25); every
+     * other layout starts Medium.
+     */
+    @TestVisible
+    private static Map<String, Object> layoutBlock(
+        String layout,
+        String paneFlow
+    ) {
+        Map<String, Object> options = new Map<String, Object>();
+        String maxWidth = 'medium';
+        if (layout == 'splitHero') {
+            options.put('fullBleed', false);
+            maxWidth = 'wide';
+        }
+        if (String.isNotBlank(paneFlow)) {
+            options.put('paneFlow', paneFlow);
+        }
+        return new Map<String, Object>{
+            'type' => layout,
+            'options' => options,
+            'maxWidth' => maxWidth,
+            'zonesDefault' => new Map<String, Object>{
+                'arrangement' => 'single',
+                'gap' => 'md'
+            }
+        };
+    }
+
     private static Map<String, Object> buildSpec(
         Id formId,
         String name,
@@ -170,10 +202,6 @@ public with sharing class FinalFormCreateController {
         String themeName,
         String paneFlow
     ) {
-        Map<String, Object> layoutOptions = new Map<String, Object>();
-        if (String.isNotBlank(paneFlow)) {
-            layoutOptions.put('paneFlow', paneFlow);
-        }
         Map<String, Object> spec = new Map<String, Object>{
             'specVersion' => 1,
             'form' => new Map<String, Object>{
@@ -183,15 +211,7 @@ public with sharing class FinalFormCreateController {
                 'targetObject' => objectApi,
                 'saveMode' => 'create'
             },
-            'layout' => new Map<String, Object>{
-                'type' => layout,
-                'options' => layoutOptions,
-                'maxWidth' => 'medium',
-                'zonesDefault' => new Map<String, Object>{
-                    'arrangement' => 'single',
-                    'gap' => 'md'
-                }
-            },
+            'layout' => layoutBlock(layout, paneFlow),
             'header' => new Map<String, Object>{
                 'style' => 'standard',
                 'arrangement' => 'stacked',
@@ -502,10 +522,6 @@ public with sharing class FinalFormCreateController {
         String paneFlow,
         String themeName
     ) {
-        Map<String, Object> layoutOptions = new Map<String, Object>();
-        if (String.isNotBlank(paneFlow)) {
-            layoutOptions.put('paneFlow', paneFlow);
-        }
         Map<String, Object> spec = new Map<String, Object>{
             'specVersion' => 1,
             'form' => new Map<String, Object>{
@@ -513,15 +529,7 @@ public with sharing class FinalFormCreateController {
                 'name' => name,
                 'type' => FinalFormTypes.FREEFORM
             },
-            'layout' => new Map<String, Object>{
-                'type' => layout,
-                'options' => layoutOptions,
-                'maxWidth' => 'medium',
-                'zonesDefault' => new Map<String, Object>{
-                    'arrangement' => 'single',
-                    'gap' => 'md'
-                }
-            },
+            'layout' => layoutBlock(layout, paneFlow),
             'header' => new Map<String, Object>{
                 'style' => 'standard',
                 'arrangement' => 'stacked',

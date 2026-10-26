@@ -1060,7 +1060,7 @@ describe('c-final-design-panel', () => {
 
     it('layout pick emits specchange with the new type + reconciled options', async () => {
         const spec = buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
-        spec.layout.maxWidth = 'wide';
+        spec.layout.maxWidth = 'narrow';
         const el = mount(spec);
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
@@ -1070,10 +1070,43 @@ describe('c-final-design-panel', () => {
         ).toBeNull();
         const next = lastSpec(handler).layout;
         expect(next.type).toBe('splitHero');
-        expect(next.options).toEqual({ paneFlow: 'oneAtATime' });
-        // layout-agnostic knobs carry over untouched
+        // coming INTO Split starts carded and Wide, like a new Split form
+        // (owner 2026-10-25), even over the old layout's Narrow
+        expect(next.options).toEqual({
+            paneFlow: 'oneAtATime',
+            fullBleed: false
+        });
         expect(next.maxWidth).toBe('wide');
         expect(next.zonesDefault).toEqual({ arrangement: 'single', gap: 'md' });
+    });
+
+    it('leaving Split keeps its width (owner 2026-10-25)', async () => {
+        const el = mount(
+            buildSampleSpec({ layout: 'splitHero', themeKey: 'nordic' })
+        );
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'scroll');
+        const next = lastSpec(handler).layout;
+        expect(next.options).toEqual({});
+        expect(next.maxWidth).toBe('wide');
+    });
+
+    it('a saved Split form keeps its own full-bleed and width on a variant switch', async () => {
+        // an existing form: full-bleed never chosen (= ON), width Narrow
+        const spec = buildSampleSpec({
+            layout: 'splitHero',
+            themeKey: 'nordic'
+        });
+        delete spec.layout.options.fullBleed;
+        spec.layout.maxWidth = 'narrow';
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        await pickLayout(el, 'splitHero', 'oneAtATime');
+        const next = lastSpec(handler).layout;
+        expect(next.options).toEqual({ paneFlow: 'oneAtATime' });
+        expect(next.maxWidth).toBe('narrow');
     });
 
     it('leaving splitHero drops its layout-specific options', async () => {
