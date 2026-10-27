@@ -108,7 +108,9 @@
     padding: var(--c-space-4) var(--c-space-5);
     border-radius: var(--c-radius);
     background: var(--c-text);
-    color: var(--c-content-bg);
+    /* the card colour is this inverse bar's ink; the engine writes a
+       readable one (IMPL_PLAN_TEXT_CONTRAST §4.8), old forms keep today's */
+    color: var(--c-toast-ink, var(--c-content-bg));
     font-weight: 600;
 }
 

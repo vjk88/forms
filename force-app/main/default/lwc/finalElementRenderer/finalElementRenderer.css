@@ -774,8 +774,11 @@
     padding: 0 2px;
     font-size: calc(var(--c-fs-answer) * 1.7);
     line-height: 1;
-    color: var(--c-text-weak);
-    opacity: 0.4;
+    /* Readable marks (IMPL_PLAN_TEXT_CONTRAST v7): the engine writes a solid
+       idle colour that reaches 3:1; a form published before keeps today's
+       faded star (both fallbacks are the old values). */
+    color: var(--c-mark-idle, var(--c-text-weak));
+    opacity: var(--c-mark-idle-opacity, 0.4);
     cursor: pointer;
     transition:
         color 120ms,
@@ -787,7 +790,7 @@
     transform: scale(1.12);
 }
 .scale-icon.filled {
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
     opacity: 1;
     /* the glow (owner artifact 2026-07-31): chosen stars radiate */
     text-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 55%, transparent);
@@ -796,13 +799,13 @@
    rating rows contain .scale-icon, so the row-scoped selector is safe;
    stars after the hovered one drop back to idle. */
 .scale-row:hover .scale-icon {
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
     opacity: 1;
     text-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 55%, transparent);
 }
 .scale-row .scale-icon:hover ~ .scale-icon {
-    color: var(--c-text-weak);
-    opacity: 0.4;
+    color: var(--c-mark-idle, var(--c-text-weak));
+    opacity: var(--c-mark-idle-opacity, 0.4);
     text-shadow: none;
 }
 /* classic NPS semantic tones — opt-in only (config.coloring='classic') */
@@ -970,7 +973,7 @@
 }
 .ic-tile.selected .ic-label::after {
     content: ' ✓';
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
     font-weight: 700;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1235,7 +1238,8 @@
     );
     font-weight: 800;
     font-variant-numeric: tabular-nums;
-    color: var(--c-accent);
+    /* large text (20px+ at 800): a 3:1 mark colour is enough */
+    color: var(--c-accent-mark, var(--c-accent));
     text-align: center;
     line-height: 1.2;
     margin-bottom: 4px;

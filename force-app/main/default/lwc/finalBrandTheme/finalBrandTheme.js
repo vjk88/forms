@@ -22,109 +22,34 @@
  * otherwise #000000 / #ffffff (black or white always reach 4.58:1).
  * Body text never takes the brand colour.
  */
-import { contrastRatio, resolveTokens } from 'c/finalThemeEngine';
+import { resolveTokens } from 'c/finalThemeEngine';
+import {
+    TEXT,
+    MARK,
+    TEXT_AIM,
+    MARK_AIM,
+    ACCENT_TINTS,
+    parseHex,
+    toHex,
+    mix,
+    composite,
+    ratio,
+    worst,
+    adjust,
+    inkFor,
+    brandSurfaces
+} from 'c/finalReadableText';
+
+// The colour helpers live in c/finalReadableText (IMPL_PLAN_TEXT_CONTRAST v7),
+// shared with the theme engine; re-exported so callers keep one import.
+export { inkFor, brandSurfaces };
 
 export const BRAND_STYLES = ['clean', 'boldHeader', 'dark'];
 
-const TEXT = 4.5;
-const MARK = 3;
-// What the generator aims for: a little above the WCAG floors, so browser
-// rounding in color-mix / compositing can never tip a pair under.
-const TEXT_AIM = 4.6;
-const MARK_AIM = 3.1;
 // The generator still picks a focus colour that would pass even as the old
 // 55% glow (kept so brand recipes stay byte-identical, focus plan V5); the
 // ring itself is now drawn at full strength (IMPL_PLAN_FOCUS_CONTRAST v5).
 const FOCUS_ALPHA = 0.55;
-// Section looks paint this share of the text colour over the card.
-const SECTION_TINTS = [0, 0.03, 0.04, 0.07];
-// Light accent tints behind text (emoji chip 12%, thank-you check 14%).
-const ACCENT_TINTS = [0.12, 0.14];
-
-// ---------------------------------------------------------------- colour
-
-function parseHex(hex) {
-    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
-    if (!m) {
-        return null;
-    }
-    const h =
-        m[1].length === 3
-            ? m[1]
-                  .split('')
-                  .map((c) => c + c)
-                  .join('')
-            : m[1];
-    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-}
-
-function toHex(rgb) {
-    return `#${rgb
-        .map((v) =>
-            Math.round(Math.min(255, Math.max(0, v)))
-                .toString(16)
-                .padStart(2, '0')
-        )
-        .join('')}`;
-}
-
-/** `share` of colour a over colour b (both hex). */
-function mix(a, b, share) {
-    const x = parseHex(a);
-    const y = parseHex(b);
-    return toHex(x.map((v, i) => v * share + y[i] * (1 - share)));
-}
-
-// A painted value (hex, rgb(a), transparent) as a solid hex over `under`.
-function composite(value, under) {
-    const v = String(value || '').trim();
-    if (!v || v === 'transparent') {
-        return under;
-    }
-    if (parseHex(v)) {
-        return toHex(parseHex(v));
-    }
-    const m = /^rgba?\(([^)]+)\)$/i.exec(v);
-    if (!m || !under) {
-        return null;
-    }
-    const parts = m[1]
-        .split(/[\s,/]+/)
-        .filter(Boolean)
-        .map(Number);
-    const alpha = parts.length > 3 ? parts[3] : 1;
-    return mix(toHex(parts.slice(0, 3)), under, alpha);
-}
-
-const ratio = (a, b) => contrastRatio(a, b) || 0;
-const worst = (color, surfaces) =>
-    Math.min(...surfaces.map((s) => ratio(color, s)));
-
-// Move `color` toward `target` in small steps until `ok(c)` holds. Keeps the
-// hue (mixing toward black or white), ends at the target at worst.
-function adjust(color, target, ok) {
-    for (let t = 0; t <= 1.0001; t += 0.02) {
-        const c = mix(target, color, t);
-        if (ok(c)) {
-            return c;
-        }
-    }
-    return target;
-}
-
-/** The ink for a fill: #111827 / #ffffff, else pure #000000 / #ffffff. */
-export function inkFor(fill) {
-    const soft =
-        ratio('#111827', fill) >= ratio('#ffffff', fill)
-            ? '#111827'
-            : '#ffffff';
-    if (ratio(soft, fill) >= TEXT) {
-        return soft;
-    }
-    return ratio('#000000', fill) >= ratio('#ffffff', fill)
-        ? '#000000'
-        : '#ffffff';
-}
 
 // ---------------------------------------------------------------- styles
 
@@ -168,33 +93,6 @@ const BASES = {
 
 // The engine's dark-field wash (finalThemeEngine outlineBg).
 const DARK_FIELD = 'rgba(255, 255, 255, 0.06)';
-
-/**
- * Every surface a form can paint, as [label, hex]. Containers: the page, the
- * card, and each section look over the card AND over the page (One at a
- * time's open page and full-bleed layouts draw sections straight on the
- * page). Fields: the field over every container. Shared by the generator
- * and the report; the test pins the labels so a surface cannot silently
- * drop out of both.
- */
-export function brandSurfaces({ pageBg, contentBg, text, fieldBg }) {
-    const page = composite(pageBg, '#ffffff');
-    const card = composite(contentBg, page);
-    const ink = composite(text, card);
-    const containers = [
-        ['page', page],
-        ['card', card],
-        ...SECTION_TINTS.flatMap((t) => [
-            [`section ${Math.round(t * 100)}% on card`, mix(ink, card, t)],
-            [`section ${Math.round(t * 100)}% on page`, mix(ink, page, t)]
-        ])
-    ];
-    const fields = containers.map(([label, bg]) => [
-        `field on ${label}`,
-        composite(fieldBg, bg)
-    ]);
-    return { page, card, containers, fields, all: [...containers, ...fields] };
-}
 
 /**
  * @param {{color: string, secondColor?: string, style?: string, fonts?: object, name?: string}} input

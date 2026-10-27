@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description>Respondent: readable text and marks on every surface a form paints. Moves muted, accent and mark colours toward the main text until they reach WCAG AA (IMPL_PLAN_TEXT_CONTRAST v7). Pure.</description>
+</LightningComponentBundle>

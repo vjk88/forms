@@ -131,7 +131,7 @@
 
 .step-btn.done .step-marker {
     border-color: var(--c-accent);
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
 }
 
 /* — Dots mode: compact unlabeled markers — */
@@ -145,7 +145,7 @@
 
 .mode-dots .step-btn.active .step-marker,
 .mode-dots .step-btn.done .step-marker {
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
 }
 
 .mode-dots .step-label {
@@ -235,7 +235,7 @@
 
 .fit-collapse.narrow-dots .step-btn.active .step-marker,
 .fit-collapse.narrow-dots .step-btn.done .step-marker {
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
 }
 
 .fit-collapse.narrow-dots .step-label {
@@ -273,7 +273,7 @@
 
     .narrow-dots .step-btn.active .step-marker,
     .narrow-dots .step-btn.done .step-marker {
-        background: var(--c-accent);
+        background: var(--c-accent-mark, var(--c-accent));
     }
 
     .narrow-dots .step-label {

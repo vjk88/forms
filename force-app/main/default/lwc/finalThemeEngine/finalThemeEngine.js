@@ -32,6 +32,15 @@ import {
     FONT_PAIRINGS,
     headingWeight
 } from 'c/finalFontFamilies';
+import {
+    TEXT_AIM,
+    MARK_AIM,
+    textScope,
+    readsOn,
+    readable,
+    inkFor,
+    ratio as readRatio
+} from 'c/finalReadableText';
 
 export const ENGINE_VERSION = 1;
 
@@ -796,6 +805,143 @@ function mergeProps(...layers) {
 }
 
 // ---------------------------------------------------------------------------
+// Readable text (IMPL_PLAN_TEXT_CONTRAST v7, PR A: the card scope)
+// ---------------------------------------------------------------------------
+
+/** Per-channel box around colours: [darkest, lightest]. A blend between
+ *  colours (a gradient) never leaves the box of its stops. */
+function rangeBox(ends) {
+    const cs = ends.map(parseColor).filter(Boolean);
+    if (!cs.length) {
+        return null;
+    }
+    const hex = (pick) =>
+        `#${['r', 'g', 'b']
+            .map((k) =>
+                Math.round(pick(...cs.map((c) => c[k])))
+                    .toString(16)
+                    .padStart(2, '0')
+            )
+            .join('')}`;
+    return [hex(Math.min), hex(Math.max)];
+}
+
+/** A colour at a Fill opacity (0-100) as rgba, or null when it can't parse. */
+function atOpacity(color, pct) {
+    const c = parseColor(color);
+    if (!c) {
+        return null;
+    }
+    const n = Number(pct);
+    const a = c.a * (Number.isFinite(n) && n < 100 ? Math.max(n, 0) / 100 : 1);
+    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
+}
+
+/** A gradient's two stops over `range`, as one box (null: no gradient). */
+function gradientOver(g, fillOpacity, range) {
+    if (!g || !g.start || !g.end) {
+        return null;
+    }
+    const start = atOpacity(g.start, fillOpacity);
+    const end = atOpacity(g.end, fillOpacity);
+    return start && end
+        ? rangeBox([...over(start, range), ...over(end, range)])
+        : null;
+}
+
+/**
+ * The text treatment for one resolved theme: muted text, accent words, accent
+ * marks, idle stars, derived labels and the toast's ink, each moved toward the
+ * main text until it reads on every surface of the CARD scope. Written only
+ * for eligible themes (inkMode 'contrast' or a brand recipe), always with the
+ * `--c-text-treatment` marker listing the roles it may adjust. An old
+ * published snapshot (frozen tokens, no marker) never changes: every CSS
+ * reader of the new tokens falls back to today's value.
+ * Returns the tokens to merge ({} when the theme isn't eligible).
+ */
+function readableTextTokens({
+    pal,
+    userPal,
+    eligible,
+    labelStyle,
+    cardRange,
+    fieldFills
+}) {
+    if (!eligible || !parseColor(pal.text)) {
+        return {};
+    }
+    const text = pal.text;
+    // the author's own muted colour always wins (owner ruling 2026-10-25), and
+    // a Muted small / Caps label that inherits it keeps inheriting it
+    const mutedRole = !userPal.textWeak;
+    const labelRole =
+        mutedRole &&
+        !pal.labelColor &&
+        (labelStyle === 'mutedSm' || labelStyle === 'caps');
+    const out = {
+        '--c-text-treatment': [
+            ...(mutedRole ? ['muted'] : []),
+            'accent',
+            ...(labelRole ? ['label'] : [])
+        ].join(' '),
+        '--c-text-src': text,
+        '--c-text-weak-src': pal.textWeak
+    };
+
+    // "Toast & go" paints the main text as its fill and the card colour as
+    // its ink: keep the card colour when it reads, else the readable ink
+    const card = parseColor(pal.contentBg);
+    const cardHex = card
+        ? `#${[card.r, card.g, card.b]
+              .map((v) => v.toString(16).padStart(2, '0'))
+              .join('')}`
+        : null;
+    out['--c-toast-ink'] =
+        cardHex && readRatio(cardHex, text) >= TEXT_AIM
+            ? cardHex
+            : inkFor(text);
+
+    const scope = textScope({
+        container: cardRange,
+        text,
+        accent: pal.accent,
+        sectionFill: pal.sectionBg
+            ? atOpacity(pal.sectionBg, pal.sectionBgOpacity) || pal.sectionBg
+            : null,
+        fieldFills
+    });
+    // Main text that can't read on its own card means no colour can be
+    // promised there (a white glass card over a photo or a glow effect): say
+    // so, change nothing, and leave it to the backing (plan PR B).
+    if (!readsOn(text, scope.text, TEXT_AIM)) {
+        out['--c-text-unresolved'] = 'card';
+        return out;
+    }
+    const muted = readable(pal.textWeak, text, scope.text, TEXT_AIM);
+    if (mutedRole && muted.ok) {
+        out['--c-text-weak'] = muted.color;
+        if (labelRole) {
+            out['--c-label-color'] = muted.color;
+        }
+    }
+    const words = readable(pal.accent, text, scope.words, TEXT_AIM);
+    if (words.ok) {
+        out['--c-accent-text'] = words.color;
+    }
+    const marks = readable(pal.accent, text, scope.marks, MARK_AIM);
+    if (marks.ok) {
+        out['--c-accent-mark'] = marks.color;
+    }
+    // idle stars: today a 40% faded muted colour; now solid and readable
+    const idle = readable(pal.textWeak, text, scope.marks, MARK_AIM);
+    if (idle.ok) {
+        out['--c-mark-idle'] = idle.color;
+        out['--c-mark-idle-opacity'] = '1';
+    }
+    return out;
+}
+
+// ---------------------------------------------------------------------------
 // The single producer
 // ---------------------------------------------------------------------------
 
@@ -1316,6 +1462,25 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-font-display': fonts.display,
         '--c-font-display-weight': displayWeight
     };
+
+    // Readable text (IMPL_PLAN_TEXT_CONTRAST v7). The card's own gradient
+    // paints above its fill, so text judges against the box of its stops.
+    Object.assign(
+        tokens,
+        readableTextTokens({
+            pal,
+            userPal,
+            eligible: pal.inkMode === 'contrast' || Boolean(p.brand),
+            labelStyle: p.labelStyle,
+            cardRange:
+                gradientOver(
+                    pal.contentBgGradient,
+                    pal.contentBgOpacity,
+                    cardRange
+                ) || cardRange,
+            fieldFills: [shell.bg, outlineBg]
+        })
+    );
 
     // Guard: an explicit `null`/empty palette value must never emit invalid
     // CSS (`--c-page-bg: null`). Dropping the token lets pageFrame's neutral win.

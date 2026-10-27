@@ -7,7 +7,10 @@ import {
 } from 'c/finalThemeCatalog';
 import { resolveTokens, contrastRatio } from 'c/finalThemeEngine';
 import BEFORE from './__fixtures__/tokensBeforeCatalogCut.json';
-import { withoutFocus } from '../../finalThemeEngine/__tests__/focusContract';
+import {
+    withoutLater,
+    withoutTextTreatment
+} from '../../finalThemeEngine/__tests__/textContrastContract';
 import {
     RESTORED,
     familiesAllowed,
@@ -82,8 +85,8 @@ const HEADER_FIXED = [
 ];
 
 function changedTokens(nowAll, beforeAll, key) {
-    const now = withoutFamiliesChanges(key, withoutFocus(nowAll));
-    const before = withoutFamiliesChanges(key, withoutFocus(beforeAll));
+    const now = withoutFamiliesChanges(key, withoutLater(nowAll));
+    const before = withoutFamiliesChanges(key, withoutLater(beforeAll));
     return Object.keys({ ...before, ...now }).filter(
         (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
     );
@@ -121,10 +124,10 @@ describe('catalog cut: gallery vs hidden themes', () => {
             expect(
                 withoutFamiliesChanges(
                     key,
-                    withoutFocus(resolveTokens(getBuiltinTheme(key), null))
+                    withoutLater(resolveTokens(getBuiltinTheme(key), null))
                 )
             ).toEqual(
-                withoutFamiliesChanges(key, withoutFocus(BEFORE.hidden[key]))
+                withoutFamiliesChanges(key, withoutLater(BEFORE.hidden[key]))
             );
         }
     );
@@ -148,15 +151,15 @@ describe('catalog cut: gallery vs hidden themes', () => {
             theme: { source: 'builtin', name: 'mintStepper' }
         };
         expect(
-            withoutFocus(resolveSpecForPublish(spec).resolved.tokens)
-        ).toEqual(withoutFocus(BEFORE.hidden.mintStepper));
+            withoutLater(resolveSpecForPublish(spec).resolved.tokens)
+        ).toEqual(withoutLater(BEFORE.hidden.mintStepper));
     });
 
     it.each(GALLERY)(
         'kept theme %s changes only the tokens the plan names',
         (key) => {
-            const now = withoutFocus(resolveTokens(getBuiltinTheme(key), null));
-            const before = withoutFocus(BEFORE.kept[key]);
+            const now = withoutLater(resolveTokens(getBuiltinTheme(key), null));
+            const before = withoutLater(BEFORE.kept[key]);
             const changed = Object.keys({ ...before, ...now }).filter(
                 (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
             );
@@ -280,8 +283,8 @@ describe('theme families', () => {
         (key) => {
             // focus tokens moved with the focus fix (PR 405); header tokens
             // with the header fix (PR 396); the rest must be on the list
-            const before = withoutFocus(BEFORE.hidden[key]);
-            const now = withoutFocus(resolveTokens(getBuiltinTheme(key), null));
+            const before = withoutLater(BEFORE.hidden[key]);
+            const now = withoutLater(resolveTokens(getBuiltinTheme(key), null));
             const changed = Object.keys({ ...before, ...now })
                 .filter(
                     (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
@@ -311,8 +314,12 @@ describe('theme families: the recipe edits, token by token', () => {
         return r;
     };
     const diff = (key) => {
-        const before = resolveTokens(undo(key), null);
-        const now = resolveTokens(getBuiltinTheme(key), null);
+        // without inkMode a theme gets no text treatment either
+        // (IMPL_PLAN_TEXT_CONTRAST); compare the families edit alone
+        const before = withoutTextTreatment(resolveTokens(undo(key), null));
+        const now = withoutTextTreatment(
+            resolveTokens(getBuiltinTheme(key), null)
+        );
         return Object.keys({ ...before, ...now }).filter(
             (t) => JSON.stringify(now[t]) !== JSON.stringify(before[t])
         );

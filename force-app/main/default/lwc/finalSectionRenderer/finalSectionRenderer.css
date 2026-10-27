@@ -187,7 +187,10 @@
 
 .sec-icon {
     flex: none;
-    --slds-c-icon-color-foreground-default: var(--c-accent, var(--c-text));
+    --slds-c-icon-color-foreground-default: var(
+        --c-accent-mark,
+        var(--c-accent, var(--c-text))
+    );
 }
 
 .sec-title {
@@ -314,7 +317,7 @@
     border: 1px dashed color-mix(in srgb, var(--c-text) 35%, transparent);
     border-radius: var(--c-radius);
     background: none;
-    color: var(--c-accent, var(--c-text));
+    color: var(--c-accent-text, var(--c-accent, var(--c-text)));
     font: inherit;
     font-size: var(--c-fs-button);
     font-weight: 600;

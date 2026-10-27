@@ -104,6 +104,19 @@ const CONTRACT_V1 = [
     '--c-focus-page-ring',
     '--c-focus-page-input',
     '--c-focus-page-under',
+    // readable text (IMPL_PLAN_TEXT_CONTRAST v7, PR A): written only for an
+    // eligible theme (inkMode 'contrast' or a brand recipe), always with the
+    // marker; every CSS reader falls back to today's value
+    '--c-text-treatment',
+    '--c-text-src',
+    '--c-text-weak-src',
+    '--c-toast-ink',
+    '--c-accent-text',
+    '--c-accent-mark',
+    '--c-mark-idle',
+    '--c-mark-idle-opacity',
+    // conditional: only when main text itself can't read on the card
+    '--c-text-unresolved',
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
@@ -166,7 +179,8 @@ describe('c-final-theme-engine', () => {
                 '--c-section-border',
                 '--c-section-shadow',
                 '--c-sec-head-display',
-                '--c-icon'
+                '--c-icon',
+                '--c-text-unresolved'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -315,7 +329,10 @@ describe('c-final-theme-engine', () => {
 
         it('palette.labelColor overrides the label look-derived ink', () => {
             const derived = resolveTokens(theme(), { labelStyle: 'mutedSm' });
-            expect(derived['--c-label-color']).toBe('#6f6a5e'); // textWeak
+            // the look's muted ink, made readable with the muted text
+            // (IMPL_PLAN_TEXT_CONTRAST §4.6): textWeak #6f6a5e, moved one step
+            expect(derived['--c-text-weak-src']).toBe('#6f6a5e');
+            expect(derived['--c-label-color']).toBe(derived['--c-text-weak']);
             const t = resolveTokens(theme(), {
                 labelStyle: 'mutedSm',
                 palette: { labelColor: '#123456' }
@@ -660,7 +677,8 @@ describe('c-final-theme-engine', () => {
                 '--c-section-border',
                 '--c-section-shadow',
                 '--c-sec-head-display',
-                '--c-icon'
+                '--c-icon',
+                '--c-text-unresolved'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()
