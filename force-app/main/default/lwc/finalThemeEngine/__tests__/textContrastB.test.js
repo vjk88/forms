@@ -258,3 +258,38 @@ describe('text contrast PR B: sections with their own background', () => {
         expect(sectionTextStyle(resolve('dracula'), null)).toBe('');
     });
 });
+
+describe('text contrast PR B: the error banner on the open page', () => {
+    it('only a backed open page gives the banner a backing', () => {
+        expect(pageView(resolve('desertOasis'))['--c-banner-backing']).toBe(
+            resolve('desertOasis')['--c-page-backing']
+        );
+        expect(
+            pageView(resolve('nordic'))['--c-banner-backing']
+        ).toBeUndefined();
+        expect(
+            openPageTextTokens(BEFORE.themes.desertOasis)['--c-banner-backing']
+        ).toBeUndefined();
+    });
+
+    // The error colour is not a role of this plan (DEFERRED 46): it is the
+    // theme's own, and on a few photo looks it was already short of 4.5 on
+    // their card. The backing never makes it worse; these are pinned so a
+    // new shortfall fails here.
+    const ERROR_SHORT = ['auroraBorealis', 'forestMist', 'silkLuxury'];
+    it('the error text reads on its banner over every page backing, except the pinned theme colours', () => {
+        const short = Object.keys(BACKED)
+            .filter((k) => k.endsWith('|page'))
+            .map((k) => k.split('|')[0])
+            .filter((key) => {
+                const v = pageView(resolve(key));
+                const error = v['--c-field-error'];
+                const n = parseInt(error.slice(1), 16);
+                const tint = `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.08)`;
+                const under = rangeFromToken(v['--c-text-under']);
+                return worstOn(error, [over(tint, under)]) < 4.5;
+            })
+            .sort();
+        expect(short).toEqual(ERROR_SHORT);
+    });
+});
