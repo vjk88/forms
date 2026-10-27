@@ -288,7 +288,7 @@
         padding: var(--c-space-3);
         border: 1px solid var(--c-field-border);
         border-radius: var(--c-radius);
-        background: var(--c-content-bg);
+        background: var(--c-card-backing, var(--c-content-bg));
     }
 
     /* topBar chips: the CHIP ROW becomes the sticky element (wayfinding
@@ -302,7 +302,7 @@
 
     /* Paint-when-pinned (wayfinding pass): surface only while stuck. */
     .narrow-topbar.sticky-rail .rail.is-stuck {
-        background: var(--c-content-bg);
+        background: var(--c-card-backing, var(--c-content-bg));
         -webkit-backdrop-filter: blur(var(--c-glass-blur));
         backdrop-filter: blur(var(--c-glass-blur));
     }

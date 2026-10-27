@@ -240,8 +240,14 @@
     position: relative;
     margin: 0 auto;
     padding: var(--c-space-6);
-    background-color: var(--c-content-bg);
-    background-image: var(--c-content-bg-gradient, none);
+    /* the card backing where its text could not read (IMPL_PLAN_TEXT_
+       CONTRAST §4.4: a white glass card over a photo or glow); old forms
+       keep the card colour and gradient */
+    background-color: var(--c-card-backing, var(--c-content-bg));
+    background-image: var(
+        --c-card-backing-image,
+        var(--c-content-bg-gradient, none)
+    );
     border: var(--c-content-border);
     border-radius: var(--c-radius);
     box-shadow: var(--c-content-shadow);

@@ -69,6 +69,18 @@
     margin: 0 var(--c-strip-inset);
     padding-top: var(--c-space-4);
 }
+/* Over a photo or glow the question column and the counter each get a
+   backing in the look's own colour, so their text can read
+   (IMPL_PLAN_TEXT_CONTRAST §4.4, owner D1 = A). The strip itself stays open
+   (its hairline is decorative; the counter says the same in words). The
+   engine writes the tokens only where the page needs them; everywhere else,
+   and on old forms, nothing new is drawn. */
+.oaat-column {
+    box-sizing: border-box;
+    padding: var(--c-page-backing-pad, 0);
+    background: var(--c-page-backing, transparent);
+    border-radius: var(--c-page-backing-radius, 0);
+}
 
 .progress-hairline {
     flex: 1;
@@ -79,6 +91,10 @@
 
 .counter {
     margin: 0;
+    /* a small pill of the same backing, only where the page needs it */
+    padding: var(--c-page-backing-chip-pad, 0);
+    background: var(--c-page-backing, transparent);
+    border-radius: 999px;
     color: var(--c-text-weak);
     font-size: var(--c-fs-secondary);
     white-space: nowrap;

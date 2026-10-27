@@ -53,7 +53,7 @@
     font-size: var(--c-fs-secondary);
     font-weight: 600;
     color: var(--c-text, inherit);
-    background: var(--c-content-bg, #fff);
+    background: var(--c-card-backing, var(--c-content-bg, #fff));
 }
 
 /* Submit failure — the response was NOT recorded; say so where the eye is. */
@@ -62,10 +62,13 @@
     padding: var(--c-space-3) var(--c-space-4);
     border: 1px solid var(--c-field-error, #b42318);
     border-radius: var(--c-radius);
-    background: color-mix(
-        in srgb,
-        var(--c-field-error, #b42318) 8%,
-        transparent
+    /* on the One at a time open page this banner sits on the page itself,
+       so the open-page swap gives it the page backing under the error tint
+       (text plan §4.4); everywhere else, and on old forms, only the tint */
+    background-color: var(--c-banner-backing, transparent);
+    background-image: linear-gradient(
+        color-mix(in srgb, var(--c-field-error, #b42318) 8%, transparent),
+        color-mix(in srgb, var(--c-field-error, #b42318) 8%, transparent)
     );
     color: var(--c-field-error, #b42318);
     font-size: var(--c-fs-error);

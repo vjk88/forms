@@ -122,6 +122,27 @@ const CONTRACT_V1 = [
     '--c-text-unresolved',
     // conditional: only when the readable muted text sits close to the main
     '--c-idle-value-style',
+    // PR B: the open page's own set (swapped in by the viewer), the range
+    // text is judged on, and the backings
+    '--c-text-under',
+    '--c-text-weak-page',
+    '--c-accent-text-page',
+    '--c-accent-mark-page',
+    '--c-mark-idle-page',
+    '--c-mark-idle-stroke-page',
+    '--c-idle-value-style-page',
+    '--c-text-under-page',
+    // conditional: only with a Muted small / Caps label look
+    '--c-label-color-page',
+    // conditional: only where the card's or the page's text needs a backing
+    '--c-card-backing',
+    '--c-card-backing-image',
+    '--c-card-backing-on',
+    '--c-page-backing',
+    '--c-page-backing-pad',
+    '--c-page-backing-radius',
+    '--c-page-backing-chip-pad',
+    '--c-page-backing-on',
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
@@ -186,7 +207,16 @@ describe('c-final-theme-engine', () => {
                 '--c-sec-head-display',
                 '--c-icon',
                 '--c-text-unresolved',
-                '--c-idle-value-style'
+                '--c-idle-value-style',
+                '--c-label-color-page',
+                '--c-card-backing',
+                '--c-card-backing-image',
+                '--c-card-backing-on',
+                '--c-page-backing',
+                '--c-page-backing-pad',
+                '--c-page-backing-radius',
+                '--c-page-backing-chip-pad',
+                '--c-page-backing-on'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -685,7 +715,16 @@ describe('c-final-theme-engine', () => {
                 '--c-sec-head-display',
                 '--c-icon',
                 '--c-text-unresolved',
-                '--c-idle-value-style'
+                '--c-idle-value-style',
+                '--c-label-color-page',
+                '--c-card-backing',
+                '--c-card-backing-image',
+                '--c-card-backing-on',
+                '--c-page-backing',
+                '--c-page-backing-pad',
+                '--c-page-backing-radius',
+                '--c-page-backing-chip-pad',
+                '--c-page-backing-on'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

@@ -34,10 +34,8 @@ import {
 } from 'c/finalFontFamilies';
 import {
     TEXT_AIM,
-    MARK_AIM,
-    textScope,
-    readsOn,
-    readable,
+    scopeColours,
+    backingFor,
     inkFor,
     ratio as readRatio
 } from 'c/finalReadableText';
@@ -808,10 +806,6 @@ function mergeProps(...layers) {
 // Readable text (IMPL_PLAN_TEXT_CONTRAST v7, PR A: the card scope)
 // ---------------------------------------------------------------------------
 
-/** Below this ratio between the muted and the main text, an untouched
- *  slider value would read as an answer, so it goes italic. */
-const IDLE_APART = 1.6;
-
 /** Per-channel box around colours: [darkest, lightest]. A blend between
  *  colours (a gradient) never leaves the box of its stops. */
 function rangeBox(ends) {
@@ -869,6 +863,7 @@ function readableTextTokens({
     eligible,
     labelStyle,
     cardRange,
+    pageRange,
     fieldFills
 }) {
     if (!eligible || !parseColor(pal.text)) {
@@ -905,55 +900,100 @@ function readableTextTokens({
             ? cardHex
             : inkFor(text);
 
-    const scope = textScope({
-        container: cardRange,
-        text,
-        accent: pal.accent,
-        sectionFill: pal.sectionBg
-            ? atOpacity(pal.sectionBg, pal.sectionBgOpacity) || pal.sectionBg
-            : null,
-        fieldFills
-    });
-    // Main text that can't read on its own card means no colour can be
-    // promised there (a white glass card over a photo or a glow effect): say
-    // so, change nothing, and leave it to the backing (plan PR B).
-    if (!readsOn(text, scope.text, TEXT_AIM)) {
-        out['--c-text-unresolved'] = 'card';
-        return out;
+    const roles = { muted: mutedRole, label: labelRole };
+    const judge = (container) =>
+        scopeColours({
+            container,
+            text,
+            textWeak: pal.textWeak,
+            accent: pal.accent,
+            sectionFill: pal.sectionBg
+                ? atOpacity(pal.sectionBg, pal.sectionBgOpacity) ||
+                  pal.sectionBg
+                : null,
+            fieldFills,
+            roles
+        });
+    // Where main text can't read (a white glass card over a photo or a glow,
+    // the open page over a photo), the text gets a backing: the look's card
+    // colour, else its page colour, as faint as it can be (owner D1 = A).
+    const cardFill = parseColor(atOpacity(pal.contentBg, pal.contentBgOpacity));
+    const page = parseColor(pal.pageBg);
+    const pageHex = page
+        ? `#${[page.r, page.g, page.b]
+              .map((v) => v.toString(16).padStart(2, '0'))
+              .join('')}`
+        : null;
+    const backed = () =>
+        backingFor({
+            colors: [cardHex, pageHex],
+            ownAlpha: cardFill ? cardFill.a : 0,
+            underlay: pageRange,
+            judge
+        });
+    const solve = (container) => {
+        const first = judge(container);
+        if (first.ok) {
+            return { container, result: first, backing: null };
+        }
+        const backing = backed();
+        return backing
+            ? {
+                  container: backing.range,
+                  result: judge(backing.range),
+                  backing
+              }
+            : { container, result: first, backing: null };
+    };
+    const cardScope = solve(cardRange);
+    const pageScope = solve(pageRange);
+    const unresolved = [
+        ...(cardScope.result.ok ? [] : ['card']),
+        ...(pageScope.result.ok ? [] : ['page'])
+    ];
+    if (unresolved.length) {
+        out['--c-text-unresolved'] = unresolved.join(' ');
     }
-    const muted = readable(pal.textWeak, text, scope.text, TEXT_AIM);
-    if (mutedRole && muted.ok) {
-        out['--c-text-weak'] = muted.color;
-        if (labelRole) {
-            out['--c-label-color'] = muted.color;
+
+    // the card (every layout but the One at a time open page)
+    if (cardScope.result.ok) {
+        Object.assign(out, cardScope.result.tokens);
+        out['--c-text-under'] = rangeToken(cardScope.container);
+        if (cardScope.result.tokens['--c-mark-idle']) {
+            // idle stars and hearts are outlines; thumb emoji go grey
+            out['--c-mark-idle-fill'] = 'transparent';
+            out['--c-mark-idle-opacity'] = '1';
+            out['--c-mark-idle-filter'] = 'grayscale(1) opacity(0.55)';
+        }
+        // the untouched slider value must not pass for an answer
+        if (cardScope.result.italic) {
+            out['--c-idle-value-style'] = 'italic';
+        }
+        if (cardScope.backing) {
+            // every card painter reads these (plan §4.4): the card's fill
+            // becomes the backing, with no gradient on top
+            out['--c-card-backing'] = cardScope.backing.css;
+            out['--c-card-backing-image'] = 'none';
+            out['--c-card-backing-on'] = '1';
         }
     }
-    const words = readable(pal.accent, text, scope.words, TEXT_AIM);
-    if (words.ok) {
-        out['--c-accent-text'] = words.color;
-    }
-    const marks = readable(pal.accent, text, scope.marks, MARK_AIM);
-    if (marks.ok) {
-        out['--c-accent-mark'] = marks.color;
-    }
-    // idle stars and hearts: today a 40% faded muted colour. Now an OUTLINE
-    // in a colour that reaches 3:1, so the shape says "not chosen" next to a
-    // solid picked one on every look (a faded rule could not keep the two
-    // apart: both must clear 3:1 on the same card; owner 2026-10-26). A thumb
-    // emoji ignores colour and stroke, so it goes grey like the emoji faces.
-    const idle = readable(pal.textWeak, text, scope.marks, MARK_AIM);
-    if (idle.ok) {
-        out['--c-mark-idle'] = idle.color;
-        out['--c-mark-idle-fill'] = 'transparent';
-        out['--c-mark-idle-stroke'] = `1.5px ${idle.color}`;
-        out['--c-mark-idle-opacity'] = '1';
-        out['--c-mark-idle-filter'] = 'grayscale(1) opacity(0.55)';
-    }
-    // the untouched slider value must not pass for an answer: when the
-    // readable muted colour ends up close to the main text, italic says
-    // "not answered yet" without colour
-    if (readRatio(out['--c-text-weak'] || pal.textWeak, text) < IDLE_APART) {
-        out['--c-idle-value-style'] = 'italic';
+    // the open page: its own set, swapped in by the viewer (openPageTextTokens)
+    if (pageScope.result.ok) {
+        Object.entries(pageScope.result.tokens).forEach(([k, v]) => {
+            out[`${k}-page`] = v;
+        });
+        out['--c-idle-value-style-page'] = pageScope.result.italic
+            ? 'italic'
+            : 'normal';
+        out['--c-text-under-page'] = rangeToken(pageScope.container);
+        if (pageScope.backing) {
+            // the question column and the top strip (progress + counter)
+            out['--c-page-backing'] = pageScope.backing.css;
+            out['--c-page-backing-pad'] = 'var(--c-space-5)';
+            out['--c-page-backing-radius'] = 'var(--c-radius)';
+            out['--c-page-backing-chip-pad'] = '2px 10px';
+            out['--c-page-backing-on'] = '1';
+        }
     }
     return out;
 }
@@ -1495,6 +1535,7 @@ export function resolveTokens(themeProps, formOverrides) {
                     pal.contentBgOpacity,
                     cardRange
                 ) || cardRange,
+            pageRange,
             fieldFills: [shell.bg, outlineBg]
         })
     );

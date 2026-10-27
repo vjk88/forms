@@ -19,6 +19,7 @@ import {
     openPageTokens,
     sectionFocusStyle
 } from 'c/finalFocusTreatment';
+import { openPageTextTokens, sectionTextStyle } from 'c/finalReadableText';
 import {
     getLayout,
     isOnePerScreen,
@@ -318,6 +319,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     model;
     tokens = {};
+    /** One at a time open page: the card-scope tokens, kept for the
+     *  completion screen, which draws a card (IMPL_PLAN_TEXT_CONTRAST §4.7). */
+    _cardTokens = null;
     navCtor;
     error;
 
@@ -332,6 +336,21 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** Post-submit: true renders c/finalAfterSubmit instead of the nav.
      *  MUST be a declared field — undeclared assignments aren't reactive. */
     completed = false;
+
+    /**
+     * The page frame's tokens. On the One at a time open page the page's
+     * colours are swapped in while the questions show; the completion screen
+     * draws a CARD, so it gets the card's colours (text, focus and backing)
+     * back. Only under the text marker: a form published before keeps its
+     * page swap through completion, exactly as before.
+     */
+    get frameTokens() {
+        return this.completed &&
+            this._cardTokens &&
+            this.tokens['--c-text-treatment']
+            ? this._cardTokens
+            : this.tokens;
+    }
 
     /** Submit-engine state (slice 7).
      *
@@ -1044,8 +1063,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // background gets its own treatment, computed here from the token
         // bag (the section renderer paints it). Both are no-ops on an old
         // snapshot, which carries none of the focus tokens.
+        // Readable text (IMPL_PLAN_TEXT_CONTRAST v7, PR B) swaps the page's
+        // own colours in the same place, and is a no-op without its marker.
         if (layout.ownsAdvance && layout.bleed && options.fullBleed !== false) {
-            this.tokens = openPageTokens(this.tokens);
+            this._cardTokens = this.tokens;
+            this.tokens = openPageTextTokens(openPageTokens(this.tokens));
+        } else {
+            this._cardTokens = null;
         }
         const withFocus = (page) => {
             if (!Array.isArray(page.sections)) {
@@ -1053,15 +1077,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             }
             let changed = false;
             const sections = page.sections.map((sec) => {
-                const focusStyle = sectionFocusStyle(
-                    this.tokens,
-                    sec && sec.surface && sec.surface.bg
-                );
-                if (!focusStyle) {
+                const bg = sec && sec.surface && sec.surface.bg;
+                const focusStyle = sectionFocusStyle(this.tokens, bg);
+                const textStyle = sectionTextStyle(this.tokens, bg);
+                if (!focusStyle && !textStyle) {
                     return sec;
                 }
                 changed = true;
-                return { ...sec, focusStyle };
+                return { ...sec, focusStyle, textStyle };
             });
             return changed ? sections : page.sections;
         };

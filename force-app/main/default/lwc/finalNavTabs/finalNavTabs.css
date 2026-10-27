@@ -22,7 +22,7 @@
 /* Paint-when-pinned (wayfinding pass): surface only while stuck — permanent
    translucent paint is the glass-theme band bug. */
 .tab-strip.is-stuck {
-    background: var(--c-content-bg);
+    background: var(--c-card-backing, var(--c-content-bg));
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));
 }
@@ -116,7 +116,7 @@
 
 .style-enclosed .tab.active {
     border-color: var(--c-field-border);
-    background: var(--c-content-bg);
+    background: var(--c-card-backing, var(--c-content-bg));
 }
 
 /* — Tab switch transition (keyed remount) — */
