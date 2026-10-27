@@ -884,6 +884,11 @@ export default class FinalElementRenderer extends LightningElement {
                     sel != null && v <= sel
                         ? 'scale-icon filled'
                         : 'scale-icon';
+                // an emoji paints its own colours: the idle state greys it
+                // instead of outlining it (IMPL_PLAN_TEXT_CONTRAST, PR 408)
+                if (glyph === RATING_GLYPHS.thumb) {
+                    cls += ' emoji-glyph';
+                }
             } else {
                 cls = isSel ? 'scale-chip selected' : 'scale-chip';
                 if (this.isEmojiScale) {

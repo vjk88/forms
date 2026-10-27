@@ -6,7 +6,7 @@ import {
 import { getBuiltinTheme, listBuiltinThemes } from 'c/finalThemeCatalog';
 import { BUNDLED_FONTS } from 'c/finalFontFamilies';
 import BEFORE from './__fixtures__/fontsLegacyBeforeA1.json';
-import { withoutFocus } from './focusContract';
+import { withoutLater } from './textContrastContract';
 import { withoutFamiliesChanges } from '../../finalThemeCatalog/__tests__/familiesContract';
 
 // IMPL_PLAN_FONTS_AND_BRAND_THEME §A.3b. The fixture is resolveTokens() for
@@ -48,8 +48,8 @@ const fontsOf = (t) => [t['--c-font-display'], t['--c-font-body']];
 describe('fonts A1: legacy regime is byte-for-byte unchanged', () => {
     it.each(BEFORE.cases.map((c) => [c.name, c]))('%s', (name, c) => {
         const theme = c.base ? nordicWith(c.themePatch) : null;
-        expect(withoutFocus(resolveTokens(theme, c.overrides))).toStrictEqual(
-            withoutFocus(c.tokens)
+        expect(withoutLater(resolveTokens(theme, c.overrides))).toStrictEqual(
+            withoutLater(c.tokens)
         );
     });
 
@@ -59,10 +59,10 @@ describe('fonts A1: legacy regime is byte-for-byte unchanged', () => {
             expect(
                 withoutFamiliesChanges(
                     key,
-                    withoutFocus(resolveTokens(getBuiltinTheme(key), null))
+                    withoutLater(resolveTokens(getBuiltinTheme(key), null))
                 )
             ).toStrictEqual(
-                withoutFamiliesChanges(key, withoutFocus(BEFORE.themes[key]))
+                withoutFamiliesChanges(key, withoutLater(BEFORE.themes[key]))
             );
         }
     );

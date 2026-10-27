@@ -14,7 +14,12 @@
         --c-input-border-color,
         var(--c-field-border)
     );
-    --slds-c-input-placeholder-color: var(--c-text-weak);
+    /* placeholders keep the theme's own muted colour (owner 2026-10-26):
+       a readable muted colour would pass for a typed answer */
+    --slds-c-input-placeholder-color: var(
+        --c-text-weak-src,
+        var(--c-text-weak)
+    );
     --slds-c-input-shadow: var(--c-input-shadow, none);
 
     --slds-c-textarea-color-background: var(--c-input-bg, var(--c-field-bg));
@@ -23,7 +28,10 @@
         --c-input-border-color,
         var(--c-field-border)
     );
-    --slds-c-textarea-placeholder-color: var(--c-text-weak);
+    --slds-c-textarea-placeholder-color: var(
+        --c-text-weak-src,
+        var(--c-text-weak)
+    );
     --slds-c-textarea-shadow: var(--c-input-shadow, none);
 
     /* Focus state = the RING (shadow hook). The border-focus hooks were
@@ -774,8 +782,14 @@
     padding: 0 2px;
     font-size: calc(var(--c-fs-answer) * 1.7);
     line-height: 1;
-    color: var(--c-text-weak);
-    opacity: 0.4;
+    /* Readable marks (IMPL_PLAN_TEXT_CONTRAST v7): the engine draws an
+       unpicked star or heart as an OUTLINE in a colour that reaches 3:1, so
+       its shape says "not chosen" next to a solid picked one. A form
+       published before keeps today's faded star: every fallback below is
+       the old value (no stroke, muted colour, 40%). */
+    color: var(--c-mark-idle-fill, var(--c-text-weak));
+    -webkit-text-stroke: var(--c-mark-idle-stroke, 0 transparent);
+    opacity: var(--c-mark-idle-opacity, 0.4);
     cursor: pointer;
     transition:
         color 120ms,
@@ -787,7 +801,8 @@
     transform: scale(1.12);
 }
 .scale-icon.filled {
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
+    -webkit-text-stroke: 0 transparent;
     opacity: 1;
     /* the glow (owner artifact 2026-07-31): chosen stars radiate */
     text-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 55%, transparent);
@@ -796,14 +811,36 @@
    rating rows contain .scale-icon, so the row-scoped selector is safe;
    stars after the hovered one drop back to idle. */
 .scale-row:hover .scale-icon {
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
+    -webkit-text-stroke: 0 transparent;
     opacity: 1;
     text-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 55%, transparent);
 }
 .scale-row .scale-icon:hover ~ .scale-icon {
-    color: var(--c-text-weak);
-    opacity: 0.4;
+    color: var(--c-mark-idle-fill, var(--c-text-weak));
+    -webkit-text-stroke: var(--c-mark-idle-stroke, 0 transparent);
+    opacity: var(--c-mark-idle-opacity, 0.4);
     text-shadow: none;
+}
+/* A thumb emoji paints its own colours: no outline, and an unpicked one goes
+   grey like the emoji faces (gated: old forms keep today's faded thumb). */
+.scale-icon.emoji-glyph {
+    color: var(--c-text-weak);
+    -webkit-text-stroke: 0 transparent;
+    filter: var(--c-mark-idle-filter, none);
+}
+.scale-icon.emoji-glyph.filled,
+.scale-row:hover .scale-icon.emoji-glyph {
+    filter: none;
+}
+.scale-row .scale-icon.emoji-glyph:hover ~ .scale-icon.emoji-glyph {
+    filter: var(--c-mark-idle-filter, none);
+}
+/* …but on keyboard focus an unpicked thumb shows at full strength, or the
+   filter would grey its focus ring too (same contract as the emoji faces
+   above; old forms keep today's look) */
+.scale-row:not(:hover) .scale-icon.emoji-glyph:not(.filled):focus-visible {
+    filter: var(--c-focus-idle-filter, none);
 }
 /* classic NPS semantic tones — opt-in only (config.coloring='classic') */
 .scale-chip.nps-detractor.selected {
@@ -970,7 +1007,7 @@
 }
 .ic-tile.selected .ic-label::after {
     content: ' ✓';
-    color: var(--c-accent);
+    color: var(--c-accent-mark, var(--c-accent));
     font-weight: 700;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1235,7 +1272,8 @@
     );
     font-weight: 800;
     font-variant-numeric: tabular-nums;
-    color: var(--c-accent);
+    /* large text (20px+ at 800): a 3:1 mark colour is enough */
+    color: var(--c-accent-mark, var(--c-accent));
     text-align: center;
     line-height: 1.2;
     margin-bottom: 4px;
@@ -1246,6 +1284,9 @@
 .slider-val.idle {
     color: var(--c-text-weak);
     font-weight: 600;
+    /* where the readable muted colour sits close to the main text, italic
+       says "not answered yet" without colour (engine-written, gated) */
+    font-style: var(--c-idle-value-style, normal);
 }
 
 /* the native range control, painted in theme tokens (replaces
