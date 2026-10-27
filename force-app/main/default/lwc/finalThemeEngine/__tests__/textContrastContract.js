@@ -16,6 +16,10 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-accent-mark',
     '--c-mark-idle',
     '--c-mark-idle-opacity',
+    '--c-mark-idle-fill',
+    '--c-mark-idle-stroke',
+    '--c-mark-idle-filter',
+    '--c-idle-value-style',
     '--c-text-unresolved'
 ];
 

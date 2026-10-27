@@ -84,7 +84,13 @@ const SWAPS = [
         'finalElementRenderer',
         '.scale-icon',
         'color',
-        'var(--c-mark-idle, var(--c-text-weak))'
+        'var(--c-mark-idle-fill, var(--c-text-weak))'
+    ],
+    [
+        'finalElementRenderer',
+        '.scale-icon',
+        '-webkit-text-stroke',
+        'var(--c-mark-idle-stroke, 0 transparent)'
     ],
     [
         'finalElementRenderer',
@@ -96,13 +102,31 @@ const SWAPS = [
         'finalElementRenderer',
         '.scale-row .scale-icon:hover ~ .scale-icon',
         'color',
-        'var(--c-mark-idle, var(--c-text-weak))'
+        'var(--c-mark-idle-fill, var(--c-text-weak))'
+    ],
+    [
+        'finalElementRenderer',
+        '.scale-row .scale-icon:hover ~ .scale-icon',
+        '-webkit-text-stroke',
+        'var(--c-mark-idle-stroke, 0 transparent)'
     ],
     [
         'finalElementRenderer',
         '.scale-row .scale-icon:hover ~ .scale-icon',
         'opacity',
         'var(--c-mark-idle-opacity, 0.4)'
+    ],
+    [
+        'finalElementRenderer',
+        '.scale-icon.emoji-glyph',
+        'filter',
+        'var(--c-mark-idle-filter, none)'
+    ],
+    [
+        'finalElementRenderer',
+        '.scale-row .scale-icon.emoji-glyph:hover ~ .scale-icon.emoji-glyph',
+        'filter',
+        'var(--c-mark-idle-filter, none)'
     ],
     [
         'finalElementRenderer',
@@ -127,6 +151,31 @@ const SWAPS = [
         '.slider-val',
         'color',
         'var(--c-accent-mark, var(--c-accent))'
+    ],
+    [
+        'finalElementRenderer',
+        '.slider-val.idle',
+        'font-style',
+        'var(--c-idle-value-style, normal)'
+    ],
+    // placeholders keep the theme's own muted colour (owner 2026-10-26)
+    [
+        'finalElementRenderer',
+        ':host',
+        '--slds-c-input-placeholder-color',
+        'var(--c-text-weak-src, var(--c-text-weak))'
+    ],
+    [
+        'finalElementRenderer',
+        ':host',
+        '--slds-c-textarea-placeholder-color',
+        'var(--c-text-weak-src, var(--c-text-weak))'
+    ],
+    [
+        'finalLookup',
+        '.fl-input::placeholder',
+        'color',
+        'var(--c-text-weak-src, var(--c-text-weak, #5c5c5c))'
     ],
     [
         'finalSectionRenderer',
@@ -181,6 +230,12 @@ const SWAPS = [
         '.toast',
         'color',
         'var(--c-toast-ink, var(--c-content-bg))'
+    ],
+    [
+        'finalAfterSubmit',
+        '.check svg',
+        'fill',
+        'var(--c-accent-mark, var(--c-accent))'
     ]
 ];
 

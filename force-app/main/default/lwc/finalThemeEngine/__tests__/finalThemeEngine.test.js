@@ -115,8 +115,13 @@ const CONTRACT_V1 = [
     '--c-accent-mark',
     '--c-mark-idle',
     '--c-mark-idle-opacity',
+    '--c-mark-idle-fill',
+    '--c-mark-idle-stroke',
+    '--c-mark-idle-filter',
     // conditional: only when main text itself can't read on the card
     '--c-text-unresolved',
+    // conditional: only when the readable muted text sits close to the main
+    '--c-idle-value-style',
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
@@ -180,7 +185,8 @@ describe('c-final-theme-engine', () => {
                 '--c-section-shadow',
                 '--c-sec-head-display',
                 '--c-icon',
-                '--c-text-unresolved'
+                '--c-text-unresolved',
+                '--c-idle-value-style'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -678,7 +684,8 @@ describe('c-final-theme-engine', () => {
                 '--c-section-shadow',
                 '--c-sec-head-display',
                 '--c-icon',
-                '--c-text-unresolved'
+                '--c-text-unresolved',
+                '--c-idle-value-style'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

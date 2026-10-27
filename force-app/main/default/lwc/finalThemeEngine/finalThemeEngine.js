@@ -808,6 +808,10 @@ function mergeProps(...layers) {
 // Readable text (IMPL_PLAN_TEXT_CONTRAST v7, PR A: the card scope)
 // ---------------------------------------------------------------------------
 
+/** Below this ratio between the muted and the main text, an untouched
+ *  slider value would read as an answer, so it goes italic. */
+const IDLE_APART = 1.6;
+
 /** Per-channel box around colours: [darkest, lightest]. A blend between
  *  colours (a gradient) never leaves the box of its stops. */
 function rangeBox(ends) {
@@ -932,11 +936,24 @@ function readableTextTokens({
     if (marks.ok) {
         out['--c-accent-mark'] = marks.color;
     }
-    // idle stars: today a 40% faded muted colour; now solid and readable
+    // idle stars and hearts: today a 40% faded muted colour. Now an OUTLINE
+    // in a colour that reaches 3:1, so the shape says "not chosen" next to a
+    // solid picked one on every look (a faded rule could not keep the two
+    // apart: both must clear 3:1 on the same card; owner 2026-10-26). A thumb
+    // emoji ignores colour and stroke, so it goes grey like the emoji faces.
     const idle = readable(pal.textWeak, text, scope.marks, MARK_AIM);
     if (idle.ok) {
         out['--c-mark-idle'] = idle.color;
+        out['--c-mark-idle-fill'] = 'transparent';
+        out['--c-mark-idle-stroke'] = `1.5px ${idle.color}`;
         out['--c-mark-idle-opacity'] = '1';
+        out['--c-mark-idle-filter'] = 'grayscale(1) opacity(0.55)';
+    }
+    // the untouched slider value must not pass for an answer: when the
+    // readable muted colour ends up close to the main text, italic says
+    // "not answered yet" without colour
+    if (readRatio(out['--c-text-weak'] || pal.textWeak, text) < IDLE_APART) {
+        out['--c-idle-value-style'] = 'italic';
     }
     return out;
 }

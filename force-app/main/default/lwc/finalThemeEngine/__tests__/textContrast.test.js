@@ -15,6 +15,7 @@ import {
 import { buildBrandTheme } from 'c/finalBrandTheme';
 import {
     mix,
+    ratio,
     textScope,
     worstOn,
     TEXT_AIM,
@@ -111,9 +112,33 @@ describe('text contrast PR A: the card scope', () => {
             expect(t['--c-accent-text']).toBe(colourAt(accent, text, words));
             expect(t['--c-accent-mark']).toBe(colourAt(accent, text, marks));
             expect(t['--c-mark-idle']).toBe(colourAt(src, text, idle));
+            // an unpicked star is an outline in that colour (PR 408 review)
+            expect(t['--c-mark-idle-fill']).toBe('transparent');
+            expect(t['--c-mark-idle-stroke']).toBe(
+                `1.5px ${t['--c-mark-idle']}`
+            );
             expect(t['--c-mark-idle-opacity']).toBe('1');
+            expect(t['--c-mark-idle-filter']).toBe(
+                'grayscale(1) opacity(0.55)'
+            );
         }
     );
+
+    it('the untouched slider value goes italic exactly where muted sits close to the main text', () => {
+        const italic = GALLERY.filter(
+            (k) => resolve(k)['--c-idle-value-style'] === 'italic'
+        ).sort();
+        // muted vs main under 1.6 : 1 after the fix
+        expect(italic).toEqual(
+            ['auroraBorealis', 'cosmicVortex', 'retroStepper'].sort()
+        );
+        GALLERY.filter((k) => CARD_STEPS[k]).forEach((key) => {
+            const t = resolve(key);
+            expect(t['--c-idle-value-style'] === 'italic').toBe(
+                ratio(t['--c-text-weak'], t['--c-text']) < 1.6
+            );
+        });
+    });
 
     it.each(GALLERY.filter((k) => CARD_STEPS[k]))(
         '%s: every role reaches its target on every card surface',

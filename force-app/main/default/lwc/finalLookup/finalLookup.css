@@ -37,7 +37,8 @@
 }
 
 .fl-input::placeholder {
-    color: var(--c-text-weak, #5c5c5c);
+    /* like every placeholder: the theme's own muted colour (owner 2026-10-26) */
+    color: var(--c-text-weak-src, var(--c-text-weak, #5c5c5c));
     opacity: 1;
 }
 

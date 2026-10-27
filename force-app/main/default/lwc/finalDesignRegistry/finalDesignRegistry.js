@@ -114,6 +114,9 @@ const AREAS = [
                         themePath: 'palette.textWeak',
                         fallbackToken: '--c-text-weak',
                         contrastToken: '--c-content-bg',
+                        // the engine may make the theme's colour readable
+                        // (IMPL_PLAN_TEXT_CONTRAST): show what the form paints
+                        readableRole: 'muted',
                         subject: 'Muted text',
                         // traced 2026-07-13: NO "help text" — field help is a
                         // tooltip icon, and it does not ride this token

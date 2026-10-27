@@ -556,6 +556,22 @@ export default class FinalDesignPanel extends LightningElement {
                 if (!vm.value && c.fallbackToken) {
                     vm.value = tokens[c.fallbackToken] || '';
                 }
+                // a theme colour the engine made readable: show what the form
+                // paints, not the theme's original (an author's own pick is
+                // never adjusted, so it shows as picked)
+                if (
+                    c.readableRole &&
+                    getAt(this.overrides, c.themePath) === undefined &&
+                    String(tokens['--c-text-treatment'] || '')
+                        .split(' ')
+                        .includes(c.readableRole) &&
+                    tokens[c.fallbackToken] &&
+                    tokens[c.fallbackToken] !== vm.value
+                ) {
+                    vm.value = tokens[c.fallbackToken];
+                    vm.hint =
+                        `${vm.hint} Adjusted from this theme's colour so it stays readable.`.trim();
+                }
                 vm.contrastWith = c.contrastToken
                     ? tokens[c.contrastToken]
                     : undefined;
