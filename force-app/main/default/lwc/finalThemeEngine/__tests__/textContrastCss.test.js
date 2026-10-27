@@ -310,30 +310,55 @@ const SWAPS = [
         'background',
         'var(--c-card-backing, var(--c-content-bg))'
     ],
-    // PR B: the One at a time question column and top strip (old forms: none)
+    // PR B: the One at a time question column and the counter pill, and
+    // the viewer's error banner on the open page (old forms: nothing new)
     [
         'finalNavOneAtATime',
-        '.top-chrome, .oaat-column',
+        '.oaat-column',
         'background',
         'var(--c-page-backing, transparent)'
     ],
     [
         'finalNavOneAtATime',
-        '.top-chrome, .oaat-column',
+        '.oaat-column',
         'border-radius',
         'var(--c-page-backing-radius, 0)'
-    ],
-    [
-        'finalNavOneAtATime',
-        '.top-chrome',
-        'padding-top',
-        'var(--c-page-backing-pad, var(--c-space-4))'
     ],
     [
         'finalNavOneAtATime',
         '.oaat-column',
         'padding',
         'var(--c-page-backing-pad, 0)'
+    ],
+    [
+        'finalNavOneAtATime',
+        '.counter',
+        'background',
+        'var(--c-page-backing, transparent)'
+    ],
+    [
+        'finalNavOneAtATime',
+        '.counter',
+        'padding',
+        'var(--c-page-backing-chip-pad, 0)'
+    ],
+    [
+        'finalFormViewer',
+        '.viewer-submit-error',
+        'background-color',
+        'var(--c-banner-backing, transparent)'
+    ],
+    [
+        'finalThemeCard',
+        '.tc-card',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg, #ffffff))'
+    ],
+    [
+        'finalLayoutCard',
+        '.lt-card',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg, #ffffff))'
     ]
 ];
 

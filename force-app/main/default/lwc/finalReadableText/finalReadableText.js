@@ -366,6 +366,11 @@ export function openPageTextTokens(tokens) {
             out[key] = t[`${key}-page`];
         }
     });
+    // the viewer's banners (a failed submit) sit on the open page outside
+    // the question column: they take the page backing, here only
+    if (t['--c-page-backing']) {
+        out['--c-banner-backing'] = t['--c-page-backing'];
+    }
     return out;
 }
 

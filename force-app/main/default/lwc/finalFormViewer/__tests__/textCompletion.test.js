@@ -71,8 +71,16 @@ async function submitAndRead(spec) {
     const before = { ...frame.tokens };
     const nav = frame.querySelector('x-test');
     nav.dispatchEvent(new CustomEvent('submit'));
-    await flush();
-    await flush();
+    // wait for the thank-you screen itself, not a fixed number of ticks
+    // (a busy parallel run can need more; PR 409 review)
+    for (
+        let i = 0;
+        i < 50 && !el.shadowRoot.querySelector('c-final-after-submit');
+        i += 1
+    ) {
+        // eslint-disable-next-line no-await-in-loop
+        await flush();
+    }
     await flush();
     return {
         before,

@@ -141,6 +141,7 @@ const CONTRACT_V1 = [
     '--c-page-backing',
     '--c-page-backing-pad',
     '--c-page-backing-radius',
+    '--c-page-backing-chip-pad',
     '--c-page-backing-on',
     '--c-header-bg',
     '--c-header-text',
@@ -214,6 +215,7 @@ describe('c-final-theme-engine', () => {
                 '--c-page-backing',
                 '--c-page-backing-pad',
                 '--c-page-backing-radius',
+                '--c-page-backing-chip-pad',
                 '--c-page-backing-on'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
@@ -721,6 +723,7 @@ describe('c-final-theme-engine', () => {
                 '--c-page-backing',
                 '--c-page-backing-pad',
                 '--c-page-backing-radius',
+                '--c-page-backing-chip-pad',
                 '--c-page-backing-on'
             ];
             expect(Object.keys(t).sort()).toEqual(

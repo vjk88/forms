@@ -991,6 +991,7 @@ function readableTextTokens({
             out['--c-page-backing'] = pageScope.backing.css;
             out['--c-page-backing-pad'] = 'var(--c-space-5)';
             out['--c-page-backing-radius'] = 'var(--c-radius)';
+            out['--c-page-backing-chip-pad'] = '2px 10px';
             out['--c-page-backing-on'] = '1';
         }
     }

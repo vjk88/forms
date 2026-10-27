@@ -49,7 +49,8 @@
 .tc-card {
     width: 100%;
     max-width: 260px;
-    background: var(--c-content-bg, #ffffff);
+    /* the card a form really draws (text plan §4.4 card backing) */
+    background: var(--c-card-backing, var(--c-content-bg, #ffffff));
     border: var(--c-content-border, 1px solid #e5e7eb);
     border-radius: var(--c-radius, 8px);
     box-shadow: var(--c-content-shadow, none);

@@ -40,6 +40,9 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-page-backing',
     '--c-page-backing-pad',
     '--c-page-backing-radius',
+    '--c-page-backing-chip-pad',
+    // set by the open-page swap only (viewer banners)
+    '--c-banner-backing',
     '--c-page-backing-on'
 ];
 
