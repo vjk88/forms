@@ -570,7 +570,7 @@ export default class FinalDesignPanel extends LightningElement {
                 ) {
                     vm.value = tokens[c.fallbackToken];
                     vm.hint =
-                        `${vm.hint} Adjusted from this theme's colour so it stays readable.`.trim();
+                        `${vm.hint} Adjusted from this theme's colour so it stays readable; example text inside empty inputs keeps the theme's colour.`.trim();
                 }
                 vm.contrastWith = c.contrastToken
                     ? tokens[c.contrastToken]

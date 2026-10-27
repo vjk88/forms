@@ -236,6 +236,12 @@ const SWAPS = [
         '.check svg',
         'fill',
         'var(--c-accent-mark, var(--c-accent))'
+    ],
+    [
+        'finalElementRenderer',
+        '.scale-row:not(:hover) .scale-icon.emoji-glyph:not(.filled):focus-visible',
+        'filter',
+        'var(--c-focus-idle-filter, none)'
     ]
 ];
 

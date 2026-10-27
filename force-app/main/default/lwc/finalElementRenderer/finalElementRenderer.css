@@ -836,6 +836,12 @@
 .scale-row .scale-icon.emoji-glyph:hover ~ .scale-icon.emoji-glyph {
     filter: var(--c-mark-idle-filter, none);
 }
+/* …but on keyboard focus an unpicked thumb shows at full strength, or the
+   filter would grey its focus ring too (same contract as the emoji faces
+   above; old forms keep today's look) */
+.scale-row:not(:hover) .scale-icon.emoji-glyph:not(.filled):focus-visible {
+    filter: var(--c-focus-idle-filter, none);
+}
 /* classic NPS semantic tones — opt-in only (config.coloring='classic') */
 .scale-chip.nps-detractor.selected {
     background: #ea001e;

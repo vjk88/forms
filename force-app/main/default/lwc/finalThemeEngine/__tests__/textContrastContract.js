@@ -14,6 +14,8 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-toast-ink',
     '--c-accent-text',
     '--c-accent-mark',
+    // the readable idle-mark colour; CSS reads it through -stroke (kept as
+    // the plain colour for the tests and the Studio)
     '--c-mark-idle',
     '--c-mark-idle-opacity',
     '--c-mark-idle-fill',
