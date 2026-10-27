@@ -242,6 +242,98 @@ const SWAPS = [
         '.scale-row:not(:hover) .scale-icon.emoji-glyph:not(.filled):focus-visible',
         'filter',
         'var(--c-focus-idle-filter, none)'
+    ],
+    // PR B: every card painter reads the card backing (old forms: the card)
+    [
+        'finalPageFrame',
+        '.panel',
+        'background-color',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalPageFrame',
+        '.panel',
+        'background-image',
+        'var(--c-card-backing-image, var(--c-content-bg-gradient, none))'
+    ],
+    [
+        'finalAfterSubmit',
+        '.wrap--card',
+        'background-color',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalAfterSubmit',
+        '.wrap--card',
+        'background-image',
+        'var(--c-card-backing-image, var(--c-content-bg-gradient, none))'
+    ],
+    [
+        'finalFormViewer',
+        '.viewer-busy-text',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg, #fff))'
+    ],
+    [
+        'finalNavSplitHero',
+        '.mode-bleed .form-card',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalNavStepper',
+        '.steps.is-stuck',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalNavTabs',
+        '.tab-strip.is-stuck',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalNavTabs',
+        '.style-enclosed .tab.active',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalNavRail',
+        '@container railnav (max-width: 540px) » .narrow-drawer .rail.drawer-open',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    [
+        'finalNavRail',
+        '@container railnav (max-width: 540px) » .narrow-topbar.sticky-rail .rail.is-stuck',
+        'background',
+        'var(--c-card-backing, var(--c-content-bg))'
+    ],
+    // PR B: the One at a time question column and top strip (old forms: none)
+    [
+        'finalNavOneAtATime',
+        '.top-chrome, .oaat-column',
+        'background',
+        'var(--c-page-backing, transparent)'
+    ],
+    [
+        'finalNavOneAtATime',
+        '.top-chrome, .oaat-column',
+        'border-radius',
+        'var(--c-page-backing-radius, 0)'
+    ],
+    [
+        'finalNavOneAtATime',
+        '.top-chrome',
+        'padding-top',
+        'var(--c-page-backing-pad, var(--c-space-4))'
+    ],
+    [
+        'finalNavOneAtATime',
+        '.oaat-column',
+        'padding',
+        'var(--c-page-backing-pad, 0)'
     ]
 ];
 
@@ -252,6 +344,31 @@ describe('text contrast PR A: CSS', () => {
             expect(valueOf(component, selector, prop)).toBe(value);
         }
     );
+
+    // PR B: a respondent surface painted in the card colour must read the
+    // card backing first, or a backed look's text sits on the wrong surface.
+    // Studio previews (theme and layout cards) are mock cards, not forms.
+    it('every card painter reads the card backing (plan §4.4)', () => {
+        const STUDIO = ['finalThemeCard', 'finalLayoutCard'];
+        const painters = fs
+            .readdirSync(LWC)
+            .filter((d) => d.startsWith('final') && !STUDIO.includes(d))
+            .filter((d) => fs.existsSync(path.join(LWC, d, `${d}.css`)))
+            .flatMap((component) =>
+                sheet(component)
+                    .filter(
+                        (d) =>
+                            d.prop.startsWith('background') &&
+                            /--c-content-bg(?![\w-])/.test(d.value)
+                    )
+                    .map((d) => ({ component, ...d }))
+            );
+        expect(painters.length).toBe(9);
+        const wrong = painters.filter(
+            (d) => !d.value.startsWith('var(--c-card-backing')
+        );
+        expect(wrong).toEqual([]);
+    });
 
     it('every reader of the changed colours is in the inventory (plan §T3)', () => {
         const now = fs

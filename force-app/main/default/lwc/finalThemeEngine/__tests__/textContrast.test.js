@@ -16,6 +16,7 @@ import { buildBrandTheme } from 'c/finalBrandTheme';
 import {
     mix,
     ratio,
+    PAGE_TEXT_TOKENS,
     textScope,
     worstOn,
     TEXT_AIM,
@@ -59,7 +60,8 @@ const CARD_STEPS = {
     botanicalSplit: [8, 3, 0, 0],
     cyberSplit: [0, 13, 0, 0],
     marbleLuxury: [9, 0, 0, 0],
-    oceanBreeze: null,
+    // PR B: on its backing (solid white), plan §3.1b
+    oceanBreeze: [0, 47, 24, 0],
     desertOasis: [17, 29, 14, 0],
     sunsetDunes: [9, 34, 23, 0],
     forestMist: [1, 17, 0, 0],
@@ -70,7 +72,8 @@ const CARD_STEPS = {
     auraSplit: [3, 0, 0, 0],
     terminal: [17, 0, 0, 0],
     retroStepper: [30, 0, 0, 6],
-    neonNights: null,
+    // PR B: on its backing (#08060f at 87%), plan §3.1b
+    neonNights: [0, 24, 5, 0],
     neoBrutalism: [0, 12, 2, 0]
 };
 
@@ -80,7 +83,8 @@ const resolve = (key, overrides = null) =>
 /** The card scope rebuilt independently from the resolved tokens. */
 function cardScope(t) {
     return textScope({
-        container: rangeFromToken(t['--c-focus-under']),
+        // the range text is judged on: the card, or its backing (PR B)
+        container: rangeFromToken(t['--c-text-under']),
         text: t['--c-text'],
         accent: t['--c-accent'],
         sectionFill: null,
@@ -130,7 +134,13 @@ describe('text contrast PR A: the card scope', () => {
         ).sort();
         // muted vs main under 1.6 : 1 after the fix
         expect(italic).toEqual(
-            ['auroraBorealis', 'cosmicVortex', 'retroStepper'].sort()
+            [
+                'auroraBorealis',
+                'cosmicVortex',
+                'retroStepper',
+                // PR B: resolved on its solid white backing
+                'oceanBreeze'
+            ].sort()
         );
         GALLERY.filter((k) => CARD_STEPS[k]).forEach((key) => {
             const t = resolve(key);
@@ -163,20 +173,18 @@ describe('text contrast PR A: the card scope', () => {
         }
     );
 
-    it('exactly Neon Nights and Ocean Breeze stay unresolved on the card, and change nothing there', () => {
-        const unresolved = GALLERY.filter(
-            (k) => resolve(k)['--c-text-unresolved']
-        ).sort();
-        expect(unresolved).toEqual(['neonNights', 'oceanBreeze']);
-        unresolved.forEach((key) => {
-            const t = resolve(key);
-            ['--c-accent-text', '--c-accent-mark', '--c-mark-idle'].forEach(
-                (tok) => expect(t[tok]).toBeUndefined()
-            );
-            expect(t['--c-text-weak']).toBe(
-                BEFORE.themes[key]['--c-text-weak']
-            );
-        });
+    it('PR B: nothing is unresolved any more; Neon Nights and Ocean Breeze cards are backed (§3.1b)', () => {
+        GALLERY.forEach((key) =>
+            expect(resolve(key)['--c-text-unresolved']).toBeUndefined()
+        );
+        expect(resolve('neonNights')['--c-card-backing']).toBe(
+            'rgba(8, 6, 15, 0.87)'
+        );
+        expect(resolve('oceanBreeze')['--c-card-backing']).toBe(
+            'rgba(255, 255, 255, 1)'
+        );
+        const backed = GALLERY.filter((k) => resolve(k)['--c-card-backing']);
+        expect(backed.sort()).toEqual(['neonNights', 'oceanBreeze']);
     });
 
     it.each(GALLERY)(
@@ -320,7 +328,8 @@ describe('text contrast PR A: engine copy guard', () => {
     const ALLOWED = {
         '--c-text-weak-src': 'the original, carried for recalculation',
         '--c-header-text-weak': 'header text is out of scope (plan §8)',
-        '--c-mark-idle': 'a mark, judged at 3 : 1 on its own'
+        '--c-mark-idle': 'a mark, judged at 3 : 1 on its own',
+        '--c-mark-idle-page': 'the same mark on the open page'
     };
     it.each(GALLERY.filter((k) => CARD_STEPS[k] && CARD_STEPS[k][0] > 0))(
         '%s: no token copies the original muted colour',
@@ -328,8 +337,16 @@ describe('text contrast PR A: engine copy guard', () => {
             ['default', 'mutedSm', 'caps'].forEach((labelStyle) => {
                 const t = resolve(key, { labelStyle });
                 const src = t['--c-text-weak-src'];
+                // an open-page colour the scope judged and found readable
+                // unchanged is not a copy (PAGE_TEXT_TOKENS, PR B)
                 const copies = Object.keys(t).filter(
-                    (k) => t[k] === src && !(k in ALLOWED)
+                    (k) =>
+                        t[k] === src &&
+                        !(k in ALLOWED) &&
+                        !(
+                            k.endsWith('-page') &&
+                            PAGE_TEXT_TOKENS.includes(k.slice(0, -5))
+                        )
                 );
                 expect(copies).toEqual([]);
             });

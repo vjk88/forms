@@ -22,7 +22,25 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-mark-idle-stroke',
     '--c-mark-idle-filter',
     '--c-idle-value-style',
-    '--c-text-unresolved'
+    '--c-text-unresolved',
+    // PR B: the range text is judged on, the open page's own set, and the
+    // backings (card: every card painter; page: the One at a time column)
+    '--c-text-under',
+    '--c-text-weak-page',
+    '--c-label-color-page',
+    '--c-accent-text-page',
+    '--c-accent-mark-page',
+    '--c-mark-idle-page',
+    '--c-mark-idle-stroke-page',
+    '--c-idle-value-style-page',
+    '--c-text-under-page',
+    '--c-card-backing',
+    '--c-card-backing-image',
+    '--c-card-backing-on',
+    '--c-page-backing',
+    '--c-page-backing-pad',
+    '--c-page-backing-radius',
+    '--c-page-backing-on'
 ];
 
 /**

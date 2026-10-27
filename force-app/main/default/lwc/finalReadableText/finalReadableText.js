@@ -14,7 +14,7 @@
  * c/finalFocusTreatment. A colour reaches a ratio on a range when it sits
  * outside it and reaches the ratio against both ends.
  */
-import { contrast, over, passes } from 'c/finalFocusTreatment';
+import { contrast, over, passes, rangeFromToken } from 'c/finalFocusTreatment';
 
 /** WCAG 2.2 AA floors. */
 export const TEXT = 4.5;
@@ -220,4 +220,187 @@ export function readable(color, toward, ranges, min) {
         return { color, steps: 0, ok: readsOn(color, ranges, min) };
     }
     return adjustSteps(color, toward, (c) => readsOn(c, ranges, min));
+}
+
+// ------------------------------------------------- one container's colours
+
+/** Below this ratio between muted and main text, an untouched slider value
+ *  would read as an answer, so it goes italic. */
+export const IDLE_APART = 1.6;
+/** The backing's opacity is raised while that keeps muted and accent words
+ *  within this many 2% steps of their own colour (50%). */
+export const CAP_STEPS = 25;
+
+/**
+ * The readable colours for one container (the card, the open page, a
+ * backing, or a section with its own background), as tokens.
+ *   roles   { muted, label }: which theme colours may be adjusted (an
+ *           author's own muted or label colour never is)
+ * `{ ok, tokens, italic, mutedSteps, wordsSteps }`; ok=false means main
+ * text itself can't read here, and nothing is promised.
+ */
+export function scopeColours({
+    container,
+    text,
+    textWeak,
+    accent,
+    sectionFill,
+    fieldFills,
+    roles
+}) {
+    const scope = textScope({
+        container,
+        text,
+        accent,
+        sectionFill,
+        fieldFills
+    });
+    if (!readsOn(text, scope.text, TEXT_AIM)) {
+        return { ok: false };
+    }
+    const muted = readable(textWeak, text, scope.text, TEXT_AIM);
+    const words = readable(accent, text, scope.words, TEXT_AIM);
+    const marks = readable(accent, text, scope.marks, MARK_AIM);
+    // idle stars and hearts are outlines in this colour (PR 408 ruling)
+    const idle = readable(textWeak, text, scope.marks, MARK_AIM);
+    const tokens = {};
+    if (roles.muted && muted.ok) {
+        tokens['--c-text-weak'] = muted.color;
+        if (roles.label) {
+            tokens['--c-label-color'] = muted.color;
+        }
+    }
+    if (words.ok) {
+        tokens['--c-accent-text'] = words.color;
+    }
+    if (marks.ok) {
+        tokens['--c-accent-mark'] = marks.color;
+    }
+    if (idle.ok) {
+        tokens['--c-mark-idle'] = idle.color;
+        tokens['--c-mark-idle-stroke'] = `1.5px ${idle.color}`;
+    }
+    const weak = tokens['--c-text-weak'] || textWeak;
+    return {
+        ok: true,
+        tokens,
+        italic: ratio(weak, text) < IDLE_APART,
+        mutedSteps: muted.steps,
+        wordsSteps: words.steps
+    };
+}
+
+/**
+ * A backing for text that can't read on what's behind it (IMPL_PLAN_TEXT_
+ * CONTRAST §4.4, owner D1 = A). Tries each colour in order (the look's card
+ * colour, then its page colour) at whole-percent opacities from the look's
+ * own card opacity up: the smallest where main text reads, then raised
+ * while that brings muted and accent words within CAP_STEPS of their own
+ * colour. `judge(range)` is scopeColours on that container.
+ * `{ color, alpha, range }`, or null when no colour can pass.
+ */
+export function backingFor({ colors, ownAlpha, underlay, judge }) {
+    const start = Math.max(Math.round((Number(ownAlpha) || 0) * 100), 1);
+    for (const color of colors) {
+        const c = parseHex(color);
+        if (!c) {
+            continue;
+        }
+        const rangeAt = (n) =>
+            over(`rgba(${c[0]}, ${c[1]}, ${c[2]}, ${n / 100})`, underlay);
+        let min = null;
+        for (let n = start; n <= 100; n += 1) {
+            if (judge(rangeAt(n)).ok) {
+                min = n;
+                break;
+            }
+        }
+        if (min === null) {
+            continue;
+        }
+        let pick = min;
+        for (let n = min; n <= 100; n += 1) {
+            const r = judge(rangeAt(n));
+            if (r.mutedSteps <= CAP_STEPS && r.wordsSteps <= CAP_STEPS) {
+                pick = n;
+                break;
+            }
+        }
+        return {
+            color: toHex(c),
+            alpha: pick / 100,
+            css: `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${pick / 100})`,
+            range: rangeAt(pick)
+        };
+    }
+    return null;
+}
+
+// ---------------------------------------------------------- the viewer
+
+/** The colours the open page swaps in (each written as `<token>-page`). */
+export const PAGE_TEXT_TOKENS = [
+    '--c-text-weak',
+    '--c-label-color',
+    '--c-accent-text',
+    '--c-accent-mark',
+    '--c-mark-idle',
+    '--c-mark-idle-stroke',
+    '--c-idle-value-style',
+    '--c-text-under'
+];
+
+/**
+ * The One at a time open page: questions sit on the page (or its backing),
+ * so its colours replace the card's. A no-op without the text marker, so a
+ * snapshot published before keeps exactly what it had.
+ */
+export function openPageTextTokens(tokens) {
+    const t = tokens || {};
+    if (!t['--c-text-treatment']) {
+        return t;
+    }
+    const out = { ...t };
+    PAGE_TEXT_TOKENS.forEach((key) => {
+        if (t[`${key}-page`] !== undefined) {
+            out[key] = t[`${key}-page`];
+        }
+    });
+    return out;
+}
+
+/**
+ * A section with its own background: its readable colours as inline style,
+ * recalculated from the ORIGINAL colours the marker carries (never from an
+ * already-adjusted value, so a section can't compound the page's change).
+ * '' when there is no marker, no background, or main text can't read there.
+ */
+export function sectionTextStyle(tokens, surfaceBg) {
+    const t = tokens || {};
+    const treatment = String(t['--c-text-treatment'] || '').split(' ');
+    const under = rangeFromToken(t['--c-text-under']);
+    if (!t['--c-text-treatment'] || !surfaceBg || !under) {
+        return '';
+    }
+    const container = over(surfaceBg, under);
+    const muted = treatment.includes('muted');
+    const r = scopeColours({
+        container,
+        text: t['--c-text-src'],
+        // an author's own muted colour is kept, and marks derive from it
+        textWeak: muted ? t['--c-text-weak-src'] : t['--c-text-weak'],
+        accent: t['--c-accent'],
+        sectionFill: null,
+        fieldFills: [t['--c-input-bg'], t['--c-field-bg']],
+        roles: { muted, label: treatment.includes('label') }
+    });
+    if (!r.ok) {
+        return '';
+    }
+    return Object.entries({
+        ...r.tokens,
+        '--c-idle-value-style': r.italic ? 'italic' : 'normal'
+    })
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ');
 }

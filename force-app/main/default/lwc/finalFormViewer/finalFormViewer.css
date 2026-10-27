@@ -53,7 +53,7 @@
     font-size: var(--c-fs-secondary);
     font-weight: 600;
     color: var(--c-text, inherit);
-    background: var(--c-content-bg, #fff);
+    background: var(--c-card-backing, var(--c-content-bg, #fff));
 }
 
 /* Submit failure — the response was NOT recorded; say so where the eye is. */

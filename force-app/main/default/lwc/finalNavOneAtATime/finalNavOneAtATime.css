@@ -67,7 +67,22 @@
     align-items: center;
     gap: var(--c-space-4);
     margin: 0 var(--c-strip-inset);
-    padding-top: var(--c-space-4);
+}
+/* Over a photo or glow the strip and the question column each get a backing
+   in the look's own colour, so their text can read (IMPL_PLAN_TEXT_CONTRAST
+   §4.4, owner D1 = A). The engine writes the tokens only where the page
+   needs it; everywhere else, and on old forms, nothing new is drawn. */
+.top-chrome,
+.oaat-column {
+    background: var(--c-page-backing, transparent);
+    border-radius: var(--c-page-backing-radius, 0);
+}
+.top-chrome {
+    padding: var(--c-page-backing-pad, 0);
+    padding-top: var(--c-page-backing-pad, var(--c-space-4));
+}
+.oaat-column {
+    padding: var(--c-page-backing-pad, 0);
 }
 
 .progress-hairline {

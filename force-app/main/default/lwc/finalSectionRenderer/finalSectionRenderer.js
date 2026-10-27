@@ -94,6 +94,10 @@ export default class FinalSectionRenderer extends LightningElement {
         if (this.sec.focusStyle) {
             parts.push(this.sec.focusStyle);
         }
+        // and its own readable text colours (IMPL_PLAN_TEXT_CONTRAST §4.2)
+        if (this.sec.textStyle) {
+            parts.push(this.sec.textStyle);
+        }
         return parts.join('; ');
     }
 

@@ -29,7 +29,7 @@
    painted permanently, translucent content-bg stacks on glass-theme cards and
    reads as a foreign band. Pinned, it masks scrolled content exactly as before. */
 .steps.is-stuck {
-    background: var(--c-content-bg);
+    background: var(--c-card-backing, var(--c-content-bg));
     -webkit-backdrop-filter: blur(var(--c-glass-blur));
     backdrop-filter: blur(var(--c-glass-blur));
 }
