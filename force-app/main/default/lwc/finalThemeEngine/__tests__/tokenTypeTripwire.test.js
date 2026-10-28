@@ -24,7 +24,8 @@ const SHORTHAND_TOKENS = ['--c-content-border'];
 const COLOR_TOKENS = ['--c-field-border'];
 
 const BORDER_PROP = /^border(-(top|right|bottom|left))?$/;
-const wholeVar = (token) => new RegExp(`^var\\(${token}(\\s*,[^)]*)?\\)$`);
+const wholeVar = (token) =>
+    new RegExp(`^var\\(${token}(\\s*,[^)]*)?\\)$`);
 
 function cssFiles() {
     return fs
@@ -66,10 +67,7 @@ describe('token type tripwire (F1 bug class)', () => {
                     if (!value.includes(`var(${token}`)) {
                         continue;
                     }
-                    if (
-                        !BORDER_PROP.test(prop) ||
-                        !wholeVar(token).test(value)
-                    ) {
+                    if (!BORDER_PROP.test(prop) || !wholeVar(token).test(value)) {
                         violations.push(`${file} → ${prop}: ${value}`);
                     }
                 }
