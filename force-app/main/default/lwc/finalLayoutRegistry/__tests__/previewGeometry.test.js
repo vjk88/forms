@@ -36,7 +36,9 @@ describe('previewGeometry: carded layouts', () => {
     it('full-bleed off makes a bleed layout carded', () => {
         expect(previewGeometry('splitHero', false, 'wide')).toEqual({
             bleed: false,
-            card: '81.3%'
+            card: '81.3%',
+            pane: '50%',
+            stacked: false
         });
         expect(previewGeometry('oneAtATime', false, undefined)).toEqual({
             bleed: false,

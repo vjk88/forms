@@ -133,6 +133,17 @@ describe('c-final-brand-dialog', () => {
         expect(preview.themeProps.brand.style).toBe('clean');
     });
 
+    it('style cards are swatches: they fill their cell, whatever the form’s width', async () => {
+        const el = await mount({
+            formLayout: { type: 'stepper', options: {}, maxWidth: 'narrow' }
+        });
+        await typeHex(el, '#1E3A8A');
+        expect(q(el, '.bd-preview c-final-theme-card').maxWidth).toBe('narrow');
+        qa(el, '.bd-styles c-final-theme-card').forEach((c) =>
+            expect(c.maxWidth).toBe('full')
+        );
+    });
+
     it('picking a style changes the preview recipe', async () => {
         const el = await mount();
         await typeHex(el, '#1e3a8a');
