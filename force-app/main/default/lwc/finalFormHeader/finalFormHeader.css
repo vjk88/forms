@@ -72,6 +72,38 @@
     font-size: var(--c-fs-desc);
     color: var(--c-header-text-weak);
 }
+/* The text plate (IMPL_PLAN_TEXT_CONTRAST, header; owner 2026-10-27): where
+   the title and description can't read on the header's own surface (a
+   photo, a form's banner, the page under a One at a time header), a soft
+   panel in the header's colour goes behind just them, as faint as it can
+   be. The engine writes the tokens only where needed; old forms and every
+   other header draw nothing new. */
+.lockup-text,
+.brand-wordmark {
+    background: var(--c-header-plate, transparent);
+    padding: var(--c-header-plate-pad, 0);
+    border-radius: var(--c-header-plate-radius, 0);
+}
+.hdr.has-banner .lockup-text,
+.hdr.has-banner .brand-wordmark {
+    background: var(
+        --c-header-plate-banner,
+        var(--c-header-plate, transparent)
+    );
+    padding: var(--c-header-plate-pad-banner, var(--c-header-plate-pad, 0));
+}
+.hdr.has-banner .brand-wordmark {
+    color: var(--c-header-text-banner, var(--c-header-text));
+}
+.hdr.has-banner .hdr-title {
+    color: var(
+        --c-header-text-banner,
+        var(--c-header-title-fill, var(--c-header-text))
+    );
+}
+.hdr.has-banner .hdr-desc {
+    color: var(--c-header-text-weak-banner, var(--c-header-text-weak));
+}
 
 /* Rich-text title/description: strip the editor's <p> wrappers so the lockup
    type scale owns the box; authored inline spans (color, size) still win. */

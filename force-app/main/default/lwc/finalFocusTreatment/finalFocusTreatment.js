@@ -77,16 +77,31 @@ function toHex({ r, g, b }) {
         .join('')}`;
 }
 
+// The readable-text search judges the same few hundred colours many times
+// over; remembering their luminance keeps the engine fast on every edit.
+const LUMINANCE = new Map();
+
 function luminance(hex) {
-    const c = parseColor(hex);
-    if (!c) {
-        return null;
+    const key = String(hex);
+    if (LUMINANCE.has(key)) {
+        return LUMINANCE.get(key);
     }
-    const lin = (v) => {
-        const x = v / 255;
-        return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-    };
-    return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+    const c = parseColor(hex);
+    let value = null;
+    if (c) {
+        const lin = (v) => {
+            const x = v / 255;
+            return x <= 0.03928
+                ? x / 12.92
+                : Math.pow((x + 0.055) / 1.055, 2.4);
+        };
+        value = 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+    }
+    if (LUMINANCE.size > 20000) {
+        LUMINANCE.clear();
+    }
+    LUMINANCE.set(key, value);
+    return value;
 }
 
 export function contrast(a, b) {

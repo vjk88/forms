@@ -359,6 +359,38 @@ const SWAPS = [
         '.lt-card',
         'background',
         'var(--c-card-backing, var(--c-content-bg, #ffffff))'
+    ],
+    // header follow-up: the text plate and a banner's own colours (old
+    // forms and every other header: nothing new)
+    [
+        'finalFormHeader',
+        '.lockup-text, .brand-wordmark',
+        'background',
+        'var(--c-header-plate, transparent)'
+    ],
+    [
+        'finalFormHeader',
+        '.lockup-text, .brand-wordmark',
+        'padding',
+        'var(--c-header-plate-pad, 0)'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr.has-banner .lockup-text, .hdr.has-banner .brand-wordmark',
+        'background',
+        'var(--c-header-plate-banner, var(--c-header-plate, transparent))'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr.has-banner .hdr-title',
+        'color',
+        'var(--c-header-text-banner, var(--c-header-title-fill, var(--c-header-text)))'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr.has-banner .hdr-desc',
+        'color',
+        'var(--c-header-text-weak-banner, var(--c-header-text-weak))'
     ]
 ];
 

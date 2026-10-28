@@ -219,7 +219,34 @@ export function readable(color, toward, ranges, min) {
     if (!parseHex(color) || !parseHex(toward)) {
         return { color, steps: 0, ok: readsOn(color, ranges, min) };
     }
-    return adjustSteps(color, toward, (c) => readsOn(c, ranges, min));
+    // The same 2% steps as adjustSteps (the share is built by adding 0.02,
+    // so every colour is identical), but found by halving: reading only
+    // improves as a colour moves toward `toward`, and the engine runs on
+    // every Studio edit.
+    const shares = [];
+    for (let t = 0; t <= 1.0001; t += 0.02) {
+        shares.push(t);
+    }
+    const colorAt = (k) => mix(toward, color, shares[k]);
+    const ok = (k) => readsOn(colorAt(k), ranges, min);
+    if (ok(0)) {
+        return { color, steps: 0, ok: true };
+    }
+    const last = shares.length - 1;
+    if (!ok(last)) {
+        return { color: toward, steps: 50, ok: readsOn(toward, ranges, min) };
+    }
+    let a = 1;
+    let b = last;
+    while (a < b) {
+        const mid = Math.floor((a + b) / 2);
+        if (ok(mid)) {
+            b = mid;
+        } else {
+            a = mid + 1;
+        }
+    }
+    return { color: colorAt(a), steps: a, ok: true };
 }
 
 // ------------------------------------------------- one container's colours
@@ -299,6 +326,25 @@ export function scopeColours({
  * colour. `judge(range)` is scopeColours on that container.
  * `{ color, alpha, range }`, or null when no colour can pass.
  */
+/** The first whole number in [lo, hi] where `test` holds, for a test that
+ *  turns from false to true once (null when it never holds). */
+function firstPassing(lo, hi, test) {
+    if (!test(hi)) {
+        return null;
+    }
+    let a = lo;
+    let b = hi;
+    while (a < b) {
+        const mid = Math.floor((a + b) / 2);
+        if (test(mid)) {
+            b = mid;
+        } else {
+            a = mid + 1;
+        }
+    }
+    return a;
+}
+
 export function backingFor({ colors, ownAlpha, underlay, judge }) {
     const start = Math.max(Math.round((Number(ownAlpha) || 0) * 100), 1);
     for (const color of colors) {
@@ -308,24 +354,30 @@ export function backingFor({ colors, ownAlpha, underlay, judge }) {
         }
         const rangeAt = (n) =>
             over(`rgba(${c[0]}, ${c[1]}, ${c[2]}, ${n / 100})`, underlay);
-        let min = null;
-        for (let n = start; n <= 100; n += 1) {
-            if (judge(rangeAt(n)).ok) {
-                min = n;
-                break;
+        // Both tests only ever turn from false to true as the backing gets
+        // more opaque (it covers more of what's behind), so the first
+        // passing opacity is found by halving, not by trying all 100: the
+        // engine runs on every Studio edit.
+        const cache = new Map();
+        const at = (n) => {
+            if (!cache.has(n)) {
+                cache.set(n, judge(rangeAt(n)));
             }
-        }
+            return cache.get(n);
+        };
+        const min = firstPassing(start, 100, (n) => at(n).ok);
         if (min === null) {
             continue;
         }
-        let pick = min;
-        for (let n = min; n <= 100; n += 1) {
-            const r = judge(rangeAt(n));
-            if (r.mutedSteps <= CAP_STEPS && r.wordsSteps <= CAP_STEPS) {
-                pick = n;
-                break;
-            }
-        }
+        const capped = firstPassing(
+            min,
+            100,
+            (n) =>
+                at(n).ok &&
+                at(n).mutedSteps <= CAP_STEPS &&
+                at(n).wordsSteps <= CAP_STEPS
+        );
+        const pick = capped === null ? min : capped;
         return {
             color: toHex(c),
             alpha: pick / 100,
@@ -347,7 +399,12 @@ export const PAGE_TEXT_TOKENS = [
     '--c-mark-idle',
     '--c-mark-idle-stroke',
     '--c-idle-value-style',
-    '--c-text-under'
+    '--c-text-under',
+    // the header on the open page sits on the page itself
+    '--c-header-text',
+    '--c-header-text-weak',
+    '--c-header-plate',
+    '--c-header-plate-pad'
 ];
 
 /**
@@ -408,4 +465,53 @@ export function sectionTextStyle(tokens, surfaceBg) {
     })
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ');
+}
+
+// -------------------------------------------------------------- the header
+
+/**
+ * The header's title and description on one header surface (its own fill,
+ * gradient or photo, over the card or the page). The title moves toward
+ * black or white, whichever reads better there; the description moves
+ * toward the title, so the two keep their order. A gradient title can't be
+ * moved: each of its stops must read as it is. An author's own colour is
+ * never moved (roles). Both are held to 4.5 : 1, because the title can be
+ * 20px in a display face with no bold.
+ * `{ ok, tokens, mutedSteps, wordsSteps }`; ok=false asks for a text plate.
+ */
+export function headerColours({ container, title, titleStops, desc, roles }) {
+    const ranges = [container];
+    const target =
+        worstOn('#000000', ranges) >= worstOn('#ffffff', ranges)
+            ? '#000000'
+            : '#ffffff';
+    let t;
+    if (titleStops && titleStops.length) {
+        t = {
+            ok: titleStops.every((s) => readsOn(s, ranges, TEXT_AIM)),
+            color: null,
+            steps: 0
+        };
+    } else if (roles.title) {
+        t = readable(title, target, ranges, TEXT_AIM);
+    } else {
+        t = { ok: readsOn(title, ranges, TEXT_AIM), color: title, steps: 0 };
+    }
+    if (!t.ok) {
+        return { ok: false };
+    }
+    const d = roles.desc
+        ? readable(desc, t.color || target, ranges, TEXT_AIM)
+        : { ok: readsOn(desc, ranges, TEXT_AIM), color: desc, steps: 0 };
+    if (!d.ok) {
+        return { ok: false };
+    }
+    const tokens = {};
+    if (roles.title && t.color) {
+        tokens['--c-header-text'] = t.color;
+    }
+    if (roles.desc) {
+        tokens['--c-header-text-weak'] = d.color;
+    }
+    return { ok: true, tokens, mutedSteps: d.steps, wordsSteps: t.steps };
 }
