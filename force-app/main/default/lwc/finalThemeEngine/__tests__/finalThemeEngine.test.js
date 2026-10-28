@@ -120,7 +120,7 @@ const CONTRACT_V1 = [
     '--c-mark-idle-filter',
     // conditional: only when main text itself can't read on the card
     '--c-text-unresolved',
-    // conditional: only when the readable muted text sits close to the main
+    // the untouched slider value: italic on every eligible theme
     '--c-idle-value-style',
     // PR B: the open page's own set (swapped in by the viewer), the range
     // text is judged on, and the backings
@@ -230,7 +230,6 @@ describe('c-final-theme-engine', () => {
                 '--c-sec-head-display',
                 '--c-icon',
                 '--c-text-unresolved',
-                '--c-idle-value-style',
                 '--c-label-color-page',
                 '--c-card-backing',
                 '--c-card-backing-image',
@@ -742,7 +741,6 @@ describe('c-final-theme-engine', () => {
                 '--c-sec-head-display',
                 '--c-icon',
                 '--c-text-unresolved',
-                '--c-idle-value-style',
                 '--c-label-color-page',
                 '--c-card-backing',
                 '--c-card-backing-image',

@@ -259,9 +259,6 @@ export function readable(color, toward, ranges, min) {
 
 // ------------------------------------------------- one container's colours
 
-/** Below this ratio between muted and main text, an untouched slider value
- *  would read as an answer, so it goes italic. */
-export const IDLE_APART = 1.6;
 /** The backing's opacity is raised while that keeps muted and accent words
  *  within this many 2% steps of their own colour (50%). */
 export const CAP_STEPS = 25;
@@ -315,11 +312,13 @@ export function scopeColours({
         tokens['--c-mark-idle'] = idle.color;
         tokens['--c-mark-idle-stroke'] = `1.5px ${idle.color}`;
     }
-    const weak = tokens['--c-text-weak'] || textWeak;
     return {
         ok: true,
         tokens,
-        italic: ratio(weak, text) < IDLE_APART,
+        // the untouched slider value is always italic (owner 2026-10-27):
+        // "not answered yet" reads the same on every form, whatever colours
+        // the look's muted text and accent end up as
+        italic: true,
         mutedSteps: muted.steps,
         wordsSteps: words.steps
     };

@@ -128,25 +128,11 @@ describe('text contrast PR A: the card scope', () => {
         }
     );
 
-    it('the untouched slider value goes italic exactly where muted sits close to the main text', () => {
-        const italic = GALLERY.filter(
-            (k) => resolve(k)['--c-idle-value-style'] === 'italic'
-        ).sort();
-        // muted vs main under 1.6 : 1 after the fix
-        expect(italic).toEqual(
-            [
-                'auroraBorealis',
-                'cosmicVortex',
-                'retroStepper',
-                // PR B: resolved on its solid white backing
-                'oceanBreeze'
-            ].sort()
-        );
-        GALLERY.filter((k) => CARD_STEPS[k]).forEach((key) => {
+    it('the untouched slider value is italic on every look (owner 2026-10-27)', () => {
+        GALLERY.forEach((key) => {
             const t = resolve(key);
-            expect(t['--c-idle-value-style'] === 'italic').toBe(
-                ratio(t['--c-text-weak'], t['--c-text']) < 1.6
-            );
+            expect(t['--c-idle-value-style']).toBe('italic');
+            expect(t['--c-idle-value-style-page']).toBe('italic');
         });
     });
 
