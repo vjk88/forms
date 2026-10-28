@@ -329,12 +329,19 @@
        card + form padding. Unset resolves the min to ~96px (inert: halves
        stay equal); capped at 60% so the brand pane never collapses. An
        explicit width deliberately overrides any pane ratio option. */
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(
-            min(60%, calc(var(--frame-max, 0px) + 2 * var(--c-space-5))),
-            1fr
-        );
+    --bleed-form-track: minmax(
+        min(60%, calc(var(--frame-max, 0px) + 2 * var(--c-space-5))),
+        1fr
+    );
+    grid-template-columns: minmax(0, 1fr) var(--bleed-form-track);
+}
+
+/* Pane side Right: the pane's order:2 puts the FORM in the first track, so
+   the growing track moves there with it. Same specificity as
+   .side-right.ratio-third and later in the file, so Pane width stays ignored
+   on both sides. */
+.mode-bleed.side-right {
+    grid-template-columns: var(--bleed-form-track) minmax(0, 1fr);
 }
 
 .mode-bleed .pane {
