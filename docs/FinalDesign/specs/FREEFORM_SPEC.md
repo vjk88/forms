@@ -280,14 +280,21 @@ A third card joins Form and Survey on the kind screen:
 > **Freeform** — I know what I want to ask; I'll decide where the answers go later.
 > _Pick a template, layout & theme →_
 
-Path: **template → layout → theme → name**. No object step anywhere. F1's template shelf holds one
-entry, **Blank freeform**; F3 fills it.
+Path: **template → layout → theme → name**. No object step anywhere. The starter shelf includes
+**Blank freeform**, **Contact Request**, **Event Registration**, **Support Request**, and
+**Partner Application**. The curated starters contain editable, unbound questions grouped into
+pages; the author still chooses the layout and theme. Blank freeform remains empty.
+
+The starter catalog adds question content only: answers stay in the Freeform submission store
+until the author configures Salesforce mappings. It does not implement F3's org-resolved mapping
+suggestions or F4's reusable sections and save-as-template features. Templates do not depend on
+custom business objects, survey topics, or guest file uploads.
 
 On create: `Form_Type__c = 'Freeform'`, `Primary_Context_Object__c` blank, spec `form.type =
 'freeform'` with no `targetObject`, chosen layout + theme, then land in Build (same as today).
 
-Apex: the existing survey creator gains a form-type parameter rather than being copied. Survey's behavior
-is unchanged.
+Apex: `FinalFormCreateController.createFreeformFromTemplate` creates the draft and its initial
+spec. Survey creation remains a separate entry point with unchanged behavior.
 
 ### 6.2 Studio surfaces
 
