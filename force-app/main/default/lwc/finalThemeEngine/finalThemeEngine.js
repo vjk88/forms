@@ -1069,9 +1069,9 @@ function computeReadableText({
             : { result: first, plate: null };
     };
     const PLATE_PAD = 'var(--c-space-2) var(--c-space-3)';
-    // the plate reaches out by its padding, so the text keeps its place
-    const PLATE_OUTSET =
-        'calc(-1 * var(--c-space-2)) calc(-1 * var(--c-space-3))';
+    // the plate reaches out sideways by its padding, so the text keeps its
+    // left edge (not up and down: that would eat the header's row gap)
+    const PLATE_OUTSET = 'calc(-1 * var(--c-space-3))';
     const headerHasSurface = Boolean(
         (headerFill && headerFill.a > 0) ||
         (pal.headerBgGradient &&

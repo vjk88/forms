@@ -20,15 +20,6 @@ import {
     sectionFocusStyle
 } from 'c/finalFocusTreatment';
 import { openPageTextTokens, sectionTextStyle } from 'c/finalReadableText';
-
-/** The header's colours and plate on the open page (kept on completion). */
-const HEADER_PAGE_KEYS = [
-    '--c-header-text',
-    '--c-header-text-weak',
-    '--c-header-plate',
-    '--c-header-plate-pad',
-    '--c-header-plate-outset'
-];
 import {
     getLayout,
     isOnePerScreen,
@@ -54,6 +45,15 @@ import {
     isRequestCurrent,
     onRequestFailure
 } from './autofillEngine';
+
+/** The header's colours and plate on the open page (kept on completion). */
+const HEADER_PAGE_KEYS = [
+    '--c-header-text',
+    '--c-header-text-weak',
+    '--c-header-plate',
+    '--c-header-plate-pad',
+    '--c-header-plate-outset'
+];
 
 /**
  * One-question-per-screen auto-split (SURVEY_PLAN §10 Q4, ruled 2026-07-27,

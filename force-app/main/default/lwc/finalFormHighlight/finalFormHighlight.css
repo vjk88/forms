@@ -32,7 +32,7 @@
 .hl-inline {
     /* the host's header colour and text plate (header or Split pane), as a
        pill; outside a header both fall back to today */
-    margin: var(--hdr-plate-outset, 0);
+    margin-inline: var(--hdr-plate-outset, 0);
     padding: var(--hdr-plate-pad, 0);
     background: var(--hdr-plate, transparent);
     border-radius: var(--c-header-plate-radius, 0);

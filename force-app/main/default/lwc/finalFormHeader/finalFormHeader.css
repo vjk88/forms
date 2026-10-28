@@ -110,7 +110,7 @@
 }
 .lockup-text,
 .brand-wordmark {
-    margin: var(--hdr-plate-outset);
+    margin-inline: var(--hdr-plate-outset);
     padding: var(--hdr-plate-pad);
     background: var(--hdr-plate);
     border-radius: var(--c-header-plate-radius, 0);
