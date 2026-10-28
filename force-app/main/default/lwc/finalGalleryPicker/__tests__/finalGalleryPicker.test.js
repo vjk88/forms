@@ -236,3 +236,29 @@ describe('c-final-gallery-picker: previews follow the form', () => {
         expect(custom.fullBleed).toBeUndefined();
     });
 });
+
+describe('c-final-gallery-picker: pane options reach the previews (PR 413 review)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it("the form's Pane side and Pane width reach its layout card", async () => {
+        const el = mount({
+            mode: 'layout',
+            layout: 'splitHero',
+            formLayout: {
+                type: 'splitHero',
+                options: { side: 'right', ratio: 'third', fullBleed: false },
+                maxWidth: 'wide'
+            }
+        });
+        await flush();
+        const split = [
+            ...el.shadowRoot.querySelectorAll('c-final-layout-card')
+        ].find((c) => c.layout === 'splitHero' && !c.paneFlow);
+        expect(split.paneSide).toBe('right');
+        expect(split.paneRatio).toBe('third');
+    });
+});

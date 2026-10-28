@@ -116,3 +116,28 @@ describe('previewSettings', () => {
         expect(convo.maxWidth).toBe('medium');
     });
 });
+
+describe('previewGeometry: carded Split pane (PR 413 review)', () => {
+    it('Half is a true half, Third a third', () => {
+        expect(previewGeometry('splitHero', false, 'wide').pane).toBe('50%');
+        expect(previewGeometry('splitHero', false, 'wide', 'third').pane).toBe(
+            '33.3%'
+        );
+    });
+
+    it('Narrow stacks the brand pane on top, as the real split does', () => {
+        // 560px panel - 64px padding = 496px, under the 540px stack point
+        expect(previewGeometry('splitHero', false, 'narrow').stacked).toBe(
+            true
+        );
+        expect(previewGeometry('splitHero', false, 'medium').stacked).toBe(
+            false
+        );
+    });
+
+    it('full-bleed ignores Pane width, as the real split does', () => {
+        expect(
+            'pane' in previewGeometry('splitHero', true, undefined, 'third')
+        ).toBe(false);
+    });
+});

@@ -80,6 +80,16 @@
     padding: 0;
     height: 10px;
 }
+/* on the open page the header band spans the whole page, not the column */
+.tc-stage {
+    position: relative;
+}
+.tc-open .tc-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
 
 .tc-banner .tc-h {
     color: var(--c-header-text, #ffffff);
@@ -299,14 +309,32 @@
     background: var(--c-accent, #6366f1);
 }
 
-/* Split */
+/* Split: the brand pane takes Pane width's share (--pv-pane: Half 50%,
+   Third 33%); Pane side Right puts it on the right */
 .tc-split {
     display: grid;
-    grid-template-columns: 42% 58%;
+    grid-template-columns: var(--pv-pane, 50%) 1fr;
+}
+.tc-split.tc-side-right {
+    grid-template-columns: 1fr var(--pv-pane, 50%);
+}
+.tc-side-right .tc-rail {
+    order: 2;
+}
+
+/* Split too narrow for two halves (Narrow, carded): the brand pane becomes
+   a strip on top, as the real split stacks under 540px */
+.tc-split-stacked {
+    display: flex;
+    flex-direction: column;
+}
+.tc-split-stacked .tc-rail {
+    padding: 8px 12px;
 }
 
 /* Split, full-bleed: the halves own the whole page and touch; the form
-   column (--pv-form) holds the fields as a floating card */
+   column (--pv-form) holds the fields as a floating card. Full-bleed has no
+   Pane width: the real split ignores it there. */
 .tc-stage-bleed {
     padding: 0;
     align-items: stretch;
@@ -314,6 +342,9 @@
 .tc-split-bleed {
     width: 100%;
     grid-template-columns: 1fr var(--pv-form, 50%);
+}
+.tc-split-bleed.tc-side-right {
+    grid-template-columns: var(--pv-form, 50%) 1fr;
 }
 .tc-split-bleed .tc-fields {
     display: flex;

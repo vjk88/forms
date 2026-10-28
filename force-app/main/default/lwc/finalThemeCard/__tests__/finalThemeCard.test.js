@@ -277,3 +277,41 @@ describe('c-final-theme-card: real full-bleed and width', () => {
         expect(carded.shadowRoot.querySelector('.tc-card')).not.toBeNull();
     });
 });
+
+describe('c-final-theme-card: Pane side, Pane width, stacking (PR 413 review)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+    const split = (el) => el.shadowRoot.querySelector('.tc-split');
+
+    it('Pane side Right mirrors the split; Third sets the pane share', async () => {
+        const el = mount({
+            themeKey: 'marbleSplit',
+            layout: 'splitHero',
+            fullBleed: false,
+            maxWidth: 'wide',
+            paneSide: 'right',
+            paneRatio: 'third'
+        });
+        await flush();
+        expect(split(el).classList.contains('tc-side-right')).toBe(true);
+        expect(
+            el.shadowRoot.querySelector('.tc-preview').getAttribute('style')
+        ).toContain('--pv-pane: 33.3%');
+    });
+
+    it('a Narrow carded Split stacks the brand pane on top', async () => {
+        const el = mount({
+            themeKey: 'marbleSplit',
+            layout: 'splitHero',
+            fullBleed: false,
+            maxWidth: 'narrow',
+            paneSide: 'right'
+        });
+        await flush();
+        expect(split(el).classList.contains('tc-split-stacked')).toBe(true);
+        expect(split(el).classList.contains('tc-side-right')).toBe(false);
+    });
+});

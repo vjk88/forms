@@ -115,6 +115,12 @@ export default class FinalBrandDialog extends LightningElement {
     get previewMaxWidth() {
         return this._previewSettings.maxWidth;
     }
+    get previewPaneSide() {
+        return (this._previewSettings.options || {}).side;
+    }
+    get previewPaneRatio() {
+        return (this._previewSettings.options || {}).ratio;
+    }
     /** The form's current logo, if any: the logo option then REPLACES it. */
     @api currentLogoUrl = '';
     /** The header arrangement ('textOnly' shows no logo). */

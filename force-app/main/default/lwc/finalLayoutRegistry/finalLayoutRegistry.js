@@ -281,6 +281,11 @@ export function previewSettings(formLayout, type, paneFlow) {
 const PREVIEW_SCREEN = 1280;
 const SPLIT_FORM_PADDING = 48;
 const OAAT_COLUMN = 640;
+// A carded split sits in the page frame's panel (2 × --c-space-6 of padding)
+// and stacks its brand pane on top at 540px or less (finalNavSplitHero
+// @container split).
+const PANEL_PADDING = 64;
+const SPLIT_STACKS_AT = 540;
 
 const share = (part, whole) =>
     `${Math.round(Math.min(100, (part / whole) * 100) * 10) / 10}%`;
@@ -294,16 +299,23 @@ const share = (part, whole) =>
  *          on One at a time, of the form column on a full-bleed Split
  *   form   (full-bleed Split only) the form column's width; the brand pane
  *          takes the rest
+ *   pane   (carded Split only) the brand pane's share of the card: Pane
+ *          width Half or Third (`ratio`); full-bleed ignores the ratio, as
+ *          the real split does
+ *   stacked (carded Split only) the card is too narrow for two halves: the
+ *          brand pane sits on top as a strip
  */
-export function previewGeometry(type, fullBleed, maxWidth) {
+export function previewGeometry(type, fullBleed, maxWidth, ratio) {
     const bleed = Boolean(getLayout(type).bleed) && fullBleed !== false;
     if (!bleed) {
         const cap = MAX_WIDTHS[maxWidth] || MAX_WIDTHS.medium;
-        return {
-            bleed,
-            card:
-                cap === 'none' ? '100%' : share(parseFloat(cap), PREVIEW_SCREEN)
-        };
+        const capPx = cap === 'none' ? PREVIEW_SCREEN : parseFloat(cap);
+        const carded = { bleed, card: share(capPx, PREVIEW_SCREEN) };
+        if (type === 'splitHero') {
+            carded.pane = ratio === 'third' ? '33.3%' : '50%';
+            carded.stacked = capPx - PANEL_PADDING <= SPLIT_STACKS_AT;
+        }
+        return carded;
     }
     const cap = BLEED_MAX_WIDTHS[maxWidth];
     const full = cap === '100%';

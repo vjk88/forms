@@ -143,6 +143,12 @@ export default class FinalGalleryPicker extends LightningElement {
     get currentMaxWidth() {
         return this._currentSettings.maxWidth;
     }
+    get currentPaneSide() {
+        return (this._currentSettings.options || {}).side;
+    }
+    get currentPaneRatio() {
+        return (this._currentSettings.options || {}).ratio;
+    }
 
     get layoutGroups() {
         const flow = this.paneFlow || '';
@@ -164,6 +170,8 @@ export default class FinalGalleryPicker extends LightningElement {
                     name: c.name,
                     fullBleed: (settings.options || {}).fullBleed,
                     maxWidth: settings.maxWidth,
+                    paneSide: (settings.options || {}).side,
+                    paneRatio: (settings.options || {}).ratio,
                     selected:
                         c.layout === this.layout && (c.paneFlow || '') === flow
                 };

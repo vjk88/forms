@@ -147,6 +147,42 @@
     overflow: hidden;
     box-shadow: var(--c-content-shadow, 0 1px 3px rgba(0, 0, 0, 0.12));
 }
+/* the card beside the rail / brand pane fills what is left: the split
+   already sits at the form's width share */
+.lt-split > .lt-card {
+    width: auto;
+    flex: 1 1 auto;
+}
+/* Split hero: the brand pane takes Pane width's share (--pv-pane: Half 50%,
+   Third 33%); Pane side Right mirrors it */
+.lt-split-hero .lt-panel {
+    width: var(--pv-pane, 50%);
+}
+.lt-side-right {
+    flex-direction: row-reverse;
+}
+.lt-side-right > .lt-card.flush {
+    border-radius: calc(var(--c-radius, 8px) * 0.75) 0 0
+        calc(var(--c-radius, 8px) * 0.75);
+    border-left: var(--c-content-border, 1px solid #e5e7eb);
+    border-right: none;
+}
+/* too narrow for two halves (Narrow, carded): the brand pane becomes a strip
+   on top, as the real split stacks under 540px */
+.lt-split-stacked {
+    flex-direction: column;
+}
+.lt-split-stacked .lt-panel {
+    width: auto;
+    height: 26%;
+    padding: 0 8px;
+}
+.lt-split-stacked > .lt-card.flush {
+    border-radius: 0 0 calc(var(--c-radius, 8px) * 0.75)
+        calc(var(--c-radius, 8px) * 0.75);
+    border-left: var(--c-content-border, 1px solid #e5e7eb);
+    border-top: none;
+}
 .lt-panel {
     width: 42%;
     flex: none;
@@ -303,12 +339,19 @@
     border-radius: 0;
     box-shadow: none;
 }
+.lt-split-bleed.lt-side-right {
+    grid-template-columns: var(--pv-form, 50%) 1fr;
+}
+.lt-split-bleed.lt-side-right .lt-panel {
+    order: 2;
+}
 .lt-split-bleed .lt-panel {
     width: auto;
 }
-.lt-float {
+.lt-split-bleed > .lt-float {
     justify-self: center;
     align-self: center;
+    width: var(--pv-card, 100%);
     height: auto;
     min-height: 60%;
 }

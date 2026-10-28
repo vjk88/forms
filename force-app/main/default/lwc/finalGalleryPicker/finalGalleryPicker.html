@@ -61,6 +61,8 @@
                                 pane-flow={paneFlow}
                                 full-bleed={currentFullBleed}
                                 max-width={currentMaxWidth}
+                                pane-side={currentPaneSide}
+                                pane-ratio={currentPaneRatio}
                                 selected={t.selected}
                                 onselect={handleCustomTheme}
                             ></c-final-theme-card>
@@ -86,6 +88,8 @@
                                     label={l.name}
                                     full-bleed={l.fullBleed}
                                     max-width={l.maxWidth}
+                                    pane-side={l.paneSide}
+                                    pane-ratio={l.paneRatio}
                                     selected={l.selected}
                                     onselect={handleLayout}
                                 ></c-final-layout-card>

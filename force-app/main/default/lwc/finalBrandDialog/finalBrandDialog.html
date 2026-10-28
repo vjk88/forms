@@ -224,6 +224,7 @@
                                     label={s.label}
                                     description={s.hint}
                                     layout="scroll"
+                                    max-width="full"
                                     accent-sample={yes}
                                     selected={s.selected}
                                     onselect={handleStyle}
@@ -288,6 +289,8 @@
                         pane-flow={paneFlow}
                         full-bleed={previewFullBleed}
                         max-width={previewMaxWidth}
+                        pane-side={previewPaneSide}
+                        pane-ratio={previewPaneRatio}
                         picture={yes}
                         accent-sample={yes}
                     ></c-final-theme-card>

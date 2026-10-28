@@ -49,9 +49,17 @@ export default class FinalLayoutCard extends LightningElement {
      */
     @api fullBleed;
     @api maxWidth;
+    /** Split's Pane side ('left' | 'right') and Pane width ('half' | 'third'). */
+    @api paneSide;
+    @api paneRatio;
 
     get _geometry() {
-        return previewGeometry(this.layout, this.fullBleed, this.maxWidth);
+        return previewGeometry(
+            this.layout,
+            this.fullBleed,
+            this.maxWidth,
+            this.paneRatio
+        );
     }
     get _bleed() {
         return this._geometry.bleed;
@@ -82,7 +90,7 @@ export default class FinalLayoutCard extends LightningElement {
      */
     get tokenStyle() {
         const g = this._geometry;
-        const where = `--pv-card: ${g.card}; --pv-form: ${g.form || '50%'};`;
+        const where = `--pv-card: ${g.card}; --pv-form: ${g.form || '50%'}; --pv-pane: ${g.pane || '50%'};`;
         try {
             return `${tokensToStyle(
                 localizeAssetUrls(resolveTokens(getBuiltinTheme(this.themeKey)))
@@ -97,9 +105,22 @@ export default class FinalLayoutCard extends LightningElement {
             ? 'lt-stage lt-stage-bleed'
             : 'lt-stage';
     }
-    /** Split: one card holding both halves, or (full-bleed) halves that touch. */
+    /**
+     * Split: one card holding both halves, a narrow card with the brand pane
+     * stacked on top, or (full-bleed) halves that touch. Pane side Right
+     * mirrors it.
+     */
     get splitClass() {
-        return this._bleed ? 'lt-split lt-split-bleed' : 'lt-split';
+        const g = this._geometry;
+        let cls = g.bleed
+            ? 'lt-split lt-split-bleed'
+            : 'lt-split lt-split-hero';
+        if (g.stacked) {
+            cls += ' lt-split-stacked';
+        } else if (this.paneSide === 'right') {
+            cls += ' lt-side-right';
+        }
+        return cls;
     }
     get splitCardClass() {
         return this._bleed ? 'lt-card lt-float' : 'lt-card flush';

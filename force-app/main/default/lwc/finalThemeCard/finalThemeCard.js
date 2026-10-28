@@ -54,6 +54,9 @@ export default class FinalThemeCard extends LightningElement {
      */
     @api fullBleed;
     @api maxWidth;
+    /** Split's Pane side ('left' | 'right') and Pane width ('half' | 'third'). */
+    @api paneSide;
+    @api paneRatio;
     @api selected = false;
     /**
      * A picture, not a control (the brand dialog's live preview): no button
@@ -95,7 +98,12 @@ export default class FinalThemeCard extends LightningElement {
     }
 
     get _geometry() {
-        return previewGeometry(this.layout, this.fullBleed, this.maxWidth);
+        return previewGeometry(
+            this.layout,
+            this.fullBleed,
+            this.maxWidth,
+            this.paneRatio
+        );
     }
 
     /** The open page (One at a time, full-bleed): text and focus sit on it. */
@@ -110,7 +118,7 @@ export default class FinalThemeCard extends LightningElement {
      */
     get tokenStyle() {
         const g = this._geometry;
-        const where = `--pv-card: ${g.card}; --pv-form: ${g.form || '50%'};`;
+        const where = `--pv-card: ${g.card}; --pv-form: ${g.form || '50%'}; --pv-pane: ${g.pane || '50%'};`;
         try {
             let tokens = localizeAssetUrls(resolveTokens(this._theme));
             if (this._openPage) {
@@ -131,11 +139,20 @@ export default class FinalThemeCard extends LightningElement {
             ? 'tc-stage tc-stage-bleed'
             : 'tc-stage';
     }
-    /** Split: a card holding both halves, or (full-bleed) halves that touch. */
+    /**
+     * Split: a card holding both halves, a narrow card with the brand pane
+     * stacked on top, or (full-bleed) halves that touch. Pane side Right
+     * mirrors it.
+     */
     get splitClass() {
-        return this._geometry.bleed
-            ? 'tc-split tc-split-bleed'
-            : 'tc-card tc-split';
+        const g = this._geometry;
+        let cls = g.bleed ? 'tc-split tc-split-bleed' : 'tc-card tc-split';
+        if (g.stacked) {
+            cls += ' tc-split-stacked';
+        } else if (this.paneSide === 'right') {
+            cls += ' tc-side-right';
+        }
+        return cls;
     }
     /** Full-bleed Split: the fields float as a card in the form column. */
     get splitBodyClass() {

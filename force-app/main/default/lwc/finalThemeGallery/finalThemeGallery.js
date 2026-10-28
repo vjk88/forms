@@ -102,6 +102,12 @@ export default class FinalThemeGallery extends LightningElement {
     get previewMaxWidth() {
         return this._shownSettings.maxWidth;
     }
+    get previewPaneSide() {
+        return (this._shownSettings.options || {}).side;
+    }
+    get previewPaneRatio() {
+        return (this._shownSettings.options || {}).ratio;
+    }
 
     get layoutChips() {
         return LAYOUTS.map((l) => ({

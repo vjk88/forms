@@ -55,7 +55,9 @@ describe('c-final-layout-card: real full-bleed and width', () => {
         });
         expect(el.shadowRoot.querySelector('.lt-split-bleed')).not.toBeNull();
         expect(el.shadowRoot.querySelector('.lt-float')).not.toBeNull();
-        expect(el.shadowRoot.querySelector('.lt-stage.lt-stage-bleed')).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.lt-stage.lt-stage-bleed')
+        ).not.toBeNull();
     });
 
     it('Conversational Split follows the same settings', async () => {
@@ -66,7 +68,9 @@ describe('c-final-layout-card: real full-bleed and width', () => {
             fullBleed: false
         });
         expect(el.shadowRoot.querySelector('.lt-split-bleed')).toBeNull();
-        expect(el.shadowRoot.querySelector('.lt-card.lt-center-v')).not.toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.lt-card.lt-center-v')
+        ).not.toBeNull();
     });
 
     it('One at a time: open page unless full-bleed is off', async () => {
@@ -74,12 +78,46 @@ describe('c-final-layout-card: real full-bleed and width', () => {
             layout: 'oneAtATime',
             themeKey: 'sandstone'
         });
-        expect(open.shadowRoot.querySelector('.lt-card.lt-open')).not.toBeNull();
+        expect(
+            open.shadowRoot.querySelector('.lt-card.lt-open')
+        ).not.toBeNull();
         const carded = await mount({
             layout: 'oneAtATime',
             themeKey: 'sandstone',
             fullBleed: false
         });
         expect(carded.shadowRoot.querySelector('.lt-card.lt-open')).toBeNull();
+    });
+});
+
+describe('c-final-layout-card: Pane side, Pane width, stacking (PR 413 review)', () => {
+    it('a carded Split marks itself for the pane share and mirrors on Right', async () => {
+        const el = await mount({
+            layout: 'splitHero',
+            themeKey: 'desertOasis',
+            fullBleed: false,
+            maxWidth: 'wide',
+            paneSide: 'right',
+            paneRatio: 'third'
+        });
+        const split = el.shadowRoot.querySelector('.lt-split');
+        expect(split.classList.contains('lt-split-hero')).toBe(true);
+        expect(split.classList.contains('lt-side-right')).toBe(true);
+        expect(style(el)).toContain('--pv-pane: 33.3%');
+    });
+
+    it('a Narrow carded Split stacks', async () => {
+        const el = await mount({
+            layout: 'splitHero',
+            themeKey: 'desertOasis',
+            fullBleed: false,
+            maxWidth: 'narrow'
+        });
+        expect(el.shadowRoot.querySelector('.lt-split-stacked')).not.toBeNull();
+    });
+
+    it('Side Nav is not a split hero: no pane share class', async () => {
+        const el = await mount({ layout: 'rail', themeKey: 'nordic' });
+        expect(el.shadowRoot.querySelector('.lt-split-hero')).toBeNull();
     });
 });
