@@ -42,7 +42,9 @@
 .lt-stage {
     height: 150px;
     width: 100%;
-    padding: 12px;
+    /* a desktop page: the form sits at its real width share (--pv-card,
+       c/finalLayoutRegistry previewGeometry) */
+    padding: 12px 6px;
     box-sizing: border-box;
     overflow: hidden;
     display: flex;
@@ -56,7 +58,7 @@
 
 /* ---- Card (the form body) ---- */
 .lt-card {
-    width: 100%;
+    width: var(--pv-card, 100%);
     height: 100%;
     padding: 9px 10px;
     box-sizing: border-box;
@@ -77,12 +79,19 @@
         calc(var(--c-radius, 8px) * 0.75) 0;
     border-left: none;
 }
-.lt-card.center {
-    width: 76%;
+.lt-card.lt-center {
     height: auto;
     justify-content: center;
 }
-.lt-card.center-v {
+/* One at a time, full-bleed: the open page, no card around the question */
+.lt-card.lt-open {
+    background: var(--c-page-backing, transparent);
+    border: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+.lt-card.lt-center-v {
     justify-content: center;
 }
 .lt-card.pad0 {
@@ -132,11 +141,47 @@
 /* ---- Split (splitHero) / rail two-pane ---- */
 .lt-split {
     display: flex;
-    width: 100%;
+    width: var(--pv-card, 100%);
     height: 100%;
     border-radius: calc(var(--c-radius, 8px) * 0.75);
     overflow: hidden;
     box-shadow: var(--c-content-shadow, 0 1px 3px rgba(0, 0, 0, 0.12));
+}
+/* the card beside the rail / brand pane fills what is left: the split
+   already sits at the form's width share */
+.lt-split > .lt-card {
+    width: auto;
+    flex: 1 1 auto;
+}
+/* Split hero: the brand pane takes Pane width's share (--pv-pane: Half 50%,
+   Third 33%); Pane side Right mirrors it */
+.lt-split-hero .lt-panel {
+    width: var(--pv-pane, 50%);
+}
+.lt-side-right {
+    flex-direction: row-reverse;
+}
+.lt-side-right > .lt-card.flush {
+    border-radius: calc(var(--c-radius, 8px) * 0.75) 0 0
+        calc(var(--c-radius, 8px) * 0.75);
+    border-left: var(--c-content-border, 1px solid #e5e7eb);
+    border-right: none;
+}
+/* too narrow for two halves (Narrow, carded): the brand pane becomes a strip
+   on top, as the real split stacks under 540px */
+.lt-split-stacked {
+    flex-direction: column;
+}
+.lt-split-stacked .lt-panel {
+    width: auto;
+    height: 26%;
+    padding: 0 8px;
+}
+.lt-split-stacked > .lt-card.flush {
+    border-radius: 0 0 calc(var(--c-radius, 8px) * 0.75)
+        calc(var(--c-radius, 8px) * 0.75);
+    border-left: var(--c-content-border, 1px solid #e5e7eb);
+    border-top: none;
 }
 .lt-panel {
     width: 42%;
@@ -280,4 +325,33 @@
     margin: 3px 0 0;
     font-size: 0.75rem;
     color: var(--c-studio-text-weak);
+}
+
+/* ---- Split, full-bleed: the halves own the page and touch; the form
+        column (--pv-form) holds a floating card ---- */
+.lt-stage.lt-stage-bleed {
+    padding: 0;
+}
+.lt-split-bleed {
+    display: grid;
+    grid-template-columns: 1fr var(--pv-form, 50%);
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+}
+.lt-split-bleed.lt-side-right {
+    grid-template-columns: var(--pv-form, 50%) 1fr;
+}
+.lt-split-bleed.lt-side-right .lt-panel {
+    order: 2;
+}
+.lt-split-bleed .lt-panel {
+    width: auto;
+}
+.lt-split-bleed > .lt-float {
+    justify-self: center;
+    align-self: center;
+    width: var(--pv-card, 100%);
+    height: auto;
+    min-height: 60%;
 }

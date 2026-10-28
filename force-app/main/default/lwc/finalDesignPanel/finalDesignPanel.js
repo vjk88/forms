@@ -331,6 +331,11 @@ export default class FinalDesignPanel extends LightningElement {
         return (this._spec.layout && this._spec.layout.type) || 'scroll';
     }
 
+    /** The form's layout block, for the pickers' previews ({} = all unset). */
+    get formLayout() {
+        return this._spec.layout || { type: this.layoutType, options: {} };
+    }
+
     get layoutInfo() {
         return getLayout(this.layoutType);
     }

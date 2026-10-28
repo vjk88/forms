@@ -2,6 +2,7 @@ import { LightningElement, api } from 'lwc';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import { resolveTokens, tokensToStyle } from 'c/finalThemeEngine';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
+import { previewGeometry } from 'c/finalLayoutRegistry';
 
 /**
  * finalLayoutCard — one layout choice in the creation flow's step 1.
@@ -41,6 +42,28 @@ export default class FinalLayoutCard extends LightningElement {
     @api label;
     @api description;
     @api selected = false;
+    /**
+     * The form's Immersive full-bleed and Max content width for THIS layout
+     * (c/finalLayoutRegistry previewSettings): the mockup draws them
+     * (previewGeometry). Unset means what it means on a form.
+     */
+    @api fullBleed;
+    @api maxWidth;
+    /** Split's Pane side ('left' | 'right') and Pane width ('half' | 'third'). */
+    @api paneSide;
+    @api paneRatio;
+
+    get _geometry() {
+        return previewGeometry(
+            this.layout,
+            this.fullBleed,
+            this.maxWidth,
+            this.paneRatio
+        );
+    }
+    get _bleed() {
+        return this._geometry.bleed;
+    }
 
     get isSplitOne() {
         return this.layout === 'splitHero' && this.paneFlow === 'oneAtATime';
@@ -61,15 +84,56 @@ export default class FinalLayoutCard extends LightningElement {
         return this.selected ? 'true' : 'false';
     }
 
-    /** The mockup rides the representative theme's full token contract. */
+    /**
+     * The mockup rides the representative theme's full token contract, plus
+     * where the form sits (--pv-card, --pv-form).
+     */
     get tokenStyle() {
+        const g = this._geometry;
+        const where = `--pv-card: ${g.card}; --pv-form: ${g.form || '50%'}; --pv-pane: ${g.pane || '50%'};`;
         try {
-            return tokensToStyle(
+            return `${tokensToStyle(
                 localizeAssetUrls(resolveTokens(getBuiltinTheme(this.themeKey)))
-            );
+            )}; ${where}`;
         } catch {
-            return '';
+            return where;
         }
+    }
+
+    get stageClass() {
+        return (this.isSplit || this.isSplitOne) && this._bleed
+            ? 'lt-stage lt-stage-bleed'
+            : 'lt-stage';
+    }
+    /**
+     * Split: one card holding both halves, a narrow card with the brand pane
+     * stacked on top, or (full-bleed) halves that touch. Pane side Right
+     * mirrors it.
+     */
+    get splitClass() {
+        const g = this._geometry;
+        let cls = g.bleed
+            ? 'lt-split lt-split-bleed'
+            : 'lt-split lt-split-hero';
+        if (g.stacked) {
+            cls += ' lt-split-stacked';
+        } else if (this.paneSide === 'right') {
+            cls += ' lt-side-right';
+        }
+        return cls;
+    }
+    get splitCardClass() {
+        return this._bleed ? 'lt-card lt-float' : 'lt-card flush';
+    }
+    get splitOneCardClass() {
+        return `${this.splitCardClass} lt-center-v`;
+    }
+    /**
+     * One at a time: the open page (no card) or a carded page. Classes carry
+     * the lt- prefix: Lightning's global .center / .open leak into the card.
+     */
+    get oneClass() {
+        return this._bleed ? 'lt-card lt-center lt-open' : 'lt-card lt-center';
     }
 
     get isScroll() {

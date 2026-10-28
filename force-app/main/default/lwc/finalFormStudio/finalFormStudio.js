@@ -3242,6 +3242,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         );
     }
 
+    /** The form's layout block: the brand preview draws its width and bleed. */
+    get brandFormLayout() {
+        return (this.spec && this.spec.layout) || null;
+    }
+
     get brandPaneFlow() {
         const o =
             (this.spec && this.spec.layout && this.spec.layout.options) || {};

@@ -6,6 +6,13 @@ import createFreeformFromTemplate from '@salesforce/apex/FinalFormCreateControll
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
 import { LAYOUT_GROUPS } from 'c/finalLayoutCards';
+import { newLayoutDefaults } from 'c/finalLayoutRegistry';
+
+// A new survey's layout block, as createSurveyFromTemplate writes it
+const SURVEY_LAYOUT = Object.freeze({
+    type: 'oneAtATime',
+    options: Object.freeze({})
+});
 import { studioUrl } from 'c/finalStudioLink';
 
 /**
@@ -307,19 +314,25 @@ export default class FinalCreationGallery extends LightningElement {
             id: g.id,
             title: g.title,
             hint: g.hint,
-            cards: g.cards.map((c) => ({
-                key: cardKey(c),
-                layout: c.layout,
-                paneFlow: c.paneFlow || '',
-                themeKey: c.themeKey,
-                name: `${c.name} layout`,
-                description:
-                    c.description ||
-                    `Start from the ${c.name} layout with an empty form.`,
-                selected:
-                    c.layout === this.chosenLayout &&
-                    (c.paneFlow || '') === this.chosenPaneFlow
-            }))
+            cards: g.cards.map((c) => {
+                // each preview draws the layout as a new form starts it
+                const start = newLayoutDefaults(c.layout, c.paneFlow || '');
+                return {
+                    key: cardKey(c),
+                    layout: c.layout,
+                    paneFlow: c.paneFlow || '',
+                    themeKey: c.themeKey,
+                    name: `${c.name} layout`,
+                    description:
+                        c.description ||
+                        `Start from the ${c.name} layout with an empty form.`,
+                    fullBleed: start.options.fullBleed,
+                    maxWidth: start.maxWidth,
+                    selected:
+                        c.layout === this.chosenLayout &&
+                        (c.paneFlow || '') === this.chosenPaneFlow
+                };
+            })
         }));
     }
 
@@ -366,6 +379,13 @@ export default class FinalCreationGallery extends LightningElement {
     }
     get themeGalleryPaneFlow() {
         return this.isSurveyType ? '' : this.chosenPaneFlow;
+    }
+    /**
+     * What the theme previews draw: a survey's template writes One at a time
+     * with nothing set; any other new form starts as newLayoutDefaults (null).
+     */
+    get themeGalleryFormLayout() {
+        return this.isSurveyType ? SURVEY_LAYOUT : null;
     }
     get themeSub() {
         return this.isSurveyType

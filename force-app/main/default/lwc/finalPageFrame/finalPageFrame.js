@@ -13,7 +13,9 @@ import { LightningElement, api } from 'lwc';
  */
 
 // Structure, not appearance — layout owns max-width (spec `layout.maxWidth`).
-const MAX_WIDTHS = {
+// Exported for the picker previews (c/finalLayoutRegistry previewGeometry),
+// which draw a form at its real width share.
+export const MAX_WIDTHS = {
     narrow: '560px',
     medium: '760px',
     wide: '1040px',
@@ -27,7 +29,7 @@ const MAX_WIDTHS = {
 // Unset = no var = each layout keeps its own default (oneAtATime: locked 540px
 // card; splitHero: proportional — 90% of the pane, 480px floor, owner
 // 2026-07-11 "scale with screen").
-const BLEED_MAX_WIDTHS = {
+export const BLEED_MAX_WIDTHS = {
     narrow: '480px',
     medium: '560px',
     wide: '680px',

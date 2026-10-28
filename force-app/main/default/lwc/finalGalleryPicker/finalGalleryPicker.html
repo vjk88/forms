@@ -36,6 +36,7 @@
                 <c-final-theme-gallery
                     layout={layout}
                     pane-flow={paneFlow}
+                    form-layout={formLayout}
                     selected-theme-key={builtinSelectedKey}
                     onthemeselect={handleBuiltinTheme}
                 ></c-final-theme-gallery>
@@ -58,6 +59,10 @@
                                 description="Custom theme"
                                 layout={layout}
                                 pane-flow={paneFlow}
+                                full-bleed={currentFullBleed}
+                                max-width={currentMaxWidth}
+                                pane-side={currentPaneSide}
+                                pane-ratio={currentPaneRatio}
                                 selected={t.selected}
                                 onselect={handleCustomTheme}
                             ></c-final-theme-card>
@@ -81,6 +86,10 @@
                                     pane-flow={l.paneFlow}
                                     theme-key={l.themeKey}
                                     label={l.name}
+                                    full-bleed={l.fullBleed}
+                                    max-width={l.maxWidth}
+                                    pane-side={l.paneSide}
+                                    pane-ratio={l.paneRatio}
                                     selected={l.selected}
                                     onselect={handleLayout}
                                 ></c-final-layout-card>

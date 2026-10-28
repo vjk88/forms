@@ -176,3 +176,89 @@ describe('c-final-gallery-picker: brand themes (B2)', () => {
         );
     });
 });
+
+// IMPL_PLAN_SPLIT_DEFAULTS_AND_PREVIEW §3: previews follow the form
+describe('c-final-gallery-picker: previews follow the form', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+    const formLayout = {
+        type: 'splitHero',
+        options: {},
+        maxWidth: 'narrow'
+    };
+    const layoutCards = (el) => [
+        ...el.shadowRoot.querySelectorAll('c-final-layout-card')
+    ];
+
+    it('layout mode: the current card draws the form, others what a switch gives', async () => {
+        const el = mount({ mode: 'layout', layout: 'splitHero', formLayout });
+        await flush();
+        const split = layoutCards(el).find(
+            (c) => c.layout === 'splitHero' && !c.paneFlow
+        );
+        expect(split.fullBleed).toBeUndefined();
+        expect(split.maxWidth).toBe('narrow');
+        const tabs = layoutCards(el).find((c) => c.layout === 'tabs');
+        expect(tabs.maxWidth).toBe('narrow');
+        expect(tabs.fullBleed).toBeUndefined();
+    });
+
+    it('layout mode from a Scroll form: the Split card draws carded and Wide', async () => {
+        const el = mount({
+            mode: 'layout',
+            layout: 'scroll',
+            formLayout: { type: 'scroll', options: {}, maxWidth: 'medium' }
+        });
+        await flush();
+        const split = layoutCards(el).find(
+            (c) => c.layout === 'splitHero' && !c.paneFlow
+        );
+        expect(split.fullBleed).toBe(false);
+        expect(split.maxWidth).toBe('wide');
+    });
+
+    it('theme mode: the gallery and custom cards get the form', async () => {
+        const el = mount({
+            mode: 'theme',
+            layout: 'splitHero',
+            formLayout,
+            customThemes: [{ id: 'a0A1', name: 'Brand', baseTheme: 'nordic' }]
+        });
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-theme-gallery').formLayout
+        ).toEqual(formLayout);
+        const custom = el.shadowRoot.querySelector('c-final-theme-card');
+        expect(custom.maxWidth).toBe('narrow');
+        expect(custom.fullBleed).toBeUndefined();
+    });
+});
+
+describe('c-final-gallery-picker: pane options reach the previews (PR 413 review)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it("the form's Pane side and Pane width reach its layout card", async () => {
+        const el = mount({
+            mode: 'layout',
+            layout: 'splitHero',
+            formLayout: {
+                type: 'splitHero',
+                options: { side: 'right', ratio: 'third', fullBleed: false },
+                maxWidth: 'wide'
+            }
+        });
+        await flush();
+        const split = [
+            ...el.shadowRoot.querySelectorAll('c-final-layout-card')
+        ].find((c) => c.layout === 'splitHero' && !c.paneFlow);
+        expect(split.paneSide).toBe('right');
+        expect(split.paneRatio).toBe('third');
+    });
+});

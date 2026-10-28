@@ -38,7 +38,9 @@
     background-image: var(--c-page-bg-image, none);
     background-size: var(--c-page-bg-size, cover);
     background-position: var(--c-page-bg-position, center);
-    padding: 18px;
+    /* the preview stands for a desktop page: the form sits at its real width
+       share (--pv-card, c/finalLayoutRegistry previewGeometry) */
+    padding: 18px 8px;
     min-height: 190px;
     display: flex;
     align-items: center;
@@ -47,8 +49,7 @@
 }
 
 .tc-card {
-    width: 100%;
-    max-width: 260px;
+    width: var(--pv-card, 100%);
     /* the card a form really draws (text plan §4.4 card backing) */
     background: var(--c-card-backing, var(--c-content-bg, #ffffff));
     border: var(--c-content-border, 1px solid #e5e7eb);
@@ -78,6 +79,16 @@
 .tc-strip {
     padding: 0;
     height: 10px;
+}
+/* on the open page the header band spans the whole page, not the column */
+.tc-stage {
+    position: relative;
+}
+.tc-open .tc-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
 }
 
 .tc-banner .tc-h {
@@ -269,9 +280,15 @@
     background: var(--c-accent, #6366f1);
 }
 
-/* Single (oneAtATime) — floating question card on the page bg */
-.tc-floating {
-    max-width: 210px;
+/* One at a time, full-bleed: the open page, with no card around the
+   question (only the page backing a photo page draws behind it) */
+.tc-open {
+    background: var(--c-page-backing, transparent);
+    border: none;
+    border-radius: var(--c-page-backing-radius, 0);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 .tc-body-center {
     justify-content: center;
@@ -292,10 +309,48 @@
     background: var(--c-accent, #6366f1);
 }
 
-/* Split */
+/* Split: the brand pane takes Pane width's share (--pv-pane: Half 50%,
+   Third 33%); Pane side Right puts it on the right */
 .tc-split {
     display: grid;
-    grid-template-columns: 42% 58%;
+    grid-template-columns: var(--pv-pane, 50%) 1fr;
+}
+.tc-split.tc-side-right {
+    grid-template-columns: 1fr var(--pv-pane, 50%);
+}
+.tc-side-right .tc-rail {
+    order: 2;
+}
+
+/* Split too narrow for two halves (Narrow, carded): the brand pane becomes
+   a strip on top, as the real split stacks under 540px */
+.tc-split-stacked {
+    display: flex;
+    flex-direction: column;
+}
+.tc-split-stacked .tc-rail {
+    padding: 8px 12px;
+}
+
+/* Split, full-bleed: the halves own the whole page and touch; the form
+   column (--pv-form) holds the fields as a floating card. Full-bleed has no
+   Pane width: the real split ignores it there. */
+.tc-stage-bleed {
+    padding: 0;
+    align-items: stretch;
+}
+.tc-split-bleed {
+    width: 100%;
+    grid-template-columns: 1fr var(--pv-form, 50%);
+}
+.tc-split-bleed.tc-side-right {
+    grid-template-columns: var(--pv-form, 50%) 1fr;
+}
+.tc-split-bleed .tc-fields {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 6px;
 }
 
 .tc-rail {

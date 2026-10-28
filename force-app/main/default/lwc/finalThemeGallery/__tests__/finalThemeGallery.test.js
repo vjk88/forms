@@ -191,3 +191,32 @@ describe('c-final-theme-gallery: review follow-ups (PR 406)', () => {
         );
     });
 });
+
+// IMPL_PLAN_SPLIT_DEFAULTS_AND_PREVIEW §3
+describe('c-final-theme-gallery: previews follow the form', () => {
+    it('no form (new-form gallery): a new Split form starts carded and Wide', async () => {
+        const el = await mount({ layout: 'splitHero' });
+        expect(card(el, 'scenic').fullBleed).toBe(false);
+        expect(card(el, 'scenic').maxWidth).toBe('wide');
+    });
+
+    it('the form’s own settings for its layout', async () => {
+        const el = await mount({
+            layout: 'splitHero',
+            formLayout: { type: 'splitHero', options: {}, maxWidth: 'medium' }
+        });
+        expect(card(el, 'scenic').fullBleed).toBeUndefined();
+        expect(card(el, 'scenic').maxWidth).toBe('medium');
+    });
+
+    it('"Preview in" another layout draws what a switch would give', async () => {
+        const el = await mount({
+            layout: 'scroll',
+            formLayout: { type: 'scroll', options: {}, maxWidth: 'medium' }
+        });
+        el.shadowRoot.querySelector('.lchip[data-value="splitHero"]').click();
+        await flush();
+        expect(card(el, 'scenic').fullBleed).toBe(false);
+        expect(card(el, 'scenic').maxWidth).toBe('wide');
+    });
+});
