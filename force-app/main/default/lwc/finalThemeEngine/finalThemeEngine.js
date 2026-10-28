@@ -1107,6 +1107,10 @@ function computeReadableText({
             out[`--c-header-plate-outset${suffix}`] = scope.plate
                 ? PLATE_OUTSET
                 : '0';
+            // a plate hugs its text (the Split pane's blocks span the pane)
+            out[`--c-header-plate-fit${suffix}`] = scope.plate
+                ? 'fit-content'
+                : 'auto';
         }
     });
     if (!headerHasSurface && headerRoles.desc && !pal.headerTextWeak) {

@@ -187,6 +187,7 @@ export default class FinalNavSplitHero extends LightningElement {
             hdr('plate', 'plate', 'transparent') +
             hdr('plate-pad', 'plate-pad', '0') +
             hdr('plate-outset', 'plate-outset', '0') +
+            hdr('plate-fit', 'plate-fit', 'auto') +
             ' color: var(--hdr-text);'
         );
     }

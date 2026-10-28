@@ -123,6 +123,8 @@
 .pane-subtitle,
 .pane .progress-text,
 .pane .brand-wordmark {
+    width: var(--hdr-plate-fit, auto);
+    max-width: 100%;
     margin-inline: var(--hdr-plate-outset, 0);
     padding: var(--hdr-plate-pad, 0);
     background: var(--hdr-plate, transparent);
