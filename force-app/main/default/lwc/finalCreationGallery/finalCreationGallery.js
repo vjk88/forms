@@ -69,14 +69,38 @@ const SURVEY_TEMPLATES = [
     }
 ];
 
-/** The Freeform shelf (FREEFORM_SPEC D5). F1 ships one entry; the curated
- *  catalog arrives in F3. Unlike surveys, a freeform picks its layout. */
+/** The Freeform shelf (FREEFORM_SPEC D5). Unlike surveys, a freeform picks
+ *  its layout after selecting a template. */
 const FREEFORM_TEMPLATES = [
     {
         key: 'blank',
         name: 'Blank freeform',
         icon: 'utility:add',
         blurb: 'An empty canvas — ask anything, then decide later where the answers go in Salesforce.'
+    },
+    {
+        key: 'contact',
+        name: 'Contact Request',
+        icon: 'utility:email',
+        blurb: 'Collect a visitor’s details and what they need help with.'
+    },
+    {
+        key: 'eventRegistration',
+        name: 'Event Registration',
+        icon: 'utility:event',
+        blurb: 'Gather attendee details and registration preferences.'
+    },
+    {
+        key: 'support',
+        name: 'Support Request',
+        icon: 'utility:help',
+        blurb: 'Capture an issue and how to reach the requester.'
+    },
+    {
+        key: 'partner',
+        name: 'Partner Application',
+        icon: 'utility:groups',
+        blurb: 'Learn about an organization and its partnership goals.'
     }
 ];
 
@@ -357,7 +381,9 @@ export default class FinalCreationGallery extends LightningElement {
     get previewSpec() {
         const name = this.isSurveyType
             ? this.surveyName.trim() || this.chosenTemplateName
-            : this.formName.trim();
+            : this.isFreeformType
+              ? this.formName.trim() || this.chosenTemplateName
+              : this.formName.trim();
         const layout = this.isSurveyType ? 'oneAtATime' : this.chosenLayout;
         const paneFlow = this.isSurveyType ? '' : this.chosenPaneFlow;
         const key = `${this.formType}|${layout}|${paneFlow}|${this.chosenThemeKey}|${name}`;

@@ -49,10 +49,24 @@ function typeCard(el, name) {
 }
 
 /** template -> layout -> theme, leaving the details screen on screen. */
-async function walkToDetails(el) {
+async function walkToDetails(el, templateKey = 'blank') {
     typeCard(el, 'Freeform').click();
     await flush();
-    el.shadowRoot.querySelector('.tpl-grid .tpl-card').click();
+    const template = [
+        ...el.shadowRoot.querySelectorAll('.tpl-grid .tpl-card')
+    ].find(
+        (card) =>
+            card.getAttribute('key') === templateKey ||
+            card.textContent.includes(
+                {
+                    contact: 'Contact Request',
+                    eventRegistration: 'Event Registration',
+                    support: 'Support Request',
+                    partner: 'Partner Application'
+                }[templateKey] || 'Blank freeform'
+            )
+    );
+    template.click();
     await flush();
     el.shadowRoot
         .querySelector('c-final-layout-card')
@@ -81,8 +95,19 @@ describe('freeform creation path', () => {
         typeCard(el, 'Freeform').click();
         await flush();
         const cards = el.shadowRoot.querySelectorAll('.tpl-grid .tpl-card');
-        expect(cards.length).toBe(1);
+        expect(cards.length).toBe(5);
         expect(cards[0].textContent).toContain('Blank freeform');
+        expect([...cards].map((card) => card.textContent)).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining('Contact Request'),
+                expect.stringContaining('Event Registration'),
+                expect.stringContaining('Support Request'),
+                expect.stringContaining('Partner Application')
+            ])
+        );
+        expect(
+            [...cards].map((card) => card.textContent).join(' ')
+        ).not.toContain('CSAT Pulse');
     });
 
     it('goes template -> layout -> theme, unlike a survey', async () => {
@@ -132,6 +157,32 @@ describe('freeform creation path', () => {
         expect(created.mock.calls[0][0].detail).toEqual({
             formId: 'a05ff',
             versionId: 'a04ff'
+        });
+    });
+
+    it.each([
+        ['contact', 'Contact Request'],
+        ['eventRegistration', 'Event Registration'],
+        ['support', 'Support Request'],
+        ['partner', 'Partner Application']
+    ])('creates the %s template with its suggested name', async (key, name) => {
+        const el = await mount();
+        await walkToDetails(el, key);
+        expect(
+            el.shadowRoot.querySelector('.d-config .d-input').placeholder
+        ).toBe(name);
+        expect(
+            el.shadowRoot.querySelector('c-final-form-viewer').spec.header.title
+        ).toBe(name);
+        el.shadowRoot.querySelector('.cg-create').click();
+        await flush();
+
+        expect(createFreeformFromTemplate).toHaveBeenCalledWith({
+            templateKey: key,
+            formName: null,
+            themeName: 'nordic',
+            layoutType: 'stepper',
+            paneFlow: null
         });
     });
 

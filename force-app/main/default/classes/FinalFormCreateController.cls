@@ -444,7 +444,7 @@ public with sharing class FinalFormCreateController {
      * Freeform, and F2's mapping page will read that field's emptiness as
      * the truth it is.
      *
-     * @param templateKey blank (F1 ships one; the catalog arrives in F3)
+     * @param templateKey blank|contact|eventRegistration|support|partner
      * @param formName    optional - the template carries a default
      * @param themeName   optional builtin theme catalog key
      * @param layoutType  any layout key; defaults to scroll
@@ -459,7 +459,8 @@ public with sharing class FinalFormCreateController {
         String paneFlow
     ) {
         String key = String.isBlank(templateKey) ? 'blank' : templateKey;
-        if (key != 'blank') {
+        FreeformTemplate template = freeformTemplate(key);
+        if (template == null) {
             throw new AuraHandledException('Unknown freeform template.');
         }
         String layout = String.isBlank(layoutType) ? 'scroll' : layoutType;
@@ -473,7 +474,7 @@ public with sharing class FinalFormCreateController {
             resolvedPaneFlow = paneFlow;
         }
         String name = String.isBlank(formName)
-            ? 'Untitled Freeform'
+            ? template.name
             : formName.trim().abbreviate(80);
 
         Savepoint sp = Database.setSavepoint();
@@ -490,7 +491,8 @@ public with sharing class FinalFormCreateController {
                 name,
                 layout,
                 resolvedPaneFlow,
-                themeName
+                themeName,
+                template.pages
             );
             Form_Version__c version = new Form_Version__c(
                 Form__c = form.Id,
@@ -522,7 +524,8 @@ public with sharing class FinalFormCreateController {
         String name,
         String layout,
         String paneFlow,
-        String themeName
+        String themeName,
+        List<Object> pages
     ) {
         Map<String, Object> spec = new Map<String, Object>{
             'specVersion' => 1,
@@ -539,22 +542,16 @@ public with sharing class FinalFormCreateController {
             },
             'settings' => new Map<String, Object>(),
             'submit' => new Map<String, Object>{ 'label' => 'Submit' },
-            'pages' => new List<Object>{
-                new Map<String, Object>{
-                    'id' => 'pg_1',
-                    'name' => 'Questions',
-                    'sections' => new List<Object>{
-                        new Map<String, Object>{
-                            'id' => 'sec_1',
-                            'title' => name,
-                            'style' => 'card',
-                            'columns' => 1,
-                            'elements' => freeformStarterElements()
-                        }
-                    }
-                }
-            }
+            'pages' => pages
         };
+        if (
+            pages.size() == 1 &&
+            ((Map<String, Object>) pages[0]).get('id') == 'pg_1'
+        ) {
+            List<Object> sections = (List<Object>) ((Map<String, Object>) pages[0])
+                .get('sections');
+            ((Map<String, Object>) sections[0]).put('title', name);
+        }
         if (String.isNotBlank(themeName)) {
             spec.put(
                 'theme',
@@ -568,19 +565,257 @@ public with sharing class FinalFormCreateController {
     }
 
     /**
-     * What the Blank freeform opens with.
+     * A freeform starter's default name and editable question pages.
      *
      * Use surveyQuestion(id, type, label, config, analytics) to build each
      * one - Freeform passes null for analytics (no Topics, D4). Element ids
      * must start with 'el_' and stay unique; they are the permanent identity
      * an answer row stores.
      */
-    private static List<Object> freeformStarterElements() {
-        // Owner ruling 2026-09-19: NOTHING. Same as the Blank survey.
-        // Anything seeded here is something every author has to delete,
-        // and a seeded element id outlives the template - it would show up
-        // in answer rows and reports for forms that never wanted it.
-        return new List<Object>();
+    private class FreeformTemplate {
+        String name;
+        List<Object> pages;
+    }
+
+    /** Resolve a curated key to its default name and grouped questions. */
+    private static FreeformTemplate freeformTemplate(String key) {
+        FreeformTemplate result = new FreeformTemplate();
+        result.pages = new List<Object>();
+        if (key == 'blank') {
+            result.name = 'Untitled Freeform';
+            result.pages.add(
+                freeformPage('pg_1', 'Questions', new List<Object>())
+            );
+        } else if (key == 'contact') {
+            result.name = 'Contact Request';
+            result.pages.add(
+                freeformPage(
+                    'pg_contact',
+                    'Your details',
+                    new List<Object>{
+                        freeformQuestion(
+                            'el_contact_name',
+                            'Your name',
+                            'text',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_contact_email',
+                            'Email address',
+                            'email',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_contact_phone',
+                            'Phone number',
+                            'phone',
+                            false
+                        ),
+                        freeformQuestion(
+                            'el_contact_message',
+                            'How can we help?',
+                            'textarea',
+                            true
+                        )
+                    }
+                )
+            );
+        } else if (key == 'eventRegistration') {
+            result.name = 'Event Registration';
+            result.pages.add(
+                freeformPage(
+                    'pg_registration',
+                    'Attendee',
+                    new List<Object>{
+                        freeformQuestion(
+                            'el_registration_name',
+                            'Full name',
+                            'text',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_registration_email',
+                            'Email address',
+                            'email',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_registration_company',
+                            'Company or organization',
+                            'text',
+                            false
+                        )
+                    }
+                )
+            );
+            result.pages.add(
+                freeformPage(
+                    'pg_event_details',
+                    'Event details',
+                    new List<Object>{
+                        freeformQuestion(
+                            'el_registration_date',
+                            'Which date will you attend?',
+                            'date',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_registration_accessibility',
+                            'Accessibility or dietary requests',
+                            'textarea',
+                            false
+                        )
+                    }
+                )
+            );
+        } else if (key == 'support') {
+            result.name = 'Support Request';
+            result.pages.add(
+                freeformPage(
+                    'pg_support',
+                    'Request details',
+                    new List<Object>{
+                        freeformQuestion(
+                            'el_support_name',
+                            'Your name',
+                            'text',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_support_email',
+                            'Email address',
+                            'email',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_support_subject',
+                            'What do you need help with?',
+                            'text',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_support_description',
+                            'Describe the issue',
+                            'textarea',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_support_url',
+                            'Page or link related to the issue',
+                            'url',
+                            false
+                        )
+                    }
+                )
+            );
+        } else if (key == 'partner') {
+            result.name = 'Partner Application';
+            result.pages.add(
+                freeformPage(
+                    'pg_partner_company',
+                    'Organization',
+                    new List<Object>{
+                        freeformQuestion(
+                            'el_partner_company',
+                            'Organization name',
+                            'text',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_partner_website',
+                            'Website',
+                            'url',
+                            false
+                        ),
+                        freeformQuestion(
+                            'el_partner_contact',
+                            'Primary contact',
+                            'text',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_partner_email',
+                            'Work email',
+                            'email',
+                            true
+                        )
+                    }
+                )
+            );
+            result.pages.add(
+                freeformPage(
+                    'pg_partner_fit',
+                    'Partnership',
+                    new List<Object>{
+                        freeformQuestion(
+                            'el_partner_focus',
+                            'What would you like to partner on?',
+                            'textarea',
+                            true
+                        ),
+                        freeformQuestion(
+                            'el_partner_experience',
+                            'Relevant experience',
+                            'textarea',
+                            false
+                        )
+                    }
+                )
+            );
+        } else {
+            return null;
+        }
+        return result;
+    }
+
+    /** Build one unbound authoring page with a single card section. */
+    private static Map<String, Object> freeformPage(
+        String id,
+        String title,
+        List<Object> elements
+    ) {
+        return new Map<String, Object>{
+            'id' => id,
+            'name' => title,
+            'sections' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => id.replace('pg_', 'sec_'),
+                    'title' => title,
+                    'style' => 'card',
+                    'columns' => 1,
+                    'elements' => elements
+                }
+            }
+        };
+    }
+
+    /** Build a supported general-input question and its required validator. */
+    private static Map<String, Object> freeformQuestion(
+        String id,
+        String label,
+        String inputType,
+        Boolean required
+    ) {
+        Map<String, Object> question = surveyQuestion(
+            id,
+            'field',
+            label,
+            new Map<String, Object>{ 'inputType' => inputType },
+            null
+        );
+        question.put('required', required);
+        if (required) {
+            question.put(
+                'validation',
+                new List<Object>{
+                    new Map<String, Object>{
+                        'type' => 'required',
+                        'message' => 'This field is required.'
+                    }
+                }
+            );
+        }
+        return question;
     }
 
     private class SurveyTemplate {
