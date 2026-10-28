@@ -57,6 +57,10 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-header-plate-banner',
     '--c-header-plate-pad-banner',
     '--c-header-plate-radius',
+    '--c-header-plate-outset',
+    '--c-header-plate-outset-page',
+    '--c-header-plate-outset-banner',
+    '--c-pane-text-fade',
     '--c-header-text-src',
     '--c-header-text-weak-src'
 ];

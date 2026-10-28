@@ -148,7 +148,9 @@ describe('header: colours, authors and old forms', () => {
     it("Dracula's description gets the readable muted colour", () => {
         const t = resolve('dracula');
         expect(BEFORE.themes.dracula['--c-header-text-weak']).toBe('#6272a4');
-        expect(t['--c-header-text-weak']).toBe('#8692b7');
+        // a plain header uses the same readable muted colour as the body
+        expect(t['--c-header-text-weak']).toBe(t['--c-text-weak']);
+        expect(t['--c-header-text-weak']).toBe('#adb5cb');
     });
 
     it("an author's own header colours are never moved", () => {

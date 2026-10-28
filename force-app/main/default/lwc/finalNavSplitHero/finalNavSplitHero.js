@@ -163,13 +163,31 @@ export default class FinalNavSplitHero extends LightningElement {
         const photo = this.paneBannerStyle
             ? 'none'
             : 'var(--c-header-bg-image, none)';
+        // The pane paints the header's surface, so its text reads the
+        // header's readable colours and text plate for where it sits: over a
+        // form's banner, over the page (immersive full-bleed), else in the
+        // card (IMPL_PLAN_TEXT_CONTRAST, header). Every value falls back to
+        // today's, so an old form is unchanged.
+        let s = '';
+        if (this.paneBannerStyle) {
+            s = '-banner';
+        } else if (this.bleedOn) {
+            s = '-page';
+        }
+        const hdr = (name, base, fallback) =>
+            ` --hdr-${name}: var(--c-header-${base}${s}, ${fallback});`;
         return (
             'background-color: var(--c-header-bg);' +
             ` background-image: ${photo},` +
             ' var(--c-header-bg-gradient, none);' +
             ' background-position: var(--c-header-bg-position, center);' +
             ' background-size: cover;' +
-            ' color: var(--c-header-text);'
+            hdr('text', 'text', 'var(--c-header-text)') +
+            hdr('text-weak', 'text-weak', 'var(--c-header-text-weak)') +
+            hdr('plate', 'plate', 'transparent') +
+            hdr('plate-pad', 'plate-pad', '0') +
+            hdr('plate-outset', 'plate-outset', '0') +
+            ' color: var(--hdr-text);'
         );
     }
 

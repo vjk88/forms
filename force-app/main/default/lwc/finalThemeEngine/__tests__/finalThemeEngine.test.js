@@ -154,11 +154,15 @@ const CONTRACT_V1 = [
     '--c-header-plate-banner',
     '--c-header-plate-pad-banner',
     '--c-header-plate-radius',
+    '--c-header-plate-outset-page',
+    '--c-header-plate-outset-banner',
+    '--c-pane-text-fade',
     '--c-header-text-src',
     '--c-header-text-weak-src',
     // conditional: only where the card's header text needs a plate
     '--c-header-plate',
     '--c-header-plate-pad',
+    '--c-header-plate-outset',
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
@@ -234,7 +238,8 @@ describe('c-final-theme-engine', () => {
                 '--c-page-backing-chip-pad',
                 '--c-page-backing-on',
                 '--c-header-plate',
-                '--c-header-plate-pad'
+                '--c-header-plate-pad',
+                '--c-header-plate-outset'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -744,7 +749,8 @@ describe('c-final-theme-engine', () => {
                 '--c-page-backing-chip-pad',
                 '--c-page-backing-on',
                 '--c-header-plate',
-                '--c-header-plate-pad'
+                '--c-header-plate-pad',
+                '--c-header-plate-outset'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

@@ -114,7 +114,19 @@
 .pane-subtitle {
     font-size: var(--c-fs-desc);
     line-height: 1.5;
-    opacity: 0.85;
+    /* the fade dims it below what was judged; the engine writes 1 */
+    opacity: var(--c-pane-text-fade, 0.85);
+}
+/* The pane's text on the header's text plate where it needs one (see
+   paneStyle); an old form gets no plate and no shift. */
+.pane-title,
+.pane-subtitle,
+.pane .progress-text,
+.pane .brand-wordmark {
+    margin-inline: var(--hdr-plate-outset, 0);
+    padding: var(--hdr-plate-pad, 0);
+    background: var(--hdr-plate, transparent);
+    border-radius: var(--c-header-plate-radius, 0);
 }
 
 /* Rich-text blocks: strip the editor's <p> wrappers so the pane type scale
@@ -191,7 +203,7 @@
 .progress-text {
     margin: var(--c-space-2) 0 0;
     font-size: var(--c-fs-secondary);
-    opacity: 0.8;
+    opacity: var(--c-pane-text-fade, 0.8);
 }
 
 /* — Form pane — */

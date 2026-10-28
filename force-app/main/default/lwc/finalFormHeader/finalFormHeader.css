@@ -44,7 +44,7 @@
     font-size: var(--c-fs-brand);
     font-weight: var(--c-font-display-weight, 700);
     letter-spacing: 0.04em;
-    color: var(--c-header-text);
+    color: var(--hdr-text);
 }
 
 /* Rich-text wordmark: same <p> strip as title/desc below. */
@@ -61,7 +61,7 @@
     font-size: var(--c-fs-title);
     font-weight: var(--c-font-display-weight, 700);
     line-height: 1.2;
-    color: var(--c-header-title-fill, var(--c-header-text));
+    color: var(--c-header-title-fill, var(--hdr-text));
     background-image: var(--c-header-title-gradient, none);
     -webkit-background-clip: text;
     background-clip: text;
@@ -70,39 +70,50 @@
 .hdr-desc {
     margin: var(--c-space-2) 0 0;
     font-size: var(--c-fs-desc);
-    color: var(--c-header-text-weak);
+    color: var(--hdr-text-weak);
 }
 /* The text plate (IMPL_PLAN_TEXT_CONTRAST, header; owner 2026-10-27): where
    the title and description can't read on the header's own surface (a
    photo, a form's banner, the page under a One at a time header), a soft
    panel in the header's colour goes behind just them, as faint as it can
-   be. The engine writes the tokens only where needed; old forms and every
-   other header draw nothing new. */
-.lockup-text,
-.brand-wordmark {
-    background: var(--c-header-plate, transparent);
-    padding: var(--c-header-plate-pad, 0);
-    border-radius: var(--c-header-plate-radius, 0);
+   be. It reaches OUT past the text (an outset), so the text keeps its place.
+   The header's text colours and plate are set once here as --hdr-* (a
+   banner picks its own set), and every header painter reads them, the
+   highlight row too. The engine writes the tokens only where needed; old
+   forms and every other header draw nothing new (each falls back to
+   today's value). */
+.hdr {
+    --hdr-text: var(--c-header-text);
+    --hdr-text-weak: var(--c-header-text-weak);
+    --hdr-plate: var(--c-header-plate, transparent);
+    --hdr-plate-pad: var(--c-header-plate-pad, 0);
+    --hdr-plate-outset: var(--c-header-plate-outset, 0);
 }
-.hdr.has-banner .lockup-text,
-.hdr.has-banner .brand-wordmark {
-    background: var(
+.hdr.has-banner {
+    --hdr-text: var(--c-header-text-banner, var(--c-header-text));
+    --hdr-text-weak: var(
+        --c-header-text-weak-banner,
+        var(--c-header-text-weak)
+    );
+    --hdr-plate: var(
         --c-header-plate-banner,
         var(--c-header-plate, transparent)
     );
-    padding: var(--c-header-plate-pad-banner, var(--c-header-plate-pad, 0));
-}
-.hdr.has-banner .brand-wordmark {
-    color: var(--c-header-text-banner, var(--c-header-text));
-}
-.hdr.has-banner .hdr-title {
-    color: var(
-        --c-header-text-banner,
-        var(--c-header-title-fill, var(--c-header-text))
+    --hdr-plate-pad: var(
+        --c-header-plate-pad-banner,
+        var(--c-header-plate-pad, 0)
+    );
+    --hdr-plate-outset: var(
+        --c-header-plate-outset-banner,
+        var(--c-header-plate-outset, 0)
     );
 }
-.hdr.has-banner .hdr-desc {
-    color: var(--c-header-text-weak-banner, var(--c-header-text-weak));
+.lockup-text,
+.brand-wordmark {
+    margin: var(--hdr-plate-outset);
+    padding: var(--hdr-plate-pad);
+    background: var(--hdr-plate);
+    border-radius: var(--c-header-plate-radius, 0);
 }
 
 /* Rich-text title/description: strip the editor's <p> wrappers so the lockup

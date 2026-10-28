@@ -30,7 +30,13 @@
 
 /* Inline — quiet text row on the host surface */
 .hl-inline {
-    color: var(--c-header-text-weak, var(--c-text-weak));
+    /* the host's header colour and text plate (header or Split pane), as a
+       pill; outside a header both fall back to today */
+    margin: var(--hdr-plate-outset, 0);
+    padding: var(--hdr-plate-pad, 0);
+    background: var(--hdr-plate, transparent);
+    border-radius: var(--c-header-plate-radius, 0);
+    color: var(--hdr-text-weak, var(--c-header-text-weak, var(--c-text-weak)));
     font-size: var(--c-fs-secondary);
 }
 

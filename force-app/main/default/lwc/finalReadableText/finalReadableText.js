@@ -220,9 +220,17 @@ export function readable(color, toward, ranges, min) {
         return { color, steps: 0, ok: readsOn(color, ranges, min) };
     }
     // The same 2% steps as adjustSteps (the share is built by adding 0.02,
-    // so every colour is identical), but found by halving: reading only
-    // improves as a colour moves toward `toward`, and the engine runs on
-    // every Studio edit.
+    // so every colour is identical), found by halving where that is safe:
+    // the engine runs on every Studio edit.
+    // Halving needs a move where every channel goes the same way (then the
+    // colour only gets lighter or only darker). When channels go opposite
+    // ways (red toward green dips, then rises), step through as before.
+    const from = parseHex(color);
+    const to = parseHex(toward);
+    const dirs = from.map((v, i) => Math.sign(to[i] - v)).filter(Boolean);
+    if (dirs.some((d) => d !== dirs[0])) {
+        return adjustSteps(color, toward, (c) => readsOn(c, ranges, min));
+    }
     const shares = [];
     for (let t = 0; t <= 1.0001; t += 0.02) {
         shares.push(t);
@@ -365,7 +373,16 @@ export function backingFor({ colors, ownAlpha, underlay, judge }) {
             }
             return cache.get(n);
         };
-        const min = firstPassing(start, 100, (n) => at(n).ok);
+        let min = firstPassing(start, 100, (n) => at(n).ok);
+        if (min === null) {
+            // a colour whose channels move opposite ways can pass below 100%
+            // and fail at it: look step by step before giving it up
+            for (let n = start; n < 100 && min === null; n += 1) {
+                if (at(n).ok) {
+                    min = n;
+                }
+            }
+        }
         if (min === null) {
             continue;
         }
@@ -404,7 +421,8 @@ export const PAGE_TEXT_TOKENS = [
     '--c-header-text',
     '--c-header-text-weak',
     '--c-header-plate',
-    '--c-header-plate-pad'
+    '--c-header-plate-pad',
+    '--c-header-plate-outset'
 ];
 
 /**

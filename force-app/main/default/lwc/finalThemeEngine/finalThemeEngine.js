@@ -1069,6 +1069,16 @@ function computeReadableText({
             : { result: first, plate: null };
     };
     const PLATE_PAD = 'var(--c-space-2) var(--c-space-3)';
+    // the plate reaches out by its padding, so the text keeps its place
+    const PLATE_OUTSET =
+        'calc(-1 * var(--c-space-2)) calc(-1 * var(--c-space-3))';
+    const headerHasSurface = Boolean(
+        (headerFill && headerFill.a > 0) ||
+        (pal.headerBgGradient &&
+            pal.headerBgGradient.start &&
+            pal.headerBgGradient.end) ||
+        pal.headerImage
+    );
     const headerScopes = {
         // inside the card (every layout but the open page)
         '': headerSolve(
@@ -1094,8 +1104,25 @@ function computeReadableText({
             out[`--c-header-plate-pad${suffix}`] = scope.plate
                 ? PLATE_PAD
                 : '0';
+            out[`--c-header-plate-outset${suffix}`] = scope.plate
+                ? PLATE_OUTSET
+                : '0';
         }
     });
+    if (!headerHasSurface && headerRoles.desc && !pal.headerTextWeak) {
+        if (!headerScopes[''].plate && out['--c-text-weak']) {
+            out['--c-header-text-weak'] = out['--c-text-weak'];
+        }
+        if (
+            !headerScopes['-page'].plate &&
+            !pageScope.backing &&
+            out['--c-text-weak-page']
+        ) {
+            out['--c-header-text-weak-page'] = out['--c-text-weak-page'];
+        }
+    }
+    // the Split pane's subtitle and progress were faded; judged at full
+    out['--c-pane-text-fade'] = '1';
     out['--c-header-plate-radius'] = 'var(--c-radius)';
     // the header's own colours before any change, for recalculation
     out['--c-header-text-src'] = pal.headerText || text;
