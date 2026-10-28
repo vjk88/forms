@@ -3,6 +3,9 @@ import { getBuiltinTheme, getBrandCopy } from 'c/finalThemeCatalog';
 import { resolveTokens, tokensToStyle, fontManifest } from 'c/finalThemeEngine';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
 import { ensureFontRefs } from 'c/finalFontBundle';
+import { previewGeometry } from 'c/finalLayoutRegistry';
+import { openPageTokens } from 'c/finalFocusTreatment';
+import { openPageTextTokens } from 'c/finalReadableText';
 
 /**
  * finalThemeCard — one theme preview card (ported from formStudio's formThemeCard).
@@ -43,6 +46,14 @@ export default class FinalThemeCard extends LightningElement {
     @api layout = 'scroll';
     /** splitHero pane flow ('oneAtATime' → conversational shape). */
     @api paneFlow;
+    /**
+     * The form's Immersive full-bleed (layout.options.fullBleed) and Max
+     * content width (layout.maxWidth): the preview draws the form the way
+     * these set it (previewGeometry). Unset means what it means on a form:
+     * full-bleed ON where the layout can, the layout's own width.
+     */
+    @api fullBleed;
+    @api maxWidth;
     @api selected = false;
     /**
      * A picture, not a control (the brand dialog's live preview): no button
@@ -83,17 +94,59 @@ export default class FinalThemeCard extends LightningElement {
         return this._theme.palette || {};
     }
 
-    /** Every --c-* the mock reads, as an inline style string. */
+    get _geometry() {
+        return previewGeometry(this.layout, this.fullBleed, this.maxWidth);
+    }
+
+    /** The open page (One at a time, full-bleed): text and focus sit on it. */
+    get _openPage() {
+        return this.isSingle && this._geometry.bleed;
+    }
+
+    /**
+     * Every --c-* the mock reads, as an inline style string, plus where the
+     * form sits: --pv-card (the card's width) and --pv-form (a full-bleed
+     * Split's form column).
+     */
     get tokenStyle() {
+        const g = this._geometry;
+        const where = `--pv-card: ${g.card}; --pv-form: ${g.form || '50%'};`;
         try {
-            return tokensToStyle(localizeAssetUrls(resolveTokens(this._theme)));
+            let tokens = localizeAssetUrls(resolveTokens(this._theme));
+            if (this._openPage) {
+                tokens = openPageTextTokens(openPageTokens(tokens));
+            }
+            return `${tokensToStyle(tokens)}; ${where}`;
         } catch {
-            return '';
+            return where;
         }
     }
 
     get shape() {
         return mockShape(this.layout, this.paneFlow);
+    }
+    get stageClass() {
+        const split = this.isSplit || this.isSplitOne;
+        return split && this._geometry.bleed
+            ? 'tc-stage tc-stage-bleed'
+            : 'tc-stage';
+    }
+    /** Split: a card holding both halves, or (full-bleed) halves that touch. */
+    get splitClass() {
+        return this._geometry.bleed
+            ? 'tc-split tc-split-bleed'
+            : 'tc-card tc-split';
+    }
+    /** Full-bleed Split: the fields float as a card in the form column. */
+    get splitBodyClass() {
+        return this._geometry.bleed ? 'tc-body tc-card tc-float' : 'tc-body';
+    }
+    get splitOneBodyClass() {
+        return `${this.splitBodyClass} tc-body-center`;
+    }
+    /** One at a time: the open page (no card around it) or a carded page. */
+    get singleClass() {
+        return this._geometry.bleed ? 'tc-card tc-open' : 'tc-card';
     }
     get isSplit() {
         return this.shape === 'split';

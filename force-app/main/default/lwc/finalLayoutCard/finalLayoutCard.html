@@ -10,7 +10,7 @@
     >
         <!-- Theme-tinted structural mockup (layoutThumb treatment, --c-* driven) -->
         <div class="lc-diagram" style={tokenStyle}>
-            <div class="lt-stage">
+            <div class={stageClass}>
                 <!-- Scroll: header strip + field lines + button -->
                 <template lwc:if={isScroll}>
                     <div class="lt-card">
@@ -64,8 +64,12 @@
                             <div class="lt-line"></div>
                             <div class="lt-line s"></div>
                         </div>
-                        <div class="lt-acc-row"><span class="lt-acc-head"></span></div>
-                        <div class="lt-acc-row"><span class="lt-acc-head"></span></div>
+                        <div class="lt-acc-row">
+                            <span class="lt-acc-head"></span>
+                        </div>
+                        <div class="lt-acc-row">
+                            <span class="lt-acc-head"></span>
+                        </div>
                     </div>
                 </template>
 
@@ -87,8 +91,10 @@
 
                 <!-- One at a time: page bg + progress + one floating question -->
                 <template lwc:elseif={isOneAtATime}>
-                    <div class="lt-card center">
-                        <div class="lt-progress"><span class="lt-progress-fill"></span></div>
+                    <div class={oneClass}>
+                        <div class="lt-progress">
+                            <span class="lt-progress-fill"></span>
+                        </div>
                         <div class="lt-line lg"></div>
                         <div class="lt-line s"></div>
                         <div class="lt-btn"></div>
@@ -97,12 +103,12 @@
 
                 <!-- Split hero: brand panel beside the form -->
                 <template lwc:elseif={isSplit}>
-                    <div class="lt-split">
+                    <div class={splitClass}>
                         <div class="lt-panel">
                             <span class="lt-panel-line"></span>
                             <span class="lt-panel-line s"></span>
                         </div>
-                        <div class="lt-card flush">
+                        <div class={splitCardClass}>
                             <div class="lt-line"></div>
                             <div class="lt-line s"></div>
                             <div class="lt-btn"></div>
@@ -112,13 +118,15 @@
 
                 <!-- Split hero · Conversational: brand panel + one question -->
                 <template lwc:elseif={isSplitOne}>
-                    <div class="lt-split">
+                    <div class={splitClass}>
                         <div class="lt-panel">
                             <span class="lt-panel-line"></span>
                             <span class="lt-panel-line s"></span>
                         </div>
-                        <div class="lt-card flush center-v">
-                            <div class="lt-progress"><span class="lt-progress-fill"></span></div>
+                        <div class={splitOneCardClass}>
+                            <div class="lt-progress">
+                                <span class="lt-progress-fill"></span>
+                            </div>
                             <div class="lt-line lg"></div>
                             <div class="lt-btn"></div>
                         </div>

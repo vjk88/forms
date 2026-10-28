@@ -189,6 +189,8 @@
                                     theme-key={l.themeKey}
                                     label={l.name}
                                     description={l.description}
+                                    full-bleed={l.fullBleed}
+                                    max-width={l.maxWidth}
                                     selected={l.selected}
                                     onselect={handleLayoutSelect}
                                 ></c-final-layout-card>
@@ -291,6 +293,7 @@
             <c-final-theme-gallery
                 layout={themeGalleryLayout}
                 pane-flow={themeGalleryPaneFlow}
+                form-layout={themeGalleryFormLayout}
                 selected-theme-key={chosenThemeKey}
                 onthemeselect={handleThemeSelect}
             ></c-final-theme-gallery>

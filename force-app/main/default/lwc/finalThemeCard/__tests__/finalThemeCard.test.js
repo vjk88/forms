@@ -210,3 +210,70 @@ describe('c-final-theme-card: header surface in every layout', () => {
         }
     );
 });
+
+// IMPL_PLAN_SPLIT_DEFAULTS_AND_PREVIEW §3: the preview draws the form's real
+// full-bleed and width.
+describe('c-final-theme-card: real full-bleed and width', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+    const style = (el) =>
+        el.shadowRoot.querySelector('.tc-preview').getAttribute('style');
+
+    it('a carded layout sits at its width share of the page', async () => {
+        const el = mount({
+            themeKey: 'nordic',
+            layout: 'scroll',
+            maxWidth: 'medium'
+        });
+        await flush();
+        expect(style(el)).toContain('--pv-card: 59.4%');
+    });
+
+    it('Split with full-bleed off: one card holding both halves', async () => {
+        const el = mount({
+            themeKey: 'marbleSplit',
+            layout: 'splitHero',
+            fullBleed: false,
+            maxWidth: 'wide'
+        });
+        await flush();
+        const split = el.shadowRoot.querySelector('.tc-split');
+        expect(split.classList.contains('tc-card')).toBe(true);
+        expect(split.classList.contains('tc-split-bleed')).toBe(false);
+        expect(style(el)).toContain('--pv-card: 81.3%');
+    });
+
+    it('Split unset (= full-bleed on): halves touch, fields float in a card', async () => {
+        const el = mount({ themeKey: 'marbleSplit', layout: 'splitHero' });
+        await flush();
+        const split = el.shadowRoot.querySelector('.tc-split');
+        expect(split.classList.contains('tc-split-bleed')).toBe(true);
+        expect(split.classList.contains('tc-card')).toBe(false);
+        expect(
+            el.shadowRoot
+                .querySelector('.tc-stage')
+                .classList.contains('tc-stage-bleed')
+        ).toBe(true);
+        expect(
+            el.shadowRoot.querySelector('.tc-fields .tc-float')
+        ).not.toBeNull();
+        expect(style(el)).toContain('--pv-form: 50%');
+    });
+
+    it('One at a time: the open page when full-bleed, a card when not', async () => {
+        const open = mount({ themeKey: 'sandstone', layout: 'oneAtATime' });
+        await flush();
+        expect(open.shadowRoot.querySelector('.tc-open')).not.toBeNull();
+        const carded = mount({
+            themeKey: 'sandstone',
+            layout: 'oneAtATime',
+            fullBleed: false
+        });
+        await flush();
+        expect(carded.shadowRoot.querySelector('.tc-open')).toBeNull();
+        expect(carded.shadowRoot.querySelector('.tc-card')).not.toBeNull();
+    });
+});

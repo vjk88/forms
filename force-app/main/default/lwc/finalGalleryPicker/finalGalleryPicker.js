@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { LAYOUT_GROUPS } from 'c/finalLayoutCards';
+import { previewSettings } from 'c/finalLayoutRegistry';
 
 /**
  * finalGalleryPicker — the Design panel's "Change…" popup: ONE fixed-overlay
@@ -63,6 +64,12 @@ export default class FinalGalleryPicker extends LightningElement {
     @api themeValue = '';
     /** FinalThemeController.listCustomThemes rows: { id, name, baseTheme }. */
     @api customThemes = [];
+    /**
+     * The form's layout block (spec.layout). Previews draw the form's real
+     * full-bleed and width: its own for its layout, what a switch would give
+     * for any other (c/finalLayoutRegistry previewSettings).
+     */
+    @api formLayout = null;
 
     _focused = false;
 
@@ -127,21 +134,40 @@ export default class FinalGalleryPicker extends LightningElement {
         return this.customCards.length > 0;
     }
 
+    get _currentSettings() {
+        return previewSettings(this.formLayout, this.layout, this.paneFlow);
+    }
+    get currentFullBleed() {
+        return (this._currentSettings.options || {}).fullBleed;
+    }
+    get currentMaxWidth() {
+        return this._currentSettings.maxWidth;
+    }
+
     get layoutGroups() {
         const flow = this.paneFlow || '';
         return LAYOUT_GROUPS.map((g) => ({
             id: g.id,
             title: g.title,
             hint: g.hint,
-            cards: g.cards.map((c) => ({
-                key: c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout,
-                layout: c.layout,
-                paneFlow: c.paneFlow || '',
-                themeKey: c.themeKey,
-                name: c.name,
-                selected:
-                    c.layout === this.layout && (c.paneFlow || '') === flow
-            }))
+            cards: g.cards.map((c) => {
+                const settings = previewSettings(
+                    this.formLayout,
+                    c.layout,
+                    c.paneFlow || ''
+                );
+                return {
+                    key: c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout,
+                    layout: c.layout,
+                    paneFlow: c.paneFlow || '',
+                    themeKey: c.themeKey,
+                    name: c.name,
+                    fullBleed: (settings.options || {}).fullBleed,
+                    maxWidth: settings.maxWidth,
+                    selected:
+                        c.layout === this.layout && (c.paneFlow || '') === flow
+                };
+            })
         }));
     }
 

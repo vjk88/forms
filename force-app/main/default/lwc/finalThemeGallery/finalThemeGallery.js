@@ -2,6 +2,7 @@ import { LightningElement, api, track } from 'lwc';
 import { listThemeFamilies, getBuiltinTheme } from 'c/finalThemeCatalog';
 import { resolveTokens } from 'c/finalThemeEngine';
 import { localizeAssetUrl } from 'c/finalThemeAssets';
+import { previewSettings } from 'c/finalLayoutRegistry';
 
 /**
  * finalThemeGallery — the "Pick a theme" step (ported from formStudio's
@@ -62,6 +63,12 @@ export default class FinalThemeGallery extends LightningElement {
     /** splitHero pane flow picked in step 1 ('oneAtATime' → conversational). */
     @api paneFlow = '';
     @api selectedThemeKey = '';
+    /**
+     * The form's layout block (spec.layout): every preview draws the form's
+     * real full-bleed and width for the layout it shows. null = a new form
+     * (the creation gallery): previews draw a new form's start.
+     */
+    @api formLayout = null;
 
     @track _previewKey = '';
     /** Local pick (an @api prop must not be reassigned); wins over the prop. */
@@ -81,6 +88,19 @@ export default class FinalThemeGallery extends LightningElement {
     }
     get previewPaneFlow() {
         return this.previewKey.split(':')[1] || '';
+    }
+    get _shownSettings() {
+        return previewSettings(
+            this.formLayout,
+            this.previewLayout,
+            this.previewPaneFlow
+        );
+    }
+    get previewFullBleed() {
+        return (this._shownSettings.options || {}).fullBleed;
+    }
+    get previewMaxWidth() {
+        return this._shownSettings.maxWidth;
     }
 
     get layoutChips() {

@@ -7,6 +7,7 @@
  *
  * Rows land with their primitives, one per P1 PR.
  */
+import { MAX_WIDTHS, BLEED_MAX_WIDTHS } from 'c/finalPageFrame';
 
 export const LAYOUTS = {
     scroll: {
@@ -255,4 +256,81 @@ export function settleStartWidth(layout) {
         return next;
     }
     return layout.maxWidth === 'wide' ? layout : next;
+}
+
+/**
+ * The layout settings a picker preview draws for `type` (+ paneFlow): the
+ * form's own settings for its current layout, what a Studio switch would
+ * give for any other, and a new form's start when there is no form yet
+ * (`formLayout` null: the new-form gallery).
+ */
+export function previewSettings(formLayout, type, paneFlow) {
+    if (!formLayout) {
+        return newLayoutDefaults(type, paneFlow);
+    }
+    const flow = (formLayout.options && formLayout.options.paneFlow) || '';
+    if (formLayout.type === type && flow === (paneFlow || '')) {
+        return formLayout;
+    }
+    return layoutAfterSwitch(formLayout, type, paneFlow);
+}
+
+// A preview stands for a 1280px desktop. The split's form column carries
+// 2 × --c-space-5 of padding (finalNavSplitHero .mode-bleed); One at a time's
+// question column is 640px unless a width is picked (finalNavOneAtATime).
+const PREVIEW_SCREEN = 1280;
+const SPLIT_FORM_PADDING = 48;
+const OAAT_COLUMN = 640;
+
+const share = (part, whole) =>
+    `${Math.round(Math.min(100, (part / whole) * 100) * 10) / 10}%`;
+
+/**
+ * Where a picker preview draws the form, as shares of the preview, from the
+ * same width tables the real page frame uses (owner 2026-10-25: previews
+ * show each form's real full-bleed and width, every layout).
+ *   bleed  the layout runs Immersive full-bleed
+ *   card   the form card's width: of the page when carded, of the open page
+ *          on One at a time, of the form column on a full-bleed Split
+ *   form   (full-bleed Split only) the form column's width; the brand pane
+ *          takes the rest
+ */
+export function previewGeometry(type, fullBleed, maxWidth) {
+    const bleed = Boolean(getLayout(type).bleed) && fullBleed !== false;
+    if (!bleed) {
+        const cap = MAX_WIDTHS[maxWidth] || MAX_WIDTHS.medium;
+        return {
+            bleed,
+            card:
+                cap === 'none' ? '100%' : share(parseFloat(cap), PREVIEW_SCREEN)
+        };
+    }
+    const cap = BLEED_MAX_WIDTHS[maxWidth];
+    const full = cap === '100%';
+    const capPx = cap && !full ? parseFloat(cap) : 0;
+    if (type === 'splitHero') {
+        // the form column grows past half for a picked width, never past 60%
+        const most = PREVIEW_SCREEN * 0.6;
+        const wanted = full ? most : Math.min(most, capPx + SPLIT_FORM_PADDING);
+        const column = Math.max(PREVIEW_SCREEN / 2, wanted);
+        const inner = column - SPLIT_FORM_PADDING;
+        let cardPx = Math.min(inner, Math.max(inner * 0.9, 480));
+        if (full) {
+            cardPx = inner;
+        } else if (capPx) {
+            cardPx = Math.min(capPx, inner);
+        }
+        return {
+            bleed,
+            form: share(column, PREVIEW_SCREEN),
+            card: share(cardPx, column)
+        };
+    }
+    let column = OAAT_COLUMN;
+    if (full) {
+        column = PREVIEW_SCREEN;
+    } else if (capPx) {
+        column = capPx;
+    }
+    return { bleed, card: share(column, PREVIEW_SCREEN) };
 }

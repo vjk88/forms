@@ -10,6 +10,7 @@ import {
     logoForUpload
 } from 'c/finalBrandColors';
 import { resolveFontRefs } from 'c/finalThemeEngine';
+import { previewSettings } from 'c/finalLayoutRegistry';
 import { applyFontPatch } from 'c/finalFontChoices';
 
 /**
@@ -98,6 +99,22 @@ export default class FinalBrandDialog extends LightningElement {
     /** The form's layout, so the preview shows the theme in it. */
     @api layout = 'scroll';
     @api paneFlow = '';
+    /** The form's layout block: the preview draws its full-bleed and width. */
+    @api formLayout = null;
+
+    get _previewSettings() {
+        return previewSettings(
+            this.formLayout || { type: this.layout, options: {} },
+            this.layout,
+            this.paneFlow
+        );
+    }
+    get previewFullBleed() {
+        return (this._previewSettings.options || {}).fullBleed;
+    }
+    get previewMaxWidth() {
+        return this._previewSettings.maxWidth;
+    }
     /** The form's current logo, if any: the logo option then REPLACES it. */
     @api currentLogoUrl = '';
     /** The header arrangement ('textOnly' shows no logo). */

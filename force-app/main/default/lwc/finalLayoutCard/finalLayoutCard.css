@@ -42,7 +42,9 @@
 .lt-stage {
     height: 150px;
     width: 100%;
-    padding: 12px;
+    /* a desktop page: the form sits at its real width share (--pv-card,
+       c/finalLayoutRegistry previewGeometry) */
+    padding: 12px 6px;
     box-sizing: border-box;
     overflow: hidden;
     display: flex;
@@ -56,7 +58,7 @@
 
 /* ---- Card (the form body) ---- */
 .lt-card {
-    width: 100%;
+    width: var(--pv-card, 100%);
     height: 100%;
     padding: 9px 10px;
     box-sizing: border-box;
@@ -77,12 +79,19 @@
         calc(var(--c-radius, 8px) * 0.75) 0;
     border-left: none;
 }
-.lt-card.center {
-    width: 76%;
+.lt-card.lt-center {
     height: auto;
     justify-content: center;
 }
-.lt-card.center-v {
+/* One at a time, full-bleed: the open page, no card around the question */
+.lt-card.lt-open {
+    background: var(--c-page-backing, transparent);
+    border: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+.lt-card.lt-center-v {
     justify-content: center;
 }
 .lt-card.pad0 {
@@ -132,7 +141,7 @@
 /* ---- Split (splitHero) / rail two-pane ---- */
 .lt-split {
     display: flex;
-    width: 100%;
+    width: var(--pv-card, 100%);
     height: 100%;
     border-radius: calc(var(--c-radius, 8px) * 0.75);
     overflow: hidden;
@@ -280,4 +289,26 @@
     margin: 3px 0 0;
     font-size: 0.75rem;
     color: var(--c-studio-text-weak);
+}
+
+/* ---- Split, full-bleed: the halves own the page and touch; the form
+        column (--pv-form) holds a floating card ---- */
+.lt-stage.lt-stage-bleed {
+    padding: 0;
+}
+.lt-split-bleed {
+    display: grid;
+    grid-template-columns: 1fr var(--pv-form, 50%);
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+}
+.lt-split-bleed .lt-panel {
+    width: auto;
+}
+.lt-float {
+    justify-self: center;
+    align-self: center;
+    height: auto;
+    min-height: 60%;
 }
