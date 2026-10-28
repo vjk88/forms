@@ -56,7 +56,10 @@ export default class FinalFormHeader extends LightningElement {
         // 'minimal' deleted 2026-07-18 (owner ruling — its background:none
         // silently ate the Fill); legacy specs render standard.
         const flush = this.flush ? ' hdr--flush' : '';
-        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}${flush}`;
+        // a form's own banner photo: the text reads its banner plate and
+        // colours (IMPL_PLAN_TEXT_CONTRAST, header)
+        const banner = this.bannerStyle ? ' has-banner' : '';
+        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}${flush}${banner}`;
     }
 
     /**

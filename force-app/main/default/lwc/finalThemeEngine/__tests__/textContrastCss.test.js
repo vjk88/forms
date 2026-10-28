@@ -359,6 +359,72 @@ const SWAPS = [
         '.lt-card',
         'background',
         'var(--c-card-backing, var(--c-content-bg, #ffffff))'
+    ],
+    // header follow-up: the header's colours and plate, set once as --hdr-*
+    // (a banner picks its own set) and read by the header, the Split pane and
+    // the highlight row; old forms and every other header: nothing new
+    ['finalFormHeader', '.hdr', '--hdr-text', 'var(--c-header-text)'],
+    ['finalFormHeader', '.hdr', '--hdr-text-weak', 'var(--c-header-text-weak)'],
+    [
+        'finalFormHeader',
+        '.hdr',
+        '--hdr-plate',
+        'var(--c-header-plate, transparent)'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr',
+        '--hdr-plate-pad',
+        'var(--c-header-plate-pad, 0)'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr',
+        '--hdr-plate-outset',
+        'var(--c-header-plate-outset, 0)'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr.has-banner',
+        '--hdr-plate',
+        'var(--c-header-plate-banner, var(--c-header-plate, transparent))'
+    ],
+    [
+        'finalFormHeader',
+        '.hdr-title',
+        'color',
+        'var(--c-header-title-fill, var(--hdr-text))'
+    ],
+    ['finalFormHeader', '.hdr-desc', 'color', 'var(--hdr-text-weak)'],
+    [
+        'finalFormHighlight',
+        '.hl-inline',
+        'background',
+        'var(--hdr-plate, transparent)'
+    ],
+    [
+        'finalFormHighlight',
+        '.hl-inline',
+        'color',
+        'var(--hdr-text-weak, var(--c-header-text-weak, var(--c-text-weak)))'
+    ],
+    [
+        'finalNavSplitHero',
+        '.pane-subtitle',
+        'opacity',
+        'var(--c-pane-text-fade, 0.85)'
+    ],
+    [
+        'finalNavSplitHero',
+        '.progress-text',
+        'opacity',
+        'var(--c-pane-text-fade, 0.8)'
+    ],
+    [
+        'finalNavSplitHero',
+        '.pane-title, .pane-subtitle, .pane .progress-text, .pane .brand-wordmark',
+        'background',
+        'var(--hdr-plate, transparent)'
     ]
 ];
 

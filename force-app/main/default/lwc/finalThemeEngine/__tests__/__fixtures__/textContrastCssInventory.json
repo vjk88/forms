@@ -92,7 +92,7 @@
     "finalElementRenderer | .slider-input:focus-visible::-moz-range-thumb | outline: 2px solid var(--c-focus-outline, var(--c-field-focus, var(--c-accent)))",
     "finalFormHighlight | .hl-badge | background: var(--c-accent)",
     "finalFormHighlight | .hl-banner | background: var(--c-accent)",
-    "finalFormHighlight | .hl-inline | color: var(--c-header-text-weak, var(--c-text-weak))",
+    "finalFormHighlight | .hl-inline | color: var(--hdr-text-weak, var(--c-header-text-weak, var(--c-text-weak)))",
     "finalFormViewer | .viewer-busy-text | color: var(--c-text, inherit)",
     "finalFormViewer | .viewer-busy-text | background: var(--c-card-backing, var(--c-content-bg, #fff))",
     "finalLayoutCard | .lt-card | background: var(--c-card-backing, var(--c-content-bg, #ffffff))",

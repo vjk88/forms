@@ -177,3 +177,37 @@ describe('c-final-form-header flush mode (One at a time open page)', () => {
         ).toBe(true);
     });
 });
+
+describe('c-final-form-header: banner text plate (header contrast follow-up)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    it("a form's own banner marks the header so its text reads the banner plate", () => {
+        const el = createElement('c-final-form-header', {
+            is: FinalFormHeader
+        });
+        el.header = { title: 'T', bgImage: { url: '/sfc/banner' } };
+        document.body.appendChild(el);
+        expect(
+            el.shadowRoot
+                .querySelector('header')
+                .classList.contains('has-banner')
+        ).toBe(true);
+    });
+
+    it('a header without a banner does not', () => {
+        const el = createElement('c-final-form-header', {
+            is: FinalFormHeader
+        });
+        el.header = { title: 'T' };
+        document.body.appendChild(el);
+        expect(
+            el.shadowRoot
+                .querySelector('header')
+                .classList.contains('has-banner')
+        ).toBe(false);
+    });
+});

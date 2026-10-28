@@ -862,6 +862,8 @@ const AREAS = [
                         type: 'color',
                         themePath: 'palette.headerTextWeak',
                         fallbackToken: '--c-header-text-weak',
+                        // the engine may make the theme's colour readable
+                        readableRole: 'muted',
                         contrastToken: '--c-header-bg',
                         subject: 'Subtitle',
                         hint: 'Color of the subtitle line in the header. Empty = same as Muted text.'

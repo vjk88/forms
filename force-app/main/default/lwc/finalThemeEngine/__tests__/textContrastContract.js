@@ -43,7 +43,29 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-page-backing-chip-pad',
     // set by the open-page swap only (viewer banners)
     '--c-banner-backing',
-    '--c-page-backing-on'
+    '--c-page-backing-on',
+    // the header: the open page's and a banner's own title and description
+    // colours, and the text plates (header follow-up)
+    '--c-header-text-page',
+    '--c-header-text-weak-page',
+    '--c-header-text-banner',
+    '--c-header-text-weak-banner',
+    '--c-header-plate',
+    '--c-header-plate-pad',
+    '--c-header-plate-page',
+    '--c-header-plate-pad-page',
+    '--c-header-plate-banner',
+    '--c-header-plate-pad-banner',
+    '--c-header-plate-radius',
+    '--c-header-plate-outset',
+    '--c-header-plate-outset-page',
+    '--c-header-plate-outset-banner',
+    '--c-pane-text-fade',
+    '--c-header-plate-fit',
+    '--c-header-plate-fit-page',
+    '--c-header-plate-fit-banner',
+    '--c-header-text-src',
+    '--c-header-text-weak-src'
 ];
 
 /**
@@ -59,6 +81,10 @@ export function withoutTextTreatment(tokens) {
         out['--c-text-weak'] = out['--c-text-weak-src'];
         if (roles.includes('label')) {
             out['--c-label-color'] = out['--c-text-weak-src'];
+        }
+        if (out['--c-header-text-src']) {
+            out['--c-header-text'] = out['--c-header-text-src'];
+            out['--c-header-text-weak'] = out['--c-header-text-weak-src'];
         }
     }
     TEXT_TREATMENT_TOKENS.forEach((key) => delete out[key]);

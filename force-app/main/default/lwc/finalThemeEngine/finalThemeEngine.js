@@ -25,7 +25,8 @@ import {
     exact,
     parseColor,
     rangeToken,
-    FOCUS_DARK
+    FOCUS_DARK,
+    FULL_RANGE
 } from 'c/finalFocusTreatment';
 import {
     BUNDLED_FONTS,
@@ -36,6 +37,7 @@ import {
     TEXT_AIM,
     scopeColours,
     backingFor,
+    headerColours,
     inkFor,
     ratio as readRatio
 } from 'c/finalReadableText';
@@ -857,7 +859,30 @@ function gradientOver(g, fillOpacity, range) {
  * reader of the new tokens falls back to today's value.
  * Returns the tokens to merge ({} when the theme isn't eligible).
  */
-function readableTextTokens({
+// The readable-text result depends only on these inputs, and the Studio
+// resolves on every edit (most edits touch no colour): remember a few.
+const READABLE_CACHE = new Map();
+
+function readableTextTokens(input) {
+    const key = JSON.stringify([
+        input.pal,
+        input.userPal,
+        input.eligible,
+        input.labelStyle,
+        input.cardRange,
+        input.pageRange,
+        input.fieldFills
+    ]);
+    if (!READABLE_CACHE.has(key)) {
+        if (READABLE_CACHE.size > 50) {
+            READABLE_CACHE.clear();
+        }
+        READABLE_CACHE.set(key, computeReadableText(input));
+    }
+    return { ...READABLE_CACHE.get(key) };
+}
+
+function computeReadableText({
     pal,
     userPal,
     eligible,
@@ -977,6 +1002,139 @@ function readableTextTokens({
             out['--c-card-backing-on'] = '1';
         }
     }
+    // The header: title and description on the header's own surface (its
+    // fill, gradient or photo) over the card, or over the page itself on the
+    // One at a time open page. Where they can't read (a photo header, an
+    // author's banner, a photo page), a text plate goes behind just the
+    // title and description, in the header's colour, else the card's, else
+    // the page's, as faint as it can be (owner 2026-10-27).
+    const headerFill = parseColor(
+        atOpacity(pal.headerBg, pal.headerBgOpacity) || ''
+    );
+    const headerHex =
+        headerFill && headerFill.a > 0
+            ? `#${[headerFill.r, headerFill.g, headerFill.b]
+                  .map((v) => v.toString(16).padStart(2, '0'))
+                  .join('')}`
+            : null;
+    const headerSurface = (base) => {
+        let r = base;
+        if (headerFill && headerFill.a > 0) {
+            r = over(atOpacity(pal.headerBg, pal.headerBgOpacity), r);
+        }
+        r = gradientOver(pal.headerBgGradient, pal.headerBgOpacity, r) || r;
+        if (pal.headerImage) {
+            const v = Math.min(
+                Math.max(Number(pal.headerImageVeil) || 0, 0),
+                1
+            );
+            r = over(`rgba(0, 0, 0, ${v})`, FULL_RANGE);
+        }
+        return r;
+    };
+    const tg = pal.headerTitleGradient;
+    const titleStops =
+        tg && Array.isArray(tg.stops) && tg.stops.length >= 2
+            ? tg.stops
+                  .map((stop) => String(stop).trim().split(/\s+/)[0])
+                  .filter((c) => parseColor(c))
+            : null;
+    const headerRoles = {
+        title: !userPal.headerText && !(!pal.headerText && userPal.text),
+        desc:
+            !userPal.headerTextWeak &&
+            !(!pal.headerTextWeak && userPal.textWeak)
+    };
+    const headerJudge = (container) =>
+        headerColours({
+            container,
+            title: pal.headerText || text,
+            titleStops,
+            desc: pal.headerTextWeak || pal.textWeak,
+            roles: headerRoles
+        });
+    const headerSolve = (surface) => {
+        const first = headerJudge(surface);
+        if (first.ok) {
+            return { result: first, plate: null };
+        }
+        const plate = backingFor({
+            colors: [headerHex, cardHex, pageHex].filter(Boolean),
+            ownAlpha: 0.01,
+            underlay: surface,
+            judge: headerJudge
+        });
+        return plate
+            ? { result: headerJudge(plate.range), plate }
+            : { result: first, plate: null };
+    };
+    const PLATE_PAD = 'var(--c-space-2) var(--c-space-3)';
+    // the plate reaches out sideways by its padding, so the text keeps its
+    // left edge (not up and down: that would eat the header's row gap)
+    const PLATE_OUTSET = 'calc(-1 * var(--c-space-3))';
+    const headerHasSurface = Boolean(
+        (headerFill && headerFill.a > 0) ||
+        (pal.headerBgGradient &&
+            pal.headerBgGradient.start &&
+            pal.headerBgGradient.end) ||
+        pal.headerImage
+    );
+    const headerScopes = {
+        // inside the card (every layout but the open page)
+        '': headerSolve(
+            headerSurface(cardScope.result.ok ? cardScope.container : cardRange)
+        ),
+        // One at a time open page: the header sits on the page itself
+        '-page': headerSolve(headerSurface(pageRange)),
+        // a form's own banner photo: unknown, whatever is under it
+        '-banner': headerSolve(FULL_RANGE)
+    };
+    Object.entries(headerScopes).forEach(([suffix, scope]) => {
+        if (!scope.result.ok) {
+            unresolved.push(`header${suffix}`);
+            return;
+        }
+        Object.entries(scope.result.tokens).forEach(([k, v]) => {
+            out[`${k}${suffix}`] = v;
+        });
+        if (scope.plate || suffix) {
+            out[`--c-header-plate${suffix}`] = scope.plate
+                ? scope.plate.css
+                : 'transparent';
+            out[`--c-header-plate-pad${suffix}`] = scope.plate
+                ? PLATE_PAD
+                : '0';
+            out[`--c-header-plate-outset${suffix}`] = scope.plate
+                ? PLATE_OUTSET
+                : '0';
+            // a plate hugs its text (the Split pane's blocks span the pane)
+            out[`--c-header-plate-fit${suffix}`] = scope.plate
+                ? 'fit-content'
+                : 'auto';
+        }
+    });
+    if (!headerHasSurface && headerRoles.desc && !pal.headerTextWeak) {
+        if (!headerScopes[''].plate && out['--c-text-weak']) {
+            out['--c-header-text-weak'] = out['--c-text-weak'];
+        }
+        if (
+            !headerScopes['-page'].plate &&
+            !pageScope.backing &&
+            out['--c-text-weak-page']
+        ) {
+            out['--c-header-text-weak-page'] = out['--c-text-weak-page'];
+        }
+    }
+    // the Split pane's subtitle and progress were faded; judged at full
+    out['--c-pane-text-fade'] = '1';
+    out['--c-header-plate-radius'] = 'var(--c-radius)';
+    // the header's own colours before any change, for recalculation
+    out['--c-header-text-src'] = pal.headerText || text;
+    out['--c-header-text-weak-src'] = pal.headerTextWeak || pal.textWeak;
+    if (unresolved.length) {
+        out['--c-text-unresolved'] = unresolved.join(' ');
+    }
+
     // the open page: its own set, swapped in by the viewer (openPageTextTokens)
     if (pageScope.result.ok) {
         Object.entries(pageScope.result.tokens).forEach(([k, v]) => {

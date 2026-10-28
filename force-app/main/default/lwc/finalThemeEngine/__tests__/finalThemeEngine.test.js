@@ -143,6 +143,29 @@ const CONTRACT_V1 = [
     '--c-page-backing-radius',
     '--c-page-backing-chip-pad',
     '--c-page-backing-on',
+    // header follow-up: the open page's and a banner's own header colours,
+    // the text plates, and the header's originals
+    '--c-header-text-page',
+    '--c-header-text-weak-page',
+    '--c-header-text-banner',
+    '--c-header-text-weak-banner',
+    '--c-header-plate-page',
+    '--c-header-plate-pad-page',
+    '--c-header-plate-banner',
+    '--c-header-plate-pad-banner',
+    '--c-header-plate-radius',
+    '--c-header-plate-outset-page',
+    '--c-header-plate-outset-banner',
+    '--c-pane-text-fade',
+    '--c-header-plate-fit-page',
+    '--c-header-plate-fit-banner',
+    '--c-header-text-src',
+    '--c-header-text-weak-src',
+    // conditional: only where the card's header text needs a plate
+    '--c-header-plate',
+    '--c-header-plate-pad',
+    '--c-header-plate-outset',
+    '--c-header-plate-fit',
     '--c-header-bg',
     '--c-header-text',
     '--c-header-text-weak',
@@ -216,7 +239,11 @@ describe('c-final-theme-engine', () => {
                 '--c-page-backing-pad',
                 '--c-page-backing-radius',
                 '--c-page-backing-chip-pad',
-                '--c-page-backing-on'
+                '--c-page-backing-on',
+                '--c-header-plate',
+                '--c-header-plate-pad',
+                '--c-header-plate-outset',
+                '--c-header-plate-fit'
             ];
             const keys = Object.keys(resolveTokens(theme(), null)).sort();
             expect(keys).toEqual(
@@ -724,7 +751,11 @@ describe('c-final-theme-engine', () => {
                 '--c-page-backing-pad',
                 '--c-page-backing-radius',
                 '--c-page-backing-chip-pad',
-                '--c-page-backing-on'
+                '--c-page-backing-on',
+                '--c-header-plate',
+                '--c-header-plate-pad',
+                '--c-header-plate-outset',
+                '--c-header-plate-fit'
             ];
             expect(Object.keys(t).sort()).toEqual(
                 CONTRACT_V1.filter((k) => !conditional.includes(k)).sort()

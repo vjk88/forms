@@ -46,6 +46,15 @@ import {
     onRequestFailure
 } from './autofillEngine';
 
+/** The header's colours and plate on the open page (kept on completion). */
+const HEADER_PAGE_KEYS = [
+    '--c-header-text',
+    '--c-header-text-weak',
+    '--c-header-plate',
+    '--c-header-plate-pad',
+    '--c-header-plate-outset'
+];
+
 /**
  * One-question-per-screen auto-split (SURVEY_PLAN §10 Q4, ruled 2026-07-27,
  * built 2026-07-31). RENDER-TIME only — the authored spec keeps its pages and
@@ -345,11 +354,22 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      * page swap through completion, exactly as before.
      */
     get frameTokens() {
-        return this.completed &&
+        if (
+            this.completed &&
             this._cardTokens &&
             this.tokens['--c-text-treatment']
-            ? this._cardTokens
-            : this.tokens;
+        ) {
+            // the header still sits on the page above the thank-you card,
+            // so it keeps the page's header colours and plate
+            const header = {};
+            HEADER_PAGE_KEYS.forEach((key) => {
+                if (this.tokens[key] !== undefined) {
+                    header[key] = this.tokens[key];
+                }
+            });
+            return { ...this._cardTokens, ...header };
+        }
+        return this.tokens;
     }
 
     /** Submit-engine state (slice 7).

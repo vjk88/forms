@@ -120,6 +120,14 @@ describe('completion after a One at a time submit', () => {
             expect(after['--c-focus-ring']).toBe(tokens['--c-focus-ring']);
             // Neon's card backing returns; Cosmic's card has none
             expect(after['--c-card-backing']).toBe(tokens['--c-card-backing']);
+            // the header still sits on the page above the thank-you card: it
+            // keeps the page's header colours and plate (header follow-up)
+            expect(after['--c-header-plate']).toBe(
+                tokens['--c-header-plate-page']
+            );
+            expect(after['--c-header-text-weak']).toBe(
+                tokens['--c-header-text-weak-page']
+            );
         }
     );
 

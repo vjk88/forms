@@ -220,9 +220,11 @@ describe('text contrast PR A: the card scope', () => {
         );
     });
 
-    it('the header keeps the original muted colour (plan §T1 line 1287)', () => {
+    it("the header's description is judged on the header now (header follow-up)", () => {
+        // the original muted copy (§T1 line 1287) is replaced by a colour
+        // that reads on the header's own surface: headerContrast.test.js
         GALLERY.forEach((key) =>
-            expect(resolve(key)['--c-header-text-weak']).toBe(
+            expect(resolve(key)['--c-header-text-weak-src']).toBe(
                 BEFORE.themes[key]['--c-header-text-weak']
             )
         );
@@ -329,7 +331,9 @@ describe('text contrast PR A: engine copy guard', () => {
         '--c-text-weak-src': 'the original, carried for recalculation',
         '--c-header-text-weak': 'header text is out of scope (plan §8)',
         '--c-mark-idle': 'a mark, judged at 3 : 1 on its own',
-        '--c-mark-idle-page': 'the same mark on the open page'
+        '--c-mark-idle-page': 'the same mark on the open page',
+        '--c-header-text-weak-src':
+            'the header original, carried for recalculation'
     };
     it.each(GALLERY.filter((k) => CARD_STEPS[k] && CARD_STEPS[k][0] > 0))(
         '%s: no token copies the original muted colour',
@@ -346,7 +350,9 @@ describe('text contrast PR A: engine copy guard', () => {
                         !(
                             k.endsWith('-page') &&
                             PAGE_TEXT_TOKENS.includes(k.slice(0, -5))
-                        )
+                        ) &&
+                        // a header colour judged on the header's own surface
+                        !k.startsWith('--c-header-text-weak')
                 );
                 expect(copies).toEqual([]);
             });
