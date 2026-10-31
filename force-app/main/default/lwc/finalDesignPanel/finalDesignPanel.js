@@ -490,6 +490,12 @@ export default class FinalDesignPanel extends LightningElement {
                 return `Set ${dependency?.label || key} first.`;
         }
         for (const condition of c.needsValue || []) {
+            // a condition on the form's header does not apply where the
+            // layout's pane IS the header (a Hidden header left from another
+            // layout must not hide a pane setting)
+            if (condition.unlessOwnsHeader && this.layoutInfo.ownsHeader) {
+                continue;
+            }
             const dependency = this._controlDef(condition.key)?.control;
             if (!dependency) return 'Required setting is unavailable.';
             const current = this._effective(dependency);
@@ -600,7 +606,9 @@ export default class FinalDesignPanel extends LightningElement {
             } else if (c.type === 'meshColors') {
                 vm.colors = this._meshColorRows(value);
             } else if (c.type === 'tiles') {
-                const current = value || c.fallback;
+                const current = c.store
+                    ? this._storedTile(c)
+                    : value || c.fallback;
                 vm.tiles = c.options.map((o) => ({
                     ...o,
                     cls: o.value === current ? 'as-tile on' : 'as-tile'
@@ -1125,10 +1133,20 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     handleTile(event) {
-        this._apply(
-            event.currentTarget.dataset.key,
-            event.currentTarget.dataset.value
-        );
+        const key = event.currentTarget.dataset.key;
+        const value = event.currentTarget.dataset.value;
+        const c = this._controlDef(key)?.control;
+        // a `store` map writes a typed value per tile (undefined = remove the
+        // key), e.g. Text fade: On removes it, Off saves false
+        this._apply(key, c && c.store ? c.store[value] : value);
+    }
+
+    /** The lit tile of a control with a `store` map: the tile whose stored
+     *  value is the spec's, else the fallback tile. */
+    _storedTile(c) {
+        const raw = getAt(this._spec, c.path);
+        const hit = c.options.find((o) => c.store[o.value] === raw);
+        return hit ? hit.value : c.fallback;
     }
 
     handleRichText(event) {

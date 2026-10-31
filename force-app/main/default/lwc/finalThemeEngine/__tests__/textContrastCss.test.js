@@ -373,18 +373,6 @@ const SWAPS = [
     ],
     [
         'finalFormHeader',
-        '.hdr',
-        '--hdr-plate-pad',
-        'var(--c-header-plate-pad, 0)'
-    ],
-    [
-        'finalFormHeader',
-        '.hdr',
-        '--hdr-plate-outset',
-        'var(--c-header-plate-outset, 0)'
-    ],
-    [
-        'finalFormHeader',
         '.hdr.has-banner',
         '--hdr-plate',
         'var(--c-header-plate-banner, var(--c-header-plate, transparent))'
@@ -396,12 +384,6 @@ const SWAPS = [
         'var(--c-header-title-fill, var(--hdr-text))'
     ],
     ['finalFormHeader', '.hdr-desc', 'color', 'var(--hdr-text-weak)'],
-    [
-        'finalFormHighlight',
-        '.hl-inline',
-        'background',
-        'var(--hdr-plate, transparent)'
-    ],
     [
         'finalFormHighlight',
         '.hl-inline',
@@ -419,12 +401,6 @@ const SWAPS = [
         '.progress-text',
         'opacity',
         'var(--c-pane-text-fade, 0.8)'
-    ],
-    [
-        'finalNavSplitHero',
-        '.pane-title, .pane-subtitle, .pane .progress-text, .pane .brand-wordmark',
-        'background',
-        'var(--hdr-plate, transparent)'
     ]
 ];
 
@@ -483,4 +459,52 @@ describe('text contrast PR A: CSS', () => {
         const gone = INVENTORY.rows.filter((row) => !now.includes(row));
         expect({ unlisted, gone }).toEqual({ unlisted: [], gone: [] });
     });
+});
+
+// IMPL_PLAN_HEADER_FADE (owner 2026-10-31): the header's text plate is never
+// drawn as a box again. Its colour feeds one wash layer per surface, and no
+// text painter reads it (nor the plate's old padding, outset, fit or radius).
+describe('header text fade: no plate boxes', () => {
+    const HOSTS = [
+        'finalFormHeader',
+        'finalFormHighlight',
+        'finalNavSplitHero'
+    ];
+    // where the plate colour may still be read: the --hdr-plate definitions
+    // and the two wash layers
+    const ALLOWED = new Set([
+        'finalFormHeader|.hdr|--hdr-plate',
+        'finalFormHeader|.hdr.has-banner|--hdr-plate',
+        'finalFormHeader|.hdr-fade|background',
+        'finalNavSplitHero|.pane-fade|background'
+    ]);
+
+    it.each(HOSTS)('%s reads the plate only on its wash layer', (host) => {
+        const readers = sheet(host)
+            .filter((d) => /--hdr-plate|--c-header-plate/.test(d.value))
+            .map((d) => `${host}|${d.selector}|${d.prop}`);
+        expect(readers.filter((r) => !ALLOWED.has(r))).toEqual([]);
+    });
+
+    it.each(HOSTS)('%s keeps no plate spacing', (host) => {
+        const spacing = sheet(host).filter((d) =>
+            /--hdr-plate-(pad|outset|fit)|--c-header-plate-(pad|outset|fit|radius)/.test(
+                `${d.prop} ${d.value}`
+            )
+        );
+        expect(spacing).toEqual([]);
+    });
+
+    it.each([
+        ['finalFormHeader', '.hdr-fade'],
+        ['finalNavSplitHero', '.pane-fade']
+    ])(
+        '%s %s: solid between the measured edges, full until measured',
+        (host, layer) => {
+            expect(valueOf(host, layer, 'background')).toBe(
+                'linear-gradient(to right, transparent calc(var(--fade-from, 0px) - var(--fade-ramp, 0px)), var(--hdr-plate) var(--fade-from, 0px), var(--hdr-plate) var(--fade-to, 100%), transparent calc(var(--fade-to, 100%) + var(--fade-ramp, 0px)))'
+            );
+            expect(valueOf(host, layer, 'pointer-events')).toBe('none');
+        }
+    );
 });

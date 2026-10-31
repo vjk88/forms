@@ -114,11 +114,15 @@ describe('header text reads everywhere', () => {
 });
 
 describe('header plates: only where needed, as faint as they can be', () => {
-    // in the card: the photo headers and the one gradient that can't pass
+    // in the card: the photo headers and the one gradient that can't pass.
+    // The card's colour is tried first since IMPL_PLAN_HEADER_FADE (owner
+    // 2026-10-31: the plate feeds a soft wash, white on light looks), but
+    // only where the title keeps its ink; the dark photo panes with white
+    // type keep their header-colour plates (headerFadeInk.test.js).
     const CARD_PLATES = {
-        marbleSplit: 'rgba(194, 193, 194, 0.71)',
+        marbleSplit: 'rgba(255, 255, 255, 0.54)',
         botanicalSplit: 'rgba(41, 39, 42, 0.23)',
-        cyberSplit: 'rgba(28, 35, 39, 0.22)',
+        cyberSplit: 'rgba(24, 24, 27, 0.2)',
         marbleLuxury: 'rgba(42, 44, 45, 0.13)',
         auraSplit: 'rgba(109, 40, 217, 0.26)'
     };

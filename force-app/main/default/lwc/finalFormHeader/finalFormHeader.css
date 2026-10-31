@@ -72,22 +72,17 @@
     font-size: var(--c-fs-desc);
     color: var(--hdr-text-weak);
 }
-/* The text plate (IMPL_PLAN_TEXT_CONTRAST, header; owner 2026-10-27): where
-   the title and description can't read on the header's own surface (a
-   photo, a form's banner, the page under a One at a time header), a soft
-   panel in the header's colour goes behind just them, as faint as it can
-   be. It reaches OUT past the text (an outset), so the text keeps its place.
-   The header's text colours and plate are set once here as --hdr-* (a
-   banner picks its own set), and every header painter reads them, the
-   highlight row too. The engine writes the tokens only where needed; old
-   forms and every other header draw nothing new (each falls back to
-   today's value). */
+/* The header's readable colours (IMPL_PLAN_TEXT_CONTRAST, header), set once
+   here as --hdr-* (a banner picks its own set) and read by every header
+   painter, the highlight row too. --hdr-plate is the colour the engine works
+   out where the text can't read on the header's own surface (a photo, a
+   form's banner, the page under a One at a time header). It is never drawn
+   as a box behind the text any more: it feeds the wash below. Old forms
+   carry no plate and get nothing new. */
 .hdr {
     --hdr-text: var(--c-header-text);
     --hdr-text-weak: var(--c-header-text-weak);
     --hdr-plate: var(--c-header-plate, transparent);
-    --hdr-plate-pad: var(--c-header-plate-pad, 0);
-    --hdr-plate-outset: var(--c-header-plate-outset, 0);
 }
 .hdr.has-banner {
     --hdr-text: var(--c-header-text-banner, var(--c-header-text));
@@ -99,21 +94,35 @@
         --c-header-plate-banner,
         var(--c-header-plate, transparent)
     );
-    --hdr-plate-pad: var(
-        --c-header-plate-pad-banner,
-        var(--c-header-plate-pad, 0)
-    );
-    --hdr-plate-outset: var(
-        --c-header-plate-outset-banner,
-        var(--c-header-plate-outset, 0)
+}
+
+/* The text fade (IMPL_PLAN_HEADER_FADE v6, owner 2026-10-31): where a plate
+   is due, one full-height wash in the plate colour (the card's, white on
+   most looks) sits behind the text, solid from the first word to the last
+   and fading to clear past them (c/finalTextFade's RAMP), so the photo
+   beside the text stays clear. c/finalTextFade measures the words and sets
+   --fade-from / --fade-to / --fade-ramp; until it has (or if it can't), the
+   wash covers the whole surface. */
+.hdr-fade {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+        to right,
+        transparent calc(var(--fade-from, 0px) - var(--fade-ramp, 0px)),
+        var(--hdr-plate) var(--fade-from, 0px),
+        var(--hdr-plate) var(--fade-to, 100%),
+        transparent calc(var(--fade-to, 100%) + var(--fade-ramp, 0px))
     );
 }
-.lockup-text,
-.brand-wordmark {
-    margin-inline: var(--hdr-plate-outset);
-    padding: var(--hdr-plate-pad);
-    background: var(--hdr-plate);
-    border-radius: var(--c-header-plate-radius, 0);
+
+/* A badge or inline highlight is measured by its own box, so it must not
+   stretch across the logoBeside grid (a banner bar paints its own fill and
+   is not part of the measured text). */
+.arr-logo-beside .hdr-highlight:not(.hdr-highlight--bar) {
+    justify-self: start;
 }
 
 /* Rich-text title/description: strip the editor's <p> wrappers so the lockup
@@ -229,4 +238,42 @@
     margin-bottom: 0;
     padding-inline: var(--c-strip-inset);
     padding-bottom: 0;
+}
+
+/*
+ * Exposed (One at a time, the header straight on the page with nothing of its
+ * own behind it): the wash's top and bottom edges would cut a hard band
+ * across the page, so they soften too, inside reserved edge room (32px, a
+ * starting value). The room stays with the switch Off; the mask only shapes
+ * the wash, never the text.
+ */
+.hdr.hdr--exposed {
+    --hdr-edge: 32px;
+    padding-top: calc(var(--c-space-5) + var(--hdr-edge));
+    padding-bottom: var(--hdr-edge);
+}
+.hdr--exposed .hdr-fade {
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--hdr-edge),
+        #000 calc(100% - var(--hdr-edge)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--hdr-edge),
+        #000 calc(100% - var(--hdr-edge)),
+        transparent 100%
+    );
+}
+
+/* On a narrow form the exposed edges keep the phone padding cap (the narrow
+   rule above), with smaller room. After the rule it overrides. */
+@container final-form-viewport (max-width: 540px) {
+    .hdr.hdr--exposed {
+        --hdr-edge: 20px;
+        padding-top: calc(min(var(--c-space-5), 16px) + var(--hdr-edge));
+    }
 }

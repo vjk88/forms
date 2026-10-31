@@ -9,6 +9,9 @@
                         aria-hidden="true"
                     ></div>
                 </template>
+                <template lwc:if={showPaneFade}>
+                    <div class="pane-fade" aria-hidden="true"></div>
+                </template>
                 <div class="brand">
                     <template lwc:if={logoUrl}>
                         <img class="brand-logo" src={logoUrl} alt={logoAlt} />
@@ -41,6 +44,7 @@
                             <template lwc:elseif={block.isHighlight}>
                                 <c-final-form-highlight
                                     key={block.key}
+                                    class={block.hlCls}
                                     highlight={block.highlight}
                                 ></c-final-form-highlight>
                             </template>

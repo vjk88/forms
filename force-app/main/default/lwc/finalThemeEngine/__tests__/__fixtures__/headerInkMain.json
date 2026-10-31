@@ -1,0 +1,210 @@
+{
+    "nordic": {
+        "--c-header-text": "#1f2937",
+        "--c-header-text-weak": "#5c6371",
+        "--c-header-text-banner": "#1f2937",
+        "--c-header-text-weak-banner": "#454d5c",
+        "--c-header-text-page": "#1f2937",
+        "--c-header-text-weak-page": "#666e7c"
+    },
+    "lavender": {
+        "--c-header-text": "#3b0764",
+        "--c-header-text-weak": "#7b3a9c",
+        "--c-header-text-banner": "#3b0764",
+        "--c-header-text-weak-banner": "#5b2080",
+        "--c-header-text-page": "#3b0764",
+        "--c-header-text-weak-page": "#7b3a9c"
+    },
+    "terracotta": {
+        "--c-header-text": "#27272a",
+        "--c-header-text-weak": "#65656d",
+        "--c-header-text-banner": "#27272a",
+        "--c-header-text-weak-banner": "#4c4c52",
+        "--c-header-text-page": "#27272a",
+        "--c-header-text-weak-page": "#6e6e77"
+    },
+    "editorialIvory": {
+        "--c-header-text": "#232019",
+        "--c-header-text-weak": "#6f6a5e",
+        "--c-header-text-banner": "#232019",
+        "--c-header-text-weak-banner": "#49453c",
+        "--c-header-text-page": "#232019",
+        "--c-header-text-weak-page": "#6f6a5e"
+    },
+    "sandstone": {
+        "--c-header-text": "#3c1508",
+        "--c-header-text-weak": "#825947",
+        "--c-header-text-banner": "#3c1508",
+        "--c-header-text-weak-banner": "#643b2c",
+        "--c-header-text-page": "#3c1508",
+        "--c-header-text-weak-page": "#845a49"
+    },
+    "vintagePaper": {
+        "--c-header-text": "#1c1917",
+        "--c-header-text-weak": "#716a65",
+        "--c-header-text-banner": "#1c1917",
+        "--c-header-text-weak-banner": "#4a4541",
+        "--c-header-text-page": "#1c1917",
+        "--c-header-text-weak-page": "#4a4541"
+    },
+    "dracula": {
+        "--c-header-text": "#f8f8f2",
+        "--c-header-text-weak": "#adb5cb",
+        "--c-header-text-banner": "#f8f8f2",
+        "--c-header-text-weak-banner": "#adb5cb",
+        "--c-header-text-page": "#f8f8f2",
+        "--c-header-text-weak-page": "#7a87b0"
+    },
+    "tokyo": {
+        "--c-header-text": "#e2e8f0",
+        "--c-header-text-weak": "#96a2b3",
+        "--c-header-text-banner": "#e2e8f0",
+        "--c-header-text-weak-banner": "#a3aebe",
+        "--c-header-text-page": "#e2e8f0",
+        "--c-header-text-weak-page": "#718095"
+    },
+    "marbleSplit": {
+        "--c-header-text": "#1c1917",
+        "--c-header-text-weak": "#24201f",
+        "--c-header-text-banner": "#1c1917",
+        "--c-header-text-weak-banner": "#24201f",
+        "--c-header-text-page": "#1c1917",
+        "--c-header-text-weak-page": "#24201f"
+    },
+    "claySplit": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#ffffff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#ffffff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#ffffff"
+    },
+    "botanicalSplit": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#ffffff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#ffffff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#ffffff"
+    },
+    "cyberSplit": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#ffffff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#ffffff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#ffffff"
+    },
+    "marbleLuxury": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#ffffff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#ffffff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#ffffff"
+    },
+    "oceanBreeze": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#ecfeff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#ecfeff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#ecfeff"
+    },
+    "desertOasis": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#fff7ed",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#fffaf3",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#fff7ed"
+    },
+    "sunsetDunes": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#fffffe",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#fffaf3",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#fffffe"
+    },
+    "forestMist": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#f0fdf4",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#f5fef7",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#f0fdf4"
+    },
+    "silkLuxury": {
+        "--c-header-text": "#4c0519",
+        "--c-header-text-weak": "#500724",
+        "--c-header-text-banner": "#4c0519",
+        "--c-header-text-weak-banner": "#500724",
+        "--c-header-text-page": "#4c0519",
+        "--c-header-text-weak-page": "#500724"
+    },
+    "carbonMatrix": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#f8fafc",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#fafcfd",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#f8fafc"
+    },
+    "cosmicVortex": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#faf5ff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#fdfaff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#faf5ff"
+    },
+    "auroraBorealis": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#f0fdfa",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#f4fefb",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#f0fdfa"
+    },
+    "auraSplit": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#f9f8ff",
+        "--c-header-text-banner": "#ffffff",
+        "--c-header-text-weak-banner": "#f9f8ff",
+        "--c-header-text-page": "#ffffff",
+        "--c-header-text-weak-page": "#f9f8ff"
+    },
+    "terminal": {
+        "--c-header-text": "#22c55e",
+        "--c-header-text-weak": "#199748",
+        "--c-header-text-banner": "#22c55e",
+        "--c-header-text-weak-banner": "#1ca34e",
+        "--c-header-text-page": "#22c55e",
+        "--c-header-text-weak-page": "#178841"
+    },
+    "retroStepper": {
+        "--c-header-text": "#fb923c",
+        "--c-header-text-weak": "#e47229",
+        "--c-header-text-banner": "#fb923c",
+        "--c-header-text-weak-banner": "#df6a24",
+        "--c-header-text-page": "#fb923c",
+        "--c-header-text-weak-page": "#cf5317"
+    },
+    "neonNights": {
+        "--c-header-text": "#ffffff",
+        "--c-header-text-weak": "#b9b4d6",
+        "--c-header-text-banner": null,
+        "--c-header-text-weak-banner": "#c8c5df",
+        "--c-header-text-page": null,
+        "--c-header-text-weak-page": "#c8c5df"
+    },
+    "neoBrutalism": {
+        "--c-header-text": "#000000",
+        "--c-header-text-weak": "#4b5563",
+        "--c-header-text-banner": "#000000",
+        "--c-header-text-weak-banner": "#272c33",
+        "--c-header-text-page": "#000000",
+        "--c-header-text-weak-page": "#4b5563"
+    }
+}
