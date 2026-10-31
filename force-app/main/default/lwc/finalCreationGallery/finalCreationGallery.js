@@ -130,6 +130,10 @@ export default class FinalCreationGallery extends LightningElement {
     @track errorMessage = '';
     @track createdInfo = null;
     @track previewDevice = 'desktop';
+    // shrink-to-fit of the live preview (_fitPreview): scale + real size
+    _pvScale = 1;
+    _pvWidth = 0;
+    _pvHeight = 0;
 
     _objects = [];
     _specCache = null;
@@ -430,8 +434,88 @@ export default class FinalCreationGallery extends LightningElement {
             ? 'pv-frame'
             : `pv-frame pv-frame_${this.previewDevice}`;
     }
+    /**
+     * The frame lays out at its real device width, then shrinks as a
+     * picture when the pane is narrower (owner 2026-10-31: shrink to fit,
+     * nothing cut off). The transform leaves the frame's own layout width
+     * alone, so the form's container queries still see a true desktop.
+     */
     get previewFrameStyle() {
-        return `width:${DEVICE_WIDTHS[this.previewDevice] || 1024}px;`;
+        const width = `width:${DEVICE_WIDTHS[this.previewDevice] || 1024}px;`;
+        return this._pvScale < 1
+            ? `${width} transform:scale(${this._pvScale}); transform-origin:0 0;`
+            : width;
+    }
+    /** The box the shrunk picture takes up (a transform frees no space). */
+    get previewFitStyle() {
+        if (this._pvScale >= 1 || !this._pvWidth) {
+            return '';
+        }
+        const w = Math.round(this._pvWidth * this._pvScale);
+        const h = Math.round(this._pvHeight * this._pvScale);
+        // the unshrunk layout box would still push a sideways scrollbar
+        return `width:${w}px; height:${h}px; overflow:hidden;`;
+    }
+
+    renderedCallback() {
+        this._watchPreview();
+    }
+
+    /** Follow the pane's width and the form's height while a preview shows. */
+    _watchPreview() {
+        const stage = this.template.querySelector('.d-stage');
+        const frame = stage ? stage.querySelector('.pv-fit > div') : null;
+        if (stage === this._pvStage && frame === this._pvFrame) {
+            return;
+        }
+        this._unwatchPreview();
+        if (!stage || !frame || typeof ResizeObserver === 'undefined') {
+            return;
+        }
+        this._pvStage = stage;
+        this._pvFrame = frame;
+        this._pvObserver = new ResizeObserver(() => this._fitPreview());
+        this._pvObserver.observe(stage);
+        this._pvObserver.observe(frame);
+        this._fitPreview();
+    }
+
+    _unwatchPreview() {
+        if (this._pvObserver) {
+            this._pvObserver.disconnect();
+        }
+        this._pvObserver = null;
+        this._pvStage = null;
+        this._pvFrame = null;
+    }
+
+    _fitPreview() {
+        const stage = this._pvStage;
+        const frame = this._pvFrame;
+        if (!stage || !frame) {
+            return;
+        }
+        const cs = window.getComputedStyle(stage);
+        const room =
+            stage.clientWidth -
+            (parseFloat(cs.paddingLeft) || 0) -
+            (parseFloat(cs.paddingRight) || 0);
+        // offsetWidth/Height ignore the transform: the frame's real size
+        const width = frame.offsetWidth;
+        const height = frame.offsetHeight;
+        const scale =
+            room > 0 && width > room
+                ? Math.floor((room / width) * 1000) / 1000
+                : 1;
+        if (
+            scale !== this._pvScale ||
+            width !== this._pvWidth ||
+            height !== this._pvHeight
+        ) {
+            this._pvScale = scale;
+            this._pvWidth = width;
+            this._pvHeight = height;
+        }
     }
     handleDevice(e) {
         this.previewDevice = e.currentTarget.dataset.value;
@@ -514,6 +598,7 @@ export default class FinalCreationGallery extends LightningElement {
 
     disconnectedCallback() {
         clearTimeout(this._blurTimer);
+        this._unwatchPreview();
     }
     handleObjectPick(e) {
         const value = e.currentTarget.dataset.value;
