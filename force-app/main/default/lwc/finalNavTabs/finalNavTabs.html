@@ -15,6 +15,8 @@
                         type="button"
                         role="tab"
                         key={tab.key}
+                        id={tab.tabId}
+                        aria-controls="tab-panel"
                         data-index={tab.index}
                         aria-selected={tab.selected}
                         tabindex={tab.tabindex}
@@ -25,7 +27,12 @@
                 </template>
             </div>
         </div>
-        <div class="content" role="tabpanel">
+        <div
+            class="content"
+            id="tab-panel"
+            role="tabpanel"
+            aria-labelledby={activeTabId}
+        >
             <template for:each={currentPageList} for:item="page">
                 <div class="page-panel" key={page.key}>
                     <c-final-layout-zones

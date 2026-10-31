@@ -9,7 +9,9 @@ import { LightningElement, api, track } from 'lwc';
  * fires on expand so the engine can track visit order.
  *
  * A11y: each trigger is a button with aria-expanded + aria-controls; the
- * panel region is labelled by its trigger.
+ * panel region is labelled by its trigger. The panel title is an h2 (a page,
+ * like Scroll's page divider), so the h3 section titles inside read as its
+ * children instead of as more panels.
  */
 export default class FinalNavAccordion extends LightningElement {
     @api currentPageIndex = 0;
