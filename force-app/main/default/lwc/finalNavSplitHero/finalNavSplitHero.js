@@ -191,6 +191,30 @@ export default class FinalNavSplitHero extends LightningElement {
     }
 
     /**
+     * The phone strip (narrow Split) shows the brand, the title and the
+     * progress. A pane with none of them would be an empty band: `pane--bare`
+     * hides it there (CSS). The desktop pane is unaffected.
+     */
+    get paneClass() {
+        const hasWords = Boolean(
+            this.logoUrl ||
+            this.opts.paneBrandName ||
+            this.opts.paneTitle ||
+            this.showProgressSteps ||
+            this.showProgressBar
+        );
+        return hasWords ? 'pane' : 'pane pane--bare';
+    }
+
+    /** The brand row; marked empty when there is no logo or name, so the
+     *  phone strip doesn't space around an empty box. */
+    get brandClass() {
+        return this.logoUrl || this.showWordmark
+            ? 'brand'
+            : 'brand brand--empty';
+    }
+
+    /**
      * The header text fade (IMPL_PLAN_HEADER_FADE): the viewer decides from
      * the tokens whether this pane's surface gets a plate (paneFadeEligible,
      * same scope as paneStyle) and maps the author's switch every time
@@ -301,10 +325,8 @@ export default class FinalNavSplitHero extends LightningElement {
         const blocks = aboveTitle
             ? [hlBlock, ...textBlocks]
             : [...textBlocks, hlBlock];
-        return ZONES.map((zone) => ({
-            zone,
-            cls: `zone zone-${zone}`,
-            blocks: blocks
+        return ZONES.map((zone) => {
+            const list = blocks
                 .filter((b) => placement[b.kind] === zone)
                 .filter((b) => {
                     return b.kind === 'highlight'
@@ -325,8 +347,15 @@ export default class FinalNavSplitHero extends LightningElement {
                         b.highlight.variant === 'banner'
                             ? 'pane-hl pane-hl--bar'
                             : 'pane-hl'
-                }))
-        }));
+                }));
+            // an empty zone keeps its place on desktop (the middle one centres
+            // the title) but takes no room in the phone strip
+            return {
+                zone,
+                cls: `zone zone-${zone}${list.length ? '' : ' zone--empty'}`,
+                blocks: list
+            };
+        });
     }
 
     /** Hairline between a bottom-placed highlight and the progress footer. */

@@ -1,7 +1,7 @@
 <template>
     <div class="split">
         <div class={layoutClass}>
-            <aside class="pane" style={paneStyle}>
+            <aside class={paneClass} style={paneStyle}>
                 <template lwc:if={paneBannerStyle}>
                     <div
                         class="banner-layer"
@@ -12,7 +12,7 @@
                 <template lwc:if={showPaneFade}>
                     <div class="pane-fade" aria-hidden="true"></div>
                 </template>
-                <div class="brand">
+                <div class={brandClass}>
                     <template lwc:if={logoUrl}>
                         <img class="brand-logo" src={logoUrl} alt={logoAlt} />
                     </template>
@@ -60,6 +60,16 @@
                             <template for:each={progressDots} for:item="dot">
                                 <span class={dot.cls} key={dot.key}></span>
                             </template>
+                        </div>
+                        <!-- the phone strip shows a thin bar in place of the dots -->
+                        <div
+                            class="progress-track phone-bar"
+                            aria-hidden="true"
+                        >
+                            <div
+                                class="progress-fill"
+                                style={progressFillStyle}
+                            ></div>
                         </div>
                         <p class="progress-text">{progressText}</p>
                     </div>
