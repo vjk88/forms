@@ -24,8 +24,9 @@
     --g-tap-icon: 40px;
 }
 
+/* No width cap: the gallery fills its window, which fills the screen
+   (owner 2026-10-31) */
 .gallery-root {
-    max-width: 1180px;
     margin: 0 auto;
     padding: 1.5rem 1.75rem 3rem;
 }
@@ -388,14 +389,26 @@
 .dev-btn.is-on lightning-icon {
     --slds-c-icon-color-foreground-default: var(--c-studio-on-accent);
 }
+/* The preview fills the window's height (the window fills the screen):
+   viewport less the window margin, the gallery's head and the preview bar. */
 .d-stage {
     padding: 1rem;
-    max-height: 560px;
-    overflow: auto; /* desktop 1024px frame scrolls horizontally inside the pane */
+    max-height: max(560px, calc(100vh - 250px));
+    overflow: auto;
+    /* a scrollbar coming and going must not change the width the picture
+       shrinks to (_fitPreview), or the two would chase each other */
+    /* both edges, so the reserved strip keeps the picture centred */
+    scrollbar-gutter: stable both-edges;
     background: var(--c-studio-surface-subtle);
 }
+/* Holds the frame at its shrunk size (set inline), centred in the pane */
+.pv-fit {
+    margin: 0 auto;
+    width: fit-content;
+}
 /* The frame renders at a REAL device width (set inline); the form inside
-   reflows via its own container queries — no scale transform. */
+   reflows via its own container queries. A pane narrower than the device
+   draws it smaller with a scale transform (_fitPreview). */
 .pv-frame_tablet,
 .pv-frame_mobile {
     border: 1px solid var(--g-line);
@@ -481,6 +494,12 @@
 @media (max-width: 768px) {
     .d-body {
         grid-template-columns: 1fr;
+    }
+}
+/* A phone: the window's margin would eat a quarter of the screen */
+@media (max-width: 600px) {
+    .gallery-root {
+        padding-inline: 1rem;
     }
 }
 

@@ -192,18 +192,25 @@
     inset: 0;
     z-index: 9000;
     background: var(--c-studio-overlay);
+    /* the creation window fills the screen, less a 24px margin (owner
+       2026-10-31); minmax(0, …) keeps a tall gallery scrolling inside the
+       window instead of stretching it */
     display: grid;
-    place-items: center;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     padding: 24px;
 }
 .lib-overlay-panel {
     background: var(--c-studio-surface);
     border-radius: 14px;
-    width: min(1180px, 96vw);
-    max-height: 92vh;
     overflow: auto;
     box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
     padding: 8px 4px;
+}
+
+@media (max-width: 600px) {
+    .lib-overlay {
+        padding: 8px;
+    }
 }
 
 @media (max-width: 700px) {
