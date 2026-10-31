@@ -9,7 +9,9 @@ import { observeStuck } from 'c/finalStuck';
  * Next/Back/Submit come from the slotted submitBar.
  *
  * A11y: real tablist/tab/tabpanel roles with a roving tabindex — Left/Right
- * arrows move AND activate (automatic activation), Home/End jump.
+ * arrows move AND activate (automatic activation), Home/End jump. Every tab
+ * points at the one panel (aria-controls) and the panel is named by the
+ * active tab (aria-labelledby), so a screen reader says which page it is in.
  */
 
 const STYLES = new Set(['underline', 'pills', 'enclosed']);
@@ -19,6 +21,10 @@ const ALIGN_CLASS = {
     center: 'align-center',
     fullWidth: 'align-full'
 };
+
+function tabIdFor(page, index) {
+    return `tab-${page.id || `pg_${index}`}`;
+}
 
 export default class FinalNavTabs extends LightningElement {
     @api pages = [];
@@ -77,6 +83,7 @@ export default class FinalNavTabs extends LightningElement {
             const active = index === current;
             return {
                 key: page.id || `pg_${index}`,
+                tabId: tabIdFor(page, index),
                 label: page.name || `Page ${index + 1}`,
                 index,
                 cls: active ? 'tab active' : 'tab',
@@ -84,6 +91,12 @@ export default class FinalNavTabs extends LightningElement {
                 tabindex: active ? '0' : '-1'
             };
         });
+    }
+
+    get activeTabId() {
+        const index = this.currentPageIndex || 0;
+        const page = (this.pages || [])[index];
+        return page ? tabIdFor(page, index) : null;
     }
 
     /** One-item list so the keyed template remounts (and animates) per tab. */

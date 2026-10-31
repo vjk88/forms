@@ -2,7 +2,7 @@
     <div class="accordion">
         <template for:each={panelList} for:item="panel">
             <section class="panel" key={panel.key}>
-                <h3 class="head">
+                <h2 class="head">
                     <button
                         class={panel.triggerCls}
                         type="button"
@@ -21,7 +21,7 @@
                         ></lightning-icon>
                         <span class="trigger-label">{panel.name}</span>
                     </button>
-                </h3>
+                </h2>
                 <template lwc:if={panel.isOpen}>
                     <div
                         class="body"
@@ -30,7 +30,7 @@
                         aria-labelledby={panel.triggerId}
                     >
                         <c-final-layout-zones
-                    onvaluechange={handleValueChange}
+                            onvaluechange={handleValueChange}
                             sections={panel.sections}
                             zones={panel.zones}
                         ></c-final-layout-zones>
