@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { bannerLayerStyle } from 'c/finalThemeEngine';
+import { watchTextFade } from 'c/finalTextFade';
 
 /**
  * finalFormHeader — the header lockup (catalog §1, owner header model 2026-07-05).
@@ -42,6 +43,58 @@ export default class FinalFormHeader extends LightningElement {
      */
     @api flush = false;
 
+    /**
+     * The header text fade (IMPL_PLAN_HEADER_FADE), decided by the viewer from
+     * the resolved tokens: `{ on, eligible, exposed }`. Eligible = the theme
+     * engine works out a text plate for this surface; on = paint the wash
+     * (fitted to the words by c/finalTextFade); exposed = the header sits
+     * straight on the One at a time page, so its top and bottom edges soften
+     * too (that room is kept with the switch Off). Absent: nothing new.
+     */
+    @api fade;
+
+    _fadeWatch = null;
+
+    renderedCallback() {
+        if (!this.showFade) {
+            // switched off (or no plate): nothing to fit, stop watching
+            this.disconnectedCallback();
+            return;
+        }
+        if (!this._fadeWatch) {
+            this._fadeWatch = watchTextFade({
+                surface: () => this.template.querySelector('header.hdr'),
+                layer: () => this.template.querySelector('.hdr-fade'),
+                blocks: () => this._fadeBlocks()
+            });
+        }
+        this._fadeWatch.measure();
+    }
+
+    disconnectedCallback() {
+        if (this._fadeWatch) {
+            this._fadeWatch.disconnect();
+            this._fadeWatch = null;
+        }
+    }
+
+    /** What the wash protects: the brand name, title and description by
+     *  their glyphs, a badge or inline highlight by its box. A banner bar
+     *  paints its own fill and is left out. */
+    _fadeBlocks() {
+        const q = (s) => this.template.querySelector(s);
+        const blocks = [
+            { el: q('.brand-wordmark'), text: true },
+            { el: q('.hdr-title'), text: true },
+            { el: q('.hdr-desc'), text: true }
+        ];
+        const hl = q('.hdr-highlight');
+        if (hl && !hl.classList.contains('hdr-highlight--bar')) {
+            blocks.push({ el: hl, text: false });
+        }
+        return blocks.filter((b) => b.el);
+    }
+
     get hdr() {
         return this.header || {};
     }
@@ -59,7 +112,15 @@ export default class FinalFormHeader extends LightningElement {
         // a form's own banner photo: the text reads its banner plate and
         // colours (IMPL_PLAN_TEXT_CONTRAST, header)
         const banner = this.bannerStyle ? ' has-banner' : '';
-        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}${flush}${banner}`;
+        const f = this.fade || {};
+        const fade = f.eligible && f.exposed ? ' hdr--exposed' : '';
+        return `hdr style-standard ${ARRANGEMENT_CLASS[this.arrangement]}${flush}${banner}${fade}`;
+    }
+
+    /** The wash itself: only where a plate is due and the switch is on. */
+    get showFade() {
+        const f = this.fade || {};
+        return Boolean(f.eligible && f.on);
     }
 
     /**
@@ -108,5 +169,13 @@ export default class FinalFormHeader extends LightningElement {
 
     get highlight() {
         return this.hdr.highlight;
+    }
+
+    /** A banner bar paints its own fill, so the wash leaves it out. */
+    get highlightClass() {
+        const h = this.highlight;
+        return h && h.variant === 'banner'
+            ? 'hdr-highlight hdr-highlight--bar'
+            : 'hdr-highlight';
     }
 }

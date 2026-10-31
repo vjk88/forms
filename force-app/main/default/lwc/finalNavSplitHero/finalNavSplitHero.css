@@ -53,6 +53,34 @@
     contain: paint;
 }
 
+/* The text fade (IMPL_PLAN_HEADER_FADE v6, owner 2026-10-31): where a plate
+   is due, one full-height wash in the plate colour (the card's, white on
+   most looks) sits behind the text, solid from the first word to the last
+   and fading to clear past them (c/finalTextFade's RAMP), so the photo
+   beside the text stays clear. c/finalTextFade measures the words and sets
+   --fade-from / --fade-to / --fade-ramp; until it has (or if it can't), the
+   wash covers the whole surface. */
+.pane-fade {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+        to right,
+        transparent calc(var(--fade-from, 0px) - var(--fade-ramp, 0px)),
+        var(--hdr-plate) var(--fade-from, 0px),
+        var(--hdr-plate) var(--fade-to, 100%),
+        transparent calc(var(--fade-to, 100%) + var(--fade-ramp, 0px))
+    );
+}
+
+/* A badge or inline highlight is measured by its own box, so it must not
+   stretch across its zone (a banner bar spans it and paints its own fill). */
+.pane-hl:not(.pane-hl--bar) {
+    align-self: flex-start;
+}
+
 /* Banner image on its own layer, above the pane's fill, behind the content,
    at real opacity (bannerLayerStyle sets background-image + opacity inline). */
 .banner-layer {
@@ -117,20 +145,6 @@
     /* the fade dims it below what was judged; the engine writes 1 */
     opacity: var(--c-pane-text-fade, 0.85);
 }
-/* The pane's text on the header's text plate where it needs one (see
-   paneStyle); an old form gets no plate and no shift. */
-.pane-title,
-.pane-subtitle,
-.pane .progress-text,
-.pane .brand-wordmark {
-    width: var(--hdr-plate-fit, auto);
-    max-width: 100%;
-    margin-inline: var(--hdr-plate-outset, 0);
-    padding: var(--hdr-plate-pad, 0);
-    background: var(--hdr-plate, transparent);
-    border-radius: var(--c-header-plate-radius, 0);
-}
-
 /* Rich-text blocks: strip the editor's <p> wrappers so the pane type scale
    owns the box; authored inline spans (color, size, italics) still win. */
 .pane-title p,

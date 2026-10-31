@@ -30,12 +30,9 @@
 
 /* Inline — quiet text row on the host surface */
 .hl-inline {
-    /* the host's header colour and text plate (header or Split pane), as a
-       pill; outside a header both fall back to today */
-    margin-inline: var(--hdr-plate-outset, 0);
-    padding: var(--hdr-plate-pad, 0);
-    background: var(--hdr-plate, transparent);
-    border-radius: var(--c-header-plate-radius, 0);
+    /* the host's header text colour (header or Split pane); outside a header
+       it falls back to today. No plate of its own: the host's text fade
+       (IMPL_PLAN_HEADER_FADE) sits behind it with the rest of the text. */
     color: var(--hdr-text-weak, var(--c-header-text-weak, var(--c-text-weak)));
     font-size: var(--c-fs-secondary);
 }

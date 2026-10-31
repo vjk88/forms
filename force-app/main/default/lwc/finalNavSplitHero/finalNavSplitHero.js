@@ -11,6 +11,7 @@ import {
     isTouchOnly
 } from 'c/finalStepFlow';
 import { bannerLayerStyle } from 'c/finalThemeEngine';
+import { watchTextFade } from 'c/finalTextFade';
 
 /**
  * finalNavSplitHero — brand pane + form pane (catalog §2).
@@ -185,11 +186,68 @@ export default class FinalNavSplitHero extends LightningElement {
             hdr('text', 'text', 'var(--c-header-text)') +
             hdr('text-weak', 'text-weak', 'var(--c-header-text-weak)') +
             hdr('plate', 'plate', 'transparent') +
-            hdr('plate-pad', 'plate-pad', '0') +
-            hdr('plate-outset', 'plate-outset', '0') +
-            hdr('plate-fit', 'plate-fit', 'auto') +
             ' color: var(--hdr-text);'
         );
+    }
+
+    /**
+     * The header text fade (IMPL_PLAN_HEADER_FADE): the viewer decides from
+     * the tokens whether this pane's surface gets a plate (paneFadeEligible,
+     * same scope as paneStyle) and maps the author's switch every time
+     * (paneTextFade). The wash is fitted to the pane's words by
+     * c/finalTextFade.
+     */
+    get showPaneFade() {
+        return Boolean(
+            this.opts.paneFadeEligible && this.opts.paneTextFade !== false
+        );
+    }
+
+    _fadeWatch = null;
+
+    renderedCallback() {
+        if (!this.showPaneFade) {
+            // switched off (or no plate): nothing to fit, stop watching
+            this.disconnectedCallback();
+            return;
+        }
+        if (!this._fadeWatch) {
+            this._fadeWatch = watchTextFade({
+                surface: () => this.template.querySelector('.pane'),
+                layer: () => this.template.querySelector('.pane-fade'),
+                blocks: () => this._fadeBlocks()
+            });
+        }
+        this._fadeWatch.measure();
+    }
+
+    disconnectedCallback() {
+        if (this._fadeWatch) {
+            this._fadeWatch.disconnect();
+            this._fadeWatch = null;
+        }
+    }
+
+    /** What the wash protects in the pane: brand name, title, subtitle and
+     *  progress text by their glyphs, a badge or inline highlight by its
+     *  box (a banner bar paints its own fill). Hidden blocks measure empty. */
+    _fadeBlocks() {
+        const pane = this.template.querySelector('.pane');
+        if (!pane) {
+            return [];
+        }
+        const text = [
+            '.brand-wordmark',
+            '.pane-title',
+            '.pane-subtitle',
+            '.progress-text'
+        ].flatMap((s) =>
+            [...pane.querySelectorAll(s)].map((el) => ({ el, text: true }))
+        );
+        const highlights = [
+            ...pane.querySelectorAll('.pane-hl:not(.pane-hl--bar)')
+        ].map((el) => ({ el, text: false }));
+        return [...text, ...highlights];
     }
 
     get paneBannerStyle() {
@@ -258,7 +316,15 @@ export default class FinalNavSplitHero extends LightningElement {
                     key: b.kind,
                     isTitle: b.kind === 'title',
                     isSubtitle: b.kind === 'subtitle',
-                    isHighlight: b.kind === 'highlight'
+                    isHighlight: b.kind === 'highlight',
+                    // a banner bar paints its own fill: the text fade
+                    // leaves it out and lets it span its zone
+                    hlCls:
+                        b.kind === 'highlight' &&
+                        b.highlight &&
+                        b.highlight.variant === 'banner'
+                            ? 'pane-hl pane-hl--bar'
+                            : 'pane-hl'
                 }))
         }));
     }

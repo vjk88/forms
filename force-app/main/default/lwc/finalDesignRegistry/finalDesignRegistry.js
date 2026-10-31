@@ -846,6 +846,40 @@ const AREAS = [
                         fallback: 100
                     },
                     {
+                        // IMPL_PLAN_HEADER_FADE (owner 2026-10-31): the soft
+                        // wash behind header text that replaced the grey text
+                        // plates. Stored only when Off (`false`); On removes
+                        // the key, so every form starts On. A Split pane is
+                        // the header there, so a Hidden header left over from
+                        // another layout must not hide this (unlessOwnsHeader).
+                        key: 'textFade',
+                        label: 'Text fade',
+                        type: 'tiles',
+                        hint: 'Adds a background fade where needed to help header text stand out. Off: text may be hard to read over photos.',
+                        path: 'header.textFade',
+                        fallback: 'on',
+                        store: { on: undefined, off: false },
+                        needsValue: [
+                            {
+                                key: 'headerStyle',
+                                notEquals: 'none',
+                                unlessOwnsHeader: true
+                            }
+                        ],
+                        options: [
+                            {
+                                value: 'on',
+                                label: 'On',
+                                hint: 'A soft fade behind the text'
+                            },
+                            {
+                                value: 'off',
+                                label: 'Off',
+                                hint: 'Text straight on the photo'
+                            }
+                        ]
+                    },
+                    {
                         key: 'headerText',
                         label: 'Header text',
                         type: 'color',
@@ -1462,6 +1496,7 @@ export const DESIGN_SECTIONS = [
                     'headerBgOpacity',
                     'bannerImage',
                     'bannerOpacity',
+                    'textFade',
                     'headerText',
                     'headerTextWeak'
                 ]

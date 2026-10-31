@@ -1005,9 +1005,11 @@ function computeReadableText({
     // The header: title and description on the header's own surface (its
     // fill, gradient or photo) over the card, or over the page itself on the
     // One at a time open page. Where they can't read (a photo header, an
-    // author's banner, a photo page), a text plate goes behind just the
-    // title and description, in the header's colour, else the card's, else
-    // the page's, as faint as it can be (owner 2026-10-27).
+    // author's banner, a photo page), a text plate goes behind them in the
+    // card's colour, else the header's, else the page's, as faint as it can
+    // be (owner 2026-10-27; card first since IMPL_PLAN_HEADER_FADE, owner
+    // 2026-10-31: the plate now feeds a soft wash, and a white wash reads
+    // clean where a grey header fill went muddy).
     const headerFill = parseColor(
         atOpacity(pal.headerBg, pal.headerBgOpacity) || ''
     );
@@ -1058,15 +1060,29 @@ function computeReadableText({
         if (first.ok) {
             return { result: first, plate: null };
         }
-        const plate = backingFor({
-            colors: [headerHex, cardHex, pageHex].filter(Boolean),
-            ownAlpha: 0.01,
-            underlay: surface,
-            judge: headerJudge
-        });
-        return plate
-            ? { result: headerJudge(plate.range), plate }
-            : { result: first, plate: null };
+        const solve = (colors) => {
+            const plate = backingFor({
+                colors,
+                ownAlpha: 0.01,
+                underlay: surface,
+                judge: headerJudge
+            });
+            return plate ? { result: headerJudge(plate.range), plate } : null;
+        };
+        // The card's colour first (a white wash on light looks), but only
+        // where the title keeps its own ink: on a dark photo pane with white
+        // type a white wash would flip the title to black, so those keep the
+        // header's colour first, exactly as before.
+        const card = cardHex ? solve([cardHex]) : null;
+        if (card && card.result.wordsSteps === 0) {
+            return card;
+        }
+        return (
+            solve([headerHex, cardHex, pageHex].filter(Boolean)) || {
+                result: first,
+                plate: null
+            }
+        );
     };
     const PLATE_PAD = 'var(--c-space-2) var(--c-space-3)';
     // the plate reaches out sideways by its padding, so the text keeps its

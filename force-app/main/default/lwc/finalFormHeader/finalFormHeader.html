@@ -7,6 +7,9 @@
                 aria-hidden="true"
             ></div>
         </template>
+        <template lwc:if={showFade}>
+            <div class="hdr-fade" aria-hidden="true"></div>
+        </template>
         <template lwc:if={showLogo}>
             <img class="brand-logo" src={logoUrl} alt={logoAlt} />
         </template>
@@ -36,7 +39,7 @@
         </div>
         <template lwc:if={highlight}>
             <c-final-form-highlight
-                class="hdr-highlight"
+                class={highlightClass}
                 highlight={highlight}
             ></c-final-form-highlight>
         </template>

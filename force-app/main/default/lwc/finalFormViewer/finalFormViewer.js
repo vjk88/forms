@@ -29,6 +29,7 @@ import { ensureFontRefs } from 'c/finalFontBundle';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 import { repeatsPageName } from 'c/finalPageName';
+import { headerFade, paneFadeEligible } from './headerFade';
 import {
     // The engine's two-argument reconcile, as the call below always meant:
     // previewSession's three-argument copy was imported by mistake and,
@@ -1108,6 +1109,25 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             });
             return changed ? sections : page.sections;
         };
+        const bleedOn = Boolean(layout.bleed) && options.fullBleed !== false;
+        const headerFlush = Boolean(layout.ownsAdvance) && bleedOn;
+        // Header text fade (IMPL_PLAN_HEADER_FADE): decided from the resolved
+        // tokens, never measured. The Split pane is the header there, so it
+        // follows the same switch, mapped every time (with or without its own
+        // words), and picks its own plate scope.
+        const paneOptions = layout.ownsHeader
+            ? {
+                  ...options,
+                  paneTextFade: header.textFade !== false,
+                  paneFadeEligible: paneFadeEligible({
+                      tokens: this.tokens,
+                      paneBanner: Boolean(
+                          options.paneImage && options.paneImage.url
+                      ),
+                      bleed: bleedOn
+                  })
+              }
+            : options;
         this.model = {
             // RAW (may be undefined): pageFrame falls back to medium for the
             // carded panel, while bleed layouts keep their locked column
@@ -1145,7 +1165,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 (spec.submit && spec.submit.buttonArrangement) ||
                 layout.buttonArrangement ||
                 'split',
-            layoutOptions: options,
+            layoutOptions: paneOptions,
             paginates: Boolean(layout.paginates),
             ownsAdvance,
             // Text-size set (type scale spec section 6): layouts that show one
@@ -1157,13 +1177,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // Immersive full-bleed: only bleed-capable layouts (splitHero,
             // oneAtATime), ON by default, reverted with fullBleed === false —
             // the toggle restores the carded render exactly.
-            bleed: Boolean(layout.bleed) && options.fullBleed !== false,
+            bleed: bleedOn,
             // One at a time on the open page: a progress strip follows the
             // header, so the header runs flush with it (finalFormHeader).
-            headerFlush:
-                Boolean(layout.ownsAdvance) &&
-                Boolean(layout.bleed) &&
-                options.fullBleed !== false,
+            headerFlush,
+            headerFade: headerFade({
+                tokens: this.tokens,
+                header,
+                flush: headerFlush
+            }),
             // Only set when the spec configures the pane EXPLICITLY (above) —
             // then the form side keeps a minimal title lockup for context.
             paneLockup
