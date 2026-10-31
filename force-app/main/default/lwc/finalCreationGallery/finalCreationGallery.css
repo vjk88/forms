@@ -397,7 +397,8 @@
     overflow: auto;
     /* a scrollbar coming and going must not change the width the picture
        shrinks to (_fitPreview), or the two would chase each other */
-    scrollbar-gutter: stable;
+    /* both edges, so the reserved strip keeps the picture centred */
+    scrollbar-gutter: stable both-edges;
     background: var(--c-studio-surface-subtle);
 }
 /* Holds the frame at its shrunk size (set inline), centred in the pane */
@@ -406,7 +407,8 @@
     width: fit-content;
 }
 /* The frame renders at a REAL device width (set inline); the form inside
-   reflows via its own container queries — no scale transform. */
+   reflows via its own container queries. A pane narrower than the device
+   draws it smaller with a scale transform (_fitPreview). */
 .pv-frame_tablet,
 .pv-frame_mobile {
     border: 1px solid var(--g-line);
@@ -492,6 +494,12 @@
 @media (max-width: 768px) {
     .d-body {
         grid-template-columns: 1fr;
+    }
+}
+/* A phone: the window's margin would eat a quarter of the screen */
+@media (max-width: 600px) {
+    .gallery-root {
+        padding-inline: 1rem;
     }
 }
 

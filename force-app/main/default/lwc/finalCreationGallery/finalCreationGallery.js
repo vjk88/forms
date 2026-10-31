@@ -453,8 +453,9 @@ export default class FinalCreationGallery extends LightningElement {
         }
         const w = Math.round(this._pvWidth * this._pvScale);
         const h = Math.round(this._pvHeight * this._pvScale);
-        // the unshrunk layout box would still push a sideways scrollbar
-        return `width:${w}px; height:${h}px; overflow:hidden;`;
+        // no clipping here: the tablet/phone frame's shadow must show, and
+        // the browser sizes scroll overflow by the shrunk picture
+        return `width:${w}px; height:${h}px;`;
     }
 
     renderedCallback() {

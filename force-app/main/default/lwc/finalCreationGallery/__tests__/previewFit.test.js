@@ -113,7 +113,36 @@ describe('new-form preview shrinks to fit', () => {
         expect(frame.style.transformOrigin).toBe('0 0');
         expect(fit.style.width).toBe('768px');
         expect(fit.style.height).toBe('1500px');
-        expect(fit.style.overflow).toBe('hidden');
+    });
+
+    it('switching device re-fits the same frame: a phone needs no shrink', async () => {
+        const el = await openDetails();
+        await measure(el, 768, 1024, 2000);
+        el.shadowRoot.querySelector('.dev-btn[data-value="mobile"]').click();
+        await flush();
+        const { fit, frame } = await measure(el, 768, 390, 1200);
+        expect(frame.style.width).toBe('390px');
+        expect(frame.style.transform).toBe('');
+        expect(fit.getAttribute('style')).toBeFalsy();
+    });
+
+    it('leaving the step and coming back watches the new pane', async () => {
+        const el = await openDetails();
+        const first = observers.length;
+        el.shadowRoot.querySelector('.d-back').click();
+        await flush();
+        el.shadowRoot
+            .querySelector('c-final-theme-gallery')
+            .dispatchEvent(
+                new CustomEvent('themeselect', {
+                    detail: { themeKey: 'nordic' }
+                })
+            );
+        await flush();
+        expect(observers.length).toBe(first + 1);
+        expect(observers[first - 1].targets).toEqual([]);
+        const { frame } = await measure(el, 512, 1024, 1000);
+        expect(frame.style.transform).toBe('scale(0.5)');
     });
 
     it('a pane wide enough draws it at real size, untouched', async () => {

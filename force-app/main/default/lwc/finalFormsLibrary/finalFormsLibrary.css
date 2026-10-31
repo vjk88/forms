@@ -207,6 +207,12 @@
     padding: 8px 4px;
 }
 
+@media (max-width: 600px) {
+    .lib-overlay {
+        padding: 8px;
+    }
+}
+
 @media (max-width: 700px) {
     .lib-head {
         align-items: flex-start;
