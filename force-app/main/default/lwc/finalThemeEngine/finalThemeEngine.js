@@ -1084,10 +1084,6 @@ function computeReadableText({
             }
         );
     };
-    const PLATE_PAD = 'var(--c-space-2) var(--c-space-3)';
-    // the plate reaches out sideways by its padding, so the text keeps its
-    // left edge (not up and down: that would eat the header's row gap)
-    const PLATE_OUTSET = 'calc(-1 * var(--c-space-3))';
     const headerHasSurface = Boolean(
         (headerFill && headerFill.a > 0) ||
         (pal.headerBgGradient &&
@@ -1113,20 +1109,12 @@ function computeReadableText({
         Object.entries(scope.result.tokens).forEach(([k, v]) => {
             out[`${k}${suffix}`] = v;
         });
+        // the plate's colour feeds the header text fade (IMPL_PLAN_HEADER_FADE);
+        // it is never drawn as a box, so it carries no padding or size
         if (scope.plate || suffix) {
             out[`--c-header-plate${suffix}`] = scope.plate
                 ? scope.plate.css
                 : 'transparent';
-            out[`--c-header-plate-pad${suffix}`] = scope.plate
-                ? PLATE_PAD
-                : '0';
-            out[`--c-header-plate-outset${suffix}`] = scope.plate
-                ? PLATE_OUTSET
-                : '0';
-            // a plate hugs its text (the Split pane's blocks span the pane)
-            out[`--c-header-plate-fit${suffix}`] = scope.plate
-                ? 'fit-content'
-                : 'auto';
         }
     });
     if (!headerHasSurface && headerRoles.desc && !pal.headerTextWeak) {
@@ -1143,7 +1131,6 @@ function computeReadableText({
     }
     // the Split pane's subtitle and progress were faded; judged at full
     out['--c-pane-text-fade'] = '1';
-    out['--c-header-plate-radius'] = 'var(--c-radius)';
     // the header's own colours before any change, for recalculation
     out['--c-header-text-src'] = pal.headerText || text;
     out['--c-header-text-weak-src'] = pal.headerTextWeak || pal.textWeak;
