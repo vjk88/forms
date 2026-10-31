@@ -51,9 +51,7 @@ import {
 const HEADER_PAGE_KEYS = [
     '--c-header-text',
     '--c-header-text-weak',
-    '--c-header-plate',
-    '--c-header-plate-pad',
-    '--c-header-plate-outset'
+    '--c-header-plate'
 ];
 
 /**

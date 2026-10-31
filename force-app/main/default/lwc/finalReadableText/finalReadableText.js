@@ -419,9 +419,7 @@ export const PAGE_TEXT_TOKENS = [
     // the header on the open page sits on the page itself
     '--c-header-text',
     '--c-header-text-weak',
-    '--c-header-plate',
-    '--c-header-plate-pad',
-    '--c-header-plate-outset'
+    '--c-header-plate'
 ];
 
 /**
