@@ -222,6 +222,11 @@
     opacity: var(--c-pane-text-fade, 0.8);
 }
 
+/* The thin bar that stands in for the dots on the phone strip */
+.phone-bar {
+    display: none;
+}
+
 /* — Form pane — */
 .form {
     min-width: 0;
@@ -444,14 +449,22 @@ slot[name='actions'] {
         display: block;
     }
 
+    /* The phone strip: brand, title and progress stacked, short (owner
+       2026-10-31). The title moved to the middle zone on 2026-07-12 and this
+       strip still hid that zone, so phones showed no title at all; and the
+       progress was never shown here. */
     .pane {
         min-height: 0;
-        flex-direction: row;
-        align-items: center;
-        gap: var(--c-space-4);
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--c-space-2);
         padding: var(--c-space-4);
         margin-bottom: var(--c-space-5);
         position: static;
+    }
+
+    .pane.pane--bare {
+        display: none;
     }
 
     /* stacked panes: release the viewport cap and the inner scroll — one
@@ -490,15 +503,40 @@ slot[name='actions'] {
         flex: none;
     }
 
-    .zone-center,
+    /* title only: no subtitle (below), no highlight, nothing at the bottom
+       but the progress */
     .zone-bottom,
     .pane-divider,
-    .pane-progress {
+    .zone-center c-final-form-highlight,
+    .zone--empty,
+    .brand--empty {
         display: none;
     }
 
+    .pane-progress {
+        margin-top: var(--c-space-1);
+    }
+
+    .dots {
+        display: none;
+    }
+
+    .phone-bar {
+        display: block;
+    }
+
+    .progress-track {
+        height: 4px;
+    }
+
+    .progress-text {
+        margin-top: var(--c-space-1);
+    }
+
+    /* the compact title size every layout uses on a phone, never smaller
+       than the section heading below it */
     .pane-title {
-        font-size: var(--c-fs-hero-compact);
+        font-size: var(--c-fs-title-compact);
     }
 
     .pane-subtitle {
