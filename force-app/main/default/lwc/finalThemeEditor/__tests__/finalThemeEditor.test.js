@@ -349,6 +349,29 @@ describe('c-final-theme-editor', () => {
         );
     });
 
+    it('Accent, Text and Muted text keep their live contrast badge', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        const accent = color(el, 'palette.accent');
+        expect(accent.subject).toBe('Button labels');
+        expect(accent.contrastWith).toBeTruthy();
+        expect(color(el, 'palette.text').subject).toBe('Body text');
+        expect(color(el, 'palette.textWeak').subject).toBe('Muted text');
+        expect(color(el, 'palette.textWeak').contrastWith).toBeTruthy();
+        // the other rows have no badge, as before
+        expect(color(el, 'palette.pageBg').subject).toBeUndefined();
+    });
+
+    it('a light brand colour: the tip names only the styles that fix the button (not Bold header)', async () => {
+        const el = await mount({ startMode: 'brand' });
+        await brand(el, { color: '#fafafa' });
+        const note = q(el, '.te-note').textContent;
+        expect(note).toContain('Submit button');
+        expect(note).toContain('Try Dark');
+        expect(note).not.toContain('Bold header');
+        await brand(el, { color: '#1e3a8a' });
+        expect(q(el, '.te-note').textContent.trim()).toBe('');
+    });
+
     it('the preview says where the theme starts from', async () => {
         const el = await mount({ startFrom: 'nordic' });
         expect(q(el, '.te-preview c-final-theme-card').description).toBe(

@@ -13,6 +13,7 @@ import { previewSettings } from 'c/finalLayoutRegistry';
 import { logoForUpload } from 'c/finalBrandColors';
 import {
     buildBrandTheme,
+    brandContrastReport,
     themeReadability,
     fixReadability
 } from 'c/finalBrandTheme';
@@ -208,6 +209,21 @@ const BASE_FOR_STYLE = {
     boldHeader: 'nordic',
     dark: 'dracula'
 };
+
+// The old editor's live contrast badge (c/finalColorControl): the colour it
+// is read against, and what it paints. Kept on the same three rows.
+const BADGES = {
+    'palette.accent': { against: '--c-on-accent', subject: 'Button labels' },
+    'palette.text': { against: '--c-content-bg', subject: 'Body text' },
+    'palette.textWeak': { against: '--c-content-bg', subject: 'Muted text' }
+};
+
+// The brand styles by name, for the Submit-button tip.
+const BRAND_STYLE_CARDS = [
+    { value: 'clean', label: 'Clean' },
+    { value: 'boldHeader', label: 'Bold header' },
+    { value: 'dark', label: 'Dark' }
+];
 
 const clone = (o) => JSON.parse(JSON.stringify(o || {}));
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -543,11 +559,14 @@ export default class FinalThemeEditor extends LightningElement {
                 const automatic =
                     !pinned && (own === undefined || own === null);
                 const value = automatic ? tokens[token] : own;
+                const badge = BADGES[path];
                 return {
                     key,
                     label,
                     path,
                     value: typeof value === 'string' ? value : '',
+                    contrastWith: badge ? tokens[badge.against] : undefined,
+                    subject: badge ? badge.subject : undefined,
                     pinned,
                     automatic,
                     flagged: worst.has(path),
@@ -739,9 +758,35 @@ export default class FinalThemeEditor extends LightningElement {
 
     /** Advisory only: a button that blends into the card. */
     get buttonNote() {
-        return this.report.checks.some((c) => c.advisory && !c.pass)
-            ? 'The Submit button is close to the card color, so it may not stand out. Try the Bold header style or a deeper shade.'
-            : '';
+        if (!this.report.checks.some((c) => c.advisory && !c.pass)) return '';
+        const lead =
+            'The Submit button is close to the card color, so it may not stand out.';
+        if (this.start !== 'brand' || !this.brand.color) {
+            return `${lead} Try a deeper button fill.`;
+        }
+        // name only the brand styles that really fix it (as the old brand
+        // dialog did: Bold header does NOT, its card stays white)
+        const fixes = BRAND_STYLE_CARDS.filter(
+            (s) =>
+                s.value !== this.brand.style &&
+                this._buttonStandsOut(
+                    buildBrandTheme({
+                        color: this.brand.color,
+                        secondColor: this.brand.second || null,
+                        style: s.value
+                    })
+                )
+        ).map((s) => s.label);
+        return fixes.length
+            ? `${lead} Try ${fixes.join(' or ')}, or a deeper shade.`
+            : `${lead} Try a deeper shade.`;
+    }
+
+    _buttonStandsOut(recipe) {
+        const fill = brandContrastReport(recipe).checks.find(
+            (c) => c.pair === 'button fill on card'
+        );
+        return !fill || fill.pass;
     }
 
     get unfixedLines() {
