@@ -1,0 +1,74 @@
+@import 'c/finalStudioStyles';
+
+/* Vertical icon rail (owner 2026-07-08, shared 2026-10-31): icons + tiny
+   labels stacked on the left edge, the same in Build and Design. */
+:host {
+    display: flex;
+    flex: none;
+}
+
+.rail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 6px;
+    border-right: 1px solid var(--c-studio-border);
+}
+
+.rail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rail-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 58px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font: inherit;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--c-studio-text-weak);
+    padding: 8px 2px;
+    cursor: pointer;
+}
+
+.rail-tab.on {
+    color: var(--c-studio-accent-text);
+    background: var(--c-studio-accent-surface);
+}
+
+.rail-tab.on lightning-icon {
+    --sds-c-icon-color-foreground-default: var(--c-studio-accent-text);
+}
+
+.rail-tab:hover:not(.on) {
+    background: var(--c-studio-hover);
+}
+
+.rail-tab:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 1px;
+}
+
+.rail-dot {
+    position: absolute;
+    top: 6px;
+    right: 12px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-studio-accent);
+}
+
+.rail-divider {
+    height: 1px;
+    margin: 0 6px;
+    background: var(--c-studio-border);
+}

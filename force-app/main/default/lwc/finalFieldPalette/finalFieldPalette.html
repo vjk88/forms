@@ -1,23 +1,11 @@
 <template>
     <div class="fp">
-        <nav class="fp-rail">
-            <template for:each={tabs} for:item="t">
-                <button
-                    key={t.key}
-                    type="button"
-                    class={t.cls}
-                    data-tab={t.key}
-                    title={t.label}
-                    onclick={handleTab}
-                >
-                    <lightning-icon
-                        icon-name={t.icon}
-                        size="x-small"
-                    ></lightning-icon>
-                    <span class="fp-tab-label">{t.label}</span>
-                </button>
-            </template>
-        </nav>
+        <c-final-studio-rail
+            tabs={tabs}
+            value={tab}
+            label="Build tools"
+            onselect={handleTab}
+        ></c-final-studio-rail>
 
         <div class="fp-main">
             <template lwc:if={isFields}>

@@ -25,6 +25,11 @@ const FIELDS = [
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
+// the icon rail is c/finalStudioRail; its buttons live in its own shadow
+const rail = (el) => el.shadowRoot.querySelector('c-final-studio-rail');
+const railTab = (el, key) =>
+    rail(el).shadowRoot.querySelector(`[data-tab="${key}"]`);
+
 function mount(props = {}) {
     const el = createElement('c-final-field-palette', {
         is: FinalFieldPalette
@@ -77,7 +82,7 @@ describe('c-final-field-palette', () => {
 
         el.objectApi = 'Contact';
         await flush();
-        el.shadowRoot.querySelector('[data-tab="blocks"]').click();
+        railTab(el, 'blocks').click();
         await flush();
         // Blocks has its OWN header — never the object one
         expect(el.shadowRoot.querySelector('.fp-head-label').textContent).toBe(
@@ -95,7 +100,7 @@ describe('c-final-field-palette', () => {
         await flush();
         expect(el.shadowRoot.querySelectorAll('.fp-item')).toHaveLength(1);
 
-        el.shadowRoot.querySelector('[data-tab="logic"]').click();
+        railTab(el, 'logic').click();
         await flush();
         // Logic is LIVE (slice 5): empty state, then the aggregate index
         expect(el.shadowRoot.querySelector('.fp-note').textContent).toContain(
@@ -177,7 +182,7 @@ describe('c-final-field-palette', () => {
         const el = mount();
         describeFields.emit(FIELDS);
         await flush();
-        el.shadowRoot.querySelector('[data-tab="blocks"]').click();
+        railTab(el, 'blocks').click();
         await flush();
 
         // the FULL FormStudio roster (BUILDER_SURFACES §1, minus Hero) +
@@ -256,7 +261,7 @@ describe('c-final-field-palette', () => {
         const el = mount();
         describeFields.emit(FIELDS);
         await flush();
-        el.shadowRoot.querySelector('[data-tab="blocks"]').click();
+        railTab(el, 'blocks').click();
         await flush();
 
         const item = el.shadowRoot.querySelector('.fp-item:not([data-type])');
@@ -300,9 +305,7 @@ describe('c-final-field-palette', () => {
         const el = mount({ spec: { pages: [] }, formId: 'f001' });
         await flush();
 
-        const autofillTabBtn = el.shadowRoot.querySelector(
-            '[data-tab="autofill"]'
-        );
+        const autofillTabBtn = railTab(el, 'autofill');
         autofillTabBtn.click();
         await flush();
 
@@ -311,10 +314,7 @@ describe('c-final-field-palette', () => {
     });
 
     it('Freeform has Autofill and Mapping in the rail; Form and Survey have Autofill', async () => {
-        const tabs = (el) =>
-            [...el.shadowRoot.querySelectorAll('.fp-tab')].map(
-                (t) => t.dataset.tab
-            );
+        const tabs = (el) => rail(el).tabs.map((t) => t.key);
         const free = mount({ formType: 'freeform' });
         await flush();
         expect(tabs(free)).toEqual([
@@ -334,9 +334,10 @@ describe('c-final-field-palette', () => {
         await flush();
         el.showMapping();
         await flush();
-        expect(
-            el.shadowRoot.querySelector('.fp-tab[data-tab="mapping"]').classList
-        ).toContain('on');
+        expect(rail(el).value).toBe('mapping');
+        expect(railTab(el, 'mapping').getAttribute('aria-pressed')).toBe(
+            'true'
+        );
         expect(
             el.shadowRoot.querySelector('c-final-mapping-summary')
         ).toBeTruthy();
