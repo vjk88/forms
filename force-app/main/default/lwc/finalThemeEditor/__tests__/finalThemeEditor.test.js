@@ -70,6 +70,32 @@ describe('c-final-theme-editor', () => {
         expect(accent.value).toBe('#111111');
     });
 
+    it('edit mode opens with the saved name, so Save works without retyping it', async () => {
+        const el = mount({
+            themeId: 'a0AXX0000001',
+            themeName: 'Spring Campaign'
+        });
+        await flush();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector(
+                'input[placeholder="e.g. Brand Purple"]'
+            ).value
+        ).toBe('Spring Campaign');
+        const save = [...el.shadowRoot.querySelectorAll('.te-btn')].find(
+            (b) => b.textContent.trim() === 'Save'
+        );
+        expect(save.disabled).toBe(false);
+        save.click();
+        await flush();
+        expect(saveCustomTheme).toHaveBeenCalledWith(
+            expect.objectContaining({
+                themeId: 'a0AXX0000001',
+                name: 'Spring Campaign'
+            })
+        );
+    });
+
     it('the font picker edits the theme recipe: fonts written, legacy typography gone', async () => {
         const el = mount({ startFrom: 'editorialIvory' });
         await flush();

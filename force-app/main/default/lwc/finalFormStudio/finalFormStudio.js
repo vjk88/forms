@@ -3207,10 +3207,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     @track editorOpen = false;
     editorThemeId = null;
     editorStartFrom = null;
+    editorThemeName = null;
 
     handleThemeEdit(event) {
         this.editorThemeId = event.detail.themeId;
         this.editorStartFrom = event.detail.startFrom;
+        this.editorThemeName = event.detail.themeName || null;
         this.editorOpen = true;
     }
 

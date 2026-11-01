@@ -1147,7 +1147,27 @@ describe('c-final-design-panel', () => {
         el.shadowRoot.querySelector('.entry-edit').click();
         expect(handler.mock.calls[0][0].detail).toEqual({
             themeId: null,
-            startFrom: 'nordic'
+            startFrom: 'nordic',
+            themeName: null
+        });
+    });
+
+    it('Edit theme… on a custom theme hands over its saved name', async () => {
+        listCustomThemes.mockResolvedValueOnce([
+            { id: 'a0AXX0000001', name: 'Brand Purple', baseTheme: 'nordic' }
+        ]);
+        const spec = buildSampleSpec({ layout: 'stepper', themeKey: 'nordic' });
+        spec.theme = { source: 'custom', name: 'a0AXX0000001', overrides: {} };
+        const el = mount(spec);
+        const handler = jest.fn();
+        el.addEventListener('themeedit', handler);
+        await flush();
+        await goAdvanced(el);
+        el.shadowRoot.querySelector('.entry-edit').click();
+        expect(handler.mock.calls[0][0].detail).toEqual({
+            themeId: 'a0AXX0000001',
+            startFrom: null,
+            themeName: 'Brand Purple'
         });
     });
 

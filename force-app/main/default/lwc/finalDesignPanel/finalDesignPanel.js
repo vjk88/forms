@@ -945,13 +945,18 @@ export default class FinalDesignPanel extends LightningElement {
 
     /** Blast-radius rule: the editor opens ONLY via this explicit action. */
     handleEditTheme() {
+        const custom = this.themeSource === 'custom';
+        const record = custom
+            ? this._customThemes.find((t) => t.id === this.themeKey)
+            : null;
         this.dispatchEvent(
             new CustomEvent('themeedit', {
                 detail: {
-                    themeId:
-                        this.themeSource === 'custom' ? this.themeKey : null,
+                    themeId: custom ? this.themeKey : null,
                     startFrom:
-                        this.themeSource === 'builtin' ? this.themeKey : null
+                        this.themeSource === 'builtin' ? this.themeKey : null,
+                    // the editor opens a saved theme with its name filled in
+                    themeName: record ? record.name : null
                 }
             })
         );
