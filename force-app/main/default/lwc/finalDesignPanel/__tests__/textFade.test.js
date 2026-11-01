@@ -26,11 +26,11 @@ jest.mock(
  */
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-function mount(spec) {
+function mount(formSpec) {
     const el = createElement('c-final-design-panel', {
         is: FinalDesignPanel
     });
-    el.spec = spec;
+    el.spec = formSpec;
     document.body.appendChild(el);
     return el;
 }
@@ -38,12 +38,15 @@ function mount(spec) {
 async function openHeader(el) {
     el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
     await flush();
-    const button = el.shadowRoot.querySelector(
-        '.section-toggle[data-area="brand"]'
-    );
-    if (button.getAttribute('aria-expanded') !== 'true') button.click();
+    el.shadowRoot
+        .querySelector('c-final-studio-rail')
+        .dispatchEvent(new CustomEvent('select', { detail: { key: 'brand' } }));
     await flush();
 }
+
+// the pane's "Find a design setting" gets the same availability
+const searchEntries = (el) =>
+    el.shadowRoot.querySelector('c-final-design-search').entries;
 
 const tile = (el, value) =>
     el.shadowRoot.querySelector(
@@ -106,25 +109,17 @@ describe('Design panel: Text fade', () => {
 
     it('a Hidden header hides it, in the panel and in search', async () => {
         const el = mount(spec('stepper', { style: 'none' }));
-        const state = jest.fn();
-        el.addEventListener('toolbarstate', state);
         await openHeader(el);
         expect(tile(el, 'on')).toBeNull();
-        const entry = state.mock.calls
-            .at(-1)[0]
-            .detail.searchEntries.find((e) => e.key === 'textFade');
+        const entry = searchEntries(el).find((e) => e.key === 'textFade');
         expect(entry.available).toBe(false);
     });
 
     it('on Split a Hidden header left from another layout does not hide it', async () => {
         const el = mount(spec('splitHero', { style: 'none' }));
-        const state = jest.fn();
-        el.addEventListener('toolbarstate', state);
         await openHeader(el);
         expect(tile(el, 'on')).not.toBeNull();
-        const entry = state.mock.calls
-            .at(-1)[0]
-            .detail.searchEntries.find((e) => e.key === 'textFade');
+        const entry = searchEntries(el).find((e) => e.key === 'textFade');
         expect(entry.available).toBe(true);
     });
 
@@ -132,12 +127,10 @@ describe('Design panel: Text fade', () => {
         // Highlight position needs a highlight text on Split: unflagged, so an
         // empty highlight still hides it there
         const el = mount(spec('splitHero', { highlight: { text: '' } }));
-        const state = jest.fn();
-        el.addEventListener('toolbarstate', state);
         await openHeader(el);
-        const entry = state.mock.calls
-            .at(-1)[0]
-            .detail.searchEntries.find((e) => e.key === 'highlightPlacement');
+        const entry = searchEntries(el).find(
+            (e) => e.key === 'highlightPlacement'
+        );
         expect(entry.available).toBe(false);
     });
 });

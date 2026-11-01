@@ -3,5 +3,5 @@
     <apiVersion>66.0</apiVersion>
     <isExposed>false</isExposed>
     <description
-    >Advanced Design shortcuts for existing fonts, colors, and registry-based settings search.</description>
+    >Design pane setting search: matches labels, paths, choices and aliases; navigation only, emits settingselect for available settings.</description>
 </LightningComponentBundle>

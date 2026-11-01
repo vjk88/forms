@@ -262,15 +262,7 @@
             </p>
         </template>
 
-        <div class={workspaceClass}>
-            <template lwc:if={showDesignToolbar}>
-                <c-final-design-toolbar
-                    state={designToolbarState}
-                    disabled={editorLocked}
-                    oncontrolchange={handleDesignToolbarChange}
-                    onsettingselect={handleDesignSettingSelect}
-                ></c-final-design-toolbar>
-            </template>
+        <div class="st-workspace-container">
             <div class={bodyClass} aria-busy={publishing}>
                 <template lwc:if={isReadOnly}>
                     <aside class="st-left st-left--notice">
@@ -305,7 +297,6 @@
                             onspecchange={handleSpecChange}
                             onthemeedit={handleThemeEdit}
                             onbrandcreate={handleBrandCreate}
-                            ontoolbarstate={handleDesignToolbarState}
                         ></c-final-design-panel>
                     </aside>
                     <main class="st-stagearea">

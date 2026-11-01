@@ -6,7 +6,6 @@ import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme
 import { resolveTokens, resolveFontRefs, MESH_SEEDS } from 'c/finalThemeEngine';
 import {
     pairingOptions,
-    pairingPatch,
     applyFontPatch,
     refsLabel,
     levelHasFonts,
@@ -45,12 +44,30 @@ import {
  * `specchange` { spec } after every mutation; the host echoes it back down and
  * into the live preview (finalFormViewer.spec, preserveNav).
  */
+// Rail tabs that are not DESIGN_SECTIONS (those carry railLabel + icon).
+// The icons are ones other final* components already show in this org.
+const THEME_TAB = { key: 'theme', label: 'Theme', icon: 'utility:layers' };
+const COLORS_TAB = {
+    key: 'colors',
+    label: 'Colors',
+    icon: 'utility:brush',
+    divider: true
+};
+// Simple's three sections, keyed like the Advanced tabs they lead into.
+const SIMPLE_TABS = [
+    THEME_TAB,
+    { key: 'brand', label: 'Brand', icon: 'utility:text_color' },
+    { key: 'navigation', label: 'Buttons', icon: 'utility:forward' }
+];
+
 export default class FinalDesignPanel extends LightningElement {
     /** Parent Form__c id — forwarded to image uploads (public/private decision). */
     @api formId;
 
     @track advanced = false;
-    @track activeAreaKey = 'brand';
+    /** The rail tab: 'theme' | a DESIGN_SECTIONS key | 'colors'. Simple
+     *  shows theme / brand / navigation (its three sections). */
+    @track activeAreaKey = 'theme';
     @track pendingThemeKey = null;
     /** 'theme' | 'layout' | null — which gallery popup is open. */
     @track galleryMode = null;
@@ -62,36 +79,23 @@ export default class FinalDesignPanel extends LightningElement {
     @track _customProps = null;
     _customPropsId = null;
     _spec = {};
-    _toolbarSignature;
     _pendingControlFocus;
     focusedControlKey;
     expandedGroups = {};
 
-    /** UI-only bridge to the shell; never enters the form spec or history. */
     renderedCallback() {
-        const signature = JSON.stringify(this.toolbarState);
-        if (signature !== this._toolbarSignature) {
-            this._toolbarSignature = signature;
-            this.dispatchEvent(
-                new CustomEvent('toolbarstate', {
-                    detail: JSON.parse(signature)
-                })
-            );
-        }
         this._focusPendingControl();
     }
 
-    get toolbarState() {
-        if (!this.advanced) return { advanced: false };
-        const controls = this.controlsVM;
+    /** Every control for "Find a design setting", with the same
+     *  availability as the rendered panel (navigation only). */
+    get searchEntries() {
         const byKey = new Map(
-            controls.map((control) => [control.key, control])
+            this.controlsVM.map((control) => [control.key, control])
         );
         const searchEntries = [];
-        const colorGroups = [];
         for (const section of DESIGN_SECTIONS) {
             for (const group of section.groups) {
-                const colors = [];
                 for (const key of group.controls) {
                     const entry = this._controlDef(key);
                     const c = entry.control;
@@ -117,13 +121,31 @@ export default class FinalDesignPanel extends LightningElement {
                         available: !reason,
                         reason
                     });
-                    const vm = byKey.get(key);
-                    if (
-                        vm &&
-                        (vm.isColor || vm.isGradientSurface || vm.isMeshColors)
-                    )
-                        colors.push(vm);
                 }
+            }
+        }
+        return searchEntries;
+    }
+
+    /** The Colors tab: every available color, gradient and mesh control,
+     *  grouped "Section › Group". A view, not a section: each control still
+     *  lives in exactly one DESIGN_SECTIONS group (its own tab). */
+    get colorGroups() {
+        const byKey = new Map(
+            this.controlsVM.map((control) => [control.key, control])
+        );
+        const colorGroups = [];
+        for (const section of DESIGN_SECTIONS) {
+            for (const group of section.groups) {
+                const colors = group.controls
+                    .map((key) => byKey.get(key))
+                    .filter(
+                        (vm) =>
+                            vm &&
+                            (vm.isColor ||
+                                vm.isGradientSurface ||
+                                vm.isMeshColors)
+                    );
                 if (colors.length)
                     colorGroups.push({
                         key: `${section.key}-${group.key}`,
@@ -132,67 +154,24 @@ export default class FinalDesignPanel extends LightningElement {
                     });
             }
         }
-        return {
-            advanced: this.advanced,
-            font: byKey.get('typography'),
-            colorGroups,
-            searchEntries
-        };
+        return colorGroups;
     }
 
-    @api
-    applyToolbarChange(change) {
-        if (!this.advanced || !change) return false;
-        const entry = this._controlDef(change.key);
-        if (!entry || this._unavailableReason(entry)) return false;
+    /** The Colors tab's "Reset to theme": drops this color's override (and
+     *  its gradient; for blob colors, the custom mesh too, so the theme's own
+     *  mesh comes back). */
+    handleColorReset(event) {
+        const entry = this._controlDef(event.currentTarget.dataset.key);
+        if (!entry) return;
         const c = entry.control;
-        const target = {
-            dataset: { key: c.key, idx: change.idx },
-            value: change.value
-        };
-        if (change.kind === 'font' && c.key === 'typography') {
-            const options =
-                this.controlsVM.find((vm) => vm.key === c.key)?.options || [];
-            if (!options.some((option) => option.value === change.value))
-                return false;
-            const patch = pairingPatch(change.value, {
-                uploadedFonts: this._fonts
-            });
-            if (!patch) return false;
-            this._applyFontPatch(patch);
-        } else if (change.kind === 'color' && c.type === 'color') {
-            this.handleColor({ target, detail: { value: change.value } });
-        } else if (change.kind === 'preset' && c.presets) {
-            if (!c.presets.some((p) => p.value === change.value)) return false;
-            this.handlePresetPick({ detail: { value: change.value } });
-        } else if (change.kind === 'gradient' && c.type === 'gradientSurface') {
-            this.handleGradientSurface({
-                target,
-                detail: { solid: change.solid, gradient: change.gradient }
-            });
-        } else if (change.kind === 'mesh' && c.type === 'meshColors') {
-            const index = Number(change.idx);
-            if (
-                !Number.isInteger(index) ||
-                index < 0 ||
-                index >= this._meshColorRows(this._effective(c)).length
-            )
-                return false;
-            this.handleMeshColor({ target, detail: { value: change.value } });
-        } else if (
-            change.kind === 'reset' &&
-            ['color', 'gradientSurface', 'meshColors'].includes(c.type)
-        ) {
-            const overrides = this._ensureOverrides();
-            deleteAt(overrides, c.themePath);
-            if (c.gradientPath) deleteAt(overrides, c.gradientPath);
-            if (c.type === 'meshColors')
-                deleteAt(overrides, this._controlDef('mesh').control.themePath);
-            this._syncInkMode();
-            this._spec = { ...this._spec };
-            this._emit();
-        } else return false;
-        return true;
+        const overrides = this._ensureOverrides();
+        deleteAt(overrides, c.themePath);
+        if (c.gradientPath) deleteAt(overrides, c.gradientPath);
+        if (c.type === 'meshColors')
+            deleteAt(overrides, this._controlDef('mesh').control.themePath);
+        this._syncInkMode();
+        this._spec = { ...this._spec };
+        this._emit();
     }
 
     @api
@@ -671,8 +650,15 @@ export default class FinalDesignPanel extends LightningElement {
         return out;
     }
 
-    /** Five task sections, using the same values and gates as Simple. */
-    get advancedSections() {
+    /** Advanced's open rail tab when it is a task section (else empty),
+     *  using the same values and gates as Simple. Every group starts open;
+     *  one the author closes stays closed (expandedGroups). */
+    get activeSections() {
+        if (!this.advanced) return [];
+        return this._sectionsVM().filter((s) => s.open);
+    }
+
+    _sectionsVM() {
         const all = this.controlsVM;
         return DESIGN_SECTIONS.map((section) => {
             const groups = section.groups
@@ -699,11 +685,12 @@ export default class FinalDesignPanel extends LightningElement {
                 open: section.key === this.activeAreaKey,
                 bodyId: `design-${section.key}`,
                 summary: this._sectionSummary(section.key),
-                groups: groups.map((group, index) => ({
+                edited: groups.some((group) => group.edited),
+                groups: groups.map((group) => ({
                     ...group,
                     open:
                         this.expandedGroups[`${section.key}:${group.key}`] ??
-                        index === 0
+                        true
                 }))
             };
         });
@@ -858,10 +845,79 @@ export default class FinalDesignPanel extends LightningElement {
         return !this.advanced && this.advChipCount > 0;
     }
 
-    get lensDesc() {
-        return this.advanced
-            ? 'Customize branding, layout, fields and completion.'
-            : 'Choose a theme, add your content and publish.';
+    // ----- the rail (IMPL_PLAN_DESIGN_RAIL) -----
+
+    /** Advanced: Theme, the five task sections, then Colors under a divider.
+     *  Simple: its three sections (theme / brand / navigation). A dot marks a
+     *  tab with customized settings. */
+    get railTabs() {
+        if (!this.advanced) {
+            const accent = this.simpleVM.accent;
+            return [
+                {
+                    ...SIMPLE_TABS[0],
+                    dot: Boolean(accent && accent.edited)
+                },
+                SIMPLE_TABS[1],
+                SIMPLE_TABS[2]
+            ];
+        }
+        const sections = this._sectionsVM();
+        return [
+            THEME_TAB,
+            ...sections.map((s) => ({
+                key: s.key,
+                label: s.railLabel,
+                icon: s.icon,
+                dot: s.edited
+            })),
+            {
+                ...COLORS_TAB,
+                dot: this.colorGroups.some((g) =>
+                    g.controls.some((c) => c.edited)
+                )
+            }
+        ];
+    }
+
+    get isThemeTab() {
+        return this.activeAreaKey === 'theme';
+    }
+
+    get isColorsTab() {
+        return this.activeAreaKey === 'colors';
+    }
+
+    get isSimpleTheme() {
+        return !this.advanced && this.activeAreaKey === 'theme';
+    }
+
+    get isSimpleBrand() {
+        return !this.advanced && this.activeAreaKey === 'brand';
+    }
+
+    get isSimpleButtons() {
+        return !this.advanced && this.activeAreaKey === 'navigation';
+    }
+
+    handleRailSelect(event) {
+        this.activeAreaKey = event.detail.key;
+    }
+
+    handleSettingSelect(event) {
+        this.revealControl(event.detail.key);
+    }
+
+    /** A lens switch keeps the open tab when the other lens has it (the
+     *  keys are shared); Finish lands on Simple's Buttons, which holds the
+     *  confirmation; anything else lands on Theme. */
+    _keepTab() {
+        const keys = this.railTabs.map((t) => t.key);
+        if (keys.includes(this.activeAreaKey)) return;
+        this.activeAreaKey =
+            !this.advanced && this.activeAreaKey === 'completion'
+                ? 'navigation'
+                : 'theme';
     }
 
     get simpleLensClass() {
@@ -1199,15 +1255,12 @@ export default class FinalDesignPanel extends LightningElement {
 
     handleLensSimple() {
         this.advanced = false;
+        this._keepTab();
     }
 
     handleLensAdvanced() {
         this.advanced = true;
-    }
-
-    handleSectionToggle(event) {
-        const key = event.currentTarget.dataset.area;
-        this.activeAreaKey = key === this.activeAreaKey ? null : key;
+        this._keepTab();
     }
 
     handleCompletionSettings() {

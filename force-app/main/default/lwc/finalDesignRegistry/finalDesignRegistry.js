@@ -1463,10 +1463,14 @@ export function flattenControls() {
 }
 
 /** Presentation order only. Keys still resolve to the canonical controls above. */
+// railLabel + icon: the Design pane's rail tab (IMPL_PLAN_DESIGN_RAIL); the
+// full label stays the tab's heading and the search path.
 export const DESIGN_SECTIONS = [
     {
         key: 'brand',
         label: 'Brand & header',
+        railLabel: 'Brand',
+        icon: 'utility:text_color',
         groups: [
             {
                 key: 'content',
@@ -1506,6 +1510,8 @@ export const DESIGN_SECTIONS = [
     {
         key: 'page',
         label: 'Page & form',
+        railLabel: 'Page',
+        icon: 'utility:layout',
         groups: [
             {
                 key: 'frame',
@@ -1564,6 +1570,8 @@ export const DESIGN_SECTIONS = [
     {
         key: 'fields',
         label: 'Fields & sections',
+        railLabel: 'Fields',
+        icon: 'utility:textbox',
         groups: [
             {
                 key: 'inputs',
@@ -1598,6 +1606,8 @@ export const DESIGN_SECTIONS = [
     {
         key: 'navigation',
         label: 'Navigation & buttons',
+        railLabel: 'Buttons',
+        icon: 'utility:forward',
         groups: [
             {
                 key: 'buttons',
@@ -1647,6 +1657,8 @@ export const DESIGN_SECTIONS = [
     {
         key: 'completion',
         label: 'After submit',
+        railLabel: 'Finish',
+        icon: 'utility:success',
         groups: [
             {
                 key: 'confirmation',

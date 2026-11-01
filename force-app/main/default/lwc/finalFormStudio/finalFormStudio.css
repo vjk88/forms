@@ -323,23 +323,6 @@
     min-width: 0;
 }
 
-.st-workspace-container--toolbar {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 118px);
-    min-height: 480px;
-}
-
-.st-workspace-container--toolbar > c-final-design-toolbar {
-    flex: none;
-}
-
-.st-workspace-container--toolbar > .st-body {
-    flex: 1;
-    height: auto;
-    min-height: 0;
-}
-
 .st-body {
     display: flex;
     align-items: stretch;
