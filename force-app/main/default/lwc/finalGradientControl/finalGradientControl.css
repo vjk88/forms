@@ -130,6 +130,12 @@
     color: var(--c-studio-text-weak);
 }
 
+/* the preset swatches had no visible focus (UX review, PR 427) */
+.preset:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
 button.seg-btn:focus-visible {
     outline-offset: -4px;
 }

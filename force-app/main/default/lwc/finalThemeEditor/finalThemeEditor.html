@@ -140,6 +140,19 @@
                                             aria-label={c.groupLabel}
                                         >
                                             <div class="te-crow-top">
+                                                <template
+                                                    lwc:if={c.canSeeThrough}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        class="te-link te-seethrough"
+                                                        data-path={c.path}
+                                                        data-gradient-path={c.gradientPath}
+                                                        onclick={handleSeeThrough}
+                                                    >
+                                                        Make see-through
+                                                    </button>
+                                                </template>
                                                 <template lwc:if={c.flagged}>
                                                     <button
                                                         type="button"
@@ -157,7 +170,8 @@
                                                 </template>
                                                 <template lwc:if={c.pinned}>
                                                     <span class="te-pin"
-                                                        >Changed by you ·
+                                                        >Changed by
+                                                        you&nbsp;·&nbsp;
                                                         <button
                                                             type="button"
                                                             class="te-link"
@@ -189,25 +203,18 @@
                                                         edited={c.pinned}
                                                         onchange={handleGradient}
                                                     ></c-final-gradient-control>
-                                                    <button
-                                                        type="button"
-                                                        class="te-link te-seethrough"
-                                                        data-path={c.path}
-                                                        data-gradient-path={c.gradientPath}
-                                                        onclick={handleSeeThrough}
-                                                    >
-                                                        Make see-through
-                                                    </button>
                                                     <template
                                                         lwc:if={c.backingHides}
                                                     >
                                                         <p
                                                             class="te-hint te-backing-note"
                                                         >
-                                                            Hidden behind a
-                                                            solid backing so
-                                                            text stays readable.
-                                                            Try lighter colors.
+                                                            Your form shows a
+                                                            solid panel instead,
+                                                            so text stays
+                                                            readable. Pick two
+                                                            colors closer
+                                                            together.
                                                         </p>
                                                     </template>
                                                 </template>
@@ -234,9 +241,11 @@
                                                             >
                                                             <span
                                                                 class="te-hint"
-                                                                >Editing makes
-                                                                this fill
-                                                                solid.</span
+                                                                >Replace with
+                                                                solid makes it
+                                                                opaque; a
+                                                                gradient goes on
+                                                                top of it.</span
                                                             >
                                                         </template>
                                                         <div class="te-row">
@@ -247,7 +256,7 @@
                                                                 data-gradient-path={c.gradientPath}
                                                                 onclick={handleAddSolid}
                                                             >
-                                                                Add a solid fill
+                                                                {c.solidVerb}
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -293,7 +302,7 @@
                             ></c-final-font-picker>
                             <template lwc:if={fontPinned}>
                                 <span class="te-pin"
-                                    >Changed by you ·
+                                    >Changed by you&nbsp;·&nbsp;
                                     <button
                                         type="button"
                                         class="te-link"
@@ -332,7 +341,7 @@
                                     </select>
                                     <template lwc:if={s.pinned}>
                                         <span class="te-pin"
-                                            >Changed by you ·
+                                            >Changed by you&nbsp;·&nbsp;
                                             <button
                                                 type="button"
                                                 class="te-link"

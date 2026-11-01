@@ -312,6 +312,7 @@ export default class FinalThemeEditor extends LightningElement {
     _uploaded = null; // { dataUrl, url, versionId } — reused on a retry
     _savedOnce = false;
     _nameTouched = false;
+    _focusAfter = null; // { path, to: 'control' | 'none' } after a fill button
 
     connectedCallback() {
         listFonts()
@@ -623,7 +624,10 @@ export default class FinalThemeEditor extends LightningElement {
                         label,
                         worst.has(path) ? 'hard to read' : '',
                         pinned ? 'changed by you' : '',
-                        automatic ? 'automatic' : ''
+                        automatic ? 'automatic' : '',
+                        fill && fill.backingHides
+                            ? 'shown as a solid panel so text stays readable'
+                            : ''
                     ]
                         .filter(Boolean)
                         .join(', ')
@@ -662,6 +666,11 @@ export default class FinalThemeEditor extends LightningElement {
                 this.tokens['--c-card-backing-image'] === 'none' &&
                 gradient === getAt(this._props, 'palette.contentBgGradient'),
             showControl: mode === 'solid' || mode === 'gradient',
+            canSeeThrough: mode === 'solid' || mode === 'gradient',
+            solidVerb:
+                mode === 'translucent'
+                    ? 'Replace with solid'
+                    : 'Add a solid fill',
             isNone: mode === 'none',
             isTranslucent: mode === 'translucent',
             displayHex: isHex(value) ? value : seed,
@@ -674,6 +683,24 @@ export default class FinalThemeEditor extends LightningElement {
     _seedHex() {
         const panel = this.tokens['--c-content-bg'];
         return isHex(panel) ? panel : '#ffffff';
+    }
+
+    /** After a fill button replaces itself, keyboard focus lands on what
+     *  replaced it (UX review, PR 427), never nowhere. */
+    renderedCallback() {
+        const target = this._focusAfter;
+        if (!target) return;
+        this._focusAfter = null;
+        const row = this.template.querySelector(
+            `.te-crow[data-row="${target.path}"]`
+        );
+        if (!row) return;
+        const control = row.querySelector('c-final-gradient-control');
+        if (target.to === 'control' && control) {
+            control.focus();
+        } else {
+            row.querySelector('.te-add-solid')?.focus();
+        }
     }
 
     _setFill(path, gradientPath, solid, gradient) {
@@ -717,11 +744,13 @@ export default class FinalThemeEditor extends LightningElement {
     handleAddSolid(event) {
         const { path, gradientPath } = event.currentTarget.dataset;
         this._setFill(path, gradientPath, this._seedHex(), null);
+        this._focusAfter = { path, to: 'control' };
     }
 
     handleAddGradient(event) {
         const { path, gradientPath } = event.currentTarget.dataset;
         const start = this._seedHex();
+        this._focusAfter = { path, to: 'control' };
         this._setFill(path, gradientPath, undefined, {
             type: 'linear',
             angle: 135,
@@ -753,6 +782,7 @@ export default class FinalThemeEditor extends LightningElement {
                 : 'transparent',
             null
         );
+        this._focusAfter = { path, to: 'none' };
     }
 
     /** "Use calculated": unpin, and the starting point's value comes back. */
@@ -890,7 +920,7 @@ export default class FinalThemeEditor extends LightningElement {
 
     get readableText() {
         return hasGradients(this._props || {})
-            ? 'Text, buttons and focus outlines read at every point we sampled, including 11 points along each gradient.'
+            ? 'Text, buttons and focus outlines read at every point we sampled, checked across each gradient.'
             : 'All text, buttons and focus outlines stay readable on every background.';
     }
 

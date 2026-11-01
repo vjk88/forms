@@ -614,7 +614,7 @@ describe('c-final-theme-editor', () => {
         expect(
             row(el, 'palette.contentBg').querySelector('.te-backing-note')
                 .textContent
-        ).toContain('Hidden behind a solid backing');
+        ).toContain('Your form shows a solid panel instead');
     });
 
     it('Make see-through turns a fill back to see-through', async () => {
@@ -625,6 +625,26 @@ describe('c-final-theme-editor', () => {
         expect(row(el, 'palette.pageBg').textContent).toContain(
             'None (see-through)'
         );
+    });
+
+    it('keyboard focus follows the fill buttons instead of getting lost', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        row(el, 'palette.pageBg').querySelector('.te-seethrough').click();
+        await flush();
+        expect(el.shadowRoot.activeElement).toBe(
+            row(el, 'palette.pageBg').querySelector('.te-add-solid')
+        );
+        row(el, 'palette.pageBg').querySelector('.te-add-gradient').click();
+        await flush();
+        expect(el.shadowRoot.activeElement).toBe(
+            gradientRow(el, 'palette.pageBg')
+        );
+        // Make see-through sits on the row's own top line
+        expect(
+            row(el, 'palette.pageBg').querySelector(
+                '.te-crow-top .te-seethrough'
+            )
+        ).not.toBeNull();
     });
 
     it('a translucent fill says so, and warns that editing makes it solid', async () => {
@@ -642,7 +662,12 @@ describe('c-final-theme-editor', () => {
         const el = await mount({ themeId: 'a0AXX0000001', themeName: 'Tr' });
         const text = row(el, 'palette.contentBg').textContent;
         expect(text).toContain('Translucent');
-        expect(text).toContain('Editing makes this fill solid.');
+        expect(text).toContain('Replace with solid makes it opaque');
+        expect(
+            row(el, 'palette.contentBg')
+                .querySelector('.te-add-solid')
+                .textContent.trim()
+        ).toBe('Replace with solid');
     });
 
     // ----------------------------------------------------- shape & type
