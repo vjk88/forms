@@ -47,6 +47,11 @@ import {
     onRequestFailure
 } from './autofillEngine';
 
+/** Numbers each blocked click's jump to the first red question. Module-level,
+ *  so two viewers on one page never hand out the same number — the renderers
+ *  remember the numbers they already acted on (IMPL_PLAN_BLOCKED_MESSAGE §3). */
+let focusSeq = 0;
+
 /** The header's colours and plate on the open page (kept on completion). */
 const HEADER_PAGE_KEYS = [
     '--c-header-text',
@@ -341,6 +346,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  Reassigned wholesale so the getters recompute. */
     _revealed = [];
 
+    /** Where the last blocked click sends the cursor:
+     *  `{ n, elementId, sectionIds }`. Fixed AT the click and never
+     *  recomputed — fixing the first red question must not hand the number
+     *  to the next one and pull the cursor away mid-typing. */
+    _focusTarget = null;
+
     /** Post-submit: true renders c/finalAfterSubmit instead of the nav.
      *  MUST be a declared field — undeclared assignments aren't reactive. */
     completed = false;
@@ -384,6 +395,25 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api
     get submitError() {
         return this._submitError;
+    }
+
+    /** Autofill could not fill a question. Its own store since the Submit
+     *  failure moved down by the button: nobody clicked a button to cause
+     *  this one, so it stays at the top (IMPL_PLAN_BLOCKED_MESSAGE §5). */
+    _autofillError;
+
+    @api
+    get autofillError() {
+        return this._autofillError;
+    }
+
+    /** The step-flow layouts (One at a time, Split's One at a time pane)
+     *  have no line by the button, so their Submit failure keeps the top
+     *  banner it always had (IMPL_PLAN_BLOCKED_MESSAGE §3a). */
+    get topSubmitError() {
+        return this.model && this.model.ownsAdvance
+            ? this._submitError
+            : undefined;
     }
     submittedRecordId = null;
     _submitting = false;
@@ -1025,7 +1055,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._answers = seededAnswers;
         }
         this._revealed = [];
+        this._focusTarget = null;
         this._submitError = undefined;
+        this._autofillError = undefined;
         this.submittedRecordId = null;
         this._startedAt = preview?.startedAt || new Date().toISOString();
         if (this.preservePreview) {
@@ -1676,10 +1708,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._ruleFacts = null;
         this._recordCtx = null;
         this._revealed = [];
+        this._focusTarget = null;
         this.pageIndex = 0;
         this.completed = false;
         this.submittedRecordId = null;
         this._submitError = undefined;
+        this._autofillError = undefined;
         this._startedAt = new Date().toISOString();
         // Revision baseline belongs to the record session, not each retry.
         this._editStartedRevisions = {};
@@ -2118,6 +2152,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 this.model.layoutOptions,
                 pages.length
             );
+        // The last blocked click's jump: its number rides on that ONE question
+        // and on the sections it named, never recomputed (see _focusTarget).
+        const focus = this._focusTarget;
         return pages.map((page) => {
             const reveal =
                 needErrors && this._revealed.includes(page.revealKey);
@@ -2137,6 +2174,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                         ...s,
                         ...(titleRepeats
                             ? { titleRepeatsPage: namesPages }
+                            : {}),
+                        ...(focus && focus.sectionIds.includes(s.id)
+                            ? { unfoldRequest: focus.n }
                             : {}),
                         ...(this.preservePreview
                             ? {
@@ -2235,6 +2275,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                 // there is nothing left to "reveal", and a
                                 // form with no client validation at all must
                                 // still be able to show what the save refused.
+                                if (
+                                    focus &&
+                                    el.id === focus.elementId &&
+                                    !s.repeat
+                                ) {
+                                    base = { ...base, focusRequest: focus.n };
+                                }
                                 const fromServer =
                                     this._serverFieldErrors[el.id] || [];
                                 if (!reveal || s.repeat) {
@@ -2390,10 +2437,100 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
     }
 
+    /** The pages the line by the button speaks for: the current page, or
+     *  the whole form in the layouts that show it all at once (Scroll,
+     *  Accordion — registry `paginates: false`). Revealed pages only — a
+     *  marked lookup is red before any click, and the line stays quiet
+     *  until a click is blocked. */
+    _pagesInView(pages) {
+        const inView =
+            this.model && this.model.paginates
+                ? pages.slice(this.pageIndex, this.pageIndex + 1)
+                : pages;
+        return inView.filter((page) => this._revealed.includes(page.revealKey));
+    }
+
+    /** A question shows red: a failed rule, a missing answer, a server
+     *  refusal (all `el.errors`) or a marked lookup. */
+    _isRed(el) {
+        return Boolean(
+            (el.errors && el.errors.length) || this._lookupStale[el.id]
+        );
+    }
+
+    /**
+     * Fix the jump target for THIS blocked click: the first red question in
+     * view, plus every section holding one (a folded section unfolds so each
+     * counted question can be seen). Repeat sections are skipped — they
+     * validate as one value and draw their own rows. The step-flow layouts
+     * are left exactly as they were (owner 2026-10-31).
+     */
+    _requestFocus() {
+        if (!this.model || this.model.ownsAdvance) {
+            return;
+        }
+        let elementId;
+        const sectionIds = [];
+        this._pagesInView(this.visiblePages).forEach((page) => {
+            (page.sections || []).forEach((sec) => {
+                if (sec.repeat) {
+                    return;
+                }
+                const red = (sec.elements || []).filter((el) =>
+                    this._isRed(el)
+                );
+                if (red.length) {
+                    elementId = elementId || red[0].id;
+                    sectionIds.push(sec.id);
+                }
+            });
+        });
+        focusSeq += 1;
+        this._focusTarget = elementId
+            ? { n: focusSeq, elementId, sectionIds }
+            : null;
+    }
+
+    /**
+     * The line above the buttons (COMPONENT_CATALOG §1 "Blocked Message",
+     * IMPL_PLAN_BLOCKED_MESSAGE §2). A Submit the server refused speaks
+     * first; otherwise the count of red questions in view, which is only
+     * ever non-zero after a blocked click (failures show on revealed pages
+     * only), so a half-filled page stays quiet.
+     */
+    get blockedMessage() {
+        if (!this.model || this.model.ownsAdvance) {
+            return '';
+        }
+        if (this._submitError) {
+            return this._submitError;
+        }
+        if (!this._revealed.length) {
+            return ''; // nothing blocked yet: skip the validation pass
+        }
+        let count = 0;
+        this._pagesInView(this.visiblePages).forEach((page) => {
+            (page.sections || []).forEach((sec) => {
+                (sec.elements || []).forEach((el) => {
+                    if (this._isRed(el)) {
+                        count += 1;
+                    }
+                });
+            });
+        });
+        if (!count) {
+            return '';
+        }
+        const fields = count === 1 ? 'field' : 'fields';
+        const verb = this.showNext ? 'continue' : 'submit';
+        return `Fix ${count} ${fields} to ${verb}`;
+    }
+
     handleNext() {
         // F8 advance-denial: an invalid page refuses Next and shows why.
         if (this.pageValidity[this.pageIndex] === false) {
             this._reveal(this.pageIndex);
+            this._requestFocus();
             return;
         }
         if (this.pageIndex < this.lastPageIndex) {
@@ -2534,6 +2671,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (bad >= 0) {
             this.pageIndex = bad;
             this._reveal(bad);
+            this._requestFocus();
         }
     }
 
@@ -2564,31 +2702,38 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     async handleSubmit() {
         if (!this.model || this.error || this.isSubmitBlocked) return;
-        // A marked lookup blocks the submit. Letting it through would mean a
-        // guaranteed server refusal and a round trip to learn what the form
-        // already knew.
-        if (this.hasStaleLookups) {
-            const first = Object.keys(this._lookupStale)[0];
-            const page = this.visiblePages.findIndex((p) =>
-                (p.sections || []).some((sec) =>
-                    (sec.elements || []).some((el) => el.id === first)
-                )
-            );
-            if (page >= 0) {
-                this.pageIndex = page;
-                this._reveal(page);
-            }
-            return;
-        }
-        // Submit validates EVERY visible page; the first invalid one becomes
-        // the current page with its failures shown.
+        // Submit checks EVERY visible page. A page is bad when it fails
+        // validation OR holds a marked lookup (letting one through would mean
+        // a guaranteed server refusal and a round trip to learn what the form
+        // already knew). One check for both: a marked lookup used to return
+        // early and hide the missing answers on every other page.
+        const pages = this.visiblePages;
         const validity = this.pageValidity;
-        const firstInvalid = validity.findIndex((ok) => ok === false);
-        if (firstInvalid >= 0) {
-            this.pageIndex = firstInvalid;
-            this._reveal(firstInvalid);
+        const stale = this._lookupStale;
+        const bad = [];
+        pages.forEach((page, i) => {
+            const marked = (page.sections || []).some((sec) =>
+                (sec.elements || []).some((el) => stale[el.id])
+            );
+            if (validity[i] === false || marked) {
+                bad.push(i);
+            }
+        });
+        if (bad.length) {
+            // Paged layouts land on the first bad page; Scroll and Accordion
+            // show the whole form at once, so every bad page shows its
+            // failures and the count by the button covers them all.
+            this.pageIndex = bad[0];
+            (this.model.paginates ? bad.slice(0, 1) : bad).forEach((i) =>
+                this._reveal(i)
+            );
+            this._requestFocus();
             return;
         }
+        // A marked lookup that no page shows was hidden by a rule. Its answer
+        // never leaves the browser (_payload drops hidden answers, #269), so
+        // it is no reason to refuse — refusing here was a Submit that did
+        // nothing at all, with no line and no jump.
         if (this._submitting || this.isAutofillPending) {
             return; // one click, one record / wait for autofill to finish
         }
@@ -2599,6 +2744,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this.delegateSubmit) {
             this._submitting = true;
             this._submitError = undefined;
+            this._autofillError = undefined;
             this.dispatchEvent(
                 new CustomEvent('submitrequest', {
                     detail: { payload: this._payload() }
@@ -2614,6 +2760,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._submitting = true;
         this._submitError = undefined;
+        this._autofillError = undefined;
         this._serverFieldErrors = {};
         const submitGeneration = ++this._submitGeneration;
         try {
@@ -3057,7 +3204,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._autofillSession) {
             onRequestFailure(this._autofillSession, identity, 'timeout');
         }
-        this._submitError =
+        this._autofillError =
             'Could not fill these details. Enter them yourself or retry.';
     }
 
@@ -3107,7 +3254,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._autofillSession) {
             onRequestFailure(this._autofillSession, identity, 'failed');
         }
-        this._submitError =
+        this._autofillError =
             'Could not fill these details. Enter them yourself or retry.';
     }
 

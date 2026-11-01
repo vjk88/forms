@@ -338,7 +338,7 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         );
         await flush();
 
-        expect(el.submitError).toBe(
+        expect(el.autofillError).toBe(
             'Could not fill these details. Enter them yourself or retry.'
         );
         const submitBar = deepQuery(el.shadowRoot, 'c-final-submit-bar');
@@ -400,7 +400,7 @@ describe('c-final-form-viewer Autofill runtime integration', () => {
         jest.advanceTimersByTime(10000);
         await Promise.resolve();
 
-        expect(el.submitError).toBe(
+        expect(el.autofillError).toBe(
             'Could not fill these details. Enter them yourself or retry.'
         );
         expect(

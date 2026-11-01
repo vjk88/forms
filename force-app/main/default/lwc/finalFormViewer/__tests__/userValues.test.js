@@ -162,7 +162,7 @@ describe('c-final-form-viewer signed-in person', () => {
 
         jest.advanceTimersByTime(11000);
         await flush();
-        expect(el.submitError).toBeFalsy();
+        expect(el.autofillError).toBeFalsy();
     });
 
     it('a request that never answers says so once, after 10 seconds', async () => {
@@ -170,7 +170,7 @@ describe('c-final-form-viewer signed-in person', () => {
         const el = await open();
         jest.advanceTimersByTime(11000);
         await flush();
-        expect(el.submitError).toMatch(/Could not fill/);
+        expect(el.autofillError).toMatch(/Could not fill/);
     });
 
     it('covers the form and takes the keyboard until Autofill has filled it (owner 2026-09-27)', async () => {

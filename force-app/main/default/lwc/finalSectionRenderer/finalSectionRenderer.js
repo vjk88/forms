@@ -19,6 +19,10 @@ import { LightningElement, api } from 'lwc';
 // 2026-07-18 (sweep DELETE ruling).
 const KNOWN_STYLES = ['plain', 'card', 'boxed'];
 
+/** `n:sectionId` unfolds already done. Module-level, so a section drawn
+ *  again (page left and come back to) never re-opens on an old click. */
+const unfoldDone = new Set();
+
 /** Elements that always span the full grid regardless of width. */
 const FULL_WIDTH_TYPES = new Set(['divider', 'spacer']);
 
@@ -277,13 +281,22 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     /** Re-init when a DIFFERENT section arrives (id change), never on
-     *  re-renders of the same one — the visitor's fold state survives. */
+     *  re-renders of the same one — the visitor's fold state survives.
+     *  One exception: a blocked click that found a red question in here
+     *  (`unfoldRequest`) opens it, once per click, so every question the
+     *  count by the button names can be seen. */
     get collapsed() {
         if (this._collapseInitFor !== this.sec.id) {
             this._collapseInitFor = this.sec.id;
             this._collapsed = Boolean(
                 this.sec.collapsible && this.sec.defaultCollapsed
             );
+        }
+        const n = this.sec.unfoldRequest;
+        const key = `${n}:${this.sec.id}`;
+        if (n && !unfoldDone.has(key)) {
+            unfoldDone.add(key);
+            this._collapsed = false;
         }
         return this._collapsed;
     }

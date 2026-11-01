@@ -117,9 +117,12 @@ describe('c-final-form-viewer delegated submit (guest host, A2)', () => {
 
         el.failSubmit('Server said no.');
         await flush();
+        // the failure sits on the line by the button, not at the top
+        // (IMPL_PLAN_BLOCKED_MESSAGE §5)
         expect(
-            deepQuery(el.shadowRoot, '.viewer-submit-error').textContent
-        ).toContain('Server said no.');
+            deepQuery(el.shadowRoot, 'c-final-submit-bar').blockedMessage
+        ).toBe('Server said no.');
+        expect(deepQuery(el.shadowRoot, '.viewer-submit-error')).toBeNull();
         expect(deepQuery(el.shadowRoot, 'c-final-after-submit')).toBeNull();
 
         // retry — the submit guard was released by failSubmit

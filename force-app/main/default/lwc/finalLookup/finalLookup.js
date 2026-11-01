@@ -108,11 +108,16 @@ export default class FinalLookup extends LightningElement {
         this._displayLabel = next || '';
     }
 
+    /** While a record is held there is no search box, only the chosen
+     *  record and its clear button — and a lookup marked for a fix always
+     *  holds one, so the clear button takes the cursor then. */
     @api
     focus() {
-        const input = this.template.querySelector('.fl-input');
-        if (input) {
-            input.focus();
+        const target =
+            this.template.querySelector('.fl-input') ||
+            this.template.querySelector('.fl-clear');
+        if (target) {
+            target.focus();
         }
     }
 

@@ -103,6 +103,20 @@ const IMAGE_SIZE_WIDTHS = {
     fit: 'auto'
 };
 
+/** Jump numbers already acted on (IMPL_PLAN_BLOCKED_MESSAGE §3). Module-level
+ *  on purpose: a renderer destroyed and recreated — an Accordion panel closed
+ *  and reopened, a page left and come back to — must not replay a jump. */
+const focusDone = new Set();
+
+/** Where the cursor goes, best first: the question's own control, then a
+ *  roving radio/chip group's current stop, then any plain control. Tiers,
+ *  because one selector list answers in DOCUMENT order, not list order. */
+const FOCUS_TIERS = [
+    'lightning-input, lightning-textarea, lightning-combobox, lightning-radio-group, lightning-checkbox-group, lightning-slider, lightning-input-field, c-final-lookup',
+    '[tabindex="0"]',
+    'input:not([tabindex="-1"]), textarea, select, button:not([disabled])'
+];
+
 const CALLOUT_ICONS = {
     info: 'utility:info',
     success: 'utility:success',
@@ -1363,6 +1377,55 @@ export default class FinalElementRenderer extends LightningElement {
             this._commitRank(this.rankValues);
         }
         this._watchScaleField();
+        this._takeFocusRequest();
+    }
+
+    /** A blocked click named this question (`el.focusRequest`): put the
+     *  cursor in it and bring it to the middle of its scroll area — smoothly,
+     *  or at once for people who switched motion off. Once per number. */
+    _takeFocusRequest() {
+        const n = this.el.focusRequest;
+        if (!n || focusDone.has(n)) {
+            return;
+        }
+        focusDone.add(n);
+        let target = null;
+        for (const tier of FOCUS_TIERS) {
+            target = this.template.querySelector(tier);
+            if (target) {
+                break;
+            }
+        }
+        const host = this.template.host;
+        const glide = () => {
+            if (!host || typeof host.scrollIntoView !== 'function') {
+                return;
+            }
+            const still =
+                typeof window !== 'undefined' &&
+                typeof window.matchMedia === 'function' &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            host.scrollIntoView({
+                block: 'center',
+                inline: 'nearest',
+                behavior: still ? 'auto' : 'smooth'
+            });
+        };
+        if (!target || typeof target.focus !== 'function') {
+            glide();
+            return;
+        }
+        // A plain control can take the cursor without scrolling, so the
+        // glide runs alone (no snap first). A base component's focus() takes
+        // no options and scrolls instantly — started after the glide it
+        // would cut it short at the nearest edge, so it goes first there.
+        if (target.tagName.includes('-')) {
+            target.focus();
+            glide();
+        } else {
+            glide();
+            target.focus({ preventScroll: true });
+        }
     }
 
     get chipChoiceItems() {
