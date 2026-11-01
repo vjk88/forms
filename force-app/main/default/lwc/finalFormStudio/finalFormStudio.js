@@ -40,6 +40,7 @@ import {
     layoutNamesPages
 } from 'c/finalLayoutRegistry';
 import { repeatsPageName } from 'c/finalPageName';
+import { toSchemaOptions } from 'c/finalChoiceLook';
 
 /**
  * finalFormStudio — the builder shell (FORM_STUDIO_IA §2–4, P3 slice 1).
@@ -1460,6 +1461,18 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return s && [1, 2, 3, 4].includes(s.columns) ? s.columns : 1;
     }
 
+    /** The form's per-field-type "Display as" defaults, so the inspector's
+     *  Appearance tiles show what the viewer actually draws (it reads the
+     *  same `settings.fieldDefaults`). */
+    get fieldDefaults() {
+        return (
+            (this.spec &&
+                this.spec.settings &&
+                this.spec.settings.fieldDefaults) ||
+            {}
+        );
+    }
+
     /** Standalone block framing (legacy): only when the element is alone in
      *  its block wrapper AND not a plain-only type (divider/callout/spacer —
      *  their frame is meaningless). Null hides the control. */
@@ -1897,6 +1910,13 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         };
         if (field.options) {
             element.config.options = field.options;
+        }
+        // A picklist starts on Default to schema, saved explicitly so a
+        // form-level default can't quietly restyle it, with Salesforce's own
+        // choices kept apart from the author's rows (IMPL_PLAN_APPEARANCE_PICKER).
+        if (field.inputType === 'picklist') {
+            element.config.renderAs = 'Default';
+            element.config.schemaOptions = toSchemaOptions(field.options);
         }
         if (field.referenceTo) {
             // R5a — the lookup element's target object, so the record picker

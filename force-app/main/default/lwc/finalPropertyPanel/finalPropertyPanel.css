@@ -454,6 +454,11 @@
     width: 44px;
     text-align: center;
 }
+
+/* a faint hint, so an empty box never reads as a chosen emoji */
+.pp-emoji::placeholder {
+    opacity: 0.3;
+}
 .pp-sublabel {
     font-size: 0.8rem;
 }
@@ -467,4 +472,353 @@
     margin: 0.125rem 0 0;
     font-size: 0.75rem;
     color: var(--c-studio-error);
+}
+
+/* ---- Appearance picker (IMPL_PLAN_APPEARANCE_PICKER, DEFERRED 36) ----
+   A full-width Default card over a 2 x 2 grid of tiles, each with a little
+   drawing of the control. Picked = 2px accent border + accent tint + tick. */
+.pp-looks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pp-look {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 8px;
+    background: var(--c-studio-surface);
+    font: inherit;
+    color: var(--c-studio-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.pp-look:hover:not(.on) {
+    border-color: var(--c-studio-accent);
+}
+
+.pp-look:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* 2px border without moving the contents: the extra pixel comes out of the
+   padding. */
+.pp-look.on {
+    border: 2px solid var(--c-studio-accent);
+    padding: 11px;
+    background: var(--c-studio-accent-surface);
+}
+
+.pp-look-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.pp-look-grid .pp-look {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 84px;
+    text-align: center;
+}
+
+.pp-look-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-right: 22px;
+}
+
+.pp-look-title,
+.pp-look-name {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.pp-look-desc {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--c-studio-text-weak);
+}
+
+.pp-look-tick {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
+}
+
+.pp-look.on .pp-look-tick {
+    display: grid;
+    place-items: center;
+}
+
+.pp-look-tick svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* the little drawings (decoration only: aria-hidden) */
+.pp-art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    color: var(--c-studio-text-weak);
+}
+
+.pp-art-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 78px;
+    height: 22px;
+    padding: 0 7px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 4px;
+    background: var(--c-studio-surface);
+}
+
+.pp-art-bar,
+.pp-art-line {
+    display: block;
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--c-studio-border-strong);
+}
+
+.pp-art-chev {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.pp-art-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 64px;
+}
+
+.pp-art-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pp-art-dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+}
+
+.pp-art-square {
+    border-radius: 2px;
+}
+
+.pp-art-chips {
+    display: flex;
+    gap: 4px;
+}
+
+.pp-art-chip {
+    width: 32px;
+    height: 12px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 999px;
+    background: var(--c-studio-surface-subtle);
+}
+
+.pp-art-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 66px;
+}
+
+.pp-art-card {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 14px;
+    padding: 0 4px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 3px;
+    background: var(--c-studio-surface);
+}
+
+.pp-art-thumb {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    background: var(--c-studio-border-strong);
+}
+
+.pp-look.on .pp-art {
+    color: var(--c-studio-accent-text);
+}
+
+/* ---- switch rows: name (+ hint) on the left, the native toggle right ---- */
+.pp-rule {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pp-rule-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.pp-rule-name {
+    font-size: 12.5px;
+}
+
+.pp-rule-hint {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--c-studio-text-weak);
+}
+
+.pp-several {
+    margin-top: 2px;
+}
+
+/* ---- options table: ⋮⋮ · Emoji · Label · Value · × ---- */
+.pp-opthead,
+.pp-schema-row {
+    display: grid;
+    grid-template-columns: 18px 44px minmax(0, 1fr) minmax(0, 1fr) 18px;
+    gap: 5px;
+    align-items: center;
+}
+
+.pp-opthead {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--c-studio-text-weak);
+}
+
+.pp-opthead-emoji {
+    text-align: center;
+}
+
+.pp-grip {
+    flex: 0 0 18px;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-studio-text-weak);
+    cursor: grab;
+}
+
+.pp-grip svg {
+    width: 10px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.pp-grip:hover {
+    color: var(--c-studio-text);
+    background: var(--c-studio-hover);
+}
+
+.pp-grip:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 1px;
+}
+
+/* where a dragged option will land */
+.pp-optgroup.drop-before {
+    box-shadow: 0 -2px 0 0 var(--c-studio-accent);
+}
+
+.pp-optgroup.drop-after {
+    box-shadow: 0 2px 0 0 var(--c-studio-accent);
+}
+
+/* Salesforce's own choices under Default to schema: read-only */
+.pp-schema-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pp-schema-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.pp-schema-row.with-emoji {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.pp-schema-cell {
+    min-width: 0;
+    padding: 6px 9px;
+    border: 1px solid var(--c-studio-border-subtle);
+    border-radius: 6px;
+    background: var(--c-studio-surface-subtle);
+    color: var(--c-studio-text-weak);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pp-schema-emoji {
+    min-height: 29px;
+    text-align: center;
+}
+
+/* screen-reader only: the "moved to position 2 of 4" announcement */
+.pp-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }

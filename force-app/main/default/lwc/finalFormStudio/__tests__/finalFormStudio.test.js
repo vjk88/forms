@@ -730,6 +730,50 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it("Build mode: a picklist starts on Default to schema with Salesforce's choices kept apart", async () => {
+        jest.useFakeTimers();
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(SPEC),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        const describeRows = [
+            { value: 'Electrical', label: 'Electrical' },
+            { value: 'Other', label: 'Other' }
+        ];
+        el.shadowRoot.querySelector('c-final-field-palette').dispatchEvent(
+            new CustomEvent('addfield', {
+                detail: {
+                    field: {
+                        apiName: 'Type',
+                        label: 'Case Type',
+                        inputType: 'picklist',
+                        options: describeRows,
+                        required: false
+                    }
+                }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        const added = saved.pages[0].sections[0].elements.at(-1);
+        expect(added.config.renderAs).toBe('Default');
+        expect(added.config.schemaOptions).toEqual(describeRows);
+        expect(added.config.options).toEqual(describeRows);
+        jest.useRealTimers();
+    });
+
     it('Build mode: freeform choice questions mint renderAs INSIDE config', async () => {
         // Caught in the org, not by a test: renderAs at the element root is
         // silently ignored - the renderer reads cfg.renderAs - so a
