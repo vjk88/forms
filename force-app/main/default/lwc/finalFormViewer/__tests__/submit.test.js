@@ -229,9 +229,9 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
         await flush();
         await flush();
         expect(deepQuery(el.shadowRoot, 'c-final-after-submit')).toBeNull();
-        expect(
-            deepQuery(el.shadowRoot, '.viewer-submit-error').textContent
-        ).toContain('Nope from the server.');
+        // on the line by the button, not at the top (IMPL_PLAN_BLOCKED_MESSAGE §5)
+        expect(bar.blockedMessage).toContain('Nope from the server.');
+        expect(deepQuery(el.shadowRoot, '.viewer-submit-error')).toBeNull();
 
         submitForm.mockResolvedValue({ recordId: '003X' });
         deepQuery(el.shadowRoot, 'c-final-submit-bar').dispatchEvent(

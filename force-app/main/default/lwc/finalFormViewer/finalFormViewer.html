@@ -48,9 +48,17 @@
                             </template>
                         </div>
                     </template>
-                    <template lwc:if={submitError}>
+                    <!-- Autofill's message, and the Submit failure of the
+                         step-flow layouts only: everywhere else the Submit
+                         failure sits on the line by the button. -->
+                    <template lwc:if={autofillError}>
                         <div class="viewer-submit-error" role="alert">
-                            {submitError}
+                            {autofillError}
+                        </div>
+                    </template>
+                    <template lwc:if={topSubmitError}>
+                        <div class="viewer-submit-error" role="alert">
+                            {topSubmitError}
                         </div>
                     </template>
                     <div
@@ -107,6 +115,7 @@
                                 show-submit={showSubmit}
                                 submitting={_submitting}
                                 disabled={isSubmitBlocked}
+                                blocked-message={blockedMessage}
                                 arrangement={model.buttonArrangement}
                                 onback={handleBack}
                                 onnext={handleNext}
