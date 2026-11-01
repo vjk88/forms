@@ -1,0 +1,29 @@
+<template>
+    <nav class="rail" aria-label={label}>
+        <template for:each={items} for:item="t">
+            <div key={t.key} class="rail-item">
+                <template lwc:if={t.divider}>
+                    <div class="rail-divider" aria-hidden="true"></div>
+                </template>
+                <button
+                    type="button"
+                    class={t.cls}
+                    data-tab={t.key}
+                    title={t.label}
+                    aria-pressed={t.pressed}
+                    onclick={handleClick}
+                >
+                    <lightning-icon
+                        icon-name={t.icon}
+                        size="x-small"
+                    ></lightning-icon>
+                    <span class="rail-label">{t.label}</span>
+                    <template lwc:if={t.dot}>
+                        <span class="rail-dot"></span>
+                        <span class="slds-assistive-text">, customized</span>
+                    </template>
+                </button>
+            </div>
+        </template>
+    </nav>
+</template>

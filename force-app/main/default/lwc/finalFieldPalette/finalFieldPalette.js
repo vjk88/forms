@@ -359,8 +359,8 @@ export default class FinalFieldPalette extends LightningElement {
     }
 
     get tabs() {
-        // vertical icon rail (owner 2026-07-08: same grammar as the Design
-        // panel's area rail — icons + tiny labels, never horizontal text tabs)
+        // vertical icon rail (owner 2026-07-08): c/finalStudioRail, the one
+        // the Design pane uses too — icons + tiny labels, never text tabs
         const icons = {
             fields: 'utility:list',
             blocks: 'utility:apps',
@@ -377,8 +377,7 @@ export default class FinalFieldPalette extends LightningElement {
         return names.map((t) => ({
             key: t,
             label: t[0].toUpperCase() + t.slice(1),
-            icon: icons[t],
-            cls: t === this.tab ? 'fp-tab on' : 'fp-tab'
+            icon: icons[t]
         }));
     }
 
@@ -439,7 +438,7 @@ export default class FinalFieldPalette extends LightningElement {
     }
 
     handleTab(event) {
-        this.tab = event.currentTarget.dataset.tab;
+        this.tab = event.detail.key;
     }
 
     handleSearch(event) {

@@ -1,7 +1,6 @@
 @import 'c/finalStudioStyles';
 
-/* Vertical icon rail (owner 2026-07-08): the same grammar as the Design
-   panel's area rail — icons + tiny labels stacked on the left edge. */
+/* The icon rail on the left is c/finalStudioRail (shared with Design). */
 .fp {
     display: flex;
     height: 100%;
@@ -11,51 +10,12 @@
     color: var(--c-studio-text);
 }
 
-.fp-rail {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px 6px;
-    border-right: 1px solid var(--c-studio-border);
-    flex: none;
-}
-
 .fp-main {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden auto;
-}
-
-.fp-tab {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    width: 58px;
-    border: 0;
-    border-radius: 8px;
-    background: none;
-    font: inherit;
-    font-size: 9.5px;
-    font-weight: 600;
-    color: var(--c-studio-text-weak);
-    padding: 8px 2px;
-    cursor: pointer;
-}
-
-.fp-tab.on {
-    color: var(--c-studio-accent-text);
-    background: var(--c-studio-accent-surface);
-}
-
-.fp-tab.on lightning-icon {
-    --sds-c-icon-color-foreground-default: var(--c-studio-accent-text);
-}
-
-.fp-tab:hover:not(.on) {
-    background: var(--c-studio-hover);
 }
 
 .fp-head {

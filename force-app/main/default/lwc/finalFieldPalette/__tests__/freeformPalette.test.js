@@ -30,9 +30,7 @@ const labels = (el) =>
     );
 
 const tabNames = (el) =>
-    [...el.shadowRoot.querySelectorAll('.fp-tab')].map((n) =>
-        n.textContent.trim()
-    );
+    el.shadowRoot.querySelector('c-final-studio-rail').tabs.map((t) => t.label);
 
 describe('field palette per form type', () => {
     afterEach(() => {
