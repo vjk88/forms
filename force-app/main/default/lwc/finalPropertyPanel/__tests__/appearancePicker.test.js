@@ -161,7 +161,7 @@ describe('Appearance picker', () => {
             expect(picked(el)).toEqual(['default']);
             expect($(el, '.pp-optrow')).toBeNull();
             expect($(el, '.pp-add')).toBeNull();
-            const rows = $$(el, '.pp-schema-row').map((r) =>
+            const rows = $$(el, 'li.pp-schema-row').map((r) =>
                 r.textContent.trim()
             );
             expect(rows).toHaveLength(3);
@@ -388,8 +388,27 @@ describe('reordering options (the ⋮⋮ handle)', () => {
     it('the handle has a name that says how to use it', async () => {
         const el = mount(textField({ renderAs: 'Radio_Buttons' }));
         await flush();
+        // the position is announced once, by the live region after a move
         expect(grips(el)[1].getAttribute('aria-label')).toBe(
-            'Move Devices, 2 of 3. Use the up and down arrow keys.'
+            'Move Devices. Use the up and down arrow keys.'
         );
+        expect(
+            $(el, '.pp-optrow [data-field="label"]').getAttribute('aria-label')
+        ).toBe('Option 1 label');
+        expect($(el, '.pp-x').getAttribute('aria-label')).toBe('Remove Power');
+    });
+
+    it('removing the last option keeps a blank row, so Chips stays Chips', async () => {
+        const el = mount(
+            textField({
+                renderAs: 'Radio_Buttons',
+                optionStyle: 'chips',
+                options: [OWN[0]]
+            })
+        );
+        await flush();
+        const events = listen(el, 'configchange');
+        $(el, '.pp-x').click();
+        expect(events).toEqual([{ options: [{ label: '', value: '' }] }]);
     });
 });

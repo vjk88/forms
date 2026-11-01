@@ -708,6 +708,13 @@
                     <div class="pp-fld pp-options">
                         <h4 class="pp-grouptitle">Options</h4>
                         <template lwc:if={showSchemaList}>
+                            <div class={schemaHeadClass} aria-hidden="true">
+                                <template lwc:if={schemaHasEmoji}>
+                                    <span class="pp-opthead-emoji">Emoji</span>
+                                </template>
+                                <span>Label</span>
+                                <span>Value</span>
+                            </div>
                             <ul
                                 class="pp-schema-list"
                                 aria-label="Choices from Salesforce"
@@ -800,6 +807,7 @@
                                             type="text"
                                             class="pp-input pp-emoji"
                                             placeholder="😊"
+                                            aria-label={o.emojiLabel}
                                             title="Optional emoji shown before the label"
                                             maxlength="16"
                                             value={o.emoji}
@@ -811,7 +819,7 @@
                                             type="text"
                                             class={o.labelClass}
                                             placeholder="Label"
-                                            aria-label="Option label"
+                                            aria-label={o.labelName}
                                             aria-invalid={o.labelInvalid}
                                             aria-describedby={o.problemId}
                                             required
@@ -824,7 +832,7 @@
                                             type="text"
                                             class={o.valueClass}
                                             placeholder="Value"
-                                            aria-label="Option value"
+                                            aria-label={o.valueName}
                                             aria-invalid={o.valueInvalid}
                                             aria-describedby={o.problemId}
                                             title="Stored in answers. Autofill picks this option only when a record's value is exactly this."
@@ -838,6 +846,7 @@
                                             type="button"
                                             class="pp-x"
                                             title="Remove option"
+                                            aria-label={o.removeName}
                                             data-index={o.index}
                                             onclick={handleRemoveOption}
                                         >
@@ -1002,8 +1011,14 @@
                     ></lightning-input>
                 </div>
                 <div class="pp-rule">
-                    <span class="pp-rule-text" aria-hidden="true">
-                        <span class="pp-rule-name">Read only</span>
+                    <span class="pp-rule-text">
+                        <span class="pp-rule-name" aria-hidden="true"
+                            >Read only</span
+                        >
+                        <span class="pp-rule-hint"
+                            >A read-only question can’t be required, so turning
+                            one on turns the other off.</span
+                        >
                     </span>
                     <lightning-input
                         type="toggle"

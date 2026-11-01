@@ -815,7 +815,7 @@ export default class FinalPropertyPanel extends LightningElement {
     get severalHint() {
         return this.severalDisabled
             ? 'A dropdown takes one answer. Pick Radio list, Chips or Cards for several.'
-            : 'People can pick more than one.';
+            : 'Let people pick more than one.';
     }
 
     handleSeveral(event) {
@@ -840,6 +840,17 @@ export default class FinalPropertyPanel extends LightningElement {
 
     get showOptionsEditor() {
         return this.showOptionsSection && !this.showSchemaList;
+    }
+
+    get schemaHasEmoji() {
+        return optionsFor(this.cfg, 'default').some((o) => o.emoji);
+    }
+
+    /** Same small Label · Value heading row as the editable table. */
+    get schemaHeadClass() {
+        return this.schemaHasEmoji
+            ? 'pp-schema-head pp-schema-row with-emoji'
+            : 'pp-schema-head pp-schema-row';
     }
 
     /** Label + value; an emoji column only when an older field still draws
@@ -1406,7 +1417,6 @@ export default class FinalPropertyPanel extends LightningElement {
         const options = this.cfg.options || [];
         const multi = this.currentLook.multi;
         const drop = this.dropTarget;
-        const count = options.length;
         const firstAt = new Map();
         return options.map((o, i) => {
             const label = o.label || '';
@@ -1448,7 +1458,12 @@ export default class FinalPropertyPanel extends LightningElement {
                 label,
                 value,
                 groupClass,
-                gripLabel: `Move ${label || `option ${i + 1}`}, ${i + 1} of ${count}. Use the up and down arrow keys.`,
+                // the position is said once, by the live region after a move
+                gripLabel: `Move ${label || `option ${i + 1}`}. Use the up and down arrow keys.`,
+                emojiLabel: `Emoji for option ${i + 1} (optional)`,
+                labelName: `Option ${i + 1} label`,
+                valueName: `Option ${i + 1} value`,
+                removeName: `Remove ${label || `option ${i + 1}`}`,
                 // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
                 emoji: o.emoji || '',
                 description: o.description || '',
@@ -1827,7 +1842,11 @@ export default class FinalPropertyPanel extends LightningElement {
         const options = (this.cfg.options || []).filter(
             (_o, i) => i !== Number(event.currentTarget.dataset.index)
         );
-        this._config({ options });
+        // never empty: Chips and Cards only draw with options, so removing
+        // the last one would quietly turn the look into a choiceless radio
+        this._config({
+            options: options.length ? options : [{ label: '', value: '' }]
+        });
     }
 
     handleSlider(event) {
