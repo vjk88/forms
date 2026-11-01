@@ -5,6 +5,7 @@ import {
     resolveAdvanceOrigin
 } from 'c/finalStepFlow';
 import { applyScaleRowLayout } from 'c/finalScaleLayout';
+import { lookOf, optionsFor } from 'c/finalChoiceLook';
 
 /**
  * finalElementRenderer — one spec element.
@@ -290,9 +291,16 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
-    /** Options: custom rows win; else the describe options (picklists). */
+    /** Which tile the Studio shows for this field (c/finalChoiceLook), the
+     *  form-level default included. */
+    get choiceLook() {
+        return lookOf(this.cfg, this.el && this.el.renderDefault);
+    }
+
+    /** Options: the author's rows, except a picklist on Default to schema,
+     *  which shows Salesforce's own labels (c/finalChoiceLook optionsFor). */
     get options() {
-        return (this.cfg.options || []).map((o) => ({
+        return optionsFor(this.cfg, this.choiceLook.look).map((o) => ({
             label: o.label || o.value,
             value: o.value,
             // Card Deck parity (owner 2026-08-01) — the normalize was
@@ -1287,16 +1295,12 @@ export default class FinalElementRenderer extends LightningElement {
     /** field + options + optionStyle chips|cards → our presentation takes
      *  over from the lightning radio/checkbox groups. */
     get isChipChoice() {
-        return (
-            this.isField &&
-            this.hasOptions &&
-            (this.cfg.optionStyle === 'chips' ||
-                this.cfg.optionStyle === 'cards')
-        );
+        const look = this.choiceLook.look;
+        return this.isField && (look === 'chips' || look === 'cards');
     }
 
     get isCardStyle() {
-        return this.cfg.optionStyle === 'cards';
+        return this.choiceLook.look === 'cards';
     }
 
     /** Multi-select comes from the renderAs the choice was authored with. */

@@ -74,7 +74,7 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         }
     });
 
-    it('field inspector: label + Behavior segmented; the binding is READ-ONLY (never a picker)', async () => {
+    it('field inspector: label + Rules switches; the binding is READ-ONLY (never a picker)', async () => {
         const el = mount({
             kind: 'element',
             bindingObjectApi: 'Contact',
@@ -101,20 +101,29 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         label.value = 'Work email';
         label.dispatchEvent(new CustomEvent('change'));
 
-        const behavior = seg(el, 'Behavior');
-        expect([...behavior].map((b) => b.textContent.trim())).toEqual([
-            'Editable',
-            'Required',
-            'Read only'
-        ]);
-        behavior[1].click();
+        // Rules: two switches. A required read-only field can't be answered,
+        // so turning one on turns the other off.
+        const rule = (name) =>
+            el.shadowRoot.querySelector(`.pp-rules [data-rule="${name}"]`);
+        expect(rule('required').label).toBe('Required');
+        expect(rule('readOnly').label).toBe('Read only');
+        rule('required').checked = true;
+        rule('required').dispatchEvent(new CustomEvent('change'));
+        rule('readOnly').checked = true;
+        rule('readOnly').dispatchEvent(new CustomEvent('change'));
+        rule('readOnly').checked = false;
+        rule('readOnly').dispatchEvent(new CustomEvent('change'));
         expect(events).toEqual([
             { patch: { label: 'Work email' } },
-            { patch: { required: true, readOnly: false } }
+            { patch: { required: true, readOnly: false } },
+            { patch: { readOnly: true, required: false } },
+            { patch: { readOnly: false } }
         ]);
+        // the old three-way Behavior control is gone
+        expect(seg(el, 'Behavior')).toBeNull();
     });
 
-    it('Display as: picklist choices + the options editor emits configchange', async () => {
+    it('Appearance tiles on a picklist + the options editor emits configchange', async () => {
         const el = mount({
             kind: 'element',
             bindingObjectApi: 'Contact',
@@ -131,12 +140,21 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             }
         });
         await flush();
-        const renderAs = el.shadowRoot.querySelector('.pp-renderas');
-        expect(renderAs).not.toBeNull();
-        const values = [...renderAs.querySelectorAll('option')].map(
-            (o) => o.value
-        );
-        expect(values).toEqual(['Default', 'Radio_Buttons', 'Dropdown']);
+        // choice fields pick their look with tiles, not the Display as list
+        expect(el.shadowRoot.querySelector('.pp-renderas')).toBeNull();
+        const tiles = [...el.shadowRoot.querySelectorAll('.pp-look')];
+        expect(tiles.map((t) => t.dataset.look)).toEqual([
+            'default',
+            'dropdown',
+            'radio',
+            'chips',
+            'cards'
+        ]);
+        expect(
+            tiles
+                .filter((t) => t.getAttribute('aria-checked') === 'true')
+                .map((t) => t.dataset.look)
+        ).toEqual(['radio']);
 
         const events = [];
         el.addEventListener('configchange', (e) => events.push(e.detail));

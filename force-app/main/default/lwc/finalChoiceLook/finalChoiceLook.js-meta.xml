@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+    >Choice field look (Default to schema, Dropdown, Radio list, Chips, Cards) and the options it draws. Shared by the Studio inspector and the renderer. No DOM.</description>
+</LightningComponentBundle>

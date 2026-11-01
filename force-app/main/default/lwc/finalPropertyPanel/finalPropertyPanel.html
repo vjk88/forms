@@ -442,22 +442,213 @@
                     onchange={handleLabel}
                 ></lightning-input>
 
-                <div class="pp-fld">
-                    <span class="pp-label">Behavior</span>
-                    <div class="pp-seg">
-                        <template for:each={behaviorSeg} for:item="b">
-                            <button
-                                key={b.value}
-                                type="button"
-                                class={b.cls}
-                                data-value={b.value}
-                                onclick={handleBehavior}
-                            >
-                                {b.label}
-                            </button>
+                <!-- Appearance: one picker for the look (DEFERRED 36,
+                     IMPL_PLAN_APPEARANCE_PICKER). Each tile writes renderAs
+                     and optionStyle together, so any look can be undone. -->
+                <template lwc:if={showAppearanceTiles}>
+                    <div class="pp-fld pp-appearance">
+                        <h4 class="pp-grouptitle" id="pp-appearance-title">
+                            Appearance
+                        </h4>
+                        <div
+                            class="pp-looks"
+                            role="radiogroup"
+                            aria-labelledby="pp-appearance-title"
+                            onkeydown={handleLookKey}
+                        >
+                            <template lwc:if={offersDefaultTile}>
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    class={defaultTile.cls}
+                                    aria-checked={defaultTile.checked}
+                                    tabindex={defaultTile.tabindex}
+                                    data-look="default"
+                                    onclick={handleLook}
+                                >
+                                    <span
+                                        class="pp-art pp-art-select"
+                                        aria-hidden="true"
+                                    >
+                                        <span class="pp-art-bar"></span>
+                                        <span class="pp-art-chev"></span>
+                                    </span>
+                                    <span class="pp-look-text">
+                                        <span class="pp-look-title"
+                                            >{defaultTile.title}</span
+                                        >
+                                        <span class="pp-look-desc"
+                                            >{defaultTile.desc}</span
+                                        >
+                                    </span>
+                                    <span
+                                        class="pp-look-tick"
+                                        aria-hidden="true"
+                                        ><svg
+                                            viewBox="0 0 16 16"
+                                            focusable="false"
+                                        >
+                                            <path
+                                                d="M3.5 8.5l3 3 6-7"
+                                            ></path></svg
+                                    ></span>
+                                </button>
+                            </template>
+                            <div class="pp-look-grid">
+                                <template for:each={gridTiles} for:item="t">
+                                    <button
+                                        key={t.look}
+                                        type="button"
+                                        role="radio"
+                                        class={t.cls}
+                                        aria-checked={t.checked}
+                                        tabindex={t.tabindex}
+                                        data-look={t.look}
+                                        onclick={handleLook}
+                                    >
+                                        <span
+                                            class="pp-look-tick"
+                                            aria-hidden="true"
+                                            ><svg
+                                                viewBox="0 0 16 16"
+                                                focusable="false"
+                                            >
+                                                <path
+                                                    d="M3.5 8.5l3 3 6-7"
+                                                ></path></svg
+                                        ></span>
+                                        <span class="pp-art" aria-hidden="true">
+                                            <template lwc:if={t.isDropdown}>
+                                                <span class="pp-art-select">
+                                                    <span
+                                                        class="pp-art-bar"
+                                                    ></span>
+                                                    <span
+                                                        class="pp-art-chev"
+                                                    ></span>
+                                                </span>
+                                            </template>
+                                            <template lwc:if={t.isRadio}>
+                                                <span class="pp-art-list">
+                                                    <span class="pp-art-item"
+                                                        ><span
+                                                            class="pp-art-dot"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                    <span class="pp-art-item"
+                                                        ><span
+                                                            class="pp-art-dot"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                    <span class="pp-art-item"
+                                                        ><span
+                                                            class="pp-art-dot"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                </span>
+                                            </template>
+                                            <template lwc:if={t.isCheckbox}>
+                                                <span class="pp-art-list">
+                                                    <span class="pp-art-item"
+                                                        ><span
+                                                            class="pp-art-dot pp-art-square"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                    <span class="pp-art-item"
+                                                        ><span
+                                                            class="pp-art-dot pp-art-square"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                    <span class="pp-art-item"
+                                                        ><span
+                                                            class="pp-art-dot pp-art-square"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                </span>
+                                            </template>
+                                            <template lwc:if={t.isChips}>
+                                                <span class="pp-art-chips">
+                                                    <span
+                                                        class="pp-art-chip"
+                                                    ></span>
+                                                    <span
+                                                        class="pp-art-chip"
+                                                    ></span>
+                                                </span>
+                                            </template>
+                                            <template lwc:if={t.isCards}>
+                                                <span class="pp-art-cards">
+                                                    <span class="pp-art-card"
+                                                        ><span
+                                                            class="pp-art-thumb"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                    <span class="pp-art-card"
+                                                        ><span
+                                                            class="pp-art-thumb"
+                                                        ></span
+                                                        ><span
+                                                            class="pp-art-line"
+                                                        ></span
+                                                    ></span>
+                                                </span>
+                                            </template>
+                                        </span>
+                                        <span class="pp-look-name"
+                                            >{t.label}</span
+                                        >
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                        <template lwc:if={showSeveralSwitch}>
+                            <div class="pp-rule pp-several">
+                                <span class="pp-rule-text">
+                                    <span
+                                        class="pp-rule-name"
+                                        aria-hidden="true"
+                                        >Allow several answers</span
+                                    >
+                                    <span class="pp-rule-hint"
+                                        >{severalHint}</span
+                                    >
+                                </span>
+                                <lightning-input
+                                    type="toggle"
+                                    variant="label-hidden"
+                                    label="Allow several answers"
+                                    checked={severalChecked}
+                                    disabled={severalDisabled}
+                                    message-toggle-active=""
+                                    message-toggle-inactive=""
+                                    data-rule="several"
+                                    onchange={handleSeveral}
+                                ></lightning-input>
+                            </div>
                         </template>
                     </div>
-                </div>
+                </template>
 
                 <template lwc:if={hasRenderAsChoices}>
                     <label class="pp-label" for="renderas">Display as</label>
@@ -513,118 +704,209 @@
                     </div>
                 </template>
 
-                <template lwc:if={showOptionsEditor}>
-                    <div class="pp-fld">
-                        <span class="pp-label">Options</span>
-                        <template for:each={optionRows} for:item="o">
-                            <div key={o.key} class="pp-optgroup">
-                                <div class="pp-optrow">
-                                    <input
-                                        type="text"
-                                        class="pp-input pp-emoji"
-                                        placeholder="😊"
-                                        title="Optional emoji shown before the label"
-                                        maxlength="16"
-                                        value={o.emoji}
-                                        data-index={o.index}
-                                        data-field="emoji"
-                                        onchange={handleOptionChange}
-                                    />
-                                    <input
-                                        type="text"
-                                        class={o.labelClass}
-                                        placeholder="Label"
-                                        aria-label="Option label"
-                                        aria-invalid={o.labelInvalid}
-                                        aria-describedby={o.problemId}
-                                        required
-                                        value={o.label}
-                                        data-index={o.index}
-                                        data-field="label"
-                                        onchange={handleOptionChange}
-                                    />
-                                    <input
-                                        type="text"
-                                        class={o.valueClass}
-                                        placeholder="Value"
-                                        aria-label="Option value"
-                                        aria-invalid={o.valueInvalid}
-                                        aria-describedby={o.problemId}
-                                        title="Stored in answers. Autofill picks this option only when a record's value is exactly this."
-                                        required
-                                        value={o.value}
-                                        data-index={o.index}
-                                        data-field="value"
-                                        onchange={handleOptionChange}
-                                    />
-                                    <button
-                                        type="button"
-                                        class="pp-x"
-                                        title="Remove option"
-                                        data-index={o.index}
-                                        onclick={handleRemoveOption}
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                                <template lwc:if={o.problem}>
-                                    <p class="pp-opt-problem" id={o.problemId}>
-                                        {o.problem}
-                                    </p>
+                <template lwc:if={showOptionsSection}>
+                    <div class="pp-fld pp-options">
+                        <h4 class="pp-grouptitle">Options</h4>
+                        <template lwc:if={showSchemaList}>
+                            <div class={schemaHeadClass} aria-hidden="true">
+                                <template lwc:if={schemaHasEmoji}>
+                                    <span class="pp-opthead-emoji">Emoji</span>
                                 </template>
-                                <template lwc:if={showOptionSublabels}>
-                                    <input
-                                        type="text"
-                                        class="pp-input pp-sublabel"
-                                        placeholder="Sublabel (optional — small line under the label)"
-                                        value={o.description}
-                                        data-index={o.index}
-                                        data-field="description"
-                                        onchange={handleOptionChange}
-                                    />
-                                </template>
+                                <span>Label</span>
+                                <span>Value</span>
                             </div>
+                            <ul
+                                class="pp-schema-list"
+                                aria-label="Choices from Salesforce"
+                            >
+                                <template for:each={schemaRows} for:item="s">
+                                    <li key={s.key} class={s.cls}>
+                                        <template lwc:if={s.withEmoji}>
+                                            <span
+                                                class="pp-schema-cell pp-schema-emoji"
+                                                >{s.emoji}</span
+                                            >
+                                        </template>
+                                        <span class="pp-schema-cell"
+                                            >{s.label}</span
+                                        >
+                                        <span class="pp-schema-cell"
+                                            >{s.value}</span
+                                        >
+                                    </li>
+                                </template>
+                            </ul>
+                            <p class="pp-hint">{schemaHint}</p>
                         </template>
-                        <button
-                            type="button"
-                            class="pp-add"
-                            onclick={handleAddOption}
-                        >
-                            + Add option
-                        </button>
-                    </div>
-                </template>
-
-                <template lwc:if={showOptionStyle}>
-                    <div class="pp-fld">
-                        <span class="pp-label">Choice look</span>
-                        <div class="pp-seg">
-                            <template for:each={optionStyleSeg} for:item="b">
-                                <button
-                                    key={b.value}
-                                    type="button"
-                                    class={b.cls}
-                                    data-value={b.value}
-                                    onclick={handleOptionStyle}
+                        <template lwc:if={showOptionsEditor}>
+                            <div class="pp-opthead" aria-hidden="true">
+                                <span class="pp-opthead-grip"></span>
+                                <span class="pp-opthead-emoji">Emoji</span>
+                                <span>Label</span>
+                                <span>Value</span>
+                                <span class="pp-opthead-x"></span>
+                            </div>
+                            <template for:each={optionRows} for:item="o">
+                                <div
+                                    key={o.key}
+                                    class={o.groupClass}
+                                    data-index={o.index}
+                                    ondragover={handleOptionDragOver}
+                                    ondrop={handleOptionDrop}
                                 >
-                                    {b.label}
-                                </button>
+                                    <div class="pp-optrow">
+                                        <button
+                                            type="button"
+                                            class="pp-grip"
+                                            draggable="true"
+                                            aria-label={o.gripLabel}
+                                            title="Drag to move, or use the arrow keys"
+                                            data-index={o.index}
+                                            ondragstart={handleGripDragStart}
+                                            ondragend={handleGripDragEnd}
+                                            onkeydown={handleGripKey}
+                                        >
+                                            <svg
+                                                viewBox="0 0 10 16"
+                                                focusable="false"
+                                                aria-hidden="true"
+                                            >
+                                                <circle
+                                                    cx="3"
+                                                    cy="3"
+                                                    r="1.4"
+                                                ></circle>
+                                                <circle
+                                                    cx="7"
+                                                    cy="3"
+                                                    r="1.4"
+                                                ></circle>
+                                                <circle
+                                                    cx="3"
+                                                    cy="8"
+                                                    r="1.4"
+                                                ></circle>
+                                                <circle
+                                                    cx="7"
+                                                    cy="8"
+                                                    r="1.4"
+                                                ></circle>
+                                                <circle
+                                                    cx="3"
+                                                    cy="13"
+                                                    r="1.4"
+                                                ></circle>
+                                                <circle
+                                                    cx="7"
+                                                    cy="13"
+                                                    r="1.4"
+                                                ></circle>
+                                            </svg>
+                                        </button>
+                                        <input
+                                            type="text"
+                                            class="pp-input pp-emoji"
+                                            placeholder="😊"
+                                            aria-label={o.emojiLabel}
+                                            title="Optional emoji shown before the label"
+                                            maxlength="16"
+                                            value={o.emoji}
+                                            data-index={o.index}
+                                            data-field="emoji"
+                                            onchange={handleOptionChange}
+                                        />
+                                        <input
+                                            type="text"
+                                            class={o.labelClass}
+                                            placeholder="Label"
+                                            aria-label={o.labelName}
+                                            aria-invalid={o.labelInvalid}
+                                            aria-describedby={o.problemId}
+                                            required
+                                            value={o.label}
+                                            data-index={o.index}
+                                            data-field="label"
+                                            onchange={handleOptionChange}
+                                        />
+                                        <input
+                                            type="text"
+                                            class={o.valueClass}
+                                            placeholder="Value"
+                                            aria-label={o.valueName}
+                                            aria-invalid={o.valueInvalid}
+                                            aria-describedby={o.problemId}
+                                            title="Stored in answers. Autofill picks this option only when a record's value is exactly this."
+                                            required
+                                            value={o.value}
+                                            data-index={o.index}
+                                            data-field="value"
+                                            onchange={handleOptionChange}
+                                        />
+                                        <button
+                                            type="button"
+                                            class="pp-x"
+                                            title="Remove option"
+                                            aria-label={o.removeName}
+                                            data-index={o.index}
+                                            onclick={handleRemoveOption}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    <template lwc:if={o.problem}>
+                                        <p
+                                            class="pp-opt-problem"
+                                            id={o.problemId}
+                                        >
+                                            {o.problem}
+                                        </p>
+                                    </template>
+                                    <template lwc:if={showOptionSublabels}>
+                                        <input
+                                            type="text"
+                                            class="pp-input pp-sublabel"
+                                            placeholder="Sublabel (optional — small line under the label)"
+                                            value={o.description}
+                                            data-index={o.index}
+                                            data-field="description"
+                                            onchange={handleOptionChange}
+                                        />
+                                    </template>
+                                </div>
                             </template>
-                        </div>
+                            <button
+                                type="button"
+                                class="pp-add"
+                                onclick={handleAddOption}
+                            >
+                                + Add option
+                            </button>
+                            <p class="pp-sr" aria-live="polite">
+                                {moveMessage}
+                            </p>
+                            <template lwc:if={showAllowOther}>
+                                <div class="pp-rule">
+                                    <span
+                                        class="pp-rule-text"
+                                        aria-hidden="true"
+                                    >
+                                        <span class="pp-rule-name"
+                                            >Allow “Other…” with free text</span
+                                        >
+                                    </span>
+                                    <lightning-input
+                                        type="toggle"
+                                        variant="label-hidden"
+                                        label="Allow “Other…” with free text"
+                                        checked={cfg.allowOther}
+                                        message-toggle-active=""
+                                        message-toggle-inactive=""
+                                        onchange={handleAllowOther}
+                                    ></lightning-input>
+                                </div>
+                            </template>
+                        </template>
                     </div>
-                    <lightning-input
-                        type="toggle"
-                        label="Allow 'Other…' with free text"
-                        checked={cfg.allowOther}
-                        message-toggle-active=""
-                        message-toggle-inactive=""
-                        onchange={handleAllowOther}
-                    ></lightning-input>
-                    <p class="pp-sub">
-                        "Display as" picks the control (radio, checkboxes,
-                        dropdown). "Choice look" redraws that control's options
-                        as tappable chips or full-width cards.
-                    </p>
                 </template>
 
                 <template lwc:if={isSlider}>
@@ -709,7 +991,50 @@
                         </div>
                     </div>
                 </template>
+            </div>
 
+            <div class="pp-group pp-rules">
+                <h4 class="pp-grouptitle">Rules</h4>
+                <div class="pp-rule">
+                    <span class="pp-rule-text" aria-hidden="true">
+                        <span class="pp-rule-name">Required</span>
+                    </span>
+                    <lightning-input
+                        type="toggle"
+                        variant="label-hidden"
+                        label="Required"
+                        checked={n.required}
+                        message-toggle-active=""
+                        message-toggle-inactive=""
+                        data-rule="required"
+                        onchange={handleRule}
+                    ></lightning-input>
+                </div>
+                <div class="pp-rule">
+                    <span class="pp-rule-text">
+                        <span class="pp-rule-name" aria-hidden="true"
+                            >Read only</span
+                        >
+                        <span class="pp-rule-hint"
+                            >A read-only question can’t be required, so turning
+                            one on turns the other off.</span
+                        >
+                    </span>
+                    <lightning-input
+                        type="toggle"
+                        variant="label-hidden"
+                        label="Read only"
+                        checked={n.readOnly}
+                        message-toggle-active=""
+                        message-toggle-inactive=""
+                        data-rule="readOnly"
+                        onchange={handleRule}
+                    ></lightning-input>
+                </div>
+            </div>
+
+            <div class="pp-group pp-guidance">
+                <h4 class="pp-grouptitle">Text &amp; guidance</h4>
                 <lightning-input
                     label="Help text"
                     data-prop="help"

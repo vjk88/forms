@@ -51,13 +51,24 @@ Legacy `ELEMENT_TYPES` minus retired Hero (splitHero's brand pane owns hero feat
 
 ## 2 · Field inspector
 
-Label · Field (read-only `Object.Field`) · **Behavior** segmented (Editable / Required / Read
-only; Δ Hidden waits for Autofill) · **Display as** per field type (see below) · **Options**
-editor (label + value rows, ＋ Add option — only when Display as is Dropdown / Radio buttons /
-Checkbox group on text/picklist types) · **Slider range** (min / max / step — when Display as =
-Slider) · Help text · Placeholder · Width (multi-column only) · Checks (§4) · Visibility.
+Label · Field (read-only `Object.Field`) · **Appearance** (choice fields: text / textarea /
+picklist) or **Display as** (every other type, see below) · **Options** (⋮⋮ · Emoji · Label ·
+Value · ×, ＋ Add option, "Other" switch; a read-only Salesforce list under Default to schema) ·
+**Slider range** (min / max / step — when Display as = Slider) · **Rules** (Required and Read
+only switches; turning one on turns the other off) · **Text & guidance** (Help text, Caption,
+Show caption as, Placeholder) · Width (multi-column only) · Checks (§4) · Visibility.
 
-**Display as** (`config.renderAs`, default = from schema):
+**Appearance** (2026-10-31, DEFERRED 36, `docs/FinalDesign/IMPL_PLAN_APPEARANCE_PICKER.md`):
+a full-width **Default to schema** card over a 2 × 2 grid of **Dropdown · Radio list · Chips ·
+Cards**, each tile drawn as the control it makes. One radio group (arrow keys pick). A tile writes
+`renderAs` and `optionStyle` together (`c/finalChoiceLook`), so any look can be undone. **Allow
+several answers** switch under the tiles for fields that aren't bound picklists (Radio list then
+reads Checkboxes; greyed on Dropdown). Default to schema on a picklist draws our dropdown with
+Salesforce's own choices and labels (`config.schemaOptions`), never the author's emoji or renamed
+labels; an unbound choice question has no Default tile. Options reorder by drag or ↑ / ↓ on the
+handle.
+
+**Display as** (`config.renderAs`, default = from schema; choice types now use Appearance):
 
 | Field type                  | Choices                                             |
 | --------------------------- | --------------------------------------------------- |

@@ -7,6 +7,13 @@ import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { compatInputTypes } from 'c/finalSurveyMapping';
 import { usesAnalytics } from 'c/finalFormTypes';
+import {
+    lookOf,
+    configFor,
+    optionsFor,
+    drawsSchemaOptions,
+    toSchemaOptions
+} from 'c/finalChoiceLook';
 
 /**
  * finalPropertyPanel — the selected node's editor, a direct port of the
@@ -122,6 +129,13 @@ const REPEAT_STYLES = [
     { label: 'Tiles', value: 'tileModal' }
 ];
 
+/** Field types whose look is picked with the Appearance tiles
+ *  (IMPL_PLAN_APPEARANCE_PICKER). Every other type keeps the Display as list. */
+const CHOICE_TYPES = new Set(['text', 'textarea', 'picklist']);
+
+/** The 2 × 2 grid under the Default card, in the image's order. */
+const GRID_LOOKS = ['dropdown', 'radio', 'chips', 'cards'];
+
 /** Display-as choices per inputType (legacy renderAsOptions, BUILDER_SURFACES §2). */
 function renderAsChoicesFor(inputType, polymorphic) {
     const isReference = inputType === 'reference' || inputType === 'lookup';
@@ -176,6 +190,9 @@ export default class FinalPropertyPanel extends LightningElement {
     @api bindingObjectApi;
     /** The hosting section's column count (Width control scope). */
     @api sectionColumns = 1;
+    /** The form's "Display as" default per field type
+     *  (spec.settings.fieldDefaults), so the tiles show what the form draws. */
+    @api fieldDefaults;
     /** Set when the layout already shows this section's page name, so the
      *  viewer tucks the section's heading away: { pageName, by, always }
      *  (Studio selectionHeaderRepeat). null when the heading is on screen. */
@@ -213,6 +230,29 @@ export default class FinalPropertyPanel extends LightningElement {
         // undefined (not null) keeps the wire idle when there is no repeater
         this._childObject =
             (value && value.repeat && value.repeat.childObject) || undefined;
+        // a bound picklist: its object's describe refreshes Salesforce's
+        // choices when the author picks Default to schema
+        const b = value && value.binding;
+        this._schemaObject =
+            value &&
+            value.type === 'field' &&
+            value.config &&
+            value.config.inputType === 'picklist' &&
+            b &&
+            b.object &&
+            b.field
+                ? b.object
+                : undefined;
+    }
+
+    _schemaObject;
+    schemaFields;
+
+    @wire(describeFields, { objectApi: '$_schemaObject' })
+    wiredSchema({ data }) {
+        if (data) {
+            this.schemaFields = data;
+        }
     }
 
     childFields;
@@ -612,34 +652,355 @@ export default class FinalPropertyPanel extends LightningElement {
         });
     }
 
-    /** optionStyle + allowOther for CHOICE fields (renderAs radio/checkbox
-     *  with options — SURVEY_PLAN §2.2 field config additions). */
-    get showOptionStyle() {
+    // ---- Appearance (IMPL_PLAN_APPEARANCE_PICKER, DEFERRED 36) ----
+    // One picker replaces "Display as" + "Choice look" for choice fields. Each
+    // tile writes renderAs AND optionStyle (c/finalChoiceLook), so a look can
+    // always be undone by picking another tile.
+
+    get showAppearanceTiles() {
+        return this.isField && CHOICE_TYPES.has(this.cfg.inputType);
+    }
+
+    get isBound() {
+        return Boolean(this.n.binding && this.n.binding.field);
+    }
+
+    get isBoundPicklist() {
+        return this.isBound && this.cfg.inputType === 'picklist';
+    }
+
+    /** A choice question with no Salesforce field behind it has no schema
+     *  to default to: its Default draws the same dropdown as Dropdown. */
+    get offersDefaultTile() {
+        return this.isBound || this.cfg.inputType !== 'picklist';
+    }
+
+    get formDefault() {
+        return (this.fieldDefaults || {})[this.cfg.inputType];
+    }
+
+    /** What respondents see right now - never just the last click. */
+    get currentLook() {
+        const cur = lookOf(this.cfg, this.formDefault);
+        if (cur.look === 'default' && !this.offersDefaultTile) {
+            return { look: 'dropdown', multi: false };
+        }
+        return cur;
+    }
+
+    /** Salesforce decides one-or-several for a bound picklist; the schema's
+     *  own control has no options to tick. */
+    _severalAllowed(look) {
+        return !this.isBoundPicklist && look !== 'default';
+    }
+
+    get visibleLooks() {
+        return this.offersDefaultTile ? ['default', ...GRID_LOOKS] : GRID_LOOKS;
+    }
+
+    _tile(look) {
+        const on = this.currentLook.look === look;
+        return {
+            look,
+            checked: on ? 'true' : 'false',
+            tabindex: on ? '0' : '-1',
+            cls: `pp-look pp-look-${look}${on ? ' on' : ''}`
+        };
+    }
+
+    get defaultTile() {
+        const tile = this._tile('default');
+        const text = this.cfg.inputType !== 'picklist';
+        tile.title = this.isBound ? 'Default to schema' : 'Text box';
+        tile.desc = text
+            ? 'A plain text box. People type their answer.'
+            : 'Uses this field’s choices and labels from Salesforce.';
+        return tile;
+    }
+
+    get gridTiles() {
+        const several = this.currentLook.multi;
+        const names = {
+            dropdown: 'Dropdown',
+            radio: several ? 'Checkboxes' : 'Radio list',
+            chips: 'Chips',
+            cards: 'Cards'
+        };
+        return GRID_LOOKS.map((look) => ({
+            ...this._tile(look),
+            label: names[look],
+            isDropdown: look === 'dropdown',
+            isRadio: look === 'radio' && !several,
+            isCheckbox: look === 'radio' && several,
+            isChips: look === 'chips',
+            isCards: look === 'cards'
+        }));
+    }
+
+    handleLook(event) {
+        this._pickLook(event.currentTarget.dataset.look);
+    }
+
+    /** Arrow keys move through the tiles and pick (WAI-ARIA radio group);
+     *  Tab enters the group once, on the picked tile (roving tabindex). */
+    handleLookKey(event) {
+        const step = {
+            ArrowRight: 1,
+            ArrowDown: 1,
+            ArrowLeft: -1,
+            ArrowUp: -1
+        }[event.key];
+        const looks = this.visibleLooks;
+        const at = looks.indexOf(this.currentLook.look);
+        let next;
+        if (step) {
+            next = looks[(at + step + looks.length) % looks.length];
+        } else if (event.key === 'Home') {
+            next = looks[0];
+        } else if (event.key === 'End') {
+            next = looks[looks.length - 1];
+        } else {
+            return;
+        }
+        event.preventDefault();
+        this._focusLook = next;
+        this._pickLook(next);
+    }
+
+    _pickLook(look) {
+        if (!look) {
+            return;
+        }
+        const several = this._severalAllowed(look) && this.currentLook.multi;
+        const patch = configFor(look, several);
+        if (look === 'default' && this.isBoundPicklist) {
+            // fresh from describe: the values Salesforce has today
+            const fresh = this.freshSchemaOptions;
+            if (fresh.length) {
+                patch.schemaOptions = fresh;
+            }
+        }
+        if (look !== 'default' && !(this.cfg.options || []).length) {
+            // something to edit: Salesforce's choices when there are any
+            const seed = (this.cfg.schemaOptions || []).map((o) => ({
+                label: o.label,
+                value: o.value
+            }));
+            patch.options = seed.length ? seed : [{ label: '', value: '' }];
+        }
+        this._config(patch);
+    }
+
+    get freshSchemaOptions() {
+        const name = this.n.binding && this.n.binding.field;
+        const field = (this.schemaFields || []).find((f) => f.apiName === name);
+        return field ? toSchemaOptions(field.options) : [];
+    }
+
+    get showSeveralSwitch() {
         return (
-            this.isField &&
-            (this.cfg.options || []).length > 0 &&
-            (this.cfg.renderAs === 'Radio_Buttons' ||
-                this.cfg.renderAs === 'Checkbox_Group' ||
-                this.cfg.renderAs === 'Custom_MultiSelect')
+            this.showAppearanceTiles &&
+            this._severalAllowed(this.currentLook.look)
         );
     }
 
-    get optionStyleSeg() {
-        return this._seg(
-            [
-                { label: 'List', value: 'list' },
-                { label: 'Chips', value: 'chips' },
-                { label: 'Cards', value: 'cards' }
-            ],
-            this.cfg.optionStyle === 'chips' || this.cfg.optionStyle === 'cards'
-                ? this.cfg.optionStyle
-                : 'list'
+    get severalDisabled() {
+        return this.currentLook.look === 'dropdown';
+    }
+
+    get severalChecked() {
+        return this.currentLook.multi;
+    }
+
+    get severalHint() {
+        return this.severalDisabled
+            ? 'A dropdown takes one answer. Pick Radio list, Chips or Cards for several.'
+            : 'Let people pick more than one.';
+    }
+
+    handleSeveral(event) {
+        this._config(configFor(this.currentLook.look, event.target.checked));
+    }
+
+    /** Options: Salesforce's read-only list under Default to schema, the
+     *  author's rows under every other look, none for a plain text box. */
+    get showOptionsSection() {
+        if (!this.showAppearanceTiles) {
+            return false;
+        }
+        return (
+            this.currentLook.look !== 'default' ||
+            this.cfg.inputType === 'picklist'
         );
     }
 
-    handleOptionStyle(event) {
-        const v = event.currentTarget.dataset.value;
-        this._config({ optionStyle: v === 'list' ? undefined : v });
+    get showSchemaList() {
+        return this.currentLook.look === 'default';
+    }
+
+    get showOptionsEditor() {
+        return this.showOptionsSection && !this.showSchemaList;
+    }
+
+    get schemaHasEmoji() {
+        return optionsFor(this.cfg, 'default').some((o) => o.emoji);
+    }
+
+    /** Same small Label · Value heading row as the editable table. */
+    get schemaHeadClass() {
+        return this.schemaHasEmoji
+            ? 'pp-schema-head pp-schema-row with-emoji'
+            : 'pp-schema-head pp-schema-row';
+    }
+
+    /** Label + value; an emoji column only when an older field still draws
+     *  one (Salesforce's own list never has any). */
+    get schemaRows() {
+        const rows = optionsFor(this.cfg, 'default');
+        const withEmoji = rows.some((o) => o.emoji);
+        return rows.map((o, i) => ({
+            key: `sch_${i}`,
+            label: o.label || o.value,
+            value: o.value,
+            emoji: o.emoji || '',
+            withEmoji,
+            cls: withEmoji ? 'pp-schema-row with-emoji' : 'pp-schema-row'
+        }));
+    }
+
+    get schemaHint() {
+        return drawsSchemaOptions(this.cfg, 'default')
+            ? 'These are this field’s choices in Salesforce. Pick another look to rename them or add emoji.'
+            : 'These came from Salesforce when the field was added. Click Default to schema to refresh them, or pick another look to rename them or add emoji.';
+    }
+
+    get showAllowOther() {
+        return ['radio', 'chips', 'cards'].includes(this.currentLook.look);
+    }
+
+    // ---- Rules (Required / Read only) ----
+
+    /** A required read-only field can't be answered, so turning one on
+     *  turns the other off. Same props as the old Behavior control. */
+    handleRule(event) {
+        const on = event.target.checked;
+        if (event.target.dataset.rule === 'required') {
+            this._prop(
+                on ? { required: true, readOnly: false } : { required: false }
+            );
+        } else {
+            this._prop(
+                on ? { readOnly: true, required: false } : { readOnly: false }
+            );
+        }
+    }
+
+    // ---- option reordering (the ⋮⋮ handle) ----
+
+    _dragFrom = null;
+    dropTarget = null; // { index, after }
+    moveMessage = '';
+    _focusGrip = null;
+    _focusLook = null;
+
+    _moveOption(from, to) {
+        const options = [...(this.cfg.options || [])];
+        if (from === to || from < 0 || to < 0 || to >= options.length) {
+            return;
+        }
+        const [row] = options.splice(from, 1);
+        options.splice(to, 0, row);
+        this._config({ options });
+        const name = row.label || row.value || `Option ${from + 1}`;
+        this.moveMessage = `${name}, position ${to + 1} of ${options.length}`;
+        this._focusGrip = to;
+    }
+
+    handleGripKey(event) {
+        const step = { ArrowUp: -1, ArrowDown: 1 }[event.key];
+        if (!step) {
+            return;
+        }
+        event.preventDefault();
+        const from = Number(event.currentTarget.dataset.index);
+        this._moveOption(from, from + step);
+    }
+
+    handleGripDragStart(event) {
+        this._dragFrom = Number(event.currentTarget.dataset.index);
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', 'pp-option');
+            const row = event.currentTarget.closest('.pp-optgroup');
+            if (row && event.dataTransfer.setDragImage) {
+                event.dataTransfer.setDragImage(row, 16, 16);
+            }
+        }
+    }
+
+    handleOptionDragOver(event) {
+        // only our own option drags may land here (never a palette field)
+        if (this._dragFrom === null) {
+            return;
+        }
+        event.preventDefault();
+        const index = Number(event.currentTarget.dataset.index);
+        const box = event.currentTarget.getBoundingClientRect();
+        const after = event.clientY > box.top + box.height / 2;
+        const cur = this.dropTarget;
+        if (!cur || cur.index !== index || cur.after !== after) {
+            this.dropTarget = { index, after };
+        }
+    }
+
+    handleOptionDrop(event) {
+        if (this._dragFrom === null) {
+            return;
+        }
+        event.preventDefault();
+        const from = this._dragFrom;
+        const target = this.dropTarget;
+        this._endDrag();
+        if (!target) {
+            return;
+        }
+        let to = target.after ? target.index + 1 : target.index;
+        if (from < to) {
+            to -= 1;
+        }
+        this._moveOption(from, to);
+    }
+
+    handleGripDragEnd() {
+        this._endDrag();
+    }
+
+    _endDrag() {
+        this._dragFrom = null;
+        this.dropTarget = null;
+    }
+
+    /** Keyboard moves re-render the list from the Studio's answer: put the
+     *  cursor back on the handle or tile that moved. */
+    _restoreFocus() {
+        if (this._focusGrip !== null) {
+            const grip = this.template.querySelector(
+                `.pp-grip[data-index="${this._focusGrip}"]`
+            );
+            this._focusGrip = null;
+            if (grip) {
+                grip.focus();
+            }
+        }
+        if (this._focusLook !== null) {
+            const tile = this.template.querySelector(
+                `.pp-look[data-look="${this._focusLook}"]`
+            );
+            this._focusLook = null;
+            if (tile) {
+                tile.focus();
+            }
+        }
     }
 
     handleAllowOther(event) {
@@ -658,6 +1019,7 @@ export default class FinalPropertyPanel extends LightningElement {
     _topicsRequested = false;
 
     renderedCallback() {
+        this._restoreFocus();
         if (this.isUnboundLookup) {
             this._loadLookupObjects();
         }
@@ -921,26 +1283,6 @@ export default class FinalPropertyPanel extends LightningElement {
 
     // ---- field inspector (BUILDER_SURFACES §2) ----
 
-    /** Behavior = Editable / Required / Read only (segmented; legacy minus
-     *  the prefill-era Hidden — owner: later, with the Autofill slice). */
-    get behaviorValue() {
-        if (this.n.readOnly) {
-            return 'readonly';
-        }
-        return this.n.required ? 'required' : 'editable';
-    }
-
-    get behaviorSeg() {
-        return this._seg(
-            [
-                { label: 'Editable', value: 'editable' },
-                { label: 'Required', value: 'required' },
-                { label: 'Read only', value: 'readonly' }
-            ],
-            this.behaviorValue
-        );
-    }
-
     /** Only our own control is configurable; the platform's is not ours to
      *  configure, so offering filter boxes beside it would be a lie. */
     get showLookupFilter() {
@@ -1060,25 +1402,21 @@ export default class FinalPropertyPanel extends LightningElement {
         );
     }
 
+    /** The Display as list, for field types without Appearance tiles
+     *  (checkbox → Toggle, number → Slider, lookup → Search with filters). */
     get hasRenderAsChoices() {
         // an unbound lookup is always our search box: nothing to choose
-        return !this.isUnboundLookup && this.renderAsOptions.length > 1;
-    }
-
-    /** Options editor: custom choices for text fields; describe-seeded and
-     *  editable for picklists (legacy showCustomValues). */
-    get showOptionsEditor() {
-        const ra = this.cfg.renderAs;
-        const it = this.cfg.inputType;
         return (
-            ['Dropdown', 'Radio_Buttons', 'Checkbox_Group'].includes(ra) &&
-            ['text', 'textarea', 'picklist'].includes(it)
+            !this.showAppearanceTiles &&
+            !this.isUnboundLookup &&
+            this.renderAsOptions.length > 1
         );
     }
 
     get optionRows() {
         const options = this.cfg.options || [];
-        const multi = this.cfg.renderAs === 'Checkbox_Group';
+        const multi = this.currentLook.multi;
+        const drop = this.dropTarget;
         const firstAt = new Map();
         return options.map((o, i) => {
             const label = o.label || '';
@@ -1110,11 +1448,22 @@ export default class FinalPropertyPanel extends LightningElement {
             const problem = [labelProblem, valueProblem]
                 .filter(Boolean)
                 .join(' ');
+            let groupClass = 'pp-optgroup';
+            if (drop && drop.index === i) {
+                groupClass += drop.after ? ' drop-after' : ' drop-before';
+            }
             return {
                 key: `opt_${i}`,
                 index: i,
                 label,
                 value,
+                groupClass,
+                // the position is said once, by the live region after a move
+                gripLabel: `Move ${label || `option ${i + 1}`}. Use the up and down arrow keys.`,
+                emojiLabel: `Emoji for option ${i + 1} (optional)`,
+                labelName: `Option ${i + 1} label`,
+                valueName: `Option ${i + 1} value`,
+                removeName: `Remove ${label || `option ${i + 1}`}`,
                 // Card Deck parity (owner 2026-08-01): per-option emoji + sublabel
                 emoji: o.emoji || '',
                 description: o.description || '',
@@ -1131,9 +1480,8 @@ export default class FinalPropertyPanel extends LightningElement {
     /** A sublabel shows only on chips and cards: a plain radio, checkbox or
      *  dropdown can't draw a second line. */
     get showOptionSublabels() {
-        return (
-            this.cfg.optionStyle === 'chips' || this.cfg.optionStyle === 'cards'
-        );
+        const look = this.currentLook.look;
+        return look === 'chips' || look === 'cards';
     }
 
     /** Raw <input value={x}> writes the LITERAL string "undefined" into the
@@ -1444,14 +1792,6 @@ export default class FinalPropertyPanel extends LightningElement {
         this._prop({ label: event.target.value });
     }
 
-    handleBehavior(event) {
-        const v = event.currentTarget.dataset.value;
-        this._prop({
-            required: v === 'required',
-            readOnly: v === 'readonly'
-        });
-    }
-
     handlePlaceholder(event) {
         this._prop({ placeholder: event.target.value });
     }
@@ -1502,7 +1842,11 @@ export default class FinalPropertyPanel extends LightningElement {
         const options = (this.cfg.options || []).filter(
             (_o, i) => i !== Number(event.currentTarget.dataset.index)
         );
-        this._config({ options });
+        // never empty: Chips and Cards only draw with options, so removing
+        // the last one would quietly turn the look into a choiceless radio
+        this._config({
+            options: options.length ? options : [{ label: '', value: '' }]
+        });
     }
 
     handleSlider(event) {
