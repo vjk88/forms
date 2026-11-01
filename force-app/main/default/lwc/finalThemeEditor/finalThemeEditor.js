@@ -11,6 +11,7 @@ import { resolveTokens, resolveFontRefs } from 'c/finalThemeEngine';
 import { applyFontPatch } from 'c/finalFontChoices';
 import { previewSettings } from 'c/finalLayoutRegistry';
 import { logoForUpload } from 'c/finalBrandColors';
+import { mix } from 'c/finalReadableText';
 import {
     buildBrandTheme,
     brandContrastReport,
@@ -71,8 +72,20 @@ const COLOR_GROUPS = [
         key: 'surfaces',
         label: 'Surfaces',
         rows: [
-            ['pageBg', 'Page fill', 'palette.pageBg', '--c-page-bg'],
-            ['contentBg', 'Panel fill', 'palette.contentBg', '--c-content-bg'],
+            [
+                'pageBg',
+                'Page fill',
+                'palette.pageBg',
+                '--c-page-bg',
+                'palette.pageBgGradient'
+            ],
+            [
+                'contentBg',
+                'Panel fill',
+                'palette.contentBg',
+                '--c-content-bg',
+                'palette.contentBgGradient'
+            ],
             ['borderColor', 'Border', 'palette.borderColor', '--c-border-color']
         ]
     },
@@ -80,7 +93,13 @@ const COLOR_GROUPS = [
         key: 'header',
         label: 'Header',
         rows: [
-            ['headerBg', 'Header fill', 'palette.headerBg', '--c-header-bg'],
+            [
+                'headerBg',
+                'Header fill',
+                'palette.headerBg',
+                '--c-header-bg',
+                'palette.headerBgGradient'
+            ],
             [
                 'headerText',
                 'Header title',
@@ -226,6 +245,15 @@ const BRAND_STYLE_CARDS = [
     { value: 'dark', label: 'Dark' }
 ];
 
+// IMPL_PLAN_THEME_GRADIENTS: a fill with a gradient path can be Solid,
+// Gradient, or (when its saved value isn't a hex colour) see-through.
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const isHex = (v) => typeof v === 'string' && HEX.test(v.trim());
+const isGradient = (g) => Boolean(g && g.start && g.end);
+// the gradient control's own second colour when it starts a gradient
+// (c/finalGradientControl PRESETS[0][1])
+const GRADIENT_END = '#064e3b';
+
 const clone = (o) => JSON.parse(JSON.stringify(o || {}));
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -284,6 +312,7 @@ export default class FinalThemeEditor extends LightningElement {
     _uploaded = null; // { dataUrl, url, versionId } — reused on a retry
     _savedOnce = false;
     _nameTouched = false;
+    _focusAfter = null; // { path, to: 'control' | 'none' } after a fill button
 
     connectedCallback() {
         listFonts()
@@ -554,14 +583,25 @@ export default class FinalThemeEditor extends LightningElement {
         return COLOR_GROUPS.map((g) => ({
             key: g.key,
             label: g.label,
-            rows: g.rows.map(([key, label, path, token]) => {
+            rows: g.rows.map(([key, label, path, token, gradientPath]) => {
                 const own = getAt(props, path);
-                const pinned = this._pinned.includes(path);
+                const pinned =
+                    this._pinned.includes(path) ||
+                    Boolean(
+                        gradientPath && this._pinned.includes(gradientPath)
+                    );
                 const automatic =
                     !pinned && (own === undefined || own === null);
                 const value = automatic ? tokens[token] : own;
                 const badge = BADGES[path];
+                const fill = gradientPath
+                    ? this._fillState(value, getAt(props, gradientPath))
+                    : null;
                 return {
+                    ...(fill || {}),
+                    isFill: Boolean(fill),
+                    gradientPath,
+                    bothPaths: gradientPath ? `${path},${gradientPath}` : path,
                     key,
                     label,
                     path,
@@ -584,7 +624,10 @@ export default class FinalThemeEditor extends LightningElement {
                         label,
                         worst.has(path) ? 'hard to read' : '',
                         pinned ? 'changed by you' : '',
-                        automatic ? 'automatic' : ''
+                        automatic ? 'automatic' : '',
+                        fill && fill.backingHides
+                            ? 'shown as a solid panel so text stays readable'
+                            : ''
                     ]
                         .filter(Boolean)
                         .join(', ')
@@ -595,6 +638,151 @@ export default class FinalThemeEditor extends LightningElement {
 
     handleColor(event) {
         this._set(event.target.dataset.path, event.detail.value);
+    }
+
+    // ---------------------------------------------- fills with a gradient
+
+    /**
+     * Which editor a fill shows, in this order (review round 2):
+     *   1. a valid gradient           -> Gradient, whatever the solid is
+     *   2. a value that isn't hex     -> None (see-through) / Translucent
+     *   3. otherwise                  -> Solid
+     * The saved solid and the picker's hex are kept apart: `displayHex` is
+     * the solid when it is hex, else the seed (never "transparent").
+     */
+    _fillState(value, gradient) {
+        const seed = this._seedHex();
+        const translucent =
+            typeof value === 'string' && /^rgba?\(|hsla?\(/i.test(value.trim());
+        let mode = 'solid';
+        if (isGradient(gradient)) mode = 'gradient';
+        else if (!isHex(value)) mode = translucent ? 'translucent' : 'none';
+        return {
+            mode,
+            // the engine hid this panel gradient behind a solid backing so
+            // text stays readable: say so, or the control looks broken
+            backingHides:
+                mode === 'gradient' &&
+                this.tokens['--c-card-backing-image'] === 'none' &&
+                gradient === getAt(this._props, 'palette.contentBgGradient'),
+            showControl: mode === 'solid' || mode === 'gradient',
+            canSeeThrough: mode === 'solid' || mode === 'gradient',
+            solidVerb:
+                mode === 'translucent'
+                    ? 'Replace with solid'
+                    : 'Add a solid fill',
+            isNone: mode === 'none',
+            isTranslucent: mode === 'translucent',
+            displayHex: isHex(value) ? value : seed,
+            gradient: isGradient(gradient) ? gradient : null,
+            savedSolid: typeof value === 'string' ? value : ''
+        };
+    }
+
+    /** The colour a new fill starts from: the panel fill as an opaque hex. */
+    _seedHex() {
+        const panel = this.tokens['--c-content-bg'];
+        return isHex(panel) ? panel : '#ffffff';
+    }
+
+    /** After a fill button replaces itself, keyboard focus lands on what
+     *  replaced it (UX review, PR 427), never nowhere. */
+    renderedCallback() {
+        const target = this._focusAfter;
+        if (!target) return;
+        this._focusAfter = null;
+        const row = this.template.querySelector(
+            `.te-crow[data-row="${target.path}"]`
+        );
+        if (!row) return;
+        const control = row.querySelector('c-final-gradient-control');
+        if (target.to === 'control' && control) {
+            control.focus();
+        } else {
+            row.querySelector('.te-add-solid')?.focus();
+        }
+    }
+
+    _setFill(path, gradientPath, solid, gradient) {
+        const next = clone(this._props);
+        if (solid !== undefined) setAt(next, path, solid);
+        setAt(next, gradientPath, gradient);
+        this._props = next;
+        this._pin(path);
+        this._pin(gradientPath);
+        this._touched();
+    }
+
+    /** The gradient control: both halves in one event. Editing only the
+     *  gradient never rewrites a saved see-through solid. */
+    handleGradient(event) {
+        const { path, gradientPath } = event.target.dataset;
+        const { solid } = event.detail;
+        let { gradient } = event.detail;
+        // a panel gradient switched on with the control's own dark default
+        // would sit under text, so the engine backs it with a solid card and
+        // nothing seems to happen: start the panel gently instead
+        if (
+            gradient &&
+            gradientPath === 'palette.contentBgGradient' &&
+            !isGradient(getAt(this._props, gradientPath)) &&
+            gradient.end === GRADIENT_END
+        ) {
+            gradient = { ...gradient, end: this._gentleEnd(gradient.start) };
+        }
+        const saved = getAt(this._props, path);
+        const keepSaved =
+            !isHex(saved) && gradient && solid === this._seedHex();
+        this._setFill(
+            path,
+            gradientPath,
+            keepSaved ? undefined : solid,
+            gradient || null
+        );
+    }
+
+    handleAddSolid(event) {
+        const { path, gradientPath } = event.currentTarget.dataset;
+        this._setFill(path, gradientPath, this._seedHex(), null);
+        this._focusAfter = { path, to: 'control' };
+    }
+
+    handleAddGradient(event) {
+        const { path, gradientPath } = event.currentTarget.dataset;
+        const start = this._seedHex();
+        this._focusAfter = { path, to: 'control' };
+        this._setFill(path, gradientPath, undefined, {
+            type: 'linear',
+            angle: 135,
+            start,
+            end:
+                gradientPath === 'palette.contentBgGradient'
+                    ? this._gentleEnd(start)
+                    : GRADIENT_END
+        });
+    }
+
+    /** A panel gradient's second colour that text still reads on: the
+     *  start with a light touch (15%) of the accent. */
+    _gentleEnd(start) {
+        const accent = this.tokens['--c-accent'];
+        return isHex(accent) && isHex(start) ? mix(accent, start, 0.15) : start;
+    }
+
+    /** Back to see-through: the starting point's own non-hex value, else
+     *  transparent; the gradient off. */
+    handleSeeThrough(event) {
+        const { path, gradientPath } = event.currentTarget.dataset;
+        const fromBase = getAt(this._base, path);
+        this._setFill(
+            path,
+            gradientPath,
+            typeof fromBase === 'string' && !isHex(fromBase)
+                ? fromBase
+                : 'transparent',
+            null
+        );
+        this._focusAfter = { path, to: 'none' };
     }
 
     /** "Use calculated": unpin, and the starting point's value comes back. */
@@ -732,7 +920,7 @@ export default class FinalThemeEditor extends LightningElement {
 
     get readableText() {
         return hasGradients(this._props || {})
-            ? 'Text, buttons and focus outlines read at every point we sampled, including 11 points along each gradient.'
+            ? 'Text, buttons and focus outlines read at every point we sampled, checked across each gradient.'
             : 'All text, buttons and focus outlines stay readable on every background.';
     }
 

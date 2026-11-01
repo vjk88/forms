@@ -6,6 +6,7 @@ import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import { buildBrandTheme } from 'c/finalBrandTheme';
+import { resolveTokens } from 'c/finalThemeEngine';
 
 // The ONE theme dialog (IMPL_PLAN_THEME_CREATOR): theme editor + "Create from
 // your brand" merged. The brand dialog's save/upload tests moved here.
@@ -93,6 +94,16 @@ async function pick(el, path, value) {
     );
     await flush();
 }
+const gradientRow = (el, path) =>
+    q(el, `c-final-gradient-control[data-path="${path}"]`);
+async function fill(el, path, solid, gradient = null) {
+    gradientRow(el, path).dispatchEvent(
+        new CustomEvent('change', { detail: { solid, gradient } })
+    );
+    await flush();
+}
+const G = { type: 'linear', angle: 90, start: '#1e3a8a', end: '#0f172a' };
+
 async function start(el, value) {
     q(el, `.te-seg[data-value="${value}"]`).click();
     await flush();
@@ -358,7 +369,7 @@ describe('c-final-theme-editor', () => {
         expect(color(el, 'palette.textWeak').subject).toBe('Muted text');
         expect(color(el, 'palette.textWeak').contrastWith).toBeTruthy();
         // the other rows have no badge, as before
-        expect(color(el, 'palette.pageBg').subject).toBeUndefined();
+        expect(color(el, 'palette.borderColor').subject).toBeUndefined();
     });
 
     it('a light brand colour: the tip names only the styles that fix the button (not Bold header)', async () => {
@@ -397,8 +408,8 @@ describe('c-final-theme-editor', () => {
 
     it('what Fix for me can’t fix stays listed with the best ratio it found', async () => {
         const el = await mount({ startFrom: 'nordic' });
-        await pick(el, 'palette.pageBg', '#595959');
-        await pick(el, 'palette.contentBg', '#ffffff');
+        await fill(el, 'palette.pageBg', '#595959');
+        await fill(el, 'palette.contentBg', '#ffffff');
         q(el, '.te-fix').click();
         await flush();
         const text = q(el, '.te-unfixed').textContent;
@@ -450,6 +461,213 @@ describe('c-final-theme-editor', () => {
         expect(box.classList).not.toContain('te-readable--ok');
         expect(box.textContent).toContain('Not checked');
         expect(box.textContent).toContain('page image');
+    });
+
+    // ------------------------------- gradients (IMPL_PLAN_THEME_GRADIENTS)
+
+    it('Page, Panel and Header fill get the gradient control; the other 15 stay color controls', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        // Nordic's header is see-through, so Header fill shows None instead
+        expect(getBuiltinTheme('nordic').palette.headerBg).toBe('transparent');
+        expect(qa(el, '.te-crow c-final-gradient-control')).toHaveLength(2);
+        expect(
+            row(el, 'palette.headerBg').querySelector('.te-none')
+        ).not.toBeNull();
+        expect(qa(el, '.te-crow c-final-color-control')).toHaveLength(15);
+        ['palette.pageBg', 'palette.contentBg'].forEach((p) =>
+            expect(gradientRow(el, p)).not.toBeNull()
+        );
+    });
+
+    it('turning a gradient on writes both halves, pins both, and reaches the preview', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await fill(el, 'palette.pageBg', '#eef2ff', G);
+        expect(preview(el).palette.pageBgGradient).toEqual(G);
+        expect(preview(el).palette.pageBg).toBe('#eef2ff');
+        expect(gradientRow(el, 'palette.pageBg').gradient).toEqual(G);
+        await setName(el, 'Grad');
+        await confirm(el);
+        expect(savedRecipe().authoring.pinned).toEqual(
+            expect.arrayContaining(['palette.pageBg', 'palette.pageBgGradient'])
+        );
+    });
+
+    it('Solid writes null for the gradient, and a rebuild from a gradient theme keeps it off', async () => {
+        getCustomTheme.mockResolvedValueOnce(
+            JSON.stringify({
+                ...getBuiltinTheme('nordic'),
+                palette: {
+                    ...getBuiltinTheme('nordic').palette,
+                    headerBgGradient: G
+                },
+                authoring: { start: 'theme', from: 'nordic', pinned: [] }
+            })
+        );
+        const el = await mount({ themeId: 'a0AXX0000001', themeName: 'H' });
+        expect(gradientRow(el, 'palette.headerBg').gradient).toEqual(G);
+        await fill(el, 'palette.headerBg', '#123456', null);
+        expect(preview(el).palette.headerBgGradient).toBeNull();
+        const select = q(el, '.te-startbox select');
+        select.value = 'dracula';
+        select.dispatchEvent(new CustomEvent('change'));
+        await flush();
+        expect(preview(el).palette.headerBgGradient).toBeNull();
+        expect(preview(el).palette.headerBg).toBe('#123456');
+    });
+
+    it('Use calculated brings both halves back and unpins both', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        const before = preview(el).palette.contentBg;
+        await fill(el, 'palette.contentBg', '#fafafa', G);
+        row(el, 'palette.contentBg').querySelector('.te-pin .te-link').click();
+        await flush();
+        expect(preview(el).palette.contentBg).toBe(before);
+        expect(preview(el).palette.contentBgGradient).toBeUndefined();
+        expect(row(el, 'palette.contentBg').textContent).not.toContain(
+            'Changed by you'
+        );
+    });
+
+    it('a saved gradient wins over None: transparent header + gradient opens on Gradient and survives save', async () => {
+        getCustomTheme.mockResolvedValueOnce(
+            JSON.stringify({
+                ...getBuiltinTheme('nordic'),
+                palette: {
+                    ...getBuiltinTheme('nordic').palette,
+                    headerBg: 'transparent',
+                    headerBgGradient: G
+                },
+                authoring: { start: 'theme', from: 'nordic', pinned: [] }
+            })
+        );
+        const el = await mount({ themeId: 'a0AXX0000001', themeName: 'T' });
+        const control = gradientRow(el, 'palette.headerBg');
+        expect(control).not.toBeNull();
+        expect(control.gradient).toEqual(G);
+        expect(
+            row(el, 'palette.headerBg').querySelector('.te-none')
+        ).toBeNull();
+        await confirm(el);
+        const saved = savedRecipe();
+        expect(saved.palette.headerBg).toBe('transparent');
+        expect(saved.palette.headerBgGradient).toEqual(G);
+    });
+
+    it('see-through: None -> Add a gradient -> Solid -> Use calculated', async () => {
+        const nordic = getBuiltinTheme('nordic');
+        getCustomTheme.mockResolvedValueOnce(
+            JSON.stringify({
+                ...nordic,
+                palette: { ...nordic.palette, headerBg: 'transparent' },
+                authoring: { start: 'theme', from: 'nordic', pinned: [] }
+            })
+        );
+        const el = await mount({ themeId: 'a0AXX0000001', themeName: 'S' });
+        const header = () => row(el, 'palette.headerBg');
+        expect(header().textContent).toContain('None (see-through)');
+        expect(gradientRow(el, 'palette.headerBg')).toBeNull();
+        header().querySelector('.te-add-gradient').click();
+        await flush();
+        const g = gradientRow(el, 'palette.headerBg').gradient;
+        expect(g.start).toMatch(/^#[0-9a-f]{6}$/i);
+        expect(g.start).not.toBe('transparent');
+        // the saved solid stays see-through under the gradient
+        expect(preview(el).palette.headerBg).toBe('transparent');
+        await fill(el, 'palette.headerBg', '#222222', null);
+        expect(preview(el).palette.headerBg).toBe('#222222');
+        expect(preview(el).palette.headerBgGradient).toBeNull();
+        header().querySelector('.te-pin .te-link').click();
+        await flush();
+        expect(header().textContent).toContain('None (see-through)');
+        expect(header().textContent).not.toContain('Changed by you');
+    });
+
+    it('a panel gradient starts gently, so the engine keeps showing it', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await fill(el, 'palette.contentBg', '#ffffff', {
+            type: 'linear',
+            angle: 135,
+            start: '#ffffff',
+            end: '#064e3b'
+        });
+        const g = preview(el).palette.contentBgGradient;
+        expect(g.end).not.toBe('#064e3b');
+        expect(resolveTokens(preview(el), null)['--c-card-backing-image']).toBe(
+            undefined
+        );
+        expect(
+            row(el, 'palette.contentBg').querySelector('.te-backing-note')
+        ).toBeNull();
+    });
+
+    it('a dark panel gradient hidden behind the backing says so', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await fill(el, 'palette.contentBg', '#ffffff', {
+            type: 'linear',
+            angle: 135,
+            start: '#ffffff',
+            end: '#000000'
+        });
+        expect(resolveTokens(preview(el), null)['--c-card-backing-image']).toBe(
+            'none'
+        );
+        expect(
+            row(el, 'palette.contentBg').querySelector('.te-backing-note')
+                .textContent
+        ).toContain('Your form shows a solid panel instead');
+    });
+
+    it('Make see-through turns a fill back to see-through', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        row(el, 'palette.pageBg').querySelector('.te-seethrough').click();
+        await flush();
+        expect(preview(el).palette.pageBg).toBe('transparent');
+        expect(row(el, 'palette.pageBg').textContent).toContain(
+            'None (see-through)'
+        );
+    });
+
+    it('keyboard focus follows the fill buttons instead of getting lost', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        row(el, 'palette.pageBg').querySelector('.te-seethrough').click();
+        await flush();
+        expect(el.shadowRoot.activeElement).toBe(
+            row(el, 'palette.pageBg').querySelector('.te-add-solid')
+        );
+        row(el, 'palette.pageBg').querySelector('.te-add-gradient').click();
+        await flush();
+        expect(el.shadowRoot.activeElement).toBe(
+            gradientRow(el, 'palette.pageBg')
+        );
+        // Make see-through sits on the row's own top line
+        expect(
+            row(el, 'palette.pageBg').querySelector(
+                '.te-crow-top .te-seethrough'
+            )
+        ).not.toBeNull();
+    });
+
+    it('a translucent fill says so, and warns that editing makes it solid', async () => {
+        const nordic = getBuiltinTheme('nordic');
+        getCustomTheme.mockResolvedValueOnce(
+            JSON.stringify({
+                ...nordic,
+                palette: {
+                    ...nordic.palette,
+                    contentBg: 'rgba(255, 255, 255, 0.7)'
+                },
+                authoring: { start: 'theme', from: 'nordic', pinned: [] }
+            })
+        );
+        const el = await mount({ themeId: 'a0AXX0000001', themeName: 'Tr' });
+        const text = row(el, 'palette.contentBg').textContent;
+        expect(text).toContain('Translucent');
+        expect(text).toContain('Replace with solid makes it opaque');
+        expect(
+            row(el, 'palette.contentBg')
+                .querySelector('.te-add-solid')
+                .textContent.trim()
+        ).toBe('Replace with solid');
     });
 
     // ----------------------------------------------------- shape & type

@@ -140,6 +140,19 @@
                                             aria-label={c.groupLabel}
                                         >
                                             <div class="te-crow-top">
+                                                <template
+                                                    lwc:if={c.canSeeThrough}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        class="te-link te-seethrough"
+                                                        data-path={c.path}
+                                                        data-gradient-path={c.gradientPath}
+                                                        onclick={handleSeeThrough}
+                                                    >
+                                                        Make see-through
+                                                    </button>
+                                                </template>
                                                 <template lwc:if={c.flagged}>
                                                     <button
                                                         type="button"
@@ -157,11 +170,12 @@
                                                 </template>
                                                 <template lwc:if={c.pinned}>
                                                     <span class="te-pin"
-                                                        >Changed by you ·
+                                                        >Changed by
+                                                        you&nbsp;·&nbsp;
                                                         <button
                                                             type="button"
                                                             class="te-link"
-                                                            data-path={c.path}
+                                                            data-path={c.bothPaths}
                                                             onclick={handleUseCalculated}
                                                         >
                                                             Use calculated
@@ -176,14 +190,97 @@
                                                     >
                                                 </template>
                                             </div>
-                                            <c-final-color-control
-                                                data-path={c.path}
-                                                label={c.label}
-                                                value={c.value}
-                                                contrast-with={c.contrastWith}
-                                                subject={c.subject}
-                                                onchange={handleColor}
-                                            ></c-final-color-control>
+                                            <template lwc:if={c.isFill}>
+                                                <template
+                                                    lwc:if={c.showControl}
+                                                >
+                                                    <c-final-gradient-control
+                                                        data-path={c.path}
+                                                        data-gradient-path={c.gradientPath}
+                                                        label={c.label}
+                                                        solid={c.displayHex}
+                                                        gradient={c.gradient}
+                                                        edited={c.pinned}
+                                                        onchange={handleGradient}
+                                                    ></c-final-gradient-control>
+                                                    <template
+                                                        lwc:if={c.backingHides}
+                                                    >
+                                                        <p
+                                                            class="te-hint te-backing-note"
+                                                        >
+                                                            Your form shows a
+                                                            solid panel instead,
+                                                            so text stays
+                                                            readable. Pick two
+                                                            colors closer
+                                                            together.
+                                                        </p>
+                                                    </template>
+                                                </template>
+                                                <template lwc:else>
+                                                    <div class="te-none">
+                                                        <span class="te-sub"
+                                                            >{c.label}</span
+                                                        >
+                                                        <template
+                                                            lwc:if={c.isNone}
+                                                        >
+                                                            <span
+                                                                class="te-none-state"
+                                                                >None
+                                                                (see-through)</span
+                                                            >
+                                                        </template>
+                                                        <template
+                                                            lwc:if={c.isTranslucent}
+                                                        >
+                                                            <span
+                                                                class="te-none-state"
+                                                                >Translucent</span
+                                                            >
+                                                            <span
+                                                                class="te-hint"
+                                                                >Replace with
+                                                                solid makes it
+                                                                opaque; a
+                                                                gradient goes on
+                                                                top of it.</span
+                                                            >
+                                                        </template>
+                                                        <div class="te-row">
+                                                            <button
+                                                                type="button"
+                                                                class="te-btn te-add-solid"
+                                                                data-path={c.path}
+                                                                data-gradient-path={c.gradientPath}
+                                                                onclick={handleAddSolid}
+                                                            >
+                                                                {c.solidVerb}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                class="te-btn te-add-gradient"
+                                                                data-path={c.path}
+                                                                data-gradient-path={c.gradientPath}
+                                                                onclick={handleAddGradient}
+                                                            >
+                                                                Add a gradient
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </template>
+                                            <template lwc:else>
+                                                <c-final-color-control
+                                                    data-path={c.path}
+                                                    label={c.label}
+                                                    value={c.value}
+                                                    contrast-with={c.contrastWith}
+                                                    subject={c.subject}
+                                                    onchange={handleColor}
+                                                ></c-final-color-control>
+                                            </template>
                                         </div>
                                     </template>
                                 </div>
@@ -205,7 +302,7 @@
                             ></c-final-font-picker>
                             <template lwc:if={fontPinned}>
                                 <span class="te-pin"
-                                    >Changed by you ·
+                                    >Changed by you&nbsp;·&nbsp;
                                     <button
                                         type="button"
                                         class="te-link"
@@ -244,7 +341,7 @@
                                     </select>
                                     <template lwc:if={s.pinned}>
                                         <span class="te-pin"
-                                            >Changed by you ·
+                                            >Changed by you&nbsp;·&nbsp;
                                             <button
                                                 type="button"
                                                 class="te-link"

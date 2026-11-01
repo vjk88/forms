@@ -4,10 +4,11 @@
             <span class="dot" title="Customized"></span>
         </template>
         <span class="label">{label}</span>
-        <div class="seg" role="tablist" aria-label="Fill mode">
+        <div class="seg" role="group" aria-label={modeGroupLabel}>
             <button
                 class={solidSegClass}
                 type="button"
+                aria-pressed={solidPressed}
                 disabled={disabled}
                 onclick={handleSolidMode}
             >
@@ -16,6 +17,7 @@
             <button
                 class={gradientSegClass}
                 type="button"
+                aria-pressed={gradientPressed}
                 disabled={disabled}
                 onclick={handleGradientMode}
             >
@@ -35,7 +37,8 @@
                         style={p.style}
                         data-start={p.start}
                         data-end={p.end}
-                        title="Preset"
+                        title={p.name}
+                        aria-label={p.name}
                         disabled={disabled}
                         onclick={handlePreset}
                     ></button>
@@ -43,7 +46,11 @@
             </div>
             <div class="grow">
                 <label>Type</label>
-                <select disabled={disabled} onchange={handleType}>
+                <select
+                    aria-label={typeLabel}
+                    disabled={disabled}
+                    onchange={handleType}
+                >
                     <template for:each={typeOptions} for:item="o">
                         <option
                             key={o.value}
@@ -60,6 +67,7 @@
                     <label>Angle</label>
                     <input
                         type="range"
+                        aria-label={angleLabel}
                         disabled={disabled}
                         min="0"
                         max="360"
@@ -73,6 +81,7 @@
                 <label>Start</label>
                 <input
                     type="color"
+                    aria-label={startLabel}
                     value={start}
                     disabled={disabled}
                     oninput={handleStart}
@@ -80,6 +89,7 @@
                 <label class="end-label">End</label>
                 <input
                     type="color"
+                    aria-label={endLabel}
                     value={end}
                     disabled={disabled}
                     oninput={handleEnd}
@@ -92,6 +102,7 @@
             <span class="hex">{solid}</span>
             <input
                 type="color"
+                aria-label={solidLabel}
                 value={solid}
                 disabled={disabled}
                 oninput={handleSolidColor}

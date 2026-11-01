@@ -191,6 +191,27 @@
     font-weight: 700;
 }
 
+/* a fill that isn't a colour: say so instead of drawing a fake swatch */
+.te-none {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px dashed var(--c-studio-border-strong);
+    border-radius: 8px;
+}
+
+.te-none-state {
+    font-weight: 600;
+    color: var(--c-studio-text-weak);
+}
+
+.te-seethrough {
+    align-self: flex-start;
+    margin-top: 4px;
+    font-size: 12px;
+}
+
 .te-link {
     padding: 0;
     border: 0;

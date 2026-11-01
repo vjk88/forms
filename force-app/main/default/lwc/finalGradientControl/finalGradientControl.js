@@ -90,9 +90,44 @@ export default class FinalGradientControl extends LightningElement {
         ];
     }
 
+    // Spoken names: each control says which fill it edits (the visible
+    // Type / Angle / Start / End labels sit beside the inputs, not on them).
+    get modeGroupLabel() {
+        return `${this.label || 'Fill'} type`;
+    }
+
+    get solidPressed() {
+        return this.isGradient ? 'false' : 'true';
+    }
+
+    get gradientPressed() {
+        return this.isGradient ? 'true' : 'false';
+    }
+
+    get typeLabel() {
+        return `${this.label || 'Fill'} gradient type`;
+    }
+
+    get angleLabel() {
+        return `${this.label || 'Fill'} gradient angle`;
+    }
+
+    get startLabel() {
+        return `${this.label || 'Fill'} gradient start color`;
+    }
+
+    get endLabel() {
+        return `${this.label || 'Fill'} gradient end color`;
+    }
+
+    get solidLabel() {
+        return `${this.label || 'Fill'} color`;
+    }
+
     get presets() {
         return PRESETS.map(([a, b], i) => ({
             key: `p${i}`,
+            name: `Preset gradient ${a} to ${b}`,
             start: a,
             end: b,
             style: `background: linear-gradient(135deg, ${a}, ${b})`

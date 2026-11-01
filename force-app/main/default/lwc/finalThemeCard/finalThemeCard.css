@@ -35,9 +35,13 @@
 /* --- Themed preview stage (everything below rides --c-* tokens) --- */
 .tc-stage {
     background-color: var(--c-page-bg, #f3f4f6);
-    background-image: var(--c-page-bg-image, none);
-    background-size: var(--c-page-bg-size, cover);
-    background-position: var(--c-page-bg-position, center);
+    /* the page image, then the page gradient under it: the form's stack
+       (finalPageFrame) without its scrim/veil, which the card never drew */
+    background-image:
+        var(--c-page-bg-image, none), var(--c-page-bg-gradient, none);
+    background-size: var(--c-page-bg-size, cover), auto;
+    background-position: var(--c-page-bg-position, center), center;
+    background-repeat: no-repeat, no-repeat;
     /* the preview stands for a desktop page: the form sits at its real width
        share (--pv-card, c/finalLayoutRegistry previewGeometry) */
     padding: 18px 8px;
@@ -50,8 +54,14 @@
 
 .tc-card {
     width: var(--pv-card, 100%);
-    /* the card a form really draws (text plan §4.4 card backing) */
-    background: var(--c-card-backing, var(--c-content-bg, #ffffff));
+    /* the card a form really draws (text plan §4.4 card backing): its
+       gradient is a FALLBACK under the backing, as in finalPageFrame, so a
+       backing that sets its image to none hides it here too */
+    background-color: var(--c-card-backing, var(--c-content-bg, #ffffff));
+    background-image: var(
+        --c-card-backing-image,
+        var(--c-content-bg-gradient, none)
+    );
     border: var(--c-content-border, 1px solid #e5e7eb);
     border-radius: var(--c-radius, 8px);
     box-shadow: var(--c-content-shadow, none);
