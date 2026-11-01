@@ -36,6 +36,7 @@ import {
     ratio,
     worst,
     adjust,
+    adjustSteps,
     inkFor,
     brandSurfaces
 } from 'c/finalReadableText';
@@ -315,4 +316,382 @@ export function brandContrastReport(recipe) {
         checks,
         pass: checks.filter((c) => !c.advisory).every((c) => c.pass)
     };
+}
+
+// ------------------------------------------------- any theme (theme creator)
+
+// IMPL_PLAN_THEME_CREATOR: the merged theme dialog checks EVERY theme, not
+// only brand recipes, and must not call a theme readable on surfaces it never
+// measured. brandContrastReport above stays as it is (brand recipe tests).
+
+/** The one recipe path each check judges, so Fix for me knows what to move. */
+export const READABILITY_PATHS = {
+    text: 'palette.text',
+    'muted text': 'palette.textWeak',
+    labels: 'palette.labelColor',
+    'error text': 'fieldStates.error',
+    'required marker': 'fieldStates.required',
+    accent: 'palette.accent',
+    'on-accent': 'palette.onAccent',
+    'button text': 'palette.submitText',
+    'button fill': 'palette.submitBg',
+    'header title': 'palette.headerText',
+    'header subtitle': 'palette.headerTextWeak',
+    'focus ring': 'fieldStates.focus',
+    'input border': 'palette.fieldBorderColor'
+};
+
+// Inks are picked for their fill, never nudged (pure black or white always
+// reaches 4.58 : 1 on a solid colour).
+const INK_FILL = {
+    'palette.onAccent': '--c-accent',
+    'palette.submitText': '--c-submit-bg'
+};
+
+function getPath(obj, path) {
+    return path
+        .split('.')
+        .reduce((node, key) => (node == null ? undefined : node[key]), obj);
+}
+
+function setPath(obj, path, value) {
+    const keys = path.split('.');
+    let node = obj;
+    keys.slice(0, -1).forEach((key) => {
+        if (!node[key] || typeof node[key] !== 'object') node[key] = {};
+        node = node[key];
+    });
+    node[keys[keys.length - 1]] = value;
+}
+
+/** A gradient with both stops set (the engine paints nothing otherwise). */
+const isGradient = (g) => Boolean(g && g.start && g.end);
+
+/** Sample points along a gradient: every 10%, ends included. A SAMPLED check
+ *  (review 2026-11-01): it catches a gradient passing through the text's own
+ *  tone, which the two ends alone miss, but a narrow spot between two points
+ *  can still slip through. */
+const SAMPLES = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+
+/** Colours along a gradient, start to end, at the sample points; [] when a
+ *  stop isn't a hex colour (it can't be mixed), else just the two stops. */
+function gradientColours(g) {
+    if (!isGradient(g)) return [];
+    const a = parseHex(g.start);
+    const b = parseHex(g.end);
+    if (!a || !b)
+        return [
+            [0, g.start],
+            [1, g.end]
+        ];
+    const start = toHex(a);
+    const end = toHex(b);
+    return SAMPLES.map((share) => [share, mix(end, start, share)]);
+}
+
+/**
+ * A gradient fill as surfaces, `[where, colour]`: each sample point at the
+ * fill's opacity (0-100), composited over what it sits on.
+ */
+function gradientPoints(g, opacity, under, label) {
+    if (!under) return [];
+    const n = Number(opacity);
+    const alpha = Number.isFinite(n) && n < 100 ? Math.max(n, 0) / 100 : 1;
+    return gradientColours(g)
+        .map(([share, colour]) => {
+            const rgb = parseHex(colour);
+            const value = rgb
+                ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`
+                : colour;
+            return [
+                `${label} (${Math.round(share * 100)}%)`,
+                composite(value, under)
+            ];
+        })
+        .filter(([, colour]) => colour);
+}
+
+/** Does the theme paint any gradient? (The box words its verdict for it.) */
+export function hasGradients(recipe) {
+    const pal = (recipe && recipe.palette) || {};
+    return [
+        pal.pageBgGradient,
+        pal.contentBgGradient,
+        pal.headerBgGradient,
+        pal.submitBgGradient,
+        pal.headerTitleGradient
+    ].some(isGradient);
+}
+
+/**
+ * Every text, mark and focus pair of ANY theme recipe, on the engine's
+ * resolved tokens, plus what it cannot measure.
+ *   - gradients (page, panel, header, button, header title) are SAMPLED at
+ *     11 points each, never judged by the solid fill under them;
+ *   - photos and mesh can't be measured from a recipe: each is named in
+ *     `unchecked`, and `complete` is false;
+ *   - a header with no fill is judged where it sits (page and card).
+ * @returns {{ checks: Array<{name, path, where, fg, bg, ratio, min, pass,
+ *   advisory?, unmeasurable?}>, unchecked: Array<{surface}>, pass: boolean,
+ *   complete: boolean }}
+ */
+export function themeReadability(recipe) {
+    const p = recipe || {};
+    const pal = p.palette || {};
+    const t = resolveTokens(p, null);
+    const s = brandSurfaces({
+        pageBg: t['--c-page-bg'],
+        contentBg: t['--c-content-bg'],
+        text: t['--c-text'],
+        fieldBg: t['--c-field-bg']
+    });
+    const pageStops = gradientPoints(
+        pal.pageBgGradient,
+        100,
+        s.page,
+        'the page gradient'
+    );
+    const cardStops = gradientPoints(
+        pal.contentBgGradient,
+        pal.contentBgOpacity,
+        s.page,
+        'the panel gradient'
+    );
+    const surfaces = [...s.all, ...pageStops, ...cardStops];
+    const accent = composite(t['--c-accent'], s.card);
+    const tinted = accent
+        ? ACCENT_TINTS.flatMap((share) => [
+              [
+                  `a ${Math.round(share * 100)}% accent tint`,
+                  mix(accent, s.card, share)
+              ],
+              [
+                  `a ${Math.round(share * 100)}% accent tint on the page`,
+                  mix(accent, s.page, share)
+              ]
+          ])
+        : [];
+
+    const checks = [];
+    const add = (name, fg, where, bg, min, advisory = false) => {
+        const row = {
+            name,
+            path: READABILITY_PATHS[name],
+            where,
+            fg,
+            bg,
+            min,
+            ratio: 0,
+            pass: false
+        };
+        if (!fg || !bg) {
+            row.unmeasurable = true;
+        } else {
+            row.ratio = Math.round(ratio(fg, bg) * 100) / 100;
+            row.pass = ratio(fg, bg) >= min;
+        }
+        if (advisory) row.advisory = true;
+        checks.push(row);
+    };
+    const each = (name, token, list, min) => {
+        list.forEach(([where, bg]) =>
+            add(name, composite(t[token], bg), where, bg, min)
+        );
+    };
+
+    each('text', '--c-text', [...surfaces, ...tinted], TEXT);
+    each('muted text', '--c-text-weak', [...surfaces, ...tinted], TEXT);
+    each('labels', '--c-label-color', surfaces, TEXT);
+    each('error text', '--c-field-error', surfaces, TEXT);
+    each('required marker', '--c-field-required', surfaces, TEXT);
+    each('accent', '--c-accent', surfaces, TEXT);
+    if (accent) {
+        add(
+            'on-accent',
+            composite(t['--c-on-accent'], accent),
+            'the accent',
+            accent,
+            TEXT
+        );
+    }
+    const submit = composite(t['--c-submit-bg'], s.card);
+    const submitStops = [
+        ['the button', submit],
+        ...gradientPoints(
+            pal.submitBgGradient,
+            100,
+            s.card,
+            'the button gradient'
+        )
+    ];
+    submitStops.forEach(([where, bg]) =>
+        add('button text', composite(t['--c-submit-text'], bg), where, bg, TEXT)
+    );
+    add('button fill', submit, 'the card', s.card, MARK, true);
+    add('button fill', submit, 'the page', s.page, MARK, true);
+
+    // the header: on its own fill, else where it sits. A gradient is a fill
+    // even over a see-through solid (review 2026-11-01): the engine paints it
+    // over the page.
+    const headerBg = t['--c-header-bg'];
+    const solidFill = headerBg && headerBg !== 'transparent';
+    const headerPoints = gradientPoints(
+        pal.headerBgGradient,
+        pal.headerBgOpacity,
+        s.page,
+        'the header gradient'
+    );
+    let headerGround = [
+        ['the page', s.page],
+        ['the card', s.card]
+    ];
+    if (solidFill || headerPoints.length) {
+        headerGround = [
+            ...(solidFill ? [['the header', composite(headerBg, s.page)]] : []),
+            ...headerPoints
+        ];
+    }
+    const titleColours = gradientColours(pal.headerTitleGradient);
+    headerGround.forEach(([where, bg]) => {
+        if (titleColours.length) {
+            titleColours.forEach(([, colour]) =>
+                add('header title', composite(colour, bg), where, bg, TEXT)
+            );
+        } else {
+            add(
+                'header title',
+                composite(t['--c-header-text'], bg),
+                where,
+                bg,
+                TEXT
+            );
+        }
+        add(
+            'header subtitle',
+            composite(t['--c-header-text-weak'], bg),
+            where,
+            bg,
+            TEXT
+        );
+    });
+
+    each('focus ring', '--c-field-focus', surfaces, MARK);
+    each('input border', '--c-field-border', surfaces, MARK);
+
+    const unchecked = [];
+    const pageImage = p.pageImage || {};
+    if (pageImage.url) unchecked.push({ surface: 'page image' });
+    if (pal.headerImage) unchecked.push({ surface: 'header photo' });
+    if ((p.effects || {}).mesh) unchecked.push({ surface: 'background mesh' });
+    checks
+        .filter((c) => c.unmeasurable)
+        .forEach((c) => {
+            if (!unchecked.some((u) => u.surface === c.where)) {
+                unchecked.push({ surface: c.where });
+            }
+        });
+
+    return {
+        checks,
+        unchecked,
+        pass: checks
+            .filter((c) => !c.advisory && !c.unmeasurable)
+            .every((c) => c.pass),
+        complete: unchecked.length === 0
+    };
+}
+
+const failingPaths = (report) => [
+    ...new Set(
+        report.checks
+            .filter((c) => !c.pass && !c.advisory && !c.unmeasurable)
+            .map((c) => c.path)
+    )
+];
+
+/**
+ * Fix for me (IMPL_PLAN_THEME_CREATOR, ruling 4 + review): moves ONLY the
+ * failing colours, in rounds, and never claims a fix it didn't make.
+ *   - each candidate is a full 2%-step walk (adjustSteps) toward black AND
+ *     toward white; the passing one with fewer steps wins. readable() is not
+ *     used: it gives up when an endpoint fails, which skips the middle grays
+ *     that pass between a dark page and a white card;
+ *   - inks (on-accent, button text) are picked for their fill (inkFor);
+ *   - after each round the whole report is recomputed (moving Text moves the
+ *     section tints, moving Accent moves the accent tints), up to 5 rounds,
+ *     stopping when a round fixes nothing;
+ *   - a colour that can't pass keeps its value and is reported with the best
+ *     worst-case ratio the walk FOUND (not "possible": a limited search).
+ * @returns {{ recipe, fixed: string[], unfixed: Array<{path, name, where,
+ *   best, min}>, report }}
+ */
+export function fixReadability(recipe) {
+    const next = JSON.parse(JSON.stringify(recipe || {}));
+    const fixed = new Set();
+    const tried = new Map();
+    let report = themeReadability(next);
+    for (let round = 0; round < 5; round++) {
+        const paths = failingPaths(report);
+        if (!paths.length) break;
+        let progress = false;
+        const tokens = resolveTokens(next, null);
+        for (const path of paths) {
+            const rows = report.checks.filter(
+                (c) => c.path === path && !c.advisory && !c.unmeasurable
+            );
+            const current =
+                rows.find((r) => !r.pass)?.fg || getPath(next, path);
+            const passes = (c) => rows.every((r) => ratio(c, r.bg) >= r.min);
+            let pick = null;
+            if (INK_FILL[path]) {
+                const ink = inkFor(
+                    composite(tokens[INK_FILL[path]], rows[0].bg) || rows[0].bg
+                );
+                if (passes(ink)) pick = ink;
+            } else if (parseHex(current)) {
+                const runs = ['#000000', '#ffffff']
+                    .map((target) => adjustSteps(current, target, passes))
+                    .filter((run) => run.ok)
+                    .sort((a, b) => a.steps - b.steps);
+                if (runs.length) pick = runs[0].color;
+            }
+            if (pick) {
+                setPath(next, path, pick);
+                fixed.add(path);
+                progress = true;
+            } else {
+                tried.set(path, { rows, current });
+            }
+        }
+        if (!progress) break;
+        report = themeReadability(next);
+    }
+    const unfixed = failingPaths(report).map((path) => {
+        const rows = report.checks.filter(
+            (c) => c.path === path && !c.advisory && !c.unmeasurable
+        );
+        const worstRow = rows
+            .filter((r) => !r.pass)
+            .sort((a, b) => a.ratio - b.ratio)[0];
+        const start = (tried.get(path) || {}).current || worstRow.fg;
+        // the best worst-case ratio anywhere on either walk (2% steps)
+        let best = Math.min(...rows.map((r) => r.ratio));
+        if (parseHex(start)) {
+            ['#000000', '#ffffff'].forEach((target) => {
+                for (let k = 0; k <= 50; k++) {
+                    const c = mix(target, start, k * 0.02);
+                    const w = Math.min(...rows.map((r) => ratio(c, r.bg)));
+                    if (w > best) best = w;
+                }
+            });
+        }
+        return {
+            path,
+            name: worstRow.name,
+            where: worstRow.where,
+            best: Math.round(best * 10) / 10,
+            min: Math.max(...rows.map((r) => r.min))
+        };
+    });
+    return { recipe: next, fixed: [...fixed], unfixed, report };
 }

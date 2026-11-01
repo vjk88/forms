@@ -3,5 +3,5 @@
     <apiVersion>66.0</apiVersion>
     <isExposed>false</isExposed>
     <description
-    >Studio: Create from your brand — logo colours, style, fonts, live preview; saves an org theme (IMPL_PLAN_FONTS_AND_BRAND_THEME B.1).</description>
+    >Theme dialog: the "Your brand" starting point — logo colours, main and second colour, style cards. Emits brandchange and logochange; never saves.</description>
 </LightningComponentBundle>

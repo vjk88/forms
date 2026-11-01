@@ -15,3 +15,6 @@ docs/FinalDesign/specs/IMPL_PLAN_FREEFORM_F2.md
 
 # Markdown (plans, specs, notes) is left exactly as written
 **/*.md
+
+# Generated test snapshots are compared as data and kept exactly as written
+**/__fixtures__/**

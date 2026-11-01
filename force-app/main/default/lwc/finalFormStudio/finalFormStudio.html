@@ -570,23 +570,16 @@
                 theme-id={editorThemeId}
                 theme-name={editorThemeName}
                 start-from={editorStartFrom}
-                onsave={handleThemeSaved}
-                oncancel={handleEditorCancel}
-                onbrandstart={handleBrandStart}
-            ></c-final-theme-editor>
-        </template>
-
-        <template lwc:if={brandOpen}>
-            <c-final-brand-dialog
+                start-mode={editorStartMode}
                 form-id={formId}
                 layout={brandLayout}
                 pane-flow={brandPaneFlow}
                 form-layout={brandFormLayout}
                 current-logo-url={brandLogoUrl}
                 header-arrangement={brandHeaderArrangement}
-                onsave={handleBrandSaved}
-                oncancel={handleBrandCancel}
-            ></c-final-brand-dialog>
+                onsave={handleThemeSaved}
+                oncancel={handleEditorCancel}
+            ></c-final-theme-editor>
         </template>
 
         <template lwc:if={autofillOpen}>

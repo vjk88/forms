@@ -114,7 +114,7 @@ describe('focus stays visible in Windows High Contrast', () => {
     // Studio and admin screens: out of scope (IMPL_PLAN_FOCUS_CONTRAST §0).
     // Every final* stylesheet with a :focus rule must be in one of the lists.
     const STUDIO_ONLY = [
-        'finalBrandDialog',
+        'finalBrandInputs',
         'finalBuilderCanvas',
         'finalColorControl',
         'finalConnectedObjectCard',

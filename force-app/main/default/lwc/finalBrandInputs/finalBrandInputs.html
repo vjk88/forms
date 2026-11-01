@@ -1,0 +1,205 @@
+<template>
+    <div class="bd-form">
+        <section class="bd-step" aria-labelledby="bd-logo-h">
+            <h3 id="bd-logo-h" class="bd-h">
+                Your logo&nbsp;<span class="bd-opt">(optional)</span>
+            </h3>
+            <p class="bd-hint">
+                We suggest colors from it. PNG, JPG, GIF or WebP, up to 5 MB.
+            </p>
+            <div class="bd-row">
+                <button
+                    type="button"
+                    class="bd-btn"
+                    onclick={handleLogoPick}
+                    disabled={logoReading}
+                >
+                    Upload logo…
+                </button>
+                <template lwc:if={hasLogo}>
+                    <img class="bd-logo" src={logoDataUrl} alt="Your logo" />
+                    <button
+                        type="button"
+                        class="bd-link"
+                        onclick={handleLogoRemove}
+                    >
+                        Remove
+                    </button>
+                </template>
+                <input
+                    class="bd-file"
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    onchange={handleLogoFile}
+                />
+            </div>
+            <template lwc:if={logoError}>
+                <p class="bd-error" role="alert">{logoError}</p>
+            </template>
+            <template lwc:if={suggestions.length}>
+                <div
+                    class="bd-swatches"
+                    role="group"
+                    aria-label="Colors from your logo"
+                    aria-describedby="bd-second-hint"
+                >
+                    <template for:each={swatches} for:item="s">
+                        <button
+                            key={s.key}
+                            type="button"
+                            aria-pressed={s.pressed}
+                            aria-label={s.label}
+                            title={s.hex}
+                            class={s.cls}
+                            data-hex={s.hex}
+                            onclick={handleSwatch}
+                        >
+                            <span class="bd-swatch-chip" style={s.style}></span>
+                            <span class="bd-swatch-role" aria-hidden="true"
+                                >{s.role}</span
+                            >
+                        </button>
+                    </template>
+                </div>
+                <template lwc:if={secondHint}>
+                    <p id="bd-second-hint" class="bd-hint bd-second-hint">
+                        {secondHint}
+                    </p>
+                </template>
+            </template>
+            <template lwc:if={noSuggestions}>
+                <p class="bd-hint">
+                    No clear colors in that logo (it may be black, white or
+                    grey). Pick your main color below.
+                </p>
+            </template>
+            <template lwc:if={hasLogo}>
+                <label class="bd-check">
+                    <input
+                        type="checkbox"
+                        checked={useAsLogo}
+                        onchange={handleUseAsLogo}
+                    />
+                    {useAsLogoLabel}
+                </label>
+                <template lwc:if={logoHiddenHint}>
+                    <p class="bd-hint">{logoHiddenHint}</p>
+                </template>
+            </template>
+        </section>
+
+        <section class="bd-step" aria-labelledby="bd-color-h">
+            <h3 id="bd-color-h" class="bd-h">Your colors</h3>
+            <div class="bd-row">
+                <input
+                    class={pickerClass}
+                    type="color"
+                    aria-label="Pick the main color"
+                    value={pickerValue}
+                    oninput={handleColorPicker}
+                />
+                <label class="bd-hexlabel">
+                    <span class="bd-colorname">Main color</span>
+                    <input
+                        class="bd-hex"
+                        type="text"
+                        placeholder="e.g. #1e3a8a"
+                        value={colorText}
+                        aria-invalid={hexInvalid}
+                        aria-describedby="bd-color-err"
+                        oninput={handleColorText}
+                        onchange={handleColorTextDone}
+                    />
+                </label>
+            </div>
+            <p id="bd-color-err" class="bd-error bd-color-err" role="alert">
+                {colorError}
+            </p>
+            <div class="bd-row">
+                <input
+                    class={secondPickerClass}
+                    type="color"
+                    aria-label="Pick the second color"
+                    value={secondPickerValue}
+                    oninput={handleSecondPicker}
+                />
+                <label class="bd-hexlabel">
+                    <span class="bd-colorname"
+                        >Second color&nbsp;<span class="bd-opt"
+                            >(optional)</span
+                        ></span
+                    >
+                    <input
+                        class="bd-hex bd-hex2"
+                        type="text"
+                        placeholder="e.g. #f59e0b"
+                        value={secondText}
+                        aria-invalid={secondInvalid}
+                        aria-describedby="bd-second-err"
+                        oninput={handleSecondText}
+                        onchange={handleSecondTextDone}
+                    />
+                </label>
+                <template lwc:if={second}>
+                    <button
+                        type="button"
+                        class="bd-link bd-clear"
+                        aria-label="Clear the second color"
+                        onclick={handleSecondClear}
+                    >
+                        Clear
+                    </button>
+                </template>
+            </div>
+            <p id="bd-second-err" class="bd-error bd-second-err" role="alert">
+                {secondError}
+            </p>
+            <template lwc:if={sameAsMain}>
+                <p class="bd-hint bd-same">
+                    Same as your main color. Pick another, or leave it empty.
+                </p>
+            </template>
+            <p class="bd-sr" role="status" aria-live="polite">{announce}</p>
+            <template lwc:if={canSwap}>
+                <button
+                    type="button"
+                    class="bd-link bd-swap"
+                    onclick={handleSwap}
+                >
+                    Swap main and second
+                </button>
+            </template>
+        </section>
+
+        <section class="bd-step" aria-labelledby="bd-style-h">
+            <h3 id="bd-style-h" class="bd-h">Style</h3>
+            <template lwc:if={hasColor}>
+                <div
+                    class="bd-styles"
+                    role="group"
+                    aria-labelledby="bd-style-h"
+                >
+                    <template for:each={styleCards} for:item="s">
+                        <c-final-theme-card
+                            key={s.value}
+                            data-value={s.value}
+                            theme-props={s.recipe}
+                            label={s.label}
+                            description={s.hint}
+                            layout="scroll"
+                            max-width="full"
+                            accent-sample={yes}
+                            selected={s.selected}
+                            onselect={handleStyle}
+                        ></c-final-theme-card>
+                    </template>
+                </div>
+            </template>
+            <template lwc:else>
+                <p class="bd-hint">Pick a color to see the styles.</p>
+            </template>
+        </section>
+    </div>
+</template>
