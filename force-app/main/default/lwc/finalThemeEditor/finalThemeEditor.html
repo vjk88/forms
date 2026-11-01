@@ -1,149 +1,362 @@
 <template>
-    <div class="te-overlay" onclick={handleCancel}></div>
-    <div class="te-dialog" role="dialog" aria-label={title}>
-        <header class="te-head">
-            <h1>{title}</h1>
-            <button
-                class="te-x"
-                type="button"
-                title="Close"
-                onclick={handleCancel}
-            >
-                &times;
-            </button>
-        </header>
+    <c-final-studio-dialog
+        size="large"
+        label={title}
+        confirm-label={confirmLabel}
+        discard-text="Your theme hasn’t been saved yet."
+        dirty={dirty}
+        busy={saving}
+        onconfirm={handleConfirm}
+        ondismiss={handleDismiss}
+    >
+        <div slot="body" class="te">
+            <template lwc:if={ready}>
+                <div class="te-form">
+                    <section class="te-step">
+                        <label class="te-h" for="te-name">Theme name</label>
+                        <input
+                            id="te-name"
+                            class="te-name"
+                            type="text"
+                            maxlength="80"
+                            value={name}
+                            placeholder="e.g. Brand Purple"
+                            oninput={handleName}
+                        />
+                    </section>
 
-        <template lwc:if={ready}>
-            <div class="te-scroll">
-                <div class="te-row">
-                    <label for="te-name">Theme name</label>
-                    <input
-                        id="te-name"
-                        type="text"
-                        value={name}
-                        placeholder="e.g. Brand Purple"
-                        oninput={handleName}
-                    />
-                </div>
-                <template lwc:if={isEdit}></template>
-                <template lwc:else>
-                    <div class="te-row">
-                        <label>Start from</label>
-                        <select onchange={handleStartFrom}>
-                            <template for:each={startOptions} for:item="o">
-                                <option
-                                    key={o.value}
-                                    value={o.value}
-                                    selected={o.selected}
-                                >
-                                    {o.label}
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-                    <div class="te-row">
-                        <span class="te-or">or</span>
-                        <button
-                            type="button"
-                            class="te-brand"
-                            onclick={handleStartFromBrand}
+                    <section class="te-step" aria-labelledby="te-start-h">
+                        <h2 id="te-start-h" class="te-h">Start from</h2>
+                        <p class="te-hint">
+                            Everything below is calculated from this. Anything
+                            you change by hand stays when you change it.
+                        </p>
+                        <div
+                            class="te-segs"
+                            role="group"
+                            aria-label="Start from"
                         >
-                            Start from your brand…
-                        </button>
-                    </div>
-                </template>
-
-                <h2 class="te-sect">Colors</h2>
-                <template for:each={colorRows} for:item="c">
-                    <c-final-color-control
-                        key={c.key}
-                        data-path={c.path}
-                        label={c.label}
-                        value={c.value}
-                        contrast-with={c.contrastWith}
-                        subject={c.subject}
-                        onchange={handleColor}
-                    ></c-final-color-control>
-                </template>
-
-                <h2 class="te-sect">Shape &amp; type</h2>
-                <c-final-font-picker
-                    mode="theme"
-                    label="Font pairing"
-                    level={fontLevel}
-                    effective={fontEffective}
-                    uploaded-fonts={uploadedFonts}
-                    fonts-loaded={fontsLoaded}
-                    onfontchange={handleFontChange}
-                ></c-final-font-picker>
-                <template for:each={selectRows} for:item="s">
-                    <div class="te-row" key={s.key}>
-                        <label>{s.label}</label>
-                        <select data-key={s.key} onchange={handleSelect}>
-                            <template for:each={s.options} for:item="o">
-                                <option
+                            <template for:each={startOptions} for:item="o">
+                                <button
                                     key={o.value}
-                                    value={o.value}
-                                    selected={o.selected}
+                                    type="button"
+                                    class={o.cls}
+                                    data-value={o.value}
+                                    aria-pressed={o.pressed}
+                                    onclick={handleStart}
                                 >
                                     {o.label}
-                                </option>
+                                </button>
                             </template>
-                        </select>
-                    </div>
-                </template>
-                <div class="te-row">
-                    <label>Glass blur</label>
-                    <input
-                        type="checkbox"
-                        checked={glassChecked}
-                        onchange={handleGlass}
-                    />
+                        </div>
+                        <div class="te-startbox">
+                            <template lwc:if={confirmRebuild}>
+                                <div class="te-rebuild" role="alert">
+                                    <p>
+                                        This recalculates every colour and
+                                        setting from {confirmRebuildLabel}.
+                                        Settings you change after this are kept.
+                                    </p>
+                                    <div class="te-row">
+                                        <button
+                                            type="button"
+                                            class="te-btn te-btn--primary"
+                                            onclick={handleRebuildYes}
+                                        >
+                                            Recalculate
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="te-btn"
+                                            onclick={handleRebuildNo}
+                                        >
+                                            Keep as saved
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                            <template lwc:if={isCurrentStart}>
+                                <p class="te-hint">
+                                    This theme was saved before starting points
+                                    were kept, so it shows exactly as saved.
+                                    Pick A theme or Your brand to recalculate
+                                    from one.
+                                </p>
+                            </template>
+                            <template lwc:if={isThemeStart}>
+                                <label class="te-sub" for="te-theme"
+                                    >Theme</label
+                                >
+                                <select
+                                    id="te-theme"
+                                    class="te-select"
+                                    onchange={handleThemeSelect}
+                                >
+                                    <template
+                                        for:each={themeOptions}
+                                        for:item="o"
+                                    >
+                                        <option
+                                            key={o.value}
+                                            value={o.value}
+                                            selected={o.selected}
+                                        >
+                                            {o.label}
+                                        </option>
+                                    </template>
+                                </select>
+                            </template>
+                            <template lwc:if={isBrandStart}>
+                                <c-final-brand-inputs
+                                    initial-color={brand.color}
+                                    initial-second={brand.second}
+                                    initial-style={brand.style}
+                                    fonts={brandFonts}
+                                    current-logo-url={currentLogoUrl}
+                                    header-arrangement={headerArrangement}
+                                    onbrandchange={handleBrandChange}
+                                    onlogochange={handleLogoChange}
+                                ></c-final-brand-inputs>
+                            </template>
+                        </div>
+                    </section>
+
+                    <section class="te-step" aria-labelledby="te-colors-h">
+                        <h2 id="te-colors-h" class="te-h">Colours</h2>
+                        <p class="te-hint">
+                            All 18 colours this theme sets. “Automatic” ones
+                            follow the others until you change them.
+                        </p>
+                        <template for:each={colorGroups} for:item="g">
+                            <div key={g.key} class="te-cgroup">
+                                <h3 class="te-cgroup-h">{g.label}</h3>
+                                <div class="te-crows">
+                                    <template for:each={g.rows} for:item="c">
+                                        <div
+                                            key={c.key}
+                                            class="te-crow"
+                                            data-row={c.path}
+                                        >
+                                            <div class="te-crow-top">
+                                                <template lwc:if={c.flagged}>
+                                                    <span class="te-flag"
+                                                        >{c.flagText}</span
+                                                    >
+                                                </template>
+                                                <template lwc:if={c.pinned}>
+                                                    <span class="te-pin"
+                                                        >Changed by you ·
+                                                        <button
+                                                            type="button"
+                                                            class="te-link"
+                                                            data-path={c.path}
+                                                            onclick={handleUseCalculated}
+                                                        >
+                                                            Use calculated
+                                                        </button></span
+                                                    >
+                                                </template>
+                                                <template
+                                                    lwc:elseif={c.automatic}
+                                                >
+                                                    <span class="te-auto"
+                                                        >Automatic</span
+                                                    >
+                                                </template>
+                                            </div>
+                                            <c-final-color-control
+                                                data-path={c.path}
+                                                label={c.label}
+                                                value={c.value}
+                                                onchange={handleColor}
+                                            ></c-final-color-control>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </section>
+
+                    <section class="te-step" aria-labelledby="te-shape-h">
+                        <h2 id="te-shape-h" class="te-h">Shape &amp; type</h2>
+                        <div class="te-font">
+                            <c-final-font-picker
+                                mode="theme"
+                                label="Font pairing"
+                                level={fontLevel}
+                                effective={fontEffective}
+                                uploaded-fonts={uploadedFonts}
+                                fonts-loaded={fontsLoaded}
+                                onfontchange={handleFontChange}
+                            ></c-final-font-picker>
+                            <template lwc:if={fontPinned}>
+                                <span class="te-pin"
+                                    >Changed by you ·
+                                    <button
+                                        type="button"
+                                        class="te-link"
+                                        data-path={fontPaths}
+                                        onclick={handleUseCalculated}
+                                    >
+                                        Use calculated
+                                    </button></span
+                                >
+                            </template>
+                        </div>
+                        <div class="te-shape">
+                            <template for:each={selectRows} for:item="s">
+                                <div class="te-field" key={s.key}>
+                                    <label class="te-sub" for={s.key}
+                                        >{s.label}</label
+                                    >
+                                    <select
+                                        id={s.key}
+                                        class="te-select"
+                                        data-key={s.key}
+                                        onchange={handleSelect}
+                                    >
+                                        <template
+                                            for:each={s.options}
+                                            for:item="o"
+                                        >
+                                            <option
+                                                key={o.value}
+                                                value={o.value}
+                                                selected={o.selected}
+                                            >
+                                                {o.label}
+                                            </option>
+                                        </template>
+                                    </select>
+                                    <template lwc:if={s.pinned}>
+                                        <span class="te-pin"
+                                            >Changed by you ·
+                                            <button
+                                                type="button"
+                                                class="te-link"
+                                                data-path={s.path}
+                                                onclick={handleUseCalculated}
+                                            >
+                                                Use calculated
+                                            </button></span
+                                        >
+                                    </template>
+                                </div>
+                            </template>
+                            <label class="te-check">
+                                <input
+                                    type="checkbox"
+                                    checked={glassChecked}
+                                    onchange={handleGlass}
+                                />
+                                Glass blur
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class={readableClass} aria-live="polite">
+                        <template lwc:if={readableOk}>
+                            <h2 class="te-h">Readable everywhere</h2>
+                            <p>
+                                All text, buttons and focus outlines stay
+                                readable on every background.
+                            </p>
+                        </template>
+                        <template lwc:if={readablePartial}>
+                            <h2 class="te-h">Readable where we could check</h2>
+                            <p>
+                                Everything we could check is readable.
+                                <strong>Not checked:</strong> {notChecked}.
+                                Check text over these in the preview.
+                            </p>
+                        </template>
+                        <template lwc:if={readableBad}>
+                            <h2 class="te-h">{attentionTitle}</h2>
+                            <ul class="te-lines">
+                                <template
+                                    for:each={readabilityLines}
+                                    for:item="l"
+                                >
+                                    <li key={l.key}>{l.text}</li>
+                                </template>
+                            </ul>
+                            <template lwc:if={hasNotChecked}>
+                                <p>
+                                    <strong>Not checked:</strong> {notChecked}.
+                                </p>
+                            </template>
+                            <div class="te-row">
+                                <button
+                                    type="button"
+                                    class="te-btn te-btn--primary te-fix"
+                                    onclick={handleFix}
+                                >
+                                    Fix for me
+                                </button>
+                                <span class="te-hint"
+                                    >Nudges just these colours until they pass,
+                                    where that’s possible. You can still save as
+                                    is.</span
+                                >
+                            </div>
+                        </template>
+                        <template lwc:if={hasUnfixed}>
+                            <ul class="te-lines te-unfixed">
+                                <template for:each={unfixedLines} for:item="l">
+                                    <li key={l.key}>{l.text}</li>
+                                </template>
+                            </ul>
+                        </template>
+                        <p class="te-note">{buttonNote}</p>
+                    </section>
                 </div>
 
-                <template lwc:if={error}>
-                    <p class="te-error" role="alert">{error}</p>
-                </template>
-            </div>
-
-            <footer class="te-foot">
-                <button class="te-btn" type="button" onclick={handleCancel}>
-                    Cancel
-                </button>
+                <aside class="te-preview" aria-label="Preview">
+                    <h2 class="te-h">Preview</h2>
+                    <c-final-theme-card
+                        theme-props={previewProps}
+                        label={previewLabel}
+                        description="This theme"
+                        layout={layout}
+                        pane-flow={paneFlow}
+                        full-bleed={previewFullBleed}
+                        max-width={previewMaxWidth}
+                        pane-side={previewPaneSide}
+                        pane-ratio={previewPaneRatio}
+                        picture={yes}
+                        accent-sample={yes}
+                    ></c-final-theme-card>
+                    <h3 class="te-sub">What each colour paints</h3>
+                    <ul class="te-roles">
+                        <template for:each={colorRoles} for:item="r">
+                            <li key={r.key} class="te-role">
+                                <span
+                                    class="te-role-chip"
+                                    style={r.style}
+                                    aria-hidden="true"
+                                ></span>
+                                <span><strong>{r.name}</strong>: {r.does}</span>
+                            </li>
+                        </template>
+                    </ul>
+                </aside>
+            </template>
+            <template lwc:else>
+                <p class="te-loading">Loading theme…</p>
+            </template>
+        </div>
+        <div slot="footer-start" class="te-foot">
+            <template lwc:if={isEdit}>
                 <button
-                    class="te-btn"
                     type="button"
-                    disabled={saveDisabled}
+                    class="te-btn"
+                    disabled={saving}
                     onclick={handleSaveAsNew}
                 >
                     Save as new
                 </button>
-                <template lwc:if={isEdit}>
-                    <button
-                        class="te-btn primary"
-                        type="button"
-                        disabled={saveDisabled}
-                        onclick={handleSave}
-                    >
-                        Save
-                    </button>
-                </template>
-                <template lwc:else>
-                    <button
-                        class="te-btn primary"
-                        type="button"
-                        disabled={saveDisabled}
-                        onclick={handleSaveAsNew}
-                    >
-                        Create theme
-                    </button>
-                </template>
-            </footer>
-        </template>
-        <template lwc:else>
-            <div class="te-scroll">
-                <p class="te-loading">Loading theme…</p>
-            </div>
-        </template>
-    </div>
+            </template>
+            <p class="te-error" role="alert">{error}</p>
+        </div>
+    </c-final-studio-dialog>
 </template>

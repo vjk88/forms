@@ -1,38 +1,15 @@
 import { createElement } from 'lwc';
-import FinalBrandDialog from 'c/finalBrandDialog';
-import saveCustomTheme from '@salesforce/apex/FinalThemeController.saveCustomTheme';
-import orgName from '@salesforce/apex/FinalThemeController.orgName';
-import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
-import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
+import FinalBrandInputs from 'c/finalBrandInputs';
 import { readImagePixels } from 'c/finalBrandColors';
 
-jest.mock(
-    '@salesforce/apex/FinalThemeController.saveCustomTheme',
-    () => ({ default: jest.fn(() => Promise.resolve('a0AXX0000009')) }),
-    { virtual: true }
-);
-jest.mock(
-    '@salesforce/apex/FinalThemeController.orgName',
-    () => ({ default: jest.fn(() => Promise.resolve('Acme')) }),
-    { virtual: true }
-);
-jest.mock(
-    '@salesforce/apex/FinalAssetController.uploadImage',
-    () => ({
-        default: jest.fn(() =>
-            Promise.resolve({ url: '/sfc/logo', contentVersionId: '068XX01' })
-        )
-    }),
-    { virtual: true }
-);
+// The "Your brand" starting point of the theme dialog. These are the old
+// "Create from your brand" dialog's input tests (PR 398-403), moved with the
+// inputs (IMPL_PLAN_THEME_CREATOR); saving, uploading and the preview are
+// tested on finalThemeEditor now.
+
 jest.mock(
     '@salesforce/resourceUrl/formFonts',
     () => ({ default: '/resource/1/formFonts' }),
-    { virtual: true }
-);
-jest.mock(
-    '@salesforce/apex/FinalAssetController.deleteImage',
-    () => ({ default: jest.fn(() => Promise.resolve()) }),
     { virtual: true }
 );
 // The canvas work needs a real browser; the ranking is the real one.
@@ -52,9 +29,20 @@ function px(hex, n) {
     return Array.from({ length: n }, () => [...v, 255]).flat();
 }
 
+const twoColourLogo = () => [
+    ...px('#ffffff', 400),
+    ...px('#e11d48', 300),
+    ...px('#1e3a8a', 200),
+    ...px('#16a34a', 100)
+];
+
 async function mount(props = {}) {
-    const el = createElement('c-final-brand-dialog', { is: FinalBrandDialog });
-    Object.assign(el, { formId: 'a05XX0000001', layout: 'stepper', ...props });
+    const el = createElement('c-final-brand-inputs', { is: FinalBrandInputs });
+    Object.assign(el, props);
+    el.brandEvents = [];
+    el.logoEvents = [];
+    el.addEventListener('brandchange', (e) => el.brandEvents.push(e.detail));
+    el.addEventListener('logochange', (e) => el.logoEvents.push(e.detail));
     document.body.appendChild(el);
     await flush();
     return el;
@@ -62,6 +50,12 @@ async function mount(props = {}) {
 
 const q = (el, sel) => el.shadowRoot.querySelector(sel);
 const qa = (el, sel) => [...el.shadowRoot.querySelectorAll(sel)];
+const lastBrand = (el) => el.brandEvents[el.brandEvents.length - 1];
+const roles = (el) =>
+    qa(el, '.bd-swatch-role').map((r) => r.textContent.trim());
+// the selected style card is drawn from the recipe the dialog will build
+const brandOf = (el) =>
+    qa(el, '.bd-styles c-final-theme-card').find((c) => c.selected).themeProps;
 
 async function typeHex(el, value, { leave = true } = {}) {
     const hex = q(el, '.bd-hex');
@@ -96,13 +90,7 @@ async function uploadLogo(el, pixels) {
     await flush();
 }
 
-async function confirm(el) {
-    q(el, 'c-final-studio-dialog').dispatchEvent(new CustomEvent('confirm'));
-    await flush();
-    await flush();
-}
-
-describe('c-final-brand-dialog', () => {
+describe('c-final-brand-inputs', () => {
     beforeEach(() => jest.clearAllMocks());
     afterEach(() => {
         while (document.body.firstChild) {
@@ -110,15 +98,25 @@ describe('c-final-brand-dialog', () => {
         }
     });
 
-    it('starts empty, with the name "<Org> brand"', async () => {
+    it('starts empty: no style cards until there is a colour, and no change event', async () => {
         const el = await mount();
-        expect(orgName).toHaveBeenCalled();
-        expect(q(el, '.bd-name').value).toBe('Acme brand');
-        expect(q(el, '.bd-empty')).not.toBeNull();
         expect(qa(el, '.bd-styles c-final-theme-card')).toHaveLength(0);
+        expect(el.brandEvents).toHaveLength(0);
     });
 
-    it('a hex colour draws three style cards and a preview in the form’s layout', async () => {
+    it('reopening a brand theme starts from its colours and style, without a change event', async () => {
+        const el = await mount({
+            initialColor: '#E11D48',
+            initialSecond: '#1e3a8a',
+            initialStyle: 'dark'
+        });
+        expect(q(el, '.bd-hex').value).toBe('#e11d48');
+        expect(q(el, '.bd-hex2').value).toBe('#1e3a8a');
+        expect(brandOf(el).brand.style).toBe('dark');
+        expect(el.brandEvents).toHaveLength(0);
+    });
+
+    it('a hex colour draws three style cards and reports the brand', async () => {
         const el = await mount();
         await typeHex(el, '#1E3A8A');
         const cards = qa(el, '.bd-styles c-final-theme-card');
@@ -128,31 +126,32 @@ describe('c-final-brand-dialog', () => {
             'Dark'
         ]);
         cards.forEach((c) => expect(c.themeProps.brand.color).toBe('#1e3a8a'));
-        const preview = q(el, '.bd-preview c-final-theme-card');
-        expect(preview.layout).toBe('stepper');
-        expect(preview.themeProps.brand.style).toBe('clean');
-    });
-
-    it('style cards are swatches: they fill their cell, whatever the form’s width', async () => {
-        const el = await mount({
-            formLayout: { type: 'stepper', options: {}, maxWidth: 'narrow' }
+        cards.forEach((c) => expect(c.maxWidth).toBe('full'));
+        expect(lastBrand(el)).toEqual({
+            color: '#1e3a8a',
+            second: '',
+            style: 'clean'
         });
-        await typeHex(el, '#1E3A8A');
-        expect(q(el, '.bd-preview c-final-theme-card').maxWidth).toBe('narrow');
-        qa(el, '.bd-styles c-final-theme-card').forEach((c) =>
-            expect(c.maxWidth).toBe('full')
-        );
     });
 
-    it('picking a style changes the preview recipe', async () => {
+    it('picking a style reports it', async () => {
         const el = await mount();
         await typeHex(el, '#1e3a8a');
-        const dark = qa(el, '.bd-styles c-final-theme-card')[2];
-        dark.dispatchEvent(new CustomEvent('select'));
+        qa(el, '.bd-styles c-final-theme-card')[2].dispatchEvent(
+            new CustomEvent('select')
+        );
         await flush();
-        expect(
-            q(el, '.bd-preview c-final-theme-card').themeProps.brand.style
-        ).toBe('dark');
+        expect(lastBrand(el).style).toBe('dark');
+        expect(brandOf(el).brand.style).toBe('dark');
+    });
+
+    it('the style cards preview the theme’s fonts', async () => {
+        const fonts = { pairing: 'editorialSerif' };
+        const el = await mount({ fonts });
+        await typeHex(el, '#1e3a8a');
+        qa(el, '.bd-styles c-final-theme-card').forEach((c) =>
+            expect(c.themeProps.fonts).toEqual(fonts)
+        );
     });
 
     it('a bad hex says so and draws nothing', async () => {
@@ -160,22 +159,25 @@ describe('c-final-brand-dialog', () => {
         await typeHex(el, '#12');
         expect(q(el, '.bd-color-err').textContent).toContain('hex colour');
         expect(q(el, '.bd-hex').getAttribute('aria-invalid')).toBe('true');
-        expect(q(el, '.bd-empty')).not.toBeNull();
+        expect(qa(el, '.bd-styles c-final-theme-card')).toHaveLength(0);
     });
 
-    it('a light colour warns that the Submit button may not stand out', async () => {
+    it('validate(): no colour, a bad Main or a bad Second blocks, and says why', async () => {
         const el = await mount();
-        await typeHex(el, '#fafafa');
-        const warn = q(el, '.bd-warn').textContent;
-        expect(warn).toContain('Submit button');
-        // only a style that really fixes it is named (Bold header does not)
-        expect(warn).toContain('Try Dark');
-        expect(warn).not.toContain('Bold header');
-        expect(el.shadowRoot.textContent).toContain(
-            'Text and focus outlines are checked'
+        expect(el.validate()).toBe(false);
+        await flush();
+        expect(q(el, '.bd-color-err').textContent).toContain(
+            'Pick a main colour first'
         );
-        await typeHex(el, '#1e3a8a');
-        expect(q(el, '.bd-warn').textContent.trim()).toBe('');
+        await typeHex(el, '#e11d48');
+        expect(el.validate()).toBe(true);
+        await typeHex(el, '#zz');
+        expect(el.validate()).toBe(false);
+        await typeHex(el, '#e11d48');
+        await typeHex2(el, '#12');
+        expect(el.validate()).toBe(false);
+        await typeHex2(el, '');
+        expect(el.validate()).toBe(true);
     });
 
     it('a logo suggests its colours and the first one is Main', async () => {
@@ -189,6 +191,10 @@ describe('c-final-brand-dialog', () => {
         expect(swatches.map((s) => s.title)).toEqual(['#e11d48', '#1e3a8a']);
         expect(swatches[0].getAttribute('aria-pressed')).toBe('true');
         expect(q(el, '.bd-hex').value).toBe('#e11d48');
+        expect(el.logoEvents[el.logoEvents.length - 1]).toMatchObject({
+            fileName: 'logo.png',
+            useAsLogo: true
+        });
         swatches[1].click();
         await flush();
         // the next tap adds a second colour, Main stays
@@ -219,85 +225,6 @@ describe('c-final-brand-dialog', () => {
         expect(readImagePixels).not.toHaveBeenCalled();
     });
 
-    it('Save uploads the logo, saves the recipe as an org theme and reports both', async () => {
-        const el = await mount();
-        const saved = jest.fn();
-        el.addEventListener('save', saved);
-        await uploadLogo(el, [...px('#ffffff', 500), ...px('#e11d48', 500)]);
-        const picker = q(el, 'c-final-font-picker');
-        picker.dispatchEvent(
-            new CustomEvent('fontchange', {
-                detail: { patch: { fonts: { pairing: 'editorialSerif' } } }
-            })
-        );
-        await flush();
-        await confirm(el);
-        expect(uploadImage).toHaveBeenCalledWith(
-            expect.objectContaining({
-                fileName: 'logo.png',
-                formId: 'a05XX0000001'
-            })
-        );
-        const args = saveCustomTheme.mock.calls[0][0];
-        expect(args.themeId).toBeNull();
-        expect(args.name).toBe('Acme brand');
-        const recipe = JSON.parse(args.themeJson);
-        expect(recipe.brand).toEqual({ color: '#e11d48', style: 'clean' });
-        expect(recipe.fonts).toEqual({ pairing: 'editorialSerif' });
-        expect(saved.mock.calls[0][0].detail).toEqual({
-            id: 'a0AXX0000009',
-            name: 'Acme brand',
-            logo: { url: '/sfc/logo', versionId: '068XX01' }
-        });
-    });
-
-    it('unticking "use as logo" saves without uploading', async () => {
-        const el = await mount();
-        const saved = jest.fn();
-        el.addEventListener('save', saved);
-        await uploadLogo(el, px('#e11d48', 500));
-        const box = q(el, '.bd-check input');
-        box.checked = false;
-        box.dispatchEvent(new CustomEvent('change'));
-        await confirm(el);
-        expect(uploadImage).not.toHaveBeenCalled();
-        expect(saved.mock.calls[0][0].detail.logo).toBeNull();
-    });
-
-    it('Save without a colour explains instead of saving', async () => {
-        const el = await mount();
-        await confirm(el);
-        expect(saveCustomTheme).not.toHaveBeenCalled();
-        expect(q(el, '.bd-color-err').textContent).toContain(
-            'Pick a main colour'
-        );
-    });
-
-    it('a failed save shows the server message and emits nothing', async () => {
-        saveCustomTheme.mockRejectedValueOnce({
-            body: { message: 'Name taken' }
-        });
-        const el = await mount();
-        const saved = jest.fn();
-        el.addEventListener('save', saved);
-        await typeHex(el, '#1e3a8a');
-        await confirm(el);
-        expect(saved).not.toHaveBeenCalled();
-        expect(q(el, '.bd-save-error').textContent).toContain(
-            'The theme couldn’t be saved: Name taken'
-        );
-    });
-
-    it('dismissing cancels', async () => {
-        const el = await mount();
-        const cancel = jest.fn();
-        el.addEventListener('cancel', cancel);
-        q(el, 'c-final-studio-dialog').dispatchEvent(
-            new CustomEvent('dismiss')
-        );
-        expect(cancel).toHaveBeenCalled();
-    });
-
     it('typing a colour key by key never rewrites the field (PR 402 B1)', async () => {
         const el = await mount();
         const hex = q(el, '.bd-hex');
@@ -311,71 +238,17 @@ describe('c-final-brand-dialog', () => {
             expect(hex.value).toBe(text);
             expect(q(el, '.bd-color-err').textContent.trim()).toBe('');
         }
-        expect(
-            q(el, '.bd-preview c-final-theme-card').themeProps.brand.color
-        ).toBe('#1e3a8a');
+        expect(lastBrand(el).color).toBe('#1e3a8a');
     });
 
     it('a 3-digit colour counts once you leave the box', async () => {
         const el = await mount();
         await typeHex(el, '#f00', { leave: false });
-        expect(q(el, '.bd-empty')).not.toBeNull();
+        expect(el.brandEvents).toHaveLength(0);
         q(el, '.bd-hex').dispatchEvent(new CustomEvent('change'));
         await flush();
         expect(q(el, '.bd-hex').value).toBe('#ff0000');
-    });
-
-    it('the preview is a picture, not a control', async () => {
-        const el = await mount();
-        await typeHex(el, '#1e3a8a');
-        expect(q(el, '.bd-preview c-final-theme-card').picture).toBe(true);
-    });
-
-    it('a retry after a failed save reuses the uploaded logo', async () => {
-        saveCustomTheme.mockRejectedValueOnce({ body: { message: 'Busy' } });
-        const el = await mount();
-        await uploadLogo(el, px('#e11d48', 500));
-        await confirm(el);
-        await confirm(el);
-        expect(uploadImage).toHaveBeenCalledTimes(1);
-        expect(saveCustomTheme).toHaveBeenCalledTimes(2);
-    });
-
-    it('Cancel after an upload that was never saved removes the file', async () => {
-        saveCustomTheme.mockRejectedValueOnce({ body: { message: 'Busy' } });
-        const el = await mount();
-        await uploadLogo(el, px('#e11d48', 500));
-        await confirm(el);
-        q(el, 'c-final-studio-dialog').dispatchEvent(
-            new CustomEvent('dismiss')
-        );
-        expect(deleteImage).toHaveBeenCalledWith({
-            contentVersionId: '068XX01',
-            formId: 'a05XX0000001'
-        });
-    });
-
-    it('busy while saving, and a second click shows no false error', async () => {
-        let release;
-        saveCustomTheme.mockImplementationOnce(
-            () =>
-                new Promise((r) => {
-                    release = r;
-                })
-        );
-        const el = await mount();
-        await typeHex(el, '#1e3a8a');
-        const shell = q(el, 'c-final-studio-dialog');
-        shell.dispatchEvent(new CustomEvent('confirm'));
-        await flush();
-        expect(shell.busy).toBe(true);
-        shell.dispatchEvent(new CustomEvent('confirm'));
-        await flush();
-        expect(q(el, '.bd-name-err').textContent.trim()).toBe('');
-        release('a0AXX0000010');
-        await flush();
-        await flush();
-        expect(shell.busy).toBe(false);
+        expect(lastBrand(el).color).toBe('#ff0000');
     });
 
     it('an existing logo: the option replaces it and starts unticked', async () => {
@@ -385,6 +258,7 @@ describe('c-final-brand-dialog', () => {
             'Replace this form’s logo'
         );
         expect(q(el, '.bd-check input').checked).toBe(false);
+        expect(el.logoEvents[el.logoEvents.length - 1].useAsLogo).toBe(false);
     });
 
     it('a text-only header says the logo will not show', async () => {
@@ -402,6 +276,7 @@ describe('c-final-brand-dialog', () => {
         await flush();
         expect(q(el, '.bd-logo')).toBeNull();
         expect(qa(el, '.bd-swatch')).toHaveLength(0);
+        expect(el.logoEvents[el.logoEvents.length - 1].dataUrl).toBeNull();
     });
 
     it('a colour typed by hand stays when a logo arrives', async () => {
@@ -410,30 +285,6 @@ describe('c-final-brand-dialog', () => {
         await uploadLogo(el, px('#e11d48', 500));
         expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
     });
-
-    it('an upload failure explains that nothing was saved', async () => {
-        uploadImage.mockRejectedValueOnce({
-            body: { message: 'Disconnected or Canceled' }
-        });
-        const el = await mount();
-        await uploadLogo(el, px('#e11d48', 500));
-        await confirm(el);
-        expect(q(el, '.bd-save-error').textContent).toContain(
-            'Your logo couldn’t be uploaded'
-        );
-        expect(saveCustomTheme).not.toHaveBeenCalled();
-    });
-
-    // ------------------------------------------- second colour (§B.4, B3)
-
-    const twoColourLogo = () => [
-        ...px('#ffffff', 500),
-        ...px('#e11d48', 300),
-        ...px('#1e3a8a', 200),
-        ...px('#16a34a', 150)
-    ];
-    const roles = (el) => qa(el, '.bd-swatch').map((s) => s.textContent.trim());
-    const brandOf = (el) => q(el, '.bd-preview c-final-theme-card').themeProps;
 
     it('taps: first is Main, next is Second, a third replaces Second', async () => {
         const el = await mount();
@@ -490,7 +341,7 @@ describe('c-final-brand-dialog', () => {
         qa(el, '.bd-swatch')[1].click(); // unpick the only colour
         await flush();
         expect(roles(el)).toEqual(['', '', '']);
-        expect(q(el, '.bd-empty')).not.toBeNull();
+        expect(qa(el, '.bd-styles c-final-theme-card')).toHaveLength(0);
         qa(el, '.bd-swatch')[2].click(); // nothing chosen: the tap is Main
         await flush();
         expect(roles(el)).toEqual(['', '', 'Main']);
@@ -499,48 +350,34 @@ describe('c-final-brand-dialog', () => {
     it('Second paints the highlights; Main keeps the button', async () => {
         const el = await mount();
         await typeHex(el, '#e11d48');
-        const before = brandOf(el);
-        expect(before.brand.secondColor).toBeUndefined();
-        expect(q(el, '.bd-roles').textContent).toContain(
-            'made from your main colour'
-        );
+        expect(brandOf(el).brand.secondColor).toBeUndefined();
         await typeHex2(el, '#1e3a8a');
         const after = brandOf(el);
         expect(after.palette.submitBg).toBe('#e11d48');
         expect(after.palette.accent).toBe('#1e3a8a');
         expect(after.brand.secondColor).toBe('#1e3a8a');
-        // the style cards are drawn with both colours too
         qa(el, '.bd-styles c-final-theme-card').forEach((c) =>
             expect(c.themeProps.brand.secondColor).toBe('#1e3a8a')
         );
-        const text = q(el, '.bd-roles').textContent;
-        expect(text).toContain('Second');
-        expect(text).not.toContain('made from your main colour');
-    });
-
-    it('a light Second is shaded until it reads, and the preview says so', async () => {
-        const el = await mount();
-        await typeHex(el, '#1e3a8a');
-        await typeHex2(el, '#fde047');
-        expect(brandOf(el).palette.accent).not.toBe('#fde047');
-        expect(q(el, '.bd-roles').textContent).toContain('adjusted');
+        expect(lastBrand(el)).toEqual({
+            color: '#e11d48',
+            second: '#1e3a8a',
+            style: 'clean'
+        });
     });
 
     it('the second hex box: live on 6 digits, emptying removes it, junk says so', async () => {
         const el = await mount();
         await typeHex(el, '#e11d48');
         await typeHex2(el, '#1e3a8a', { leave: false });
-        expect(brandOf(el).brand.secondColor).toBe('#1e3a8a');
+        expect(lastBrand(el).second).toBe('#1e3a8a');
         await typeHex2(el, '');
-        expect(brandOf(el).brand.secondColor).toBeUndefined();
+        expect(lastBrand(el).second).toBe('');
         await typeHex2(el, '#12');
         expect(q(el, '.bd-second-err').textContent).toContain('hex colour');
         expect(q(el, '.bd-hex2').getAttribute('aria-invalid')).toBe('true');
-        // Save waits until it is fixed or emptied
-        await confirm(el);
-        expect(saveCustomTheme).not.toHaveBeenCalled();
         await typeHex2(el, '#0f0');
-        expect(brandOf(el).brand.secondColor).toBe('#00ff00');
+        expect(lastBrand(el).second).toBe('#00ff00');
     });
 
     it('Swap trades the two; Clear removes Second', async () => {
@@ -571,31 +408,6 @@ describe('c-final-brand-dialog', () => {
         await typeHex2(el, '#f59e0b');
         await uploadLogo(el, twoColourLogo());
         expect(q(el, '.bd-hex2').value).toBe('#f59e0b');
-    });
-
-    it('Save records both colours in the theme', async () => {
-        const el = await mount();
-        await uploadLogo(el, twoColourLogo());
-        qa(el, '.bd-swatch')[1].click();
-        await flush();
-        await confirm(el);
-        const saved = JSON.parse(saveCustomTheme.mock.calls[0][0].themeJson);
-        expect(saved.brand).toEqual({
-            color: '#e11d48',
-            secondColor: '#1e3a8a',
-            style: 'clean'
-        });
-        expect(saved.palette.submitBg).toBe('#e11d48');
-        expect(saved.palette.accent).toBe('#1e3a8a');
-    });
-
-    it('a bad Main hex blocks Save, like a bad Second', async () => {
-        const el = await mount();
-        await typeHex(el, '#e11d48');
-        await typeHex(el, '#zz');
-        await confirm(el);
-        expect(saveCustomTheme).not.toHaveBeenCalled();
-        expect(q(el, '.bd-color-err').textContent).toContain('hex colour');
     });
 
     it('a Second equal to Main says so', async () => {

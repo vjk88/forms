@@ -1,155 +1,358 @@
 @import 'c/finalStudioStyles';
 
-/* Builder chrome, te- prefixed (LEX global-CSS collision rule). */
-:host {
+/* Builder chrome, te- prefixed (LEX global-CSS collision rule). The dialog
+   shell is c/finalStudioDialog; this is its body: the form on the left, a
+   sticky live preview on the right, one column on narrow windows. */
+.te {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(260px, 1fr);
+    gap: 24px;
+    align-items: start;
     font-size: 13px;
     color: var(--c-studio-text);
 }
 
-.te-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--c-studio-overlay);
-    z-index: 9000;
+@media (max-width: 860px) {
+    .te {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
-.te-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 420px;
-    max-height: 84vh;
-    background: var(--c-studio-surface);
-    border-radius: 10px;
-    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.28);
+.te-form {
     display: flex;
     flex-direction: column;
-    z-index: 9001;
+    gap: 22px;
+    min-width: 0;
 }
 
-.te-head {
+.te-step {
     display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--c-studio-border);
+    flex-direction: column;
+    gap: 8px;
 }
 
-.te-head h1 {
+.te-h {
     margin: 0;
     font-size: 14px;
-    flex: 1;
+    font-weight: 700;
 }
 
-.te-x {
-    border: 0;
-    background: none;
-    font-size: 18px;
+.te-sub {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.te-hint {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
     color: var(--c-studio-text-weak);
+}
+
+.te-name,
+.te-select {
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 6px;
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
+}
+
+.te-name {
+    max-width: 360px;
+}
+
+.te-select {
+    width: 100%;
+    max-width: 280px;
+}
+
+.te-name:focus-visible,
+.te-select:focus-visible,
+.te-btn:focus-visible,
+.te-seg:focus-visible,
+.te-link:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* Start from: one segmented choice, then what it needs */
+.te-segs {
+    display: inline-flex;
+    align-self: flex-start;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.te-seg {
+    border: 0;
+    border-left: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface);
+    padding: 7px 16px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--c-studio-text);
     cursor: pointer;
-    line-height: 1;
-    padding: 2px 6px;
 }
 
-.te-scroll {
-    overflow-y: auto;
-    flex: 1;
-    padding: 10px 16px 16px;
+.te-seg:first-child {
+    border-left: 0;
 }
 
-.te-sect {
-    margin: 14px 0 4px;
+.te-seg.on {
+    background: var(--c-studio-accent-surface);
+    color: var(--c-studio-accent-text);
+}
+
+.te-startbox {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid var(--c-studio-border);
+    border-radius: 10px;
+    background: var(--c-studio-surface-subtle);
+}
+
+.te-rebuild {
+    padding: 10px 12px;
+    border: 1px solid var(--c-studio-warning-border);
+    border-radius: 8px;
+    background: var(--c-studio-warning-surface);
+    color: var(--c-studio-warning-text);
+}
+
+.te-rebuild p {
+    margin: 0 0 8px;
+}
+
+/* Colours: two columns of rows per group */
+.te-cgroup + .te-cgroup {
+    margin-top: 10px;
+}
+
+.te-cgroup-h {
+    margin: 0 0 6px;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: var(--c-studio-text-weak);
+}
+
+.te-crows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+}
+
+@media (max-width: 560px) {
+    .te-crows {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.te-crow-top {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 16px;
+    font-size: 11px;
+}
+
+.te-auto {
+    color: var(--c-studio-text-weak);
+}
+
+.te-pin {
+    color: var(--c-studio-accent-text);
+    font-weight: 600;
+    font-size: 11px;
+}
+
+.te-flag {
+    margin-right: auto;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--c-studio-error-surface);
+    color: var(--c-studio-error-text);
+    font-weight: 700;
+}
+
+.te-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--c-studio-accent-text);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Shape & type */
+.te-font {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.te-shape {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+    align-items: end;
+}
+
+.te-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.te-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Readability: green only when everything was measured */
+.te-readable {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid;
+    border-radius: 10px;
+}
+
+.te-readable p {
+    margin: 0;
+}
+
+.te-readable--ok {
+    background: var(--c-studio-success-surface);
+    color: var(--c-studio-success-text);
+    border-color: var(--c-studio-success-text);
+}
+
+.te-readable--partial {
+    background: var(--c-studio-info-surface);
+    color: var(--c-studio-info-text);
+    border-color: var(--c-studio-info-text);
+}
+
+.te-readable--bad {
+    background: var(--c-studio-error-surface);
+    color: var(--c-studio-error-text);
+    border-color: var(--c-studio-error-border);
+}
+
+.te-lines {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.te-lines li + li {
+    margin-top: 3px;
 }
 
 .te-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 0;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.te-row label {
-    flex: 1;
-    min-width: 0;
+.te-note {
+    font-size: 12px;
 }
 
-.te-row input[type='text'],
-.te-row select {
-    font: inherit;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    padding: 4px 8px;
-    background: var(--c-studio-surface);
-    color: var(--c-studio-text);
-    max-width: 200px;
+.te-note:empty,
+.te-error:empty {
+    display: none;
 }
 
-.te-error {
-    margin: 8px 0 0;
-    font-size: 11.5px;
-    color: var(--c-studio-error);
-}
-
-.te-loading {
-    color: var(--c-studio-text-weak);
-}
-
-.te-foot {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 10px 16px;
-    border-top: 1px solid var(--c-studio-border);
-}
-
+/* Buttons inside the body (the footer's are the dialog's own) */
 .te-btn {
     font: inherit;
     font-weight: 600;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 7px;
+    border-radius: 6px;
     background: var(--c-studio-surface);
     color: var(--c-studio-text);
     padding: 6px 14px;
     cursor: pointer;
 }
 
-.te-btn.primary {
+.te-btn--primary {
     background: var(--c-studio-accent);
     border-color: var(--c-studio-accent);
     color: var(--c-studio-on-accent);
 }
 
-.te-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.te-btn.primary:hover:not(:disabled) {
+.te-btn--primary:hover:not(:disabled) {
     background: var(--c-studio-accent-hover);
     border-color: var(--c-studio-accent-hover);
 }
 
-/* "Start from your brand…": swaps this editor for the brand dialog. */
-.te-or {
-    color: var(--c-studio-text-weak, #526071);
+.te-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
 }
 
-.te-brand {
-    min-height: 32px;
-    padding: 4px 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    color: var(--c-studio-accent-text, #115e59);
-    text-decoration: underline;
-    cursor: pointer;
+/* Preview */
+.te-preview {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.te-brand:focus-visible {
-    outline: 2px solid var(--c-studio-focus, #0f766e);
-    outline-offset: 2px;
+.te-roles {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.te-role {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.te-role-chip {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+}
+
+.te-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.te-error {
+    margin: 0;
+    max-width: 52ch;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--c-studio-error-text);
+}
+
+.te-loading {
+    color: var(--c-studio-text-weak);
 }

@@ -3208,21 +3208,43 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     editorThemeId = null;
     editorStartFrom = null;
     editorThemeName = null;
+    /** 'brand' opens a new theme on "Your brand" (the gallery's card). */
+    editorStartMode = null;
+    // where the dialog was opened from, so Cancel goes back there
+    _editorOrigin = null;
 
     handleThemeEdit(event) {
         this.editorThemeId = event.detail.themeId;
         this.editorStartFrom = event.detail.startFrom;
         this.editorThemeName = event.detail.themeName || null;
+        this.editorStartMode = null;
+        this._editorOrigin = 'panel';
+        this.editorOpen = true;
+    }
+
+    /** The gallery's "Create from your brand" card: the same ONE theme
+     *  dialog, opened on "Your brand" (IMPL_PLAN_THEME_CREATOR). */
+    handleBrandCreate() {
+        this.editorThemeId = null;
+        this.editorStartFrom = null;
+        this.editorThemeName = null;
+        this.editorStartMode = 'brand';
+        this._editorOrigin = 'gallery';
         this.editorOpen = true;
     }
 
     handleEditorCancel() {
         this.editorOpen = false;
+        if (this._editorOrigin === 'gallery') {
+            const panel = this.template.querySelector('c-final-design-panel');
+            if (panel) {
+                panel.openThemeGallery();
+            }
+        }
+        this._editorOrigin = null;
     }
 
-    // ----- "Create from your brand" (IMPL_PLAN_FONTS_AND_BRAND_THEME §B.1) -----
-
-    @track brandOpen = false;
+    // ----- what the theme dialog needs to know about this form -----
 
     get brandLayout() {
         return (
@@ -3250,38 +3272,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return ((this.spec && this.spec.header) || {}).arrangement || '';
     }
 
-    // where the dialog was opened from, so Cancel goes back there
-    _brandOrigin = null;
-
-    handleBrandCreate() {
-        this._brandOrigin = 'gallery';
-        this.brandOpen = true;
-    }
-
-    /** The theme editor's "Start from brand" swaps one dialog for the other. */
-    handleBrandStart() {
-        this._brandOrigin = 'editor';
+    /** Saved: the form takes the org theme (and the logo, if asked). */
+    async handleThemeSaved(event) {
         this.editorOpen = false;
-        this.brandOpen = true;
-    }
-
-    handleBrandCancel() {
-        this.brandOpen = false;
-        if (this._brandOrigin === 'editor') {
-            this.editorOpen = true;
-        } else if (this._brandOrigin === 'gallery') {
-            const panel = this.template.querySelector('c-final-design-panel');
-            if (panel) {
-                panel.openThemeGallery();
-            }
-        }
-        this._brandOrigin = null;
-    }
-
-    /** Saved: the form takes the new org theme (and the logo, if asked). */
-    async handleBrandSaved(event) {
-        this.brandOpen = false;
-        this._brandOrigin = null;
+        this._editorOrigin = null;
         const { id, logo } = event.detail || {};
         const next = JSON.parse(JSON.stringify(this.spec));
         next.theme = { source: 'custom', name: id, overrides: {} };
@@ -3291,17 +3285,6 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 logo: { url: logo.url, versionId: logo.versionId }
             };
         }
-        this.handleSpecChange({ detail: { spec: next } });
-        const panel = this.template.querySelector('c-final-design-panel');
-        if (panel) {
-            await panel.refreshThemes();
-        }
-    }
-
-    async handleThemeSaved(event) {
-        this.editorOpen = false;
-        const next = JSON.parse(JSON.stringify(this.spec));
-        next.theme = { source: 'custom', name: event.detail.id, overrides: {} };
         this.handleSpecChange({ detail: { spec: next } });
         const panel = this.template.querySelector('c-final-design-panel');
         if (panel) {
