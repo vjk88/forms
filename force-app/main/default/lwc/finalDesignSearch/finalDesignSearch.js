@@ -20,6 +20,8 @@ const ALIASES = {
     glass: 'blur frosted transparency'
 };
 
+const LIMIT = 12;
+
 function normalize(value) {
     return String(value || '')
         .toLowerCase()
@@ -27,26 +29,20 @@ function normalize(value) {
         .trim();
 }
 
-/** Presentational shortcuts only. finalDesignPanel owns values and mutations. */
-export default class FinalDesignToolbar extends LightningElement {
-    @api state;
+/**
+ * finalDesignSearch — "Find a design setting" at the top of the Design pane
+ * (IMPL_PLAN_DESIGN_RAIL; moved unchanged from the old toolbar strip).
+ * Navigation only: picking an available result emits `settingselect`
+ * { key }; finalDesignPanel opens that control's tab and focuses it.
+ *
+ *   entries  [{ key, label, path, hint?, choices?, available, reason? }]
+ */
+export default class FinalDesignSearch extends LightningElement {
+    @api entries = [];
     @api disabled = false;
     query = '';
     searchOpen = false;
-    colorsOpen = false;
     _focusResult = false;
-
-    get fontOptions() {
-        return this.state?.font?.options || [];
-    }
-
-    get fontDisabled() {
-        return this.disabled || !this.fontOptions.length;
-    }
-
-    get colorGroups() {
-        return this.state?.colorGroups || [];
-    }
 
     get hasQuery() {
         return Boolean(this.query);
@@ -56,7 +52,7 @@ export default class FinalDesignToolbar extends LightningElement {
         const query = normalize(this.query);
         if (!query) return [];
         const words = query.split(' ');
-        return (this.state?.searchEntries || [])
+        return (this.entries || [])
             .map((entry, index) => {
                 const label = normalize(entry.label);
                 const aliases = `${ALIASES[entry.key] || ''} ${entry.key.toLowerCase().includes('opacity') ? 'opacity transparency transparent' : ''}`;
@@ -90,7 +86,7 @@ export default class FinalDesignToolbar extends LightningElement {
     }
 
     get results() {
-        return this.matches.slice(0, 12);
+        return this.matches.slice(0, LIMIT);
     }
 
     get hasResults() {
@@ -103,93 +99,21 @@ export default class FinalDesignToolbar extends LightningElement {
 
     get resultSummary() {
         const count = this.matches.length;
-        return count > 12
-            ? `Showing 12 of ${count} settings. Refine your search for more.`
+        return count > LIMIT
+            ? `Showing ${LIMIT} of ${count} settings. Refine your search for more.`
             : `${count} matching setting${count === 1 ? '' : 's'}.`;
     }
 
     renderedCallback() {
-        // A native select can keep a stale choice after its options change
-        // (uploaded fonts arrive later): set the value outright.
-        const select = this.template.querySelector('[data-role="font"]');
-        const current = this.fontOptions.find((o) => o.selected);
-        if (select && current && select.value !== current.value) {
-            select.value = current.value;
-        }
         if (this._focusResult) {
             this._focusResult = false;
-            this.template.querySelector('.dt-result')?.focus();
+            this.template.querySelector('.ds-result')?.focus();
         }
-    }
-
-    emitChange(detail) {
-        if (this.disabled) return;
-        this.dispatchEvent(new CustomEvent('controlchange', { detail }));
-    }
-
-    handleFont(event) {
-        this.emitChange({
-            key: 'typography',
-            kind: 'font',
-            value: event.target.value
-        });
-    }
-
-    handleColor(event) {
-        this.emitChange({
-            key: event.target.dataset.key,
-            kind: 'color',
-            value: event.detail.value
-        });
-    }
-
-    handlePreset(event) {
-        this.emitChange({
-            key: event.target.dataset.key,
-            kind: 'preset',
-            value: event.detail.value
-        });
-    }
-
-    handleGradient(event) {
-        this.emitChange({
-            key: event.target.dataset.key,
-            kind: 'gradient',
-            ...event.detail
-        });
-    }
-
-    handleMesh(event) {
-        this.emitChange({
-            key: 'meshColors',
-            kind: 'mesh',
-            idx: event.target.dataset.idx,
-            value: event.detail.value
-        });
-    }
-
-    handleReset(event) {
-        this.emitChange({
-            key: event.currentTarget.dataset.key,
-            kind: 'reset'
-        });
-    }
-
-    handleColors() {
-        if (this.disabled) return;
-        this.colorsOpen = !this.colorsOpen;
-        this.searchOpen = false;
-    }
-
-    closeColors() {
-        this.colorsOpen = false;
-        this.template.querySelector('.dt-colors-trigger')?.focus();
     }
 
     handleQuery(event) {
         this.query = event.target.value;
         this.searchOpen = true;
-        this.colorsOpen = false;
     }
 
     handleSearchFocus() {
@@ -212,14 +136,12 @@ export default class FinalDesignToolbar extends LightningElement {
     clearSearch() {
         this.query = '';
         this.searchOpen = false;
-        this.template.querySelector('.dt-search-input')?.focus();
+        this.template.querySelector('.ds-input')?.focus();
     }
 
     selectResult(key) {
         if (this.disabled) return;
-        const entry = (this.state?.searchEntries || []).find(
-            (item) => item.key === key
-        );
+        const entry = (this.entries || []).find((item) => item.key === key);
         if (!entry?.available) return;
         this.searchOpen = false;
         this.dispatchEvent(
@@ -235,7 +157,7 @@ export default class FinalDesignToolbar extends LightningElement {
         if (event.key === 'ArrowDown' && this.results.length) {
             event.preventDefault();
             this.searchOpen = true;
-            const first = this.template.querySelector('.dt-result');
+            const first = this.template.querySelector('.ds-result');
             if (first) first.focus();
             else this._focusResult = true;
         } else if (event.key === 'Enter' && this.results.length) {
@@ -245,28 +167,21 @@ export default class FinalDesignToolbar extends LightningElement {
     }
 
     handleResultKeydown(event) {
-        const buttons = [...this.template.querySelectorAll('.dt-result')];
+        const buttons = [...this.template.querySelectorAll('.ds-result')];
         const index = buttons.indexOf(event.currentTarget);
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
             const next = index + (event.key === 'ArrowDown' ? 1 : -1);
-            if (next < 0)
-                this.template.querySelector('.dt-search-input')?.focus();
+            if (next < 0) this.template.querySelector('.ds-input')?.focus();
             else buttons[Math.min(next, buttons.length - 1)]?.focus();
         }
     }
 
     handleKeydown(event) {
-        if (event.key !== 'Escape') return;
-        if (this.colorsOpen) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.closeColors();
-        } else if (this.searchOpen) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.template.querySelector('.dt-search-input')?.focus();
-            this.searchOpen = false;
-        }
+        if (event.key !== 'Escape' || !this.searchOpen) return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.template.querySelector('.ds-input')?.focus();
+        this.searchOpen = false;
     }
 }

@@ -547,10 +547,10 @@ describe('c-final-form-studio', () => {
         );
     });
 
-    it('Advanced toolbar edits update preview, autosave and undo; search is navigation only', async () => {
+    it('Design pane: search is navigation only; Colors tab edits update preview, autosave and undo', async () => {
         jest.useFakeTimers();
         loadStudio.mockResolvedValue({
-            name: 'Toolbar',
+            name: 'Rail',
             specJson: JSON.stringify(SPEC),
             draftVersionId: 'a0V1',
             versionNumber: 1
@@ -561,14 +561,16 @@ describe('c-final-form-studio', () => {
         CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
         await micro(40);
         const root = el.shadowRoot;
+        // the old strip above the preview is gone in every mode
         expect(root.querySelector('c-final-design-toolbar')).toBeNull();
         const panel = root.querySelector('c-final-design-panel');
         panel.shadowRoot.querySelectorAll('.lens-btn')[1].click();
         await micro(20);
-        const toolbar = root.querySelector('c-final-design-toolbar');
-        expect(toolbar).not.toBeNull();
-        toolbar.dispatchEvent(
-            new CustomEvent('settingselect', { detail: { key: 'typography' } })
+        expect(root.querySelector('c-final-design-toolbar')).toBeNull();
+        panel.shadowRoot.querySelector('c-final-design-search').dispatchEvent(
+            new CustomEvent('settingselect', {
+                detail: { key: 'typography' }
+            })
         );
         await micro(20);
         expect(
@@ -578,11 +580,19 @@ describe('c-final-form-studio', () => {
         ).toBe(true);
         expect(root.querySelector('.st-undo').disabled).toBe(true);
         expect(saveDraft).not.toHaveBeenCalled();
-        toolbar.dispatchEvent(
-            new CustomEvent('controlchange', {
-                detail: { key: 'labelColor', kind: 'color', value: '#123456' }
-            })
-        );
+        panel.shadowRoot
+            .querySelector('c-final-studio-rail')
+            .dispatchEvent(
+                new CustomEvent('select', { detail: { key: 'colors' } })
+            );
+        await micro(20);
+        panel.shadowRoot
+            .querySelector(
+                '.colors-tab c-final-color-control[data-key="labelColor"]'
+            )
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: '#123456' } })
+            );
         await micro(20);
         expect(previewViewer(el).spec.theme.overrides.palette.labelColor).toBe(
             '#123456'
@@ -601,7 +611,7 @@ describe('c-final-form-studio', () => {
         ).toBeUndefined();
         root.querySelectorAll('.st-mode')[0].click();
         await micro(20);
-        expect(root.querySelector('c-final-design-toolbar')).toBeNull();
+        expect(root.querySelector('c-final-design-panel')).toBeNull();
         expect(root.querySelector('c-final-builder-canvas')).not.toBeNull();
     });
 

@@ -46,13 +46,21 @@ async function goAdvanced(el) {
     await flush();
 }
 
+// one rail tab at a time (IMPL_PLAN_DESIGN_RAIL): pick it on the rail
 async function openArea(el, key) {
-    const button = el.shadowRoot.querySelector(
-        `.section-toggle[data-area="${key}"]`
-    );
-    if (button.getAttribute('aria-expanded') !== 'true') button.click();
+    el.shadowRoot
+        .querySelector('c-final-studio-rail')
+        .dispatchEvent(new CustomEvent('select', { detail: { key } }));
     await flush();
 }
+
+const rail = (el) => el.shadowRoot.querySelector('c-final-studio-rail');
+const railTab = (el, key) => rail(el).tabs.find((t) => t.key === key);
+const searchEntries = (el) =>
+    el.shadowRoot.querySelector('c-final-design-search').entries;
+
+const railKeys = (el) =>
+    el.shadowRoot.querySelector('c-final-studio-rail').tabs.map((t) => t.key);
 
 async function openGallery(el, which) {
     el.shadowRoot
@@ -79,17 +87,14 @@ async function pickLayout(el, layout, paneFlow) {
 }
 
 describe('c-final-design-panel', () => {
-    describe('Advanced toolbar bridge', () => {
-        it('indexes every control with the same availability as the rendered panel', async () => {
+    // The old toolbar strip's jobs, now inside the pane (IMPL_PLAN_DESIGN_RAIL):
+    // search at the top, every color on the Colors rail tab.
+    describe('pane search + Colors tab', () => {
+        it('search indexes every control with the same availability as the rendered panel', async () => {
             const el = mount();
-            const state = jest.fn();
-            el.addEventListener('toolbarstate', state);
             await goAdvanced(el);
-            const latest = () => state.mock.calls.at(-1)[0].detail;
-            expect(latest().searchEntries).toHaveLength(
-                flattenControls().length
-            );
-            const entries = latest().searchEntries;
+            const entries = searchEntries(el);
+            expect(entries).toHaveLength(flattenControls().length);
             expect(
                 entries.find((entry) => entry.key === 'pageScrim')
             ).toMatchObject({
@@ -115,96 +120,120 @@ describe('c-final-design-panel', () => {
             const changed = jest.fn();
             el.addEventListener('specchange', changed);
             expect(el.revealControl('pageScrim')).toBe(false);
-            expect(
-                el.applyToolbarChange({
-                    key: 'pageScrim',
-                    kind: 'color',
-                    value: '#123456'
-                })
-            ).toBe(false);
             expect(changed).not.toHaveBeenCalled();
         });
 
-        it('applies custom fonts and gradients through the existing specchange path and resets sparse overrides', async () => {
-            listFonts.mockResolvedValueOnce([
-                {
-                    key: 'Brand',
-                    family: 'Brand',
-                    resource: 'brand_font',
-                    fallback: 'serif'
-                }
-            ]);
+        it('search is offered in Simple too, and a pick lands in Advanced on its tab', async () => {
+            const el = mount();
+            expect(searchEntries(el)).toHaveLength(flattenControls().length);
+            el.shadowRoot.querySelector('c-final-design-search').dispatchEvent(
+                new CustomEvent('settingselect', {
+                    detail: { key: 'labelColor' }
+                })
+            );
+            await flush();
+            expect(rail(el).value).toBe('fields');
+            expect(
+                el.shadowRoot.querySelector('[data-control="labelColor"]')
+            ).not.toBeNull();
+        });
+
+        it('the Colors tab lists exactly the available colors, gradients and mesh colors', async () => {
+            const el = mount();
+            await goAdvanced(el);
+            await openArea(el, 'colors');
+            const shown = [
+                ...el.shadowRoot.querySelectorAll('.colors-tab .color-row')
+            ].map((row) => row.dataset.control);
+            const types = new Map(
+                flattenControls().map((e) => [e.control.key, e.control.type])
+            );
+            const expected = searchEntries(el)
+                .filter((entry) => entry.available)
+                .map((entry) => entry.key)
+                .filter((key) =>
+                    ['color', 'gradientSurface', 'meshColors'].includes(
+                        types.get(key)
+                    )
+                );
+            expect(shown.length).toBeGreaterThan(0);
+            expect([...shown].sort()).toEqual([...expected].sort());
+        });
+
+        it('a gradient edit on the Colors tab goes through specchange, and its reset drops both halves', async () => {
             const el = mount();
             const changed = jest.fn();
             el.addEventListener('specchange', changed);
-            await flush();
             await goAdvanced(el);
-            expect(
-                el.applyToolbarChange({
-                    key: 'typography',
-                    kind: 'font',
-                    value: 'uploaded:Brand'
-                })
-            ).toBe(true);
-            // an uploaded font sets both sides, with its file info
-            expect(
-                lastSpec(changed).theme.overrides.fonts.display.resource
-            ).toBe('brand_font');
-            expect(lastSpec(changed).theme.overrides.fonts.body.family).toBe(
-                'Brand'
-            );
-            expect(
-                el.applyToolbarChange({
-                    key: 'typography',
-                    kind: 'font',
-                    value: 'pairing:editorialSerif'
-                })
-            ).toBe(true);
-            expect(lastSpec(changed).theme.overrides.fonts).toEqual({
-                pairing: 'editorialSerif'
-            });
-            // values the dropdown does not offer are refused
-            expect(
-                el.applyToolbarChange({
-                    key: 'typography',
-                    kind: 'font',
-                    value: 'editorial'
-                })
-            ).toBe(false);
+            await openArea(el, 'colors');
             const gradient = {
                 type: 'linear',
                 angle: 90,
                 start: '#112233',
                 end: '#445566'
             };
-            el.applyToolbarChange({
-                key: 'pageBg',
-                kind: 'gradient',
-                solid: '#123456',
-                gradient
-            });
+            el.shadowRoot
+                .querySelector(
+                    '.colors-tab c-final-gradient-control[data-key="pageBg"]'
+                )
+                .dispatchEvent(
+                    new CustomEvent('change', {
+                        detail: { solid: '#123456', gradient }
+                    })
+                );
+            await flush();
             expect(
                 lastSpec(changed).theme.overrides.palette.pageBgGradient
             ).toEqual(gradient);
-            el.applyToolbarChange({ key: 'pageBg', kind: 'reset' });
+            el.spec = lastSpec(changed);
+            await flush();
+            expect(railTab(el, 'colors').dot).toBe(true);
+            el.shadowRoot
+                .querySelector('.color-reset[data-key="pageBg"]')
+                .click();
+            await flush();
             expect(
                 lastSpec(changed).theme.overrides.palette?.pageBgGradient
             ).toBeUndefined();
             expect(
                 lastSpec(changed).theme.overrides.palette?.pageBg
             ).toBeUndefined();
-            expect(lastSpec(changed).theme.overrides.fonts).toEqual({
-                pairing: 'editorialSerif'
-            });
         });
 
-        it('reveals and focuses a collapsed group without editing the spec', async () => {
+        it('a color changed on the Colors tab is the same setting, edited dot included, in its own tab', async () => {
             const el = mount();
             const changed = jest.fn();
             el.addEventListener('specchange', changed);
             await goAdvanced(el);
+            await openArea(el, 'colors');
+            el.shadowRoot
+                .querySelector(
+                    '.colors-tab c-final-color-control[data-key="labelColor"]'
+                )
+                .dispatchEvent(
+                    new CustomEvent('change', { detail: { value: '#123456' } })
+                );
+            await flush();
+            el.spec = lastSpec(changed);
+            await flush();
+            expect(railTab(el, 'fields').dot).toBe(true);
+            await openArea(el, 'fields');
+            const own = el.shadowRoot.querySelector(
+                'c-final-color-control[data-key="labelColor"]'
+            );
+            expect(own.value).toBe('#123456');
+            expect(own.edited).toBe(true);
+        });
+
+        it('reveals and focuses a control on its own tab without editing the spec', async () => {
+            const el = mount();
+            const changed = jest.fn();
+            el.addEventListener('specchange', changed);
+            await goAdvanced(el);
+            await openArea(el, 'page');
             expect(el.revealControl('typography')).toBe(true);
             await flush();
+            expect(rail(el).value).toBe('brand');
             const wrapper = el.shadowRoot.querySelector(
                 '[data-control="typography"]'
             );
@@ -218,7 +247,7 @@ describe('c-final-design-panel', () => {
             expect(changed).not.toHaveBeenCalled();
         });
 
-        it('resetting mesh colors restores the theme mesh as well as its colors', async () => {
+        it('resetting mesh colors on the Colors tab restores the theme mesh as well as its colors', async () => {
             const spec = buildSampleSpec({
                 layout: 'stepper',
                 themeKey: 'nordic'
@@ -233,9 +262,11 @@ describe('c-final-design-panel', () => {
             const changed = jest.fn();
             el.addEventListener('specchange', changed);
             await goAdvanced(el);
-            expect(
-                el.applyToolbarChange({ key: 'meshColors', kind: 'reset' })
-            ).toBe(true);
+            await openArea(el, 'colors');
+            el.shadowRoot
+                .querySelector('.color-reset[data-key="meshColors"]')
+                .click();
+            await flush();
             expect(
                 lastSpec(changed).theme.overrides.effects?.mesh
             ).toBeUndefined();
@@ -264,17 +295,24 @@ describe('c-final-design-panel', () => {
         );
     });
 
-    it('Simple has three sections and only Appearance starts expanded', () => {
+    it('Simple has three rail tabs, one section each, and opens on Appearance', async () => {
         const el = mount();
-        const sections = [...el.shadowRoot.querySelectorAll('.simple-section')];
-        expect(
-            sections.map((s) => s.querySelector('.section-title').textContent)
-        ).toEqual([
-            'Appearance',
-            'Content & branding',
-            'Buttons & confirmation'
+        expect(railKeys(el)).toEqual(['theme', 'brand', 'navigation']);
+        expect(rail(el).tabs.map((t) => t.label)).toEqual([
+            'Theme',
+            'Brand',
+            'Buttons'
         ]);
-        expect(sections.map((s) => s.open)).toEqual([true, false, false]);
+        expect(rail(el).value).toBe('theme');
+        const titles = () =>
+            [
+                ...el.shadowRoot.querySelectorAll('.simple-section .area-title')
+            ].map((t) => t.textContent);
+        expect(titles()).toEqual(['Appearance']);
+        await openArea(el, 'brand');
+        expect(titles()).toEqual(['Content & branding']);
+        await openArea(el, 'navigation');
+        expect(titles()).toEqual(['Buttons & confirmation']);
         expect(el.shadowRoot.querySelector('.entry-edit')).toBeNull();
         expect(
             el.shadowRoot.querySelector('[data-key="onePerScreen"]')
@@ -296,10 +334,11 @@ describe('c-final-design-panel', () => {
         ]
     ])(
         'Simple shows working button labels for %s / %s',
-        (layout, paneFlow, labels) => {
+        async (layout, paneFlow, labels) => {
             const el = mount(
                 buildSampleSpec({ layout, paneFlow, themeKey: 'nordic' })
             );
+            await openArea(el, 'navigation');
             const actual = [
                 ...el.shadowRoot.querySelectorAll('.simple-text input')
             ]
@@ -332,13 +371,17 @@ describe('c-final-design-panel', () => {
         const el = mount(spec);
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
+        await openArea(el, 'brand');
         expect(
-            el.shadowRoot.querySelectorAll('.section-summary')[1].textContent
+            el.shadowRoot.querySelector('.simple-section .area-summary')
+                .textContent
         ).toBe('Welcome & hello');
         await goAdvanced(el);
         await openArea(el, 'completion');
         el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
         await flush();
+        // Finish has no Simple tab: its confirmation lives on Simple's Buttons
+        expect(rail(el).value).toBe('navigation');
         expect(handler).not.toHaveBeenCalled();
         expect(el.spec).toEqual(spec);
         const title = el.shadowRoot.querySelector('input[data-key="asTitle"]');
@@ -354,6 +397,7 @@ describe('c-final-design-panel', () => {
         const el = mount();
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
+        await openArea(el, 'navigation');
         const editor = el.shadowRoot.querySelector(
             'lightning-input-rich-text[data-key="asMessage"]'
         );
@@ -384,6 +428,7 @@ describe('c-final-design-panel', () => {
         const el = mount(spec);
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
+        await openArea(el, 'navigation');
         expect(el.shadowRoot.querySelector('[data-key="asTitle"]')).toBeNull();
         expect(
             el.shadowRoot.querySelector('[data-key="asMessage"]')
@@ -393,11 +438,11 @@ describe('c-final-design-panel', () => {
         ].find((b) => b.textContent.includes('after-submit'));
         link.click();
         await flush();
+        expect(rail(el).value).toBe('completion');
         expect(
-            el.shadowRoot
-                .querySelector('.section-toggle[data-area="completion"]')
-                .getAttribute('aria-expanded')
-        ).toBe('true');
+            el.shadowRoot.querySelector('.design-section .area-title')
+                .textContent
+        ).toBe('After submit');
         expect(handler).not.toHaveBeenCalled();
         expect(el.spec.settings.completion).toEqual(spec.settings.completion);
     });
@@ -427,6 +472,7 @@ describe('c-final-design-panel', () => {
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
         await goAdvanced(el);
+        await openArea(el, 'brand');
         el.shadowRoot.querySelector('[data-group="header"]').click();
         await flush();
         const updated = lastSpec(handler);
@@ -435,26 +481,82 @@ describe('c-final-design-panel', () => {
         expect(updated.header).toEqual(spec.header);
     });
 
-    it('starts in Simple: no rail, essentials only', () => {
+    it('starts in Simple on the Theme tab, essentials only', () => {
         const el = mount();
-        expect(el.shadowRoot.querySelector('.rail')).toBeNull();
-        expect(el.shadowRoot.querySelector('.simple-section')).not.toBeNull();
+        expect(rail(el)).not.toBeNull();
+        expect(rail(el).value).toBe('theme');
+        expect(el.shadowRoot.querySelectorAll('.simple-section')).toHaveLength(
+            1
+        );
+        expect(el.shadowRoot.querySelector('.design-section')).toBeNull();
     });
 
-    it('Advanced exposes five task sections without a rail', async () => {
+    it('Advanced has seven rail tabs, Colors last after a divider, one area at a time', async () => {
         const el = mount();
         await goAdvanced(el);
-        const areas = [
-            ...el.shadowRoot.querySelectorAll('.section-toggle')
-        ].map((b) => b.dataset.area);
-        expect(areas).toEqual([
+        expect(railKeys(el)).toEqual([
+            'theme',
             'brand',
             'page',
             'fields',
             'navigation',
-            'completion'
+            'completion',
+            'colors'
         ]);
-        expect(el.shadowRoot.querySelector('.rail')).toBeNull();
+        expect(rail(el).tabs.map((t) => t.label)).toEqual([
+            'Theme',
+            'Brand',
+            'Page',
+            'Fields',
+            'Buttons',
+            'Finish',
+            'Colors'
+        ]);
+        expect(railTab(el, 'colors').divider).toBe(true);
+        expect(railTab(el, 'theme').dot).toBeFalsy();
+        const titles = () =>
+            [
+                ...el.shadowRoot.querySelectorAll('.design-section .area-title')
+            ].map((t) => t.textContent);
+        expect(titles()).toEqual(['Theme']);
+        await openArea(el, 'page');
+        expect(titles()).toEqual(['Page & form']);
+        await openArea(el, 'colors');
+        expect(titles()).toEqual(['Colors']);
+    });
+
+    it('every group in the open tab starts open, and one the author closes stays closed', async () => {
+        const el = mount();
+        await goAdvanced(el);
+        await openArea(el, 'brand');
+        const groups = () => [
+            ...el.shadowRoot.querySelectorAll('details.group')
+        ];
+        expect(groups().length).toBeGreaterThan(1);
+        expect(groups().every((g) => g.open)).toBe(true);
+        const fonts = el.shadowRoot.querySelector(
+            'details.group[data-disclosure-group="fonts"]'
+        );
+        fonts.open = false;
+        fonts.dispatchEvent(new CustomEvent('toggle'));
+        await openArea(el, 'page');
+        await openArea(el, 'brand');
+        expect(
+            el.shadowRoot.querySelector(
+                'details.group[data-disclosure-group="fonts"]'
+            ).open
+        ).toBe(false);
+    });
+
+    it('a lens switch keeps the tab both lenses have, else lands on Theme', async () => {
+        const el = mount();
+        await openArea(el, 'brand');
+        await goAdvanced(el);
+        expect(rail(el).value).toBe('brand');
+        await openArea(el, 'colors');
+        el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
+        await flush();
+        expect(rail(el).value).toBe('theme');
     });
 
     it('accent change writes a sparse override and emits specchange', async () => {
@@ -484,6 +586,8 @@ describe('c-final-design-panel', () => {
             );
         await flush();
         await goAdvanced(el);
+        // Advanced keeps accent in Brand › Colors (one home per control)
+        await openArea(el, 'brand');
         const adv = el.shadowRoot.querySelector(
             'c-final-color-control[data-key="accent"]'
         );
@@ -524,6 +628,7 @@ describe('c-final-design-panel', () => {
             );
         await flush();
         await goAdvanced(el);
+        await openArea(el, 'brand');
         el.shadowRoot.querySelector('.resetchip').click();
         await flush();
         expect(lastSpec(handler).theme.overrides.palette).toBeUndefined();
@@ -1222,6 +1327,7 @@ describe('c-final-design-panel', () => {
         const el = mount();
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
+        await openArea(el, 'brand');
         const editor = el.shadowRoot.querySelector(
             'lightning-input-rich-text[data-key="title"]'
         );
@@ -1358,7 +1464,7 @@ describe('c-final-design-panel', () => {
 
         it('Simple keeps its own editors, unwrapped', async () => {
             const el = mount(sampleWith({ title: RICH_TEXT_HTML }));
-            await flush();
+            await openArea(el, 'brand');
             expect(editorOf(el, 'title')).not.toBeNull();
             expect(editorOf(el, 'title').closest('details.rt-disclosure')).toBe(
                 null

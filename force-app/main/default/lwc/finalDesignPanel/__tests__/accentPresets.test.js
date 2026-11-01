@@ -39,6 +39,10 @@ function mount(themeKey, overrides) {
     return el;
 }
 
+const openTab = (el, key) =>
+    el.shadowRoot
+        .querySelector('c-final-studio-rail')
+        .dispatchEvent(new CustomEvent('select', { detail: { key } }));
 const lastSpec = (h) => h.mock.calls[h.mock.calls.length - 1][0].detail.spec;
 const accentControl = (el) =>
     el.shadowRoot.querySelector('c-final-color-control[data-key="accent"]');
@@ -147,6 +151,8 @@ describe('accent presets in the Design panel', () => {
         await flush();
         el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
         await flush();
+        openTab(el, 'brand');
+        await flush();
         el.shadowRoot.querySelector('.resetchip').click();
         await flush();
         const overrides = lastSpec(handler).theme.overrides;
@@ -159,25 +165,30 @@ describe('accent presets in the Design panel', () => {
     });
 });
 
-describe('toolbar presets (applyToolbarChange)', () => {
-    async function advanced(themeKey) {
+// The Colors rail tab carries the accent too (it took over the old toolbar
+// strip's Colors menu, IMPL_PLAN_DESIGN_RAIL): same presets, same writes.
+describe('Colors tab presets', () => {
+    async function colorsTab(themeKey) {
         const el = mount(themeKey);
         el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
         await flush();
+        openTab(el, 'colors');
+        await flush();
         return el;
     }
+    const colorsAccent = (el) =>
+        el.shadowRoot.querySelector(
+            '.colors-tab c-final-color-control[data-key="accent"]'
+        );
 
-    it('a toolbar pick is one spec change with accent + ink flag', async () => {
-        const el = await advanced('mintStepper');
+    it('a Colors-tab pick is one spec change with accent + ink flag', async () => {
+        const el = await colorsTab('mintStepper');
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        expect(
-            el.applyToolbarChange({
-                key: 'accent',
-                kind: 'preset',
-                value: '#6ee7b7'
-            })
-        ).toBe(true);
+        colorsAccent(el).dispatchEvent(
+            new CustomEvent('presetpick', { detail: { value: '#6ee7b7' } })
+        );
+        await flush();
         expect(handler).toHaveBeenCalledTimes(1);
         expect(lastSpec(handler).theme.overrides.palette).toEqual({
             accent: '#6ee7b7',
@@ -185,27 +196,29 @@ describe('toolbar presets (applyToolbarChange)', () => {
         });
     });
 
-    it('rejects a value that is not one of the presets', async () => {
-        const el = await advanced('mintStepper');
-        expect(
-            el.applyToolbarChange({
-                key: 'accent',
-                kind: 'preset',
-                value: '#123456'
-            })
-        ).toBe(false);
+    it('offers the same presets and card colour as Brand › Colors', async () => {
+        const el = await colorsTab('mintStepper');
+        const inColors = colorsAccent(el);
+        openTab(el, 'brand');
+        await flush();
+        const inBrand = el.shadowRoot.querySelector(
+            'c-final-color-control[data-key="accent"]'
+        );
+        expect(inColors.presets).toEqual(inBrand.presets);
+        expect(inColors.presets.length).toBeGreaterThan(0);
+        expect(inColors.presetBackground).toBe(inBrand.presetBackground);
     });
 
-    it('the toolbar reset on Accent also drops the ink flag', async () => {
-        const el = await advanced('mintStepper');
+    it('the Colors-tab reset on Accent also drops the ink flag', async () => {
+        const el = await colorsTab('mintStepper');
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        el.applyToolbarChange({
-            key: 'accent',
-            kind: 'preset',
-            value: '#6ee7b7'
-        });
-        el.applyToolbarChange({ key: 'accent', kind: 'reset' });
+        colorsAccent(el).dispatchEvent(
+            new CustomEvent('presetpick', { detail: { value: '#6ee7b7' } })
+        );
+        await flush();
+        el.shadowRoot.querySelector('.color-reset[data-key="accent"]').click();
+        await flush();
         const overrides = lastSpec(handler).theme.overrides;
         expect(
             withoutFocus(

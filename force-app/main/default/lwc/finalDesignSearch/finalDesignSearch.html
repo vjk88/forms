@@ -1,0 +1,73 @@
+<template>
+    <div
+        class="ds-search"
+        onfocusout={handleSearchFocusOut}
+        onkeydown={handleKeydown}
+    >
+        <label class="slds-assistive-text" for="design-search"
+            >Find a design setting</label
+        >
+        <input
+            id="design-search"
+            class="ds-input"
+            type="search"
+            placeholder="Find a design setting…"
+            value={query}
+            disabled={disabled}
+            autocomplete="off"
+            aria-controls="design-results"
+            oninput={handleQuery}
+            onfocus={handleSearchFocus}
+            onkeydown={handleSearchKeydown}
+        />
+        <template lwc:if={hasQuery}>
+            <button
+                type="button"
+                class="ds-clear"
+                title="Clear search"
+                aria-label="Clear search"
+                onclick={clearSearch}
+            >
+                ×
+            </button>
+        </template>
+        <template lwc:if={showResults}>
+            <div
+                id="design-results"
+                class="ds-results"
+                onmousedown={keepSearchFocus}
+            >
+                <p class="ds-summary" role="status">{resultSummary}</p>
+                <template lwc:if={hasResults}>
+                    <ul>
+                        <template for:each={results} for:item="result">
+                            <li key={result.key}>
+                                <button
+                                    type="button"
+                                    class="ds-result"
+                                    data-key={result.key}
+                                    aria-disabled={result.unavailable}
+                                    onclick={handleResult}
+                                    onkeydown={handleResultKeydown}
+                                >
+                                    <strong>{result.label}</strong>
+                                    <span>{result.path}</span>
+                                    <template lwc:if={result.unavailable}
+                                        ><span class="ds-reason"
+                                            >{result.reason}</span
+                                        ></template
+                                    >
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+                <template lwc:else
+                    ><p class="ds-summary">
+                        Try “font”, “border”, “background”, or “button”.
+                    </p></template
+                >
+            </div>
+        </template>
+    </div>
+</template>
