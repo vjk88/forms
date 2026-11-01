@@ -3,6 +3,7 @@ import {
     brandContrastReport,
     themeReadability,
     fixReadability,
+    hasGradients,
     READABILITY_PATHS
 } from 'c/finalBrandTheme';
 import { readable, readsOn, ratio } from 'c/finalReadableText';
@@ -55,7 +56,70 @@ describe('themeReadability', () => {
         expect(report.pass).toBe(false);
         expect(
             failing(report, 'text').some(
-                (c) => c.where === 'the page gradient (end)'
+                (c) => c.where === 'the page gradient (100%)'
+            )
+        ).toBe(true);
+    });
+
+    it('a header gradient over a see-through header is checked (white title on its white end fails)', () => {
+        const recipe = brand({
+            palette: {
+                headerBg: 'transparent',
+                headerText: '#ffffff',
+                headerBgGradient: {
+                    type: 'linear',
+                    angle: 90,
+                    start: '#ffffff',
+                    end: '#1e3a8a'
+                }
+            }
+        });
+        const report = themeReadability(recipe);
+        const title = failing(report, 'header title');
+        expect(title.some((c) => c.where === 'the header gradient (0%)')).toBe(
+            true
+        );
+        // the navy end passes: it is judged on the gradient, not the page
+        expect(
+            report.checks.find(
+                (c) =>
+                    c.name === 'header title' &&
+                    c.where === 'the header gradient (100%)'
+            ).pass
+        ).toBe(true);
+    });
+
+    it('the middle of a gradient is sampled: #767676 passes both ends of black → white but fails at 50%', () => {
+        const recipe = brand({
+            palette: {
+                text: '#767676',
+                pageBgGradient: {
+                    type: 'linear',
+                    angle: 90,
+                    start: '#000000',
+                    end: '#ffffff'
+                }
+            }
+        });
+        const rows = themeReadability(recipe).checks.filter(
+            (c) => c.name === 'text' && c.where.startsWith('the page gradient')
+        );
+        const at = (pct) => rows.find((c) => c.where.endsWith(`(${pct}%)`));
+        expect(rows).toHaveLength(11);
+        expect(at(0).pass).toBe(true);
+        expect(at(100).pass).toBe(true);
+        expect(at(50).pass).toBe(false);
+    });
+
+    it('hasGradients tells a theme with any gradient from a solid one', () => {
+        expect(hasGradients(brand())).toBe(false);
+        expect(
+            hasGradients(
+                brand({
+                    palette: {
+                        headerBgGradient: { start: '#111111', end: '#222222' }
+                    }
+                })
             )
         ).toBe(true);
     });

@@ -364,27 +364,70 @@ function setPath(obj, path, value) {
     node[keys[keys.length - 1]] = value;
 }
 
-/** A gradient's two stops at a fill opacity (0-100), composited over `under`. */
-function gradientStops(g, opacity, under) {
-    if (!g || !g.start || !g.end || !under) return [];
+/** A gradient with both stops set (the engine paints nothing otherwise). */
+const isGradient = (g) => Boolean(g && g.start && g.end);
+
+/** Sample points along a gradient: every 10%, ends included. A SAMPLED check
+ *  (review 2026-11-01): it catches a gradient passing through the text's own
+ *  tone, which the two ends alone miss, but a narrow spot between two points
+ *  can still slip through. */
+const SAMPLES = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+
+/** Colours along a gradient, start to end, at the sample points; [] when a
+ *  stop isn't a hex colour (it can't be mixed), else just the two stops. */
+function gradientColours(g) {
+    if (!isGradient(g)) return [];
+    const a = parseHex(g.start);
+    const b = parseHex(g.end);
+    if (!a || !b)
+        return [
+            [0, g.start],
+            [1, g.end]
+        ];
+    const start = toHex(a);
+    const end = toHex(b);
+    return SAMPLES.map((share) => [share, mix(end, start, share)]);
+}
+
+/**
+ * A gradient fill as surfaces, `[where, colour]`: each sample point at the
+ * fill's opacity (0-100), composited over what it sits on.
+ */
+function gradientPoints(g, opacity, under, label) {
+    if (!under) return [];
     const n = Number(opacity);
     const alpha = Number.isFinite(n) && n < 100 ? Math.max(n, 0) / 100 : 1;
-    return [g.start, g.end]
-        .map((stop) => {
-            const rgb = parseHex(stop);
+    return gradientColours(g)
+        .map(([share, colour]) => {
+            const rgb = parseHex(colour);
             const value = rgb
                 ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`
-                : stop;
-            return composite(value, under);
+                : colour;
+            return [
+                `${label} (${Math.round(share * 100)}%)`,
+                composite(value, under)
+            ];
         })
-        .filter(Boolean);
+        .filter(([, colour]) => colour);
+}
+
+/** Does the theme paint any gradient? (The box words its verdict for it.) */
+export function hasGradients(recipe) {
+    const pal = (recipe && recipe.palette) || {};
+    return [
+        pal.pageBgGradient,
+        pal.contentBgGradient,
+        pal.headerBgGradient,
+        pal.submitBgGradient,
+        pal.headerTitleGradient
+    ].some(isGradient);
 }
 
 /**
  * Every text, mark and focus pair of ANY theme recipe, on the engine's
  * resolved tokens, plus what it cannot measure.
- *   - gradients (page, panel, header, button, header title) are judged
- *     stop by stop, never by the solid fill under them;
+ *   - gradients (page, panel, header, button, header title) are SAMPLED at
+ *     11 points each, never judged by the solid fill under them;
  *   - photos and mesh can't be measured from a recipe: each is named in
  *     `unchecked`, and `complete` is false;
  *   - a header with no fill is judged where it sits (page and card).
@@ -402,14 +445,18 @@ export function themeReadability(recipe) {
         text: t['--c-text'],
         fieldBg: t['--c-field-bg']
     });
-    const pageStops = gradientStops(pal.pageBgGradient, 100, s.page).map(
-        (bg, i) => [`the page gradient (${i ? 'end' : 'start'})`, bg]
+    const pageStops = gradientPoints(
+        pal.pageBgGradient,
+        100,
+        s.page,
+        'the page gradient'
     );
-    const cardStops = gradientStops(
+    const cardStops = gradientPoints(
         pal.contentBgGradient,
         pal.contentBgOpacity,
-        pageStops.length ? pageStops[0][1] : s.page
-    ).map((bg, i) => [`the panel gradient (${i ? 'end' : 'start'})`, bg]);
+        s.page,
+        'the panel gradient'
+    );
     const surfaces = [...s.all, ...pageStops, ...cardStops];
     const accent = composite(t['--c-accent'], s.card);
     const tinted = accent
@@ -470,10 +517,12 @@ export function themeReadability(recipe) {
     const submit = composite(t['--c-submit-bg'], s.card);
     const submitStops = [
         ['the button', submit],
-        ...gradientStops(pal.submitBgGradient, 100, s.card).map((bg, i) => [
-            `the button gradient (${i ? 'end' : 'start'})`,
-            bg
-        ])
+        ...gradientPoints(
+            pal.submitBgGradient,
+            100,
+            s.card,
+            'the button gradient'
+        )
     ];
     submitStops.forEach(([where, bg]) =>
         add('button text', composite(t['--c-submit-text'], bg), where, bg, TEXT)
@@ -481,30 +530,32 @@ export function themeReadability(recipe) {
     add('button fill', submit, 'the card', s.card, MARK, true);
     add('button fill', submit, 'the page', s.page, MARK, true);
 
-    // the header: on its own fill (solid or gradient), else where it sits
+    // the header: on its own fill, else where it sits. A gradient is a fill
+    // even over a see-through solid (review 2026-11-01): the engine paints it
+    // over the page.
     const headerBg = t['--c-header-bg'];
-    const filled = headerBg && headerBg !== 'transparent';
-    const headerGround = filled
-        ? [
-              ['the header', composite(headerBg, s.page)],
-              ...gradientStops(
-                  pal.headerBgGradient,
-                  pal.headerBgOpacity,
-                  s.page
-              ).map((bg, i) => [
-                  `the header gradient (${i ? 'end' : 'start'})`,
-                  bg
-              ])
-          ]
-        : [
-              ['the page', s.page],
-              ['the card', s.card]
-          ];
-    const titleGradient = pal.headerTitleGradient;
+    const solidFill = headerBg && headerBg !== 'transparent';
+    const headerPoints = gradientPoints(
+        pal.headerBgGradient,
+        pal.headerBgOpacity,
+        s.page,
+        'the header gradient'
+    );
+    let headerGround = [
+        ['the page', s.page],
+        ['the card', s.card]
+    ];
+    if (solidFill || headerPoints.length) {
+        headerGround = [
+            ...(solidFill ? [['the header', composite(headerBg, s.page)]] : []),
+            ...headerPoints
+        ];
+    }
+    const titleColours = gradientColours(pal.headerTitleGradient);
     headerGround.forEach(([where, bg]) => {
-        if (titleGradient && titleGradient.start && titleGradient.end) {
-            [titleGradient.start, titleGradient.end].forEach((stop) =>
-                add('header title', composite(stop, bg), where, bg, TEXT)
+        if (titleColours.length) {
+            titleColours.forEach(([, colour]) =>
+                add('header title', composite(colour, bg), where, bg, TEXT)
             );
         } else {
             add(

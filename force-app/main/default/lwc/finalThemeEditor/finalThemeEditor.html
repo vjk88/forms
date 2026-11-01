@@ -273,11 +273,8 @@
                     </p>
                     <section class={readableClass}>
                         <template lwc:if={readableOk}>
-                            <h2 class="te-h">Readable everywhere</h2>
-                            <p>
-                                All text, buttons and focus outlines stay
-                                readable on every background.
-                            </p>
+                            <h2 class="te-h">{readableTitle}</h2>
+                            <p>{readableText}</p>
                         </template>
                         <template lwc:if={readablePartial}>
                             <h2 class="te-h">Readable where we could check</h2>

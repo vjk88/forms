@@ -1,2000 +1,1816 @@
 {
- "capturedFrom": "origin/main after PR 402 (before B3)",
- "recipes": {
-  "#e11d48|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#cb1a41",
-    "onAccent": "#ffffff",
-    "submitBg": "#e11d48",
-    "submitText": "#ffffff",
-    "pageBg": "#fef6f8",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#7e1028",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#e11d48",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#e11d48|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#c61a3f",
-    "onAccent": "#ffffff",
-    "submitBg": "#e11d48",
-    "submitText": "#ffffff",
-    "pageBg": "#fdf1f4",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#7c7e81",
-    "headerBg": "#e11d48",
-    "fieldBg": "#ffffff",
-    "headerText": "#ffffff",
-    "headerTextWeak": "#fffcfd"
-   },
-   "fieldStates": {
-    "focus": "#7b1027",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#e11d48",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#e11d48|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#ef859c",
-    "onAccent": "#111827",
-    "submitBg": "#e11d48",
-    "submitText": "#ffffff",
-    "pageBg": "#1c0e16",
-    "contentBg": "#261a25",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#4b414b",
-    "fieldBorderColor": "#88838a",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#f5b1c0",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#e11d48",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#fbbf24|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#836313",
-    "onAccent": "#ffffff",
-    "submitBg": "#fbbf24",
-    "submitText": "#111827",
-    "pageBg": "#fffcf6",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#848689",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#3f3009",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#fbbf24",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#fbbf24|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#836313",
-    "onAccent": "#ffffff",
-    "submitBg": "#fbbf24",
-    "submitText": "#111827",
-    "pageBg": "#fffbf2",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#fbbf24",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#403926"
-   },
-   "fieldStates": {
-    "focus": "#413109",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#fbbf24",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#fbbf24|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#fbbf24",
-    "onAccent": "#111827",
-    "submitBg": "#fbbf24",
-    "submitText": "#111827",
-    "pageBg": "#1e1b13",
-    "contentBg": "#282722",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#4c4c49",
-    "fieldBorderColor": "#8f908f",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#fbc73e",
-    "error": "#ff8f85",
-    "required": "#ff8f85"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#fbbf24",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#84cc16|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#4a720c",
-    "onAccent": "#ffffff",
-    "submitBg": "#84cc16",
-    "submitText": "#111827",
-    "pageBg": "#fafdf6",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#848689",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#253906",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#84cc16",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#84cc16|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#4a720c",
-    "onAccent": "#ffffff",
-    "submitBg": "#84cc16",
-    "submitText": "#111827",
-    "pageBg": "#f8fcf1",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#84cc16",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#283c24"
-   },
-   "fieldStates": {
-    "focus": "#243706",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#84cc16",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#84cc16|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#84cc16",
-    "onAccent": "#111827",
-    "submitBg": "#84cc16",
-    "submitText": "#111827",
-    "pageBg": "#151c12",
-    "contentBg": "#1f2821",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#454d48",
-    "fieldBorderColor": "#8b918e",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#abdc61",
-    "error": "#ff8f85",
-    "required": "#ff8f85"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#84cc16",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#fafafa|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#696969",
-    "onAccent": "#ffffff",
-    "submitBg": "#fafafa",
-    "submitText": "#111827",
-    "pageBg": "#ffffff",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#848689",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#323232",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#fafafa",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#fafafa|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#696969",
-    "onAccent": "#ffffff",
-    "submitBg": "#fafafa",
-    "submitText": "#111827",
-    "pageBg": "#ffffff",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#848689",
-    "headerBg": "#fafafa",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#404551"
-   },
-   "fieldStates": {
-    "focus": "#323232",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#fafafa",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#fafafa|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#fafafa",
-    "onAccent": "#111827",
-    "submitBg": "#fafafa",
-    "submitText": "#111827",
-    "pageBg": "#1e2025",
-    "contentBg": "#282c33",
-    "text": "#f1f5f9",
-    "textWeak": "#b1bac8",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#4c5057",
-    "fieldBorderColor": "#93959a",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#fafafa",
-    "error": "#ffa199",
-    "required": "#ffa199"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#fafafa",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#0a0a0a|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#0a0a0a",
-    "onAccent": "#ffffff",
-    "submitBg": "#0a0a0a",
-    "submitText": "#ffffff",
-    "pageBg": "#f5f5f5",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#0a0a0a",
-    "error": "#ad2217",
-    "required": "#ad2217"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#0a0a0a",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#0a0a0a|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#0a0a0a",
-    "onAccent": "#ffffff",
-    "submitBg": "#0a0a0a",
-    "submitText": "#ffffff",
-    "pageBg": "#f0f0f0",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#7c7e81",
-    "headerBg": "#0a0a0a",
-    "fieldBg": "#ffffff",
-    "headerText": "#ffffff",
-    "headerTextWeak": "#cecece"
-   },
-   "fieldStates": {
-    "focus": "#0a0a0a",
-    "error": "#a92117",
-    "required": "#a92117"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#0a0a0a",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#0a0a0a|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#a2a2a2",
-    "onAccent": "#111827",
-    "submitBg": "#0a0a0a",
-    "submitText": "#ffffff",
-    "pageBg": "#0b0d11",
-    "contentBg": "#151920",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#3d4147",
-    "fieldBorderColor": "#7f8287",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#bebebe",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#0a0a0a",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#1e3a8a|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#1e3a8a",
-    "onAccent": "#ffffff",
-    "submitBg": "#1e3a8a",
-    "submitText": "#ffffff",
-    "pageBg": "#f6f7fa",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#182e6e",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#1e3a8a",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#1e3a8a|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#1e3a8a",
-    "onAccent": "#ffffff",
-    "submitBg": "#1e3a8a",
-    "submitText": "#ffffff",
-    "pageBg": "#f2f3f8",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#7c7e81",
-    "headerBg": "#1e3a8a",
-    "fieldBg": "#ffffff",
-    "headerText": "#ffffff",
-    "headerTextWeak": "#d2d8e8"
-   },
-   "fieldStates": {
-    "focus": "#182e6e",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#1e3a8a",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#1e3a8a|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#98a4c9",
-    "onAccent": "#111827",
-    "submitBg": "#1e3a8a",
-    "submitText": "#ffffff",
-    "pageBg": "#0d111c",
-    "contentBg": "#171d2a",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#3e444f",
-    "fieldBorderColor": "#80858c",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#b9c1da",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#1e3a8a",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#808080|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#696969",
-    "onAccent": "#ffffff",
-    "submitBg": "#808080",
-    "submitText": "#000000",
-    "pageBg": "#fafafa",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#303030",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#808080",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#808080|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#666666",
-    "onAccent": "#ffffff",
-    "submitBg": "#808080",
-    "submitText": "#000000",
-    "pageBg": "#f7f7f7",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#808080",
-    "fieldBg": "#ffffff",
-    "headerText": "#000000",
-    "headerTextWeak": "#151515"
-   },
-   "fieldStates": {
-    "focus": "#2f2f2f",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#808080",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#808080|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#a9a9a9",
-    "onAccent": "#111827",
-    "submitBg": "#808080",
-    "submitText": "#000000",
-    "pageBg": "#14161b",
-    "contentBg": "#1e222a",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#44484f",
-    "fieldBorderColor": "#878a8f",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#c8c8c8",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#808080",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#06b6d4|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#047183",
-    "onAccent": "#ffffff",
-    "submitBg": "#06b6d4",
-    "submitText": "#111827",
-    "pageBg": "#f5fcfd",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#023b44",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#06b6d4",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#06b6d4|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#047183",
-    "onAccent": "#ffffff",
-    "submitBg": "#06b6d4",
-    "submitText": "#111827",
-    "pageBg": "#f0fbfc",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#06b6d4",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#0f384a"
-   },
-   "fieldStates": {
-    "focus": "#023841",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#06b6d4",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#06b6d4|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#15bad7",
-    "onAccent": "#111827",
-    "submitBg": "#06b6d4",
-    "submitText": "#111827",
-    "pageBg": "#0b1b22",
-    "contentBg": "#152630",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#3d4b54",
-    "fieldBorderColor": "#838c92",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#77d7e8",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#06b6d4",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#7c3aed|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#7c3aed",
-    "onAccent": "#ffffff",
-    "submitBg": "#7c3aed",
-    "submitText": "#ffffff",
-    "pageBg": "#faf7fe",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#431f80",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#7c3aed",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#7c3aed|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#7a39e8",
-    "onAccent": "#ffffff",
-    "submitBg": "#7c3aed",
-    "submitText": "#ffffff",
-    "pageBg": "#f7f3fe",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#7c3aed",
-    "fieldBg": "#ffffff",
-    "headerText": "#ffffff",
-    "headerTextWeak": "#ece3fc"
-   },
-   "fieldStates": {
-    "focus": "#3f1e79",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#7c3aed",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#7c3aed|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#b895f5",
-    "onAccent": "#111827",
-    "submitBg": "#7c3aed",
-    "submitText": "#ffffff",
-    "pageBg": "#141124",
-    "contentBg": "#1e1d32",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#444456",
-    "fieldBorderColor": "#878894",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#d2bbf9",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#7c3aed",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#777777|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#696969",
-    "onAccent": "#ffffff",
-    "submitBg": "#777777",
-    "submitText": "#000000",
-    "pageBg": "#fafafa",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#303030",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#777777",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#777777|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#666666",
-    "onAccent": "#ffffff",
-    "submitBg": "#777777",
-    "submitText": "#000000",
-    "pageBg": "#f7f7f7",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#777777",
-    "fieldBg": "#ffffff",
-    "headerText": "#000000",
-    "headerTextWeak": "#030303"
-   },
-   "fieldStates": {
-    "focus": "#2f2f2f",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#777777",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#777777|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#a8a8a8",
-    "onAccent": "#111827",
-    "submitBg": "#777777",
-    "submitText": "#000000",
-    "pageBg": "#14151a",
-    "contentBg": "#1e2129",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#44474e",
-    "fieldBorderColor": "#878a8f",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#c6c6c6",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#777777",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#ffffff|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#6b6b6b",
-    "onAccent": "#ffffff",
-    "submitBg": "#ffffff",
-    "submitText": "#111827",
-    "pageBg": "#ffffff",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#848689",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#333333",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#ffffff",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#ffffff|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#6b6b6b",
-    "onAccent": "#ffffff",
-    "submitBg": "#ffffff",
-    "submitText": "#111827",
-    "pageBg": "#ffffff",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#848689",
-    "headerBg": "#ffffff",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#414652"
-   },
-   "fieldStates": {
-    "focus": "#333333",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#ffffff",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#ffffff|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#ffffff",
-    "onAccent": "#111827",
-    "submitBg": "#ffffff",
-    "submitText": "#111827",
-    "pageBg": "#1f2025",
-    "contentBg": "#292c34",
-    "text": "#f1f5f9",
-    "textWeak": "#b3bcc9",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#4d5057",
-    "fieldBorderColor": "#93959a",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#ffffff",
-    "error": "#ffa49c",
-    "required": "#ffa49c"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#ffffff",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#000000|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#000000",
-    "onAccent": "#ffffff",
-    "submitBg": "#000000",
-    "submitText": "#ffffff",
-    "pageBg": "#f5f5f5",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#000000",
-    "error": "#ad2217",
-    "required": "#ad2217"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#000000",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#000000|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#000000",
-    "onAccent": "#ffffff",
-    "submitBg": "#000000",
-    "submitText": "#ffffff",
-    "pageBg": "#f0f0f0",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#7c7e81",
-    "headerBg": "#000000",
-    "fieldBg": "#ffffff",
-    "headerText": "#ffffff",
-    "headerTextWeak": "#cccccc"
-   },
-   "fieldStates": {
-    "focus": "#000000",
-    "error": "#a62016",
-    "required": "#a62016"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#000000",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#000000|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#9e9e9e",
-    "onAccent": "#111827",
-    "submitBg": "#000000",
-    "submitText": "#ffffff",
-    "pageBg": "#0a0c11",
-    "contentBg": "#14181f",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#3c4046",
-    "fieldBorderColor": "#7f8286",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#bdbdbd",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#000000",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#16a34a|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#107937",
-    "onAccent": "#ffffff",
-    "submitBg": "#16a34a",
-    "submitText": "#111827",
-    "pageBg": "#f6fbf8",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#083c1b",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#16a34a",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#16a34a|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#107535",
-    "onAccent": "#ffffff",
-    "submitBg": "#16a34a",
-    "submitText": "#111827",
-    "pageBg": "#f1f9f4",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#16a34a",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#12292b"
-   },
-   "fieldStates": {
-    "focus": "#083a1a",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#16a34a",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#16a34a|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#57bd7d",
-    "onAccent": "#111827",
-    "submitBg": "#16a34a",
-    "submitText": "#111827",
-    "pageBg": "#0c1916",
-    "contentBg": "#162525",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#3d4a4b",
-    "fieldBorderColor": "#838c8d",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#97d6ae",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#16a34a",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#ea580c|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#b24309",
-    "onAccent": "#ffffff",
-    "submitBg": "#ea580c",
-    "submitText": "#111827",
-    "pageBg": "#fef8f5",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#602405",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#ea580c",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#ea580c|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#b24309",
-    "onAccent": "#ffffff",
-    "submitBg": "#ea580c",
-    "submitText": "#111827",
-    "pageBg": "#fef5f0",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#ea580c",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#231d25"
-   },
-   "fieldStates": {
-    "focus": "#5d2305",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#ea580c",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#ea580c|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#f1915f",
-    "onAccent": "#111827",
-    "submitBg": "#ea580c",
-    "submitText": "#111827",
-    "pageBg": "#1d1312",
-    "contentBg": "#271f20",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#4b4647",
-    "fieldBorderColor": "#8c898a",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#f6bb9c",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#ea580c",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#f472b6|clean": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#a14b78",
-    "onAccent": "#ffffff",
-    "submitBg": "#f472b6",
-    "submitText": "#111827",
-    "pageBg": "#fff9fc",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#50253c",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#f472b6",
-    "style": "clean"
-   },
-   "typography": "system"
-  },
-  "#f472b6|boldHeader": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "boldHeader",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#a14b78",
-    "onAccent": "#ffffff",
-    "submitBg": "#f472b6",
-    "submitText": "#111827",
-    "pageBg": "#fef7fb",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "#f472b6",
-    "fieldBg": "#ffffff",
-    "headerText": "#111827",
-    "headerTextWeak": "#3e2a44"
-   },
-   "fieldStates": {
-    "focus": "#50253c",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#f472b6",
-    "style": "boldHeader"
-   },
-   "typography": "system"
-  },
-  "#f472b6|dark": {
-   "name": "Brand theme",
-   "tags": [
-    "brand",
-    "dark",
-    "dark"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#f686c0",
-    "onAccent": "#111827",
-    "submitBg": "#f472b6",
-    "submitText": "#111827",
-    "pageBg": "#1e151f",
-    "contentBg": "#28212e",
-    "text": "#f1f5f9",
-    "textWeak": "#aab4c3",
-    "labelColor": "#f1f5f9",
-    "borderColor": "#4c4753",
-    "fieldBorderColor": "#8c8a91",
-    "headerBg": "transparent"
-   },
-   "fieldStates": {
-    "focus": "#fab6d9",
-    "error": "#ff8a80",
-    "required": "#ff8a80"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "floating",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#f472b6",
-    "style": "dark"
-   },
-   "typography": "system"
-  },
-  "#e11d48|clean|fonts": {
-   "name": "Acme brand",
-   "tags": [
-    "brand",
-    "clean",
-    "light"
-   ],
-   "layout": "classic",
-   "palette": {
-    "accent": "#cb1a41",
-    "onAccent": "#ffffff",
-    "submitBg": "#e11d48",
-    "submitText": "#ffffff",
-    "pageBg": "#fef6f8",
-    "contentBg": "#ffffff",
-    "text": "#1f2937",
-    "textWeak": "#4b5563",
-    "labelColor": "#1f2937",
-    "borderColor": "#d7d8db",
-    "fieldBorderColor": "#808285",
-    "headerBg": "transparent",
-    "fieldBg": "#ffffff"
-   },
-   "fieldStates": {
-    "focus": "#7e1028",
-    "error": "#b42318",
-    "required": "#b42318"
-   },
-   "radius": "soft",
-   "border": "hairline",
-   "density": "comfortable",
-   "effects": {
-    "shadow": "soft",
-    "glass": false,
-    "texture": null,
-    "mesh": null
-   },
-   "brand": {
-    "color": "#e11d48",
-    "style": "clean"
-   },
-   "fonts": {
-    "pairing": "editorialSerif"
-   }
+  "capturedFrom": "origin/main after PR 402 (before B3)",
+  "recipes": {
+    "#e11d48|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#cb1a41",
+        "onAccent": "#ffffff",
+        "submitBg": "#e11d48",
+        "submitText": "#ffffff",
+        "pageBg": "#fef6f8",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#7e1028",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#e11d48",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#e11d48|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#c61a3f",
+        "onAccent": "#ffffff",
+        "submitBg": "#e11d48",
+        "submitText": "#ffffff",
+        "pageBg": "#fdf1f4",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#7c7e81",
+        "headerBg": "#e11d48",
+        "fieldBg": "#ffffff",
+        "headerText": "#ffffff",
+        "headerTextWeak": "#fffcfd"
+      },
+      "fieldStates": {
+        "focus": "#7b1027",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#e11d48",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#e11d48|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#ef859c",
+        "onAccent": "#111827",
+        "submitBg": "#e11d48",
+        "submitText": "#ffffff",
+        "pageBg": "#1c0e16",
+        "contentBg": "#261a25",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#4b414b",
+        "fieldBorderColor": "#88838a",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#f5b1c0",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#e11d48",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#fbbf24|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#836313",
+        "onAccent": "#ffffff",
+        "submitBg": "#fbbf24",
+        "submitText": "#111827",
+        "pageBg": "#fffcf6",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#848689",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#3f3009",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#fbbf24",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#fbbf24|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#836313",
+        "onAccent": "#ffffff",
+        "submitBg": "#fbbf24",
+        "submitText": "#111827",
+        "pageBg": "#fffbf2",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#fbbf24",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#403926"
+      },
+      "fieldStates": {
+        "focus": "#413109",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#fbbf24",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#fbbf24|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#fbbf24",
+        "onAccent": "#111827",
+        "submitBg": "#fbbf24",
+        "submitText": "#111827",
+        "pageBg": "#1e1b13",
+        "contentBg": "#282722",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#4c4c49",
+        "fieldBorderColor": "#8f908f",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#fbc73e",
+        "error": "#ff8f85",
+        "required": "#ff8f85"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#fbbf24",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#84cc16|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#4a720c",
+        "onAccent": "#ffffff",
+        "submitBg": "#84cc16",
+        "submitText": "#111827",
+        "pageBg": "#fafdf6",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#848689",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#253906",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#84cc16",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#84cc16|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#4a720c",
+        "onAccent": "#ffffff",
+        "submitBg": "#84cc16",
+        "submitText": "#111827",
+        "pageBg": "#f8fcf1",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#84cc16",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#283c24"
+      },
+      "fieldStates": {
+        "focus": "#243706",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#84cc16",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#84cc16|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#84cc16",
+        "onAccent": "#111827",
+        "submitBg": "#84cc16",
+        "submitText": "#111827",
+        "pageBg": "#151c12",
+        "contentBg": "#1f2821",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#454d48",
+        "fieldBorderColor": "#8b918e",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#abdc61",
+        "error": "#ff8f85",
+        "required": "#ff8f85"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#84cc16",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#fafafa|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#696969",
+        "onAccent": "#ffffff",
+        "submitBg": "#fafafa",
+        "submitText": "#111827",
+        "pageBg": "#ffffff",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#848689",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#323232",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#fafafa",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#fafafa|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#696969",
+        "onAccent": "#ffffff",
+        "submitBg": "#fafafa",
+        "submitText": "#111827",
+        "pageBg": "#ffffff",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#848689",
+        "headerBg": "#fafafa",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#404551"
+      },
+      "fieldStates": {
+        "focus": "#323232",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#fafafa",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#fafafa|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#fafafa",
+        "onAccent": "#111827",
+        "submitBg": "#fafafa",
+        "submitText": "#111827",
+        "pageBg": "#1e2025",
+        "contentBg": "#282c33",
+        "text": "#f1f5f9",
+        "textWeak": "#b1bac8",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#4c5057",
+        "fieldBorderColor": "#93959a",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#fafafa",
+        "error": "#ffa199",
+        "required": "#ffa199"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#fafafa",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#0a0a0a|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#0a0a0a",
+        "onAccent": "#ffffff",
+        "submitBg": "#0a0a0a",
+        "submitText": "#ffffff",
+        "pageBg": "#f5f5f5",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#0a0a0a",
+        "error": "#ad2217",
+        "required": "#ad2217"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#0a0a0a",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#0a0a0a|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#0a0a0a",
+        "onAccent": "#ffffff",
+        "submitBg": "#0a0a0a",
+        "submitText": "#ffffff",
+        "pageBg": "#f0f0f0",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#7c7e81",
+        "headerBg": "#0a0a0a",
+        "fieldBg": "#ffffff",
+        "headerText": "#ffffff",
+        "headerTextWeak": "#cecece"
+      },
+      "fieldStates": {
+        "focus": "#0a0a0a",
+        "error": "#a92117",
+        "required": "#a92117"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#0a0a0a",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#0a0a0a|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#a2a2a2",
+        "onAccent": "#111827",
+        "submitBg": "#0a0a0a",
+        "submitText": "#ffffff",
+        "pageBg": "#0b0d11",
+        "contentBg": "#151920",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#3d4147",
+        "fieldBorderColor": "#7f8287",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#bebebe",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#0a0a0a",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#1e3a8a|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#1e3a8a",
+        "onAccent": "#ffffff",
+        "submitBg": "#1e3a8a",
+        "submitText": "#ffffff",
+        "pageBg": "#f6f7fa",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#182e6e",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#1e3a8a",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#1e3a8a|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#1e3a8a",
+        "onAccent": "#ffffff",
+        "submitBg": "#1e3a8a",
+        "submitText": "#ffffff",
+        "pageBg": "#f2f3f8",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#7c7e81",
+        "headerBg": "#1e3a8a",
+        "fieldBg": "#ffffff",
+        "headerText": "#ffffff",
+        "headerTextWeak": "#d2d8e8"
+      },
+      "fieldStates": {
+        "focus": "#182e6e",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#1e3a8a",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#1e3a8a|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#98a4c9",
+        "onAccent": "#111827",
+        "submitBg": "#1e3a8a",
+        "submitText": "#ffffff",
+        "pageBg": "#0d111c",
+        "contentBg": "#171d2a",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#3e444f",
+        "fieldBorderColor": "#80858c",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#b9c1da",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#1e3a8a",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#808080|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#696969",
+        "onAccent": "#ffffff",
+        "submitBg": "#808080",
+        "submitText": "#000000",
+        "pageBg": "#fafafa",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#303030",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#808080",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#808080|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#666666",
+        "onAccent": "#ffffff",
+        "submitBg": "#808080",
+        "submitText": "#000000",
+        "pageBg": "#f7f7f7",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#808080",
+        "fieldBg": "#ffffff",
+        "headerText": "#000000",
+        "headerTextWeak": "#151515"
+      },
+      "fieldStates": {
+        "focus": "#2f2f2f",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#808080",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#808080|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#a9a9a9",
+        "onAccent": "#111827",
+        "submitBg": "#808080",
+        "submitText": "#000000",
+        "pageBg": "#14161b",
+        "contentBg": "#1e222a",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#44484f",
+        "fieldBorderColor": "#878a8f",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#c8c8c8",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#808080",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#06b6d4|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#047183",
+        "onAccent": "#ffffff",
+        "submitBg": "#06b6d4",
+        "submitText": "#111827",
+        "pageBg": "#f5fcfd",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#023b44",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#06b6d4",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#06b6d4|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#047183",
+        "onAccent": "#ffffff",
+        "submitBg": "#06b6d4",
+        "submitText": "#111827",
+        "pageBg": "#f0fbfc",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#06b6d4",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#0f384a"
+      },
+      "fieldStates": {
+        "focus": "#023841",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#06b6d4",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#06b6d4|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#15bad7",
+        "onAccent": "#111827",
+        "submitBg": "#06b6d4",
+        "submitText": "#111827",
+        "pageBg": "#0b1b22",
+        "contentBg": "#152630",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#3d4b54",
+        "fieldBorderColor": "#838c92",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#77d7e8",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#06b6d4",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#7c3aed|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#7c3aed",
+        "onAccent": "#ffffff",
+        "submitBg": "#7c3aed",
+        "submitText": "#ffffff",
+        "pageBg": "#faf7fe",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#431f80",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#7c3aed",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#7c3aed|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#7a39e8",
+        "onAccent": "#ffffff",
+        "submitBg": "#7c3aed",
+        "submitText": "#ffffff",
+        "pageBg": "#f7f3fe",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#7c3aed",
+        "fieldBg": "#ffffff",
+        "headerText": "#ffffff",
+        "headerTextWeak": "#ece3fc"
+      },
+      "fieldStates": {
+        "focus": "#3f1e79",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#7c3aed",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#7c3aed|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#b895f5",
+        "onAccent": "#111827",
+        "submitBg": "#7c3aed",
+        "submitText": "#ffffff",
+        "pageBg": "#141124",
+        "contentBg": "#1e1d32",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#444456",
+        "fieldBorderColor": "#878894",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#d2bbf9",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#7c3aed",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#777777|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#696969",
+        "onAccent": "#ffffff",
+        "submitBg": "#777777",
+        "submitText": "#000000",
+        "pageBg": "#fafafa",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#303030",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#777777",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#777777|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#666666",
+        "onAccent": "#ffffff",
+        "submitBg": "#777777",
+        "submitText": "#000000",
+        "pageBg": "#f7f7f7",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#777777",
+        "fieldBg": "#ffffff",
+        "headerText": "#000000",
+        "headerTextWeak": "#030303"
+      },
+      "fieldStates": {
+        "focus": "#2f2f2f",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#777777",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#777777|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#a8a8a8",
+        "onAccent": "#111827",
+        "submitBg": "#777777",
+        "submitText": "#000000",
+        "pageBg": "#14151a",
+        "contentBg": "#1e2129",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#44474e",
+        "fieldBorderColor": "#878a8f",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#c6c6c6",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#777777",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#ffffff|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#6b6b6b",
+        "onAccent": "#ffffff",
+        "submitBg": "#ffffff",
+        "submitText": "#111827",
+        "pageBg": "#ffffff",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#848689",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#333333",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#ffffff",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#ffffff|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#6b6b6b",
+        "onAccent": "#ffffff",
+        "submitBg": "#ffffff",
+        "submitText": "#111827",
+        "pageBg": "#ffffff",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#848689",
+        "headerBg": "#ffffff",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#414652"
+      },
+      "fieldStates": {
+        "focus": "#333333",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#ffffff",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#ffffff|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#ffffff",
+        "onAccent": "#111827",
+        "submitBg": "#ffffff",
+        "submitText": "#111827",
+        "pageBg": "#1f2025",
+        "contentBg": "#292c34",
+        "text": "#f1f5f9",
+        "textWeak": "#b3bcc9",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#4d5057",
+        "fieldBorderColor": "#93959a",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#ffffff",
+        "error": "#ffa49c",
+        "required": "#ffa49c"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#ffffff",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#000000|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#000000",
+        "onAccent": "#ffffff",
+        "submitBg": "#000000",
+        "submitText": "#ffffff",
+        "pageBg": "#f5f5f5",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#000000",
+        "error": "#ad2217",
+        "required": "#ad2217"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#000000",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#000000|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#000000",
+        "onAccent": "#ffffff",
+        "submitBg": "#000000",
+        "submitText": "#ffffff",
+        "pageBg": "#f0f0f0",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#7c7e81",
+        "headerBg": "#000000",
+        "fieldBg": "#ffffff",
+        "headerText": "#ffffff",
+        "headerTextWeak": "#cccccc"
+      },
+      "fieldStates": {
+        "focus": "#000000",
+        "error": "#a62016",
+        "required": "#a62016"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#000000",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#000000|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#9e9e9e",
+        "onAccent": "#111827",
+        "submitBg": "#000000",
+        "submitText": "#ffffff",
+        "pageBg": "#0a0c11",
+        "contentBg": "#14181f",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#3c4046",
+        "fieldBorderColor": "#7f8286",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#bdbdbd",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#000000",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#16a34a|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#107937",
+        "onAccent": "#ffffff",
+        "submitBg": "#16a34a",
+        "submitText": "#111827",
+        "pageBg": "#f6fbf8",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#083c1b",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#16a34a",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#16a34a|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#107535",
+        "onAccent": "#ffffff",
+        "submitBg": "#16a34a",
+        "submitText": "#111827",
+        "pageBg": "#f1f9f4",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#16a34a",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#12292b"
+      },
+      "fieldStates": {
+        "focus": "#083a1a",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#16a34a",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#16a34a|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#57bd7d",
+        "onAccent": "#111827",
+        "submitBg": "#16a34a",
+        "submitText": "#111827",
+        "pageBg": "#0c1916",
+        "contentBg": "#162525",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#3d4a4b",
+        "fieldBorderColor": "#838c8d",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#97d6ae",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#16a34a",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#ea580c|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#b24309",
+        "onAccent": "#ffffff",
+        "submitBg": "#ea580c",
+        "submitText": "#111827",
+        "pageBg": "#fef8f5",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#602405",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#ea580c",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#ea580c|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#b24309",
+        "onAccent": "#ffffff",
+        "submitBg": "#ea580c",
+        "submitText": "#111827",
+        "pageBg": "#fef5f0",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#ea580c",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#231d25"
+      },
+      "fieldStates": {
+        "focus": "#5d2305",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#ea580c",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#ea580c|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#f1915f",
+        "onAccent": "#111827",
+        "submitBg": "#ea580c",
+        "submitText": "#111827",
+        "pageBg": "#1d1312",
+        "contentBg": "#271f20",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#4b4647",
+        "fieldBorderColor": "#8c898a",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#f6bb9c",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#ea580c",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#f472b6|clean": {
+      "name": "Brand theme",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#a14b78",
+        "onAccent": "#ffffff",
+        "submitBg": "#f472b6",
+        "submitText": "#111827",
+        "pageBg": "#fff9fc",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#50253c",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#f472b6",
+        "style": "clean"
+      },
+      "typography": "system"
+    },
+    "#f472b6|boldHeader": {
+      "name": "Brand theme",
+      "tags": ["brand", "boldHeader", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#a14b78",
+        "onAccent": "#ffffff",
+        "submitBg": "#f472b6",
+        "submitText": "#111827",
+        "pageBg": "#fef7fb",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "#f472b6",
+        "fieldBg": "#ffffff",
+        "headerText": "#111827",
+        "headerTextWeak": "#3e2a44"
+      },
+      "fieldStates": {
+        "focus": "#50253c",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#f472b6",
+        "style": "boldHeader"
+      },
+      "typography": "system"
+    },
+    "#f472b6|dark": {
+      "name": "Brand theme",
+      "tags": ["brand", "dark", "dark"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#f686c0",
+        "onAccent": "#111827",
+        "submitBg": "#f472b6",
+        "submitText": "#111827",
+        "pageBg": "#1e151f",
+        "contentBg": "#28212e",
+        "text": "#f1f5f9",
+        "textWeak": "#aab4c3",
+        "labelColor": "#f1f5f9",
+        "borderColor": "#4c4753",
+        "fieldBorderColor": "#8c8a91",
+        "headerBg": "transparent"
+      },
+      "fieldStates": {
+        "focus": "#fab6d9",
+        "error": "#ff8a80",
+        "required": "#ff8a80"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "floating",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#f472b6",
+        "style": "dark"
+      },
+      "typography": "system"
+    },
+    "#e11d48|clean|fonts": {
+      "name": "Acme brand",
+      "tags": ["brand", "clean", "light"],
+      "layout": "classic",
+      "palette": {
+        "accent": "#cb1a41",
+        "onAccent": "#ffffff",
+        "submitBg": "#e11d48",
+        "submitText": "#ffffff",
+        "pageBg": "#fef6f8",
+        "contentBg": "#ffffff",
+        "text": "#1f2937",
+        "textWeak": "#4b5563",
+        "labelColor": "#1f2937",
+        "borderColor": "#d7d8db",
+        "fieldBorderColor": "#808285",
+        "headerBg": "transparent",
+        "fieldBg": "#ffffff"
+      },
+      "fieldStates": {
+        "focus": "#7e1028",
+        "error": "#b42318",
+        "required": "#b42318"
+      },
+      "radius": "soft",
+      "border": "hairline",
+      "density": "comfortable",
+      "effects": {
+        "shadow": "soft",
+        "glass": false,
+        "texture": null,
+        "mesh": null
+      },
+      "brand": {
+        "color": "#e11d48",
+        "style": "clean"
+      },
+      "fonts": {
+        "pairing": "editorialSerif"
+      }
+    }
   }
- }
 }

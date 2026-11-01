@@ -407,6 +407,37 @@ describe('c-final-theme-editor', () => {
         expect(q(el, '.te-readable').classList).toContain('te-readable--bad');
     });
 
+    it('a passing theme with a gradient says it was sampled, a solid one says everywhere', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await pick(el, 'palette.textWeak', '#d4d6da');
+        q(el, '.te-fix').click();
+        await flush();
+        expect(q(el, '.te-readable').textContent).toContain(
+            'Readable everywhere'
+        );
+        getCustomTheme.mockResolvedValueOnce(
+            JSON.stringify({
+                ...getBuiltinTheme('nordic'),
+                palette: {
+                    ...getBuiltinTheme('nordic').palette,
+                    headerBgGradient: { start: '#1e3a8a', end: '#0f172a' },
+                    headerText: '#ffffff',
+                    headerTextWeak: '#e2e8f0'
+                }
+            })
+        );
+        document.body.removeChild(el);
+        const g = await mount({ themeId: 'a0AXX0000001', themeName: 'G' });
+        if (q(g, '.te-fix')) {
+            q(g, '.te-fix').click();
+            await flush();
+        }
+        expect(q(g, '.te-readable').classList).toContain('te-readable--ok');
+        expect(q(g, '.te-readable').textContent).toContain(
+            'Readable at every point we sampled'
+        );
+    });
+
     it('a theme with a page image is never called readable everywhere', async () => {
         getCustomTheme.mockResolvedValueOnce(
             JSON.stringify({

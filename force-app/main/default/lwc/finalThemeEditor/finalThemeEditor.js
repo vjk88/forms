@@ -15,7 +15,8 @@ import {
     buildBrandTheme,
     brandContrastReport,
     themeReadability,
-    fixReadability
+    fixReadability,
+    hasGradients
 } from 'c/finalBrandTheme';
 
 /**
@@ -722,6 +723,19 @@ export default class FinalThemeEditor extends LightningElement {
         return `te-readable te-readable--${this.readableState}`;
     }
 
+    /** Gradients are sampled, not proven: the green verdict says so. */
+    get readableTitle() {
+        return hasGradients(this._props || {})
+            ? 'Readable at every point we sampled'
+            : 'Readable everywhere';
+    }
+
+    get readableText() {
+        return hasGradients(this._props || {})
+            ? 'Text, buttons and focus outlines read at every point we sampled, including 11 points along each gradient.'
+            : 'All text, buttons and focus outlines stay readable on every background.';
+    }
+
     get readableOk() {
         return this.readableState === 'ok';
     }
@@ -736,7 +750,7 @@ export default class FinalThemeEditor extends LightningElement {
 
     /** What the screen reader hears when the verdict changes: one line. */
     get readableStatus() {
-        if (this.readableOk) return 'Readable everywhere.';
+        if (this.readableOk) return `${this.readableTitle}.`;
         if (this.readablePartial) {
             return `Readable where we could check. Not checked: ${this.notChecked}.`;
         }
