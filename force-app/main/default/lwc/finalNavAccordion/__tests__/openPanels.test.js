@@ -112,6 +112,43 @@ describe('Accordion keeps the panels the person opened', () => {
     });
 });
 
+describe('the Accordion switches still apply live in the Studio preview', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    // the layout survives an edit, and the pages setter keeps the panels
+    // now, so the switches must re-seed them themselves (UX review)
+    it('turning "First panel open" off closes the default panel', async () => {
+        const cmp = mount();
+        await flush();
+        expect(openIds(cmp)).toEqual(['p1']);
+        cmp.options = { firstPanelOpen: false };
+        await flush();
+        expect(openIds(cmp)).toEqual([]);
+    });
+
+    it('turning "Allow multiple" off collapses several open panels back to the default', async () => {
+        const cmp = mount({ allowMultiple: true });
+        await toggle(cmp, 'p2');
+        await toggle(cmp, 'p3');
+        expect(openIds(cmp)).toEqual(['p1', 'p2', 'p3']);
+        cmp.options = { allowMultiple: false };
+        await flush();
+        expect(openIds(cmp)).toEqual(['p1']);
+    });
+
+    it('an unrelated option change (icon side) leaves the panels alone', async () => {
+        const cmp = mount();
+        await toggle(cmp, 'p2');
+        cmp.options = { iconPosition: 'trailing' };
+        await flush();
+        expect(openIds(cmp)).toEqual(['p2']);
+    });
+});
+
 describe('Accordion opens the panel holding the jump target', () => {
     afterEach(() => {
         while (document.body.firstChild) {

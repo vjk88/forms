@@ -1396,19 +1396,35 @@ export default class FinalElementRenderer extends LightningElement {
                 break;
             }
         }
-        if (target && typeof target.focus === 'function') {
-            target.focus();
-        }
         const host = this.template.host;
-        if (host && typeof host.scrollIntoView === 'function') {
+        const glide = () => {
+            if (!host || typeof host.scrollIntoView !== 'function') {
+                return;
+            }
             const still =
                 typeof window !== 'undefined' &&
                 typeof window.matchMedia === 'function' &&
                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             host.scrollIntoView({
                 block: 'center',
+                inline: 'nearest',
                 behavior: still ? 'auto' : 'smooth'
             });
+        };
+        if (!target || typeof target.focus !== 'function') {
+            glide();
+            return;
+        }
+        // A plain control can take the cursor without scrolling, so the
+        // glide runs alone (no snap first). A base component's focus() takes
+        // no options and scrolls instantly — started after the glide it
+        // would cut it short at the nearest edge, so it goes first there.
+        if (target.tagName.includes('-')) {
+            target.focus();
+            glide();
+        } else {
+            glide();
+            target.focus({ preventScroll: true });
         }
     }
 

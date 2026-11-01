@@ -273,6 +273,42 @@ describe('Submit finds every problem, marked lookups included', () => {
         expect(line(el)).toBe('Fix 1 field to continue');
     });
 
+    it('a marked lookup that a rule hides no longer makes Submit do nothing at all', async () => {
+        const el = await mount(
+            SPEC('scroll', [
+                page('pg_1', [
+                    {
+                        id: 'el_a',
+                        type: 'field',
+                        label: 'Driver',
+                        render: { inputType: 'text' }
+                    },
+                    {
+                        id: 'el_look',
+                        type: 'field',
+                        label: 'Account',
+                        render: { inputType: 'text' },
+                        visibility: {
+                            action: 'show',
+                            logic: 'all',
+                            rules: [
+                                {
+                                    source: 'el_a',
+                                    operator: 'equals',
+                                    value: 'show'
+                                }
+                            ]
+                        }
+                    }
+                ])
+            ])
+        );
+        await markLookup(el);
+        await click(el, 'submit');
+        // hidden answers never leave the browser (#269), so it goes through
+        expect(deepQuery(el.shadowRoot, 'c-final-after-submit')).not.toBeNull();
+    });
+
     it('Accordion counts the whole form, like Scroll', async () => {
         const el = await mount(THREE('accordion'));
         await click(el, 'submit');

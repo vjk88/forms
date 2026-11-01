@@ -57,6 +57,7 @@ describe('the renderer takes the cursor for a blocked click', () => {
         );
         expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({
             block: 'center',
+            inline: 'nearest',
             behavior: 'smooth'
         });
     });
@@ -67,6 +68,7 @@ describe('the renderer takes the cursor for a blocked click', () => {
         await flush();
         expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({
             block: 'center',
+            inline: 'nearest',
             behavior: 'auto'
         });
     });
@@ -114,5 +116,33 @@ describe('the renderer takes the cursor for a blocked click', () => {
         const focused = focusSpy.mock.contexts || focusSpy.mock.instances;
         expect(focused.length).toBe(1);
         expect(cmp.shadowRoot.contains(focused[0])).toBe(true);
+    });
+
+    it('a plain control glides first, then takes the cursor without a second scroll (no snap)', async () => {
+        const order = [];
+        Element.prototype.scrollIntoView = jest.fn(() => order.push('glide'));
+        focusSpy.mockImplementation(() => order.push('focus'));
+        const cmp = mount({
+            id: 'el_file',
+            type: 'file',
+            label: 'Upload',
+            config: { accept: '.pdf' },
+            focusRequest: 5006
+        });
+        await flush();
+        const focused = focusSpy.mock.contexts || focusSpy.mock.instances;
+        expect(focused[0].tagName).toBe('BUTTON');
+        expect(cmp.shadowRoot.contains(focused[0])).toBe(true);
+        expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+        expect(order).toEqual(['glide', 'focus']);
+    });
+
+    it('a base component takes the cursor first, then the glide (its focus() cannot skip the scroll)', async () => {
+        const order = [];
+        Element.prototype.scrollIntoView = jest.fn(() => order.push('glide'));
+        focusSpy.mockImplementation(() => order.push('focus'));
+        mount(ELEMENT({ focusRequest: 5007 }));
+        await flush();
+        expect(order).toEqual(['focus', 'glide']);
     });
 });

@@ -2505,6 +2505,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._submitError) {
             return this._submitError;
         }
+        if (!this._revealed.length) {
+            return ''; // nothing blocked yet: skip the validation pass
+        }
         let count = 0;
         this._pagesInView(this.visiblePages).forEach((page) => {
             (page.sections || []).forEach((sec) => {
@@ -2727,9 +2730,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._requestFocus();
             return;
         }
-        if (this.hasStaleLookups) {
-            return; // a marked lookup no page shows: still never submitted
-        }
+        // A marked lookup that no page shows was hidden by a rule. Its answer
+        // never leaves the browser (_payload drops hidden answers, #269), so
+        // it is no reason to refuse — refusing here was a Submit that did
+        // nothing at all, with no line and no jump.
         if (this._submitting || this.isAutofillPending) {
             return; // one click, one record / wait for autofill to finish
         }

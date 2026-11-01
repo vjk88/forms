@@ -34,8 +34,27 @@ export default class FinalNavAccordion extends LightningElement {
     @api pageValidity = [];
     /** Spec layout.options: { allowMultiple, firstPanelOpen, iconPosition } —
      *  ALL PRODUCT-SET since 2026-07-18 (Design panel "Accordion" group,
-     *  sweep BUILD slice 1). */
-    @api options;
+     *  sweep BUILD slice 1). The layout survives an edit in the Studio, so a
+     *  change to "First panel open" or "Allow multiple" re-seeds the panels
+     *  here — the pages setter keeps them now, and used to be what applied
+     *  these switches live. */
+    _options;
+    @api
+    get options() {
+        return this._options;
+    }
+    set options(value) {
+        const before = this._options || {};
+        const after = value || {};
+        if (
+            this._options !== undefined &&
+            (before.firstPanelOpen !== after.firstPanelOpen ||
+                before.allowMultiple !== after.allowMultiple)
+        ) {
+            this._openKeys = undefined;
+        }
+        this._options = value;
+    }
 
     @track _openKeys;
     _pages = [];

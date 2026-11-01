@@ -1,6 +1,6 @@
 # Build plan: the error count by the Next / Submit button
 
-Status: plan, waiting for the owner's OK (2026-10-31). Nothing built. Revised the same day for two review rounds: round 1 (P1 Accordion, P2 stale lookups) and round 2 (P1 step-flow submit failures, P2 one fixed focus target, P2 Accordion keeps surviving panels). Each was checked against the code or the plan before the change.
+Status: BUILT 2026-10-31 on `feat/blocked-message`, verified in the dev org on the Studio preview, the Lightning viewer tab and the public site (desktop + 390 px). The pre-merge UX review found two should-fixes, both fixed in the same PR: a marked lookup now takes the cursor on its clear button (`finalLookup.focus()`), and the Accordion's "First panel open" / "Allow multiple" switches re-seed the panels live again. Also from the review: a plain control glides then focuses without a second scroll, a Submit is no longer refused by a marked lookup that a rule hides, and the line skips its pass until a click is blocked. Follow-up: DEFERRED 47. Revised the same day for two review rounds: round 1 (P1 Accordion, P2 stale lookups) and round 2 (P1 step-flow submit failures, P2 one fixed focus target, P2 Accordion keeps surviving panels). Each was checked against the code or the plan before the change.
 
 Owner rulings, 2026-10-31 (buttons in chat):
 
