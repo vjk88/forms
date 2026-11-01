@@ -148,6 +148,9 @@ export default class FinalThemeEditor extends LightningElement {
     @api themeId;
     /** Built-in key to fork from when creating (default editorialIvory). */
     @api startFrom;
+    /** The saved theme's name (edit only): the record JSON doesn't carry it,
+     *  so without this Save stayed disabled until the name was retyped. */
+    @api themeName;
 
     @track name = '';
     @track baseKey = '';
@@ -167,6 +170,7 @@ export default class FinalThemeEditor extends LightningElement {
                 this.uploadedFonts = [];
             });
         if (this.themeId) {
+            this.name = this.themeName || '';
             getCustomTheme({ themeId: this.themeId })
                 .then((json) => {
                     this._props = JSON.parse(json);
