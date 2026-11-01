@@ -126,6 +126,11 @@ describe('c-final-design-panel', () => {
         it('search is offered in Simple too, and a pick lands in Advanced on its tab', async () => {
             const el = mount();
             expect(searchEntries(el)).toHaveLength(flattenControls().length);
+            // the list says a pick will switch to Advanced design
+            expect(
+                el.shadowRoot.querySelector('c-final-design-search')
+                    .opensAdvanced
+            ).toBe(true);
             el.shadowRoot.querySelector('c-final-design-search').dispatchEvent(
                 new CustomEvent('settingselect', {
                     detail: { key: 'labelColor' }

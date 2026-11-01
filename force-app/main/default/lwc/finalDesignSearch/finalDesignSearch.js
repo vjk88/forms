@@ -40,6 +40,8 @@ function normalize(value) {
 export default class FinalDesignSearch extends LightningElement {
     @api entries = [];
     @api disabled = false;
+    /** In Simple: a pick switches to Advanced design, so the list says so. */
+    @api opensAdvanced = false;
     query = '';
     searchOpen = false;
     _focusResult = false;
@@ -99,9 +101,13 @@ export default class FinalDesignSearch extends LightningElement {
 
     get resultSummary() {
         const count = this.matches.length;
-        return count > LIMIT
-            ? `Showing ${LIMIT} of ${count} settings. Refine your search for more.`
-            : `${count} matching setting${count === 1 ? '' : 's'}.`;
+        const found =
+            count > LIMIT
+                ? `Showing ${LIMIT} of ${count} settings. Refine your search for more.`
+                : `${count} matching setting${count === 1 ? '' : 's'}.`;
+        return this.opensAdvanced && count
+            ? `${found} Picking one opens Advanced design.`
+            : found;
     }
 
     renderedCallback() {

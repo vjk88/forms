@@ -129,6 +129,19 @@ it('closes results when focus leaves the search, but not when it moves to a resu
     expect(el.shadowRoot.querySelector('.ds-results')).not.toBeNull();
 });
 
+it('in Simple, the list says a pick opens Advanced design', async () => {
+    const el = mount();
+    await search(el, 'corner');
+    expect(
+        el.shadowRoot.querySelector('.ds-summary').textContent
+    ).not.toContain('Advanced');
+    el.opensAdvanced = true;
+    await flush();
+    expect(el.shadowRoot.querySelector('.ds-summary').textContent).toContain(
+        'Picking one opens Advanced design.'
+    );
+});
+
 it('shows no matches, and a disabled search navigates nowhere', async () => {
     const el = mount();
     await search(el, 'no-such-setting');
