@@ -11,6 +11,7 @@ import { resolveTokens, resolveFontRefs } from 'c/finalThemeEngine';
 import { applyFontPatch } from 'c/finalFontChoices';
 import { previewSettings } from 'c/finalLayoutRegistry';
 import { logoForUpload } from 'c/finalBrandColors';
+import { mix } from 'c/finalReadableText';
 import {
     buildBrandTheme,
     brandContrastReport,
@@ -654,6 +655,12 @@ export default class FinalThemeEditor extends LightningElement {
         else if (!isHex(value)) mode = translucent ? 'translucent' : 'none';
         return {
             mode,
+            // the engine hid this panel gradient behind a solid backing so
+            // text stays readable: say so, or the control looks broken
+            backingHides:
+                mode === 'gradient' &&
+                this.tokens['--c-card-backing-image'] === 'none' &&
+                gradient === getAt(this._props, 'palette.contentBgGradient'),
             showControl: mode === 'solid' || mode === 'gradient',
             isNone: mode === 'none',
             isTranslucent: mode === 'translucent',
@@ -683,7 +690,19 @@ export default class FinalThemeEditor extends LightningElement {
      *  gradient never rewrites a saved see-through solid. */
     handleGradient(event) {
         const { path, gradientPath } = event.target.dataset;
-        const { solid, gradient } = event.detail;
+        const { solid } = event.detail;
+        let { gradient } = event.detail;
+        // a panel gradient switched on with the control's own dark default
+        // would sit under text, so the engine backs it with a solid card and
+        // nothing seems to happen: start the panel gently instead
+        if (
+            gradient &&
+            gradientPath === 'palette.contentBgGradient' &&
+            !isGradient(getAt(this._props, gradientPath)) &&
+            gradient.end === GRADIENT_END
+        ) {
+            gradient = { ...gradient, end: this._gentleEnd(gradient.start) };
+        }
         const saved = getAt(this._props, path);
         const keepSaved =
             !isHex(saved) && gradient && solid === this._seedHex();
@@ -702,12 +721,23 @@ export default class FinalThemeEditor extends LightningElement {
 
     handleAddGradient(event) {
         const { path, gradientPath } = event.currentTarget.dataset;
+        const start = this._seedHex();
         this._setFill(path, gradientPath, undefined, {
             type: 'linear',
             angle: 135,
-            start: this._seedHex(),
-            end: GRADIENT_END
+            start,
+            end:
+                gradientPath === 'palette.contentBgGradient'
+                    ? this._gentleEnd(start)
+                    : GRADIENT_END
         });
+    }
+
+    /** A panel gradient's second colour that text still reads on: the
+     *  start with a light touch (15%) of the accent. */
+    _gentleEnd(start) {
+        const accent = this.tokens['--c-accent'];
+        return isHex(accent) && isHex(start) ? mix(accent, start, 0.15) : start;
     }
 
     /** Back to see-through: the starting point's own non-hex value, else

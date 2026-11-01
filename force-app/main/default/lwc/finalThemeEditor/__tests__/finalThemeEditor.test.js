@@ -6,6 +6,7 @@ import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { getBuiltinTheme } from 'c/finalThemeCatalog';
 import { buildBrandTheme } from 'c/finalBrandTheme';
+import { resolveTokens } from 'c/finalThemeEngine';
 
 // The ONE theme dialog (IMPL_PLAN_THEME_CREATOR): theme editor + "Create from
 // your brand" merged. The brand dialog's save/upload tests moved here.
@@ -579,6 +580,41 @@ describe('c-final-theme-editor', () => {
         await flush();
         expect(header().textContent).toContain('None (see-through)');
         expect(header().textContent).not.toContain('Changed by you');
+    });
+
+    it('a panel gradient starts gently, so the engine keeps showing it', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await fill(el, 'palette.contentBg', '#ffffff', {
+            type: 'linear',
+            angle: 135,
+            start: '#ffffff',
+            end: '#064e3b'
+        });
+        const g = preview(el).palette.contentBgGradient;
+        expect(g.end).not.toBe('#064e3b');
+        expect(resolveTokens(preview(el), null)['--c-card-backing-image']).toBe(
+            undefined
+        );
+        expect(
+            row(el, 'palette.contentBg').querySelector('.te-backing-note')
+        ).toBeNull();
+    });
+
+    it('a dark panel gradient hidden behind the backing says so', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await fill(el, 'palette.contentBg', '#ffffff', {
+            type: 'linear',
+            angle: 135,
+            start: '#ffffff',
+            end: '#000000'
+        });
+        expect(resolveTokens(preview(el), null)['--c-card-backing-image']).toBe(
+            'none'
+        );
+        expect(
+            row(el, 'palette.contentBg').querySelector('.te-backing-note')
+                .textContent
+        ).toContain('Hidden behind a solid backing');
     });
 
     it('Make see-through turns a fill back to see-through', async () => {

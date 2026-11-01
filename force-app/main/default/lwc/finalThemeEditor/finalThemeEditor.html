@@ -198,6 +198,18 @@
                                                     >
                                                         Make see-through
                                                     </button>
+                                                    <template
+                                                        lwc:if={c.backingHides}
+                                                    >
+                                                        <p
+                                                            class="te-hint te-backing-note"
+                                                        >
+                                                            Hidden behind a
+                                                            solid backing so
+                                                            text stays readable.
+                                                            Try lighter colors.
+                                                        </p>
+                                                    </template>
                                                 </template>
                                                 <template lwc:else>
                                                     <div class="te-none">
