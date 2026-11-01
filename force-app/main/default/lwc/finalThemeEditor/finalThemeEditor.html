@@ -53,7 +53,7 @@
                             <template lwc:if={confirmRebuild}>
                                 <div class="te-rebuild" role="alert">
                                     <p>
-                                        This recalculates every colour and
+                                        This recalculates every color and
                                         setting from {confirmRebuildLabel}.
                                         Settings you change after this are kept.
                                     </p>
@@ -122,9 +122,9 @@
                     </section>
 
                     <section class="te-step" aria-labelledby="te-colors-h">
-                        <h2 id="te-colors-h" class="te-h">Colours</h2>
+                        <h2 id="te-colors-h" class="te-h">Colors</h2>
                         <p class="te-hint">
-                            All 18 colours this theme sets. “Automatic” ones
+                            All 18 colors this theme sets. “Automatic” ones
                             follow the others until you change them.
                         </p>
                         <template for:each={colorGroups} for:item="g">
@@ -136,12 +136,24 @@
                                             key={c.key}
                                             class="te-crow"
                                             data-row={c.path}
+                                            role="group"
+                                            aria-label={c.groupLabel}
                                         >
                                             <div class="te-crow-top">
                                                 <template lwc:if={c.flagged}>
-                                                    <span class="te-flag"
-                                                        >{c.flagText}</span
+                                                    <button
+                                                        type="button"
+                                                        class="te-flag"
+                                                        title={c.flagWhere}
+                                                        onclick={handleFlag}
                                                     >
+                                                        {c.flagText}
+                                                        <span
+                                                            class="slds-assistive-text"
+                                                            >{c.flagWhere}. Go
+                                                            to Fix for me</span
+                                                        >
+                                                    </button>
                                                 </template>
                                                 <template lwc:if={c.pinned}>
                                                     <span class="te-pin"
@@ -254,7 +266,10 @@
                         </div>
                     </section>
 
-                    <section class={readableClass} aria-live="polite">
+                    <p class="slds-assistive-text" role="status">
+                        {readableStatus}
+                    </p>
+                    <section class={readableClass}>
                         <template lwc:if={readableOk}>
                             <h2 class="te-h">Readable everywhere</h2>
                             <p>
@@ -294,7 +309,7 @@
                                     Fix for me
                                 </button>
                                 <span class="te-hint"
-                                    >Nudges just these colours until they pass,
+                                    >Nudges just these colors until they pass,
                                     where that’s possible. You can still save as
                                     is.</span
                                 >
@@ -316,7 +331,7 @@
                     <c-final-theme-card
                         theme-props={previewProps}
                         label={previewLabel}
-                        description="This theme"
+                        description={previewDescription}
                         layout={layout}
                         pane-flow={paneFlow}
                         full-bleed={previewFullBleed}
@@ -326,7 +341,7 @@
                         picture={yes}
                         accent-sample={yes}
                     ></c-final-theme-card>
-                    <h3 class="te-sub">What each colour paints</h3>
+                    <h3 class="te-sub">What each color paints</h3>
                     <ul class="te-roles">
                         <template for:each={colorRoles} for:item="r">
                             <li key={r.key} class="te-role">

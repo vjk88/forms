@@ -5,7 +5,7 @@
                 Your logo&nbsp;<span class="bd-opt">(optional)</span>
             </h3>
             <p class="bd-hint">
-                We suggest colours from it. PNG, JPG, GIF or WebP, up to 5 MB.
+                We suggest colors from it. PNG, JPG, GIF or WebP, up to 5 MB.
             </p>
             <div class="bd-row">
                 <button
@@ -42,7 +42,7 @@
                 <div
                     class="bd-swatches"
                     role="group"
-                    aria-label="Colours from your logo"
+                    aria-label="Colors from your logo"
                     aria-describedby="bd-second-hint"
                 >
                     <template for:each={swatches} for:item="s">
@@ -71,8 +71,8 @@
             </template>
             <template lwc:if={noSuggestions}>
                 <p class="bd-hint">
-                    No clear colours in that logo (it may be black, white or
-                    grey). Pick your main colour below.
+                    No clear colors in that logo (it may be black, white or
+                    grey). Pick your main color below.
                 </p>
             </template>
             <template lwc:if={hasLogo}>
@@ -91,17 +91,17 @@
         </section>
 
         <section class="bd-step" aria-labelledby="bd-color-h">
-            <h3 id="bd-color-h" class="bd-h">Your colours</h3>
+            <h3 id="bd-color-h" class="bd-h">Your colors</h3>
             <div class="bd-row">
                 <input
                     class={pickerClass}
                     type="color"
-                    aria-label="Pick the main colour"
+                    aria-label="Pick the main color"
                     value={pickerValue}
                     oninput={handleColorPicker}
                 />
                 <label class="bd-hexlabel">
-                    <span class="bd-colorname">Main colour</span>
+                    <span class="bd-colorname">Main color</span>
                     <input
                         class="bd-hex"
                         type="text"
@@ -121,13 +121,13 @@
                 <input
                     class={secondPickerClass}
                     type="color"
-                    aria-label="Pick the second colour"
+                    aria-label="Pick the second color"
                     value={secondPickerValue}
                     oninput={handleSecondPicker}
                 />
                 <label class="bd-hexlabel">
                     <span class="bd-colorname"
-                        >Second colour&nbsp;<span class="bd-opt"
+                        >Second color&nbsp;<span class="bd-opt"
                             >(optional)</span
                         ></span
                     >
@@ -146,7 +146,7 @@
                     <button
                         type="button"
                         class="bd-link bd-clear"
-                        aria-label="Clear the second colour"
+                        aria-label="Clear the second color"
                         onclick={handleSecondClear}
                     >
                         Clear
@@ -158,7 +158,7 @@
             </p>
             <template lwc:if={sameAsMain}>
                 <p class="bd-hint bd-same">
-                    Same as your main colour. Pick another, or leave it empty.
+                    Same as your main color. Pick another, or leave it empty.
                 </p>
             </template>
             <p class="bd-sr" role="status" aria-live="polite">{announce}</p>
@@ -198,7 +198,7 @@
                 </div>
             </template>
             <template lwc:else>
-                <p class="bd-hint">Pick a colour to see the styles.</p>
+                <p class="bd-hint">Pick a color to see the styles.</p>
             </template>
         </section>
     </div>

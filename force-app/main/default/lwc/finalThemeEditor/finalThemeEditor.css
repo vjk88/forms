@@ -103,9 +103,10 @@
     border-left: 0;
 }
 
+/* solid, like Simple / Advanced design and Build / Design */
 .te-seg.on {
-    background: var(--c-studio-accent-surface);
-    color: var(--c-studio-accent-text);
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
 }
 
 .te-startbox {
@@ -148,6 +149,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 16px;
+    align-items: end;
 }
 
 @media (max-width: 560px) {
@@ -160,8 +162,11 @@
     display: flex;
     justify-content: flex-end;
     gap: 6px;
-    min-height: 16px;
     font-size: 11px;
+}
+
+.te-crow-top:empty {
+    display: none;
 }
 
 .te-auto {
@@ -177,6 +182,9 @@
 .te-flag {
     margin-right: auto;
     padding: 0 6px;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
     border-radius: 999px;
     background: var(--c-studio-error-surface);
     color: var(--c-studio-error-text);

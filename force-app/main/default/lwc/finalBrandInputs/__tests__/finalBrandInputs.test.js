@@ -29,7 +29,7 @@ function px(hex, n) {
     return Array.from({ length: n }, () => [...v, 255]).flat();
 }
 
-const twoColourLogo = () => [
+const twoColorLogo = () => [
     ...px('#ffffff', 400),
     ...px('#e11d48', 300),
     ...px('#1e3a8a', 200),
@@ -98,13 +98,13 @@ describe('c-final-brand-inputs', () => {
         }
     });
 
-    it('starts empty: no style cards until there is a colour, and no change event', async () => {
+    it('starts empty: no style cards until there is a color, and no change event', async () => {
         const el = await mount();
         expect(qa(el, '.bd-styles c-final-theme-card')).toHaveLength(0);
         expect(el.brandEvents).toHaveLength(0);
     });
 
-    it('reopening a brand theme starts from its colours and style, without a change event', async () => {
+    it('reopening a brand theme starts from its colors and style, without a change event', async () => {
         const el = await mount({
             initialColor: '#E11D48',
             initialSecond: '#1e3a8a',
@@ -116,7 +116,7 @@ describe('c-final-brand-inputs', () => {
         expect(el.brandEvents).toHaveLength(0);
     });
 
-    it('a hex colour draws three style cards and reports the brand', async () => {
+    it('a hex color draws three style cards and reports the brand', async () => {
         const el = await mount();
         await typeHex(el, '#1E3A8A');
         const cards = qa(el, '.bd-styles c-final-theme-card');
@@ -157,17 +157,17 @@ describe('c-final-brand-inputs', () => {
     it('a bad hex says so and draws nothing', async () => {
         const el = await mount();
         await typeHex(el, '#12');
-        expect(q(el, '.bd-color-err').textContent).toContain('hex colour');
+        expect(q(el, '.bd-color-err').textContent).toContain('hex color');
         expect(q(el, '.bd-hex').getAttribute('aria-invalid')).toBe('true');
         expect(qa(el, '.bd-styles c-final-theme-card')).toHaveLength(0);
     });
 
-    it('validate(): no colour, a bad Main or a bad Second blocks, and says why', async () => {
+    it('validate(): no color, a bad Main or a bad Second blocks, and says why', async () => {
         const el = await mount();
         expect(el.validate()).toBe(false);
         await flush();
         expect(q(el, '.bd-color-err').textContent).toContain(
-            'Pick a main colour first'
+            'Pick a main color first'
         );
         await typeHex(el, '#e11d48');
         expect(el.validate()).toBe(true);
@@ -180,7 +180,7 @@ describe('c-final-brand-inputs', () => {
         expect(el.validate()).toBe(true);
     });
 
-    it('a logo suggests its colours and the first one is Main', async () => {
+    it('a logo suggests its colors and the first one is Main', async () => {
         const el = await mount();
         await uploadLogo(el, [
             ...px('#ffffff', 500),
@@ -197,7 +197,7 @@ describe('c-final-brand-inputs', () => {
         });
         swatches[1].click();
         await flush();
-        // the next tap adds a second colour, Main stays
+        // the next tap adds a second color, Main stays
         expect(q(el, '.bd-hex').value).toBe('#e11d48');
         expect(q(el, '.bd-hex2').value).toBe('#1e3a8a');
     });
@@ -206,7 +206,7 @@ describe('c-final-brand-inputs', () => {
         const el = await mount();
         await uploadLogo(el, px('#000000', 500));
         expect(qa(el, '.bd-swatch')).toHaveLength(0);
-        expect(el.shadowRoot.textContent).toContain('No clear colours');
+        expect(el.shadowRoot.textContent).toContain('No clear colors');
     });
 
     it('refuses an unsupported file type', async () => {
@@ -225,7 +225,7 @@ describe('c-final-brand-inputs', () => {
         expect(readImagePixels).not.toHaveBeenCalled();
     });
 
-    it('typing a colour key by key never rewrites the field (PR 402 B1)', async () => {
+    it('typing a color key by key never rewrites the field (PR 402 B1)', async () => {
         const el = await mount();
         const hex = q(el, '.bd-hex');
         let text = '';
@@ -241,7 +241,7 @@ describe('c-final-brand-inputs', () => {
         expect(lastBrand(el).color).toBe('#1e3a8a');
     });
 
-    it('a 3-digit colour counts once you leave the box', async () => {
+    it('a 3-digit color counts once you leave the box', async () => {
         const el = await mount();
         await typeHex(el, '#f00', { leave: false });
         expect(el.brandEvents).toHaveLength(0);
@@ -267,7 +267,7 @@ describe('c-final-brand-inputs', () => {
         expect(el.shadowRoot.textContent).toContain('show text only');
     });
 
-    it('a second logo moves a colour taken from the first; Remove clears it', async () => {
+    it('a second logo moves a color taken from the first; Remove clears it', async () => {
         const el = await mount();
         await uploadLogo(el, px('#e11d48', 500));
         await uploadLogo(el, px('#16a34a', 500));
@@ -279,7 +279,7 @@ describe('c-final-brand-inputs', () => {
         expect(el.logoEvents[el.logoEvents.length - 1].dataUrl).toBeNull();
     });
 
-    it('a colour typed by hand stays when a logo arrives', async () => {
+    it('a color typed by hand stays when a logo arrives', async () => {
         const el = await mount();
         await typeHex(el, '#1e3a8a');
         await uploadLogo(el, px('#e11d48', 500));
@@ -288,11 +288,11 @@ describe('c-final-brand-inputs', () => {
 
     it('taps: first is Main, next is Second, a third replaces Second', async () => {
         const el = await mount();
-        await uploadLogo(el, twoColourLogo());
+        await uploadLogo(el, twoColorLogo());
         // the logo picks Main only, and says how to add Second
         expect(roles(el)).toEqual(['Main', '', '']);
         expect(q(el, '.bd-second-hint').textContent).toContain(
-            'Pick another logo colour'
+            'Pick another logo color'
         );
         expect(q(el, '.bd-hex2').value).toBe('');
         let sw = qa(el, '.bd-swatch');
@@ -301,18 +301,18 @@ describe('c-final-brand-inputs', () => {
         expect(roles(el)).toEqual(['Main', 'Second', '']);
         expect(q(el, '.bd-hex2').value).toBe('#1e3a8a');
         expect(q(el, '.bd-second-hint').textContent).toContain(
-            'Pick a chosen colour again'
+            'Pick a chosen color again'
         );
         sw = qa(el, '.bd-swatch');
         expect(sw[1].getAttribute('aria-pressed')).toBe('true');
         expect(sw[1].getAttribute('aria-label')).toBe(
-            '#1e3a8a, second colour. Press to remove'
+            '#1e3a8a, second color. Press to remove'
         );
         expect(sw[0].getAttribute('aria-label')).toBe(
-            '#e11d48, main colour. Press to remove'
+            '#e11d48, main color. Press to remove'
         );
         expect(sw[2].getAttribute('aria-label')).toBe(
-            'Use #16a34a as second colour, replacing the current one'
+            'Use #16a34a as second color, replacing the current one'
         );
         sw[2].click();
         await flush();
@@ -322,14 +322,14 @@ describe('c-final-brand-inputs', () => {
 
     it('tapping a chosen swatch unpicks it; unpicking Main promotes Second', async () => {
         const el = await mount();
-        await uploadLogo(el, twoColourLogo());
+        await uploadLogo(el, twoColorLogo());
         qa(el, '.bd-swatch')[1].click();
         await flush();
         qa(el, '.bd-swatch')[0].click(); // unpick Main
         await flush();
         expect(roles(el)).toEqual(['', 'Main', '']);
         expect(q(el, '.bd-sr').textContent).toContain(
-            'Main colour is now #1e3a8a'
+            'Main color is now #1e3a8a'
         );
         expect(q(el, '.bd-hex').value).toBe('#1e3a8a');
         expect(q(el, '.bd-hex2').value).toBe('');
@@ -338,7 +338,7 @@ describe('c-final-brand-inputs', () => {
         qa(el, '.bd-swatch')[2].click(); // and unpicked again
         await flush();
         expect(roles(el)).toEqual(['', 'Main', '']);
-        qa(el, '.bd-swatch')[1].click(); // unpick the only colour
+        qa(el, '.bd-swatch')[1].click(); // unpick the only color
         await flush();
         expect(roles(el)).toEqual(['', '', '']);
         expect(qa(el, '.bd-styles c-final-theme-card')).toHaveLength(0);
@@ -374,7 +374,7 @@ describe('c-final-brand-inputs', () => {
         await typeHex2(el, '');
         expect(lastBrand(el).second).toBe('');
         await typeHex2(el, '#12');
-        expect(q(el, '.bd-second-err').textContent).toContain('hex colour');
+        expect(q(el, '.bd-second-err').textContent).toContain('hex color');
         expect(q(el, '.bd-hex2').getAttribute('aria-invalid')).toBe('true');
         await typeHex2(el, '#0f0');
         expect(lastBrand(el).second).toBe('#00ff00');
@@ -400,13 +400,13 @@ describe('c-final-brand-inputs', () => {
 
     it('a new logo drops a Second tapped on the old one, keeps a typed one', async () => {
         const el = await mount();
-        await uploadLogo(el, twoColourLogo());
+        await uploadLogo(el, twoColorLogo());
         qa(el, '.bd-swatch')[1].click();
         await flush();
         await uploadLogo(el, [...px('#16a34a', 300), ...px('#7c3aed', 200)]);
         expect(q(el, '.bd-hex2').value).toBe('');
         await typeHex2(el, '#f59e0b');
-        await uploadLogo(el, twoColourLogo());
+        await uploadLogo(el, twoColorLogo());
         expect(q(el, '.bd-hex2').value).toBe('#f59e0b');
     });
 
@@ -424,7 +424,7 @@ describe('c-final-brand-inputs', () => {
         q(el, '.bd-swap').click();
         await flush();
         expect(q(el, '.bd-sr').textContent).toContain(
-            'Main colour is now #1e3a8a, second colour #e11d48'
+            'Main color is now #1e3a8a, second color #e11d48'
         );
     });
 });

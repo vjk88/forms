@@ -185,7 +185,7 @@ describe('c-final-theme-editor', () => {
         expect(q(el, '.te-seg.on').dataset.value).toBe('current');
         await start(el, 'theme');
         expect(q(el, '.te-rebuild').textContent).toContain(
-            'recalculates every colour'
+            'recalculates every color'
         );
         // Keep as saved changes nothing
         [...qa(el, '.te-rebuild .te-btn')][1].click();
@@ -200,7 +200,7 @@ describe('c-final-theme-editor', () => {
         );
     });
 
-    it('an older brand theme reopens on Your brand with its colours', async () => {
+    it('an older brand theme reopens on Your brand with its colors', async () => {
         getCustomTheme.mockResolvedValueOnce(
             JSON.stringify(
                 buildBrandTheme({
@@ -296,9 +296,9 @@ describe('c-final-theme-editor', () => {
         expect(savedRecipe(1).brand).toBeUndefined();
     });
 
-    // ----------------------------------------------- 18 colours (ruling 5)
+    // ----------------------------------------------- 18 colors (ruling 5)
 
-    it('shows all 18 colours; an unset one is Automatic and saving writes nothing for it', async () => {
+    it('shows all 18 colors; an unset one is Automatic and saving writes nothing for it', async () => {
         const el = await mount({ startFrom: 'nordic' });
         expect(qa(el, '.te-crow')).toHaveLength(18);
         const auto = qa(el, '.te-crow').find((r) =>
@@ -315,7 +315,7 @@ describe('c-final-theme-editor', () => {
 
     // ------------------------------------------------ readability (ruling 4)
 
-    it('a hard-to-read colour is flagged in plain words; Save still works', async () => {
+    it('a hard-to-read color is flagged in plain words; Save still works', async () => {
         const el = await mount({ startFrom: 'nordic' });
         await pick(el, 'palette.textWeak', '#d4d6da');
         const box = q(el, '.te-readable');
@@ -331,7 +331,36 @@ describe('c-final-theme-editor', () => {
         expect(saveCustomTheme).toHaveBeenCalled();
     });
 
-    it('Fix for me moves the failing colour, turns the box green and pins it', async () => {
+    it('the pill names its background, jumps to Fix for me, and the row says it out loud', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        await pick(el, 'palette.textWeak', '#d4d6da');
+        const pill = row(el, 'palette.textWeak').querySelector('.te-flag');
+        expect(pill.title).toMatch(/^on /);
+        expect(pill.textContent).toContain('Go to Fix for me');
+        pill.click();
+        await flush();
+        expect(el.shadowRoot.activeElement).toBe(q(el, '.te-fix'));
+        const label = row(el, 'palette.textWeak').getAttribute('aria-label');
+        expect(label).toBe('Muted text, hard to read, changed by you');
+        // one status line, not the whole box, is read out
+        expect(q(el, '.te-readable').getAttribute('aria-live')).toBeNull();
+        expect(q(el, '[role="status"]').textContent.trim()).toMatch(
+            /^\d colors? needs? attention\.$/
+        );
+    });
+
+    it('the preview says where the theme starts from', async () => {
+        const el = await mount({ startFrom: 'nordic' });
+        expect(q(el, '.te-preview c-final-theme-card').description).toBe(
+            'From Nordic Minimalist'
+        );
+        await start(el, 'brand');
+        expect(q(el, '.te-preview c-final-theme-card').description).toBe(
+            'From your brand'
+        );
+    });
+
+    it('Fix for me moves the failing color, turns the box green and pins it', async () => {
         const el = await mount({ startFrom: 'nordic' });
         await pick(el, 'palette.textWeak', '#d4d6da');
         q(el, '.te-fix').click();
@@ -420,7 +449,7 @@ describe('c-final-theme-editor', () => {
         expect(q(el, '.te-name').value).toBe('Acme brand');
     });
 
-    it('Your brand needs a main colour before Save', async () => {
+    it('Your brand needs a main color before Save', async () => {
         const el = await mount({ startMode: 'brand' });
         await confirm(el);
         expect(saveCustomTheme).not.toHaveBeenCalled();

@@ -24,11 +24,11 @@ import {
  *
  *   Start from   A theme (a built-in) | Your brand (c/finalBrandInputs) |
  *                Current theme (as saved), for themes saved before this
- *   Colours      all 18 a theme sets, grouped; unset ones show the engine's
+ *   Colors      all 18 a theme sets, grouped; unset ones show the engine's
  *                value as "Automatic" and write nothing until changed
  *   Shape & type font picker + the shape selects
  *   Readability  every pair measured (photos/mesh named as not checked);
- *                Fix for me moves only the failing colours
+ *                Fix for me moves only the failing colors
  *
  * Hand edits stick (owner ruling 3): a property changed by hand is PINNED.
  * Changing the starting point rebuilds from it and copies every pinned path
@@ -528,12 +528,12 @@ export default class FinalThemeEditor extends LightningElement {
         return (this._props && this._props.fonts) || null;
     }
 
-    // ----------------------------------------------------------- colours
+    // ----------------------------------------------------------- colors
 
     get colorGroups() {
         const props = this._props || {};
         const tokens = this.tokens;
-        const failing = this.failingPaths;
+        const worst = this._worstByPath();
         return COLOR_GROUPS.map((g) => ({
             key: g.key,
             label: g.label,
@@ -550,12 +550,24 @@ export default class FinalThemeEditor extends LightningElement {
                     value: typeof value === 'string' ? value : '',
                     pinned,
                     automatic,
-                    flagged: failing.has(path),
+                    flagged: worst.has(path),
                     flagText:
                         path === 'palette.fieldBorderColor' ||
                         path === 'fieldStates.focus'
                             ? 'Hard to see'
-                            : 'Hard to read'
+                            : 'Hard to read',
+                    flagWhere: worst.has(path)
+                        ? `on ${worst.get(path).where}`
+                        : '',
+                    // the row's badges, read out with its color control
+                    groupLabel: [
+                        label,
+                        worst.has(path) ? 'hard to read' : '',
+                        pinned ? 'changed by you' : '',
+                        automatic ? 'automatic' : ''
+                    ]
+                        .filter(Boolean)
+                        .join(', ')
                 };
             })
         }));
@@ -654,16 +666,8 @@ export default class FinalThemeEditor extends LightningElement {
         return themeReadability(this._props || {});
     }
 
-    get failingPaths() {
-        return new Set(
-            this.report.checks
-                .filter((c) => !c.pass && !c.advisory && !c.unmeasurable)
-                .map((c) => c.path)
-        );
-    }
-
-    /** One line per failing colour, its worst pair, in plain words. */
-    get readabilityLines() {
+    /** Each failing color's worst pair (the background it fails on). */
+    _worstByPath() {
         const worstByPath = new Map();
         this.report.checks
             .filter((c) => !c.pass && !c.advisory && !c.unmeasurable)
@@ -671,7 +675,19 @@ export default class FinalThemeEditor extends LightningElement {
                 const seen = worstByPath.get(c.path);
                 if (!seen || c.ratio < seen.ratio) worstByPath.set(c.path, c);
             });
-        return [...worstByPath.values()].map((c) => ({
+        return worstByPath;
+    }
+
+    /** The pill jumps to the reason and the Fix button. */
+    handleFlag() {
+        const box = this.template.querySelector('.te-readable');
+        if (box && box.scrollIntoView) box.scrollIntoView({ block: 'center' });
+        this.template.querySelector('.te-fix')?.focus();
+    }
+
+    /** One line per failing color, its worst pair, in plain words. */
+    get readabilityLines() {
+        return [...this._worstByPath().values()].map((c) => ({
             key: c.path,
             text: `${capital(c.name)} is hard to ${c.min < 4.5 ? 'see' : 'read'} on ${c.where}: ${c.ratio.toFixed(1)} : 1, needs ${c.min} : 1.`
         }));
@@ -699,9 +715,18 @@ export default class FinalThemeEditor extends LightningElement {
         return this.readableState === 'bad';
     }
 
+    /** What the screen reader hears when the verdict changes: one line. */
+    get readableStatus() {
+        if (this.readableOk) return 'Readable everywhere.';
+        if (this.readablePartial) {
+            return `Readable where we could check. Not checked: ${this.notChecked}.`;
+        }
+        return `${this.attentionTitle}.`;
+    }
+
     get attentionTitle() {
         const n = this.readabilityLines.length;
-        return `${n} colour${n === 1 ? ' needs' : 's need'} attention`;
+        return `${n} color${n === 1 ? ' needs' : 's need'} attention`;
     }
 
     get notChecked() {
@@ -715,14 +740,14 @@ export default class FinalThemeEditor extends LightningElement {
     /** Advisory only: a button that blends into the card. */
     get buttonNote() {
         return this.report.checks.some((c) => c.advisory && !c.pass)
-            ? 'The Submit button is close to the card colour, so it may not stand out. Try the Bold header style or a deeper shade.'
+            ? 'The Submit button is close to the card color, so it may not stand out. Try the Bold header style or a deeper shade.'
             : '';
     }
 
     get unfixedLines() {
         return this.unfixed.map((u) => ({
             key: u.path,
-            text: `Couldn’t fix automatically: ${capital(u.name)} on ${u.where} (best found ${u.best} : 1, needs ${u.min} : 1). Try a different colour for ${u.where.replace(/^the /, '')}.`
+            text: `Couldn’t fix automatically: ${capital(u.name)} on ${u.where} (best found ${u.best} : 1, needs ${u.min} : 1). Try a different color for ${u.where.replace(/^the /, '')}.`
         }));
     }
 
@@ -769,6 +794,14 @@ export default class FinalThemeEditor extends LightningElement {
         return this._props;
     }
 
+    /** The preview card's subtitle: where this theme starts from. */
+    get previewDescription() {
+        if (this.start === 'brand') return 'From your brand';
+        if (this.start === 'current') return 'As saved';
+        const t = listBuiltinThemes().find((x) => x.key === this.baseKey);
+        return t ? `From ${t.name}` : 'This theme';
+    }
+
     get previewLabel() {
         return this.name || 'Your theme';
     }
@@ -778,7 +811,7 @@ export default class FinalThemeEditor extends LightningElement {
         return true;
     }
 
-    /** What each colour paints, with the colour actually used. */
+    /** What each color paints, with the color actually used. */
     get colorRoles() {
         const t = this.tokens;
         const role = (key, name, does, color) => ({
@@ -789,7 +822,7 @@ export default class FinalThemeEditor extends LightningElement {
         });
         if (this.start === 'brand' && this.brand.color) {
             const accent = t['--c-accent'];
-            let secondNote = ' (made from your main colour)';
+            let secondNote = ' (made from your main color)';
             if (this.brand.second) {
                 secondNote =
                     accent === this.brand.second

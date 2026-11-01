@@ -6,10 +6,10 @@ import { suggestColors, readImagePixels } from 'c/finalBrandColors';
  * finalBrandInputs — the "Your brand" starting point of the theme dialog
  * (IMPL_PLAN_THEME_CREATOR; the inputs of the old "Create from your brand"
  * dialog, IMPL_PLAN_FONTS_AND_BRAND_THEME §B, moved here unchanged): logo
- * (optional, suggests colours), Main + optional Second colour, Swap, and the
+ * (optional, suggests colors), Main + optional Second color, Swap, and the
  * Clean / Bold header / Dark style cards drawn from the real recipes.
  *
- * Colours (§B.4): Main (required) paints the button, Bold header and page
+ * Colors (§B.4): Main (required) paints the button, Bold header and page
  * tint; the optional Second paints the highlights. Logo swatches: the first
  * tap is Main, the next is Second; tapping a chosen one unpicks it, and
  * unpicking Main promotes Second. A logo auto-picks Main only.
@@ -29,7 +29,7 @@ export const BRAND_STYLE_CARDS = [
     {
         value: 'boldHeader',
         label: 'Bold header',
-        hint: 'Header in your colour'
+        hint: 'Header in your color'
     },
     { value: 'dark', label: 'Dark', hint: 'Dark page, brand glow' }
 ];
@@ -151,13 +151,13 @@ export default class FinalBrandInputs extends LightningElement {
     }
 
     /**
-     * Before Save: a brand start needs a valid main colour and no half-typed
+     * Before Save: a brand start needs a valid main color and no half-typed
      * second. Shows the error, focuses the box, returns false when blocked.
      */
     @api
     validate() {
         if (!this.color) {
-            this.colorError = 'Pick a main colour first.';
+            this.colorError = 'Pick a main color first.';
             this.template.querySelector('.bd-hex')?.focus();
             return false;
         }
@@ -183,7 +183,7 @@ export default class FinalBrandInputs extends LightningElement {
         return Boolean(this.color);
     }
 
-    // One build per colours/fonts, not per render.
+    // One build per colors/fonts, not per render.
     get styleCards() {
         const key = `${this.color}|${this.second}|${JSON.stringify(this.fonts)}`;
         if (this._memo.key !== key) {
@@ -299,7 +299,7 @@ export default class FinalBrandInputs extends LightningElement {
             if (this._secondFromLogo) {
                 this._setSecond('', false);
             }
-            // a colour picked by hand stays; one taken from the last logo
+            // a color picked by hand stays; one taken from the last logo
             // follows the new logo
             if (
                 this.suggestions.length &&
@@ -324,11 +324,11 @@ export default class FinalBrandInputs extends LightningElement {
 
     get swatches() {
         // what tapping an unchosen swatch does (see handleSwatch)
-        let next = 'main colour';
+        let next = 'main color';
         if (this.color) {
             next = this.second
-                ? 'second colour, replacing the current one'
-                : 'second colour';
+                ? 'second color, replacing the current one'
+                : 'second color';
         }
         return this.suggestions.map((s) => {
             let role = '';
@@ -342,7 +342,7 @@ export default class FinalBrandInputs extends LightningElement {
                 role,
                 pressed: role ? 'true' : 'false',
                 label: role
-                    ? `${s.hex}, ${role.toLowerCase()} colour. Press to remove`
+                    ? `${s.hex}, ${role.toLowerCase()} color. Press to remove`
                     : `Use ${s.hex} as ${next}`,
                 style: `background:${s.hex};`,
                 cls: role ? 'bd-swatch is-on' : 'bd-swatch'
@@ -356,8 +356,8 @@ export default class FinalBrandInputs extends LightningElement {
             return '';
         }
         return this.second
-            ? 'Pick a chosen colour again to remove it.'
-            : 'Pick another logo colour to add a second colour.';
+            ? 'Pick a chosen color again to remove it.'
+            : 'Pick another logo color to add a second color.';
     }
 
     get sameAsMain() {
@@ -374,13 +374,13 @@ export default class FinalBrandInputs extends LightningElement {
             if (this.second) {
                 this._applyColor(this.second, this._secondFromLogo);
                 this._setSecond('', false);
-                this.announce = `Main colour is now ${this.color}.`;
+                this.announce = `Main color is now ${this.color}.`;
             } else {
                 this.color = '';
                 this.colorText = '';
                 this.colorError = '';
                 this._colorFromLogo = false;
-                this.announce = 'Main colour removed.';
+                this.announce = 'Main color removed.';
             }
         } else if (hex === this.second) {
             this._setSecond('', false);
@@ -395,7 +395,7 @@ export default class FinalBrandInputs extends LightningElement {
         this._useAsLogo = event.target.checked;
     }
 
-    // ------------------------------------------------------------ colour
+    // ------------------------------------------------------------ color
 
     _applyColor(hex, fromLogo) {
         const normal = normalizeHex(hex);
@@ -416,7 +416,7 @@ export default class FinalBrandInputs extends LightningElement {
 
     /**
      * While typing: keep exactly what was typed, and only a complete 6-digit
-     * colour takes effect (a 3-digit one is complete only on leaving).
+     * color takes effect (a 3-digit one is complete only on leaving).
      */
     handleColorText(event) {
         this.colorText = event.target.value;
@@ -436,11 +436,11 @@ export default class FinalBrandInputs extends LightningElement {
             return;
         }
         if (!this._applyColor(text, false)) {
-            this.colorError = 'Use a hex colour such as #1e3a8a.';
+            this.colorError = 'Use a hex color such as #1e3a8a.';
         }
     }
 
-    // ----------------------------------------------------- second colour
+    // ----------------------------------------------------- second color
 
     _setSecond(hex, fromLogo) {
         const normal = hex ? normalizeHex(hex) : '';
@@ -477,7 +477,7 @@ export default class FinalBrandInputs extends LightningElement {
         const text = event.target.value.trim();
         if (!this._setSecond(text, false)) {
             this.secondError =
-                'Use a hex colour such as #1e3a8a, or leave it empty.';
+                'Use a hex color such as #1e3a8a, or leave it empty.';
         }
     }
 
@@ -490,7 +490,7 @@ export default class FinalBrandInputs extends LightningElement {
         const main = { hex: this.color, fromLogo: this._colorFromLogo };
         this._applyColor(this.second, this._secondFromLogo);
         this._setSecond(main.hex, main.fromLogo);
-        this.announce = `Main colour is now ${this.color}, second colour ${this.second}.`;
+        this.announce = `Main color is now ${this.color}, second color ${this.second}.`;
     }
 
     // ------------------------------------------------------------- style
