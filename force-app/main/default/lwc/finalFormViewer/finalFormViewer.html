@@ -25,7 +25,11 @@
                     <c-final-after-submit
                         config={model.afterSubmit}
                         bleed={model.bleed}
+                        can-download={canDownloadCopy}
+                        download-busy={_pdfBusy}
+                        download-error={_pdfError}
                         oncontinue={handleAfterContinue}
+                        ondownloadcopy={handleDownloadCopy}
                     ></c-final-after-submit>
                 </template>
                 <template lwc:elseif={navCtor}>

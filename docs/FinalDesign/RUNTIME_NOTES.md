@@ -177,3 +177,18 @@ both let one option's label steal another option's value. The authoring side mak
 a new option's value starts as its label (on creation only), both are required, values are
 unique per question (exact), and publish refuses a question that breaks those rules
 (`FinalPublishWarnings.choiceOptionProblems`). Do not reintroduce label matching.
+
+## PDF copies — built in the browser, images by spec (2026-11-02)
+
+[IMPL_PLAN_FORM_PDF.md](./IMPL_PLAN_FORM_PDF.md) §5 is the full rule set. The law:
+
+- **No answer leaves the browser for a PDF.** The respondent's copy is drawn client-side from the
+  payload that was submitted. Never add an endpoint that accepts answers or PDF bytes from a guest
+  in order to store or send them: an emailed copy is built by the server from the stored submission
+  (§7 of the plan).
+- **The guest names no file.** `getGuestPdfImages` serves exactly the images the active published spec
+  references, behind the hard gate, and only when the author turned on `downloadCopy`.
+- **Signed-in image reads are USER MODE** (`FinalPdfController`): nobody gets a file they can't open.
+- `finalFormViewer` takes its guest image loader from the host (`pdf-image-loader`); it still calls
+  no guest Apex.
+

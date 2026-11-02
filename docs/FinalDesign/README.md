@@ -18,6 +18,7 @@ The source of truth for the rebuild. Three places:
 | [IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./IMPL_PLAN_STUDIO_COMPONENT_SWAP.md) | Every hand-built Studio control: swap to Salesforce, our shared component, or keep (runs before the restyle) |
 | [IMPL_PLAN_STUDIO_DESIGN_SCALE.md](./IMPL_PLAN_STUDIO_DESIGN_SCALE.md) | Steps that move the Studio onto the design system (mock in [mocks/](./mocks/studio-formwork-system-mock.html)) |
 | [PLAN_DOCUMENTS_AND_PAYMENTS.md](./PLAN_DOCUMENTS_AND_PAYMENTS.md) | Proposed roadmap: submission PDFs, payments, and DocGen    |
+| [IMPL_PLAN_FORM_PDF.md](./IMPL_PLAN_FORM_PDF.md)                   | Branded PDFs: respondent copy, staff copy, blank form (slice 1 built); email copy (slice 2) |
 | [GUEST_SITE_SETUP.md](./GUEST_SITE_SETUP.md)                       | How to set up the public site                             |
 
 ## [specs/](./specs/) — contracts you still build against

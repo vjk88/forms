@@ -92,6 +92,51 @@
     box-shadow: var(--c-focus-ring);
 }
 
+.download {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-space-2);
+    min-height: var(--c-control-h);
+    padding: 0 var(--c-space-5);
+    border: 1px solid var(--c-field-border);
+    border-radius: var(--c-radius);
+    background: transparent;
+    color: var(--c-text);
+    font-family: var(--c-font-body);
+    font-size: var(--c-fs-button);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.download:hover:not([disabled]) {
+    background: color-mix(in srgb, var(--c-text) 6%, transparent);
+}
+
+.download:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: var(--c-focus-ring);
+}
+
+.download[disabled] {
+    cursor: progress;
+    color: var(--c-text-weak);
+}
+
+.download-icon {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    fill: currentColor;
+}
+
+.download-error {
+    margin: 0;
+    max-width: 46ch;
+    color: var(--c-field-error);
+    font-size: var(--c-fs-secondary);
+}
+
 .pill {
     display: inline-flex;
     align-items: center;

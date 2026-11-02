@@ -105,4 +105,67 @@ describe('c-final-after-submit', () => {
         const el = mount({}, { bleed: true });
         expect(el.shadowRoot.querySelector('.wrap--card')).not.toBeNull();
     });
+
+    describe('download a copy (IMPL_PLAN_FORM_PDF §6.1)', () => {
+        it('is hidden until the author turns it on AND the viewer has a copy', () => {
+            expect(
+                mount({}, { canDownload: true }).shadowRoot.querySelector(
+                    '.download'
+                )
+            ).toBeNull();
+            expect(
+                mount({ downloadCopy: true }).shadowRoot.querySelector(
+                    '.download'
+                )
+            ).toBeNull();
+            const el = mount({ downloadCopy: true }, { canDownload: true });
+            expect(
+                el.shadowRoot.querySelector('.download').textContent.trim()
+            ).toBe('Download a copy (PDF)');
+        });
+
+        it('uses the author label and fires downloadcopy', () => {
+            const el = mount(
+                { downloadCopy: true, downloadLabel: 'Save my answers' },
+                { canDownload: true }
+            );
+            const handler = jest.fn();
+            el.addEventListener('downloadcopy', handler);
+            const btn = el.shadowRoot.querySelector('.download');
+            expect(btn.textContent.trim()).toBe('Save my answers');
+            btn.click();
+            expect(handler).toHaveBeenCalledTimes(1);
+        });
+
+        it('says it is busy, waits, and shows a failure under the button', async () => {
+            const el = mount(
+                { downloadCopy: true },
+                { canDownload: true, downloadBusy: true }
+            );
+            const handler = jest.fn();
+            el.addEventListener('downloadcopy', handler);
+            const btn = el.shadowRoot.querySelector('.download');
+            expect(btn.textContent.trim()).toBe('Preparing your PDF…');
+            expect(btn.disabled).toBe(true);
+            expect(btn.getAttribute('aria-busy')).toBe('true');
+            el.downloadBusy = false;
+            el.downloadError = 'The PDF could not be made.';
+            await Promise.resolve();
+            expect(
+                el.shadowRoot
+                    .querySelector('.download-error')
+                    .textContent.trim()
+            ).toBe('The PDF could not be made.');
+            el.shadowRoot.querySelector('.download').click();
+            expect(handler).toHaveBeenCalledTimes(1);
+        });
+
+        it('never shows in toast mode', () => {
+            const el = mount(
+                { mode: 'toast', downloadCopy: true },
+                { canDownload: true }
+            );
+            expect(el.shadowRoot.querySelector('.download')).toBeNull();
+        });
+    });
 });

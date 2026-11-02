@@ -484,6 +484,14 @@ Thank-you or redirect after submit.
 | Redirect URL | text | When redirecting |
 | Show Response Summary | toggle | Recap of submitted values |
 | Allow Another Response | toggle | "Submit another" |
+| Download a Copy (PDF) | toggle | `settings.completion.downloadCopy`; built: `finalAfterSubmit` + `finalFormViewer` ([IMPL_PLAN_FORM_PDF.md](./IMPL_PLAN_FORM_PDF.md) §6.1) |
+| Download Button Label | text | `settings.completion.downloadLabel` |
+
+### PDF family — branded PDFs built in the browser ([IMPL_PLAN_FORM_PDF.md](./IMPL_PLAN_FORM_PDF.md))
+Modules, not components: `finalPdfModel` (what the PDF says), `finalPdfTheme` (tokens → colors and
+fonts), `finalPdfWriter` (pdf-lib drawing and pagination), `finalPdfService` (load, draw, save).
+Shared truths: `finalAnswerText` (stored value → words), `finalSurveyPoints` (scale points). Entry
+points: thank-you screen, `finalSubmissionReader` Download PDF, `finalPreviewStage` blank form.
 
 ### `draftManager` — save & resume (review §2 gap) — **DEFERRED to v2** ([DEFERRED.md](./DEFERRED.md) #2)
 Lets respondents (especially guests on long multi-page forms) save progress and continue later.

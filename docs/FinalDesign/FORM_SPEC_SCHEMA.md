@@ -86,6 +86,9 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "buttonLabel": "Continue",
       "buttonGoesTo": "record", // "record" | "url"
       "buttonUrl": null,
+      "downloadCopy": false, // screen only — "Download a copy (PDF)" on the thank-you screen
+      // (IMPL_PLAN_FORM_PDF §6.1); also unlocks FinalGuestController.getGuestPdfImages
+      "downloadLabel": null, // button text; null = "Download a copy (PDF)"
       "showSummary": false, // v2 (deferred — response summary on the screen)
       "allowAnother": false // v2 (deferred — "submit another response")
     }

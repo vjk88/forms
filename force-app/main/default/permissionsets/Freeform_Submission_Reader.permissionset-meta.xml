@@ -6,6 +6,10 @@
     >Read the Freeform submissions shared with you. Form_Submission__c is org-wide Private, so this set alone shows nothing until a share opens a submission - that is the point. To read every submission instead, assign Freeform Submission Admin.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <classAccesses>
+        <apexClass>FinalPdfController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>FinalSubmissionController</apexClass>
         <enabled>true</enabled>
     </classAccesses>

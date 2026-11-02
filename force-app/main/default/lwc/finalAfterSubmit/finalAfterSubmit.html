@@ -40,6 +40,31 @@
                         {buttonLabel}
                     </button>
                 </template>
+                <template lwc:if={showDownload}>
+                    <button
+                        type="button"
+                        class="download"
+                        aria-busy={downloadBusyAttr}
+                        disabled={downloadBusy}
+                        onclick={handleDownload}
+                    >
+                        <svg
+                            class="download-icon"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M11 3h2v9.17l3.59-3.58L18 10l-6 6-6-6 1.41-1.41L11 12.17V3zM5 18h14v2H5v-2z"
+                            />
+                        </svg>
+                        {downloadLabel}
+                    </button>
+                    <template lwc:if={downloadError}>
+                        <p class="download-error" role="alert">
+                            {downloadError}
+                        </p>
+                    </template>
+                </template>
                 <template lwc:if={showRedirect}>
                     <div class="pill">{redirectPill}</div>
                 </template>

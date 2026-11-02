@@ -295,6 +295,35 @@ public without sharing class FinalGuestController {
 
     /** True only when the form opts into honeypot AND the bait field carries a
      *  value (real users never see or fill it). */
+    /**
+     * Image bytes for a respondent's PDF copy (IMPL_PLAN_FORM_PDF §5).
+     *
+     * The guest names NOTHING: the files are exactly the ones the active,
+     * published spec references for display (logo, banner, image blocks),
+     * so this can never be pointed at another record's file. Served only
+     * when the author turned on "Let respondents download a copy"
+     * (`settings.completion.downloadCopy`). Deliberately not refused when
+     * the form has since CLOSED: the response that filled the last place
+     * still deserves its copy. Same hard gate as every guest method.
+     */
+    @AuraEnabled
+    public static FinalPdfImageService.Result getGuestPdfImages(Id formId) {
+        Form__c f = gate(formId);
+        Form_Version__c version = activeVersion(f.Id);
+        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        Map<String, Object> settings = asMap(spec.get('settings'));
+        Map<String, Object> completion = asMap(
+            settings == null ? null : settings.get('completion')
+        );
+        if (completion == null || completion.get('downloadCopy') != true) {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
+        return FinalPdfImageService.read(
+            FinalPdfImageService.referencedIds(spec),
+            false
+        );
+    }
+
     private static Boolean isHoneypotTripped(
         Map<String, Object> spec,
         Map<String, Object> payload

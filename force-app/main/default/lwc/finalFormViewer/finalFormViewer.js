@@ -26,6 +26,9 @@ import {
     layoutNamesPages
 } from 'c/finalLayoutRegistry';
 import { ensureFontRefs } from 'c/finalFontBundle';
+import getPdfImages from '@salesforce/apex/FinalPdfController.getImages';
+import { buildFormDocument, pdfFileName } from 'c/finalPdfModel';
+import { downloadPdf, LOCALE } from 'c/finalPdfService';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 import { repeatsPageName } from 'c/finalPageName';
@@ -311,6 +314,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      * inline-spec simulate below (the host feeds the viewer an inline spec).
      */
     @api delegateSubmit = false;
+
+    /**
+     * Where a respondent's PDF copy gets its image bytes
+     * (IMPL_PLAN_FORM_PDF §6.1): `(versionIds) => Promise<{ images }>`.
+     * Unset = the signed-in path (FinalPdfController, user mode). The guest
+     * host passes its own, so this component still calls no guest Apex.
+     */
+    @api pdfImageLoader;
 
     /**
      * Inline spec (pre-save preview — creation flow step 3, builder preview
@@ -769,6 +780,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._requiresEditRecord(spec) || this._editState !== 'inactive')
             this.model = null;
         this._editSpec = spec;
+        // The spec a PDF copy is written from, and no copy of an older one.
+        this._pdfSpec = spec;
+        this._submittedCopy = null;
+        this._pdfError = undefined;
         this._editGeneration += 1;
         this._editReaders = [];
         if (this._requiresEditRecord(spec)) this._editState = 'loading';
@@ -2341,6 +2356,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const current = this.visiblePages[this.pageIndex];
         const key = current ? current.revealKey : undefined;
         this._answers = { ...this.answers, [elementId]: value };
+        // A lookup names the record it picked: kept for the PDF copy only.
+        if (event.detail.label !== undefined) {
+            this._pickedLabels = {
+                ...this._pickedLabels,
+                [elementId]: event.detail.label
+            };
+        }
         const pages = this.visiblePages;
         const at =
             key !== undefined
@@ -2745,9 +2767,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._submitting = true;
             this._submitError = undefined;
             this._autofillError = undefined;
+            const delegated = this._payload();
+            this._snapshotCopy(delegated);
             this.dispatchEvent(
                 new CustomEvent('submitrequest', {
-                    detail: { payload: this._payload() }
+                    detail: { payload: delegated }
                 })
             );
             return;
@@ -2755,6 +2779,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Previews SIMULATE: the studio's authoring/inline specs (and the
         // read-only history view) must never create records.
         if (this.authoring || this._inlineSpec) {
+            this._snapshotCopy(this._payload());
             this.completed = true;
             return;
         }
@@ -2778,6 +2803,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 this._applyServerErrors(res.errors);
                 return;
             }
+            this._snapshotCopy(payload);
             this.submittedRecordId = res ? res.recordId : null;
             this.completed = true;
             this._scheduleCompletion();
@@ -2804,6 +2830,78 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             if (submitGeneration === this._submitGeneration)
                 this._submitting = false;
         }
+    }
+
+    // ----- The respondent's PDF copy (IMPL_PLAN_FORM_PDF §6.1) -----
+
+    /** What was submitted, for the copy: the payload itself (rule-hidden
+     *  answers already left out), the questions the rules hid (so they do
+     *  not print as "No answer"), and the names of picked records. */
+    _submittedCopy = null;
+    _pickedLabels = {};
+    _pdfBusy = false;
+    _pdfError;
+
+    _snapshotCopy(payload) {
+        const hidden = this._hiddenAnswerKeys;
+        this._submittedCopy = {
+            payload,
+            hiddenKeys: hidden ? [...hidden] : [],
+            lookupLabels: { ...this._lookupLabels, ...this._pickedLabels }
+        };
+        this._pdfError = undefined;
+    }
+
+    get canDownloadCopy() {
+        return Boolean(this._submittedCopy);
+    }
+
+    async handleDownloadCopy() {
+        const copy = this._submittedCopy;
+        if (!copy || this._pdfBusy) {
+            return;
+        }
+        this._pdfBusy = true;
+        this._pdfError = undefined;
+        try {
+            const { payload } = copy;
+            const doc = buildFormDocument({
+                spec: this._pdfSpec,
+                mode: 'answers',
+                answers: payload.answers,
+                repeats: payload.repeats,
+                files: payload.files,
+                hiddenKeys: copy.hiddenKeys,
+                lookupLabels: copy.lookupLabels,
+                submittedAt: payload.meta && payload.meta.submittedAt,
+                locale: LOCALE
+            });
+            await downloadPdf({
+                component: this,
+                doc,
+                tokens: this._cardTokens || this.tokens,
+                loadImages:
+                    this.pdfImageLoader ||
+                    ((versionIds) => getPdfImages({ versionIds })),
+                fileName: pdfFileName(doc.title, 'my answers')
+            });
+        } catch (e) {
+            this._pdfError = e && e.message;
+        } finally {
+            this._pdfBusy = false;
+        }
+    }
+
+    /**
+     * The spec and the exact tokens this viewer paints with, for a PDF made
+     * elsewhere (the Studio's blank form). Read-only.
+     */
+    @api
+    getPdfSnapshot() {
+        return {
+            spec: this._pdfSpec || null,
+            tokens: { ...(this._cardTokens || this.tokens || {}) }
+        };
     }
 
     /**

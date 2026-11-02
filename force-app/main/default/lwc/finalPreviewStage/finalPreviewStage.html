@@ -46,6 +46,15 @@
                 >{scaleLabel}</span
             >
             <lightning-button-icon
+                class="ps-pdf"
+                icon-name="utility:download"
+                variant="border-filled"
+                alternative-text={pdfLabel}
+                title={pdfLabel}
+                disabled={pdfBusy}
+                onclick={handleDownloadPdf}
+            ></lightning-button-icon>
+            <lightning-button-icon
                 class="ps-refresh"
                 icon-name="utility:refresh"
                 variant="border-filled"
@@ -63,6 +72,9 @@
             </template>
         </div>
     </div>
+    <template lwc:if={pdfError}>
+        <p class="ps-pdf-error" role="alert">{pdfError}</p>
+    </template>
     <div
         class="ps-viewport"
         tabindex="0"

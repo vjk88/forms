@@ -14,10 +14,18 @@ module.exports = {
             '<rootDir>/force-app/main/default/lwc/finalStudioStyles/finalStudioStyles.css'
     },
     modulePathIgnorePatterns: ['<rootDir>/.localdevserver'],
+    // Vendored third-party builds (pdf-lib, fontkit) are plain UMD: running
+    // 1.3 MB of minified code through Babel only makes the PDF tests slow.
+    transformIgnorePatterns: [
+        ...(jestConfig.transformIgnorePatterns || []),
+        '/staticresources/'
+    ],
     // Other Claude sessions keep git worktrees under .claude/worktrees; their
     // copies of the tests must never run against this checkout's components.
     testPathIgnorePatterns: [
         ...(jestConfig.testPathIgnorePatterns || []),
-        '<rootDir>/.claude/'
+        '<rootDir>/.claude/',
+        // shared test data (JS modules imported by tests, not tests)
+        '/__tests__/__fixtures__/'
     ]
 };

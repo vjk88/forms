@@ -1,4 +1,7 @@
 import { LightningElement, api } from 'lwc';
+import getPdfImages from '@salesforce/apex/FinalPdfController.getImages';
+import { buildFormDocument, pdfFileName } from 'c/finalPdfModel';
+import { downloadPdf, LOCALE } from 'c/finalPdfService';
 import {
     DEVICES,
     PHONES,
@@ -198,6 +201,50 @@ export default class FinalPreviewStage extends LightningElement {
     handleHost(event) {
         this.host = normalizeFrame({ host: event.target.value }).host;
         this._sync();
+    }
+
+    pdfBusy = false;
+    pdfError;
+
+    get pdfLabel() {
+        return this.pdfBusy ? 'Preparing PDF…' : 'Download form as PDF';
+    }
+
+    /**
+     * The form itself as a printable, branded PDF with empty answer areas
+     * (IMPL_PLAN_FORM_PDF §6.3). Spec and tokens come from the viewer on the
+     * stage, so the PDF uses exactly the colors and fonts the preview shows,
+     * draft or published.
+     */
+    async handleDownloadPdf() {
+        const viewer = this.template.querySelector('c-final-form-viewer');
+        if (!viewer || this.pdfBusy) {
+            return;
+        }
+        const { spec, tokens } = viewer.getPdfSnapshot();
+        if (!spec) {
+            return;
+        }
+        this.pdfBusy = true;
+        this.pdfError = undefined;
+        try {
+            const doc = buildFormDocument({
+                spec,
+                mode: 'blank',
+                locale: LOCALE
+            });
+            await downloadPdf({
+                component: this,
+                doc,
+                tokens,
+                loadImages: (versionIds) => getPdfImages({ versionIds }),
+                fileName: pdfFileName(doc.title)
+            });
+        } catch (e) {
+            this.pdfError = e && e.message;
+        } finally {
+            this.pdfBusy = false;
+        }
     }
 
     handleRefresh() {

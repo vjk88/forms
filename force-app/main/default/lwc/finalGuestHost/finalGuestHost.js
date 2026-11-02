@@ -3,6 +3,7 @@ import { CurrentPageReference } from 'lightning/navigation';
 import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec';
 import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
+import getGuestPdfImages from '@salesforce/apex/FinalGuestController.getGuestPdfImages';
 import getLookupPlan from '@salesforce/apex/FinalAutofillController.getLookupPlan';
 import isGuest from '@salesforce/user/isGuest';
 
@@ -98,6 +99,14 @@ export default class FinalGuestHost extends LightningElement {
             );
         }
     }
+
+    /**
+     * Image bytes for the respondent's PDF copy (IMPL_PLAN_FORM_PDF §6.1).
+     * The guest names nothing: the server serves the images the published
+     * spec shows, and only when the author allowed a copy. The ids the
+     * viewer asks for are ignored on purpose.
+     */
+    pdfImageLoader = () => getGuestPdfImages({ formId: this.effectiveFormId });
 
     get effectiveFormId() {
         return this._urlFormId || this.formId;

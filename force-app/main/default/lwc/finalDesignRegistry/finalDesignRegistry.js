@@ -1406,6 +1406,29 @@ const AREAS = [
                             { key: 'asButtonGoesTo', equals: 'url' }
                         ]
                     },
+                    // Respondent's PDF copy (IMPL_PLAN_FORM_PDF §6.1): off until
+                    // the author says so — a published form's thank-you screen
+                    // never grows a button nobody asked for.
+                    {
+                        key: 'asDownloadCopy',
+                        label: 'Let respondents download a copy (PDF)',
+                        type: 'toggle',
+                        path: 'settings.completion.downloadCopy',
+                        fallback: false,
+                        simple: true,
+                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                    },
+                    {
+                        key: 'asDownloadLabel',
+                        label: 'Download button label',
+                        type: 'text',
+                        path: 'settings.completion.downloadLabel',
+                        placeholder: 'Download a copy (PDF)',
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asDownloadCopy', equals: true }
+                        ]
+                    },
                     // Toast & go: same destination slots, its own gate — two
                     // registry rows over ONE path is the OR of the mode gates.
                     {
@@ -1670,7 +1693,9 @@ export const DESIGN_SECTIONS = [
                     'asActionButton',
                     'asButtonLabel',
                     'asButtonGoesTo',
-                    'asButtonUrl'
+                    'asButtonUrl',
+                    'asDownloadCopy',
+                    'asDownloadLabel'
                 ]
             },
             {

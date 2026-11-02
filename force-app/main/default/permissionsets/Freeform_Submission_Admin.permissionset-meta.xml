@@ -6,6 +6,10 @@
     >Every Freeform submission and its answers, without the builder: View All, plus retrying failed mappings (the Retry button, and setting Ready for Retry in bulk - which needs edit on submissions). Assign only to people whose job is all submissions.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <classAccesses>
+        <apexClass>FinalPdfController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>FinalSubmissionController</apexClass>
         <enabled>true</enabled>
     </classAccesses>

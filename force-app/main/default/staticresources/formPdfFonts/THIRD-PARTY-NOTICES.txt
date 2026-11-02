@@ -1,0 +1,235 @@
+Third-party fonts bundled in the formFonts static resource
+
+Each font below is redistributed unmodified (Latin subset as served by
+Google Fonts) under its own licence. The full licence text sits next to
+each font, in the folder named below.
+
+Inter
+  Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+  Licence: OFL-1.1 (inter/OFL.txt)
+  Source: google/fonts ofl/inter
+
+Roboto
+  Copyright 2011 The Roboto Project Authors (https://github.com/googlefonts/roboto-classic)
+  Licence: OFL-1.1 (roboto/OFL.txt)
+  Source: google/fonts ofl/roboto
+
+Open Sans
+  Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)
+  Licence: OFL-1.1 (opensans/OFL.txt)
+  Source: google/fonts ofl/opensans
+
+Lato
+  Copyright (c) 2011-2015 by tyPoland Lukasz Dziedzic (http://www.typoland.com/) with Reserved Font Name \
+  Licence: OFL-1.1 (lato/OFL.txt)
+  Source: google/fonts ofl/lato
+
+Source Sans 3
+  © 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’
+  Licence: OFL-1.1 (sourcesans3/OFL.txt)
+  Source: google/fonts ofl/sourcesans3
+
+Noto Sans
+  Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+  Licence: OFL-1.1 (notosans/OFL.txt)
+  Source: google/fonts ofl/notosans
+
+Public Sans
+  Copyright 2015 The Public Sans Project Authors (https://github.com/uswds/public-sans)
+  Licence: OFL-1.1 (publicsans/OFL.txt)
+  Source: google/fonts ofl/publicsans
+
+Poppins
+  Copyright 2020 The Poppins Project Authors (https://github.com/itfoundry/Poppins)
+  Licence: OFL-1.1 (poppins/OFL.txt)
+  Source: google/fonts ofl/poppins
+
+Montserrat
+  Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+  Licence: OFL-1.1 (montserrat/OFL.txt)
+  Source: google/fonts ofl/montserrat
+
+DM Sans
+  Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)
+  Licence: OFL-1.1 (dmsans/OFL.txt)
+  Source: google/fonts ofl/dmsans
+
+Manrope
+  Copyright 2019 The Manrope Project Authors (https://github.com/googlefonts/manrope)
+  Licence: OFL-1.1 (manrope/OFL.txt)
+  Source: google/fonts ofl/manrope
+
+Plus Jakarta Sans
+  Copyright 2020 The Plus Jakarta Sans Project Authors (https://github.com/tokotype/PlusJakartaSans)
+  Licence: OFL-1.1 (plusjakartasans/OFL.txt)
+  Source: google/fonts ofl/plusjakartasans
+
+Outfit
+  Copyright 2021 The Outfit Project Authors (https://github.com/Outfitio/Outfit-Fonts)
+  Licence: OFL-1.1 (outfit/OFL.txt)
+  Source: google/fonts ofl/outfit
+
+Figtree
+  Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)
+  Licence: OFL-1.1 (figtree/OFL.txt)
+  Source: google/fonts ofl/figtree
+
+Space Grotesk
+  Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)
+  Licence: OFL-1.1 (spacegrotesk/OFL.txt)
+  Source: google/fonts ofl/spacegrotesk
+
+Nunito
+  Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
+  Licence: OFL-1.1 (nunito/OFL.txt)
+  Source: google/fonts ofl/nunito
+
+Nunito Sans
+  Copyright 2016 The Nunito Sans Project Authors (https://github.com/Fonthausen/NunitoSans)
+  Licence: OFL-1.1 (nunitosans/OFL.txt)
+  Source: google/fonts ofl/nunitosans
+
+Quicksand
+  Copyright 2019 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily.git), with Reserved Font Name \
+  Licence: OFL-1.1 (quicksand/OFL.txt)
+  Source: google/fonts ofl/quicksand
+
+Rubik
+  Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik)
+  Licence: OFL-1.1 (rubik/OFL.txt)
+  Source: google/fonts ofl/rubik
+
+Comfortaa
+  Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfortaa), with Reserved Font Name \
+  Licence: OFL-1.1 (comfortaa/OFL.txt)
+  Source: google/fonts ofl/comfortaa
+
+Playfair Display
+  Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name \
+  Licence: OFL-1.1 (playfairdisplay/OFL.txt)
+  Source: google/fonts ofl/playfairdisplay
+
+Lora
+  Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \
+  Licence: OFL-1.1 (lora/OFL.txt)
+  Source: google/fonts ofl/lora
+
+Merriweather
+  Copyright 2024 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name \
+  Licence: OFL-1.1 (merriweather/OFL.txt)
+  Source: google/fonts ofl/merriweather
+
+Libre Baskerville
+  Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)
+  Licence: OFL-1.1 (librebaskerville/OFL.txt)
+  Source: google/fonts ofl/librebaskerville
+
+Source Serif 4
+  © 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’.
+  Licence: OFL-1.1 (sourceserif4/OFL.txt)
+  Source: google/fonts ofl/sourceserif4
+
+Noto Serif
+  Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+  Licence: OFL-1.1 (notoserif/OFL.txt)
+  Source: google/fonts ofl/notoserif
+
+Cormorant Garamond
+  Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)
+  Licence: OFL-1.1 (cormorantgaramond/OFL.txt)
+  Source: google/fonts ofl/cormorantgaramond
+
+EB Garamond
+  Copyright 2017 The EB Garamond Project Authors (https://github.com/octaviopardo/EBGaramond12)
+  Licence: OFL-1.1 (ebgaramond/OFL.txt)
+  Source: google/fonts ofl/ebgaramond
+
+Fraunces
+  Copyright 2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces)
+  Licence: OFL-1.1 (fraunces/OFL.txt)
+  Source: google/fonts ofl/fraunces
+
+Oswald
+  Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
+  Licence: OFL-1.1 (oswald/OFL.txt)
+  Source: google/fonts ofl/oswald
+
+Barlow Condensed
+  Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+  Licence: OFL-1.1 (barlowcondensed/OFL.txt)
+  Source: google/fonts ofl/barlowcondensed
+
+Roboto Condensed
+  Copyright 2011 Google Inc. All Rights Reserved.
+  Licence: OFL-1.1 (robotocondensed/OFL.txt)
+  Source: google/fonts ofl/robotocondensed
+
+Archivo Black
+  Copyright 2017 The Archivo Black Project Authors (https://github.com/Omnibus-Type/ArchivoBlack)
+  Licence: OFL-1.1 (archivoblack/OFL.txt)
+  Source: google/fonts ofl/archivoblack
+
+Anton
+  Copyright 2020 The Anton Project Authors (https://github.com/googlefonts/AntonFont.git)
+  Licence: OFL-1.1 (anton/OFL.txt)
+  Source: google/fonts ofl/anton
+
+Bebas Neue
+  Copyright 2019 The Bebas Neue Project Authors (https://github.com/dharmatype/Bebas-Neue)
+  Licence: OFL-1.1 (bebasneue/OFL.txt)
+  Source: google/fonts ofl/bebasneue
+
+JetBrains Mono
+  Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+  Licence: OFL-1.1 (jetbrainsmono/OFL.txt)
+  Source: google/fonts ofl/jetbrainsmono
+
+IBM Plex Mono
+  Copyright 2017 IBM Corp. All rights reserved.
+  Licence: OFL-1.1 (ibmplexmono/OFL.txt)
+  Source: google/fonts ofl/ibmplexmono
+
+Roboto Mono
+  Copyright 2015 The Roboto Mono Project Authors (https://github.com/googlefonts/robotomono)
+  Licence: OFL-1.1 (robotomono/OFL.txt)
+  Source: google/fonts ofl/robotomono
+
+Source Code Pro
+  © 2010 - 2020 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’.
+  Licence: OFL-1.1 (sourcecodepro/OFL.txt)
+  Source: google/fonts ofl/sourcecodepro
+
+Space Mono
+  Copyright 2016 The Space Mono Project Authors (https://github.com/googlefonts/spacemono)
+  Licence: OFL-1.1 (spacemono/OFL.txt)
+  Source: google/fonts ofl/spacemono
+
+Fira Code
+  Copyright 2014-2020 The Fira Code Project Authors (https://github.com/tonsky/FiraCode)
+  Licence: OFL-1.1 (firacode/OFL.txt)
+  Source: google/fonts ofl/firacode
+
+Caveat
+  Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)
+  Licence: OFL-1.1 (caveat/OFL.txt)
+  Source: google/fonts ofl/caveat
+
+Dancing Script
+  Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name \'Dancing Script\'.
+  Licence: OFL-1.1 (dancingscript/OFL.txt)
+  Source: google/fonts ofl/dancingscript
+
+Pacifico
+  Copyright 2018 The Pacifico Project Authors (https://github.com/googlefonts/Pacifico)
+  Licence: OFL-1.1 (pacifico/OFL.txt)
+  Source: google/fonts ofl/pacifico
+
+Patrick Hand
+  Copyright (c) 2010-2012 Patrick Wagesreiter (mail@patrickwagesreiter.at)
+  Licence: OFL-1.1 (patrickhand/OFL.txt)
+  Source: google/fonts ofl/patrickhand
+
+Satisfy
+  Copyright (c) 2011 by Font Diner, Inc. All rights reserved.
+  Licence: Apache-2.0 (satisfy/LICENSE.txt)
+  Source: google/fonts apache/satisfy

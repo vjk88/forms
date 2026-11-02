@@ -1,6 +1,11 @@
 import { LightningElement, api, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import getSubmission from '@salesforce/apex/FinalSubmissionController.getSubmission';
+import getPdfImages from '@salesforce/apex/FinalPdfController.getImages';
+import { optionLabel } from 'c/finalAnswerText';
+import { localizeAssetUrls } from 'c/finalThemeAssets';
+import { buildReaderDocument, pdfFileName } from 'c/finalPdfModel';
+import { downloadPdf, LOCALE } from 'c/finalPdfService';
 
 /**
  * Reads one Freeform submission back, in the form's own order (FREEFORM_SPEC §8).
@@ -27,6 +32,8 @@ export default class FinalSubmissionReader extends NavigationMixin(
 
     data;
     error;
+    pdfBusy = false;
+    pdfError;
 
     @wire(getSubmission, { submissionId: '$recordId' })
     wired({ data, error }) {
@@ -69,6 +76,50 @@ export default class FinalSubmissionReader extends NavigationMixin(
 
     get hasFiles() {
         return this.files.length > 0;
+    }
+
+    get pdfLabel() {
+        return this.pdfBusy ? 'Preparing PDF…' : 'Download PDF';
+    }
+
+    /**
+     * The submission as a branded PDF (IMPL_PLAN_FORM_PDF §6.2): the rows
+     * on this card, in the colors and fonts of the version that was filled
+     * in (its frozen `resolved.tokens`), with images read in user mode.
+     */
+    async handleDownloadPdf() {
+        if (!this.data || this.pdfBusy) {
+            return;
+        }
+        this.pdfBusy = true;
+        this.pdfError = undefined;
+        try {
+            const spec = this._spec;
+            const doc = buildReaderDocument({
+                spec,
+                header: this.header,
+                sections: this.sections,
+                files: this.files,
+                locale: LOCALE
+            });
+            const tokens = localizeAssetUrls(
+                (spec.resolved && spec.resolved.tokens) || {}
+            );
+            await downloadPdf({
+                component: this,
+                doc,
+                tokens,
+                loadImages: (versionIds) => getPdfImages({ versionIds }),
+                fileName: pdfFileName(
+                    doc.title,
+                    this.data.submissionNumber || 'answers'
+                )
+            });
+        } catch (e) {
+            this.pdfError = e && e.message;
+        } finally {
+            this.pdfBusy = false;
+        }
     }
 
     /** Open an attachment in the standard file preview. */
@@ -347,42 +398,6 @@ function optionLabels(a, el) {
     }
     const options = optionsOf(el);
     return values.map((v) => optionLabel(v, options)).join(', ');
-}
-
-/**
- * One stored choice value, as a person should read it.
- *
- * `options` is the choice list from the version that was FILLED IN, each
- * entry `{ value, label }`. `value` is what was stored — an internal key
- * like "vip", never the wording.
- *
- * Comparison is by string: a spec authored with numeric option values stores
- * "1" and declares 1, and those must still be the same option.
- *
- * An unmatched value falls back to the key itself, with no marker attached.
- * That case is not the exception it looks like — the orphan section renders
- * with no element at all, so EVERY answer there arrives here unmatched, and a
- * note on each one would only repeat the heading already above them. Inside a
- * live question it means the author deleted the option after someone picked
- * it; the key is still the truthful answer, and a parenthetical repeated
- * across six selections of a multi-select would cost more than it explains.
- */
-function optionLabel(value, options) {
-    if (value === null || value === undefined) {
-        return '';
-    }
-    const key = String(value);
-    const hit = (options || []).find((o) => o && String(o.value) === key);
-    if (!hit) {
-        return key;
-    }
-    // An option may carry a value and no wording; the key is then all the
-    // name it ever had.
-    return hit.label === null ||
-        hit.label === undefined ||
-        String(hit.label).trim() === ''
-        ? key
-        : hit.label;
 }
 
 function fileDetail(f) {

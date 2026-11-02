@@ -98,6 +98,15 @@
     margin-left: auto;
 }
 
+.ps-pdf-error {
+    margin: 0;
+    padding: var(--c-studio-space-3) var(--c-studio-space-5);
+    background: var(--c-studio-error-surface);
+    color: var(--c-studio-error-text);
+    font-size: var(--c-studio-fs-small);
+    border-bottom: 1px solid var(--c-studio-error-border);
+}
+
 .ps-scale {
     min-width: 4ch;
     font-size: 12px;

@@ -1,5 +1,20 @@
 <template>
     <lightning-card icon-name="standard:form" title="Answers">
+        <template lwc:if={hasData}>
+            <lightning-button
+                slot="actions"
+                class="sr-pdf"
+                label={pdfLabel}
+                icon-name="utility:download"
+                disabled={pdfBusy}
+                onclick={handleDownloadPdf}
+            ></lightning-button>
+        </template>
+        <template lwc:if={pdfError}>
+            <p class="sr-error slds-p-horizontal_medium" role="alert">
+                {pdfError}
+            </p>
+        </template>
         <template lwc:if={error}>
             <p class="sr-error slds-p-horizontal_medium" role="alert">
                 {error}

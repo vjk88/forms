@@ -24,6 +24,13 @@ export default class FinalAfterSubmit extends LightningElement {
     @api config;
     /** Bleed layouts dropped the panel surface — paint our own card. */
     @api bleed = false;
+    /** The viewer holds a submitted copy it can turn into a PDF
+     *  (IMPL_PLAN_FORM_PDF §6.1). The author's switch is config.downloadCopy. */
+    @api canDownload = false;
+    /** The PDF is being made: the button says so and waits. */
+    @api downloadBusy = false;
+    /** The last attempt failed: said under the button, which stays usable. */
+    @api downloadError;
 
     get cfg() {
         return this.config || {};
@@ -52,6 +59,28 @@ export default class FinalAfterSubmit extends LightningElement {
 
     get showRedirect() {
         return Boolean(this.cfg.autoRedirect);
+    }
+
+    get showDownload() {
+        return Boolean(this.cfg.downloadCopy) && this.canDownload;
+    }
+
+    get downloadLabel() {
+        if (this.downloadBusy) {
+            return 'Preparing your PDF…';
+        }
+        return this.cfg.downloadLabel || 'Download a copy (PDF)';
+    }
+
+    get downloadBusyAttr() {
+        return this.downloadBusy ? 'true' : 'false';
+    }
+
+    handleDownload() {
+        if (this.downloadBusy) {
+            return;
+        }
+        this.dispatchEvent(new CustomEvent('downloadcopy'));
     }
 
     get redirectDest() {

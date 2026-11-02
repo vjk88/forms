@@ -6,6 +6,7 @@ import {
 } from 'c/finalStepFlow';
 import { applyScaleRowLayout } from 'c/finalScaleLayout';
 import { lookOf, optionsFor } from 'c/finalChoiceLook';
+import { likertPoints, matrixPoints, scaleBounds } from 'c/finalSurveyPoints';
 
 /**
  * finalElementRenderer — one spec element.
@@ -139,7 +140,6 @@ const EMOJI_SENTIMENTS = [
     'Very happy'
 ];
 const RATING_GLYPHS = { star: '★', heart: '♥', thumb: '👍' };
-const SCALE_SIZES = [5, 7, 10];
 
 export default class FinalElementRenderer extends LightningElement {
     _element;
@@ -873,24 +873,7 @@ export default class FinalElementRenderer extends LightningElement {
     }
 
     get scaleBounds() {
-        if (this.isLikert) {
-            const pts = this.likertPoints;
-            return { min: pts[0].value, max: pts[pts.length - 1].value };
-        }
-        if (this.isNps) {
-            return { min: 0, max: 10 };
-        }
-        if (this.isRating) {
-            // segmented 5|10 (owner ruling Q1 — the 7 lives on `scale` only)
-            return { min: 1, max: this.cfg.max === 10 ? 10 : 5 };
-        }
-        if (this.isScale) {
-            const size = SCALE_SIZES.includes(this.cfg.size)
-                ? this.cfg.size
-                : 5;
-            return { min: 1, max: size };
-        }
-        return { min: 1, max: 5 }; // emojiScale
+        return scaleBounds(this.el.type, this.cfg);
     }
 
     get scaleItems() {
@@ -1099,17 +1082,7 @@ export default class FinalElementRenderer extends LightningElement {
 
     /** Likert points: authored config.points, else the classic agree-5. */
     get likertPoints() {
-        const authored = this.cfg.points;
-        if (Array.isArray(authored) && authored.length) {
-            return authored;
-        }
-        return [
-            { value: 1, label: 'Strongly disagree' },
-            { value: 2, label: 'Disagree' },
-            { value: 3, label: 'Neutral' },
-            { value: 4, label: 'Agree' },
-            { value: 5, label: 'Strongly agree' }
-        ];
+        return likertPoints(this.cfg);
     }
 
     get likertItems() {
@@ -1231,16 +1204,7 @@ export default class FinalElementRenderer extends LightningElement {
 
     /** Matrix scale points: authored config.points, else agree-4. */
     get matrixPoints() {
-        const authored = this.cfg.points;
-        if (Array.isArray(authored) && authored.length) {
-            return authored;
-        }
-        return [
-            { value: 1, label: 'Disagree' },
-            { value: 2, label: 'Neutral' },
-            { value: 3, label: 'Agree' },
-            { value: 4, label: 'Strongly agree' }
-        ];
+        return matrixPoints(this.cfg);
     }
 
     get matrixPicksMap() {
@@ -1663,7 +1627,9 @@ export default class FinalElementRenderer extends LightningElement {
 
     handleLookupChange(event) {
         if (event && event.detail) {
-            this.dispatchValue(event.detail.value);
+            // The record's NAME rides along so a downloaded copy can print it
+            // instead of an Id (IMPL_PLAN_FORM_PDF §4.3). Display only.
+            this.dispatchValue(event.detail.value, event.detail.label);
         }
     }
 
@@ -1698,11 +1664,11 @@ export default class FinalElementRenderer extends LightningElement {
         this.dispatchValue(event.detail.value);
     }
 
-    dispatchValue(value) {
-        this.dispatchEvent(
-            new CustomEvent('valuechange', {
-                detail: { elementId: this.el.id, value }
-            })
-        );
+    dispatchValue(value, label) {
+        const detail = { elementId: this.el.id, value };
+        if (label !== undefined) {
+            detail.label = label;
+        }
+        this.dispatchEvent(new CustomEvent('valuechange', { detail }));
     }
 }
