@@ -394,6 +394,8 @@ describe('the bundle holds the DESIGN_SYSTEM §4 values', () => {
         'radius-pill': '999px',
         'shadow-2': '0 10px 24px rgb(15 23 42 / 12%)',
         'shadow-3': '0 20px 48px rgb(0 0 0 / 28%)',
+        'selected-ring': '0 0 0 1px var(--c-studio-accent)',
+        'selected-bar': 'inset 3px 0 0 var(--c-studio-accent)',
         'dialog-shadow': 'var(--c-studio-shadow-3)',
         'z-raised': '2',
         'z-dropdown': '20',

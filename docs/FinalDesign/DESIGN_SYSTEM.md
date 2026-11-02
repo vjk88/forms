@@ -182,6 +182,7 @@ an alias. 2 is for optical fixes and tight insets only.
 | `--c-studio-radius-lg` | 12px | Dialogs, drawers, the app frame |
 | `--c-studio-radius-pill` | 999px | Toggles, round markers. Never buttons. |
 | `--c-studio-shadow-2` | `0 10px 24px rgb(15 23 42 / 12%)` | Menus, popovers, dropdowns |
+| `--c-studio-selected-ring` / `--c-studio-selected-bar` | `0 0 0 1px` accent / `inset 3px 0 0` accent | Selected: the ring around a card, the leading bar on a row or rail tab (§2) |
 | `--c-studio-shadow-3` | `0 20px 48px rgb(0 0 0 / 28%)` | Dialogs, drawers (replaces `--c-studio-dialog-shadow`) |
 | `--c-studio-z-raised` / `-dropdown` / `-menu` / `-drawer` / `-action-dialog` / `-backdrop` / `-modal` / `-popover` | 2 / 20 / 30 / 1000 / 1100 / 9000 / 9001 / 9500 | Today's numbers, named. Check the real stacking context before trusting one. |
 | `--c-studio-duration` / `--c-studio-ease` | 150ms / `ease` | State changes only (hover, toggle knob, width). Never focus or errors. |
