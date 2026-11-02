@@ -48,22 +48,6 @@
     margin-bottom: -6px;
 }
 
-.pp-select {
-    width: 100%;
-    padding: 7px 10px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12.5px;
-    cursor: pointer;
-}
-
-.pp-select:focus-visible {
-    outline: 2px solid var(--c-studio-accent);
-    outline-offset: 1px;
-}
-
 .pp-hint {
     margin: 0;
     color: var(--c-studio-text-weak);
@@ -203,26 +187,6 @@
     color: var(--c-studio-accent-text);
 }
 
-/* Wide two-state toggle button (Header shown / Not collapsible …). */
-.pp-toggle {
-    width: 100%;
-    padding: 7px 10px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--c-studio-text-weak);
-    cursor: pointer;
-}
-
-.pp-toggle.on {
-    border-color: var(--c-studio-accent);
-    background: var(--c-studio-accent-surface);
-    color: var(--c-studio-accent-text);
-}
-
 .pp-input {
     width: 100%;
     min-width: 0;
@@ -245,40 +209,20 @@
     align-items: center;
 }
 
+/* lightning-input / -button-icon draw themselves; these only place them. */
+.pp-field {
+    display: block;
+    width: 100%;
+}
+
+.pp-optrow .pp-field,
+.pp-numrow .pp-field {
+    flex: 1;
+    min-width: 0;
+}
+
 .pp-x {
     flex: none;
-    border: 0;
-    background: none;
-    color: var(--c-studio-text-weak);
-    font: inherit;
-    font-size: 14px;
-    line-height: 1;
-    min-width: 24px;
-    min-height: 24px;
-    padding: 4px 2px;
-    cursor: pointer;
-}
-
-.pp-x:hover {
-    color: var(--c-studio-error);
-}
-
-.pp-add {
-    align-self: flex-start;
-    border: 1px dashed var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: none;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--c-studio-accent-text);
-    padding: 5px 10px;
-    cursor: pointer;
-}
-
-.pp-add:hover {
-    border-color: var(--c-studio-accent);
-    background: var(--c-studio-accent-surface);
 }
 
 /* media upload (images are Salesforce Files — legacy path) */
@@ -310,22 +254,6 @@
 
 .pp-upload input[type='file'] {
     display: none;
-}
-
-.pp-remove {
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12px;
-    color: var(--c-studio-text-weak);
-    padding: 6px 10px;
-    cursor: pointer;
-}
-
-.pp-remove:hover {
-    color: var(--c-studio-error);
-    border-color: var(--c-studio-error);
 }
 
 /* section header icon picker (legacy ic-picker) */
@@ -384,20 +312,6 @@
     font-size: 0.78rem;
     font-weight: 600;
 }
-.pp-topic-x {
-    border: none;
-    background: none;
-    color: inherit;
-    font-size: 0.9rem;
-    line-height: 1;
-    padding: 2px 6px;
-    cursor: pointer;
-    border-radius: 50%;
-}
-.pp-topic-x:hover {
-    background: var(--c-studio-hover);
-}
-
 /* ---- imageChoice per-option upload (2026-07-31 fixes) ---- */
 .pp-opt-thumb {
     width: 34px;

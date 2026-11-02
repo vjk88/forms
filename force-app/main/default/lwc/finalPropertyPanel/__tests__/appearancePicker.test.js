@@ -412,7 +412,8 @@ describe('reordering options (the ⋮⋮ handle)', () => {
         expect(
             $(el, '.pp-optrow [data-field="label"]').getAttribute('aria-label')
         ).toBe('Option 1 label');
-        expect($(el, '.pp-x').getAttribute('aria-label')).toBe('Remove Power');
+        // lightning-button-icon: the spoken name is alternative-text
+        expect($(el, '.pp-x').alternativeText).toBe('Remove Power');
     });
 
     it('removing the last option keeps a blank row, so Chips stays Chips', async () => {

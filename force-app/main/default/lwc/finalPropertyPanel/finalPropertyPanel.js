@@ -404,10 +404,15 @@ export default class FinalPropertyPanel extends LightningElement {
         return out;
     }
 
+    get mappingValue() {
+        return (this.n.mapping && this.n.mapping.field) || '';
+    }
+
+    /** lightning-combobox reports the pick in detail.value. */
     handleMappingChange(event) {
         this.dispatchEvent(
             new CustomEvent('mappingchange', {
-                detail: { field: event.target.value || null }
+                detail: { field: event.detail.value || null }
             })
         );
     }
@@ -432,7 +437,7 @@ export default class FinalPropertyPanel extends LightningElement {
     handleMappingMode(event) {
         this.dispatchEvent(
             new CustomEvent('mappingmodechange', {
-                detail: { mode: event.currentTarget.dataset.value }
+                detail: { mode: event.detail.value }
             })
         );
     }
@@ -1125,14 +1130,14 @@ export default class FinalPropertyPanel extends LightningElement {
 
     handleCaptionDisplay(event) {
         this._prop({
-            descriptionDisplay: event.currentTarget.dataset.value
+            descriptionDisplay: event.detail.value
         });
     }
 
     /** Scale-bound changes keep analytics.scaleMax in lockstep — normalized
      *  scores must never disagree with the widget's own bounds. */
     handleRatingMax(event) {
-        const max = Number(event.currentTarget.dataset.value);
+        const max = Number(event.detail.value);
         this._config({ max });
         this._prop({
             analytics: {
@@ -1144,11 +1149,11 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     handleRatingIcon(event) {
-        this._config({ icon: event.currentTarget.dataset.value });
+        this._config({ icon: event.detail.value });
     }
 
     handleScaleSize(event) {
-        const size = Number(event.currentTarget.dataset.value);
+        const size = Number(event.detail.value);
         this._config({ size });
         this._prop({
             analytics: {
@@ -1160,7 +1165,7 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     handleNpsColoring(event) {
-        this._config({ coloring: event.currentTarget.dataset.value });
+        this._config({ coloring: event.detail.value });
     }
 
     handleEndLabel(event) {
@@ -1234,11 +1239,10 @@ export default class FinalPropertyPanel extends LightningElement {
 
     // ---- segmented option builders ----
 
+    /** A finalButtonGroup's inputs (DESIGN_SYSTEM 5.7): its options and the
+     *  chosen value. Every value is a string, as data-value gave before. */
     _seg(options, current) {
-        return options.map((o) => ({
-            ...o,
-            cls: o.value === current ? 'pp-seg-btn on' : 'pp-seg-btn'
-        }));
+        return { options, value: current };
     }
 
     // ---- field inspector (BUILDER_SURFACES §2) ----
@@ -1609,32 +1613,12 @@ export default class FinalPropertyPanel extends LightningElement {
         return `The ${r.by} already names this page “${r.pageName}”, so this heading would say it twice. Screen readers still read it.${back} Switch the header on to show it anyway.`;
     }
 
-    get headerToggleLabel() {
-        return this.showHeader ? 'Header shown' : 'Header hidden';
-    }
-
-    get headerToggleClass() {
-        return this.showHeader ? 'pp-toggle on' : 'pp-toggle';
-    }
-
     get collapsible() {
         return Boolean(this.n.collapsible);
     }
 
-    get collapsibleLabel() {
-        return this.collapsible ? 'Collapsible' : 'Not collapsible';
-    }
-
-    get collapsibleClass() {
-        return this.collapsible ? 'pp-toggle on' : 'pp-toggle';
-    }
-
-    get collapsedDefaultLabel() {
-        return this.n.defaultCollapsed ? 'Starts collapsed' : 'Starts expanded';
-    }
-
-    get collapsedDefaultClass() {
-        return this.n.defaultCollapsed ? 'pp-toggle on' : 'pp-toggle';
+    get startsCollapsed() {
+        return Boolean(this.n.defaultCollapsed);
     }
 
     get hasIcon() {
@@ -1760,8 +1744,12 @@ export default class FinalPropertyPanel extends LightningElement {
         this._prop({ help: event.target.value });
     }
 
+    get renderAsValue() {
+        return this.cfg.renderAs || 'Default';
+    }
+
     handleRenderAs(event) {
-        const renderAs = event.target.value;
+        const renderAs = event.detail.value;
         const patch = { renderAs };
         // custom choices need rows to edit; seed picklists from describe
         if (
@@ -1833,7 +1821,7 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     handleWidth(event) {
-        this._prop({ width: Number(event.currentTarget.dataset.value) });
+        this._prop({ width: Number(event.detail.value) });
     }
 
     // content
@@ -1846,26 +1834,26 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     handleImageSize(event) {
-        this._config({ size: event.currentTarget.dataset.value });
+        this._config({ size: event.detail.value });
     }
 
     handleCalloutTone(event) {
-        this._config({ variant: event.currentTarget.dataset.value });
+        this._config({ variant: event.detail.value });
     }
 
     handleSpacerSize(event) {
-        this._config({ size: event.currentTarget.dataset.value });
+        this._config({ size: event.detail.value });
     }
 
     handleConsentToggle(event) {
         this._prop({
-            required: event.currentTarget.dataset.value === 'required'
+            required: event.detail.value === 'required'
         });
     }
 
     handleBlockStyle(event) {
         this._emit('blockstylechange', {
-            style: event.currentTarget.dataset.value
+            style: event.detail.value
         });
     }
 
@@ -1927,19 +1915,20 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     handleColumns(event) {
-        this._prop({ columns: Number(event.currentTarget.dataset.value) });
+        this._prop({ columns: Number(event.detail.value) });
     }
 
-    handleHeaderToggle() {
-        this._prop({ showHeader: !this.showHeader });
+    // lightning-input toggles: the new state is event.target.checked
+    handleHeaderToggle(event) {
+        this._prop({ showHeader: event.target.checked });
     }
 
-    handleCollapsibleToggle() {
-        this._prop({ collapsible: !this.collapsible });
+    handleCollapsibleToggle(event) {
+        this._prop({ collapsible: event.target.checked });
     }
 
-    handleCollapsedDefaultToggle() {
-        this._prop({ defaultCollapsed: !this.n.defaultCollapsed });
+    handleCollapsedDefaultToggle(event) {
+        this._prop({ defaultCollapsed: event.target.checked });
     }
 
     handleIconSearch(event) {
@@ -1965,7 +1954,7 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     handleRepeatStyle(event) {
-        this._repeatPatch('style', event.currentTarget.dataset.value);
+        this._repeatPatch('style', event.detail.value);
     }
 
     handleAddLabel(event) {

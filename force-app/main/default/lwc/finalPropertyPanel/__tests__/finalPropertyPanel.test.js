@@ -56,12 +56,27 @@ function mount(props) {
 
 const flush = () => Promise.resolve();
 
+/** The Header / Collapsible / Starts-collapsed switches are lightning-input
+ *  toggles: their words are the on/off messages, the state is `checked`. */
+function switchWords(t) {
+    if (t.checked) {
+        return t.messageToggleActive;
+    }
+    return t.messageToggleInactive;
+}
+const flipSwitch = (t) => {
+    t.checked = !t.checked;
+    t.dispatchEvent(new CustomEvent('change'));
+};
+
 const seg = (el, containerLabel) => {
     const flds = el.shadowRoot.querySelectorAll('.pp-fld');
     for (const fld of flds) {
         const label = fld.querySelector('.pp-label');
         if (label && label.textContent === containerLabel) {
-            return fld.querySelectorAll('.pp-seg-btn');
+            // the row is a c-final-button-group (DESIGN_SYSTEM 5.7)
+            const group = fld.querySelector('c-final-button-group');
+            return group ? group.shadowRoot.querySelectorAll('button') : [];
         }
     }
     return null;
@@ -369,9 +384,11 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(events.at(-1)).toEqual({ patch: { columns: 4 } });
 
         // icon picker: search narrows, pick emits utility:name
-        const search = el.shadowRoot.querySelector('.pp-icsearch input');
+        const search = el.shadowRoot.querySelector(
+            '.pp-icsearch lightning-input'
+        );
         search.value = 'email';
-        search.dispatchEvent(new Event('input'));
+        search.dispatchEvent(new CustomEvent('change'));
         await flush();
         const icons = el.shadowRoot.querySelectorAll('.pp-ic');
         expect(icons).toHaveLength(1);
@@ -379,11 +396,11 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(events.at(-1)).toEqual({ patch: { icon: 'utility:email' } });
 
         // header + collapsible toggles
-        const toggles = el.shadowRoot.querySelectorAll('.pp-toggle');
-        expect(toggles[0].textContent.trim()).toBe('Header shown');
-        toggles[0].click();
+        const toggles = el.shadowRoot.querySelectorAll('.pp-switch');
+        expect(switchWords(toggles[0])).toBe('Header shown');
+        flipSwitch(toggles[0]);
         expect(events.at(-1)).toEqual({ patch: { showHeader: false } });
-        toggles[1].click();
+        flipSwitch(toggles[1]);
         expect(events.at(-1)).toEqual({ patch: { collapsible: true } });
 
         // NO delete button anywhere (owner delta)
@@ -410,9 +427,9 @@ describe('c-final-property-panel (the FormStudio port)', () => {
                 }
             });
             await flush();
-            const toggle = el.shadowRoot.querySelector('.pp-toggle');
-            expect(toggle.textContent.trim()).toBe('Header hidden');
-            expect(toggle.classList.contains('on')).toBe(false);
+            const toggle = el.shadowRoot.querySelector('.pp-switch');
+            expect(switchWords(toggle)).toBe('Header hidden');
+            expect(toggle.checked).toBe(false);
             const text = hint(el).textContent;
             expect(text).toContain('The side rail already names this page');
             expect(text).toContain('“Details”');
@@ -445,7 +462,7 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             await flush();
             const events = [];
             el.addEventListener('propchange', (e) => events.push(e.detail));
-            el.shadowRoot.querySelector('.pp-toggle').click();
+            flipSwitch(el.shadowRoot.querySelector('.pp-switch'));
             expect(events).toEqual([{ patch: { showHeader: true } }]);
         });
 
@@ -453,9 +470,9 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             const el = mount({ kind: 'section', node: SECTION });
             await flush();
             expect(hint(el)).toBeNull();
-            expect(
-                el.shadowRoot.querySelector('.pp-toggle').textContent.trim()
-            ).toBe('Header shown');
+            expect(switchWords(el.shadowRoot.querySelector('.pp-switch'))).toBe(
+                'Header shown'
+            );
         });
 
         it('a header the author hid by hand shows no explanation (it is simply off)', async () => {
@@ -465,9 +482,9 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             });
             await flush();
             expect(hint(el)).toBeNull();
-            expect(
-                el.shadowRoot.querySelector('.pp-toggle').textContent.trim()
-            ).toBe('Header hidden');
+            expect(switchWords(el.shadowRoot.querySelector('.pp-switch'))).toBe(
+                'Header hidden'
+            );
         });
     });
 
@@ -736,9 +753,10 @@ describe('c-final-property-panel (the FormStudio port)', () => {
                 node: refNode({ referenceTo: 'Contact' })
             });
             await flush();
-            const opts = [
-                ...el.shadowRoot.querySelectorAll('.pp-renderas option')
-            ].map((o) => o.value);
+            // lightning-combobox holds its options as data
+            const opts = el.shadowRoot
+                .querySelector('.pp-renderas')
+                .options.map((o) => o.value);
             expect(opts).toEqual(['Default', 'Filtered_Search']);
         });
 
@@ -768,5 +786,30 @@ describe('c-final-property-panel (the FormStudio port)', () => {
                 el.shadowRoot.querySelector('c-final-lookup-filter')
             ).toBeNull();
         });
+    });
+
+    // IMPL_PLAN_STUDIO_COMPONENT_SWAP rule 3: lightning-input fires change on
+    // every keystroke; the inspector's boxes still save only when you leave.
+    it('typing in a box saves nothing; leaving it (commit) saves', async () => {
+        const el = mount({
+            kind: 'element',
+            node: {
+                id: 'el_m',
+                type: 'matrix',
+                label: 'Rate us',
+                config: { rows: [{ label: 'Speed', value: 'speed' }] }
+            }
+        });
+        await flush();
+        const events = [];
+        el.addEventListener('configchange', (e) => events.push(e.detail));
+        const box = el.shadowRoot.querySelector(
+            'lightning-input[data-index="0"]'
+        );
+        box.value = 'Quality';
+        box.dispatchEvent(new CustomEvent('change'));
+        expect(events).toEqual([]);
+        box.dispatchEvent(new CustomEvent('commit'));
+        expect(events.at(-1).patch.rows[0].label).toBe('Quality');
     });
 });

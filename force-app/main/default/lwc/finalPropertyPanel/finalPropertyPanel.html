@@ -46,91 +46,61 @@
                      either way, so an early pick is harmless -->
                 <div class="pp-fld">
                     <span class="pp-label">Show caption as</span>
-                    <div class="pp-seg">
-                        <template for:each={captionDisplaySeg} for:item="b">
-                            <button
-                                key={b.value}
-                                type="button"
-                                class={b.cls}
-                                data-value={b.value}
-                                onclick={handleCaptionDisplay}
-                            >
-                                {b.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Show caption as"
+                        options={captionDisplaySeg.options}
+                        value={captionDisplaySeg.value}
+                        onchange={handleCaptionDisplay}
+                    ></c-final-button-group>
                 </div>
 
                 <template lwc:if={isRatingQuestion}>
                     <div class="pp-fld">
                         <span class="pp-label">Maximum</span>
-                        <div class="pp-seg">
-                            <template for:each={ratingMaxSeg} for:item="b">
-                                <button
-                                    key={b.value}
-                                    type="button"
-                                    class={b.cls}
-                                    data-value={b.value}
-                                    onclick={handleRatingMax}
-                                >
-                                    {b.label}
-                                </button>
-                            </template>
-                        </div>
+                        <c-final-button-group
+                            stretch
+                            label="Maximum"
+                            options={ratingMaxSeg.options}
+                            value={ratingMaxSeg.value}
+                            onchange={handleRatingMax}
+                        ></c-final-button-group>
                     </div>
                     <div class="pp-fld">
                         <span class="pp-label">Icon</span>
-                        <div class="pp-seg">
-                            <template for:each={ratingIconSeg} for:item="b">
-                                <button
-                                    key={b.value}
-                                    type="button"
-                                    class={b.cls}
-                                    data-value={b.value}
-                                    onclick={handleRatingIcon}
-                                >
-                                    {b.label}
-                                </button>
-                            </template>
-                        </div>
+                        <c-final-button-group
+                            stretch
+                            label="Icon"
+                            options={ratingIconSeg.options}
+                            value={ratingIconSeg.value}
+                            onchange={handleRatingIcon}
+                        ></c-final-button-group>
                     </div>
                 </template>
 
                 <template lwc:if={isOpinionScaleQuestion}>
                     <div class="pp-fld">
                         <span class="pp-label">Scale size</span>
-                        <div class="pp-seg">
-                            <template for:each={scaleSizeSeg} for:item="b">
-                                <button
-                                    key={b.value}
-                                    type="button"
-                                    class={b.cls}
-                                    data-value={b.value}
-                                    onclick={handleScaleSize}
-                                >
-                                    {b.label}
-                                </button>
-                            </template>
-                        </div>
+                        <c-final-button-group
+                            stretch
+                            label="Scale size"
+                            options={scaleSizeSeg.options}
+                            value={scaleSizeSeg.value}
+                            onchange={handleScaleSize}
+                        ></c-final-button-group>
                     </div>
                 </template>
 
                 <template lwc:if={isNpsQuestion}>
                     <div class="pp-fld">
                         <span class="pp-label">Detractor coloring</span>
-                        <div class="pp-seg">
-                            <template for:each={npsColoringSeg} for:item="b">
-                                <button
-                                    key={b.value}
-                                    type="button"
-                                    class={b.cls}
-                                    data-value={b.value}
-                                    onclick={handleNpsColoring}
-                                >
-                                    {b.label}
-                                </button>
-                            </template>
-                        </div>
+                        <c-final-button-group
+                            stretch
+                            label="Detractor coloring"
+                            options={npsColoringSeg.options}
+                            value={npsColoringSeg.value}
+                            onchange={handleNpsColoring}
+                        ></c-final-button-group>
                     </div>
                 </template>
 
@@ -138,20 +108,22 @@
                     <div class="pp-fld">
                         <span class="pp-label">Button labels</span>
                         <div class="pp-numrow">
-                            <input
-                                type="text"
-                                class="pp-input"
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Yes label"
+                                class="pp-field"
                                 placeholder="Yes"
                                 value={yesLabelText}
-                                onchange={handleYesLabel}
-                            />
-                            <input
-                                type="text"
-                                class="pp-input"
+                                oncommit={handleYesLabel}
+                            ></lightning-input>
+                            <lightning-input
+                                variant="label-hidden"
+                                label="No label"
+                                class="pp-field"
                                 placeholder="No"
                                 value={noLabelText}
-                                onchange={handleNoLabel}
-                            />
+                                oncommit={handleNoLabel}
+                            ></lightning-input>
                         </div>
                     </div>
                 </template>
@@ -176,15 +148,16 @@
                                         alt=""
                                     />
                                 </template>
-                                <input
-                                    type="text"
-                                    class="pp-input"
+                                <lightning-input
+                                    variant="label-hidden"
+                                    label="Label"
+                                    class="pp-field"
                                     placeholder="Label"
                                     value={o.label}
                                     data-index={o.index}
                                     data-field="label"
-                                    onchange={handleImageOptionChange}
-                                />
+                                    oncommit={handleImageOptionChange}
+                                ></lightning-input>
                                 <label
                                     class="pp-upload-opt"
                                     title="Upload an image"
@@ -198,27 +171,28 @@
                                         onchange={handleOptionImageUpload}
                                     />
                                 </label>
-                                <button
-                                    type="button"
+                                <lightning-button-icon
                                     class="pp-x"
+                                    variant="bare"
+                                    size="small"
+                                    icon-name="utility:close"
+                                    alternative-text="Remove option"
                                     title="Remove option"
                                     data-index={o.index}
                                     onclick={handleRemoveImageOption}
-                                >
-                                    ×
-                                </button>
+                                ></lightning-button-icon>
                             </div>
                         </template>
                         <template lwc:if={uploadError}>
                             <p class="pp-sub" role="alert">{uploadError}</p>
                         </template>
-                        <button
-                            type="button"
+                        <lightning-button
                             class="pp-add"
+                            variant="base"
+                            icon-name="utility:add"
+                            label="Add picture option"
                             onclick={handleAddImageOption}
-                        >
-                            + Add picture option
-                        </button>
+                        ></lightning-button>
                     </div>
                 </template>
 
@@ -227,33 +201,35 @@
                         <span class="pp-label">Items to rank</span>
                         <template for:each={plainOptionRows} for:item="o">
                             <div key={o.key} class="pp-optrow">
-                                <input
-                                    type="text"
-                                    class="pp-input"
+                                <lightning-input
+                                    variant="label-hidden"
+                                    label="Item label"
+                                    class="pp-field"
                                     placeholder="Item label"
                                     value={o.label}
                                     data-index={o.index}
                                     data-field="label"
-                                    onchange={handleImageOptionChange}
-                                />
-                                <button
-                                    type="button"
+                                    oncommit={handleImageOptionChange}
+                                ></lightning-input>
+                                <lightning-button-icon
                                     class="pp-x"
+                                    variant="bare"
+                                    size="small"
+                                    icon-name="utility:close"
+                                    alternative-text="Remove item"
                                     title="Remove item"
                                     data-index={o.index}
                                     onclick={handleRemoveImageOption}
-                                >
-                                    ×
-                                </button>
+                                ></lightning-button-icon>
                             </div>
                         </template>
-                        <button
-                            type="button"
+                        <lightning-button
                             class="pp-add"
+                            variant="base"
+                            icon-name="utility:add"
+                            label="Add item"
                             onclick={handleAddPlainOption}
-                        >
-                            + Add item
-                        </button>
+                        ></lightning-button>
                     </div>
                 </template>
 
@@ -262,32 +238,34 @@
                         <span class="pp-label">Statements (rows)</span>
                         <template for:each={matrixStatementRows} for:item="r">
                             <div key={r.key} class="pp-optrow">
-                                <input
-                                    type="text"
-                                    class="pp-input"
+                                <lightning-input
+                                    variant="label-hidden"
+                                    label="Statement"
+                                    class="pp-field"
                                     placeholder="Statement"
                                     value={r.label}
                                     data-index={r.index}
-                                    onchange={handleMatrixRowChange}
-                                />
-                                <button
-                                    type="button"
+                                    oncommit={handleMatrixRowChange}
+                                ></lightning-input>
+                                <lightning-button-icon
                                     class="pp-x"
+                                    variant="bare"
+                                    size="small"
+                                    icon-name="utility:close"
+                                    alternative-text="Remove statement"
                                     title="Remove statement"
                                     data-index={r.index}
                                     onclick={handleRemoveMatrixRow}
-                                >
-                                    ×
-                                </button>
+                                ></lightning-button-icon>
                             </div>
                         </template>
-                        <button
-                            type="button"
+                        <lightning-button
                             class="pp-add"
+                            variant="base"
+                            icon-name="utility:add"
+                            label="Add statement"
                             onclick={handleAddMatrixRow}
-                        >
-                            + Add statement
-                        </button>
+                        ></lightning-button>
                     </div>
                     <p class="pp-sub">
                         Scale: Disagree → Strongly agree (4 points). On phones
@@ -304,24 +282,13 @@
 
                 <template lwc:if={showMapping}>
                     <div class="pp-fld">
-                        <label class="pp-label" for="qmapping"
-                            >Map to field</label
-                        >
-                        <select
-                            id="qmapping"
-                            class="pp-select"
+                        <lightning-combobox
+                            class="pp-mapping"
+                            label="Map to field"
+                            options={mappingOptions}
+                            value={mappingValue}
                             onchange={handleMappingChange}
-                        >
-                            <template for:each={mappingOptions} for:item="o">
-                                <option
-                                    key={o.value}
-                                    value={o.value}
-                                    selected={o.selected}
-                                >
-                                    {o.label}
-                                </option>
-                            </template>
-                        </select>
+                        ></lightning-combobox>
                         <p class="pp-hint">
                             Also writes this answer to the connected object's
                             field on submit, and prefills it when the survey
@@ -331,22 +298,13 @@
                         </p>
                         <template lwc:if={isMapped}>
                             <span class="pp-label">Direction</span>
-                            <div class="pp-seg">
-                                <template
-                                    for:each={mappingModeSeg}
-                                    for:item="b"
-                                >
-                                    <button
-                                        key={b.value}
-                                        type="button"
-                                        class={b.cls}
-                                        data-value={b.value}
-                                        onclick={handleMappingMode}
-                                    >
-                                        {b.label}
-                                    </button>
-                                </template>
-                            </div>
+                            <c-final-button-group
+                                stretch
+                                label="Direction"
+                                options={mappingModeSeg.options}
+                                value={mappingModeSeg.value}
+                                onchange={handleMappingMode}
+                            ></c-final-button-group>
                         </template>
                         <template lwc:if={showGuestPrefill}>
                             <lightning-input
@@ -371,22 +329,24 @@
                     <div class="pp-fld">
                         <span class="pp-label">End labels</span>
                         <div class="pp-numrow">
-                            <input
-                                type="text"
-                                class="pp-input"
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Left label"
+                                class="pp-field"
                                 placeholder="Left (e.g. Poor)"
                                 value={endLeftText}
                                 data-side="left"
-                                onchange={handleEndLabel}
-                            />
-                            <input
-                                type="text"
-                                class="pp-input"
+                                oncommit={handleEndLabel}
+                            ></lightning-input>
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Right label"
+                                class="pp-field"
                                 placeholder="Right (e.g. Excellent)"
                                 value={endRightText}
                                 data-side="right"
-                                onchange={handleEndLabel}
-                            />
+                                oncommit={handleEndLabel}
+                            ></lightning-input>
                         </div>
                     </div>
                 </template>
@@ -399,15 +359,16 @@
                                 <template for:each={topicChips} for:item="t">
                                     <span key={t.id} class="pp-topic-chip">
                                         {t.name}
-                                        <button
-                                            type="button"
-                                            class="pp-topic-x"
+                                        <lightning-button-icon
+                                            class="pp-x"
+                                            variant="bare"
+                                            size="small"
+                                            icon-name="utility:close"
+                                            alternative-text="Remove topic"
                                             title="Remove topic"
                                             data-id={t.id}
                                             onclick={handleRemoveTopic}
-                                        >
-                                            ×
-                                        </button>
+                                        ></lightning-button-icon>
                                     </span>
                                 </template>
                             </div>
@@ -485,22 +446,13 @@
                 </template>
 
                 <template lwc:if={hasRenderAsChoices}>
-                    <label class="pp-label" for="renderas">Display as</label>
-                    <select
-                        id="renderas"
-                        class="pp-select pp-renderas"
+                    <lightning-combobox
+                        class="pp-renderas"
+                        label="Display as"
+                        options={renderAsOptions}
+                        value={renderAsValue}
                         onchange={handleRenderAs}
-                    >
-                        <template for:each={renderAsOptions} for:item="o">
-                            <option
-                                key={o.value}
-                                value={o.value}
-                                selected={o.selected}
-                            >
-                                {o.label}
-                            </option>
-                        </template>
-                    </select>
+                    ></lightning-combobox>
                 </template>
 
                 <template lwc:if={isUnboundLookup}>
@@ -676,16 +628,16 @@
                                             data-field="value"
                                             onchange={handleOptionChange}
                                         />
-                                        <button
-                                            type="button"
+                                        <lightning-button-icon
                                             class="pp-x"
+                                            variant="bare"
+                                            size="small"
+                                            icon-name="utility:close"
+                                            alternative-text={o.removeName}
                                             title="Remove option"
-                                            aria-label={o.removeName}
                                             data-index={o.index}
                                             onclick={handleRemoveOption}
-                                        >
-                                            ×
-                                        </button>
+                                        ></lightning-button-icon>
                                     </div>
                                     <template lwc:if={o.problem}>
                                         <p
@@ -708,13 +660,13 @@
                                     </template>
                                 </div>
                             </template>
-                            <button
-                                type="button"
+                            <lightning-button
                                 class="pp-add"
+                                variant="base"
+                                icon-name="utility:add"
+                                label="Add option"
                                 onclick={handleAddOption}
-                            >
-                                + Add option
-                            </button>
+                            ></lightning-button>
                             <p class="pp-sr" aria-live="polite">
                                 {moveMessage}
                             </p>
@@ -747,56 +699,67 @@
                     <div class="pp-fld">
                         <span class="pp-label">Slider range</span>
                         <div class="pp-numrow">
-                            <input
+                            <lightning-input
                                 type="number"
-                                class="pp-input"
+                                step="any"
+                                variant="label-hidden"
+                                label="Min"
+                                class="pp-field"
                                 title="Min"
                                 placeholder="Min"
                                 value={slider.min}
                                 data-param="min"
-                                onchange={handleSlider}
-                            />
-                            <input
+                                oncommit={handleSlider}
+                            ></lightning-input>
+                            <lightning-input
                                 type="number"
-                                class="pp-input"
+                                step="any"
+                                variant="label-hidden"
+                                label="Max"
+                                class="pp-field"
                                 title="Max"
                                 placeholder="Max"
                                 value={slider.max}
                                 data-param="max"
-                                onchange={handleSlider}
-                            />
-                            <input
+                                oncommit={handleSlider}
+                            ></lightning-input>
+                            <lightning-input
                                 type="number"
-                                class="pp-input"
+                                step="any"
+                                variant="label-hidden"
+                                label="Step"
+                                class="pp-field"
                                 title="Step"
                                 placeholder="Step"
                                 value={slider.step}
                                 data-param="step"
-                                onchange={handleSlider}
-                            />
+                                oncommit={handleSlider}
+                            ></lightning-input>
                         </div>
                     </div>
                     <div class="pp-fld">
                         <span class="pp-label">Value display</span>
                         <div class="pp-numrow">
-                            <input
-                                type="text"
-                                class="pp-input"
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Prefix (e.g. $)"
+                                class="pp-field"
                                 title="Prefix"
                                 placeholder="Prefix (e.g. $)"
                                 value={sliderPrefixText}
                                 data-side="prefix"
-                                onchange={handleSliderAffix}
-                            />
-                            <input
-                                type="text"
-                                class="pp-input"
+                                oncommit={handleSliderAffix}
+                            ></lightning-input>
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Suffix (e.g. /night)"
+                                class="pp-field"
                                 title="Suffix"
                                 placeholder="Suffix (e.g. /night)"
                                 value={sliderSuffixText}
                                 data-side="suffix"
-                                onchange={handleSliderAffix}
-                            />
+                                oncommit={handleSliderAffix}
+                            ></lightning-input>
                         </div>
                         <p class="pp-hint">
                             Wraps the big live value — prefix before, suffix
@@ -806,22 +769,24 @@
                     <div class="pp-fld">
                         <span class="pp-label">End labels</span>
                         <div class="pp-numrow">
-                            <input
-                                type="text"
-                                class="pp-input"
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Left label"
+                                class="pp-field"
                                 placeholder="Left (e.g. Tight budget)"
                                 value={endLeftText}
                                 data-side="left"
-                                onchange={handleEndLabel}
-                            />
-                            <input
-                                type="text"
-                                class="pp-input"
+                                oncommit={handleEndLabel}
+                            ></lightning-input>
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Right label"
+                                class="pp-field"
                                 placeholder="Right (e.g. No limit)"
                                 value={endRightText}
                                 data-side="right"
-                                onchange={handleEndLabel}
-                            />
+                                oncommit={handleEndLabel}
+                            ></lightning-input>
                         </div>
                     </div>
                 </template>
@@ -887,19 +852,13 @@
                 ></lightning-input>
                 <div class="pp-fld">
                     <span class="pp-label">Show caption as</span>
-                    <div class="pp-seg">
-                        <template for:each={captionDisplaySeg} for:item="b">
-                            <button
-                                key={b.value}
-                                type="button"
-                                class={b.cls}
-                                data-value={b.value}
-                                onclick={handleCaptionDisplay}
-                            >
-                                {b.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Show caption as"
+                        options={captionDisplaySeg.options}
+                        value={captionDisplaySeg.value}
+                        onchange={handleCaptionDisplay}
+                    ></c-final-button-group>
                 </div>
                 <lightning-input
                     label="Placeholder"
@@ -965,13 +924,12 @@
                             {uploadLabel}
                         </label>
                         <template lwc:if={hasImageSrc}>
-                            <button
-                                type="button"
+                            <lightning-button
                                 class="pp-remove"
+                                variant="base"
+                                label="Remove"
                                 onclick={handleImageRemove}
-                            >
-                                Remove
-                            </button>
+                            ></lightning-button>
                         </template>
                     </div>
                     <template lwc:if={uploadError}>
@@ -987,19 +945,13 @@
                 ></lightning-input>
                 <div class="pp-fld">
                     <span class="pp-label">Size</span>
-                    <div class="pp-seg">
-                        <template for:each={imageSizeSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleImageSize}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Size"
+                        options={imageSizeSeg.options}
+                        value={imageSizeSeg.value}
+                        onchange={handleImageSize}
+                    ></c-final-button-group>
                 </div>
             </div>
         </template>
@@ -1015,19 +967,13 @@
                 ></lightning-input>
                 <div class="pp-fld">
                     <span class="pp-label">Tone</span>
-                    <div class="pp-seg">
-                        <template for:each={calloutToneSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleCalloutTone}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Tone"
+                        options={calloutToneSeg.options}
+                        value={calloutToneSeg.value}
+                        onchange={handleCalloutTone}
+                    ></c-final-button-group>
                 </div>
                 <lightning-input-rich-text
                     label="Message"
@@ -1044,19 +990,13 @@
             <div class="pp-group">
                 <div class="pp-fld">
                     <span class="pp-label">Size</span>
-                    <div class="pp-seg">
-                        <template for:each={spacerSizeSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleSpacerSize}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Size"
+                        options={spacerSizeSeg.options}
+                        value={spacerSizeSeg.value}
+                        onchange={handleSpacerSize}
+                    ></c-final-button-group>
                 </div>
             </div>
         </template>
@@ -1079,19 +1019,13 @@
                 ></lightning-input-rich-text>
                 <div class="pp-fld">
                     <span class="pp-label">Acceptance</span>
-                    <div class="pp-seg">
-                        <template for:each={consentSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleConsentToggle}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Acceptance"
+                        options={consentSeg.options}
+                        value={consentSeg.value}
+                        onchange={handleConsentToggle}
+                    ></c-final-button-group>
                 </div>
             </div>
         </template>
@@ -1144,19 +1078,13 @@
                 </div>
                 <div class="pp-fld">
                     <span class="pp-label">Display style</span>
-                    <div class="pp-seg">
-                        <template for:each={repeatStyleSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleRepeatStyle}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Display style"
+                        options={repeatStyleSeg.options}
+                        value={repeatStyleSeg.value}
+                        onchange={handleRepeatStyle}
+                    ></c-final-button-group>
                 </div>
                 <lightning-input
                     label="Add-button label"
@@ -1239,30 +1167,27 @@
 
                 <div class="pp-fld">
                     <span class="pp-label">Columns</span>
-                    <div class="pp-seg">
-                        <template for:each={columnsSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleColumns}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Columns"
+                        options={columnsSeg.options}
+                        value={columnsSeg.value}
+                        onchange={handleColumns}
+                    ></c-final-button-group>
                 </div>
 
                 <div class="pp-fld">
                     <span class="pp-label">Header</span>
-                    <button
-                        type="button"
-                        class={headerToggleClass}
-                        onclick={handleHeaderToggle}
-                    >
-                        {headerToggleLabel}
-                    </button>
+                    <lightning-input
+                        type="toggle"
+                        class="pp-switch"
+                        variant="label-hidden"
+                        label="Header"
+                        checked={showHeader}
+                        message-toggle-active="Header shown"
+                        message-toggle-inactive="Header hidden"
+                        onchange={handleHeaderToggle}
+                    ></lightning-input>
                 </div>
                 <template lwc:if={hasHeaderRepeat}>
                     <p class="pp-hint" data-id="header-repeat">
@@ -1274,22 +1199,22 @@
                     <div class="pp-fld">
                         <span class="pp-label">Header icon</span>
                         <div class="pp-icsearch">
-                            <input
-                                type="text"
-                                class="pp-input"
+                            <lightning-input
+                                variant="label-hidden"
+                                label="Search icons"
+                                class="pp-field"
                                 placeholder="Search icons…"
                                 value={iconSearch}
-                                oninput={handleIconSearch}
-                            />
+                                onchange={handleIconSearch}
+                            ></lightning-input>
                             <template lwc:if={hasIcon}>
-                                <button
-                                    type="button"
+                                <lightning-button
                                     class="pp-remove"
+                                    variant="base"
+                                    label="Clear"
                                     title="Clear icon"
                                     onclick={handleClearIcon}
-                                >
-                                    Clear
-                                </button>
+                                ></lightning-button>
                             </template>
                         </div>
                         <div class="pp-icgrid">
@@ -1331,24 +1256,30 @@
 
                 <div class="pp-fld">
                     <span class="pp-label">Collapsible</span>
-                    <button
-                        type="button"
-                        class={collapsibleClass}
-                        onclick={handleCollapsibleToggle}
-                    >
-                        {collapsibleLabel}
-                    </button>
+                    <lightning-input
+                        type="toggle"
+                        class="pp-switch"
+                        variant="label-hidden"
+                        label="Collapsible"
+                        checked={collapsible}
+                        message-toggle-active="Collapsible"
+                        message-toggle-inactive="Not collapsible"
+                        onchange={handleCollapsibleToggle}
+                    ></lightning-input>
                 </div>
                 <template lwc:if={collapsible}>
                     <div class="pp-fld">
                         <span class="pp-label">Default state</span>
-                        <button
-                            type="button"
-                            class={collapsedDefaultClass}
-                            onclick={handleCollapsedDefaultToggle}
-                        >
-                            {collapsedDefaultLabel}
-                        </button>
+                        <lightning-input
+                            type="toggle"
+                            class="pp-switch"
+                            variant="label-hidden"
+                            label="Starts collapsed"
+                            checked={startsCollapsed}
+                            message-toggle-active="Starts collapsed"
+                            message-toggle-inactive="Starts expanded"
+                            onchange={handleCollapsedDefaultToggle}
+                        ></lightning-input>
                     </div>
                 </template>
             </div>
@@ -1378,19 +1309,13 @@
             <div class="pp-group">
                 <div class="pp-fld">
                     <span class="pp-label">Width</span>
-                    <div class="pp-seg">
-                        <template for:each={widthSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleWidth}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Width"
+                        options={widthSeg.options}
+                        value={widthSeg.value}
+                        onchange={handleWidth}
+                    ></c-final-button-group>
                 </div>
             </div>
         </template>
@@ -1400,19 +1325,13 @@
             <div class="pp-group">
                 <div class="pp-fld">
                     <span class="pp-label">Block style</span>
-                    <div class="pp-seg">
-                        <template for:each={blockStyleSeg} for:item="o">
-                            <button
-                                key={o.value}
-                                type="button"
-                                class={o.cls}
-                                data-value={o.value}
-                                onclick={handleBlockStyle}
-                            >
-                                {o.label}
-                            </button>
-                        </template>
-                    </div>
+                    <c-final-button-group
+                        stretch
+                        label="Block style"
+                        options={blockStyleSeg.options}
+                        value={blockStyleSeg.value}
+                        onchange={handleBlockStyle}
+                    ></c-final-button-group>
                 </div>
             </div>
         </template>
