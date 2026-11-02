@@ -1,0 +1,226 @@
+@import 'c/finalStudioStyles';
+
+/* Picture tiles (DESIGN_SYSTEM 5.24): moved unchanged from the inspector's
+   Appearance picker (finalPropertyPanel, PR 422). Its raw sizes are listed in
+   the Studio guard's allowlist and come onto tokens in the restyle step. */
+:host {
+    display: block;
+}
+
+/* ---- Appearance picker (IMPL_PLAN_APPEARANCE_PICKER, DEFERRED 36) ----
+   A full-width Default card over a 2 x 2 grid of tiles, each with a little
+   drawing of the control. Picked = 2px accent border + accent tint + tick. */
+.pc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pc-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 8px;
+    background: var(--c-studio-surface);
+    font: inherit;
+    color: var(--c-studio-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.pc-tile:hover:not(.on) {
+    border-color: var(--c-studio-accent);
+}
+
+.pc-tile:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* 2px border without moving the contents: the extra pixel comes out of the
+   padding. */
+.pc-tile.on {
+    border: 2px solid var(--c-studio-accent);
+    padding: 11px;
+    background: var(--c-studio-accent-surface);
+}
+
+.pc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.pc-grid .pc-tile {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 84px;
+    text-align: center;
+}
+
+/* drawings are 12-35px tall: one box height keeps the names in a row level */
+.pc-grid .pc-art {
+    height: 36px;
+}
+
+.pc-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-right: 22px;
+}
+
+.pc-title,
+.pc-name {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.pc-desc {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--c-studio-text-weak);
+}
+
+.pc-tick {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
+}
+
+.pc-tile.on .pc-tick {
+    display: grid;
+    place-items: center;
+}
+
+.pc-tick svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* the little drawings (decoration only: aria-hidden) */
+.pc-art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    color: var(--c-studio-text-weak);
+}
+
+.pc-art-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 78px;
+    height: 22px;
+    padding: 0 7px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 4px;
+    background: var(--c-studio-surface);
+}
+
+.pc-art-bar,
+.pc-art-line {
+    display: block;
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--c-studio-border-strong);
+}
+
+.pc-art-chev {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.pc-art-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 64px;
+}
+
+.pc-art-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pc-art-dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+}
+
+.pc-art-square {
+    border-radius: 2px;
+}
+
+.pc-art-chips {
+    display: flex;
+    gap: 4px;
+}
+
+.pc-art-chip {
+    width: 32px;
+    height: 12px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 999px;
+    background: var(--c-studio-surface-subtle);
+}
+
+.pc-art-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 66px;
+}
+
+.pc-art-card {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 14px;
+    padding: 0 4px;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: 3px;
+    background: var(--c-studio-surface);
+}
+
+.pc-art-thumb {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    background: var(--c-studio-border-strong);
+}
+
+.pc-tile.on .pc-art {
+    color: var(--c-studio-accent-text);
+}

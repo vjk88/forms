@@ -89,13 +89,9 @@ export default class FinalPreviewStage extends LightningElement {
     _canvasRO;
     _raf;
 
-    get deviceButtons() {
-        return DEVICES.map((d) => ({
-            key: d.key,
-            label: d.label,
-            pressed: String(d.key === this.device),
-            cls: d.key === this.device ? 'ps-device on' : 'ps-device'
-        }));
+    /** finalButtonGroup options (DESIGN_SYSTEM 5.7). */
+    get deviceOptions() {
+        return DEVICES.map((d) => ({ label: d.label, value: d.key }));
     }
 
     get frame() {
@@ -110,13 +106,11 @@ export default class FinalPreviewStage extends LightningElement {
         return this.device === 'mobile';
     }
 
-    get phoneButtons() {
+    get phoneOptions() {
         return PHONES.map((p) => ({
-            key: p.key,
             label: p.label,
-            title: p.title,
-            pressed: String(p.key === this.phone),
-            cls: p.key === this.phone ? 'ps-phone on' : 'ps-phone'
+            value: p.key,
+            title: p.title
         }));
     }
 
@@ -151,23 +145,19 @@ export default class FinalPreviewStage extends LightningElement {
         );
     }
 
-    get zoomButtons() {
+    get zoomOptions() {
         return [
             {
-                key: 'fit',
+                value: 'fit',
                 label: 'Fit',
                 title: 'Fit desktop or device width in the preview pane'
             },
             {
-                key: 'actual',
+                value: 'actual',
                 label: '100%',
                 title: 'Show actual size; scroll horizontally when needed'
             }
-        ].map((z) => ({
-            ...z,
-            pressed: String(z.key === this.zoom),
-            cls: z.key === this.zoom ? 'ps-zoom on' : 'ps-zoom'
-        }));
+        ];
     }
 
     get scaleLabel() {
@@ -191,17 +181,17 @@ export default class FinalPreviewStage extends LightningElement {
     }
 
     handleZoom(event) {
-        this.zoom = event.currentTarget.dataset.zoom;
+        this.zoom = event.detail.value;
         this._sync();
     }
 
     handleDevice(event) {
-        this.device = event.currentTarget.dataset.device;
+        this.device = event.detail.value;
         this._sync();
     }
 
     handlePhone(event) {
-        this.phone = event.currentTarget.dataset.phone;
+        this.phone = event.detail.value;
         this._sync();
     }
 

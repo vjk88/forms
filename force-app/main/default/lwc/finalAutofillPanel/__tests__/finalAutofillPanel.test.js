@@ -179,7 +179,9 @@ describe('c-final-autofill-panel', () => {
         await flush();
 
         // Edit rule
-        el.shadowRoot.querySelector('button[title="Edit rule"]').click();
+        el.shadowRoot
+            .querySelector('lightning-button-icon[title="Edit rule"]')
+            .click();
         await flush();
 
         expect(el.shadowRoot.querySelector('.ap-mint-form')).not.toBeNull();
@@ -214,11 +216,27 @@ describe('c-final-autofill-panel', () => {
             return el;
         };
         const $ = (el, sel) => el.shadowRoot.querySelector(sel);
+        // The buttons are lightning-button (IMPL_PLAN_STUDIO_COMPONENT_SWAP),
+        // which pass focus() to their inner button in the org. Jest's stand-in
+        // cannot hold focus, so record which element was asked to take it.
+        let focused;
+        let focusSpy;
+        beforeEach(() => {
+            focused = null;
+            focusSpy = jest
+                .spyOn(HTMLElement.prototype, 'focus')
+                .mockImplementation(function focus() {
+                    focused = this;
+                });
+        });
+        afterEach(() => {
+            focusSpy.mockRestore();
+        });
 
         it('shows the question with focus on Cancel, and Cancel stops nothing', async () => {
             const el = await openPanel();
             const trigger = $(el, '.ap-stop-trigger');
-            expect(trigger.textContent.trim()).toBe('Stop earlier links');
+            expect(trigger.label).toBe('Stop earlier links');
             expect($(el, '[role="alertdialog"]')).toBeNull();
 
             trigger.click();
@@ -229,7 +247,7 @@ describe('c-final-autofill-panel', () => {
             expect($(el, '.ap-stop-title').textContent.trim()).toBe(
                 'Stop every link made so far?'
             );
-            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-cancel'));
+            expect(focused).toBe($(el, '.ap-stop-cancel'));
             expect(trigger.getAttribute('aria-expanded')).toBe('true');
 
             $(el, '.ap-stop-cancel').click();
@@ -237,7 +255,7 @@ describe('c-final-autofill-panel', () => {
 
             expect($(el, '[role="alertdialog"]')).toBeNull();
             expect(invalidateLinks).not.toHaveBeenCalled();
-            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+            expect(focused).toBe($(el, '.ap-stop-trigger'));
             expect(trigger.getAttribute('aria-expanded')).toBe('false');
         });
 
@@ -253,7 +271,7 @@ describe('c-final-autofill-panel', () => {
 
             expect($(el, '[role="alertdialog"]')).toBeNull();
             expect(invalidateLinks).not.toHaveBeenCalled();
-            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+            expect(focused).toBe($(el, '.ap-stop-trigger'));
         });
 
         it('Stop links stops them, says so, and hands focus back', async () => {
@@ -272,7 +290,7 @@ describe('c-final-autofill-panel', () => {
             expect($(el, '.ap-notice-inline').getAttribute('role')).toBe(
                 'status'
             );
-            expect(el.shadowRoot.activeElement).toBe($(el, '.ap-stop-trigger'));
+            expect(focused).toBe($(el, '.ap-stop-trigger'));
         });
 
         it('while stopping, the button says so and cannot ask again', async () => {
@@ -289,11 +307,11 @@ describe('c-final-autofill-panel', () => {
             await flush();
 
             const trigger = $(el, '.ap-stop-trigger');
-            expect(trigger.textContent.trim()).toBe('Stopping…');
+            expect(trigger.label).toBe('Stopping…');
             expect(trigger.disabled).toBe(true);
-            expect(
-                $(el, '.ap-mint-actions .ap-btn-primary').textContent.trim()
-            ).toBe('Create link');
+            expect($(el, '.ap-mint-actions .ap-btn-primary').label).toBe(
+                'Create link'
+            );
             trigger.click();
             await flush();
             expect($(el, '[role="alertdialog"]')).toBeNull();
@@ -301,9 +319,7 @@ describe('c-final-autofill-panel', () => {
             finish({ ok: true });
             await flush();
             await flush();
-            expect($(el, '.ap-stop-trigger').textContent.trim()).toBe(
-                'Stop earlier links'
-            );
+            expect($(el, '.ap-stop-trigger').label).toBe('Stop earlier links');
         });
 
         it('says so plainly when stopping fails', async () => {
@@ -331,8 +347,12 @@ describe('c-final-autofill-panel', () => {
             const got = [];
             el.addEventListener('editautofillrule', (e) => got.push(e.detail));
             await flush();
-            el.shadowRoot.querySelector('button[title="Add rule"]').click();
-            el.shadowRoot.querySelector('button[title="Edit rule"]').click();
+            el.shadowRoot
+                .querySelector('lightning-button[title="Add rule"]')
+                .click();
+            el.shadowRoot
+                .querySelector('lightning-button-icon[title="Edit rule"]')
+                .click();
             await flush();
             expect(got[0]).toEqual({ rule: null });
             expect(got[1].rule.id).toBe(
@@ -350,7 +370,7 @@ describe('c-final-autofill-panel', () => {
                 );
                 await flush();
                 el.shadowRoot
-                    .querySelector('button[title="Edit rule"]')
+                    .querySelector('lightning-button-icon[title="Edit rule"]')
                     .click();
                 await flush();
                 expect(got[0].rule.id).toBe(

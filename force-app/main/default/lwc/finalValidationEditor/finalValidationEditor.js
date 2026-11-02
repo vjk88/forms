@@ -122,16 +122,17 @@ export default class FinalValidationEditor extends LightningElement {
                 isRange: preset === 'range',
                 isLength: preset === 'length',
                 isMatch: preset === 'match',
+                // lightning-combobox: { label, value } plus the chosen value
                 presetOptions: PRESETS.map((p) => ({
                     value: p.key,
-                    label: p.label,
-                    selected: p.key === preset ? true : undefined
+                    label: p.label
                 })),
+                presetValue: preset,
                 sourceOptions: (this.sources || []).map((s) => ({
                     value: s.id,
-                    label: s.label,
-                    selected: s.id === entry.compareTo ? true : undefined
-                }))
+                    label: s.label
+                })),
+                compareTo: entry.compareTo || ''
             };
         });
     }
@@ -168,7 +169,7 @@ export default class FinalValidationEditor extends LightningElement {
      *  (that bug left "Phone format" showing the email default message). */
     handlePreset(event) {
         const i = Number(event.currentTarget.dataset.index);
-        const preset = PRESETS.find((p) => p.key === event.target.value);
+        const preset = PRESETS.find((p) => p.key === event.detail.value);
         if (!preset) {
             return;
         }
@@ -196,7 +197,12 @@ export default class FinalValidationEditor extends LightningElement {
         if (!entry) {
             return;
         }
-        let v = event.target.value;
+        // lightning-combobox (compareTo) sends detail.value; lightning-input's
+        // commit carries no detail, its value is on the element
+        let v =
+            event.detail && 'value' in event.detail
+                ? event.detail.value
+                : event.target.value;
         if (['min', 'max', 'minLen', 'maxLen'].includes(param)) {
             v = v === '' ? null : Number(v);
         }

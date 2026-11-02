@@ -95,8 +95,9 @@ describe('c-final-field-palette', () => {
         describeFields.emit(FIELDS);
         await flush();
         const search = el.shadowRoot.querySelector('.fp-search');
+        // lightning-input: the value is on the element; change fires per keystroke
         search.value = 'email';
-        search.dispatchEvent(new Event('input'));
+        search.dispatchEvent(new CustomEvent('change'));
         await flush();
         expect(el.shadowRoot.querySelectorAll('.fp-item')).toHaveLength(1);
 

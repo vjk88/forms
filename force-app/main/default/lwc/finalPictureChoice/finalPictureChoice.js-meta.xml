@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+    >Picture tiles (DESIGN_SYSTEM 5.24): pick an option by a drawing of it. Extracted from the Appearance picker; fires change with detail.value.</description>
+</LightningComponentBundle>

@@ -194,6 +194,13 @@ const micro = (n) => {
     return n ? Promise.resolve().then(() => micro(n - 1)) : Promise.resolve();
 };
 
+// The preview's device and zoom rows are c-final-button-group (DESIGN_SYSTEM 5.7).
+function stageButton(stageEl, group, value) {
+    return stageEl.shadowRoot
+        .querySelector(`c-final-button-group[data-group="${group}"]`)
+        .shadowRoot.querySelector(`button[data-value="${value}"]`);
+}
+
 describe('c-final-form-studio', () => {
     describe('builder keyboard and move actions', () => {
         afterEach(async () => {
@@ -434,7 +441,7 @@ describe('c-final-form-studio', () => {
         await flush();
         const stage = () =>
             el.shadowRoot.querySelector('c-final-preview-stage');
-        stage().shadowRoot.querySelector('[data-device="tablet"]').click();
+        stageButton(stage(), 'devices', 'tablet').click();
         previewViewer(el)
             .shadowRoot.querySelector('x-test')
             .dispatchEvent(
@@ -1776,7 +1783,7 @@ describe('c-final-form-studio', () => {
         ).toBeNull();
         expect(el.shadowRoot.querySelector('.st-notice')).not.toBeNull();
 
-        el.shadowRoot.querySelector('.st-notice-btn').click();
+        el.shadowRoot.querySelector('[data-id="back-to-editable"]').click();
         await flush();
         expect(el.shadowRoot.querySelector('.st-notice')).toBeNull();
         expect(
@@ -1883,10 +1890,8 @@ describe('c-final-form-studio', () => {
 
         it('keeps preview answers, device and zoom across expand and collapse', async () => {
             const el = await open('build');
-            stage(el)
-                .shadowRoot.querySelector('[data-device="tablet"]')
-                .click();
-            stage(el).shadowRoot.querySelector('[data-zoom="actual"]').click();
+            stageButton(stage(el), 'devices', 'tablet').click();
+            stageButton(stage(el), 'zooms', 'actual').click();
             previewViewer(el)
                 .shadowRoot.querySelector('x-test')
                 .dispatchEvent(
@@ -2055,7 +2060,7 @@ describe('c-final-form-studio', () => {
             expect(propertyPanel(el).node.id).toBe('s');
 
             // back to the palette, collapse again, then jump from the logic rail
-            el.shadowRoot.querySelector('.st-back').click();
+            el.shadowRoot.querySelector('[data-id="back-to-fields"]').click();
             await flush();
             toggle(el).click();
             await flush();
@@ -3380,7 +3385,7 @@ describe('c-final-form-studio', () => {
         expect(
             element.shadowRoot.querySelector('[data-id="actions-trigger"]')
         ).toBeNull();
-        element.shadowRoot.querySelector('.st-primary').click();
+        element.shadowRoot.querySelector('[data-id="restore-form"]').click();
         await micro(6);
         expect(restoreForm).toHaveBeenCalledWith({ formId: 'a0F1' });
         expect(

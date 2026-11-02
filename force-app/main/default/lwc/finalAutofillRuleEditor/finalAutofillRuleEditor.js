@@ -275,28 +275,32 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         return this.draft?.source?.type === 'user';
     }
 
-    get userClass() {
-        return this.isUser ? 'am-seg on' : 'am-seg';
+    /** "Fill from" as a finalButtonGroup (DESIGN_SYSTEM 5.7). */
+    get sourceOptions() {
+        return [
+            {
+                label: 'The record in the link',
+                value: 'link',
+                disabled: this.linkDisabled
+            },
+            { label: 'A record picked in a lookup', value: 'lookup' },
+            { label: 'The signed-in person', value: 'user' }
+        ];
     }
 
-    get userPressed() {
-        return String(this.isUser);
+    get sourceType() {
+        return this.draft?.source?.type;
     }
 
-    get linkClass() {
-        return this.isLink ? 'am-seg on' : 'am-seg';
-    }
-
-    get lookupClass() {
-        return this.isLookup ? 'am-seg on' : 'am-seg';
-    }
-
-    get linkPressed() {
-        return String(this.isLink);
-    }
-
-    get lookupPressed() {
-        return String(this.isLookup);
+    handleSource(event) {
+        const pick = {
+            link: () => this.handleLink(),
+            lookup: () => this.handleLookup(),
+            user: () => this.handleUser()
+        }[event.detail.value];
+        if (pick) {
+            pick();
+        }
     }
 
     /** Another link rule is on, and this one would be on too. */

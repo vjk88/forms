@@ -9,19 +9,15 @@
                         >Populate answers from Salesforce records</span
                     >
                 </div>
-                <button
-                    type="button"
+                <lightning-button
                     class="ap-add-rule-btn"
-                    onclick={handleCreateRule}
-                    disabled={maxRulesReached}
+                    variant="brand"
+                    label="Add rule"
+                    icon-name="utility:add"
                     title="Add rule"
-                >
-                    <lightning-icon
-                        icon-name="utility:add"
-                        size="x-small"
-                    ></lightning-icon>
-                    <span>Add rule</span>
-                </button>
+                    disabled={maxRulesReached}
+                    onclick={handleCreateRule}
+                ></lightning-button>
             </div>
         </header>
 
@@ -61,30 +57,24 @@
                                         onchange={handleToggleRule}
                                         class="ap-toggle"
                                     ></lightning-input>
-                                    <button
-                                        type="button"
+                                    <lightning-button-icon
                                         class="ap-icon-btn"
+                                        variant="bare"
+                                        icon-name="utility:edit"
+                                        alternative-text="Edit rule"
+                                        title="Edit rule"
                                         data-id={r.id}
                                         onclick={handleEditRule}
-                                        title="Edit rule"
-                                    >
-                                        <lightning-icon
-                                            icon-name="utility:edit"
-                                            size="x-small"
-                                        ></lightning-icon>
-                                    </button>
-                                    <button
-                                        type="button"
+                                    ></lightning-button-icon>
+                                    <lightning-button-icon
                                         class="ap-icon-btn ap-delete-btn"
+                                        variant="bare"
+                                        icon-name="utility:delete"
+                                        alternative-text="Delete rule"
+                                        title="Delete rule"
                                         data-id={r.id}
                                         onclick={handleDeleteRule}
-                                        title="Delete rule"
-                                    >
-                                        <lightning-icon
-                                            icon-name="utility:delete"
-                                            size="x-small"
-                                        ></lightning-icon>
-                                    </button>
+                                    ></lightning-button-icon>
                                 </div>
                             </div>
                             <template lwc:if={r.hasErrors}>
@@ -122,13 +112,12 @@
                         Prefill form fields using personalized links or
                         authenticated lookup selections made by respondents.
                     </p>
-                    <button
-                        type="button"
+                    <lightning-button
                         class="ap-btn-primary"
+                        variant="brand"
+                        label="Add rule"
                         onclick={handleCreateRule}
-                    >
-                        Add rule
-                    </button>
+                    ></lightning-button>
                 </div>
             </template>
         </div>
@@ -178,23 +167,20 @@
                             </div>
                         </template>
                         <div class="ap-mint-actions">
-                            <button
-                                type="button"
-                                class="ap-btn-primary ap-btn-sm"
-                                onclick={handleCreateLink}
+                            <lightning-button
+                                class="ap-btn-primary"
+                                variant="brand"
+                                label={createLinkLabel}
                                 disabled={createLinkDisabled}
-                            >
-                                {createLinkLabel}
-                            </button>
-                            <button
-                                type="button"
-                                class="ap-btn-secondary ap-btn-sm ap-stop-trigger"
-                                onclick={handleInvalidateLinks}
+                                onclick={handleCreateLink}
+                            ></lightning-button>
+                            <lightning-button
+                                class="ap-stop-trigger"
+                                label={stopLinksLabel}
                                 disabled={linkBusy}
                                 aria-expanded={stopExpanded}
-                            >
-                                {stopLinksLabel}
-                            </button>
+                                onclick={handleInvalidateLinks}
+                            ></lightning-button>
                         </div>
                         <template lwc:if={confirmingStop}>
                             <div
@@ -214,20 +200,17 @@
                                     undo this.
                                 </p>
                                 <div class="ap-stop-actions">
-                                    <button
-                                        type="button"
-                                        class="ap-btn-secondary ap-btn-sm ap-stop-cancel"
+                                    <lightning-button
+                                        class="ap-stop-cancel"
+                                        label="Cancel"
                                         onclick={handleStopCancel}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="ap-btn-danger ap-btn-sm ap-stop-confirm"
+                                    ></lightning-button>
+                                    <lightning-button
+                                        class="ap-stop-confirm"
+                                        variant="destructive"
+                                        label="Stop links"
                                         onclick={handleStopConfirm}
-                                    >
-                                        Stop links
-                                    </button>
+                                    ></lightning-button>
                                 </div>
                             </div>
                         </template>
@@ -248,13 +231,11 @@
                                     value={mintedLink}
                                     readonly
                                 ></lightning-input>
-                                <button
-                                    type="button"
-                                    class="ap-btn-secondary ap-btn-sm ap-copy-btn"
+                                <lightning-button
+                                    class="ap-copy-btn"
+                                    label={copiedLinkText}
                                     onclick={handleCopyLink}
-                                >
-                                    {copiedLinkText}
-                                </button>
+                                ></lightning-button>
                             </div>
                         </template>
                     </div>

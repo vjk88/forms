@@ -142,8 +142,13 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         await flush();
         // choice fields pick their look with tiles, not the Display as list
         expect(el.shadowRoot.querySelector('.pp-renderas')).toBeNull();
-        const tiles = [...el.shadowRoot.querySelectorAll('.pp-look')];
-        expect(tiles.map((t) => t.dataset.look)).toEqual([
+        // the tiles live inside c-final-picture-choice (DESIGN_SYSTEM 5.24)
+        const tiles = [
+            ...el.shadowRoot
+                .querySelector('c-final-picture-choice')
+                .shadowRoot.querySelectorAll('.pc-tile')
+        ];
+        expect(tiles.map((t) => t.dataset.value)).toEqual([
             'default',
             'dropdown',
             'radio',
@@ -153,7 +158,7 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(
             tiles
                 .filter((t) => t.getAttribute('aria-checked') === 'true')
-                .map((t) => t.dataset.look)
+                .map((t) => t.dataset.value)
         ).toEqual(['radio']);
 
         const events = [];

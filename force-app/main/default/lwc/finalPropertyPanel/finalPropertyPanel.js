@@ -694,77 +694,47 @@ export default class FinalPropertyPanel extends LightningElement {
         return !this.isBoundPicklist && look !== 'default';
     }
 
-    get visibleLooks() {
-        return this.offersDefaultTile ? ['default', ...GRID_LOOKS] : GRID_LOOKS;
-    }
-
-    _tile(look) {
-        const on = this.currentLook.look === look;
-        return {
-            look,
-            checked: on ? 'true' : 'false',
-            tabindex: on ? '0' : '-1',
-            cls: `pp-look pp-look-${look}${on ? ' on' : ''}`
-        };
-    }
-
-    get defaultTile() {
-        const tile = this._tile('default');
-        const text = this.cfg.inputType !== 'picklist';
-        tile.title = this.isBound ? 'Default to schema' : 'Text box';
-        tile.desc = text
-            ? 'A plain text box. People type their answer.'
-            : 'Uses this field’s choices and labels from Salesforce.';
-        return tile;
-    }
-
-    get gridTiles() {
+    /** The Appearance tiles (c/finalPictureChoice): a full-width Default
+     *  card over the grid, each with a drawing of the control. */
+    get lookOptions() {
         const several = this.currentLook.multi;
+        const options = [];
+        if (this.offersDefaultTile) {
+            const text = this.cfg.inputType !== 'picklist';
+            options.push({
+                value: 'default',
+                label: this.isBound ? 'Default to schema' : 'Text box',
+                desc: text
+                    ? 'A plain text box. People type their answer.'
+                    : 'Uses this field’s choices and labels from Salesforce.',
+                art: 'select',
+                wide: true
+            });
+        }
         const names = {
             dropdown: 'Dropdown',
             radio: several ? 'Checkboxes' : 'Radio list',
             chips: 'Chips',
             cards: 'Cards'
         };
-        return GRID_LOOKS.map((look) => ({
-            ...this._tile(look),
-            label: names[look],
-            isDropdown: look === 'dropdown',
-            isRadio: look === 'radio' && !several,
-            isCheckbox: look === 'radio' && several,
-            isChips: look === 'chips',
-            isCards: look === 'cards'
-        }));
+        const arts = {
+            dropdown: 'select',
+            radio: several ? 'checkbox' : 'radio',
+            chips: 'chips',
+            cards: 'cards'
+        };
+        GRID_LOOKS.forEach((look) =>
+            options.push({ value: look, label: names[look], art: arts[look] })
+        );
+        return options;
     }
 
-    handleLook(event) {
-        this._pickLook(event.currentTarget.dataset.look);
+    get lookValue() {
+        return this.currentLook.look;
     }
 
-    /** Arrow keys move through the tiles and pick (WAI-ARIA radio group);
-     *  Tab enters the group once, on the picked tile (roving tabindex). */
-    handleLookKey(event) {
-        const step = {
-            ArrowRight: 1,
-            ArrowDown: 1,
-            ArrowLeft: -1,
-            ArrowUp: -1
-        }[event.key];
-        const looks = this.visibleLooks;
-        const at = looks.indexOf(this.currentLook.look);
-        let next;
-        if (step) {
-            next = looks[(at + step + looks.length) % looks.length];
-        } else if (event.key === 'Home') {
-            next = looks[0];
-        } else if (event.key === 'End') {
-            next = looks[looks.length - 1];
-        } else {
-            return;
-        }
-        event.preventDefault();
-        this._focusLook = next;
-        this._pickLook(next);
+    handleLookChange(event) {
+        this._pickLook(event.detail.value);
     }
 
     _pickLook(look) {
@@ -901,7 +871,6 @@ export default class FinalPropertyPanel extends LightningElement {
     dropTarget = null; // { index, after }
     moveMessage = '';
     _focusGrip = null;
-    _focusLook = null;
 
     _moveOption(from, to) {
         const options = [...(this.cfg.options || [])];
@@ -990,15 +959,6 @@ export default class FinalPropertyPanel extends LightningElement {
             this._focusGrip = null;
             if (grip) {
                 grip.focus();
-            }
-        }
-        if (this._focusLook !== null) {
-            const tile = this.template.querySelector(
-                `.pp-look[data-look="${this._focusLook}"]`
-            );
-            this._focusLook = null;
-            if (tile) {
-                tile.focus();
             }
         }
     }

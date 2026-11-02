@@ -58,9 +58,9 @@ describe('c-final-validation-editor (presets — no regex for humans)', () => {
             ]
         });
         await flush();
-        const options = [
-            ...el.shadowRoot.querySelectorAll('.ve-type option')
-        ].map((o) => o.textContent);
+        const options = el.shadowRoot
+            .querySelector('.ve-type')
+            .options.map((o) => o.label);
         expect(options).toEqual([
             'Email format',
             'Phone format',
@@ -73,8 +73,10 @@ describe('c-final-validation-editor (presets — no regex for humans)', () => {
         const changes = [];
         el.addEventListener('validationchange', (e) => changes.push(e.detail));
         const type = el.shadowRoot.querySelector('.ve-type');
-        type.value = 'match';
-        type.dispatchEvent(new CustomEvent('change'));
+        // lightning-combobox reports the pick in detail.value
+        type.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'match' } })
+        );
         expect(changes[0].entries[0]).toEqual({
             type: 'custom',
             compareTo: '',
@@ -98,8 +100,10 @@ describe('c-final-validation-editor (presets — no regex for humans)', () => {
         const changes = [];
         el.addEventListener('validationchange', (e) => changes.push(e.detail));
         const type = el.shadowRoot.querySelector('.ve-type');
-        type.value = 'phone';
-        type.dispatchEvent(new CustomEvent('change'));
+        // lightning-combobox reports the pick in detail.value
+        type.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'phone' } })
+        );
         const entry = changes[0].entries[0];
         expect(entry.preset).toBe('phone');
         // the email default must NOT carry over (the reported bug)
@@ -125,16 +129,18 @@ describe('c-final-validation-editor (presets — no regex for humans)', () => {
         el.addEventListener('validationchange', (e) => changes.push(e.detail));
 
         const minLen = el.shadowRoot.querySelector('[data-param="minLen"]');
+        // lightning-input: the value is on the element; saving waits for commit
         minLen.value = '3';
-        minLen.dispatchEvent(new CustomEvent('change'));
+        minLen.dispatchEvent(new CustomEvent('commit'));
         const length = changes.at(-1).entries[0];
         expect(length.pattern).toBe('^[\\s\\S]{3,255}$');
         expect(new RegExp(length.pattern).test('ab')).toBe(false);
         expect(new RegExp(length.pattern).test('abc')).toBe(true);
 
         const min = el.shadowRoot.querySelector('[data-param="min"]');
+        // lightning-input: the value is on the element; saving waits for commit
         min.value = '18';
-        min.dispatchEvent(new CustomEvent('change'));
+        min.dispatchEvent(new CustomEvent('commit'));
         expect(changes.at(-1).entries[1].min).toBe(18);
     });
 
@@ -153,11 +159,30 @@ describe('c-final-validation-editor (presets — no regex for humans)', () => {
         const changes = [];
         el.addEventListener('validationchange', (e) => changes.push(e.detail));
         const compare = el.shadowRoot.querySelector('[data-param="compareTo"]');
-        compare.value = 'el_other';
-        compare.dispatchEvent(new CustomEvent('change'));
+        // lightning-combobox reports the pick in detail.value
+        compare.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'el_other' } })
+        );
         expect(changes.at(-1).entries[0].compareTo).toBe('el_other');
 
         el.shadowRoot.querySelector('.ve-x').click();
         expect(changes.at(-1).entries).toEqual([]);
+    });
+
+    // IMPL_PLAN_STUDIO_COMPONENT_SWAP rule 3: lightning-input fires change on
+    // every keystroke; these boxes still save only when you leave them.
+    it('typing alone saves nothing; leaving the box (commit) saves', async () => {
+        const el = mount({
+            entries: [{ preset: 'email', pattern: 'x', message: 'Old' }]
+        });
+        await flush();
+        const changes = [];
+        el.addEventListener('validationchange', (e) => changes.push(e.detail));
+        const message = el.shadowRoot.querySelector('[data-param="message"]');
+        message.value = 'New';
+        message.dispatchEvent(new CustomEvent('change'));
+        expect(changes).toEqual([]);
+        message.dispatchEvent(new CustomEvent('commit'));
+        expect(changes.at(-1).entries[0].message).toBe('New');
     });
 });

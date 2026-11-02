@@ -38,25 +38,11 @@
     min-width: 0;
 }
 
+/* Salesforce components draw the boxes; these only place them. */
 .ve-select,
 .ve-input {
-    padding: 5px 8px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12px;
+    display: block;
     width: 100%;
-}
-
-.ve-select {
-    cursor: pointer;
-}
-
-.ve-select:focus-visible,
-.ve-input:focus-visible {
-    outline: 2px solid var(--c-studio-accent);
-    outline-offset: 1px;
 }
 
 .ve-minmax {
@@ -64,20 +50,13 @@
     gap: 6px;
 }
 
-.ve-x {
-    flex: none;
-    border: 0;
-    background: none;
-    color: var(--c-studio-text-weak);
-    font: inherit;
-    font-size: 14px;
-    line-height: 1;
-    padding: 4px 2px;
-    cursor: pointer;
+.ve-minmax .ve-input {
+    flex: 1;
+    min-width: 0;
 }
 
-.ve-x:hover {
-    color: var(--c-studio-error);
+.ve-x {
+    flex: none;
 }
 
 .ve-empty {
@@ -89,18 +68,4 @@
 
 .ve-add {
     align-self: flex-start;
-    border: 1px dashed var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: none;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--c-studio-accent-text);
-    padding: 6px 12px;
-    cursor: pointer;
-}
-
-.ve-add:hover {
-    border-color: var(--c-studio-accent);
-    background: var(--c-studio-accent-surface);
 }
