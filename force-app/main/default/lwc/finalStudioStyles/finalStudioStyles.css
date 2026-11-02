@@ -134,7 +134,9 @@ lightning-button-menu {
 
 lightning-input,
 lightning-combobox,
-lightning-textarea {
+lightning-textarea,
+lightning-radio-group,
+lightning-checkbox-group {
     --slds-c-input-radius-border: var(--c-studio-radius-md);
     --slds-c-input-color-border: var(--c-studio-border-strong);
     --slds-c-input-color-border-focus: var(--c-studio-focus);
@@ -148,6 +150,8 @@ lightning-textarea {
     --slds-c-checkbox-mark-color-foreground: var(--c-studio-on-accent);
     --slds-c-checkbox-toggle-color-background-checked: var(--c-studio-accent);
     --slds-c-checkbox-toggle-color-border-checked: var(--c-studio-accent);
+    --slds-c-radio-color-background-checked: var(--c-studio-accent);
+    --slds-c-radio-color-border-checked: var(--c-studio-accent);
     --slds-c-checkbox-toggle-color-background-checked-focus: var(
         --c-studio-accent-hover
     );

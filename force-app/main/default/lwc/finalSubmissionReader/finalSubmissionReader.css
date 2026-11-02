@@ -1,58 +1,59 @@
+@import 'c/finalStudioStyles';
+
 /* A submission is read, not scanned: one column, generous line height, and a
    clear difference between an answer, a skipped question and a value that
    did not match its type. */
 .sr-head {
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    border-bottom: 1px solid var(--c-studio-border);
 }
 .sr-form {
-    font-weight: 700;
-    font-size: 1rem;
+    font-weight: var(--c-studio-fw-strong);
+    font-size: var(--c-studio-fs-title);
 }
 .sr-meta {
-    font-size: 0.8125rem;
-    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
 }
 .sr-note {
     margin-top: 0.35rem;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     font-style: italic;
-    color: var(--slds-g-color-neutral-base-50, #747474);
+    color: var(--c-studio-text-weak);
 }
 .sr-section {
     padding: 0.75rem 1rem 0.25rem;
 }
 .sr-section-title {
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+    color: var(--c-studio-text);
     margin-bottom: 0.5rem;
 }
 .sr-row {
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--slds-g-color-border-base-1, #f0f0f0);
+    border-bottom: 1px solid var(--c-studio-border);
 }
 .sr-label {
-    font-size: 0.8125rem;
-    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
 }
 .sr-value {
     margin: 0.15rem 0 0;
-    font-size: 0.9375rem;
+    font-size: var(--c-studio-fs-subhead);
     line-height: 1.5;
     white-space: pre-wrap;
 }
 .sr-skipped {
-    color: var(--slds-g-color-neutral-base-50, #999);
+    color: var(--c-studio-text-weak);
     font-style: italic;
 }
 .sr-unparsed {
     display: block;
     margin-top: 0.2rem;
-    font-size: 0.75rem;
-    color: var(--slds-g-color-warning-base-30, #8c4b02);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-warning-text);
 }
 .sr-files {
     margin: 0;
@@ -62,10 +63,10 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.3rem 0;
-    font-size: 0.875rem;
+    font-size: var(--c-studio-fs-subhead);
 }
 .sr-error {
-    color: var(--slds-g-color-error-base-30, #b60554);
+    color: var(--c-studio-error-text);
 }
 
 /* A matrix keeps its statements under the question they belong to, indented
@@ -73,7 +74,7 @@
 .sr-matrix {
     margin: 0.1rem 0 0;
     padding-left: 0.75rem;
-    border-left: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    border-left: 1px solid var(--c-studio-border);
 }
 .sr-matrix-line {
     display: flex;
@@ -83,8 +84,8 @@
     padding: 0.1rem 0;
 }
 .sr-statement {
-    font-size: 0.8125rem;
-    color: var(--slds-g-color-neutral-base-30, #5c5c5c);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
 }
 .sr-statement::after {
     content: ':';
@@ -92,6 +93,6 @@
 /* A file title is a button so it can open the standard preview, but it must
    read as the link it is, not as a control. */
 .sr-file-detail {
-    color: var(--slds-g-color-neutral-base-50, #999);
-    font-size: 0.75rem;
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
 }
