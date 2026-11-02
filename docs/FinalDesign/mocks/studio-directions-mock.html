@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Studio Directions</title>
+        <style>
+            /* Studio palette: exactly finalStudioStyles.css today. */
+            :root {
+                --surface: #ffffff;
+                --surface-subtle: #f8fafc;
+                --workspace: #f1f5f9;
+                --hover: #eef2f6;
+                --text: #1f2937;
+                --text-weak: #526071;
+                --border: #dce2e9;
+                --border-subtle: #e8edf2;
+                --border-strong: #7c8999;
+                --accent: #0f766e;
+                --accent-hover: #115e59;
+                --accent-text: #115e59;
+                --accent-surface: #e8f5f2;
+                --on-accent: #ffffff;
+                --focus: #0f766e;
+                --error: #b42318;
+                --error-text: #8e2018;
+                --error-surface: #fef1ee;
+                --error-border: #e6b3ac;
+                --warning-text: #73510d;
+                --warning-surface: #fff5df;
+                --warning-border: #caa24c;
+                --success-text: #21613f;
+                --success-surface: #eaf6ee;
+                --overlay: rgb(8 15 26 / 52%);
+                --shadow-2: 0 10px 24px rgb(15 23 42 / 12%);
+                --shadow-3: 0 20px 48px rgb(0 0 0 / 28%);
+                /* Fixed by owner ruling: same in every direction */
+                --fs-caption: 11px;
+                --fs-small: 12px;
+                --fs-body: 13px;
+                --fs-subhead: 14px;
+                --fs-title: 16px;
+                --fs-display: 20px;
+                --font:
+                    -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+                    sans-serif;
+                --mono:
+                    ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono',
+                    Menlo, monospace;
+            }
+
+            /* The three directions: ONLY these numbers and the group/row styles differ. */
+            .calm {
+                --h: 32px;
+                --r: 8px;
+                --r-lg: 12px;
+                --pad: 16px;
+                --row: 12px;
+                --btn-r: 8px;
+                --label-w: 0;
+            }
+            .pro {
+                --h: 28px;
+                --r: 6px;
+                --r-lg: 10px;
+                --pad: 12px;
+                --row: 8px;
+                --btn-r: 6px;
+                --label-w: 112px;
+            }
+            .friendly {
+                --h: 36px;
+                --r: 12px;
+                --r-lg: 16px;
+                --pad: 20px;
+                --row: 12px;
+                --btn-r: 999px;
+                --label-w: 0;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+            }
+            body {
+                background: var(--workspace);
+                color: var(--text);
+                font: var(--fs-body)/1.45 var(--font);
+            }
+            button,
+            input,
+            select {
+                font: inherit;
+                color: inherit;
+            }
+
+            /* ---------- page chrome (the mock itself, not a direction) ---------- */
+            .intro {
+                max-width: 1180px;
+                margin: 0 auto;
+                padding: 28px 16px 8px;
+            }
+            .intro h1 {
+                font-size: 22px;
+                font-weight: 600;
+                margin: 0 0 6px;
+                line-height: 1.25;
+            }
+            .intro p {
+                margin: 0 0 6px;
+                color: var(--text-weak);
+                max-width: 78ch;
+            }
+            .intro .fixed {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin: 12px 0 0;
+                padding: 0;
+                list-style: none;
+            }
+            .intro .fixed li {
+                font-size: var(--fs-small);
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 999px;
+                padding: 2px 10px;
+                color: var(--text-weak);
+            }
+            .tabs {
+                max-width: 1180px;
+                margin: 16px auto 0;
+                padding: 0 16px;
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+            .tabs button {
+                border: 1px solid transparent;
+                background: none;
+                border-radius: 8px;
+                padding: 6px 12px;
+                cursor: pointer;
+                color: var(--text-weak);
+            }
+            .tabs button:hover {
+                background: var(--hover);
+                color: var(--text);
+            }
+            .tabs button[aria-selected='true'] {
+                background: var(--surface);
+                border-color: var(--border);
+                color: var(--accent-text);
+                font-weight: 600;
+            }
+            .tabs button:focus-visible,
+            .mock :focus-visible {
+                outline: 2px solid var(--focus);
+                outline-offset: 2px;
+            }
+
+            .grid {
+                max-width: 1180px;
+                margin: 12px auto 48px;
+                padding: 0 16px;
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 16px;
+                align-items: start;
+            }
+            @media (max-width: 1080px) {
+                .grid {
+                    grid-template-columns: minmax(0, 1fr);
+                    max-width: 520px;
+                }
+            }
+            .col-head {
+                margin: 0 0 8px;
+            }
+            .col-head h2 {
+                font-size: var(--fs-subhead);
+                font-weight: 600;
+                margin: 0;
+            }
+            .col-head p {
+                margin: 2px 0 0;
+                font-size: var(--fs-small);
+                color: var(--text-weak);
+            }
+
+            /* ---------- Studio pieces (scoped per direction) ---------- */
+            .mock {
+                font-size: var(--fs-body);
+            }
+            .panel {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--r-lg);
+                overflow: hidden;
+            }
+            .panel-head {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: var(--pad);
+                padding-bottom: 0;
+            }
+            .panel-head h3 {
+                font-size: var(--fs-title);
+                font-weight: 600;
+                margin: 0;
+                line-height: 1.25;
+                flex: 1;
+            }
+            .panel-body {
+                padding: var(--pad);
+            }
+            .panel-foot {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px var(--pad);
+                border-top: 1px solid var(--border-subtle);
+                background: var(--surface-subtle);
+            }
+            .panel-foot .spacer {
+                flex: 1;
+            }
+            .status {
+                font-size: var(--fs-small);
+                color: var(--text-weak);
+                display: inline-flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .status::before {
+                content: '';
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--success-text);
+            }
+
+            .chip {
+                font-size: var(--fs-caption);
+                color: var(--text-weak);
+                background: var(--surface-subtle);
+                border: 1px solid var(--border-subtle);
+                border-radius: 999px;
+                padding: 1px 8px;
+            }
+
+            /* groups */
+            .group + .group {
+                margin-top: 24px;
+            }
+            .group h4 {
+                font-size: var(--fs-subhead);
+                font-weight: 600;
+                margin: 0 0 8px;
+                line-height: 1.25;
+                display: flex;
+                align-items: center;
+            }
+            .group h4 .quiet {
+                margin-left: auto;
+            }
+            .group .desc {
+                margin: -4px 0 8px;
+                font-size: var(--fs-small);
+                color: var(--text-weak);
+            }
+            .pro .group + .group {
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid var(--border-subtle);
+            }
+            .pro .group h4 {
+                font-size: var(--fs-body);
+            }
+            .friendly .group {
+                background: var(--surface-subtle);
+                border-radius: var(--r-lg);
+                padding: 16px;
+            }
+            .friendly .group + .group {
+                margin-top: 12px;
+            }
+
+            /* settings row */
+            .row {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .row + .row {
+                margin-top: var(--row);
+            }
+            .row label,
+            .row .lbl {
+                font-weight: 400;
+            }
+            .help {
+                font-size: var(--fs-small);
+                color: var(--text-weak);
+            }
+            .err {
+                font-size: var(--fs-small);
+                color: var(--error-text);
+            }
+            .pro .row {
+                display: grid;
+                grid-template-columns: var(--label-w) minmax(0, 1fr);
+                column-gap: 8px;
+                row-gap: 2px;
+                align-items: center;
+            }
+            .pro .row > .help,
+            .pro .row > .err {
+                grid-column: 2;
+            }
+            .row.inline {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .pro .row.inline {
+                display: grid;
+            }
+            .pro .row.inline > :last-child {
+                justify-self: start;
+            }
+
+            /* control */
+            .ctl {
+                min-height: var(--h);
+                width: 100%;
+                padding: 0 12px;
+                border: 1px solid var(--border-strong);
+                border-radius: var(--r);
+                background: var(--surface);
+                line-height: 1.25;
+            }
+            .pro .ctl {
+                padding: 0 8px;
+            }
+            .ctl::placeholder {
+                color: var(--text-weak);
+            }
+            .ctl:hover,
+            .ctl.is-hover {
+                border-color: var(--text-weak);
+            }
+            .ctl:focus,
+            .ctl.is-focus {
+                outline: none;
+                border-color: var(--focus);
+                box-shadow: 0 0 0 2px var(--focus);
+            }
+            .ctl.is-invalid {
+                border-color: var(--error);
+                box-shadow: 0 0 0 1px var(--error);
+            }
+            .ctl:disabled {
+                background: var(--surface-subtle);
+                color: var(--text-weak);
+                border-color: var(--border);
+            }
+            select.ctl {
+                appearance: none;
+                padding-right: 28px;
+                cursor: pointer;
+                background: var(--surface)
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23526071' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")
+                    no-repeat right 10px center;
+            }
+            .ctl.mono {
+                font-family: var(--mono);
+                font-size: var(--fs-small);
+            }
+
+            /* buttons */
+            .btn {
+                min-height: var(--h);
+                padding: 0 14px;
+                border-radius: var(--btn-r);
+                cursor: pointer;
+                border: 1px solid var(--border-strong);
+                background: var(--surface);
+                color: var(--text);
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                white-space: nowrap;
+                font-weight: 600;
+            }
+            .pro .btn {
+                padding: 0 10px;
+            }
+            .btn:hover,
+            .btn.is-hover {
+                background: var(--hover);
+            }
+            .btn.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--on-accent);
+            }
+            .btn.primary:hover,
+            .btn.primary.is-hover {
+                background: var(--accent-hover);
+                border-color: var(--accent-hover);
+            }
+            .btn.quiet {
+                background: none;
+                border-color: transparent;
+                color: var(--accent-text);
+                padding: 0 8px;
+            }
+            .btn.quiet:hover,
+            .btn.quiet.is-hover {
+                background: var(--accent-surface);
+            }
+            .btn.danger {
+                color: var(--error-text);
+                border-color: var(--error-border);
+            }
+            .btn.danger:hover,
+            .btn.danger.is-hover {
+                background: var(--error-surface);
+            }
+            .btn.is-focus {
+                outline: 2px solid var(--focus);
+                outline-offset: 2px;
+            }
+            .btn:disabled {
+                cursor: not-allowed;
+                background: var(--surface-subtle);
+                border-color: var(--border);
+                color: var(--text-weak);
+            }
+            .btn.sm {
+                min-height: calc(var(--h) - 4px);
+                font-size: var(--fs-small);
+            }
+            .spin {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                border: 2px solid currentColor;
+                border-right-color: transparent;
+                animation: spin 0.7s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .spin {
+                    animation: none;
+                }
+                * {
+                    transition: none !important;
+                }
+            }
+            .icon-btn {
+                width: var(--h);
+                height: var(--h);
+                border-radius: var(--r);
+                border: 0;
+                background: none;
+                cursor: pointer;
+                color: var(--text-weak);
+                display: inline-grid;
+                place-items: center;
+                font-size: 15px;
+            }
+            .icon-btn:hover {
+                background: var(--hover);
+                color: var(--text);
+            }
+
+            /* segmented */
+            .seg {
+                display: inline-flex;
+                padding: 2px;
+                gap: 2px;
+                border-radius: calc(var(--r) + 2px);
+                background: var(--workspace);
+                border: 1px solid var(--border-subtle);
+            }
+            .seg button {
+                min-height: calc(var(--h) - 6px);
+                padding: 0 12px;
+                border: 1px solid transparent;
+                background: none;
+                border-radius: var(--r);
+                cursor: pointer;
+                color: var(--text-weak);
+            }
+            .friendly .seg {
+                border-radius: 999px;
+            }
+            .friendly .seg button {
+                border-radius: 999px;
+            }
+            .seg button:hover {
+                color: var(--text);
+            }
+            .seg button[aria-checked='true'] {
+                background: var(--surface);
+                color: var(--accent-text);
+                border-color: var(--border);
+                box-shadow: 0 1px 1px rgb(15 23 42 / 6%);
+            }
+            .seg.full {
+                display: flex;
+                min-width: 0;
+            }
+            .seg.full button {
+                flex: 1;
+                min-width: 0;
+            }
+            .pro .seg button {
+                padding: 0 8px;
+            }
+
+            /* switch */
+            .switch {
+                width: 36px;
+                height: 20px;
+                border-radius: 999px;
+                border: 1px solid var(--border-strong);
+                background: var(--border);
+                position: relative;
+                cursor: pointer;
+                padding: 0;
+                flex: none;
+            }
+            .switch::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: var(--surface);
+                box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+                transition: transform 150ms ease;
+            }
+            .switch[aria-checked='true'] {
+                background: var(--accent);
+                border-color: var(--accent);
+            }
+            .switch[aria-checked='true']::after {
+                transform: translateX(16px);
+            }
+
+            /* selectable theme cards (the preview inside is a specimen) */
+            .cards {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .card {
+                border: 1px solid var(--border);
+                border-radius: var(--r);
+                background: var(--surface);
+                padding: 6px;
+                cursor: pointer;
+                text-align: left;
+                position: relative;
+            }
+            .card:hover {
+                border-color: var(--text-weak);
+            }
+            /* Selected = tinted fill + accent edge + check. Focus = a separate ring with a visible gap. */
+            .card[aria-checked='true'] {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 1px var(--accent);
+                background: var(--accent-surface);
+            }
+            .card[aria-checked='true']::after {
+                content: '✓';
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: var(--on-accent);
+                font-size: 11px;
+                display: grid;
+                place-items: center;
+            }
+            .card.is-focus,
+            .card:focus-visible {
+                outline: 2px solid var(--focus);
+                outline-offset: 4px;
+            }
+            .card .art {
+                height: 64px;
+                border-radius: calc(var(--r) - 3px);
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .card .art i {
+                display: block;
+                height: 6px;
+                border-radius: 3px;
+            }
+            .card .name {
+                display: block;
+                font-weight: 600;
+                margin: 6px 2px 0;
+            }
+            .card .meta {
+                display: block;
+                font-size: var(--fs-small);
+                color: var(--text-weak);
+                margin: 0 2px 2px;
+            }
+
+            /* color row */
+            .color {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .swatch {
+                width: var(--h);
+                height: var(--h);
+                border-radius: var(--r);
+                border: 1px solid var(--border-strong);
+                flex: none;
+            }
+            .badge {
+                font-size: var(--fs-caption);
+                font-weight: 600;
+                border-radius: 999px;
+                padding: 1px 8px;
+                white-space: nowrap;
+            }
+            .badge.ok {
+                background: var(--success-surface);
+                color: var(--success-text);
+            }
+            .badge.warn {
+                background: var(--warning-surface);
+                color: var(--warning-text);
+            }
+
+            /* feedback */
+            .note {
+                border: 1px solid var(--warning-border);
+                background: var(--warning-surface);
+                color: var(--warning-text);
+                border-radius: var(--r);
+                padding: 8px 12px;
+                display: flex;
+                gap: 8px;
+                align-items: flex-start;
+                font-size: var(--fs-body);
+            }
+            .note b {
+                font-weight: 600;
+            }
+            .note.error {
+                border-color: var(--error-border);
+                background: var(--error-surface);
+                color: var(--error-text);
+            }
+            .empty {
+                border: 1px dashed var(--border);
+                border-radius: var(--r);
+                padding: 16px;
+                text-align: center;
+                color: var(--text-weak);
+            }
+            .empty strong {
+                display: block;
+                color: var(--text);
+                font-weight: 600;
+                margin-bottom: 2px;
+            }
+
+            /* dialog */
+            .dialog-stage {
+                background: var(--overlay);
+                border-radius: var(--r-lg);
+                padding: 16px 10px;
+            }
+            .dialog {
+                background: var(--surface);
+                border-radius: var(--r-lg);
+                box-shadow: var(--shadow-3);
+                overflow: hidden;
+            }
+            .dialog .panel-head {
+                padding-bottom: 12px;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            /* mapping table */
+            .map {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+            }
+            .map th {
+                text-align: left;
+                font-size: var(--fs-small);
+                font-weight: 600;
+                color: var(--text-weak);
+                padding: 6px 8px;
+                background: var(--surface-subtle);
+                border-bottom: 1px solid var(--border-subtle);
+            }
+            .map td {
+                padding: 8px;
+                vertical-align: top;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+            .pro .map td {
+                padding: 6px 8px;
+            }
+            .friendly .map td {
+                padding: 10px 8px;
+            }
+            .map .q {
+                overflow-wrap: anywhere;
+            }
+            .map .api {
+                display: block;
+                font-family: var(--mono);
+                font-size: var(--fs-caption);
+                color: var(--text-weak);
+                margin-top: 2px;
+            }
+            .map tr.active td {
+                background: var(--accent-surface);
+            }
+            .friendly .map {
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+
+            /* picker list */
+            .pop {
+                margin-top: 4px;
+                border: 1px solid var(--border);
+                border-radius: var(--r);
+                background: var(--surface);
+                box-shadow: var(--shadow-2);
+                padding: 4px;
+                list-style: none;
+            }
+            .pop li {
+                padding: 6px 8px;
+                border-radius: calc(var(--r) - 2px);
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .pop li .api {
+                font-family: var(--mono);
+                font-size: var(--fs-caption);
+                color: var(--text-weak);
+            }
+            .pop li.active {
+                background: var(--hover);
+            }
+            .pop li.sel {
+                color: var(--accent-text);
+                font-weight: 600;
+            }
+            .pop li.sel::after {
+                content: '✓';
+            }
+
+            /* controls sheet */
+            .sheet h4 {
+                font-size: var(--fs-small);
+                font-weight: 600;
+                color: var(--text-weak);
+                margin: 16px 0 6px;
+            }
+            .sheet h4:first-child {
+                margin-top: 0;
+            }
+            .line {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            .cap {
+                font-size: var(--fs-caption);
+                color: var(--text-weak);
+                display: block;
+                margin-top: 2px;
+            }
+            .stack {
+                display: grid;
+                gap: 8px;
+            }
+            .pick-note {
+                max-width: 1180px;
+                margin: -32px auto 48px;
+                padding: 0 16px;
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+            }
+        </style>
+    </head>
+    <body>
+        <header class="intro">
+            <h1>Studio directions: pick the one that feels right</h1>
+            <p>
+                The same screens drawn three ways. Only control height, corner
+                rounding, spacing, how settings rows sit and how groups are
+                separated change between columns. Colors in the theme cards
+                belong to the form being designed; everything else is Studio
+                chrome.
+            </p>
+            <ul class="fixed" aria-label="Fixed in every direction">
+                <li>13px normal text</li>
+                <li>Sentence case only</li>
+                <li>Teal only for the main action, selection and focus</li>
+                <li>Two weights: 400 and 600</li>
+                <li>Shadows only on floating things</li>
+            </ul>
+        </header>
+
+        <nav class="tabs" role="tablist" aria-label="Screen">
+            <button role="tab" aria-selected="true" data-screen="build">
+                Build inspector
+            </button>
+            <button role="tab" aria-selected="false" data-screen="design">
+                Design pane
+            </button>
+            <button role="tab" aria-selected="false" data-screen="mapping">
+                Mapping dialog
+            </button>
+            <button role="tab" aria-selected="false" data-screen="controls">
+                All controls and states
+            </button>
+        </nav>
+
+        <main class="grid" id="grid" aria-live="polite"></main>
+        <p class="pick-note">
+            To choose, tell Claude a name, or a mix (for example "Calm, with
+            Pro's label-left rows").
+        </p>
+
+        <script>
+            const DIRECTIONS = [
+                {
+                    cls: 'calm',
+                    name: 'Calm workspace',
+                    note: 'Like Linear or Notion. 32px controls, 8px corners, groups by space.'
+                },
+                {
+                    cls: 'pro',
+                    name: 'Pro tool',
+                    note: 'Like Figma inspectors. 28px controls, 6px corners, label left, hairlines.'
+                },
+                {
+                    cls: 'friendly',
+                    name: 'Friendly builder',
+                    note: 'Like Typeform or Tally. 36px controls, 12px corners, soft cards, pills.'
+                }
+            ];
+
+            let uid = 0;
+            const id = (p) => `${p}-${++uid}`;
+
+            function row(label, control, extra = '') {
+                const i = id('f');
+                return `<div class="row">
+        <label for="${i}">${label}</label>
+        ${control.replace('%ID%', i)}
+        ${extra}
+    </div>`;
+            }
+            function inlineRow(label, control) {
+                return `<div class="row inline"><span class="lbl">${label}</span>${control}</div>`;
+            }
+            const seg = (opts, sel, label, full = false) =>
+                `<div class="seg ${full ? 'full' : ''}" role="radiogroup" aria-label="${label}">${opts
+                    .map(
+                        (o) =>
+                            `<button type="button" role="radio" aria-checked="${o === sel}" tabindex="${o === sel ? 0 : -1}">${o}</button>`
+                    )
+                    .join('')}</div>`;
+            const sw = (on, label) =>
+                `<button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${label}"></button>`;
+
+            const SCREENS = {
+                build: () => `
+    <section class="panel" aria-label="Question properties">
+        <div class="panel-head">
+            <h3>Question</h3><span class="chip">Short text</span>
+        </div>
+        <div class="panel-body">
+            <div class="group">
+                <h4>Basics</h4>
+                ${row('Label', '<input id="%ID%" class="ctl" value="Full legal name">')}
+                ${row('Help text', '<input id="%ID%" class="ctl" value="As it appears on your passport">', '<span class="help">Shown under the question.</span>')}
+                ${row('Placeholder', '<input id="%ID%" class="ctl" placeholder="e.g. Ada Lovelace">')}
+            </div>
+            <div class="group">
+                <h4>Answer <button type="button" class="btn quiet sm">Reset</button></h4>
+                ${inlineRow('Required', sw(true, 'Required'))}
+                <div class="row"><span class="lbl">Width</span>${seg(['Half', 'Full'], 'Full', 'Width')}</div>
+                ${row('Maximum length', '<input id="%ID%" class="ctl is-invalid" value="0" aria-invalid="true">', '<span class="err">Enter a number from 1 to 255.</span>')}
+            </div>
+            <div class="group">
+                <h4>Visibility</h4>
+                <p class="desc">Always shown.</p>
+                <button type="button" class="btn">＋ Add condition</button>
+            </div>
+        </div>
+        <div class="panel-foot"><span class="status">Saved to draft</span></div>
+    </section>`,
+
+                design: () => `
+    <section class="panel" aria-label="Design">
+        <div class="panel-head">
+            <h3>Design</h3>${seg(['Simple', 'Advanced'], 'Simple', 'Design mode')}
+        </div>
+        <div class="panel-body">
+            <div class="group">
+                <h4>Theme</h4>
+                <div class="cards" role="radiogroup" aria-label="Theme">
+                    <button type="button" class="card" role="radio" aria-checked="true">
+                        <span class="art" style="background:#eef2ff"><i style="width:60%;background:#4f46e5"></i><i style="width:85%;background:#c7d2fe"></i><i style="width:70%;background:#c7d2fe"></i></span>
+                        <span class="name">Harbor</span><span class="meta">Calm, light</span>
+                    </button>
+                    <button type="button" class="card" role="radio" aria-checked="false">
+                        <span class="art" style="background:#1c2b22"><i style="width:55%;background:#e9c46a"></i><i style="width:80%;background:#3d5a4a"></i><i style="width:65%;background:#3d5a4a"></i></span>
+                        <span class="name">Evergreen</span><span class="meta">Dark, warm</span>
+                    </button>
+                </div>
+            </div>
+            <div class="group">
+                <h4>Colors <button type="button" class="btn quiet sm">Reset to theme</button></h4>
+                ${row('Accent', '<div class="color"><span class="swatch" style="background:#4f46e5"></span><input id="%ID%" class="ctl mono" value="#4f46e5"><span class="badge ok">AA 6.3:1</span></div>')}
+                ${row('Page background', '<div class="color"><span class="swatch" style="background:#f6f4ee"></span><input id="%ID%" class="ctl mono" value="#f6f4ee"><span class="badge warn">Low 2.1:1</span></div>', '<span class="help">Light text on this background is hard to read.</span>')}
+            </div>
+            <div class="group">
+                <h4>Text</h4>
+                ${row('Font', '<select id="%ID%" class="ctl"><option>Inter</option><option>Source Serif</option></select>')}
+                <div class="row"><span class="lbl">Spacing</span>${seg(['Compact', 'Comfortable', 'Roomy'], 'Comfortable', 'Spacing', true)}</div>
+            </div>
+        </div>
+        <div class="panel-foot">
+            <button type="button" class="btn">Save as theme</button><span class="spacer"></span>
+            <span class="status">Saved to draft</span>
+        </div>
+    </section>`,
+
+                mapping: () => `
+    <div class="dialog-stage">
+    <section class="dialog" role="dialog" aria-label="Map answers to Contact">
+        <div class="panel-head">
+            <h3>Map answers to Contact</h3><button type="button" class="icon-btn" aria-label="Close">✕</button>
+        </div>
+        <div class="panel-body">
+            <div class="note"><span aria-hidden="true">⚠</span><span><b>Last name isn't mapped.</b> Contact needs it to save a record.</span></div>
+            <table class="map" style="margin-top:12px">
+                <thead><tr><th style="width:52%">Question</th><th>Salesforce field</th></tr></thead>
+                <tbody>
+                    <tr><td class="q">What is your full legal name as it appears on your passport?</td>
+                        <td><select class="ctl" aria-label="Field for full legal name"><option>First name</option></select><span class="api">FirstName</span></td></tr>
+                    <tr class="active"><td class="q">Work email</td>
+                        <td><input class="ctl is-focus" value="ema" aria-label="Field for work email">
+                        <ul class="pop" role="listbox" aria-label="Fields">
+                            <li class="active" role="option">Email <span class="api">Email</span></li>
+                            <li class="sel" role="option" aria-selected="true">Email opt-out</li>
+                        </ul></td></tr>
+                    <tr><td class="q">Phone</td>
+                        <td><select class="ctl" aria-label="Field for phone"><option>Choose a field</option></select></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="panel-foot">
+            <span class="help">Applied changes go to the draft.</span><span class="spacer"></span>
+            <button type="button" class="btn">Cancel</button>
+            <button type="button" class="btn primary">Apply mapping</button>
+        </div>
+    </section>
+    </div>`,
+
+                controls: () => `
+    <section class="panel sheet" aria-label="Controls and states">
+        <div class="panel-body">
+            <h4>Buttons</h4>
+            <div class="line">
+                <button type="button" class="btn primary">Publish form</button>
+                <button type="button" class="btn">Preview</button>
+                <button type="button" class="btn quiet">Reset</button>
+                <button type="button" class="btn danger">Delete</button>
+            </div>
+            <div class="line" style="margin-top:8px">
+                <span><button type="button" class="btn primary is-hover">Publish form</button><span class="cap">Hover</span></span>
+                <span><button type="button" class="btn is-focus">Preview</button><span class="cap">Focus</span></span>
+                <span><button type="button" class="btn primary" disabled>Publish form</button><span class="cap">Disabled</span></span>
+                <span><button type="button" class="btn primary" aria-busy="true"><span class="spin" aria-hidden="true"></span>Publishing</button><span class="cap">Busy</span></span>
+            </div>
+
+            <h4>Text field</h4>
+            <div class="stack">
+                <span><input class="ctl" value="Full legal name" aria-label="Default"><span class="cap">Default</span></span>
+                <span><input class="ctl is-focus" value="Full legal name" aria-label="Focus"><span class="cap">Focus</span></span>
+                <span><input class="ctl is-invalid" value="0" aria-label="Invalid" aria-invalid="true"><span class="err">Enter a number from 1 to 255.</span></span>
+                <span><input class="ctl" value="Contact" disabled aria-label="Disabled"><span class="cap">Disabled: the object can't change after the first submission</span></span>
+            </div>
+
+            <h4>Choices</h4>
+            <div class="line">${seg(['Desktop', 'Tablet', 'Phone'], 'Desktop', 'Preview device')}</div>
+            <div class="line" style="margin-top:8px">${sw(false, 'Off example')}<span class="cap">Off</span>${sw(true, 'On example')}<span class="cap">On</span></div>
+
+            <h4>Cards</h4>
+            <div class="cards">
+                <button type="button" class="card" role="radio" aria-checked="true"><span class="art" style="background:#eef2ff"><i style="width:60%;background:#4f46e5"></i><i style="width:85%;background:#c7d2fe"></i></span><span class="name">Selected</span></button>
+                <button type="button" class="card is-focus" role="radio" aria-checked="false"><span class="art" style="background:#fdf2f8"><i style="width:60%;background:#db2777"></i><i style="width:85%;background:#fbcfe8"></i></span><span class="name">Focused</span></button>
+            </div>
+
+            <h4>Loading, empty and failed are different</h4>
+            <div class="stack">
+                <div class="empty"><strong>No forms yet</strong>Create one from a template to get started.<div style="margin-top:8px"><button type="button" class="btn primary">New form</button></div></div>
+                <div class="note error"><span aria-hidden="true">!</span><span><b>Forms didn't load.</b> Check your connection, then try again. <button type="button" class="btn quiet sm">Retry</button></span></div>
+            </div>
+        </div>
+    </section>`
+            };
+
+            const grid = document.getElementById('grid');
+            function render(screen) {
+                grid.innerHTML = DIRECTIONS.map(
+                    (d) => `
+        <div class="mock ${d.cls}">
+            <div class="col-head"><h2>${d.name}</h2><p>${d.note}</p></div>
+            ${SCREENS[screen]()}
+        </div>`
+                ).join('');
+            }
+            render('build');
+
+            const tabs = [...document.querySelectorAll('[role=tab]')];
+            tabs.forEach((t) =>
+                t.addEventListener('click', () => {
+                    tabs.forEach((x) =>
+                        x.setAttribute('aria-selected', String(x === t))
+                    );
+                    render(t.dataset.screen);
+                })
+            );
+
+            // Make the sample controls feel real: radios, segments and switches toggle.
+            grid.addEventListener('click', (e) => {
+                const b = e.target.closest('button');
+                if (!b) return;
+                if (b.getAttribute('role') === 'switch') {
+                    b.setAttribute(
+                        'aria-checked',
+                        String(b.getAttribute('aria-checked') !== 'true')
+                    );
+                } else if (b.getAttribute('role') === 'radio') {
+                    const grp = b.closest('[role=radiogroup], .cards');
+                    grp.querySelectorAll('[role=radio]').forEach((r) => {
+                        r.setAttribute('aria-checked', String(r === b));
+                        r.tabIndex = r === b ? 0 : -1;
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -140,5 +140,5 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--dt-muted, #5c6b7a);
+    color: var(--c-studio-text-weak);
 }

@@ -4,15 +4,19 @@
     display: block;
 }
 
-/* SLDS styling hooks, with the SLDS values as fallbacks. */
+/* SLDS styling hooks, with the SLDS values as fallbacks. The fallbacks used to
+   name the property itself (an invalid cycle), which would have left the box
+   with no border or focus colour on a host without the SLDS globals. Both
+   Studio hosts define them today (measured 2026-11-02), so the fallbacks are
+   the VF host's values and nothing changes on screen. */
 :host {
-    --ta-border: var(--slds-g-color-border-2, var(--ta-border));
+    --ta-border: var(--slds-g-color-border-2, #747474);
     --ta-surface: var(--slds-g-color-neutral-base-100, #fff);
-    --ta-brand: var(--slds-g-color-brand-base-50, var(--ta-brand));
-    --ta-error: var(--slds-g-color-error-base-40, var(--ta-error));
+    --ta-brand: var(--slds-g-color-brand-base-50, #0176d3);
+    --ta-error: var(--slds-g-color-error-base-40, #ba0517);
     --ta-weak: var(--slds-g-color-neutral-base-50, #747474);
-    --ta-rule: var(--slds-g-color-border-1, var(--ta-rule));
-    --ta-active: var(--slds-g-color-brand-base-95, var(--ta-active));
+    --ta-rule: var(--slds-g-color-border-1, #c9c9c9);
+    --ta-active: var(--slds-g-color-brand-base-95, #eef4ff);
 }
 
 /* The box, its magnifier and its dropdown: the dropdown hangs off the box,

@@ -28,9 +28,52 @@
     --c-studio-info-text: #364d6b;
     --c-studio-info-surface: #eef3fa;
     --c-studio-overlay: rgb(8 15 26 / 52%);
-    --c-studio-dialog-shadow: 0 20px 48px rgb(0 0 0 / 28%);
+    --c-studio-dialog-shadow: var(--c-studio-shadow-3);
     --c-studio-radius-lg: 12px;
     --c-studio-space-lg: 24px;
+    /* Design-system foundations (DESIGN_SYSTEM.md §4). New names only: nothing
+       reads them until the screen-by-screen restyle. Values are guarded by
+       __tests__/studioScale.test.js. */
+    --c-studio-fs-caption: 11px;
+    --c-studio-fs-small: 12px;
+    --c-studio-fs-body: 13px;
+    --c-studio-fs-subhead: 14px;
+    --c-studio-fs-title: 16px;
+    --c-studio-fs-display: 20px;
+    --c-studio-fw-regular: 400;
+    --c-studio-fw-strong: 600;
+    --c-studio-lh-tight: 1.25;
+    --c-studio-lh-body: 1.45;
+    --c-studio-font:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+        Arial, sans-serif;
+    --c-studio-font-mono:
+        ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+    --c-studio-space-1: 2px;
+    --c-studio-space-2: 4px;
+    --c-studio-space-3: 8px;
+    --c-studio-space-4: 12px;
+    --c-studio-space-5: 16px;
+    --c-studio-space-6: 24px;
+    --c-studio-space-7: 32px;
+    --c-studio-space-8: 48px;
+    --c-studio-control-h: 32px;
+    --c-studio-bar-h: 56px;
+    --c-studio-radius-sm: 4px;
+    --c-studio-radius-md: 8px;
+    --c-studio-radius-pill: 999px;
+    --c-studio-shadow-2: 0 10px 24px rgb(15 23 42 / 12%);
+    --c-studio-shadow-3: 0 20px 48px rgb(0 0 0 / 28%);
+    --c-studio-z-raised: 2;
+    --c-studio-z-dropdown: 20;
+    --c-studio-z-menu: 30;
+    --c-studio-z-drawer: 1000;
+    --c-studio-z-action-dialog: 1100;
+    --c-studio-z-backdrop: 9000;
+    --c-studio-z-modal: 9001;
+    --c-studio-z-popover: 9500;
+    --c-studio-duration: 150ms;
+    --c-studio-ease: ease;
     /* Structure panel (the blueprint): light authoring surfaces with a darker
        teal selection and focus color (2026-09-29; it was dark). Only the
        structure panel reads these; respondent theme tokens are untouched. */
