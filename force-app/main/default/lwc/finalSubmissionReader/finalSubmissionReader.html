@@ -136,14 +136,13 @@
                                     icon-name="doctype:attachment"
                                     size="x-small"
                                 ></lightning-icon>
-                                <button
+                                <lightning-button
                                     class="sr-file-open"
-                                    type="button"
+                                    variant="base"
+                                    label={file.title}
                                     data-id={file.documentId}
                                     onclick={handleFileOpen}
-                                >
-                                    {file.title}
-                                </button>
+                                ></lightning-button>
                                 <template lwc:if={file.detail}>
                                     <span class="sr-file-detail"
                                         >{file.detail}</span

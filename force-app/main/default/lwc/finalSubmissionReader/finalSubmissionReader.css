@@ -91,19 +91,6 @@
 }
 /* A file title is a button so it can open the standard preview, but it must
    read as the link it is, not as a control. */
-.sr-file-open {
-    padding: 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    color: var(--slds-g-link-color, #0176d3);
-    cursor: pointer;
-    text-align: left;
-}
-.sr-file-open:hover,
-.sr-file-open:focus-visible {
-    text-decoration: underline;
-}
 .sr-file-detail {
     color: var(--slds-g-color-neutral-base-50, #999);
     font-size: 0.75rem;

@@ -101,18 +101,3 @@
     padding: 10px 16px 14px;
     border-top: 1px solid var(--c-studio-border-subtle);
 }
-
-.rp-cancel {
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    padding: 7px 14px;
-    cursor: pointer;
-}
-
-.rp-cancel:hover {
-    background: var(--c-studio-hover);
-}

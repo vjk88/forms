@@ -109,16 +109,14 @@
                 <template lwc:else>
                     <p class="ma-match-summary">
                         {matchSummary}
-                        <button
-                            type="button"
+                        <lightning-button
                             class="ma-link"
+                            variant="base"
+                            label="Change"
+                            aria-label="Change what happens when one is found"
                             disabled={readOnly}
                             onclick={handleChangeOnMatch}
-                        >
-                            Change<span class="slds-assistive-text">
-                                what happens when one is found</span
-                            >
-                        </button>
+                        ></lightning-button>
                     </p>
                 </template>
             </section>

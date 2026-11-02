@@ -404,7 +404,6 @@
     ".ma-choice-detail || raw font size": 1,
     ".ma-choice-title || raw font size": 1,
     ".ma-choice-title || raw font weight": 1,
-    ".ma-link || raw colour": 1,
     ".ma-match || raw colour": 1,
     ".ma-match || raw radius": 1,
     ".ma-match-summary || raw colour": 1,
@@ -437,9 +436,6 @@
   "finalMappingEditor": {
     ".me-add || raw colour": 1,
     ".me-add || raw radius": 1,
-    ".me-add-start || raw colour": 2,
-    ".me-add-start || raw font size": 1,
-    ".me-add-start || raw radius": 1,
     ".me-card || raw colour": 1,
     ".me-card || raw radius": 1,
     ".me-card--on || raw colour": 2,
@@ -516,9 +512,6 @@
     ".rl-stop-title || raw font weight": 1
   },
   "finalRelationshipPicker": {
-    ".rp-cancel || raw font size": 1,
-    ".rp-cancel || raw font weight": 1,
-    ".rp-cancel || raw radius": 1,
     ".rp-dialog || raw colour": 1,
     ".rp-dialog || raw font family": 1,
     ".rp-dialog || raw radius": 1,
