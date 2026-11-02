@@ -3,47 +3,49 @@
 .pp {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    font-family:
-        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    gap: var(--c-studio-space-5);
+    font-family: var(--c-studio-font);
     color: var(--c-studio-text);
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-body);
 }
 
 .pp-head {
-    padding-bottom: 2px;
+    padding-bottom: var(--c-studio-space-1);
 }
 
 .pp-title {
     margin: 0;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
     overflow-wrap: anywhere;
 }
 
 .pp-sub {
-    margin: 2px 0 0;
-    font-size: 11px;
+    margin: var(--c-studio-space-2) 0 0;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
+/* Groups: a soft line between them and 24px (16 gap + 8 padding). */
 .pp-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--c-studio-border-subtle);
+    gap: var(--c-studio-space-4);
+    padding-top: var(--c-studio-space-3);
+    border-top: 1px solid var(--c-studio-border);
 }
 
 .pp-grouptitle {
     margin: 0;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
 }
 
+/* Matches the labels lightning-input draws beside it (12px, weak). */
 .pp-label {
-    font-size: 12px;
-    font-weight: 400;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-regular);
     color: var(--c-studio-text-weak);
     margin-bottom: -6px;
 }
@@ -51,24 +53,24 @@
 .pp-hint {
     margin: 0;
     color: var(--c-studio-text-weak);
-    font-size: 11.5px;
-    line-height: 1.5;
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
 }
 
 .pp-only {
-    padding-top: 10px;
-    border-top: 1px solid var(--c-studio-border-subtle);
+    padding-top: var(--c-studio-space-3);
+    border-top: 1px solid var(--c-studio-border);
 }
 
 .pp-error {
     margin: 0;
-    color: var(--c-studio-error);
-    font-size: 11.5px;
+    color: var(--c-studio-error-text);
+    font-size: var(--c-studio-fs-small);
 }
 
 .pp-minmax {
     display: flex;
-    gap: 10px;
+    gap: var(--c-studio-space-3);
 }
 
 .pp-minmax > * {
@@ -86,21 +88,25 @@
 .pp-childfield {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
     width: 100%;
-    margin-top: 6px;
-    padding: 7px 10px;
+    min-height: var(--c-studio-control-h);
+    margin-top: var(--c-studio-space-2);
+    padding: var(--c-studio-space-2) var(--c-studio-space-3);
     border: 1px solid var(--c-studio-border);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
+    color: var(--c-studio-text);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-tight);
     text-align: left;
     cursor: pointer;
 }
 
 .pp-childfield:hover:not(.added) {
     border-color: var(--c-studio-accent);
+    background: var(--c-studio-hover);
 }
 
 .pp-childfield.added {
@@ -111,33 +117,40 @@
 .pp-childlabel {
     flex: 1;
     min-width: 0;
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.pp-childtype {
+/* Badges (DESIGN_SYSTEM 5.22): neutral type, accent "Added". */
+.pp-childtype,
+.pp-added {
     flex: none;
-    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 0 var(--c-studio-space-2);
+    border-radius: var(--c-studio-radius-sm);
+    font-size: var(--c-studio-fs-caption);
+    white-space: nowrap;
+}
+
+.pp-childtype {
     color: var(--c-studio-text-weak);
-    border: 1px solid var(--c-studio-border);
-    border-radius: 999px;
-    padding: 1px 7px;
+    background: var(--c-studio-workspace);
 }
 
 .pp-added {
-    flex: none;
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-accent-text);
+    background: var(--c-studio-accent-surface);
 }
 
 .pp-req {
     color: var(--c-studio-error);
     text-decoration: none;
-    margin-right: 2px;
+    margin-right: var(--c-studio-space-1);
 }
 
 /* ---- the FormStudio port (BUILDER_SURFACES): segmented rows, toggles,
@@ -146,55 +159,31 @@
 .pp-fld {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: var(--c-studio-space-2);
 }
 
 .pp-ro {
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 
-/* Segmented button row — the owner's "2 clicks" rule: options on one row. */
-.pp-seg {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-}
+/* (Button rows are c/finalButtonGroup since PR 430; the old .pp-seg rules
+   had no users left and are gone.) */
 
-.pp-seg-btn {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 6px 8px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--c-studio-text-weak);
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.pp-seg-btn:hover:not(.on) {
-    border-color: var(--c-studio-border-strong);
-}
-
-.pp-seg-btn.on {
-    border-color: var(--c-studio-accent);
-    background: var(--c-studio-accent-surface);
-    color: var(--c-studio-accent-text);
-}
-
+/* Kept native (swap plan: choice option boxes), drawn as a control (5.3). */
 .pp-input {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    padding: 6px 9px;
+    min-height: var(--c-studio-control-h);
+    padding: 0 var(--c-studio-space-3);
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--c-studio-fs-body);
 }
 
 .pp-input:focus-visible {
@@ -205,7 +194,7 @@
 .pp-optrow,
 .pp-numrow {
     display: flex;
-    gap: 5px;
+    gap: var(--c-studio-space-2);
     align-items: center;
 }
 
@@ -230,25 +219,28 @@
     display: block;
     max-width: 100%;
     max-height: 120px;
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     border: 1px solid var(--c-studio-border);
 }
 
 .pp-mediarow {
     display: flex;
-    gap: 6px;
+    gap: var(--c-studio-space-3);
     align-items: center;
 }
 
 .pp-upload {
-    display: inline-block;
-    padding: 7px 12px;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: var(--c-studio-control-h);
+    padding: 0 var(--c-studio-space-4);
     border: 1px solid var(--c-studio-accent);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-accent-surface);
     color: var(--c-studio-accent-text);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
     cursor: pointer;
 }
 
@@ -259,34 +251,34 @@
 /* section header icon picker (legacy ic-picker) */
 .pp-icsearch {
     display: flex;
-    gap: 5px;
+    gap: var(--c-studio-space-2);
     align-items: center;
 }
 
 .pp-icgrid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 3px;
+    gap: var(--c-studio-space-1);
     max-height: 132px;
     overflow: auto;
-    padding: 4px;
-    border: 1px solid var(--c-studio-border-subtle);
-    border-radius: 8px;
+    padding: var(--c-studio-space-2);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface-subtle);
 }
 
 .pp-ic {
     display: grid;
     place-items: center;
-    padding: 6px 0;
+    padding: var(--c-studio-space-2) 0;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: calc(var(--c-studio-radius-md) - var(--c-studio-space-1));
     background: none;
     cursor: pointer;
 }
 
 .pp-ic:hover {
-    background: var(--c-studio-border-subtle);
+    background: var(--c-studio-hover);
 }
 
 .pp-ic.on {
@@ -298,61 +290,41 @@
 .pp-topic-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 6px;
+    gap: var(--c-studio-space-2);
+    margin-bottom: var(--c-studio-space-2);
 }
 .pp-topic-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 4px 2px 10px;
-    border-radius: 999px;
-    background: var(--c-studio-info-surface);
+    gap: var(--c-studio-space-2);
+    padding: var(--c-studio-space-1) var(--c-studio-space-2)
+        var(--c-studio-space-1) var(--c-studio-space-3);
+    border-radius: var(--c-studio-radius-pill);
+    background: var(--c-studio-accent-surface);
     color: var(--c-studio-accent-text);
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
 }
-/* ---- imageChoice per-option upload (2026-07-31 fixes) ---- */
+/* ---- per-option image upload (owner 2026-07-31). The two earlier copies of
+   these rules are merged; the later values won before and still do. ---- */
 .pp-opt-thumb {
     width: 34px;
     height: 34px;
     object-fit: cover;
-    border-radius: 6px;
-    flex: none;
-}
-.pp-upload-opt {
-    flex: none;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--c-studio-accent-text);
-    cursor: pointer;
-    padding: 6px 8px;
-    border: 1px dashed var(--c-studio-accent-text);
-    border-radius: 6px;
-}
-.pp-file-hidden {
-    display: none;
-}
-
-/* ---- per-option image upload (owner 2026-07-31) ---- */
-.pp-opt-thumb {
-    width: 34px;
-    height: 34px;
-    object-fit: cover;
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-sm);
     flex: none;
 }
 .pp-upload-opt {
     display: inline-flex;
     align-items: center;
-    padding: 6px 10px;
-    border: 1.5px dashed var(--c-studio-accent);
-    border-radius: 8px;
-    color: var(--c-studio-accent);
-    font-size: 0.78rem;
-    font-weight: 700;
-    cursor: pointer;
     flex: none;
+    padding: var(--c-studio-space-2) var(--c-studio-space-3);
+    border: 1.5px dashed var(--c-studio-accent);
+    border-radius: var(--c-studio-radius-md);
+    color: var(--c-studio-accent-text);
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
+    cursor: pointer;
 }
 .pp-file-hidden {
     display: none;
@@ -362,8 +334,8 @@
 .pp-optgroup {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: var(--c-studio-space-2);
+    margin-bottom: var(--c-studio-space-3);
 }
 .pp-emoji {
     flex: 0 0 44px;
@@ -377,7 +349,7 @@
     opacity: 0.45;
 }
 .pp-sublabel {
-    font-size: 0.8rem;
+    font-size: var(--c-studio-fs-body);
 }
 
 /* starts under the Emoji column, not under the drag handle */
@@ -389,12 +361,13 @@
 /* A choice option missing its label or value, or repeating a value. */
 .pp-input-bad {
     border-color: var(--c-studio-error);
+    background: var(--c-studio-error-surface);
 }
 
 .pp-opt-problem {
-    margin: 0.125rem 0 0;
-    font-size: 0.75rem;
-    color: var(--c-studio-error);
+    margin: var(--c-studio-space-1) 0 0;
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-error-text);
 }
 
 /* ---- switch rows: name (+ hint) on the left, the native toggle right ---- */
@@ -402,14 +375,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--c-studio-space-4);
 }
 
 .pp-rule-text {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--c-studio-space-1);
     min-width: 0;
 }
 
@@ -419,17 +392,17 @@
 }
 
 .pp-rule-name {
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-body);
 }
 
 .pp-rule-hint {
-    font-size: 11.5px;
-    line-height: 1.4;
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-text-weak);
 }
 
 .pp-several {
-    margin-top: 2px;
+    margin-top: var(--c-studio-space-1);
 }
 
 /* ---- options table: ⋮⋮ · Emoji · Label · Value · × ---- */
@@ -437,13 +410,13 @@
 .pp-schema-row {
     display: grid;
     grid-template-columns: 18px 44px minmax(0, 1fr) minmax(0, 1fr) 24px;
-    gap: 5px;
+    gap: var(--c-studio-space-2);
     align-items: center;
 }
 
 .pp-opthead {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 
@@ -459,7 +432,7 @@
     height: 28px;
     padding: 0;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--c-studio-radius-sm);
     background: none;
     color: var(--c-studio-text-weak);
     cursor: grab;
@@ -494,7 +467,7 @@
 .pp-schema-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--c-studio-space-2);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -509,20 +482,23 @@
 }
 
 .pp-schema-cell {
+    box-sizing: border-box;
     min-width: 0;
-    padding: 6px 9px;
-    border: 1px solid var(--c-studio-border-subtle);
-    border-radius: 6px;
+    min-height: var(--c-studio-control-h);
+    padding: var(--c-studio-space-2) var(--c-studio-space-3);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface-subtle);
     color: var(--c-studio-text-weak);
-    font-size: 12px;
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-body);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .pp-schema-emoji {
-    min-height: 29px;
+    min-height: var(--c-studio-control-h);
     text-align: center;
 }
 
@@ -540,7 +516,7 @@
 }
 
 .pp-schema-head {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }

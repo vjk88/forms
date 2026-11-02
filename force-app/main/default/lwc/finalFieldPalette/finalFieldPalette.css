@@ -1,12 +1,12 @@
 @import 'c/finalStudioStyles';
 
-/* The icon rail on the left is c/finalStudioRail (shared with Design). */
+/* The icon rail on the left is c/finalStudioRail (shared with Design).
+   Tokens only (DESIGN_SYSTEM §4); rows, drag and drop and "Added" stay as built. */
 .fp {
     display: flex;
     height: 100%;
     background: var(--c-studio-surface);
-    font-family:
-        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--c-studio-font);
     color: var(--c-studio-text);
 }
 
@@ -19,64 +19,68 @@
 }
 
 .fp-head {
-    padding: 12px 12px 0;
+    padding: var(--c-studio-space-4) var(--c-studio-space-4) 0;
 }
 
 .fp-head-label {
     display: block;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .fp-head-sub {
-    font-size: 10.5px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
 /* lightning-input draws the box; this only places it. */
 .fp-search {
     display: block;
-    margin: 10px;
+    margin: var(--c-studio-space-3) var(--c-studio-space-4);
 }
 
 .fp-error {
-    margin: 10px;
-    color: var(--c-studio-error);
-    font-size: 12.5px;
+    margin: var(--c-studio-space-3) var(--c-studio-space-4);
+    color: var(--c-studio-error-text);
+    font-size: var(--c-studio-fs-body);
 }
 
 .fp-note {
-    margin: 14px 12px;
+    margin: var(--c-studio-space-4);
     color: var(--c-studio-text-weak);
-    font-size: 12.5px;
-    line-height: 1.5;
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-body);
 }
 
 .fp-list {
     list-style: none;
     margin: 0;
-    padding: 0 10px 12px;
+    padding: 0 var(--c-studio-space-4) var(--c-studio-space-4);
     overflow: auto;
 }
 
 .fp-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
     width: 100%;
-    margin-top: 6px;
-    padding: 8px 10px;
+    min-height: var(--c-studio-control-h);
+    margin-top: var(--c-studio-space-2);
+    padding: var(--c-studio-space-2) var(--c-studio-space-3);
     border: 1px solid var(--c-studio-border);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
+    color: var(--c-studio-text);
     font: inherit;
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-tight);
     text-align: left;
     cursor: grab;
 }
 
 .fp-item:hover:not(.added) {
     border-color: var(--c-studio-accent);
+    background: var(--c-studio-hover);
 }
 
 .fp-item.added {
@@ -87,7 +91,7 @@
 .fp-label {
     flex: 1;
     min-width: 0;
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -96,24 +100,31 @@
 .fp-req {
     color: var(--c-studio-error);
     text-decoration: none;
-    margin-right: 2px;
+    margin-right: var(--c-studio-space-1);
+}
+
+/* Badges (DESIGN_SYSTEM 5.22): neutral type, accent "Added". */
+.fp-type,
+.fp-added {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 0 var(--c-studio-space-2);
+    border-radius: var(--c-studio-radius-sm);
+    font-size: var(--c-studio-fs-caption);
+    white-space: nowrap;
 }
 
 .fp-type {
-    flex: none;
-    font-size: 10.5px;
     color: var(--c-studio-text-weak);
-    border: 1px solid var(--c-studio-border);
-    border-radius: 999px;
-    padding: 1px 7px;
+    background: var(--c-studio-workspace);
 }
 
 .fp-added {
-    flex: none;
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-accent-text);
+    background: var(--c-studio-accent-surface);
 }
 
 /* Logic index rows: owner label + what the rule does */
@@ -124,18 +135,26 @@
 
 .fp-logic-summary {
     flex: 1 0 100%;
-    font-size: 11px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
 /* Freeform serves 19 question types; the group label keeps that from
-   reading as one wall of buttons (survey stays ungrouped). */
+   reading as one wall of buttons (survey stays ungrouped). Group title
+   pattern (DESIGN_SYSTEM 5.5): plain words, strong, hairline to the edge. */
 .fp-group-label {
-    margin: 0.75rem 0 0.25rem;
-    padding: 0 0.25rem;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    margin: var(--c-studio-space-4) 0 var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
+}
+
+.fp-group-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--c-studio-border);
 }
