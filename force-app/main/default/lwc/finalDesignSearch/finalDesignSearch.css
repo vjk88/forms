@@ -57,7 +57,7 @@
     background: var(--c-studio-surface);
     border: 1px solid var(--c-studio-border-strong);
     border-radius: 8px;
-    box-shadow: 0 8px 24px var(--c-studio-shadow, #0002);
+    box-shadow: var(--c-studio-shadow-2);
 }
 
 .ds-results ul {

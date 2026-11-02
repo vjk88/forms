@@ -1,0 +1,4307 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Formwork system mock</title>
+        <style>
+            /* =========================================================================
+   Formwork: the Studio design system, as a reference mock.
+   Token names match DESIGN_SYSTEM.md §3 and finalStudioStyles.css exactly,
+   so this file doubles as the visual reference for the migration.
+   Standalone HTML, local sample data, no Salesforce calls.
+   ========================================================================= */
+            :root {
+                /* Surfaces */
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-hover: #eef2f6;
+                /* Text */
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                /* Lines by meaning: border-strong = you can type here; border = layout separator; border-subtle = rows inside a list */
+                --c-studio-border-strong: #7c8999;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                /* Accent: action, selection, focus. Nothing else. */
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-hover: #115e59;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-on-accent: #ffffff;
+                --c-studio-focus: #0f766e;
+                /* Feedback */
+                --c-studio-error: #b42318;
+                --c-studio-error-text: #8e2018;
+                --c-studio-error-surface: #fef1ee;
+                --c-studio-error-border: #e6b3ac;
+                --c-studio-warning-text: #73510d;
+                --c-studio-warning-surface: #fff5df;
+                --c-studio-warning-border: #caa24c;
+                --c-studio-success-text: #21613f;
+                --c-studio-success-surface: #eaf6ee;
+                --c-studio-overlay: rgb(8 15 26 / 52%);
+                /* Type roles */
+                --c-studio-fs-caption: 11px;
+                --c-studio-fs-small: 12px;
+                --c-studio-fs-body: 13px;
+                --c-studio-fs-subhead: 14px;
+                --c-studio-fs-title: 16px;
+                --c-studio-fs-display: 20px;
+                --c-studio-fw-regular: 400;
+                --c-studio-fw-strong: 600;
+                --c-studio-lh-tight: 1.25;
+                --c-studio-lh-body: 1.45;
+                --c-studio-font:
+                    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    'Helvetica Neue', Arial, sans-serif;
+                --c-studio-font-mono:
+                    ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono',
+                    monospace;
+                /* Space: 4px grid (2 is for optical fixes only) */
+                --c-studio-space-1: 2px;
+                --c-studio-space-2: 4px;
+                --c-studio-space-3: 8px;
+                --c-studio-space-4: 12px;
+                --c-studio-space-5: 16px;
+                --c-studio-space-6: 24px;
+                --c-studio-space-7: 32px;
+                --c-studio-space-8: 48px;
+                /* Shape and size */
+                --c-studio-control-h: 32px;
+                --c-studio-bar-h: 56px;
+                --c-studio-radius-sm: 4px;
+                --c-studio-radius-md: 8px;
+                --c-studio-radius-lg: 12px;
+                --c-studio-radius-pill: 999px;
+                /* Depth: only floating things */
+                --c-studio-shadow-2: 0 10px 24px rgb(15 23 42 / 12%);
+                --c-studio-shadow-3: 0 20px 48px rgb(0 0 0 / 28%);
+                --c-studio-duration: 150ms;
+                --c-studio-ease: ease;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text);
+                font: var(--c-studio-fs-body)/var(--c-studio-lh-body)
+                    var(--c-studio-font);
+            }
+            h1,
+            h2,
+            h3,
+            h4,
+            p {
+                margin: 0;
+            }
+            button,
+            input,
+            select,
+            textarea {
+                font: inherit;
+                color: inherit;
+            }
+            button {
+                cursor: pointer;
+            }
+            [hidden] {
+                display: none !important;
+            }
+            svg.i {
+                width: 16px;
+                height: 16px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.7;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                flex: none;
+            }
+            .sr {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                overflow: hidden;
+                clip-path: inset(50%);
+                white-space: nowrap;
+            }
+            .weak {
+                color: var(--c-studio-text-weak);
+            }
+            .small {
+                font-size: var(--c-studio-fs-small);
+            }
+            .caption {
+                font-size: var(--c-studio-fs-caption);
+            }
+            .mono {
+                font-family: var(--c-studio-font-mono);
+                font-size: var(--c-studio-fs-small);
+            }
+            .grow {
+                flex: 1;
+            }
+            .row {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+            }
+
+            /* ---------- Focus: ring OUTSIDE the item, always visible ---------- */
+            :where(
+                button,
+                input,
+                select,
+                textarea,
+                a,
+                [tabindex]
+            ):focus-visible,
+            .is-focus {
+                outline: 2px solid var(--c-studio-focus);
+                outline-offset: 2px;
+            }
+
+            /* ---------- Pattern: Button (4 variants, control height) ---------- */
+            .btn {
+                min-height: var(--c-studio-control-h);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--c-studio-space-3);
+                padding: 0 var(--c-studio-space-4);
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface);
+                font-weight: var(--c-studio-fw-strong);
+                white-space: nowrap;
+                transition: background var(--c-studio-duration)
+                    var(--c-studio-ease);
+            }
+            .btn:hover:not(:disabled) {
+                background: var(--c-studio-hover);
+            }
+            .btn.primary {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+            }
+            .btn.primary:hover:not(:disabled) {
+                background: var(--c-studio-accent-hover);
+            }
+            .btn.quiet {
+                border-color: transparent;
+                background: transparent;
+                color: var(--c-studio-accent-text);
+            }
+            .btn.quiet:hover:not(:disabled) {
+                background: var(--c-studio-accent-surface);
+            }
+            .btn.danger {
+                color: var(--c-studio-error-text);
+                border-color: var(--c-studio-error-border);
+            }
+            .btn.danger.solid {
+                background: var(--c-studio-error);
+                border-color: var(--c-studio-error);
+                color: #fff;
+            }
+            .btn:disabled {
+                cursor: default;
+                background: var(--c-studio-surface-subtle);
+                border-color: var(--c-studio-border);
+                color: var(--c-studio-text-weak);
+            }
+            .btn.primary:disabled[aria-busy='true'] {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+                opacity: 0.85;
+            }
+            .icon-btn {
+                width: var(--c-studio-control-h);
+                height: var(--c-studio-control-h);
+                display: inline-grid;
+                place-items: center;
+                padding: 0;
+                border: 1px solid transparent;
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                color: var(--c-studio-text-weak);
+            }
+            .icon-btn:hover:not(:disabled) {
+                background: var(--c-studio-hover);
+                color: var(--c-studio-text);
+            }
+            .icon-btn:disabled {
+                opacity: 0.45;
+                cursor: default;
+            }
+            .spin {
+                width: 14px;
+                height: 14px;
+                border: 2px solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+                animation: spin 900ms linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* ---------- Pattern: Control (input/select/textarea) — strong EDGE ---------- */
+            .ctl {
+                width: 100%;
+                min-width: 0;
+                min-height: var(--c-studio-control-h);
+                padding: 0 var(--c-studio-space-4);
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface);
+                line-height: var(--c-studio-lh-tight);
+            }
+            textarea.ctl {
+                padding: var(--c-studio-space-3) var(--c-studio-space-4);
+                min-height: 64px;
+                resize: vertical;
+                line-height: var(--c-studio-lh-body);
+            }
+            select.ctl {
+                padding-right: var(--c-studio-space-7);
+                appearance: none;
+                background: var(--c-studio-surface)
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23526071' stroke-width='1.8'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E")
+                    no-repeat right 10px center;
+            }
+            .ctl:disabled {
+                background: var(--c-studio-surface-subtle);
+                border-color: var(--c-studio-border);
+                color: var(--c-studio-text-weak);
+            }
+            .ctl[aria-invalid='true'] {
+                border-color: var(--c-studio-error);
+                background: var(--c-studio-error-surface);
+            }
+            .ctl::placeholder {
+                color: var(--c-studio-text-weak);
+                opacity: 1;
+            }
+
+            /* ---------- Pattern: Settings row ---------- */
+            .field {
+                display: grid;
+                gap: var(--c-studio-space-2);
+            }
+            .field-row {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: var(--c-studio-space-5);
+                align-items: start;
+            }
+            .field-row > .field {
+                margin-top: 0 !important;
+            }
+            .field + .field,
+            .field + .toggle-row,
+            .toggle-row + .field,
+            .toggle-row + .toggle-row {
+                margin-top: var(--c-studio-space-5);
+            }
+            .field > label,
+            .field > .label {
+                font-size: var(--c-studio-fs-body);
+            }
+            .help {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                line-height: var(--c-studio-lh-body);
+            }
+            .err {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-error-text);
+                display: flex;
+                gap: var(--c-studio-space-2);
+                align-items: flex-start;
+            }
+            .toggle-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--c-studio-space-4);
+                min-height: var(--c-studio-control-h);
+            }
+            .switch {
+                appearance: none;
+                flex: none;
+                margin: 0;
+                width: 32px;
+                height: 18px;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-pill);
+                background: var(--c-studio-border);
+                position: relative;
+                cursor: pointer;
+            }
+            .switch::before {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #fff;
+                box-shadow: 0 0 0 1px rgb(15 23 42 / 18%);
+                transition: left var(--c-studio-duration) var(--c-studio-ease);
+            }
+            .switch:checked {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+            }
+            .switch:checked::before {
+                left: 16px;
+            }
+            .switch:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+
+            /* ---------- Pattern: Group header (title + hairline, NO numbers) ---------- */
+            .group + .group {
+                margin-top: var(--c-studio-space-6);
+            }
+            .group-title {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                margin-bottom: var(--c-studio-space-4);
+                font-size: var(--c-studio-fs-body);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .group-title::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--c-studio-border);
+            }
+            .group-title .btn.quiet {
+                order: 2;
+                min-height: 24px;
+                padding: 0 var(--c-studio-space-2);
+                font-weight: var(--c-studio-fw-regular);
+                font-size: var(--c-studio-fs-small);
+            }
+
+            /* ---------- Pattern: Navigation tabs (underline) = where you are ---------- */
+            .tabs {
+                display: flex;
+                gap: var(--c-studio-space-5);
+                align-self: stretch;
+            }
+            .tabs [role='tab'] {
+                flex: none;
+                white-space: nowrap;
+                position: relative;
+                border: 0;
+                background: none;
+                padding: 0 var(--c-studio-space-1);
+                color: var(--c-studio-text-weak);
+                font-weight: var(--c-studio-fw-strong);
+                min-height: var(--c-studio-control-h);
+            }
+            .tabs [role='tab']::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 2px;
+                border-radius: 2px 2px 0 0;
+                background: transparent;
+            }
+            .tabs [role='tab'][aria-selected='true'] {
+                color: var(--c-studio-accent-text);
+            }
+            .tabs [role='tab'][aria-selected='true']::after {
+                background: var(--c-studio-accent);
+            }
+            .tabs [role='tab']:hover:not([aria-selected='true']) {
+                color: var(--c-studio-text);
+            }
+            .tabs [role='tab']:focus-visible {
+                outline-offset: -2px;
+            }
+
+            /* ---------- Pattern: Segmented = pick a value ---------- */
+            .seg {
+                display: inline-flex;
+                gap: var(--c-studio-space-1);
+                padding: var(--c-studio-space-1);
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-workspace);
+            }
+            .seg button {
+                min-height: 26px;
+                display: inline-flex;
+                align-items: center;
+                gap: var(--c-studio-space-2);
+                padding: 0 var(--c-studio-space-3);
+                border: 1px solid transparent;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--c-studio-text-weak);
+                white-space: nowrap;
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--c-studio-surface);
+                border-color: var(--c-studio-border-strong);
+                color: var(--c-studio-accent-text);
+            }
+            .seg.full {
+                display: flex;
+            }
+            .seg.full button {
+                flex: 1;
+                justify-content: center;
+            }
+
+            /* ---------- Pattern: Selected = edge INSIDE the item ---------- */
+            .sel-row {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                width: 100%;
+                min-height: var(--c-studio-control-h);
+                padding: var(--c-studio-space-2) var(--c-studio-space-3);
+                border: 1px solid transparent;
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                text-align: left;
+                color: var(--c-studio-text);
+            }
+            .sel-row > svg {
+                color: var(--c-studio-text-weak);
+            }
+            .sel-row:hover:not([aria-pressed='true']):not(
+                    [aria-current='true']
+                ) {
+                background: var(--c-studio-hover);
+            }
+            .sel-row[aria-pressed='true'],
+            .sel-row[aria-current='true'] {
+                background: var(--c-studio-accent-surface);
+                box-shadow: inset 3px 0 0 var(--c-studio-accent);
+                color: var(--c-studio-accent-text);
+            }
+            .sel-row[aria-pressed='true'] > svg,
+            .sel-row[aria-current='true'] > svg {
+                color: var(--c-studio-accent);
+            }
+            .card {
+                position: relative;
+                display: grid;
+                gap: var(--c-studio-space-3);
+                padding: var(--c-studio-space-3);
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface);
+                text-align: left;
+            }
+            .card:hover:not([aria-pressed='true']) {
+                border-color: var(--c-studio-border-strong);
+            }
+            .card[aria-pressed='true'] {
+                border-color: var(--c-studio-accent);
+                box-shadow: inset 0 0 0 1px var(--c-studio-accent);
+            }
+            .card .check {
+                position: absolute;
+                top: var(--c-studio-space-3);
+                right: var(--c-studio-space-3);
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                display: none;
+                place-items: center;
+                background: var(--c-studio-accent);
+                color: #fff;
+            }
+            .card .check svg {
+                width: 12px;
+                height: 12px;
+                stroke-width: 2.4;
+            }
+            .card[aria-pressed='true'] .check {
+                display: grid;
+            }
+
+            /* ---------- Pattern: Add / drop place = dashed ---------- */
+            .add-place {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--c-studio-space-2);
+                width: 100%;
+                min-height: var(--c-studio-control-h);
+                border: 1px dashed var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                color: var(--c-studio-accent-text);
+            }
+            .add-place:hover {
+                background: var(--c-studio-accent-surface);
+            }
+
+            /* ---------- Pattern: Feedback ---------- */
+            .note {
+                display: flex;
+                gap: var(--c-studio-space-3);
+                align-items: flex-start;
+                padding: var(--c-studio-space-3) var(--c-studio-space-4);
+                border: 1px solid;
+                border-radius: var(--c-studio-radius-md);
+                font-size: var(--c-studio-fs-body);
+            }
+            .note svg {
+                margin-top: 2px;
+            }
+            .note.ok {
+                background: var(--c-studio-success-surface);
+                border-color: transparent;
+                color: var(--c-studio-success-text);
+            }
+            .note.warn {
+                background: var(--c-studio-warning-surface);
+                border-color: var(--c-studio-warning-border);
+                color: var(--c-studio-warning-text);
+            }
+            .note.fail {
+                background: var(--c-studio-error-surface);
+                border-color: var(--c-studio-error-border);
+                color: var(--c-studio-error-text);
+            }
+            .note .btn {
+                margin-left: auto;
+            }
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                min-height: 20px;
+                padding: 0 var(--c-studio-space-2);
+                border-radius: var(--c-studio-radius-sm);
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-caption);
+                white-space: nowrap;
+            }
+            .badge.on {
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+            }
+            .state {
+                display: grid;
+                justify-items: start;
+                gap: var(--c-studio-space-2);
+                padding: var(--c-studio-space-6) var(--c-studio-space-5);
+            }
+            .state h4 {
+                font-size: var(--c-studio-fs-subhead);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .state .btn {
+                margin-top: var(--c-studio-space-3);
+            }
+            .skeleton {
+                height: 12px;
+                border-radius: var(--c-studio-radius-sm);
+                background: linear-gradient(
+                    90deg,
+                    var(--c-studio-border-subtle),
+                    var(--c-studio-hover),
+                    var(--c-studio-border-subtle)
+                );
+                background-size: 200% 100%;
+                animation: shimmer 1.4s linear infinite;
+            }
+            @keyframes shimmer {
+                to {
+                    background-position: -200% 0;
+                }
+            }
+
+            /* ---------- Page chrome of the MOCK (not part of the system) ---------- */
+            .mock-head {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-6);
+                flex-wrap: wrap;
+                max-width: 1440px;
+                margin: 0 auto;
+                padding: var(--c-studio-space-5) var(--c-studio-space-5) 0;
+            }
+            .mock-head h1 {
+                font-size: var(--c-studio-fs-display);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .mock-head p {
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .mock-nav {
+                max-width: 1440px;
+                margin: 0 auto;
+                padding: 0 var(--c-studio-space-5);
+                height: 44px;
+                border-bottom: 1px solid var(--c-studio-border);
+                overflow-x: auto;
+            }
+            .mock-nav .tabs {
+                height: 100%;
+            }
+            .stage {
+                max-width: 1440px;
+                margin: 0 auto;
+                padding: var(--c-studio-space-5);
+            }
+
+            /* ---------- App frame ---------- */
+            .app {
+                position: relative;
+                container: app/inline-size;
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-lg);
+                overflow: hidden;
+                margin: 0 auto;
+                transition: max-width 200ms ease;
+            }
+            body[data-view='narrow'] .app {
+                max-width: 400px;
+            }
+            .topbar {
+                height: var(--c-studio-bar-h);
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-4);
+                padding: 0 var(--c-studio-space-4);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .ident {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                min-width: 0;
+            }
+            .ident strong {
+                font-weight: var(--c-studio-fw-strong);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .status {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-2);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                white-space: nowrap;
+            }
+            .status .dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--c-studio-success-text);
+            }
+            .status.live .dot {
+                background: var(--c-studio-accent);
+            }
+            .vsep {
+                width: 1px;
+                height: 20px;
+                background: var(--c-studio-border);
+            }
+            .narrow-tabs {
+                display: none;
+                height: 44px;
+                padding: 0 var(--c-studio-space-4);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+
+            .workspace {
+                display: grid;
+                grid-template-columns: 72px 300px 280px minmax(0, 1fr);
+                height: 680px;
+            }
+            .app[data-mode='design'] .workspace {
+                grid-template-columns: 72px 320px minmax(0, 1fr);
+            }
+            .app[data-mode='design'] .structure {
+                display: none;
+            }
+            .app.expanded .workspace {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .app.expanded :is(.rail, .tool, .structure) {
+                display: none;
+            }
+            .app[data-page='library'] :is(.workspace, .narrow-tabs, .topbar) {
+                display: none !important;
+            }
+            .app:not([data-page='library']) .library {
+                display: none;
+            }
+
+            /* Rail */
+            .rail {
+                display: flex;
+                flex-direction: column;
+                gap: var(--c-studio-space-2);
+                padding: var(--c-studio-space-3) var(--c-studio-space-2);
+                border-right: 1px solid var(--c-studio-border);
+                background: var(--c-studio-surface-subtle);
+            }
+            .rail button {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--c-studio-space-2);
+                padding: var(--c-studio-space-3) var(--c-studio-space-1);
+                border: 0;
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+                line-height: var(--c-studio-lh-tight);
+            }
+            .rail button svg {
+                width: 20px;
+                height: 20px;
+            }
+            .rail button:hover:not([aria-current='true']) {
+                background: var(--c-studio-hover);
+                color: var(--c-studio-text);
+            }
+            .rail button[aria-current='true'] {
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+                box-shadow: inset 3px 0 0 var(--c-studio-accent);
+            }
+
+            /* Panes: every pane starts with the same 56px header */
+            .pane {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                min-height: 0;
+                border-right: 1px solid var(--c-studio-border);
+            }
+            .pane-head {
+                flex: none;
+                min-height: var(--c-studio-bar-h);
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                padding: var(--c-studio-space-3) var(--c-studio-space-5);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .pane-head .titles {
+                min-width: 0;
+                flex: 1;
+            }
+            .pane-head h2 {
+                font-size: var(--c-studio-fs-subhead);
+                font-weight: var(--c-studio-fw-strong);
+                line-height: var(--c-studio-lh-tight);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .pane-head .meta {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                line-height: var(--c-studio-lh-tight);
+                margin-top: var(--c-studio-space-1);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .type-mark {
+                flex: none;
+                width: 32px;
+                height: 32px;
+                display: grid;
+                place-items: center;
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+                color: var(--c-studio-text-weak);
+            }
+            .pane-sub {
+                flex: none;
+                height: 44px;
+                display: flex;
+                padding: 0 var(--c-studio-space-5);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .pane-body {
+                flex: 1;
+                min-height: 0;
+                overflow: auto;
+                padding: var(--c-studio-space-5);
+            }
+
+            /* Palette list */
+            .palette {
+                display: grid;
+                gap: var(--c-studio-space-1);
+                margin-top: var(--c-studio-space-4);
+            }
+            .palette .sel-row .badge {
+                margin-left: auto;
+            }
+
+            /* Structure: quiet rows; multi-column sections show columns as lanes */
+            .structure {
+                background: var(--c-studio-surface-subtle);
+            }
+            .st-page {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                padding: var(--c-studio-space-2) var(--c-studio-space-3);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .st-page .num {
+                width: 20px;
+                height: 20px;
+                display: grid;
+                place-items: center;
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-sm);
+                font-size: var(--c-studio-fs-caption);
+                font-weight: var(--c-studio-fw-regular);
+                background: var(--c-studio-surface);
+            }
+            .st-page + .st-section,
+            .st-section {
+                margin-top: var(--c-studio-space-4);
+            }
+            .st-section-head {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-2);
+                padding: 0 var(--c-studio-space-3) var(--c-studio-space-2);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .lanes {
+                display: grid;
+                gap: var(--c-studio-space-2);
+            }
+            .structure .pane-body {
+                container: struct/inline-size;
+                width: 100%;
+            }
+            .lanes.two {
+                grid-template-columns: 1fr;
+            }
+            .lane-cap {
+                font-size: var(--c-studio-fs-caption);
+                color: var(--c-studio-text-weak);
+                padding: var(--c-studio-space-1) var(--c-studio-space-3) 0;
+            }
+            @container struct (min-width: 360px) {
+                .lanes.two {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .lane-cap {
+                    display: none;
+                }
+            }
+            .lane {
+                display: grid;
+                gap: var(--c-studio-space-1);
+                align-content: start;
+                min-width: 0;
+            }
+            .lanes.two .lane {
+                padding: var(--c-studio-space-1);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border-subtle);
+            }
+            .lane .sel-row {
+                font-size: var(--c-studio-fs-body);
+            }
+            .lane .sel-row span {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .req-dot {
+                margin-left: auto;
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-caption);
+            }
+            .st-collapsed {
+                margin-top: var(--c-studio-space-5);
+            }
+            .structure .add-place {
+                margin-top: var(--c-studio-space-4);
+            }
+
+            /* Preview stage (Studio frame) — the form inside is a respondent SPECIMEN */
+            .preview {
+                border-right: 0;
+                background: var(--c-studio-workspace);
+            }
+            .preview .pane-head {
+                background: var(--c-studio-surface);
+            }
+            .preview-scroll {
+                flex: 1;
+                min-height: 0;
+                overflow: auto;
+                padding: var(--c-studio-space-6);
+            }
+            .preview-foot {
+                display: flex;
+                gap: var(--c-studio-space-2);
+                align-items: center;
+                justify-content: center;
+                margin-top: var(--c-studio-space-4);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+
+            /* Respondent specimen: reads only --f-* (stands in for the theme's --c-*) */
+            .sheet {
+                --f-bg: #fffdf8;
+                --f-text: #2c3a33;
+                --f-weak: #5f6b63;
+                --f-accent: #3f6656;
+                --f-on-accent: #fff;
+                --f-field: #fff;
+                --f-edge: #86978b;
+                --f-head: Georgia, 'Times New Roman', serif;
+                max-width: 620px;
+                margin: 0 auto;
+                padding: var(--c-studio-space-7);
+                background: var(--f-bg);
+                color: var(--f-text);
+                border-radius: 6px;
+                box-shadow: 0 0 0 1px rgb(15 23 42 / 8%);
+                font-family: system-ui, sans-serif;
+                transition: max-width 200ms ease;
+            }
+            .sheet[data-theme='lagoon'] {
+                --f-bg: #0f766e;
+                --f-text: #f2fbf9;
+                --f-weak: #cdeee8;
+                --f-accent: #fcd34d;
+                --f-on-accent: #3b2f05;
+                --f-field: #ffffff;
+                --f-edge: #0b4f4a;
+                --f-head: 'Trebuchet MS', system-ui, sans-serif;
+            }
+            .sheet[data-theme='night'] {
+                --f-bg: #1d2733;
+                --f-text: #eef2f7;
+                --f-weak: #b8c3d1;
+                --f-accent: #7dd3fc;
+                --f-on-accent: #0b2533;
+                --f-field: #26323f;
+                --f-edge: #64748b;
+                --f-head: Georgia, serif;
+            }
+            .app.phone .sheet {
+                max-width: 360px;
+                padding: var(--c-studio-space-6);
+            }
+            .f-brand {
+                font-size: 12px;
+                color: var(--f-weak);
+                margin-bottom: 20px;
+            }
+            .sheet h3 {
+                font: 400 28px/1.15 var(--f-head);
+                margin-bottom: 8px;
+            }
+            .f-intro {
+                color: var(--f-weak);
+                font-size: 14px;
+                margin-bottom: 24px;
+                max-width: 46ch;
+            }
+            .f-section {
+                font-weight: 600;
+                font-size: 15px;
+                margin: 20px 0 4px;
+            }
+            .f-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                column-gap: 16px;
+            }
+            .app.phone .f-grid {
+                grid-template-columns: 1fr;
+            }
+            .f-field {
+                position: relative;
+                padding: 10px;
+                margin: 2px -10px;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+            .f-field:hover {
+                background: rgb(127 127 127 / 8%);
+            }
+            .f-field label {
+                display: block;
+                font-size: 14px;
+                margin-bottom: 6px;
+                cursor: pointer;
+            }
+            .f-field .req {
+                color: var(--f-accent);
+                margin-left: 2px;
+            }
+            .f-input {
+                width: 100%;
+                height: 40px;
+                border: 1px solid var(--f-edge);
+                border-radius: 6px;
+                background: var(--f-field);
+                color: var(--f-text);
+                padding: 0 10px;
+                font-size: 14px;
+            }
+            .sheet[data-theme='lagoon'] .f-input {
+                color: #14302c;
+            }
+            .f-help {
+                font-size: 12px;
+                color: var(--f-weak);
+                margin-top: 6px;
+            }
+            .f-choices {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .f-choices span {
+                border: 1px solid var(--f-edge);
+                border-radius: 20px;
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            .f-actions {
+                display: flex;
+                gap: 12px;
+                margin-top: 24px;
+            }
+            .f-back {
+                border: 1px solid var(--f-edge);
+                background: transparent;
+                color: var(--f-text);
+                border-radius: 6px;
+                padding: 11px 20px;
+                font-size: 14px;
+            }
+            .f-select {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                color: var(--f-weak);
+            }
+            .f-radios {
+                display: grid;
+                gap: 10px;
+            }
+            .f-radios span {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                font-size: 14px;
+            }
+            .f-radios i {
+                width: 16px;
+                height: 16px;
+                border: 1px solid var(--f-edge);
+                border-radius: 50%;
+                background: var(--f-field);
+            }
+            .f-radios i.sq {
+                border-radius: 3px;
+            }
+            .f-cards {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .f-cards span {
+                border: 1px solid var(--f-edge);
+                border-radius: 8px;
+                padding: 14px 8px;
+                font-size: 13px;
+                text-align: center;
+            }
+            .f-submit {
+                border: 0;
+                border-radius: 6px;
+                background: var(--f-accent);
+                color: var(--f-on-accent);
+                padding: 11px 20px;
+                font-size: 14px;
+                font-weight: 600;
+            }
+            /* THE EDITING MARK: subtle. A faint tint plus a thin white-and-dark ring, fixed colors so it
+   reads on any theme. No label. Authoring-only (drawn by finalSectionRenderer in the app). */
+            .f-field.editing,
+            .mark-sample {
+                background: rgb(127 127 127 / 5%);
+                box-shadow:
+                    0 0 0 1px rgb(255 255 255 / 70%),
+                    0 0 0 2px rgb(17 24 39 / 35%);
+            }
+
+            /* Design pane bits */
+            .theme-cards {
+                display: grid;
+                gap: var(--c-studio-space-3);
+            }
+            .theme-cards .card {
+                grid-template-columns: 56px 1fr;
+                align-items: center;
+            }
+            .thumb {
+                height: 48px;
+                border-radius: var(--c-studio-radius-sm);
+                padding: 8px;
+                display: grid;
+                gap: 4px;
+                align-content: center;
+            }
+            .thumb i {
+                display: block;
+                height: 3px;
+                border-radius: 2px;
+                opacity: 0.7;
+            }
+            .thumb i:first-child {
+                height: 6px;
+                width: 70%;
+                opacity: 1;
+            }
+            .card .name {
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .colorrow {
+                display: flex;
+                gap: var(--c-studio-space-3);
+                align-items: center;
+            }
+            .colorrow input[type='color'] {
+                width: var(--c-studio-control-h);
+                height: var(--c-studio-control-h);
+                padding: 2px;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: #fff;
+            }
+
+            /* Library page */
+            .library {
+                padding: var(--c-studio-space-6);
+            }
+            .page-head {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-4);
+                flex-wrap: wrap;
+                margin-bottom: var(--c-studio-space-5);
+            }
+            .page-head h2 {
+                font-size: var(--c-studio-fs-display);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .toolbar {
+                display: flex;
+                gap: var(--c-studio-space-3);
+                align-items: center;
+                flex-wrap: wrap;
+                margin-bottom: var(--c-studio-space-4);
+            }
+            .toolbar .ctl {
+                max-width: 280px;
+            }
+            .table-wrap {
+                position: relative;
+                overflow-x: auto;
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+            }
+            table.data {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 640px;
+            }
+            .data th {
+                text-align: left;
+                font-size: var(--c-studio-fs-small);
+                font-weight: var(--c-studio-fw-strong);
+                color: var(--c-studio-text-weak);
+                background: var(--c-studio-surface-subtle);
+                padding: var(--c-studio-space-3) var(--c-studio-space-4);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .data td {
+                padding: var(--c-studio-space-3) var(--c-studio-space-4);
+                border-bottom: 1px solid var(--c-studio-border-subtle);
+                vertical-align: middle;
+                overflow-wrap: anywhere;
+            }
+            .data tr:last-child td {
+                border-bottom: 0;
+            }
+            .data tbody tr:hover {
+                background: var(--c-studio-surface-subtle);
+            }
+            .data .sub {
+                display: block;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .data .actions {
+                text-align: right;
+                width: 1%;
+                white-space: nowrap;
+            }
+
+            /* ---------- Pattern: Dialog / drawer ---------- */
+            dialog {
+                padding: 0;
+                border: 0;
+                border-radius: var(--c-studio-radius-lg);
+                box-shadow: var(--c-studio-shadow-3);
+                color: var(--c-studio-text);
+                width: min(560px, calc(100vw - 32px));
+                max-height: calc(100vh - 48px);
+            }
+            dialog[open] {
+                display: flex;
+                flex-direction: column;
+            }
+            dialog::backdrop {
+                background: var(--c-studio-overlay);
+            }
+            dialog.wide {
+                width: min(1000px, calc(100vw - 32px));
+            }
+            dialog.drawer {
+                margin: 0 0 0 auto;
+                height: 100vh;
+                max-height: 100vh;
+                width: min(420px, 100vw);
+                border-radius: var(--c-studio-radius-lg) 0 0
+                    var(--c-studio-radius-lg);
+            }
+            .d-head {
+                flex: none;
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                padding: var(--c-studio-space-5) var(--c-studio-space-6);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .d-head h2 {
+                font-size: var(--c-studio-fs-title);
+                font-weight: var(--c-studio-fw-strong);
+                line-height: var(--c-studio-lh-tight);
+            }
+            .d-head .meta {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                margin-top: var(--c-studio-space-1);
+            }
+            .d-tabs {
+                flex: none;
+                height: 44px;
+                display: flex;
+                padding: 0 var(--c-studio-space-6);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .d-body {
+                flex: 1;
+                min-height: 0;
+                overflow: auto;
+                padding: var(--c-studio-space-6);
+            }
+            .d-foot {
+                flex: none;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                padding: var(--c-studio-space-4) var(--c-studio-space-6);
+                border-top: 1px solid var(--c-studio-border);
+                background: var(--c-studio-surface-subtle);
+            }
+            .d-foot .help {
+                margin-right: auto;
+            }
+            .confirm {
+                margin-top: var(--c-studio-space-4);
+            }
+
+            /* Mapping */
+            .map-body {
+                display: grid;
+                grid-template-columns: 220px minmax(0, 1fr);
+                flex: 1;
+                min-height: 0;
+            }
+            .map-records {
+                padding: var(--c-studio-space-5);
+                border-right: 1px solid var(--c-studio-border);
+                background: var(--c-studio-surface-subtle);
+                display: grid;
+                gap: var(--c-studio-space-2);
+                align-content: start;
+            }
+            .map-detail {
+                padding: var(--c-studio-space-6);
+                overflow: auto;
+                min-width: 0;
+            }
+            .flow {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                margin-bottom: var(--c-studio-space-4);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .flow i {
+                flex: 0 1 64px;
+                height: 1px;
+                background: var(--c-studio-border);
+            }
+            table.map {
+                min-width: 0;
+                table-layout: fixed;
+            }
+            .map th:first-child {
+                width: 42%;
+            }
+            .map .arrow {
+                width: 36px;
+                color: var(--c-studio-text-weak);
+            }
+            .map .mono {
+                display: block;
+                color: var(--c-studio-text-weak);
+                margin-top: var(--c-studio-space-1);
+            }
+
+            /* Creation */
+            .kinds {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: var(--c-studio-space-4);
+            }
+            .kinds .card {
+                padding: var(--c-studio-space-5);
+                align-content: start;
+            }
+            .kinds .card > svg {
+                width: 24px;
+                height: 24px;
+                color: var(--c-studio-accent);
+            }
+
+            /* System sheet */
+            .sys {
+                display: grid;
+                gap: var(--c-studio-space-6);
+            }
+            .sys-block {
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-lg);
+                padding: var(--c-studio-space-6);
+            }
+            .sys-block > h2 {
+                font-size: var(--c-studio-fs-title);
+                font-weight: var(--c-studio-fw-strong);
+                margin-bottom: var(--c-studio-space-2);
+            }
+            .sys-block > p.help {
+                margin-bottom: var(--c-studio-space-5);
+                max-width: 72ch;
+            }
+            .mapgrid {
+                display: grid;
+                grid-template-columns: minmax(180px, 1.1fr) minmax(
+                        140px,
+                        1fr
+                    ) minmax(200px, 1.6fr);
+                border-top: 1px solid var(--c-studio-border);
+            }
+            .mapgrid > div {
+                padding: var(--c-studio-space-4) var(--c-studio-space-3);
+                border-bottom: 1px solid var(--c-studio-border-subtle);
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                min-width: 0;
+            }
+            .mapgrid .h {
+                font-size: var(--c-studio-fs-small);
+                font-weight: var(--c-studio-fw-strong);
+                color: var(--c-studio-text-weak);
+                background: var(--c-studio-surface-subtle);
+            }
+            .typerow {
+                display: grid;
+                grid-template-columns: 150px 70px 1fr;
+                gap: var(--c-studio-space-4);
+                align-items: baseline;
+                padding: var(--c-studio-space-3) 0;
+                border-bottom: 1px solid var(--c-studio-border-subtle);
+            }
+            .cols3 {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--c-studio-space-6);
+            }
+            .cols3 > div > h3 {
+                font-size: var(--c-studio-fs-subhead);
+                font-weight: var(--c-studio-fw-strong);
+                margin-bottom: var(--c-studio-space-4);
+            }
+            .stack > * + * {
+                margin-top: var(--c-studio-space-3);
+            }
+            .spacebar {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-4);
+                font-size: var(--c-studio-fs-small);
+                margin-top: var(--c-studio-space-2);
+            }
+            .spacebar i {
+                display: block;
+                height: 12px;
+                background: var(--c-studio-accent-surface);
+                border: 1px solid var(--c-studio-accent);
+            }
+            .marks {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: var(--c-studio-space-4);
+            }
+            .marks .sheet {
+                margin: 0;
+                padding: var(--c-studio-space-6) var(--c-studio-space-5);
+                max-width: none;
+            }
+            .marks .f-field {
+                cursor: default;
+            }
+
+            /* ---------- Pattern: Picture tiles = pick a LOOK (same recipe as today's Appearance picker) ---------- */
+            .art {
+                width: 64px;
+                height: 32px;
+                display: block;
+                fill: none;
+                stroke: var(--c-studio-text-weak);
+                stroke-width: 1.5;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .art .f {
+                fill: var(--c-studio-accent);
+                stroke: none;
+            }
+            .art .s {
+                fill: var(--c-studio-border);
+                stroke: none;
+            }
+            .pic {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: var(--c-studio-space-3);
+            }
+            .pic.three {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .pic.big {
+                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+                gap: var(--c-studio-space-4);
+            }
+            .pic [role='radio'] {
+                position: relative;
+                display: grid;
+                justify-items: center;
+                align-content: center;
+                gap: var(--c-studio-space-2);
+                min-height: 80px;
+                padding: var(--c-studio-space-4) var(--c-studio-space-2)
+                    var(--c-studio-space-3);
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface);
+                font-weight: var(--c-studio-fw-strong);
+                text-align: center;
+            }
+            .pic [role='radio']:hover:not([aria-checked='true']) {
+                background: var(--c-studio-hover);
+            }
+            .pic [role='radio'][aria-checked='true'] {
+                border-color: var(--c-studio-accent);
+                background: var(--c-studio-accent-surface);
+                box-shadow: inset 0 0 0 1px var(--c-studio-accent);
+            }
+            .pic .tick {
+                position: absolute;
+                top: 6px;
+                right: 6px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--c-studio-accent);
+                color: #fff;
+                display: none;
+                place-items: center;
+            }
+            .pic .tick svg {
+                width: 11px;
+                height: 11px;
+                stroke-width: 2.6;
+            }
+            .pic [aria-checked='true'] .tick {
+                display: grid;
+            }
+            .pic .desc {
+                font-weight: var(--c-studio-fw-regular);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .pic.big [role='radio'] {
+                min-height: 150px;
+                padding: var(--c-studio-space-5) var(--c-studio-space-4);
+            }
+            .pic.big .art {
+                width: 128px;
+                height: 64px;
+            }
+
+            /* ---------- Structure: page tabs, rows with an always-visible remove ---------- */
+            .page-tabs {
+                gap: var(--c-studio-space-3);
+                align-items: stretch;
+                overflow-x: auto;
+            }
+            .page-tabs .tabs {
+                gap: var(--c-studio-space-4);
+            }
+            .pt {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-1);
+            }
+            .page-tabs > .btn.quiet {
+                align-self: center;
+                min-height: 28px;
+                padding: 0 var(--c-studio-space-2);
+            }
+            .srow {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-1);
+                min-width: 0;
+            }
+            .srow .sel-row {
+                flex: 1;
+                min-width: 0;
+            }
+            .x {
+                flex: none;
+                width: 24px;
+                height: 24px;
+                display: grid;
+                place-items: center;
+                padding: 0;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: var(--c-studio-text-weak);
+            }
+            .x svg {
+                width: 14px;
+                height: 14px;
+            }
+            .x:hover {
+                color: var(--c-studio-error-text);
+                background: var(--c-studio-error-surface);
+            }
+            .st-section-head .x {
+                margin-left: auto;
+            }
+
+            /* ---------- New form: full-window dialog, today's steps ---------- */
+            dialog.full {
+                width: calc(100vw - 32px);
+                height: calc(100vh - 32px);
+                max-width: 1240px;
+                max-height: none;
+            }
+            .d-head > .btn.quiet {
+                margin-left: calc(-1 * var(--c-studio-space-2));
+            }
+            .card.kind {
+                padding: var(--c-studio-space-5);
+                align-content: start;
+                min-height: 200px;
+            }
+            .card.kind .foot {
+                margin-top: auto;
+                color: var(--c-studio-accent-text);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .lgroup + .lgroup {
+                margin-top: var(--c-studio-space-6);
+            }
+            .lgroup .group-title .weak {
+                font-weight: var(--c-studio-fw-regular);
+                font-size: var(--c-studio-fs-small);
+                order: 3;
+            }
+            .details {
+                display: grid;
+                grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+                gap: var(--c-studio-space-6);
+                align-items: start;
+            }
+            .details .field + .field {
+                margin-top: var(--c-studio-space-5);
+            }
+            .details .sheet {
+                max-width: none;
+                margin: 0;
+            }
+
+            /* ---------- Kept controls, restyled only (DESIGN_SYSTEM §5.0) ---------- */
+            .modes {
+                display: flex;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                overflow: hidden;
+                margin-left: var(--c-studio-space-3);
+            }
+            .modes button {
+                min-height: 30px;
+                border: 0;
+                background: var(--c-studio-surface);
+                padding: 0 var(--c-studio-space-5);
+                font-weight: var(--c-studio-fw-strong);
+                color: var(--c-studio-text-weak);
+            }
+            .modes button[aria-pressed='true'] {
+                background: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+            }
+            .modes button:hover:not([aria-pressed='true']) {
+                background: var(--c-studio-hover);
+            }
+            .verpill {
+                height: 24px;
+                padding: 0 var(--c-studio-space-6) 0 var(--c-studio-space-3);
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-pill);
+                background: var(--c-studio-surface-subtle)
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%23526071' stroke-width='1.6'%3E%3Cpath d='m2 3.5 3 3 3-3'/%3E%3C/svg%3E")
+                    no-repeat right 8px center;
+                appearance: none;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                cursor: pointer;
+            }
+            .icon-btn.bordered {
+                border-color: var(--c-studio-border-strong);
+                background: var(--c-studio-surface);
+            }
+            .menu-wrap {
+                position: relative;
+            }
+            .menu {
+                position: absolute;
+                z-index: 30;
+                top: calc(100% + 8px);
+                right: 0;
+                min-width: 240px;
+                padding: var(--c-studio-space-2);
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+                box-shadow: var(--c-studio-shadow-2);
+            }
+            .menu button {
+                display: flex;
+                justify-content: space-between;
+                gap: var(--c-studio-space-4);
+                width: 100%;
+                min-height: var(--c-studio-control-h);
+                padding: 0 var(--c-studio-space-3);
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                text-align: left;
+                white-space: nowrap;
+            }
+            .menu button:hover {
+                background: var(--c-studio-hover);
+            }
+            .menu hr {
+                border: 0;
+                border-top: 1px solid var(--c-studio-border);
+                margin: var(--c-studio-space-2) 0;
+            }
+            .btn svg.i {
+                width: 14px;
+                height: 14px;
+            }
+            .publish-progress {
+                padding: var(--c-studio-space-2) var(--c-studio-space-4);
+                background: var(--c-studio-info-surface);
+                color: var(--c-studio-info-text);
+                font-size: var(--c-studio-fs-small);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .pane-back {
+                flex: none;
+                padding: var(--c-studio-space-1) var(--c-studio-space-3);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .pane-back .btn {
+                min-height: 28px;
+                padding: 0 var(--c-studio-space-2);
+            }
+            .app.insp[data-mode='build'] .rail {
+                display: none;
+            }
+            .app.insp[data-mode='build'] .workspace {
+                grid-template-columns: 372px 300px minmax(0, 1fr);
+            }
+            .app.tablet .sheet {
+                max-width: 560px;
+            }
+            .pd-group {
+                margin-top: var(--c-studio-space-5);
+            }
+            .pd-head {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+            }
+            .pd-head h3 {
+                font-size: var(--c-studio-fs-body);
+                font-weight: var(--c-studio-fw-strong);
+                flex: 1;
+            }
+            .pd-lines {
+                list-style: none;
+                margin: var(--c-studio-space-3) 0 0;
+                padding: 0;
+                display: grid;
+                gap: var(--c-studio-space-2);
+            }
+            .pd-lines li {
+                display: flex;
+                gap: var(--c-studio-space-3);
+                align-items: flex-start;
+            }
+            .pd-lines svg {
+                margin-top: 2px;
+                color: var(--c-studio-success-text);
+            }
+            .pd-note {
+                margin-top: var(--c-studio-space-5);
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+
+            /* ---------- Narrow workspace (container query on the app, not the window) ---------- */
+            @container app (max-width: 959px) {
+                .workspace,
+                .app[data-mode='design'] .workspace {
+                    grid-template-columns: 72px minmax(0, 1fr);
+                    height: auto;
+                }
+                .structure {
+                    display: none;
+                }
+                .app.insp[data-mode='build'] .workspace {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
+            @container app (max-width: 700px) {
+                .narrow-tabs {
+                    display: flex;
+                }
+                .topbar {
+                    gap: var(--c-studio-space-2);
+                }
+                .topbar .hide-narrow {
+                    display: none;
+                }
+                .workspace,
+                .app[data-mode='design'] .workspace,
+                .app.insp[data-mode='build'] .workspace {
+                    grid-template-columns: minmax(0, 1fr);
+                    height: auto;
+                }
+                .modes button {
+                    padding: 0 var(--c-studio-space-3);
+                }
+                .rail {
+                    flex-direction: row;
+                    overflow-x: auto;
+                    border-right: 0;
+                    border-bottom: 1px solid var(--c-studio-border);
+                    padding: var(--c-studio-space-2);
+                }
+                .rail button {
+                    flex: 1 0 64px;
+                }
+                .rail button[aria-current='true'] {
+                    box-shadow: inset 0 -3px 0 var(--c-studio-accent);
+                }
+                .pane {
+                    border-right: 0;
+                }
+                .tool .pane-body {
+                    max-height: none;
+                }
+                .app:not(.show-preview) .preview {
+                    display: none;
+                }
+                .app.show-preview :is(.rail, .tool, .structure) {
+                    display: none;
+                }
+                .app[data-mode='build']:not(.show-preview) .structure {
+                    display: flex;
+                    border-top: 1px solid var(--c-studio-border);
+                }
+                .preview-scroll {
+                    padding: var(--c-studio-space-4);
+                }
+                .sheet {
+                    padding: var(--c-studio-space-6) var(--c-studio-space-5);
+                }
+                .f-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            @media (max-width: 860px) {
+                .details {
+                    grid-template-columns: 1fr;
+                }
+                .cols3,
+                .marks {
+                    grid-template-columns: 1fr;
+                }
+                .kinds {
+                    grid-template-columns: 1fr;
+                }
+                .mapgrid {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .mapgrid > div:nth-child(3n) {
+                    grid-column: 1/-1;
+                    padding-top: 0;
+                }
+                .mapgrid .h:nth-child(3) {
+                    display: none;
+                }
+                .map-body {
+                    grid-template-columns: 1fr;
+                }
+                .map-records {
+                    border-right: 0;
+                    border-bottom: 1px solid var(--c-studio-border);
+                }
+                .typerow {
+                    grid-template-columns: 110px 50px 1fr;
+                }
+            }
+            @media (pointer: coarse) {
+                .btn,
+                .ctl,
+                .icon-btn,
+                .sel-row,
+                .seg button,
+                .tabs [role='tab'] {
+                    min-height: 44px;
+                }
+                .icon-btn {
+                    width: 44px;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before {
+                    animation: none !important;
+                    transition: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body data-view="build">
+        <svg aria-hidden="true" style="position: absolute; width: 0; height: 0">
+            <defs>
+                <symbol id="i-back" viewBox="0 0 24 24">
+                    <path d="M20 12H4m6-6-6 6 6 6" />
+                </symbol>
+                <symbol id="i-fields" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="5" rx="1.5" />
+                    <rect x="4" y="13" width="16" height="7" rx="1.5" />
+                </symbol>
+                <symbol id="i-blocks" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+                    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+                    <rect x="4" y="13" width="16" height="7" rx="1.5" />
+                </symbol>
+                <symbol id="i-logic" viewBox="0 0 24 24">
+                    <path d="M6 4v6a4 4 0 0 0 4 4h8M14 10l4 4-4 4M6 20v-2" />
+                </symbol>
+                <symbol id="i-auto" viewBox="0 0 24 24">
+                    <path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z" />
+                </symbol>
+                <symbol id="i-map" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="7" height="6" rx="1.5" />
+                    <rect x="14" y="14" width="7" height="6" rx="1.5" />
+                    <path d="M6.5 10v4a3 3 0 0 0 3 3H14" />
+                </symbol>
+                <symbol id="i-theme" viewBox="0 0 24 24">
+                    <path
+                        d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2s-.9-1.5-.9-2.5S14 15 15 15h2a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z"
+                    />
+                    <circle cx="7.5" cy="11" r="1" />
+                    <circle cx="11" cy="7" r="1" />
+                    <circle cx="16" cy="8.5" r="1" />
+                </symbol>
+                <symbol id="i-brand" viewBox="0 0 24 24">
+                    <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+                    <path d="m13.5 6.5 4 4" />
+                </symbol>
+                <symbol id="i-button" viewBox="0 0 24 24">
+                    <rect x="3" y="7" width="18" height="10" rx="3" />
+                    <path d="M8 12h8" />
+                </symbol>
+                <symbol id="i-colors" viewBox="0 0 24 24">
+                    <circle cx="9" cy="9" r="5" />
+                    <circle cx="15" cy="15" r="5" />
+                </symbol>
+                <symbol id="i-text" viewBox="0 0 24 24">
+                    <path d="M5 6h14M12 6v13M9 19h6" />
+                </symbol>
+                <symbol id="i-mail" viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="m3 7 9 6 9-6" />
+                </symbol>
+                <symbol id="i-phone" viewBox="0 0 24 24">
+                    <rect x="7" y="2.5" width="10" height="19" rx="2" />
+                    <path d="M11 18h2" />
+                </symbol>
+                <symbol id="i-monitor" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="12" rx="2" />
+                    <path d="M9 20h6M12 16v4" />
+                </symbol>
+                <symbol id="i-choice" viewBox="0 0 24 24">
+                    <circle cx="7" cy="8" r="2.5" />
+                    <circle cx="7" cy="16" r="2.5" />
+                    <path d="M12 8h8M12 16h8" />
+                </symbol>
+                <symbol id="i-para" viewBox="0 0 24 24">
+                    <path d="M4 6h16M4 10h16M4 14h16M4 18h10" />
+                </symbol>
+                <symbol id="i-check" viewBox="0 0 24 24">
+                    <path d="m5 12 4.5 4.5L19 7" />
+                </symbol>
+                <symbol id="i-close" viewBox="0 0 24 24">
+                    <path d="m6 6 12 12M18 6 6 18" />
+                </symbol>
+                <symbol id="i-plus" viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12h14" />
+                </symbol>
+                <symbol id="i-expand" viewBox="0 0 24 24">
+                    <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" />
+                </symbol>
+                <symbol id="i-settings" viewBox="0 0 24 24">
+                    <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+                    <circle cx="16" cy="7" r="2" />
+                    <circle cx="8" cy="17" r="2" />
+                </symbol>
+                <symbol id="i-undo" viewBox="0 0 24 24">
+                    <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
+                </symbol>
+                <symbol id="i-redo" viewBox="0 0 24 24">
+                    <path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" />
+                </symbol>
+                <symbol id="i-alert" viewBox="0 0 24 24">
+                    <path d="M12 8v5M12 16.5v.5" />
+                    <circle cx="12" cy="12" r="9" />
+                </symbol>
+                <symbol id="i-search" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                </symbol>
+                <symbol id="i-form" viewBox="0 0 24 24">
+                    <rect x="5" y="3" width="14" height="18" rx="2" />
+                    <path d="M9 8h6M9 12h6M9 16h3" />
+                </symbol>
+                <symbol id="i-survey" viewBox="0 0 24 24">
+                    <path d="M5 19V9M10 19V5M15 19v-7M20 19v-4" />
+                </symbol>
+                <symbol id="i-free" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="8" height="8" rx="1.5" />
+                    <rect x="13" y="3" width="8" height="5" rx="1.5" />
+                    <rect x="13" y="10" width="8" height="11" rx="1.5" />
+                    <rect x="3" y="13" width="8" height="8" rx="1.5" />
+                </symbol>
+                <symbol id="i-chev" viewBox="0 0 24 24">
+                    <path d="m7 10 5 5 5-5" />
+                </symbol>
+                <symbol id="i-more" viewBox="0 0 24 24">
+                    <circle cx="5" cy="12" r="1" />
+                    <circle cx="12" cy="12" r="1" />
+                    <circle cx="19" cy="12" r="1" />
+                </symbol>
+            </defs>
+        </svg>
+
+        <header class="mock-head">
+            <div>
+                <h1>Formwork</h1>
+                <p>
+                    Styling reference. Built screens keep their controls and
+                    behavior; only the owner-approved changes differ from today.
+                    Nothing here talks to Salesforce.
+                </p>
+            </div>
+        </header>
+        <nav class="mock-nav" aria-label="Mock screens">
+            <div class="tabs" role="tablist" id="mockTabs">
+                <button role="tab" aria-selected="true" data-view="build">
+                    Build
+                </button>
+                <button role="tab" aria-selected="false" data-view="design">
+                    Design
+                </button>
+                <button role="tab" aria-selected="false" data-view="mapping">
+                    Mapping
+                </button>
+                <button role="tab" aria-selected="false" data-view="library">
+                    Forms library
+                </button>
+                <button role="tab" aria-selected="false" data-view="create">
+                    New form
+                </button>
+                <button role="tab" aria-selected="false" data-view="settings">
+                    Form settings
+                </button>
+                <button role="tab" aria-selected="false" data-view="publish">
+                    Publish
+                </button>
+                <button role="tab" aria-selected="false" data-view="narrow">
+                    Narrow width
+                </button>
+                <button role="tab" aria-selected="false" data-view="system">
+                    The system
+                </button>
+            </div>
+        </nav>
+
+        <main class="stage">
+            <!-- ============================== THE APP ============================== -->
+            <section
+                class="app"
+                id="app"
+                data-mode="build"
+                data-page="studio"
+                aria-label="Studio"
+            >
+                <header class="topbar">
+                    <button
+                        class="icon-btn hide-narrow"
+                        aria-label="Back to forms"
+                        data-go="library"
+                    >
+                        <svg class="i"><use href="#i-back" /></svg>
+                    </button>
+                    <div class="ident">
+                        <strong>Patient intake</strong
+                        ><select
+                            class="verpill hide-narrow"
+                            aria-label="Form version"
+                        >
+                            <option>Version 3 (draft)</option>
+                            <option>Version 2 (live)</option>
+                            <option>Version 1</option>
+                        </select>
+                    </div>
+                    <div
+                        class="modes"
+                        role="group"
+                        aria-label="Studio mode"
+                        id="modeTabs"
+                    >
+                        <button
+                            type="button"
+                            aria-pressed="true"
+                            data-mode="build"
+                        >
+                            Build
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed="false"
+                            data-mode="design"
+                        >
+                            Design
+                        </button>
+                    </div>
+                    <span
+                        class="status hide-narrow"
+                        id="saveStatus"
+                        role="status"
+                        aria-live="polite"
+                        ><span class="dot"></span><span>Saved</span></span
+                    >
+                    <span class="grow"></span>
+                    <button
+                        class="icon-btn bordered hide-narrow"
+                        aria-label="Undo"
+                        title="Undo"
+                        id="undoBtn"
+                    >
+                        <svg class="i"><use href="#i-undo" /></svg>
+                    </button>
+                    <button
+                        class="icon-btn bordered hide-narrow"
+                        aria-label="Redo"
+                        title="Redo"
+                        disabled
+                    >
+                        <svg class="i"><use href="#i-redo" /></svg>
+                    </button>
+                    <div class="menu-wrap">
+                        <button
+                            class="icon-btn bordered"
+                            aria-label="Form settings"
+                            title="Form settings"
+                            aria-haspopup="menu"
+                            aria-expanded="false"
+                            data-menu="setMenu"
+                        >
+                            <svg class="i"><use href="#i-settings" /></svg>
+                        </button>
+                        <div
+                            class="menu"
+                            role="menu"
+                            aria-label="Form settings"
+                            id="setMenu"
+                            hidden
+                        >
+                            <button role="menuitem" data-section="Availability">
+                                <span>Availability</span
+                                ><span class="weak small"
+                                    >Accepting responses</span
+                                >
+                            </button>
+                            <button
+                                role="menuitem"
+                                data-section="Access &amp; invitations"
+                            >
+                                <span>Access &amp; invitations</span
+                                ><span class="weak small">Signed-in users</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="menu-wrap hide-narrow">
+                        <button
+                            class="btn"
+                            aria-haspopup="menu"
+                            aria-expanded="false"
+                            data-menu="actMenu"
+                        >
+                            Actions<svg class="i"><use href="#i-chev" /></svg>
+                        </button>
+                        <div
+                            class="menu"
+                            role="menu"
+                            aria-label="Form actions"
+                            id="actMenu"
+                            hidden
+                        >
+                            <button role="menuitem">Clone form</button
+                            ><button role="menuitem">Export form</button
+                            ><button role="menuitem">Import form</button>
+                            <hr />
+                            <button role="menuitem">Delete form</button>
+                        </div>
+                    </div>
+                    <button
+                        class="btn primary"
+                        id="publishBtn"
+                        data-open="publishDlg"
+                    >
+                        Publish
+                    </button>
+                </header>
+                <p
+                    class="publish-progress"
+                    id="pubProgress"
+                    role="status"
+                    hidden
+                >
+                    Publishing… Editing will resume when this finishes.
+                </p>
+                <div class="narrow-tabs">
+                    <div
+                        class="tabs"
+                        role="tablist"
+                        aria-label="Editor or preview"
+                        id="narrowTabs"
+                    >
+                        <button
+                            role="tab"
+                            aria-selected="true"
+                            data-np="editor"
+                        >
+                            Editor</button
+                        ><button
+                            role="tab"
+                            aria-selected="false"
+                            data-np="preview"
+                        >
+                            Preview
+                        </button>
+                    </div>
+                </div>
+
+                <div class="workspace">
+                    <nav class="rail" id="rail" aria-label="Tools"></nav>
+                    <aside
+                        class="pane tool"
+                        id="tool"
+                        aria-label="Tools panel"
+                    ></aside>
+                    <section class="pane structure" aria-label="Form structure">
+                        <header class="pane-head">
+                            <div class="titles">
+                                <h2>Structure</h2>
+                                <p class="meta" id="structMeta">
+                                    2 pages, 7 questions
+                                </p>
+                            </div>
+                        </header>
+                        <div class="pane-sub page-tabs" id="pageTabs"></div>
+                        <div class="pane-body" id="outline"></div>
+                    </section>
+                    <section class="pane preview" aria-label="Preview">
+                        <header class="pane-head">
+                            <div class="titles">
+                                <h2>Preview</h2>
+                                <p class="meta">
+                                    Test answers stay in the preview
+                                </p>
+                            </div>
+                            <div
+                                class="seg"
+                                role="group"
+                                aria-label="Preview device"
+                                id="deviceSeg"
+                            >
+                                <button
+                                    aria-pressed="true"
+                                    data-device="desktop"
+                                >
+                                    Desktop</button
+                                ><button
+                                    aria-pressed="false"
+                                    data-device="tablet"
+                                >
+                                    Tablet</button
+                                ><button
+                                    aria-pressed="false"
+                                    data-device="phone"
+                                >
+                                    Mobile
+                                </button>
+                            </div>
+                            <button
+                                class="icon-btn"
+                                id="expandBtn"
+                                aria-label="Expand preview"
+                                aria-pressed="false"
+                            >
+                                <svg class="i"><use href="#i-expand" /></svg>
+                            </button>
+                        </header>
+                        <div class="preview-scroll">
+                            <div
+                                class="sheet"
+                                id="sheet"
+                                data-theme="paper"
+                            ></div>
+                            <p class="preview-foot">
+                                <svg class="i"><use href="#i-check" /></svg
+                                >Click any question to edit it
+                            </p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Library page (same app frame) -->
+                <div class="library">
+                    <div class="page-head">
+                        <h2>Forms &amp; surveys</h2>
+                        <span class="grow"></span
+                        ><button class="btn primary" data-open="createDlg">
+                            <svg class="i"><use href="#i-plus" /></svg>Create a
+                            form
+                        </button>
+                    </div>
+                    <div class="toolbar">
+                        <label class="row small weak"
+                            >Show<select
+                                class="ctl"
+                                style="width: auto"
+                                aria-label="Form lifecycle filter"
+                            >
+                                <option>Current</option>
+                                <option>Archived</option>
+                            </select></label
+                        >
+                        <input
+                            class="ctl"
+                            type="search"
+                            placeholder="Search by name"
+                            aria-label="Search forms"
+                        />
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Object</th>
+                                    <th scope="col">Version</th>
+                                    <th scope="col">Last modified</th>
+                                    <th scope="col">
+                                        <span class="sr">Actions</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Patient intake</strong></td>
+                                    <td>Form</td>
+                                    <td>
+                                        Contact<span class="sub mono"
+                                            >Contact</span
+                                        >
+                                    </td>
+                                    <td>2</td>
+                                    <td>Today, 9:41</td>
+                                    <td class="actions">
+                                        <button
+                                            class="btn quiet"
+                                            data-go="build"
+                                        >
+                                            Open
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong
+                                            >Quarterly customer pulse</strong
+                                        >
+                                    </td>
+                                    <td>Survey</td>
+                                    <td>
+                                        Account<span class="sub mono"
+                                            >Account</span
+                                        >
+                                    </td>
+                                    <td>5</td>
+                                    <td>Yesterday</td>
+                                    <td class="actions">
+                                        <button class="btn quiet">Open</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong
+                                            >Volunteer application with
+                                            emergency contacts and medical
+                                            consent</strong
+                                        >
+                                    </td>
+                                    <td>Freeform</td>
+                                    <td>
+                                        Contact, Case<span class="sub mono"
+                                            >Contact, Case</span
+                                        >
+                                    </td>
+                                    <td>Draft</td>
+                                    <td>Oct 28</td>
+                                    <td class="actions">
+                                        <button class="btn quiet">Open</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Job application</strong></td>
+                                    <td>Form</td>
+                                    <td>
+                                        Job application<span class="sub mono"
+                                            >Job_Application__c</span
+                                        >
+                                    </td>
+                                    <td>4</td>
+                                    <td>Sep 30</td>
+                                    <td class="actions">
+                                        <button class="btn quiet">Open</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================== THE SYSTEM SHEET ============================== -->
+            <section class="sys" id="system" hidden aria-label="The system">
+                <div class="sys-block">
+                    <h2>The meaning map</h2>
+                    <p class="help">
+                        Each treatment means one thing, everywhere. Learn it
+                        once and every screen reads the same. If you need a
+                        treatment that isn't here, add it to the design system
+                        first.
+                    </p>
+                    <div class="mapgrid">
+                        <div class="h">Treatment</div>
+                        <div class="h">Means</div>
+                        <div class="h">Looks like</div>
+                        <div>Underlined tab</div>
+                        <div>Where you are</div>
+                        <div>
+                            <div
+                                class="tabs"
+                                role="tablist"
+                                aria-label="Sample"
+                            >
+                                <button role="tab" aria-selected="true">
+                                    Editor</button
+                                ><button role="tab" aria-selected="false">
+                                    Preview
+                                </button>
+                            </div>
+                        </div>
+                        <div>Segmented control</div>
+                        <div>Pick a value</div>
+                        <div>
+                            <div class="seg">
+                                <button aria-pressed="true">Desktop</button
+                                ><button aria-pressed="false">Tablet</button
+                                ><button aria-pressed="false">Mobile</button>
+                            </div>
+                        </div>
+                        <div>Solid teal button</div>
+                        <div>
+                            Do the main thing (the Build/Design switch keeps its
+                            teal fill as today)
+                        </div>
+                        <div>
+                            <button class="btn primary">Publish</button
+                            ><button class="btn">Cancel</button>
+                        </div>
+                        <div>Teal edge inside the item</div>
+                        <div>Selected</div>
+                        <div style="display: block">
+                            <button class="sel-row" aria-pressed="true">
+                                <svg class="i"><use href="#i-mail" /></svg>Email
+                                address
+                            </button>
+                        </div>
+                        <div>Ring outside the item</div>
+                        <div>Keyboard focus</div>
+                        <div style="display: block">
+                            <button
+                                class="sel-row is-focus"
+                                aria-pressed="true"
+                            >
+                                <svg class="i"><use href="#i-mail" /></svg
+                                >Selected and focused
+                            </button>
+                        </div>
+                        <div>Strong grey edge</div>
+                        <div>You can type here</div>
+                        <div>
+                            <input
+                                class="ctl"
+                                value="Ada Lovelace"
+                                aria-label="Sample"
+                            />
+                        </div>
+                        <div>Soft line</div>
+                        <div>Layout separator</div>
+                        <div style="display: block; width: 100%">
+                            <span class="small weak">Text &amp; guidance</span>
+                            <div
+                                style="
+                                    height: 1px;
+                                    background: var(--c-studio-border);
+                                    margin: 6px 0;
+                                "
+                            ></div>
+                            <span class="small weak">Checks</span>
+                        </div>
+                        <div>Dashed outline</div>
+                        <div>A place to add or drop</div>
+                        <div>
+                            <button class="add-place">
+                                <svg class="i"><use href="#i-plus" /></svg>Add a
+                                section
+                            </button>
+                        </div>
+                        <div>Shadow</div>
+                        <div>It floats over the page</div>
+                        <div>
+                            <span
+                                class="card"
+                                style="
+                                    box-shadow: var(--c-studio-shadow-3);
+                                    border-color: transparent;
+                                    padding: 8px 12px;
+                                "
+                                >Dialogs and drawers only</span
+                            >
+                        </div>
+                        <div>Picture tiles</div>
+                        <div>Pick a look</div>
+                        <div
+                            id="mmPic"
+                            style="display: block; width: 100%"
+                        ></div>
+                        <div>Faint tint + thin ring</div>
+                        <div>What you're editing, in the preview</div>
+                        <div>
+                            <span
+                                class="mark-sample"
+                                style="padding: 6px 10px; border-radius: 6px"
+                                >Email address</span
+                            ><span class="small weak"
+                                >No label; fixed colors so it shows on any
+                                theme</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sys-block">
+                    <h2>Type roles</h2>
+                    <p class="help">
+                        Pick the role, never a number. Two weights only: regular
+                        400 and strong 600. Sentence case everywhere.
+                    </p>
+                    <div class="typerow">
+                        <span class="small weak">Page title</span
+                        ><span class="mono weak">20</span
+                        ><span style="font-size: 20px; font-weight: 600"
+                            >Forms &amp; surveys</span
+                        >
+                    </div>
+                    <div class="typerow">
+                        <span class="small weak">Dialog title</span
+                        ><span class="mono weak">16</span
+                        ><span style="font-size: 16px; font-weight: 600"
+                            >Publish version 3?</span
+                        >
+                    </div>
+                    <div class="typerow">
+                        <span class="small weak">Pane title</span
+                        ><span class="mono weak">14</span
+                        ><span style="font-size: 14px; font-weight: 600"
+                            >Email address</span
+                        >
+                    </div>
+                    <div class="typerow">
+                        <span class="small weak">Group title</span
+                        ><span class="mono weak">13 strong</span
+                        ><span style="font-weight: 600"
+                            >Text &amp; guidance</span
+                        >
+                    </div>
+                    <div class="typerow">
+                        <span class="small weak">Body, labels, buttons</span
+                        ><span class="mono weak">13</span
+                        ><span>Help text shown under the question</span>
+                    </div>
+                    <div class="typerow">
+                        <span class="small weak">Help, meta, rail labels</span
+                        ><span class="mono weak">12</span
+                        ><span class="small weak"
+                            >Shown to people filling in the form</span
+                        >
+                    </div>
+                    <div class="typerow">
+                        <span class="small weak">Badges, counts</span
+                        ><span class="mono weak">11</span
+                        ><span class="caption weak">Added</span>
+                    </div>
+                </div>
+
+                <div class="sys-block">
+                    <div class="cols3">
+                        <div>
+                            <h3>Space (4px grid)</h3>
+                            <div class="stack">
+                                <div class="spacebar">
+                                    <i style="width: 4px"></i>4 label to
+                                    control, control to help
+                                </div>
+                                <div class="spacebar">
+                                    <i style="width: 8px"></i>8 icon to label,
+                                    related controls
+                                </div>
+                                <div class="spacebar">
+                                    <i style="width: 12px"></i>12 group title to
+                                    first row
+                                </div>
+                                <div class="spacebar">
+                                    <i style="width: 16px"></i>16 between rows,
+                                    pane padding
+                                </div>
+                                <div class="spacebar">
+                                    <i style="width: 24px"></i>24 between
+                                    groups, dialog padding
+                                </div>
+                                <div class="spacebar">
+                                    <i style="width: 32px"></i>32 page gutters
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Shape and size</h3>
+                            <div class="stack">
+                                <p class="small">
+                                    Controls and buttons are
+                                    <strong>32px</strong> tall with
+                                    <strong>8px</strong> corners. 44px on touch
+                                    screens.
+                                </p>
+                                <p class="small">
+                                    Dialogs and drawers: 12px corners. Badges:
+                                    4px. Toggles: round.
+                                </p>
+                                <p class="small">
+                                    Every pane header is <strong>56px</strong>,
+                                    so their bottom lines meet.
+                                </p>
+                                <div class="row">
+                                    <input
+                                        class="ctl"
+                                        value="32px control"
+                                        aria-label="Sample"
+                                        style="max-width: 160px"
+                                    /><button class="btn">Button</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Depth and motion</h3>
+                            <div class="stack">
+                                <p class="small">
+                                    Panes and cards sit flat. Menus and popovers
+                                    get the small shadow; dialogs and drawers
+                                    the large one.
+                                </p>
+                                <p class="small">
+                                    Motion is 150ms, only for state changes, and
+                                    it turns off when the reduced-motion setting
+                                    is on.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sys-block">
+                    <h2>Controls in every state</h2>
+                    <p class="help">
+                        Focus is shown here with a fixed ring so you can see it
+                        without a keyboard.
+                    </p>
+                    <div class="cols3">
+                        <div>
+                            <h3>Actions</h3>
+                            <div class="stack">
+                                <div class="row" style="flex-wrap: wrap">
+                                    <button class="btn primary">
+                                        Apply mapping</button
+                                    ><button class="btn">Cancel</button
+                                    ><button class="btn quiet">Reset</button>
+                                </div>
+                                <div class="row" style="flex-wrap: wrap">
+                                    <button class="btn danger">
+                                        Delete form</button
+                                    ><button class="btn primary is-focus">
+                                        Focused
+                                    </button>
+                                </div>
+                                <div class="row" style="flex-wrap: wrap">
+                                    <button class="btn" disabled>
+                                        Unavailable</button
+                                    ><button
+                                        class="btn primary"
+                                        disabled
+                                        aria-busy="true"
+                                    >
+                                        <span class="spin"></span>Publishing…
+                                    </button>
+                                </div>
+                                <p class="help">
+                                    One primary per area. A busy button keeps
+                                    its label and blocks only itself.
+                                </p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Fields</h3>
+                            <div class="field">
+                                <label for="s1">Default</label
+                                ><input class="ctl" id="s1" value="Ada" />
+                            </div>
+                            <div class="field">
+                                <label for="s2">Focused</label
+                                ><input
+                                    class="ctl is-focus"
+                                    id="s2"
+                                    value="Ada"
+                                />
+                            </div>
+                            <div class="field">
+                                <label for="s3">Invalid</label
+                                ><input
+                                    class="ctl"
+                                    id="s3"
+                                    value="ada@"
+                                    aria-invalid="true"
+                                    aria-describedby="s3e"
+                                /><span class="err" id="s3e"
+                                    ><svg class="i"><use href="#i-alert" /></svg
+                                    >Enter a full email address, like
+                                    ada@example.com.</span
+                                >
+                            </div>
+                            <div class="field">
+                                <label for="s4">Unavailable</label
+                                ><input
+                                    class="ctl"
+                                    id="s4"
+                                    value="Contact"
+                                    disabled
+                                /><span class="help"
+                                    >The object can't change after the first
+                                    publish.</span
+                                >
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Choices</h3>
+                            <div class="field">
+                                <span class="label">Answer width</span>
+                                <div class="seg full">
+                                    <button aria-pressed="false">Half</button
+                                    ><button aria-pressed="true">Full</button>
+                                </div>
+                            </div>
+                            <label class="toggle-row" style="margin-top: 16px"
+                                >Required<input
+                                    type="checkbox"
+                                    class="switch"
+                                    checked
+                            /></label>
+                            <label class="toggle-row"
+                                >Hide on phones<input
+                                    type="checkbox"
+                                    class="switch"
+                            /></label>
+                            <label class="toggle-row weak"
+                                >Collect signature (needs Files)<input
+                                    type="checkbox"
+                                    class="switch"
+                                    disabled
+                            /></label>
+                            <div class="field" style="margin-top: 16px">
+                                <label for="s5">Field</label
+                                ><select class="ctl" id="s5">
+                                    <option>Email</option>
+                                    <option>Phone</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sys-block">
+                    <h2>Picture tiles</h2>
+                    <p class="help">
+                        When the options differ in how something looks, show a
+                        small picture of each one instead of a dropdown. Same
+                        recipe as today's Appearance picker: art, a short name,
+                        a tick when chosen, arrow keys move. Use a dropdown only
+                        when there are too many options or they have no look to
+                        draw.
+                    </p>
+                    <div class="cols3" id="picDemo"></div>
+                </div>
+
+                <div class="sys-block">
+                    <h2>Feedback, loading, empty, failed</h2>
+                    <p class="help">
+                        Loading, empty and failed always use different words and
+                        different actions. A failed load never looks like an
+                        empty list.
+                    </p>
+                    <div class="cols3">
+                        <div class="stack">
+                            <div class="note ok">
+                                <svg class="i"><use href="#i-check" /></svg
+                                ><span>Mapping applied to the draft.</span>
+                            </div>
+                            <div class="note warn">
+                                <svg class="i"><use href="#i-alert" /></svg
+                                ><span
+                                    >Last name is required on Contact but
+                                    nothing fills it.</span
+                                >
+                            </div>
+                            <div class="note fail">
+                                <svg class="i"><use href="#i-alert" /></svg
+                                ><span
+                                    >We couldn't save. Your edits are still
+                                    here.</span
+                                ><button class="btn">Retry save</button>
+                            </div>
+                        </div>
+                        <div class="card" style="padding: 0">
+                            <div class="state">
+                                <span class="row weak small"
+                                    ><span class="spin"></span>Loading Contact
+                                    fields…</span
+                                >
+                                <div class="skeleton" style="width: 80%"></div>
+                                <div class="skeleton" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div class="card" style="padding: 0">
+                            <div class="state">
+                                <h4>No conditions yet</h4>
+                                <p class="help">
+                                    This question is shown to everyone.
+                                </p>
+                                <button class="btn">
+                                    <svg class="i"><use href="#i-plus" /></svg
+                                    >Add a condition
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sys-block">
+                    <h2>The editing mark on any theme</h2>
+                    <p class="help">
+                        The preview is the real form in its own theme, so the
+                        mark can't borrow Studio teal: on a teal form it would
+                        vanish. It stays quiet: a faint tint and a thin
+                        white-and-dark ring, no label.
+                    </p>
+                    <div class="marks">
+                        <div class="sheet" data-theme="paper">
+                            <div class="f-field editing">
+                                <label>Email address</label>
+                                <div class="f-input"></div>
+                            </div>
+                        </div>
+                        <div class="sheet" data-theme="lagoon">
+                            <div class="f-field editing">
+                                <label>Email address</label>
+                                <div class="f-input"></div>
+                            </div>
+                        </div>
+                        <div class="sheet" data-theme="night">
+                            <div class="f-field editing">
+                                <label>Email address</label>
+                                <div class="f-input"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ============================== DIALOGS ============================== -->
+        <dialog class="wide" id="mappingDlg" aria-labelledby="mapT">
+            <header class="d-head">
+                <div class="grow">
+                    <h2 id="mapT">Mapping</h2>
+                    <p class="meta">
+                        Styling reference only: the real Mapping keeps its own
+                        layout and steps
+                    </p>
+                </div>
+                <button class="icon-btn" data-close aria-label="Close">
+                    <svg class="i"><use href="#i-close" /></svg>
+                </button>
+            </header>
+            <div class="map-body">
+                <aside class="map-records">
+                    <p class="small weak">Records, created in order</p>
+                    <button class="sel-row" aria-pressed="true">
+                        <svg class="i"><use href="#i-form" /></svg
+                        ><span
+                            >1. Contact<span class="help" style="display: block"
+                                >Create a new record</span
+                            ></span
+                        >
+                    </button>
+                    <button class="sel-row" aria-pressed="false">
+                        <svg class="i"><use href="#i-form" /></svg
+                        ><span
+                            >2. Case<span class="help" style="display: block"
+                                >Linked to the Contact</span
+                            ></span
+                        >
+                    </button>
+                    <button class="add-place" style="margin-top: 8px">
+                        <svg class="i"><use href="#i-plus" /></svg>Add a record
+                    </button>
+                </aside>
+                <section class="map-detail">
+                    <div class="flow">
+                        <span>Your form</span><i></i><span>Contact</span>
+                    </div>
+                    <table class="data map">
+                        <thead>
+                            <tr>
+                                <th scope="col">Answer</th>
+                                <th class="arrow">
+                                    <span class="sr">fills</span>
+                                </th>
+                                <th scope="col">Contact field</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>First name</td>
+                                <td class="arrow">→</td>
+                                <td>
+                                    <select
+                                        class="ctl"
+                                        aria-label="Field for First name"
+                                    >
+                                        <option>First name</option></select
+                                    ><span class="mono">FirstName</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Last name</td>
+                                <td class="arrow">→</td>
+                                <td>
+                                    <select
+                                        class="ctl"
+                                        aria-label="Field for Last name"
+                                    >
+                                        <option>Last name</option></select
+                                    ><span class="mono">LastName</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Email address</td>
+                                <td class="arrow">→</td>
+                                <td>
+                                    <select
+                                        class="ctl"
+                                        aria-label="Field for Email address"
+                                    >
+                                        <option>Email</option></select
+                                    ><span class="mono">Email</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    How would you like us to contact you about
+                                    your appointment?
+                                </td>
+                                <td class="arrow">→</td>
+                                <td>
+                                    <select
+                                        class="ctl"
+                                        aria-label="Field for preferred contact"
+                                        aria-invalid="true"
+                                        aria-describedby="mapErr"
+                                    >
+                                        <option>Pick a field</option>
+                                        <option>
+                                            Preferred contact method
+                                        </option></select
+                                    ><span class="err" id="mapErr"
+                                        ><svg class="i">
+                                            <use href="#i-alert" /></svg
+                                        >Pick a field or remove this
+                                        answer.</span
+                                    >
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+            <footer class="d-foot">
+                <span class="help"
+                    >Applying updates the draft. Publish when you're
+                    ready.</span
+                ><button class="btn" data-close>Cancel</button
+                ><button class="btn primary" id="applyMap">
+                    Apply mapping
+                </button>
+            </footer>
+        </dialog>
+
+        <dialog class="full" id="createDlg" aria-labelledby="crT"></dialog>
+
+        <dialog class="drawer" id="settingsDlg" aria-labelledby="setT">
+            <header class="d-head">
+                <div class="grow">
+                    <h2 id="setT">Availability</h2>
+                    <p class="meta">Form settings</p>
+                </div>
+                <button class="icon-btn" data-close aria-label="Close">
+                    <svg class="i"><use href="#i-close" /></svg>
+                </button>
+            </header>
+            <div class="d-body">
+                <section class="group">
+                    <h3 class="group-title">Responses</h3>
+                    <label class="toggle-row"
+                        >Accept responses<input
+                            type="checkbox"
+                            class="switch"
+                            checked
+                    /></label>
+                    <div class="field">
+                        <label for="opens">Opens</label
+                        ><input
+                            class="ctl"
+                            id="opens"
+                            type="date"
+                            value="2026-11-03"
+                        />
+                    </div>
+                    <div class="field">
+                        <label for="closes">Closes</label
+                        ><input
+                            class="ctl"
+                            id="closes"
+                            type="date"
+                            value="2026-10-01"
+                            aria-invalid="true"
+                            aria-describedby="closesErr"
+                        /><span class="err" id="closesErr"
+                            ><svg class="i"><use href="#i-alert" /></svg>Pick a
+                            date after Nov 3, 2026.</span
+                        >
+                    </div>
+                </section>
+                <section class="group">
+                    <h3 class="group-title">Limits</h3>
+                    <div class="field">
+                        <label for="limit">Most responses</label
+                        ><input
+                            class="ctl"
+                            id="limit"
+                            inputmode="numeric"
+                            placeholder="No limit"
+                        /><span class="help"
+                            >The form closes once it reaches this number.</span
+                        >
+                    </div>
+                    <div class="field">
+                        <label for="closedMsg">Message when closed</label
+                        ><textarea class="ctl" id="closedMsg">
+This form isn't taking responses right now.</textarea
+                        >
+                    </div>
+                </section>
+            </div>
+            <footer class="d-foot">
+                <button class="btn" data-close>Cancel</button
+                ><button class="btn primary" data-close>Apply</button>
+            </footer>
+        </dialog>
+
+        <dialog id="publishDlg" aria-labelledby="pubT">
+            <header class="d-head">
+                <div class="grow"><h2 id="pubT">Publish changes?</h2></div>
+                <button class="icon-btn" data-close aria-label="Close">
+                    <svg class="i"><use href="#i-close" /></svg>
+                </button>
+            </header>
+            <div class="d-body">
+                <p>These changes go live when you publish.</p>
+                <section class="pd-group">
+                    <div class="pd-head">
+                        <h3>Build: Your visit</h3>
+                        <button class="btn quiet">Go there</button>
+                    </div>
+                    <ul class="pd-lines">
+                        <li>
+                            <svg class="i"><use href="#i-check" /></svg
+                            ><span>Reason for visit: appearance changed</span>
+                        </li>
+                        <li>
+                            <svg class="i"><use href="#i-check" /></svg
+                            ><span>Anything else we should know? added</span>
+                        </li>
+                    </ul>
+                </section>
+                <section class="pd-group">
+                    <div class="pd-head">
+                        <h3>Design: Theme</h3>
+                        <button class="btn quiet">Go there</button>
+                    </div>
+                    <ul class="pd-lines">
+                        <li>
+                            <svg class="i"><use href="#i-check" /></svg
+                            ><span>Button position changed</span>
+                        </li>
+                    </ul>
+                </section>
+                <p class="pd-note">The live form updates immediately.</p>
+            </div>
+            <footer class="d-foot">
+                <button class="btn" data-close>Cancel</button
+                ><button class="btn primary" id="pubGo">Publish</button>
+            </footer>
+        </dialog>
+
+        <script>
+            const $ = (s) => document.querySelector(s),
+                $$ = (s) => [...document.querySelectorAll(s)];
+            const ic = (n) => `<svg class="i"><use href="#i-${n}"/></svg>`;
+            const esc = (s) =>
+                String(s).replace(
+                    /[&<>"]/g,
+                    (c) =>
+                        ({
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '"': '&quot;'
+                        })[c]
+                );
+            const app = $('#app');
+
+            /* ---------- sample form ---------- */
+            const Q = [
+                {
+                    id: 'first',
+                    label: 'First name',
+                    type: 'Text',
+                    icon: 'text',
+                    sec: 'details',
+                    col: 0,
+                    req: true,
+                    help: '',
+                    ph: ''
+                },
+                {
+                    id: 'email',
+                    label: 'Email address',
+                    type: 'Email',
+                    icon: 'mail',
+                    sec: 'details',
+                    col: 0,
+                    req: true,
+                    help: "We'll send your appointment details here.",
+                    ph: 'name@example.com',
+                    max: '80'
+                },
+                {
+                    id: 'last',
+                    label: 'Last name',
+                    type: 'Text',
+                    icon: 'text',
+                    sec: 'details',
+                    col: 1,
+                    req: true,
+                    help: '',
+                    ph: ''
+                },
+                {
+                    id: 'phone',
+                    label: 'Phone',
+                    type: 'Phone',
+                    icon: 'phone',
+                    sec: 'details',
+                    col: 1,
+                    req: false,
+                    help: '',
+                    ph: ''
+                },
+                {
+                    id: 'reason',
+                    label: 'Reason for visit',
+                    type: 'Choice',
+                    icon: 'choice',
+                    sec: 'visit',
+                    col: 0,
+                    req: true,
+                    help: '',
+                    look: 'chips',
+                    choices: ['Check-up', 'New concern', 'Follow-up']
+                },
+                {
+                    id: 'notes',
+                    label: 'Anything else we should know?',
+                    type: 'Long text',
+                    icon: 'para',
+                    sec: 'visit',
+                    col: 0,
+                    req: false,
+                    help: 'Optional.',
+                    ph: ''
+                }
+            ];
+            Q.push({
+                id: 'agree',
+                label: 'I agree to how my details are used',
+                type: 'Checkbox',
+                icon: 'check',
+                sec: 'consent',
+                col: 0,
+                req: true,
+                help: ''
+            });
+            const SECTIONS = {
+                details: { title: 'Your details', cols: 2, page: 1 },
+                visit: { title: 'Your visit', cols: 1, page: 1 },
+                consent: { title: 'Consent', cols: 1, page: 2 }
+            };
+            let curPage = 1,
+                btnAlign = 'left',
+                removed = null;
+            let selected = 'email',
+                railBuild = 'fields',
+                railDesign = 'theme',
+                designTab = 'simple';
+
+            /* ---------- rail (one component, two tool sets) ---------- */
+            function renderRail() {
+                const build = [
+                    ['fields', 'Fields', 'fields'],
+                    ['blocks', 'Blocks', 'blocks'],
+                    ['logic', 'Logic', 'logic'],
+                    ['autofill', 'Autofill', 'auto'],
+                    ['mapping', 'Mapping', 'map']
+                ];
+                const design = [
+                    ['theme', 'Theme', 'theme'],
+                    ['brand', 'Brand', 'brand'],
+                    ['buttons', 'Buttons', 'button']
+                ].concat(
+                    designTab === 'advanced'
+                        ? [['colors', 'Colors', 'colors']]
+                        : []
+                );
+                const isB = app.dataset.mode === 'build',
+                    set = isB ? build : design,
+                    cur = isB
+                        ? selected && railBuild === 'fields'
+                            ? 'fields'
+                            : railBuild
+                        : railDesign;
+                $('#rail').innerHTML = set
+                    .map(
+                        ([k, l, i]) =>
+                            `<button data-rail="${k}" ${k === cur ? 'aria-current="true"' : ''}>${ic(i)}<span>${l}</span></button>`
+                    )
+                    .join('');
+            }
+            $('#rail').addEventListener('click', (e) => {
+                const b = e.target.closest('[data-rail]');
+                if (!b) return;
+                const k = b.dataset.rail;
+                if (app.dataset.mode === 'build') {
+                    if (k === 'mapping') {
+                        openDlg('mappingDlg', b);
+                        return;
+                    }
+                    railBuild = k;
+                    selected = null;
+                } else railDesign = k;
+                renderAll();
+            });
+
+            /* ---------- tool pane ---------- */
+            function renderTool() {
+                const t = $('#tool');
+                if (app.dataset.mode === 'design') {
+                    t.innerHTML = designPane();
+                    return;
+                }
+                if (selected) {
+                    t.innerHTML = inspector(Q.find((q) => q.id === selected));
+                    return;
+                }
+                if (railBuild === 'fields') {
+                    const used = new Set([
+                        'FirstName',
+                        'LastName',
+                        'Email',
+                        'Phone'
+                    ]);
+                    const f = [
+                        ['First name', 'FirstName', 'text'],
+                        ['Last name', 'LastName', 'text'],
+                        ['Email', 'Email', 'mail'],
+                        ['Phone', 'Phone', 'phone'],
+                        ['Mobile', 'MobilePhone', 'phone'],
+                        ['Birthdate', 'Birthdate', 'text'],
+                        ['Mailing street', 'MailingStreet', 'para'],
+                        [
+                            'Preferred contact method',
+                            'Preferred_Contact__c',
+                            'choice'
+                        ]
+                    ];
+                    t.innerHTML = `<header class="pane-head"><div class="titles"><h2>Fields</h2><p class="meta">From Contact</p></div></header><div class="pane-body"><input class="ctl" type="search" placeholder="Search Contact fields" aria-label="Search fields"><div class="palette">${f.map(([l, a, i]) => `<button class="sel-row" title="${a}">${ic(i)}<span>${l}</span>${used.has(a) ? '<span class="badge">Added</span>' : ''}</button>`).join('')}</div></div>`;
+                    return;
+                }
+                const empty = {
+                    blocks: [
+                        'Blocks',
+                        'Headings, text, images and dividers',
+                        'No blocks on this page',
+                        'Blocks add words and pictures between questions.',
+                        'Add a block'
+                    ],
+                    logic: [
+                        'Logic',
+                        'Show, hide and skip',
+                        'No logic yet',
+                        'Every question is shown to everyone.',
+                        'Add a condition'
+                    ],
+                    autofill: [
+                        'Autofill',
+                        'Fill answers from Salesforce',
+                        'No autofill rules',
+                        'Answers start empty for everyone.',
+                        'Add a rule'
+                    ]
+                }[railBuild];
+                t.innerHTML = `<header class="pane-head"><div class="titles"><h2>${empty[0]}</h2><p class="meta">${empty[1]}</p></div></header><div class="pane-body" style="padding:0"><div class="state"><h4>${empty[2]}</h4><p class="help">${empty[3]}</p><button class="btn">${ic('plus')}${empty[4]}</button></div></div>`;
+            }
+            function inspector(q) {
+                const sec = SECTIONS[q.sec];
+                const g1 = `<section class="group"><h3 class="group-title">Text &amp; guidance</h3>
+    <div class="field"><label for="pLabel">Label</label><input class="ctl" id="pLabel" value="${esc(q.label)}"></div>
+    <div class="field"><label for="pHelp">Help text</label><textarea class="ctl" id="pHelp" placeholder="Shown under the question">${esc(q.help || '')}</textarea></div>
+    ${q.type === 'Choice' ? '' : `<div class="field"><label for="pPh">Placeholder</label><input class="ctl" id="pPh" value="${esc(q.ph || '')}" placeholder="Shown inside an empty box"></div>`}</section>`;
+                const g2 = `<section class="group"><h3 class="group-title">Checks</h3>
+    <label class="toggle-row">Required<input type="checkbox" class="switch" id="pReq" ${q.req ? 'checked' : ''}></label>
+    ${q.type === 'Choice' ? '' : `<div class="field"><label for="pMax">Most characters</label><input class="ctl" id="pMax" inputmode="numeric" value="${esc(q.max || '')}" placeholder="No limit" aria-describedby="pMaxMsg"><span class="help" id="pMaxMsg">Leave empty for no limit.</span></div>`}</section>`;
+                const g3 = `<section class="group"><h3 class="group-title">Visibility<button class="btn quiet" type="button">Add</button></h3><p class="help">Shown to everyone. Add a condition to show it only for some answers.</p></section>`;
+                return `<div class="pane-back"><button class="btn quiet" type="button" data-back>‹ Fields</button></div><header class="pane-head"><span class="type-mark">${ic(q.icon)}</span><div class="titles"><h2 id="inspTitle">${esc(q.label)}</h2><p class="meta">${q.type} question in ${sec.title}</p></div><button class="icon-btn" aria-label="More actions for this question">${ic('more')}</button></header><div class="pane-body">${g1}${appearance(q)}${g2}${g3}</div>`;
+            }
+            function designPane() {
+                const themes = [
+                    [
+                        'paper',
+                        'Paper',
+                        'Warm serif, calm green',
+                        '#fffdf8',
+                        '#3f6656',
+                        '#c9d3cb'
+                    ],
+                    [
+                        'lagoon',
+                        'Lagoon',
+                        'Bold teal with gold',
+                        '#0f766e',
+                        '#fcd34d',
+                        '#5fb3aa'
+                    ],
+                    [
+                        'night',
+                        'Night',
+                        'Dark and quiet',
+                        '#1d2733',
+                        '#7dd3fc',
+                        '#475569'
+                    ]
+                ];
+                const cur = $('#sheet').dataset.theme;
+                const head = `<header class="pane-head"><div class="titles"><h2>${{ theme: 'Theme', brand: 'Brand', buttons: 'Buttons', colors: 'Colors' }[railDesign]}</h2><p class="meta">Changes the form, never the Studio</p></div></header><div class="pane-sub" style="align-items:center"><div class="seg" role="group" aria-label="Design mode"><button type="button" data-level="simple" aria-pressed="${designTab === 'simple'}">Simple</button><button type="button" data-level="advanced" aria-pressed="${designTab === 'advanced'}">Advanced design</button></div></div>`;
+                let body = '';
+                if (railDesign === 'theme') {
+                    body = `<section class="group"><h3 class="group-title">Theme</h3><div class="theme-cards">${themes.map(([k, n, d, bg, ac, ln]) => `<button class="card" data-theme="${k}" aria-pressed="${k === cur}"><span class="check">${ic('check')}</span><span class="thumb" style="background:${bg}"><i style="background:${ac}"></i><i style="background:${ln}"></i><i style="background:${ln}"></i></span><span><span class="name" style="display:block">${n}</span><span class="help">${d}</span></span></button>`).join('')}</div></section>
+    <section class="group"><h3 class="group-title">Text</h3><div class="field"><label for="dFont">Heading font</label><select class="ctl" id="dFont"><option>Georgia</option><option>System</option></select></div>
+    ${designTab === 'advanced' ? '<div class="field"><label for="dScale">Text size</label><div class="seg full" id="dScale"><button aria-pressed="false">Small</button><button aria-pressed="true">Medium</button><button aria-pressed="false">Large</button></div></div>' : ''}</section>`;
+                } else if (railDesign === 'brand') {
+                    body = `<section class="group"><h3 class="group-title">Brand</h3><div class="field"><label for="bName">Organization name</label><input class="ctl" id="bName" value="Riverside Clinic"></div><div class="field"><label>Logo</label><button class="add-place">${ic('plus')}Upload a logo</button><span class="help">PNG or SVG, up to 2 MB.</span></div></section>`;
+                } else if (railDesign === 'buttons') {
+                    body = `<section class="group"><h3 class="group-title">Buttons</h3><div class="field"><span class="label">Position</span>${pictures(
+                        'pos',
+                        [
+                            ['left', 'Left'],
+                            ['center', 'Center'],
+                            ['spread', 'Spread']
+                        ],
+                        btnAlign,
+                        'three',
+                        'Button position'
+                    )}</div><div class="field"><label for="bSubmit">Submit label</label><input class="ctl" id="bSubmit" value="Submit"></div></section>`;
+                } else {
+                    body = `<section class="group"><h3 class="group-title">Colors</h3><div class="field"><label for="cA">Accent</label><div class="colorrow"><input type="color" id="cA" value="#3f6656" aria-label="Accent color"><input class="ctl mono" value="#3F6656" aria-label="Accent hex"></div><span class="help">Buttons, links and progress.</span></div></section>`;
+                }
+                return head + `<div class="pane-body">${body}</div>`;
+            }
+
+            /* ---------- picture tiles ---------- */
+            const THEMES = {
+                paper: ['Paper', '#fffdf8', '#3f6656', '#c9d3cb'],
+                lagoon: ['Lagoon', '#0f766e', '#fcd34d', '#5fb3aa'],
+                night: ['Night', '#1d2733', '#7dd3fc', '#475569'],
+                sand: ['Sand', '#f6efe3', '#b45309', '#e2d3bb'],
+                slate: ['Slate', '#f8fafc', '#334155', '#cbd5e1'],
+                bloom: ['Bloom', '#fdf2f8', '#be185d', '#f5c6dd']
+            };
+            function art(k) {
+                if (THEMES[k]) {
+                    const [, bg, ac, ln] = THEMES[k];
+                    return `<svg class="art" viewBox="0 0 64 32" style="stroke:none"><rect width="64" height="32" rx="3" fill="${bg}" stroke="rgb(15 23 42 / 15%)"/><rect x="8" y="7" width="26" height="4" rx="1" fill="${ac}"/><rect x="8" y="15" width="48" height="3" fill="${ln}"/><rect x="8" y="21" width="40" height="3" fill="${ln}"/></svg>`;
+                }
+                const A = {
+                    dropdown:
+                        '<rect x="6" y="9" width="52" height="14" rx="3"/><path d="m45 14 3 3 3-3"/>',
+                    radio: '<circle cx="10" cy="10" r="3.5"/><circle cx="10" cy="22" r="3.5" class="f"/><path d="M18 10h30M18 22h24"/>',
+                    chips: '<rect x="4" y="10" width="24" height="12" rx="6"/><rect x="32" y="10" width="28" height="12" rx="6" class="f"/>',
+                    cards: '<rect x="4" y="5" width="26" height="22" rx="3"/><rect x="34" y="5" width="26" height="22" rx="3" class="s"/><path d="M10 16h14M40 16h14"/>',
+                    left: '<path d="M6 7h52M6 13h40"/><rect class="f" x="6" y="20" width="16" height="7" rx="2"/>',
+                    center: '<path d="M6 7h52M6 13h40"/><rect class="f" x="24" y="20" width="16" height="7" rx="2"/>',
+                    spread: '<path d="M6 7h52M6 13h40"/><rect x="6" y="20" width="14" height="7" rx="2"/><rect class="f" x="44" y="20" width="14" height="7" rx="2"/>',
+                    steps: '<circle cx="12" cy="16" r="5" class="f"/><circle cx="32" cy="16" r="5"/><circle cx="52" cy="16" r="5"/><path d="M17 16h10M37 16h10"/>',
+                    dots: '<circle cx="22" cy="16" r="3" class="f"/><circle cx="32" cy="16" r="3" class="s"/><circle cx="42" cy="16" r="3" class="s"/>',
+                    bar: '<rect x="6" y="14" width="52" height="4" rx="2" class="s"/><rect x="6" y="14" width="22" height="4" rx="2" class="f"/>',
+                    scroll: '<path d="M8 6h48M8 12h48M8 18h48M8 24h36"/>',
+                    accordion:
+                        '<rect x="6" y="3" width="52" height="7" rx="2"/><rect x="6" y="12.5" width="52" height="7" rx="2" class="s"/><rect x="6" y="22" width="52" height="7" rx="2"/>',
+                    one: '<path d="M14 7h36"/><rect x="14" y="12" width="36" height="8" rx="2"/><rect class="f" x="38" y="24" width="12" height="5" rx="2"/>',
+                    stepper:
+                        '<circle cx="20" cy="6" r="2.5" class="f"/><circle cx="32" cy="6" r="2.5" class="s"/><circle cx="44" cy="6" r="2.5" class="s"/><rect x="8" y="13" width="48" height="7" rx="2"/><path d="M8 26h30"/>',
+                    tabs: '<path d="M6 6h14M25 6h14M44 6h14"/><path d="M6 10h14" stroke="var(--c-studio-accent)" stroke-width="2.5"/><rect x="6" y="15" width="52" height="12" rx="2"/>',
+                    split: '<rect class="f" x="4" y="4" width="22" height="24" rx="2"/><path d="M32 9h26M32 15h26M32 21h18"/>'
+                };
+                return `<svg class="art" viewBox="0 0 64 32" aria-hidden="true">${A[k] || ''}</svg>`;
+            }
+            function pictures(group, opts, cur, size, label) {
+                return `<div class="pic ${size || ''}" role="radiogroup" aria-label="${label}">${opts.map(([k, l, d]) => `<button type="button" role="radio" data-pic="${group}" data-val="${k}" aria-checked="${k === cur}" tabindex="${k === cur ? 0 : -1}"><span class="tick">${ic('check')}</span>${art(k)}<span>${l}</span>${d ? `<span class="desc">${d}</span>` : ''}</button>`).join('')}</div>`;
+            }
+            function appearance(q) {
+                if (q.type !== 'Choice') return '';
+                return `<section class="group"><h3 class="group-title">Appearance</h3>${pictures(
+                    'look',
+                    [
+                        ['dropdown', 'Dropdown'],
+                        ['radio', 'Radio buttons'],
+                        ['chips', 'Chips'],
+                        ['cards', 'Cards']
+                    ],
+                    q.look || 'chips',
+                    '',
+                    'Appearance'
+                )}</section>`;
+            }
+
+            /* ---------- structure: one page at a time (today's page switcher), rows, columns as lanes ---------- */
+            const xBtn = (id, what) =>
+                `<button class="x" data-remove="${id}" aria-label="Remove ${esc(what)}" title="Remove">${ic('close')}</button>`;
+            function renderOutline() {
+                const pages = [
+                    [1, 'About you'],
+                    [2, 'Consent']
+                ];
+                $('#pageTabs').innerHTML =
+                    `<div class="tabs" role="tablist" aria-label="Pages">${pages.map(([n, t]) => `<span class="pt"><button role="tab" data-page="${n}" aria-selected="${n === curPage}">${t}</button>${xBtn('page-' + n, 'page ' + t)}</span>`).join('')}</div><button class="btn quiet" type="button">${ic('plus')}Page</button>`;
+                $('#structMeta').textContent = `2 pages, ${Q.length} questions`;
+                const row = (q) =>
+                    `<div class="srow"><button class="sel-row" data-q="${q.id}" aria-pressed="${q.id === selected}">${ic(q.icon)}<span>${esc(q.label)}</span></button>${xBtn(q.id, q.label)}</div>`;
+                const sec = (k) => {
+                    const s = SECTIONS[k],
+                        qs = Q.filter((q) => q.sec === k);
+                    const lanes =
+                        s.cols === 2
+                            ? `<div class="lanes two">${[0, 1]
+                                  .map(
+                                      (c) =>
+                                          `<div class="lane" aria-label="Column ${c + 1}"><div class="lane-cap" aria-hidden="true">Column ${c + 1}</div>${qs
+                                              .filter((q) => q.col === c)
+                                              .map(row)
+                                              .join('')}</div>`
+                                  )
+                                  .join('')}</div>`
+                            : `<div class="lanes"><div class="lane">${qs.map(row).join('')}</div></div>`;
+                    return `<div class="st-section"><div class="st-section-head"><span>${s.title}</span>${s.cols === 2 ? '<span class="badge">2 columns</span>' : ''}${xBtn('sec-' + k, 'section ' + s.title)}</div>${lanes}</div>`;
+                };
+                $('#outline').innerHTML =
+                    Object.keys(SECTIONS)
+                        .filter((k) => SECTIONS[k].page === curPage)
+                        .map(sec)
+                        .join('') +
+                    `<button class="add-place">${ic('plus')}Section</button>`;
+            }
+
+            /* ---------- preview specimen ---------- */
+            function control(q) {
+                if (q.type === 'Choice') {
+                    const l = q.look || 'chips';
+                    if (l === 'dropdown')
+                        return `<div class="f-input f-select"><span>Choose one</span><span aria-hidden="true">▾</span></div>`;
+                    if (l === 'radio')
+                        return `<div class="f-radios">${q.choices.map((c) => `<span><i></i>${c}</span>`).join('')}</div>`;
+                    if (l === 'cards')
+                        return `<div class="f-cards">${q.choices.map((c) => `<span>${c}</span>`).join('')}</div>`;
+                    return `<div class="f-choices">${q.choices.map((c) => `<span>${c}</span>`).join('')}</div>`;
+                }
+                if (q.type === 'Checkbox')
+                    return `<div class="f-radios"><span><i class="sq"></i>Yes, I agree</span></div>`;
+                if (q.type === 'Long text')
+                    return `<div class="f-input" style="height:72px"></div>`;
+                return `<input class="f-input" tabindex="-1" placeholder="${esc(q.ph || '')}">`;
+            }
+            function renderSheet() {
+                const fld = (q) =>
+                    `<div class="f-field ${q.id === selected ? 'editing' : ''}" data-q="${q.id}"><label>${esc(q.label)}${q.req ? '<span class="req" aria-hidden="true">*</span>' : ''}</label>${control(q)}${q.help ? `<div class="f-help">${esc(q.help)}</div>` : ''}</div>`;
+                const back = curPage > 1 || btnAlign === 'spread';
+                const btns = `<div class="f-actions" style="justify-content:${{ left: 'flex-start', center: 'center', spread: 'space-between' }[btnAlign]}">${back ? '<button class="f-back" tabindex="-1">Back</button>' : ''}<button class="f-submit" tabindex="-1">${curPage === 2 ? 'Submit' : 'Next'}</button></div>`;
+                let body;
+                if (curPage === 1) {
+                    const d = Q.filter((q) => q.sec === 'details');
+                    body = `<h3>Before your visit</h3><p class="f-intro">A few details so we're ready when you arrive. It takes about two minutes.</p>
+     <div class="f-section">Your details</div><div class="f-grid"><div>${d
+         .filter((q) => q.col === 0)
+         .map(fld)
+         .join('')}</div><div>${d
+         .filter((q) => q.col === 1)
+         .map(fld)
+         .join('')}</div></div>
+     <div class="f-section">Your visit</div>${Q.filter((q) => q.sec === 'visit')
+         .map(fld)
+         .join('')}`;
+                } else
+                    body = `<h3>Almost done</h3><p class="f-intro">One last thing before you send this.</p><div class="f-section">Consent</div>${Q.filter(
+                        (q) => q.sec === 'consent'
+                    )
+                        .map(fld)
+                        .join('')}`;
+                $('#sheet').innerHTML =
+                    `<div class="f-brand">Riverside Clinic</div>${body}${btns}`;
+            }
+            function status() {
+                saving();
+            }
+
+            /* ---------- new form: today's steps, restyled ---------- */
+            let crState = { layout: 'scroll', theme: 'paper' };
+            function renderCreate(step) {
+                const d = $('#createDlg');
+                const back =
+                    step === 'type'
+                        ? ''
+                        : `<button class="btn quiet" data-crback="${{ layout: 'type', theme: 'layout', details: 'theme' }[step]}">${ic('back')}Back</button>`;
+                const head = (t, sub) =>
+                    `<header class="d-head">${back}<div class="grow"><h2 id="crT">${t}</h2><p class="meta">${sub}</p></div><button class="icon-btn" data-close aria-label="Close">${ic('close')}</button></header>`;
+                let html = '';
+                if (step === 'type') {
+                    const kinds = [
+                        [
+                            'form',
+                            'form',
+                            'Form',
+                            'Collects data into Salesforce records. Every answer becomes a field on the object you choose.',
+                            'Pick a layout and theme'
+                        ],
+                        [
+                            'survey',
+                            'survey',
+                            'Survey',
+                            'Asks questions and measures how people feel. Answers are kept for charts and topics; a Salesforce object is optional.',
+                            'Pick a template and theme'
+                        ],
+                        [
+                            'free',
+                            'free',
+                            'Freeform',
+                            'Ask anything. Answers stay with the submission, and you choose later which ones also fill Salesforce records.',
+                            'Pick a layout and theme'
+                        ]
+                    ];
+                    html =
+                        head(
+                            'What are you creating?',
+                            'Pick one. You can create the other kinds later.'
+                        ) +
+                        `<div class="d-body"><div class="kinds">${kinds.map(([k, i, n, dsc, f]) => `<button class="card kind" data-kind="${k}">${ic(i)}<span class="name">${n}</span><span class="help">${dsc}</span><span class="foot">${f}</span></button>`).join('')}</div></div>`;
+                } else if (step === 'layout') {
+                    const groups = [
+                        [
+                            'One page',
+                            'Everything on one screen',
+                            [
+                                [
+                                    'scroll',
+                                    'Scroll',
+                                    'All questions, one after another'
+                                ],
+                                [
+                                    'accordion',
+                                    'Accordion',
+                                    'Sections open one at a time'
+                                ]
+                            ]
+                        ],
+                        [
+                            'Step by step',
+                            'One part at a time',
+                            [
+                                [
+                                    'one',
+                                    'One at a time',
+                                    'One question per screen'
+                                ],
+                                [
+                                    'stepper',
+                                    'Stepper',
+                                    'Numbered steps with progress'
+                                ],
+                                [
+                                    'tabs',
+                                    'Tabs',
+                                    'Sections as tabs along the top'
+                                ]
+                            ]
+                        ],
+                        [
+                            'Side by side',
+                            'A brand pane next to the questions',
+                            [
+                                [
+                                    'split',
+                                    'Split',
+                                    'Your image or message on one side'
+                                ]
+                            ]
+                        ]
+                    ];
+                    html =
+                        head(
+                            'Create a form',
+                            'Pick a layout. You can change it later in Design.'
+                        ) +
+                        `<div class="d-tabs"><div class="tabs" role="tablist" aria-label="How to start"><button role="tab" aria-selected="false">Form templates</button><button role="tab" aria-selected="true">Blank form</button></div></div><div class="d-body">${groups.map(([t, h, cards]) => `<section class="lgroup"><h3 class="group-title">${t}<span class="weak">${h}</span></h3>${pictures('layout', cards, crState.layout, 'big', 'Layout')}</section>`).join('')}</div>`;
+                } else if (step === 'theme') {
+                    html =
+                        head(
+                            'Pick a theme',
+                            'You can fine-tune colors and fonts in Design.'
+                        ) +
+                        `<div class="d-body">${pictures(
+                            'ctheme',
+                            Object.entries(THEMES).map(([k, v]) => [k, v[0]]),
+                            crState.theme,
+                            'big',
+                            'Theme'
+                        )}</div>`;
+                } else {
+                    const t = ['paper', 'lagoon', 'night'].includes(
+                        crState.theme
+                    )
+                        ? crState.theme
+                        : 'paper';
+                    html =
+                        head('Name your form', 'Last step') +
+                        `<div class="d-body"><div class="details"><div>
+      <div class="field"><label for="crName">Form name</label><input class="ctl" id="crName" placeholder="For example, Patient intake"></div>
+      <div class="field"><label for="crObj">Primary object</label><select class="ctl" id="crObj"><option>Contact</option><option>Case</option><option>Lead</option></select><span class="help">Answers save to this object.</span></div></div>
+      <div class="sheet" data-theme="${t}"><div class="f-brand">Live preview</div><h3>Your new form</h3><p class="f-intro">Questions you add appear here.</p><div class="f-field"><label>First question</label><input class="f-input" tabindex="-1"></div></div></div></div>
+      <footer class="d-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="crGo">Create form</button></footer>`;
+                }
+                d.innerHTML = html;
+                wireTabs();
+                const f = d.querySelector(
+                    '.d-body [aria-checked=true],.d-body .card,.d-body input'
+                );
+                f && f.focus();
+            }
+            $('#createDlg').addEventListener('click', (e) => {
+                const b = e.target.closest('[data-crback]');
+                if (b) {
+                    renderCreate(b.dataset.crback);
+                    return;
+                }
+                const k = e.target.closest('[data-kind]');
+                if (k) {
+                    renderCreate('layout');
+                    return;
+                }
+                const g = e.target.closest('#crGo');
+                if (g) {
+                    g.disabled = true;
+                    g.setAttribute('aria-busy', 'true');
+                    g.innerHTML = '<span class="spin"></span>Creating…';
+                    setTimeout(() => {
+                        if (
+                            ['paper', 'lagoon', 'night'].includes(crState.theme)
+                        )
+                            $('#sheet').dataset.theme = crState.theme;
+                        go('build');
+                    }, 900);
+                }
+            });
+
+            function renderAll() {
+                app.classList.toggle(
+                    'insp',
+                    app.dataset.mode === 'build' && !!selected
+                );
+                renderRail();
+                renderTool();
+                renderOutline();
+                renderSheet();
+                wireTabs();
+            }
+
+            /* ---------- selection sync: structure ↔ preview ↔ inspector ---------- */
+            document.addEventListener('click', (e) => {
+                const bk = e.target.closest('[data-back]');
+                if (bk) {
+                    selected = null;
+                    railBuild = 'fields';
+                    renderAll();
+                    return;
+                }
+                const rm = e.target.closest('[data-remove]');
+                if (rm) {
+                    const id = rm.dataset.remove,
+                        i = Q.findIndex((q) => q.id === id);
+                    if (i < 0) {
+                        status(
+                            'Sections and pages remove the same way; Undo brings them back'
+                        );
+                        return;
+                    }
+                    removed = { q: Q[i], i };
+                    Q.splice(i, 1);
+                    if (selected === id) selected = null;
+                    renderAll();
+                    status('Question removed. Undo brings it back');
+                    return;
+                }
+                const pk = e.target.closest('[data-pic]');
+                if (pk) {
+                    const g = pk.dataset.pic,
+                        v = pk.dataset.val;
+                    if (g === 'layout') {
+                        crState.layout = v;
+                        renderCreate('theme');
+                        return;
+                    }
+                    if (g === 'ctheme') {
+                        crState.theme = v;
+                        renderCreate('details');
+                        return;
+                    }
+                    if (g === 'look') {
+                        Q.find((x) => x.id === selected).look = v;
+                        renderTool();
+                        renderSheet();
+                        saving();
+                    } else if (g === 'pos') {
+                        btnAlign = v;
+                        renderTool();
+                        renderSheet();
+                        saving();
+                    } else {
+                        pk.closest('[role=radiogroup]')
+                            .querySelectorAll('[role=radio]')
+                            .forEach((r) => {
+                                r.setAttribute('aria-checked', r === pk);
+                                r.tabIndex = r === pk ? 0 : -1;
+                            });
+                    }
+                    const n = document.querySelector(
+                        `[data-pic="${g}"][data-val="${v}"]`
+                    );
+                    n && n.focus();
+                    return;
+                }
+                const q = e.target.closest('[data-q]');
+                if (q && app.contains(q)) {
+                    if (app.dataset.mode === 'design') return;
+                    selected = q.dataset.q;
+                    railBuild = 'fields';
+                    renderAll();
+                    if (app.classList.contains('show-preview')) {
+                    }
+                    return;
+                }
+                const th = e.target.closest('.theme-cards [data-theme]');
+                if (th) {
+                    $('#sheet').dataset.theme = th.dataset.theme;
+                    renderTool();
+                    return;
+                }
+                const lv = e.target.closest('[data-level]');
+                if (lv) {
+                    designTab = lv.dataset.level;
+                    if (designTab === 'simple' && railDesign === 'colors')
+                        railDesign = 'theme';
+                    renderRail();
+                    renderTool();
+                    wireTabs();
+                    return;
+                }
+                const sb = e.target.closest('.seg button');
+                if (sb) {
+                    sb.parentElement
+                        .querySelectorAll('button')
+                        .forEach((b) =>
+                            b.setAttribute('aria-pressed', b === sb)
+                        );
+                    if (sb.dataset.device) {
+                        app.classList.toggle(
+                            'phone',
+                            sb.dataset.device === 'phone'
+                        );
+                        app.classList.toggle(
+                            'tablet',
+                            sb.dataset.device === 'tablet'
+                        );
+                    }
+                    return;
+                }
+                const kc = e.target.closest('#kinds .card');
+                if (kc) {
+                    $$('#kinds .card').forEach((c) =>
+                        c.setAttribute('aria-pressed', c === kc)
+                    );
+                    return;
+                }
+                const pr = e.target.closest('.palette .sel-row');
+                if (pr) {
+                    $$('.palette .sel-row').forEach((r) =>
+                        r.removeAttribute('aria-pressed')
+                    );
+                    pr.setAttribute('aria-pressed', 'true');
+                }
+            });
+            document.addEventListener('input', (e) => {
+                const q = Q.find((x) => x.id === selected);
+                if (!q) return;
+                if (e.target.id === 'pLabel') {
+                    q.label = e.target.value || 'Untitled question';
+                    $('#inspTitle').textContent = q.label;
+                    renderOutline();
+                    renderSheet();
+                    saving();
+                }
+                if (e.target.id === 'pHelp') {
+                    q.help = e.target.value;
+                    renderSheet();
+                    saving();
+                }
+                if (e.target.id === 'pPh') {
+                    q.ph = e.target.value;
+                    renderSheet();
+                    saving();
+                }
+                if (e.target.id === 'pReq') {
+                    q.req = e.target.checked;
+                    renderOutline();
+                    renderSheet();
+                    saving();
+                }
+                if (e.target.id === 'pMax') {
+                    const v = e.target.value.trim(),
+                        bad = v !== '' && !/^[1-9]\d*$/.test(v),
+                        m = $('#pMaxMsg');
+                    e.target.setAttribute('aria-invalid', bad);
+                    m.className = bad ? 'err' : 'help';
+                    m.innerHTML = bad
+                        ? `${ic('alert')}Enter a whole number above 0, or leave it empty.`
+                        : 'Leave empty for no limit.';
+                    if (!bad) {
+                        q.max = v;
+                        saving();
+                    }
+                }
+            });
+            let st;
+            function saving(txt) {
+                const s = $('#saveStatus');
+                s.classList.remove('live');
+                s.lastElementChild.textContent = 'Saving…';
+                clearTimeout(st);
+                st = setTimeout(() => {
+                    s.lastElementChild.textContent = txt || 'Saved';
+                }, 600);
+            }
+
+            /* ---------- picture tiles: one tab stop, arrows move ---------- */
+            document.addEventListener('keydown', (e) => {
+                const r = e.target.closest('[role=radio][data-pic]');
+                if (
+                    !r ||
+                    ![
+                        'ArrowLeft',
+                        'ArrowRight',
+                        'ArrowUp',
+                        'ArrowDown'
+                    ].includes(e.key)
+                )
+                    return;
+                e.preventDefault();
+                const all = [
+                        ...r
+                            .closest('[role=radiogroup]')
+                            .querySelectorAll('[role=radio]')
+                    ],
+                    i = all.indexOf(r),
+                    n =
+                        all[
+                            (i +
+                                (['ArrowRight', 'ArrowDown'].includes(e.key)
+                                    ? 1
+                                    : -1) +
+                                all.length) %
+                                all.length
+                        ];
+                if (['layout', 'ctheme'].includes(r.dataset.pic)) {
+                    n.focus();
+                } else {
+                    n.click();
+                }
+            });
+
+            /* ---------- tabs: one tab stop, arrows move ---------- */
+            function wireTabs() {
+                $$('[role=tablist]').forEach((tl) => {
+                    const tabs = [...tl.querySelectorAll('[role=tab]')];
+                    tabs.forEach(
+                        (t) =>
+                            (t.tabIndex =
+                                t.getAttribute('aria-selected') === 'true'
+                                    ? 0
+                                    : -1)
+                    );
+                });
+            }
+            document.addEventListener('keydown', (e) => {
+                const t = e.target.closest('[role=tab]');
+                if (!t || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+                const tabs = [
+                        ...t
+                            .closest('[role=tablist]')
+                            .querySelectorAll('[role=tab]')
+                    ],
+                    i = tabs.indexOf(t),
+                    n =
+                        tabs[
+                            (i +
+                                (e.key === 'ArrowRight' ? 1 : -1) +
+                                tabs.length) %
+                                tabs.length
+                        ];
+                n.focus();
+                n.click();
+            });
+            document.addEventListener('click', (e) => {
+                const t = e.target.closest('[role=tab]');
+                if (!t) return;
+                const tl = t.closest('[role=tablist]');
+                if (tl.id === 'levelTabs') return;
+                tl.querySelectorAll('[role=tab]').forEach((x) =>
+                    x.setAttribute('aria-selected', x === t)
+                );
+                wireTabs();
+                if (t.dataset.mode) {
+                    setMode(t.dataset.mode);
+                }
+                if (t.dataset.page) {
+                    curPage = +t.dataset.page;
+                    if (
+                        selected &&
+                        SECTIONS[Q.find((q) => q.id === selected).sec].page !==
+                            curPage
+                    )
+                        selected = null;
+                    renderAll();
+                    const pt = document.querySelector(
+                        `[data-page="${curPage}"]`
+                    );
+                    pt && pt.focus();
+                }
+                if (t.dataset.np) {
+                    app.classList.toggle(
+                        'show-preview',
+                        t.dataset.np === 'preview'
+                    );
+                }
+                if (t.dataset.view) {
+                    go(t.dataset.view, t);
+                }
+            });
+            function setMode(m) {
+                app.dataset.mode = m;
+                $$('#modeTabs button').forEach((x) =>
+                    x.setAttribute('aria-pressed', x.dataset.mode === m)
+                );
+                renderAll();
+            }
+            $('#modeTabs').addEventListener('click', (e) => {
+                const b = e.target.closest('[data-mode]');
+                if (b) setMode(b.dataset.mode);
+            });
+            /* menus: settings + Actions */
+            document.addEventListener('click', (e) => {
+                const t = e.target.closest('[data-menu]');
+                const open = $$('.menu:not([hidden])');
+                open.forEach((m) => {
+                    if (!t || m.id !== t.dataset.menu) {
+                        m.hidden = true;
+                        const b = document.querySelector(
+                            `[data-menu="${m.id}"]`
+                        );
+                        b && b.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                if (t) {
+                    const m = document.getElementById(t.dataset.menu);
+                    m.hidden = !m.hidden;
+                    t.setAttribute('aria-expanded', !m.hidden);
+                    if (!m.hidden) m.querySelector('[role=menuitem]').focus();
+                    return;
+                }
+                const it = e.target.closest('[data-section]');
+                if (it) {
+                    $('#setT').textContent = it.dataset.section;
+                    openDlg(
+                        'settingsDlg',
+                        document.querySelector('[data-menu=setMenu]')
+                    );
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape')
+                    $$('.menu:not([hidden])').forEach((m) => {
+                        m.hidden = true;
+                        const b = document.querySelector(
+                            `[data-menu="${m.id}"]`
+                        );
+                        b &&
+                            (b.setAttribute('aria-expanded', 'false'),
+                            b.focus());
+                    });
+            });
+
+            /* ---------- mock navigation ---------- */
+            function go(v, trigger) {
+                document.body.dataset.view = v;
+                $$('#mockTabs [role=tab]').forEach((x) =>
+                    x.setAttribute('aria-selected', x.dataset.view === v)
+                );
+                wireTabs();
+                $$('dialog[open]').forEach((d) => d.close());
+                const sys = v === 'system';
+                $('#system').hidden = !sys;
+                app.hidden = sys;
+                app.dataset.page =
+                    v === 'library' || v === 'create' ? 'library' : 'studio';
+                if (
+                    [
+                        'build',
+                        'mapping',
+                        'settings',
+                        'publish',
+                        'narrow'
+                    ].includes(v)
+                )
+                    setMode('build');
+                if (v === 'design') setMode('design');
+                app.classList.remove('show-preview');
+                $$('#narrowTabs [role=tab]').forEach((x, i) =>
+                    x.setAttribute('aria-selected', i === 0)
+                );
+                if (v === 'mapping') openDlg('mappingDlg', trigger);
+                if (v === 'create') openDlg('createDlg', trigger);
+                if (v === 'settings') openDlg('settingsDlg', trigger);
+                if (v === 'publish') openDlg('publishDlg', trigger);
+            }
+            document.addEventListener('click', (e) => {
+                const g = e.target.closest('[data-go]');
+                if (g && !g.closest('[role=tablist]')) {
+                    const v = g.dataset.go;
+                    setTimeout(() => {
+                        go(v);
+                        $$('#mockTabs [role=tab]').forEach((x) =>
+                            x.setAttribute(
+                                'aria-selected',
+                                x.dataset.view === v
+                            )
+                        );
+                    }, 0);
+                }
+            });
+
+            /* ---------- dialog contract: focus in, Escape, focus back ---------- */
+            let lastTrigger = null;
+            function openDlg(id, trigger) {
+                const d = document.getElementById(id);
+                lastTrigger = trigger || document.activeElement;
+                if (id === 'createDlg') {
+                    d.showModal();
+                    renderCreate('type');
+                    return;
+                }
+                if (id === 'publishDlg') resetPublish();
+                d.showModal();
+                const f = d.querySelector(
+                    '.d-body input,.d-body select,.d-body textarea,.map-body button,.d-body .card,.d-foot .btn.primary'
+                );
+                f && f.focus();
+            }
+            $$('dialog').forEach((d) => {
+                d.addEventListener('close', () => {
+                    lastTrigger && lastTrigger.focus && lastTrigger.focus();
+                });
+                d.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-close]')) d.close();
+                });
+            });
+            $$('[data-open]').forEach((b) =>
+                b.addEventListener('click', () => openDlg(b.dataset.open, b))
+            );
+            $('#applyMap').addEventListener('click', () => {
+                $('#mappingDlg').close();
+                saving();
+            });
+            function resetPublish() {}
+            $('#pubGo').addEventListener('click', () => {
+                $('#publishDlg').close();
+                const b = $('#publishBtn');
+                b.disabled = true;
+                b.textContent = 'Publishing…';
+                $('#pubProgress').hidden = false;
+                setTimeout(() => {
+                    b.disabled = false;
+                    b.textContent = 'Publish';
+                    $('#pubProgress').hidden = true;
+                    saving();
+                }, 1600);
+            });
+
+            /* ---------- expand preview ---------- */
+            $('#expandBtn').addEventListener('click', (e) => {
+                const on = app.classList.toggle('expanded');
+                e.currentTarget.setAttribute('aria-pressed', on);
+                e.currentTarget.setAttribute(
+                    'aria-label',
+                    on ? 'Show the editor' : 'Expand preview'
+                );
+            });
+
+            $('#undoBtn').addEventListener('click', () => {
+                if (!removed) return;
+                Q.splice(removed.i, 0, removed.q);
+                selected = removed.q.id;
+                removed = null;
+                renderAll();
+                status('Question restored');
+            });
+            $('#mmPic').innerHTML = pictures(
+                'demo1',
+                [
+                    ['left', 'Left'],
+                    ['center', 'Center'],
+                    ['spread', 'Spread']
+                ],
+                'center',
+                'three',
+                'Sample'
+            );
+            $('#picDemo').innerHTML = `<div><h3>Button position</h3>${pictures(
+                'demo2',
+                [
+                    ['left', 'Left'],
+                    ['center', 'Center'],
+                    ['spread', 'Spread']
+                ],
+                'left',
+                'three',
+                'Button position'
+            )}</div><div><h3>Appearance</h3>${pictures(
+                'demo3',
+                [
+                    ['dropdown', 'Dropdown'],
+                    ['radio', 'Radio buttons'],
+                    ['chips', 'Chips'],
+                    ['cards', 'Cards']
+                ],
+                'chips',
+                '',
+                'Appearance'
+            )}</div><div><h3>Progress indicator</h3>${pictures(
+                'demo4',
+                [
+                    ['steps', 'Numbered steps'],
+                    ['dots', 'Dots'],
+                    ['bar', 'Progress bar']
+                ],
+                'bar',
+                'three',
+                'Progress indicator'
+            )}</div>`;
+            renderAll();
+        </script>
+    </body>
+</html>
