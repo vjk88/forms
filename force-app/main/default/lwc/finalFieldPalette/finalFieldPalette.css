@@ -33,13 +33,10 @@
     color: var(--c-studio-text-weak);
 }
 
+/* lightning-input draws the box; this only places it. */
 .fp-search {
+    display: block;
     margin: 10px;
-    padding: 6px 10px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    font: inherit;
-    font-size: 12.5px;
 }
 
 .fp-error {

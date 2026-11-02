@@ -116,6 +116,7 @@ describe('focus stays visible in Windows High Contrast', () => {
     const STUDIO_ONLY = [
         'finalBrandInputs',
         'finalBuilderCanvas',
+        'finalButtonGroup',
         'finalColorControl',
         'finalConnectedObjectCard',
         'finalCreationGallery',
@@ -127,6 +128,7 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalGradientControl',
         'finalLayoutCard',
         'finalMappingSoql',
+        'finalPictureChoice',
         'finalPreviewStage',
         'finalPropertyPanel',
         'finalStudioRail',

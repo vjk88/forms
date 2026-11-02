@@ -21,33 +21,13 @@
 
         <section class="am-section">
             <h2 class="am-heading">Fill from</h2>
-            <div class="am-segs" role="group" aria-label="Fill from">
-                <button
-                    type="button"
-                    class={linkClass}
-                    aria-pressed={linkPressed}
-                    disabled={linkDisabled}
-                    onclick={handleLink}
-                >
-                    The record in the link
-                </button>
-                <button
-                    type="button"
-                    class={lookupClass}
-                    aria-pressed={lookupPressed}
-                    onclick={handleLookup}
-                >
-                    A record picked in a lookup
-                </button>
-                <button
-                    type="button"
-                    class={userClass}
-                    aria-pressed={userPressed}
-                    onclick={handleUser}
-                >
-                    The signed-in person
-                </button>
-            </div>
+            <c-final-button-group
+                data-group="source"
+                label="Fill from"
+                options={sourceOptions}
+                value={sourceType}
+                onchange={handleSource}
+            ></c-final-button-group>
             <template lwc:if={linkDisabled}>
                 <p class="am-hint">
                     Another link rule is on. A link carries one record, so turn

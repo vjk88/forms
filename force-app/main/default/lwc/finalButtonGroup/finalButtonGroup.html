@@ -1,0 +1,19 @@
+<template>
+    <div class={groupClass} role="group" aria-label={label}>
+        <template for:each={items} for:item="o">
+            <button
+                key={o.key}
+                type="button"
+                class={o.cls}
+                aria-pressed={o.pressed}
+                title={o.title}
+                disabled={o.disabled}
+                data-index={o.index}
+                data-value={o.dataValue}
+                onclick={handleClick}
+            >
+                {o.label}
+            </button>
+        </template>
+    </div>
+</template>

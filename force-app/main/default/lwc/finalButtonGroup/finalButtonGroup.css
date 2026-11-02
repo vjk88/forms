@@ -1,0 +1,70 @@
+@import 'c/finalStudioStyles';
+
+/* Joined buttons, the chosen one filled teal (owner 2026-11-01): the look of
+   the Build/Design switch and the preview toolbar. Tokens only (the Studio
+   guard, DESIGN_SYSTEM §10). */
+:host {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.bg {
+    display: inline-flex;
+    max-width: 100%;
+    border: 1px solid var(--c-studio-border-strong);
+    border-radius: var(--c-studio-radius-md);
+    overflow: hidden;
+    background: var(--c-studio-surface);
+}
+
+.bg-stretch {
+    display: flex;
+    width: 100%;
+}
+
+.bg-btn {
+    border: 0;
+    background: var(--c-studio-surface);
+    font: inherit;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
+    color: var(--c-studio-text-weak);
+    padding: var(--c-studio-space-2) var(--c-studio-space-4);
+    cursor: pointer;
+}
+
+.bg-stretch .bg-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: var(--c-studio-space-3);
+    text-align: center;
+}
+
+.bg-btn + .bg-btn {
+    border-left: 1px solid var(--c-studio-border-strong);
+}
+
+.bg-btn:hover:not(.on):not(:disabled) {
+    background: var(--c-studio-hover);
+    color: var(--c-studio-text);
+}
+
+.bg-btn.on {
+    background: var(--c-studio-accent);
+    color: var(--c-studio-on-accent);
+}
+
+.bg-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* The group clips its corners, so the focus ring draws inside the button. */
+.bg-btn:focus-visible {
+    outline-offset: -3px;
+}
+
+.bg-btn.on:focus-visible {
+    outline-color: var(--c-studio-on-accent);
+}

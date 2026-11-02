@@ -31,43 +31,6 @@
     color: var(--c-studio-text-weak);
 }
 
-.am-segs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0;
-}
-
-.am-seg {
-    padding: 0.375rem 0.875rem;
-    border: 1px solid var(--c-studio-border);
-    background: var(--c-studio-surface);
-    font-size: 0.8125rem;
-    cursor: pointer;
-}
-
-.am-seg:first-child {
-    border-radius: 0.25rem 0 0 0.25rem;
-}
-
-.am-seg + .am-seg {
-    border-left: 0;
-}
-
-.am-seg:last-child {
-    border-radius: 0 0.25rem 0.25rem 0;
-}
-
-.am-seg.on {
-    background: var(--c-studio-accent, #0b5cab);
-    border-color: var(--c-studio-accent, #0b5cab);
-    color: #fff;
-}
-
-.am-seg:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 .am-grid {
     display: flex;
     flex-direction: column;

@@ -56,6 +56,20 @@ async function mount(props = {}) {
     return el;
 }
 
+// The device, phone and zoom rows are c-final-button-group (DESIGN_SYSTEM 5.7).
+const group = (el, name) =>
+    el.shadowRoot.querySelector(`c-final-button-group[data-group="${name}"]`);
+function groupButtons(el, name) {
+    const host = group(el, name);
+    if (!host) {
+        return [];
+    }
+    return [...host.shadowRoot.querySelectorAll('button')];
+}
+const groupButton = (el, name, value) =>
+    groupButtons(el, name).find((b) => b.dataset.value === String(value)) ||
+    null;
+
 describe('c-final-preview-stage', () => {
     it('restores a handed-off session and Restart clears it without changing device', async () => {
         const spec = {
@@ -79,8 +93,8 @@ describe('c-final-preview-stage', () => {
             ]
         };
         const el = await mount({ spec, preserveSession: true });
-        el.shadowRoot.querySelector('[data-device="mobile"]').click();
-        el.shadowRoot.querySelector('[data-zoom="actual"]').click();
+        groupButton(el, 'devices', 'mobile').click();
+        groupButton(el, 'zooms', 'actual').click();
         el.shadowRoot
             .querySelector('c-final-form-viewer')
             .shadowRoot.querySelector('x-test')
@@ -115,7 +129,7 @@ describe('c-final-preview-stage', () => {
 
     it('defaults to Desktop: 1280px canvas + synthetic device viewport offset', async () => {
         const el = await mount();
-        const buttons = el.shadowRoot.querySelectorAll('.ps-device');
+        const buttons = groupButtons(el, 'devices');
         expect(buttons).toHaveLength(3);
         expect(buttons[0].classList.contains('on')).toBe(true);
         expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
@@ -127,9 +141,7 @@ describe('c-final-preview-stage', () => {
         expect(style).toContain('calc(100dvh - 800px)');
         expect(el.getSession().zoom).toBe('fit');
         expect(
-            el.shadowRoot
-                .querySelector('[data-zoom="fit"]')
-                .getAttribute('aria-pressed')
+            groupButton(el, 'zooms', 'fit').getAttribute('aria-pressed')
         ).toBe('true');
     });
 
@@ -197,16 +209,14 @@ describe('c-final-preview-stage', () => {
                 '73%'
             );
 
-            el.shadowRoot.querySelector('[data-zoom="actual"]').click();
+            groupButton(el, 'zooms', 'actual').click();
             await resize();
             expect(canvas.style.width).toBe('1280px');
             expect(canvas.style.transform).toContain('scale(1)');
             expect(surface.style.width).toBe('1280px');
             expect(surface.style.height).toBe('800px');
             expect(
-                el.shadowRoot
-                    .querySelector('[data-zoom="actual"]')
-                    .getAttribute('aria-pressed')
+                groupButton(el, 'zooms', 'actual').getAttribute('aria-pressed')
             ).toBe('true');
             expect(el.shadowRoot.querySelector('c-final-form-viewer')).toBe(
                 viewer
@@ -219,7 +229,7 @@ describe('c-final-preview-stage', () => {
             await resize();
             expect(canvas.style.transform).toContain('scale(1)');
             viewport.scrollLeft = 300;
-            el.shadowRoot.querySelector('[data-zoom="fit"]').click();
+            groupButton(el, 'zooms', 'fit').click();
             await resize();
             expect(canvas.style.transform).toContain('scale(0.5)');
             expect(surface.style.width).toBe('640px');
@@ -240,12 +250,12 @@ describe('c-final-preview-stage', () => {
             const canvas = el.shadowRoot.querySelector('.ps-canvas');
             Object.defineProperty(viewport, 'clientWidth', { value: 940 });
             Object.defineProperty(canvas, 'offsetHeight', { value: 844 });
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await resize();
             expect(canvas.style.width).toBe('390px');
             expect(canvas.style.transform).toBe('translateX(275px) scale(1)');
-            el.shadowRoot.querySelector('[data-zoom="actual"]').click();
-            el.shadowRoot.querySelector('[data-device="desktop"]').click();
+            groupButton(el, 'zooms', 'actual').click();
+            groupButton(el, 'devices', 'desktop').click();
             await resize();
             expect(el.getSession().zoom).toBe('actual');
             expect(canvas.style.transform).toBe('translateX(0px) scale(1)');
@@ -254,7 +264,7 @@ describe('c-final-preview-stage', () => {
 
     it('device toggle re-lays-out the canvas at the device width', async () => {
         const el = await mount();
-        el.shadowRoot.querySelector('[data-device="mobile"]').click();
+        groupButton(el, 'devices', 'mobile').click();
         await flush();
         const style = el.shadowRoot
             .querySelector('.ps-canvas')
@@ -262,9 +272,7 @@ describe('c-final-preview-stage', () => {
         expect(style).toContain('width:390px');
         expect(style).toContain('calc(100dvh - 844px)');
         expect(
-            el.shadowRoot
-                .querySelector('[data-device="mobile"]')
-                .classList.contains('on')
+            groupButton(el, 'devices', 'mobile').classList.contains('on')
         ).toBe(true);
     });
 
@@ -329,9 +337,9 @@ describe('c-final-preview-stage', () => {
         it('asks the host to expand and never flips its own state', async () => {
             const el = await mount({ expandable: true });
             const button = el.shadowRoot.querySelector('.ps-expand');
-            expect(button.tagName).toBe('BUTTON');
-            expect(button.getAttribute('type')).toBe('button');
-            expect(button.textContent.trim()).toBe('Expand preview');
+            // a Salesforce lightning-button (IMPL_PLAN_STUDIO_COMPONENT_SWAP)
+            expect(button.tagName).toBe('LIGHTNING-BUTTON');
+            expect(button.label).toBe('Expand preview');
             expect(button.getAttribute('aria-expanded')).toBe('false');
             const seen = [];
             el.addEventListener('previewexpand', (e) => seen.push(e.detail));
@@ -340,14 +348,14 @@ describe('c-final-preview-stage', () => {
             await flush();
             expect(seen).toEqual([{ expanded: true }]);
             // the host owns the layout — nothing changes until it says so
-            expect(button.textContent.trim()).toBe('Expand preview');
+            expect(button.label).toBe('Expand preview');
             expect(el.expanded).toBe(false);
 
             el.expanded = true;
             await flush();
             // the SAME element updates in place, so keyboard focus survives
             expect(el.shadowRoot.querySelector('.ps-expand')).toBe(button);
-            expect(button.textContent.trim()).toBe('Collapse preview');
+            expect(button.label).toBe('Collapse preview');
             expect(button.getAttribute('aria-expanded')).toBe('true');
             button.click();
             expect(seen).toEqual([{ expanded: true }, { expanded: false }]);
@@ -359,8 +367,8 @@ describe('c-final-preview-stage', () => {
                 expandable: true,
                 preserveSession: true
             });
-            el.shadowRoot.querySelector('[data-device="tablet"]').click();
-            el.shadowRoot.querySelector('[data-zoom="actual"]').click();
+            groupButton(el, 'devices', 'tablet').click();
+            groupButton(el, 'zooms', 'actual').click();
             const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
             viewer.shadowRoot.querySelector('x-test').dispatchEvent(
                 new CustomEvent('valuechange', {
@@ -396,7 +404,7 @@ describe('c-final-preview-stage', () => {
 
         it('the canvas is the SCREEN wide and the host margin is padding inside it, so the viewer gets screen minus both margins', async () => {
             const el = await mount();
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
             const style = styleOf(el);
             expect(style).toContain('width:390px');
@@ -409,12 +417,10 @@ describe('c-final-preview-stage', () => {
 
         it('the phone width control shows only on Mobile, defaults to 390 and resizes the screen', async () => {
             const el = await mount();
-            expect(el.shadowRoot.querySelector('.ps-phones')).toBeNull();
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            expect(group(el, 'phones')).toBeNull();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
-            const buttons = [
-                ...el.shadowRoot.querySelectorAll('.ps-phones [data-phone]')
-            ];
+            const buttons = groupButtons(el, 'phones');
             expect(buttons.map((b) => b.textContent.trim())).toEqual([
                 '320',
                 '360',
@@ -433,14 +439,12 @@ describe('c-final-preview-stage', () => {
             expect(style).toContain('padding-inline:15px');
             expect(style).toContain('calc(100dvh - 568px)');
             expect(
-                el.shadowRoot
-                    .querySelector('[data-phone="320"]')
-                    .getAttribute('aria-pressed')
+                groupButton(el, 'phones', '320').getAttribute('aria-pressed')
             ).toBe('true');
 
-            el.shadowRoot.querySelector('[data-device="tablet"]').click();
+            groupButton(el, 'devices', 'tablet').click();
             await flush();
-            expect(el.shadowRoot.querySelector('.ps-phones')).toBeNull();
+            expect(group(el, 'phones')).toBeNull();
             expect(styleOf(el)).toContain('width:768px');
         });
 
@@ -460,7 +464,7 @@ describe('c-final-preview-stage', () => {
                 ['none', 'None (edge to edge)']
             ]);
             // Lightning leaves more room on a phone than on a desktop
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
             expect(options()[1]).toEqual([
                 'lightning',
@@ -471,7 +475,7 @@ describe('c-final-preview-stage', () => {
         it('changing the host changes the margin around the same form and nothing else', async () => {
             const el = await mount();
             const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
             await pick(el, 'lightning');
             expect(styleOf(el)).toContain('padding-inline:28px');
@@ -488,11 +492,11 @@ describe('c-final-preview-stage', () => {
 
         it('the toolbar controls have names a screen reader can read', async () => {
             const el = await mount();
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
             expect(
-                el.shadowRoot
-                    .querySelector('.ps-phones')
+                group(el, 'phones')
+                    .shadowRoot.querySelector('[role="group"]')
                     .getAttribute('aria-label')
             ).toBe('Phone width');
             const label = hostSelect(el).closest('label');
@@ -521,9 +525,9 @@ describe('c-final-preview-stage', () => {
 
         it('hands the phone and host back in the session and restores them, falling back per key for anything unknown', async () => {
             const el = await mount();
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
-            el.shadowRoot.querySelector('[data-phone="360"]').click();
+            groupButton(el, 'phones', '360').click();
             await pick(el, 'lightning');
             const session = el.getSession();
             expect(session).toMatchObject({
@@ -556,9 +560,9 @@ describe('c-final-preview-stage', () => {
 
         it('Restart keeps the phone width and the host', async () => {
             const el = await mount();
-            el.shadowRoot.querySelector('[data-device="mobile"]').click();
+            groupButton(el, 'devices', 'mobile').click();
             await flush();
-            el.shadowRoot.querySelector('[data-phone="320"]').click();
+            groupButton(el, 'phones', '320').click();
             await pick(el, 'lightning');
             el.shadowRoot.querySelector('.ps-refresh').click();
             await flush();
@@ -610,9 +614,9 @@ describe('c-final-preview-stage', () => {
                     configurable: true,
                     value: 568
                 });
-                el.shadowRoot.querySelector('[data-device="mobile"]').click();
+                groupButton(el, 'devices', 'mobile').click();
                 await flush();
-                el.shadowRoot.querySelector('[data-phone="320"]').click();
+                groupButton(el, 'phones', '320').click();
                 observers.forEach((callback) => callback());
                 frames.splice(0).forEach((callback) => callback());
                 await flush();

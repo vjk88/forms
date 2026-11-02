@@ -14,9 +14,12 @@
                 It may have been deleted, or you may not have access. Pick a
                 form from the library to keep working.
             </p>
-            <button type="button" class="st-primary" onclick={handleExit}>
-                Go to Forms
-            </button>
+            <lightning-button
+                variant="brand"
+                label="Go to Forms"
+                data-id="go-to-forms"
+                onclick={handleExit}
+            ></lightning-button>
         </div>
     </template>
     <template lwc:elseif={archived}>
@@ -31,17 +34,19 @@
                 <p class="st-archive-error" role="alert">{restoreError}</p>
             </template>
             <div class="st-archive-actions">
-                <button type="button" class="st-exit" onclick={handleExit}>
-                    Go to Forms
-                </button>
-                <button
-                    type="button"
-                    class="st-primary"
+                <lightning-button
+                    variant="base"
+                    label="Go to Forms"
+                    data-id="archived-exit"
+                    onclick={handleExit}
+                ></lightning-button>
+                <lightning-button
+                    variant="brand"
+                    label="Restore form"
+                    data-id="restore-form"
                     disabled={restoreBusy}
                     onclick={handleRestoreArchived}
-                >
-                    Restore form
-                </button>
+                ></lightning-button>
             </div>
             <template lwc:if={restoreBusy}>
                 <p role="status">Restoring as a private draft…</p>
@@ -269,13 +274,13 @@
                         <div class="st-notice">
                             <h3 class="st-notice-title">{readOnlyTitle}</h3>
                             <p class="st-notice-text">{readOnlyText}</p>
-                            <button
-                                type="button"
-                                class="st-primary st-notice-btn"
+                            <lightning-button
+                                variant="brand"
+                                class="st-notice-btn"
+                                label={backToEditableLabel}
+                                data-id="back-to-editable"
                                 onclick={handleBackToEditable}
-                            >
-                                {backToEditableLabel}
-                            </button>
+                            ></lightning-button>
                         </div>
                     </aside>
                     <main class="st-stagearea">
@@ -340,13 +345,12 @@
                         >
                             <template lwc:if={showProperties}>
                                 <div class="st-props">
-                                    <button
-                                        type="button"
-                                        class="st-back"
+                                    <lightning-button
+                                        variant="base"
+                                        label="‹ Fields"
+                                        data-id="back-to-fields"
                                         onclick={handleBackToPalette}
-                                    >
-                                        ‹ Fields
-                                    </button>
+                                    ></lightning-button>
                                     <c-final-property-panel
                                         node={selectedNode}
                                         kind={selectedKind}
@@ -527,13 +531,12 @@
                             onmanageinvitations={handleManageInvitations}
                         ></c-final-studio-settings-panel>
                         <template lwc:if={saveFailed}>
-                            <button
-                                type="button"
-                                class="st-retry"
+                            <lightning-button
+                                variant="destructive-text"
+                                label="Retry save"
+                                data-id="drawer-retry-save"
                                 onclick={handleRetrySave}
-                            >
-                                Retry save
-                            </button>
+                            ></lightning-button>
                         </template>
                     </div>
                     <span

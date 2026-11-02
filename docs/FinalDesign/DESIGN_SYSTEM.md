@@ -78,8 +78,8 @@ every screen.
 |---|---|---|
 | **Underlined tab** | Where you are | Use when choosing it **replaces what's below** with a different set of controls or content: new screens only; no built control uses it today. |
 | **Picture tiles** | Pick a look | Use when the options **differ in how something looks** (appearance, button position, layout, progress style, tab style, density). A small drawing of each option plus a short name; a tick on the chosen one. Today's Appearance picker is the reference. |
-| **Segmented control** | Pick a value | Use when choosing it **changes a value** and the content stays the same kind: preview device, Simple / Advanced design. 2–4 short options; more → a select. |
-| **Solid teal button** | Do the main thing | At most **one per area** (top bar, dialog footer, page header). Everything else is secondary or quiet. |
+| **Segmented control** (joined buttons, chosen one solid teal) | Pick a value | Use when choosing it **changes a value** and the content stays the same kind: preview device, Simple / Advanced design. 2–4 short options; more → a select. |
+| **Solid teal button** (alone) | Do the main thing | At most **one per area** (top bar, dialog footer, page header). Everything else is secondary or quiet. |
 | **Teal edge inside the item** | Selected | Rows get a 3px leading bar plus an accent-surface fill; cards get a 1px inset teal ring plus a check badge. Never shown by bold text alone. |
 | **Ring outside the item** | Keyboard focus | 2px `focus` outline, 2px outside (−2px inside a scrolling bar such as tabs). Shows on top of selection; the two never replace each other. |
 | **Strong grey edge** (`border-strong`) | You can type or choose here | Every input, select, textarea and secondary button. 3:1 against white. |
@@ -224,7 +224,7 @@ markup **and** behavior repeat. New components stay in the `final*` family.
 | 5.4 | **Settings row** | Label above control, 4px; help or error below, 4px; rows 16px apart. A binary setting is a **toggle row**: label left, switch right. | Inspector, Design, settings drawer, theme creator |
 | 5.5 | **Group** | Title (13 strong) + hairline to the right edge + optional quiet action at the end. 12px to the first row, 24px between groups. **No numbers, no boxes.** | Inspector, Design, drawers |
 | 5.6 | **Tabs** | Underline 2px accent on the selected tab, `accent-text`; others weak; all strong weight. `role=tablist`, one tab stop, arrow keys move. | New screens |
-| 5.7 | **Segmented (button group)** | **Always `finalButtonGroup`** (owner 2026-11-01): never hand-made, never `lightning-radio-group` buttons. Workspace-grey track, 2px inset; selected option = white + `border-strong` + `accent-text`. `aria-pressed`, 2–4 options, fits on one line. | Preview device, phone width, zoom, Simple / Advanced design |
+| 5.7 | **Segmented (button group)** | **Always `finalButtonGroup`** (owner 2026-11-01): never hand-made, never `lightning-radio-group` buttons. **Joined buttons in one box, the chosen one filled solid teal** with white text (owner 2026-11-02: the look of the Build/Design switch and the preview toolbar). `stretch` fills the row (inspector rows). Fires `change` with `detail.value`; Tab moves between buttons. `aria-pressed`, 2–4 options, fits on one line. | Preview device, phone width, zoom, Simple / Advanced design |
 | 5.8 | **Toggle** | 32×18 switch, accent when on. Label is the setting's name; no "On/Off" text unless the label is ambiguous. | Settings |
 | 5.9 | **Rail** | `finalStudioRail` only. 72px wide, 20px icon over a 12px label, never smaller. Selected: accent surface + 3px leading bar, `aria-current`. | Build, Design |
 | 5.10 | **Selectable row** | 32px row, icon + label, radius-md. Selected = accent surface + 3px leading bar + accent icon. | Palette, structure, mapping records, menus |
@@ -337,6 +337,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-02 v2.6.** Owner: button groups are joined with the chosen one solid teal (5.7). A lone solid teal button is the main action; teal inside a joined group is the chosen value.
 - **2026-11-01 v2.5.** Owner: swap hand-built controls to Salesforce components first, then restyle
   ([IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./IMPL_PLAN_STUDIO_COMPONENT_SWAP.md)). Rule 12: Salesforce components
   first; every button group uses `finalButtonGroup`.

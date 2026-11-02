@@ -1,0 +1,121 @@
+<template>
+    <div class="pc" role="radiogroup" aria-label={label} onkeydown={handleKey}>
+        <template for:each={wideTiles} for:item="t">
+            <button
+                key={t.key}
+                type="button"
+                role="radio"
+                class={t.cls}
+                aria-checked={t.checked}
+                tabindex={t.tabindex}
+                data-index={t.index}
+                data-value={t.dataValue}
+                onclick={handleClick}
+            >
+                <span class="pc-art" aria-hidden="true">
+                    <template lwc:if={t.isSelect}>
+                        <span class="pc-art-select">
+                            <span class="pc-art-bar"></span>
+                            <span class="pc-art-chev"></span>
+                        </span>
+                    </template>
+                </span>
+                <span class="pc-text">
+                    <span class="pc-title">{t.label}</span>
+                    <span class="pc-desc">{t.desc}</span>
+                </span>
+                <span class="pc-tick" aria-hidden="true"
+                    ><svg viewBox="0 0 16 16" focusable="false">
+                        <path d="M3.5 8.5l3 3 6-7"></path></svg
+                ></span>
+            </button>
+        </template>
+        <template lwc:if={hasGrid}>
+            <div class="pc-grid">
+                <template for:each={gridTiles} for:item="t">
+                    <button
+                        key={t.key}
+                        type="button"
+                        role="radio"
+                        class={t.cls}
+                        aria-checked={t.checked}
+                        tabindex={t.tabindex}
+                        data-index={t.index}
+                        data-value={t.dataValue}
+                        onclick={handleClick}
+                    >
+                        <span class="pc-tick" aria-hidden="true"
+                            ><svg viewBox="0 0 16 16" focusable="false">
+                                <path d="M3.5 8.5l3 3 6-7"></path></svg
+                        ></span>
+                        <span class="pc-art" aria-hidden="true">
+                            <template lwc:if={t.isSelect}>
+                                <span class="pc-art-select">
+                                    <span class="pc-art-bar"></span>
+                                    <span class="pc-art-chev"></span>
+                                </span>
+                            </template>
+                            <template lwc:if={t.isRadio}>
+                                <span class="pc-art-list">
+                                    <span class="pc-art-item"
+                                        ><span class="pc-art-dot"></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                    <span class="pc-art-item"
+                                        ><span class="pc-art-dot"></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                    <span class="pc-art-item"
+                                        ><span class="pc-art-dot"></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                </span>
+                            </template>
+                            <template lwc:if={t.isCheckbox}>
+                                <span class="pc-art-list">
+                                    <span class="pc-art-item"
+                                        ><span
+                                            class="pc-art-dot pc-art-square"
+                                        ></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                    <span class="pc-art-item"
+                                        ><span
+                                            class="pc-art-dot pc-art-square"
+                                        ></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                    <span class="pc-art-item"
+                                        ><span
+                                            class="pc-art-dot pc-art-square"
+                                        ></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                </span>
+                            </template>
+                            <template lwc:if={t.isChips}>
+                                <span class="pc-art-chips">
+                                    <span class="pc-art-chip"></span>
+                                    <span class="pc-art-chip"></span>
+                                </span>
+                            </template>
+                            <template lwc:if={t.isCards}>
+                                <span class="pc-art-cards">
+                                    <span class="pc-art-card"
+                                        ><span class="pc-art-thumb"></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                    <span class="pc-art-card"
+                                        ><span class="pc-art-thumb"></span
+                                        ><span class="pc-art-line"></span
+                                    ></span>
+                                </span>
+                            </template>
+                        </span>
+                        <span class="pc-name">{t.label}</span>
+                    </button>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

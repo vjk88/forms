@@ -104,6 +104,13 @@ function mount(props = {}) {
 
 const $ = (el, sel) => el.shadowRoot.querySelector(sel);
 const $$ = (el, sel) => [...el.shadowRoot.querySelectorAll(sel)];
+// "Fill from" is a c-final-button-group (DESIGN_SYSTEM 5.7)
+const sourceButtons = (el) => [
+    ...$(
+        el,
+        'c-final-button-group[data-group="source"]'
+    ).shadowRoot.querySelectorAll('button')
+];
 
 beforeEach(() => {
     resetFieldCache();
@@ -147,7 +154,7 @@ describe('c-final-autofill-rule-editor', () => {
     it('a form that already has a link rule starts a new rule on a lookup', async () => {
         const { el } = mount({ hasOtherLinkRule: true });
         await flush();
-        const [link] = $$(el, '.am-seg');
+        const [link] = sourceButtons(el);
         expect(link.disabled).toBe(true);
         expect(el.rule.source.type).toBe('lookup');
         expect($(el, '.am-lookup').value).toBe('el_pick');
@@ -319,7 +326,7 @@ describe('c-final-autofill-rule-editor', () => {
         const off = { ...linkRule([]), enabled: false };
         const { el } = mount({ rule: off, hasOtherLinkRule: true });
         await flush();
-        const [link] = $$(el, '.am-seg');
+        const [link] = sourceButtons(el);
         expect(link.disabled).toBe(false);
         expect(
             el.reportProblems().some((p) => /other link rule/.test(p.message))
@@ -359,7 +366,7 @@ describe('c-final-autofill-rule-editor', () => {
             ])
         });
         await flush();
-        const [, , user] = $$(el, '.am-seg');
+        const [, , user] = sourceButtons(el);
         user.click();
         await flush();
         const last = got[got.length - 1];

@@ -10,117 +10,115 @@
             <template for:each={rows} for:item="r">
                 <li key={r.key} class="ve-entry">
                     <div class="ve-entry-head">
-                        <select
-                            class="ve-select ve-type"
-                            aria-label="Check type"
+                        <lightning-combobox
+                            class="ve-type"
+                            variant="label-hidden"
+                            label="Check type"
                             data-index={r.index}
+                            options={r.presetOptions}
+                            value={r.presetValue}
                             onchange={handlePreset}
-                        >
-                            <template for:each={r.presetOptions} for:item="o">
-                                <option
-                                    key={o.value}
-                                    value={o.value}
-                                    selected={o.selected}
-                                >
-                                    {o.label}
-                                </option>
-                            </template>
-                        </select>
-                        <button
-                            type="button"
+                        ></lightning-combobox>
+                        <lightning-button-icon
                             class="ve-x"
+                            variant="bare"
+                            icon-name="utility:close"
+                            alternative-text="Remove this check"
                             title="Remove this check"
                             data-index={r.index}
                             onclick={handleRemove}
-                        >
-                            ×
-                        </button>
+                        ></lightning-button-icon>
                     </div>
 
                     <template lwc:if={r.isRange}>
                         <div class="ve-minmax">
-                            <input
+                            <lightning-input
                                 type="number"
+                                step="any"
                                 class="ve-input"
+                                variant="label-hidden"
+                                label="Minimum"
                                 placeholder="Min"
-                                aria-label="Minimum"
                                 data-index={r.index}
                                 data-param="min"
                                 value={r.min}
-                                onchange={handleParam}
-                            />
-                            <input
+                                oncommit={handleParam}
+                            ></lightning-input>
+                            <lightning-input
                                 type="number"
+                                step="any"
                                 class="ve-input"
+                                variant="label-hidden"
+                                label="Maximum"
                                 placeholder="Max"
-                                aria-label="Maximum"
                                 data-index={r.index}
                                 data-param="max"
                                 value={r.max}
-                                onchange={handleParam}
-                            />
+                                oncommit={handleParam}
+                            ></lightning-input>
                         </div>
                     </template>
                     <template lwc:elseif={r.isLength}>
                         <div class="ve-minmax">
-                            <input
+                            <lightning-input
                                 type="number"
+                                step="any"
                                 class="ve-input"
+                                variant="label-hidden"
+                                label="Minimum characters"
                                 placeholder="Min characters"
-                                aria-label="Minimum characters"
                                 data-index={r.index}
                                 data-param="minLen"
                                 value={r.minLen}
-                                onchange={handleParam}
-                            />
-                            <input
+                                oncommit={handleParam}
+                            ></lightning-input>
+                            <lightning-input
                                 type="number"
+                                step="any"
                                 class="ve-input"
+                                variant="label-hidden"
+                                label="Maximum characters"
                                 placeholder="Max characters"
-                                aria-label="Maximum characters"
                                 data-index={r.index}
                                 data-param="maxLen"
                                 value={r.maxLen}
-                                onchange={handleParam}
-                            />
+                                oncommit={handleParam}
+                            ></lightning-input>
                         </div>
                     </template>
                     <template lwc:elseif={r.isMatch}>
-                        <select
+                        <lightning-combobox
                             class="ve-select"
-                            aria-label="Answer to match"
+                            variant="label-hidden"
+                            label="Answer to match"
+                            placeholder="Pick the answer to match…"
                             data-index={r.index}
                             data-param="compareTo"
+                            options={r.sourceOptions}
+                            value={r.compareTo}
                             onchange={handleParam}
-                        >
-                            <option value="">Pick the answer to match…</option>
-                            <template for:each={r.sourceOptions} for:item="o">
-                                <option
-                                    key={o.value}
-                                    value={o.value}
-                                    selected={o.selected}
-                                >
-                                    {o.label}
-                                </option>
-                            </template>
-                        </select>
+                        ></lightning-combobox>
                     </template>
 
-                    <input
-                        type="text"
+                    <lightning-input
                         class="ve-input"
+                        variant="label-hidden"
+                        label="Error message"
                         placeholder="Error message the visitor sees"
-                        aria-label="Error message"
                         data-index={r.index}
                         data-param="message"
                         value={r.message}
-                        onchange={handleParam}
-                    />
+                        oncommit={handleParam}
+                    ></lightning-input>
                 </li>
             </template>
         </ul>
-        <button type="button" class="ve-add" onclick={handleAdd}>
-            + Add check
-        </button>
+        <lightning-button
+            class="ve-add"
+            variant="base"
+            icon-name="utility:add"
+            label="Add check"
+            onclick={handleAdd}
+        ></lightning-button>
     </div>
 </template>

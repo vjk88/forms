@@ -27,6 +27,8 @@
 | Color pickers (6) and their hex boxes (2) | **Keep** (step 0: Salesforce's picker sends nothing while dragging, so live recolor would be lost) |
 | Rule date & time (1) | **Keep** (step 0: Salesforce's box showed a saved 9:30 as 7:30 AM and saves a different format) |
 | SOQL box (1) | **Keep** (monospace code font) |
+| Button group look (2026-11-02) | **Joined, solid teal**: the look of the Build/Design switch and the preview toolbar |
+| Choice option boxes (4), Page margin dropdown (1), invitation link box (1) (2026-11-02) | **Keep**: each would lose a screen-reader link or a fallback |
 | Font picker dropdowns (3: Font pairing, Heading font, Body font) | **Keep** (native `<select>` with `<optgroup>` headings; `lightning-combobox` has no option groups) |
 
 ## Rules for the swap PRs
@@ -99,6 +101,12 @@ Jest uses stand-ins for Lightning components, so it can't prove how the real one
 - If color or the slider can't update live, or date-time values shift, **stop and ask the owner** before swapping those controls (the fallback is Keep).
 - Then delete `finalSwapProbe` from the org.
 
+## Progress
+
+- **Build swap: built 2026-11-02 on `feat/swap-build`** (PR open, deployed to `revclouddev`, checked on both hosts).
+  - It adds `finalButtonGroup` and `finalPictureChoice`.
+  - It also keeps the topic box native: its suggestions are a `<datalist>`.
+
 ## Order of work (one swap PR per screen, then its restyle PR)
 
 | Screen | Components |
@@ -114,9 +122,9 @@ Jest uses stand-ins for Lightning components, so it can't prove how the real one
 
 | | Controls |
 |---|---|
-| **Swap to a Salesforce component** | **144** |
+| **Swap to a Salesforce component** | **137** |
 | **Move to our shared component** (button group, picture tiles) | **35** |
-| **Keep as is** (restyle only, reason given) | **84** |
+| **Keep as is** (restyle only, reason given) | **91** |
 | Total hand-built controls today | 263 |
 
 
@@ -374,18 +382,18 @@ Line numbers are in each component's `.html` as of 2026-11-01. "Keep" never mean
 |---|---|---|---|
 | 22 | textarea | Keep | SOQL code box stays monospace (owner) |
 
-### `finalPreviewStage` (3 salesforce, 3 our shared component)
+### `finalPreviewStage` (2 salesforce, 3 our shared component, 1 keep)
 
 | Line | Today | Becomes | Notes |
 |---|---|---|---|
 | 6 | button "{d.label}" | Ours (shared) | `finalButtonGroup` (our segmented group; owner: every button group uses it) |
 | 21 | button "{p.label}" | Ours (shared) | `finalButtonGroup` (our segmented group; owner: every button group uses it) |
-| 38 | select | Salesforce | `lightning-combobox` (options become a list in JS; opens a popup instead of the browser list) |
+| 38 | select | Keep | Page margin: its spoken description ("Preview only, nothing on your form changes") can't cross `lightning-combobox`'s shadow root (owner: keep, 2026-11-02). Restyle only |
 | 55 | button "{z.label}" | Ours (shared) | `finalButtonGroup` (our segmented group; owner: every button group uses it) |
 | 71 | button "⟳" | Salesforce | `lightning-button-icon` (utility:refresh) |
 | 81 | button "{expandLabel}" | Salesforce | `lightning-button` (keeps `aria-expanded`) |
 
-### `finalPropertyPanel` (36 salesforce, 17 our shared component, 5 keep)
+### `finalPropertyPanel` (31 salesforce, 17 our shared component, 10 keep)
 
 | Line | Today | Becomes | Notes |
 |---|---|---|---|
@@ -411,16 +419,16 @@ Line numbers are in each component's `.html` as of 2026-11-01. "Keep" never mean
 | 374 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
 | 382 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
 | 402 | button "×" | Salesforce | `lightning-button-icon` (utility:close) |
-| 415 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
+| 415 | input (text) | Keep | Topic box: its "type to pick" suggestions are a native `<datalist>`, which `lightning-input` can't use. Restyle only |
 | 460 | button "{defaultTile.title} / {defaultTile.desc}" | Ours (shared) | `finalPictureChoice` (Appearance tiles, extracted unchanged) |
 | 499 | button "{t.label}" | Ours (shared) | `finalPictureChoice` (Appearance tiles, extracted unchanged) |
 | 655 | select | Salesforce | `lightning-combobox` (options become a list in JS; opens a popup instead of the browser list) |
 | 758 | icon button (.pp-grip) | Keep | Drag and drop source (owner: don't touch) |
-| 806 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
-| 818 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
-| 831 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
+| 806 | input (text) | Keep | Choice option row box: its problem line is linked by `aria-describedby` and it turns red; `lightning-input` would cut the link and add its own message (owner: keep, 2026-11-02). Restyle only |
+| 818 | input (text) | Keep | Choice option row box: its problem line is linked by `aria-describedby` and it turns red; `lightning-input` would cut the link and add its own message (owner: keep, 2026-11-02). Restyle only |
+| 831 | input (text) | Keep | Choice option row box: its problem line is linked by `aria-describedby` and it turns red; `lightning-input` would cut the link and add its own message (owner: keep, 2026-11-02). Restyle only |
 | 845 | button "×" | Salesforce | `lightning-button-icon` (utility:close) |
-| 865 | input (text) | Salesforce | `lightning-input` with `oncommit` (saves on blur/Enter, as today) |
+| 865 | input (text) | Keep | Choice option row box: its problem line is linked by `aria-describedby` and it turns red; `lightning-input` would cut the link and add its own message (owner: keep, 2026-11-02). Restyle only |
 | 877 | button "+ Add option" | Salesforce | `lightning-button variant="base"` |
 | 916 | input (number) | Salesforce | `lightning-input type="number"` with `oncommit` (saves on blur/Enter, as today) |
 | 925 | input (number) | Salesforce | `lightning-input type="number"` with `oncommit` (saves on blur/Enter, as today) |
@@ -448,11 +456,11 @@ Line numbers are in each component's `.html` as of 2026-11-01. "Keep" never mean
 | 1549 | button "{o.label}" | Ours (shared) | `finalButtonGroup` (our segmented group; owner: every button group uses it) |
 | 1571 | button "{o.label}" | Ours (shared) | `finalButtonGroup` (our segmented group; owner: every button group uses it) |
 
-### `finalRecordLinkPanel` (1 salesforce)
+### `finalRecordLinkPanel` (1 keep)
 
 | Line | Today | Becomes | Notes |
 |---|---|---|---|
-| 81 | input (text) | Salesforce | `lightning-input` read-only |
+| 81 | input (text) | Keep | Invitation link box: when copying is blocked it selects its text; `lightning-input` can't (owner: keep, 2026-11-02). Restyle only |
 
 ### `finalRelationshipPicker` (1 salesforce, 1 keep)
 

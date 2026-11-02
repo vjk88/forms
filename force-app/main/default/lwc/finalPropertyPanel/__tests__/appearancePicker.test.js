@@ -75,11 +75,28 @@ const textField = (config) => ({
 const flush = () => Promise.resolve();
 const $ = (el, sel) => el.shadowRoot.querySelector(sel);
 const $$ = (el, sel) => [...el.shadowRoot.querySelectorAll(sel)];
-const tile = (el, look) => $(el, `.pp-look[data-look="${look}"]`);
+// The tiles live inside c-final-picture-choice (DESIGN_SYSTEM 5.24).
+const looks = (el) => $(el, 'c-final-picture-choice');
+function lookGroup(el) {
+    const host = looks(el);
+    if (!host) {
+        return null;
+    }
+    return host.shadowRoot.querySelector('.pc');
+}
+function tiles(el) {
+    const host = looks(el);
+    if (!host) {
+        return [];
+    }
+    return [...host.shadowRoot.querySelectorAll('.pc-tile')];
+}
+const tile = (el, look) =>
+    tiles(el).find((t) => t.dataset.value === look) || null;
 const picked = (el) =>
-    $$(el, '.pp-look')
+    tiles(el)
         .filter((t) => t.getAttribute('aria-checked') === 'true')
-        .map((t) => t.dataset.look);
+        .map((t) => t.dataset.value);
 const listen = (el, name) => {
     const events = [];
     el.addEventListener(name, (e) => events.push(e.detail.patch));
@@ -132,8 +149,8 @@ describe('Appearance picker', () => {
     it('tiles are one radio group with a roving tab stop', async () => {
         const el = mount(bound({ renderAs: 'Dropdown' }));
         await flush();
-        expect($(el, '.pp-looks').getAttribute('role')).toBe('radiogroup');
-        const stops = $$(el, '.pp-look').map((t) => t.getAttribute('tabindex'));
+        expect(lookGroup(el).getAttribute('role')).toBe('radiogroup');
+        const stops = tiles(el).map((t) => t.getAttribute('tabindex'));
         expect(stops).toEqual(['-1', '0', '-1', '-1', '-1']);
     });
 
@@ -141,10 +158,10 @@ describe('Appearance picker', () => {
         const el = mount(bound({ renderAs: 'Dropdown' }));
         await flush();
         const events = listen(el, 'configchange');
-        $(el, '.pp-looks').dispatchEvent(
+        lookGroup(el).dispatchEvent(
             new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
         );
-        $(el, '.pp-looks').dispatchEvent(
+        lookGroup(el).dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Home', bubbles: true })
         );
         expect(events[0]).toEqual({
@@ -323,7 +340,7 @@ describe('Appearance picker', () => {
             config: { inputType: 'number' }
         });
         await flush();
-        expect($(el, '.pp-looks')).toBeNull();
+        expect(looks(el)).toBeNull();
         expect($(el, '.pp-renderas')).not.toBeNull();
     });
 });
@@ -395,7 +412,8 @@ describe('reordering options (the ⋮⋮ handle)', () => {
         expect(
             $(el, '.pp-optrow [data-field="label"]').getAttribute('aria-label')
         ).toBe('Option 1 label');
-        expect($(el, '.pp-x').getAttribute('aria-label')).toBe('Remove Power');
+        // lightning-button-icon: the spoken name is alternative-text
+        expect($(el, '.pp-x').alternativeText).toBe('Remove Power');
     });
 
     it('removing the last option keeps a blank row, so Chips stays Chips', async () => {

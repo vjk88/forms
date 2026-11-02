@@ -127,25 +127,6 @@
     flex: none;
 }
 
-.ap-icon-btn {
-    border: 0;
-    background: none;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    color: var(--c-studio-text-weak, #747474);
-}
-
-.ap-icon-btn:hover {
-    background: var(--c-studio-hover, #f3f3f3);
-    color: var(--c-studio-text, #181818);
-}
-
-.ap-delete-btn:hover {
-    color: #ba0517;
-    background: #fef0ef;
-}
-
 .ap-card-errors {
     margin-top: 8px;
     padding-top: 8px;
@@ -238,64 +219,6 @@
     flex: 1;
 }
 
-.ap-btn-primary {
-    background: var(--c-studio-accent, #0176d3);
-    color: #ffffff;
-    border: 0;
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.ap-btn-primary:hover:not(:disabled) {
-    background: #015ba5;
-}
-
-.ap-btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.ap-btn-secondary {
-    background: #ffffff;
-    color: var(--c-studio-text, #181818);
-    border: 1px solid var(--c-studio-border-strong, #c9c9c9);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.ap-btn-secondary:hover:not(:disabled) {
-    background: var(--c-studio-hover, #f3f3f3);
-}
-
-.ap-btn-secondary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.ap-btn-danger {
-    background: var(--c-studio-error);
-    color: var(--c-studio-on-accent);
-    border: 0;
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.ap-btn-danger:hover:not(:disabled) {
-    background: var(--c-studio-error-text);
-}
-
 /* Inline "Stop every link made so far?" question. */
 .ap-stop-ask {
     margin-top: 8px;
@@ -323,34 +246,6 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-}
-
-.ap-btn-sm {
-    padding: 4px 8px;
-    font-size: 11.5px;
-}
-
-.ap-add-rule-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--c-studio-accent, #0176d3);
-    color: #ffffff;
-    border: 0;
-    border-radius: 4px;
-    padding: 4px 10px;
-    font-size: 11.5px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.ap-add-rule-btn:hover:not(:disabled) {
-    background: #015ba5;
-}
-
-.ap-add-rule-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 .ap-error-inline {
