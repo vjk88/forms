@@ -2,6 +2,9 @@
 
 **Status:** slice 1 built (this PR) and unit-tested; **not yet deployed or looked at in an org**
 (§8 is the check list). Slice 2 (email a copy) is planned, not built.
+**Parent plan:** [PLAN_DOCUMENTS_AND_PAYMENTS.md](./PLAN_DOCUMENTS_AND_PAYMENTS.md) M1 "Submission PDFs".
+This file is M1's **first part, the in-session copy**, which needs no receipt. §10 maps it onto the
+parent plan, including what of M1 it does not cover.
 **Owner decision (2026-11-02):** build the PDF **in the browser, as a real .pdf file**, and ship four
 entry points: the respondent's copy after submit, the staff copy on a submission, the Studio's blank
 form, and (slice 2) an emailed copy.
@@ -120,12 +123,14 @@ show them but not read their bytes. The server hands the bytes over:
 - **Signed-in (`FinalPdfController.getImages(versionIds)`):** `with sharing`, **USER MODE**. The
   browser names files, and the user's own access decides; an unreadable id comes back in `skipped`,
   exactly like one that doesn't exist.
-- **Guest (`FinalGuestController.getGuestPdfImages(formId)`):** behind the same hard gate as every
-  guest method. **The guest names nothing:** the files are exactly the ones the active published spec
-  references (`versionId` / `contentVersionId` anywhere in it). Served **only** when the author
-  turned on `settings.completion.downloadCopy`. Deliberately *not* refused after the form closes:
-  the response that filled the last place still gets its copy. These images are already public
-  (ContentDistribution links), so this exposes nothing new.
+- **Guest (`FinalGuestController.getGuestPdfImages(formId)`):** behind the same hard gate **and the
+  same availability gates** (closed, window, response cap) as every guest method, per the parent
+  plan's rule to keep them until a receipt-download policy exists. **The guest names nothing:** the
+  files are exactly the ones the active published spec references (`versionId` / `contentVersionId`
+  anywhere in it). Served **only** when the author turned on `settings.completion.downloadCopy`. These
+  images are already public (ContentDistribution links), so this exposes nothing new. Known effect: the
+  respondent whose answer fills the response cap gets a copy without images; the copy itself is still
+  made.
 - Both: images only (PNG, JPEG, GIF, WebP; GIF and WebP go through a canvas to PNG), ≤ 12 files,
   ≤ 2 MB each, ≤ 3 MB together. Sizes are checked before any blob is loaded.
 - `finalFormViewer` still contains no guest code: the guest host passes its loader in through the
@@ -161,23 +166,23 @@ permission sets.
 "Download form as PDF". It reads `getPdfSnapshot()` from the viewer on the stage, so the PDF uses the
 draft's live tokens. A failure shows as a line under the toolbar.
 
-## 7. Slice 2 (not built): email a copy
+## 7. Slice 2 (not built): email a copy, from the receipt
 
-The browser must **not** send the PDF to be mailed: a guest could then mail any content to any
-address. The server builds the emailed copy itself, from what it stored:
+Blocked on the parent plan's M0 (`Form_Receipt__c` and its input snapshot). Rules that follow from it:
 
-1. Author setting `settings.completion.emailCopy: { enabled, emailElementId, subject, message }`.
-   Publish warns if `emailElementId` is not an email question on the form.
-2. After a successful submit (guest or internal), queue a `Queueable` with the submission Id. It
-   reads the stored answers and the version spec, renders with `Blob.toPdf` from a server template
-   (colors, logo and standard fonts; approximate branding by design, §2), and sends it with
-   `Messaging.SingleEmailMessage` **only** to the address stored in that submission's
-   `emailElementId` answer.
-3. Rate limits: one email per submission (idempotent on the submission key), and per-address and
-   per-form daily caps in a custom setting. Respect `Messaging.reserveSingleEmailCapacity`.
-4. Org-wide email address for the From line; nothing sent when none is configured (publish warning).
-5. Tests: answer-derived recipient only, cap enforcement, no send on failed submit, template escapes
-   all answer text.
+- The browser never sends a PDF or answers to be mailed: a guest could then mail any content to any
+  address. The server builds the emailed copy.
+- It builds it from the **receipt's snapshot**, never by rereading answer rows or business records
+  (the parent plan's snapshot rule: classic forms update mutable records, so a reread is not what was
+  submitted). The receipt commits with the submission; rendering and sending run after commit, and
+  their failure never touches the accepted answers.
+- Rendering is server-side (`Blob.toPdf` or the engine M0 F0.6 picks), so its branding is approximate.
+  `Form_Document__c` tracks pending, ready and failed states, separately from submission acceptance.
+- Recipient: only the address stored in that receipt's answer to the author's chosen email question
+  (`settings.completion.emailCopy.emailElementId`, final name settled with `settings.documents`).
+  One send per receipt, per-address and per-form daily caps, `Messaging.reserveSingleEmailCapacity`,
+  an org-wide From address (publish warns when none).
+- Tests: answer-derived recipient only, caps, no send for a refused submit, escaped answer text.
 
 ## 8. Before calling slice 1 done (in-org checks)
 
@@ -204,3 +209,22 @@ None of these can run outside an org. Record results in `qa/` with dates.
 - Uploaded brand fonts: convert the uploaded WOFF2 to TrueType at upload time.
 - Signature images in the copy, once `formSignature` ships.
 - Optional content blocks in a copy (author toggle), and page size as an author setting.
+
+## 10. Against the parent plan (PLAN_DOCUMENTS_AND_PAYMENTS.md)
+
+| Parent plan item | Where this slice stands |
+|---|---|
+| M1 outcome "submit, then download a branded copy" | **Done for the moment of submission** (§6.1). Not covered: downloading again later, or after a lost tab. That needs the receipt and a scoped guest grant (M0 F0.3, F0.4). |
+| M1 "optional Salesforce File retention" | Not covered. The browser copy is never stored. Retention needs `Form_Document__c` and a server render. |
+| F0.2 native PDF feasibility | Answered differently, with an owner decision: the M1 copy is drawn **in the browser**, so no data goes to any renderer. Findings: long answers, repeats, logo and page breaks work; brand fonts work after a TrueType conversion (§3); non-Latin text does not yet (§9). The server render for retained or emailed copies is still F0.2's question. |
+| F0.6 engine decision | Recorded for in-session copies (§2). Retained copies, email and DocGen still need a server engine. |
+| Product default: no exact layouts or custom web fonts in M1 | Exceeded for fonts (bundled families embed). Layout is a print document, not the interactive layout, as the plan says. |
+| No customer data to an external renderer | Holds: nothing leaves the browser for the copy. |
+| Guest access: no Salesforce ID, session ID or submission key as authorization | Holds: the copy needs no authorization at all, and the image endpoint takes only the gated form Id and serves only spec images. |
+| Keep availability gates until a receipt-download policy exists | Holds (§5), after review on 2026-11-02 removed a closed-form exception. |
+| Snapshot is server-normalized, not client-supplied | **Different on purpose for this slice:** the in-session copy is "what your browser sent," built from the submitted payload and the projection spec, after the server accepted it. It is not a server receipt and doesn't claim to be. Retained and emailed copies must use the receipt snapshot (§7). |
+| Settings: additive, absence = disabled; serializer, validator, import/export, guest projection tested | `settings.completion.downloadCopy` / `downloadLabel` default off. Nothing in save, publish, transfer or projection filters `settings.completion`; `FinalGuestPdfTest` pins the projection. When `settings.documents` lands, decide whether these move under it (with a reader for the old place). |
+| Preview creates no receipts or files | Holds: the Studio preview's copy and blank form are browser-only. |
+| Keep orchestration out of `finalAfterSubmit` | Holds: it only shows the button and emits `downloadcopy`; the viewer builds the copy. |
+| Apex tests in an org, real internal and guest journeys | Pending: §8. |
+

@@ -187,7 +187,11 @@ unique per question (exact), and publish refuses a question that breaks those ru
   in order to store or send them: an emailed copy is built by the server from the stored submission
   (§7 of the plan).
 - **The guest names no file.** `getGuestPdfImages` serves exactly the images the active published spec
-  references, behind the hard gate, and only when the author turned on `downloadCopy`.
+  references, behind the hard gate and the availability gates, and only when the author turned on
+  `downloadCopy`.
+- An emailed or retained copy comes from the submission receipt's snapshot
+  ([PLAN_DOCUMENTS_AND_PAYMENTS.md](./PLAN_DOCUMENTS_AND_PAYMENTS.md)), never from a reread of answer
+  rows or business records.
 - **Signed-in image reads are USER MODE** (`FinalPdfController`): nobody gets a file they can't open.
 - `finalFormViewer` takes its guest image loader from the host (`pdf-image-loader`); it still calls
   no guest Apex.

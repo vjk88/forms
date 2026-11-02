@@ -302,15 +302,23 @@ public without sharing class FinalGuestController {
      * published spec references for display (logo, banner, image blocks),
      * so this can never be pointed at another record's file. Served only
      * when the author turned on "Let respondents download a copy"
-     * (`settings.completion.downloadCopy`). Deliberately not refused when
-     * the form has since CLOSED: the response that filled the last place
-     * still deserves its copy. Same hard gate as every guest method.
+     * (`settings.completion.downloadCopy`). Same hard gate AND the same
+     * availability gates as every guest method (PLAN_DOCUMENTS_AND_PAYMENTS
+     * "Guest and internal access": keep them until a receipt-download
+     * policy exists). A copy asked for after the form closed is still
+     * made, without its images.
      */
     @AuraEnabled
     public static FinalPdfImageService.Result getGuestPdfImages(Id formId) {
         Form__c f = gate(formId);
         Form_Version__c version = activeVersion(f.Id);
         Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        if (
+            FinalSubmitService.isClosed(spec) ||
+            FinalSubmitService.responseCapReached(spec, version.Id)
+        ) {
+            throw new AuraHandledException(UNAVAILABLE);
+        }
         Map<String, Object> settings = asMap(spec.get('settings'));
         Map<String, Object> completion = asMap(
             settings == null ? null : settings.get('completion')

@@ -77,12 +77,30 @@ private class FinalGuestPdfTest {
     }
 
     @IsTest
-    static void stillServesAfterTheFormCloses() {
+    static void closedFormKeepsTheAvailabilityGate() {
+        // PLAN_DOCUMENTS_AND_PAYMENTS: availability gates stay until a
+        // receipt-download policy exists; the browser builds the PDF
+        // without images instead.
         Form__c f = form('Published', spec(png('logo'), true, true));
-        FinalPdfImageService.Result r = FinalGuestController.getGuestPdfImages(
+        try {
+            FinalGuestController.getGuestPdfImages(f.Id);
+            Assert.fail('should refuse');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'closed form refused');
+        }
+    }
+
+    @IsTest
+    static void downloadSettingsSurviveTheGuestProjection() {
+        Form__c f = form('Published', spec(png('logo'), true, false));
+        Map<String, Object> res = FinalGuestController.getGuestRuntimeSpec(
             f.Id
         );
-        Assert.areEqual(1, r.images.size(), 'the last response gets its copy');
+        String json = JSON.serialize(res.get('spec'));
+        Assert.isTrue(
+            json.contains('"downloadCopy":true'),
+            'the viewer must see the author switch'
+        );
     }
 
     @IsTest
