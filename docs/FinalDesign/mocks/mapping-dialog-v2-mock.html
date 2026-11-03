@@ -1,0 +1,2430 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Mapping dialog v2</title>
+        <style>
+            /* Real Studio token names, so this CSS ports into the LWCs as-is. */
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-hover: #eef2f6;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-hover: #115e59;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-on-accent: #ffffff;
+                --c-studio-focus: #0f766e;
+                --c-studio-error: #b42318;
+                --c-studio-error-text: #8e2018;
+                --c-studio-error-surface: #fef1ee;
+                --c-studio-warning-text: #73510d;
+                --c-studio-warning-surface: #fff5df;
+                --c-studio-warning-border: #caa24c;
+                --c-studio-success-text: #21613f;
+                --c-studio-success-surface: #eaf6ee;
+                --c-studio-fs-caption: 11px;
+                --c-studio-fs-small: 12px;
+                --c-studio-fs-body: 13px;
+                --c-studio-fs-subhead: 14px;
+                --c-studio-fs-title: 16px;
+                --c-studio-fw-strong: 600;
+                --c-studio-lh-tight: 1.25;
+                --c-studio-lh-body: 1.45;
+                --c-studio-font:
+                    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    'Helvetica Neue', Arial, sans-serif;
+                --c-studio-font-mono:
+                    ui-monospace, 'SF Mono', Consolas, monospace;
+                --c-studio-control-h: 32px;
+                --c-studio-bar-h: 56px;
+                --c-studio-radius-sm: 4px;
+                --c-studio-radius-md: 8px;
+                --c-studio-radius-lg: 12px;
+                --c-studio-shadow-3: 0 20px 48px rgb(0 0 0 / 28%);
+                --c-studio-selected-ring: 0 0 0 1px var(--c-studio-accent);
+                --c-studio-selected-bar: inset 3px 0 0 var(--c-studio-accent);
+                --c-studio-duration: 150ms;
+
+                /* Object colors come from Salesforce (getObjectInfo themeInfo.color), read from revclouddev. */
+                --obj-account: #5867e8;
+                --obj-contact: #9602c7;
+                --obj-none: #747e96;
+                --pin: #c2410c;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #5d6673;
+                font-family: var(--c-studio-font);
+                font-size: var(--c-studio-fs-body);
+                line-height: var(--c-studio-lh-body);
+                color: var(--c-studio-text);
+            }
+            button {
+                font: inherit;
+                color: inherit;
+            }
+            :focus-visible {
+                outline: 2px solid var(--c-studio-focus);
+                outline-offset: 2px;
+            }
+            [hidden] {
+                display: none !important;
+            }
+
+            /* Mock-only bar */
+            .mockbar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+                align-items: center;
+                padding: 10px 16px;
+                background: #1f2937;
+                color: #e5e7eb;
+                font-size: var(--c-studio-fs-small);
+            }
+            .mockbar strong {
+                color: #fff;
+            }
+            .mockbar label {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .mseg {
+                display: inline-flex;
+                border: 1px solid #4b5563;
+                border-radius: var(--c-studio-radius-md);
+                overflow: hidden;
+            }
+            .mseg button {
+                background: transparent;
+                color: #e5e7eb;
+                border: 0;
+                padding: 4px 10px;
+                cursor: pointer;
+            }
+            .mseg button + button {
+                border-left: 1px solid #4b5563;
+            }
+            .mseg button[aria-pressed='true'] {
+                background: #e5e7eb;
+                color: #111827;
+            }
+
+            .stage {
+                padding: 24px 16px 40px;
+            }
+            .dialog {
+                max-width: 1440px;
+                margin: 0 auto;
+                background: var(--c-studio-surface);
+                border-radius: var(--c-studio-radius-lg);
+                box-shadow: var(--c-studio-shadow-3);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Header (§3 dialog order: title + meta + close) */
+            .d-head {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 16px 24px;
+                border-bottom: 1px solid var(--c-studio-border);
+                position: relative;
+            }
+            .d-head h1 {
+                margin: 0;
+                font-size: var(--c-studio-fs-title);
+                font-weight: var(--c-studio-fw-strong);
+                line-height: var(--c-studio-lh-tight);
+            }
+            .d-head p {
+                margin: 4px 0 0;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                max-width: 80ch;
+            }
+
+            /* Icon button (§5.2) and remove × (§5.0) */
+            .ibtn {
+                margin-left: auto;
+                flex: none;
+                width: 32px;
+                height: 32px;
+                display: inline-grid;
+                place-items: center;
+                border: 0;
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                color: var(--c-studio-text-weak);
+                cursor: pointer;
+            }
+            .ibtn:hover {
+                background: var(--c-studio-hover);
+                color: var(--c-studio-text);
+            }
+            .ibtn.remove {
+                width: 24px;
+                height: 24px;
+                margin: 0;
+            }
+            .ibtn.remove:hover,
+            .ibtn.danger:hover {
+                color: var(--c-studio-error);
+                background: var(--c-studio-error-surface);
+            }
+
+            /* Buttons (§5.1) */
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                height: var(--c-studio-control-h);
+                padding: 0 12px;
+                border-radius: var(--c-studio-radius-md);
+                font-weight: var(--c-studio-fw-strong);
+                cursor: pointer;
+                border: 1px solid var(--c-studio-border-strong);
+                background: var(--c-studio-surface);
+                color: var(--c-studio-accent-text);
+                transition: background var(--c-studio-duration) ease;
+            }
+            .btn:hover {
+                background: var(--c-studio-hover);
+            }
+            .btn.primary {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+            }
+            .btn.primary:hover {
+                background: var(--c-studio-accent-hover);
+            }
+            .btn.quiet {
+                border-color: transparent;
+                background: transparent;
+                padding: 0 8px;
+            }
+            .btn.quiet:hover {
+                background: var(--c-studio-accent-surface);
+            }
+
+            /* Intro strip */
+            .intro {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+                gap: 16px;
+                align-items: center;
+                padding: 12px 24px;
+                background: var(--c-studio-surface-subtle);
+                border-bottom: 1px solid var(--c-studio-border);
+                position: relative;
+            }
+            .intro-item {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            .intro-item svg {
+                flex: none;
+            }
+            .intro-item b {
+                display: block;
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .intro-item span {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+
+            /* Three panes, soft lines between (§2) */
+            .d-body {
+                display: grid;
+                grid-template-columns: 288px minmax(0, 1fr) 320px;
+                min-height: 660px;
+            }
+            .pane {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                position: relative;
+            }
+            .pane + .pane {
+                border-left: 1px solid var(--c-studio-border);
+            }
+            .p-head {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: var(--c-studio-bar-h);
+                padding: 8px 16px;
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .p-head h2 {
+                margin: 0;
+                font-size: var(--c-studio-fs-subhead);
+                font-weight: var(--c-studio-fw-strong);
+                line-height: var(--c-studio-lh-tight);
+            }
+            .p-head .meta {
+                display: block;
+                margin-top: 2px;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .p-foot {
+                margin-top: auto;
+                padding: 12px 16px;
+                border-top: 1px solid var(--c-studio-border-subtle);
+                display: flex;
+                gap: 8px;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .p-foot svg {
+                flex: none;
+                margin-top: 2px;
+            }
+
+            /* Object icon: real lightning-icon in the build, drawn with the object's own color */
+            .oicon {
+                flex: none;
+                width: 24px;
+                height: 24px;
+                border-radius: var(--c-studio-radius-sm);
+                display: inline-grid;
+                place-items: center;
+                color: #fff;
+            }
+            .oicon.lg {
+                width: 32px;
+                height: 32px;
+            }
+            .oicon.sm {
+                width: 14px;
+                height: 14px;
+                border-radius: 3px;
+            }
+            .o-account {
+                background: var(--obj-account);
+            }
+            .o-contact {
+                background: var(--obj-contact);
+            }
+
+            /* Records list: selectable rows (§5.10) */
+            .records {
+                list-style: none;
+                margin: 0;
+                padding: 12px 8px;
+                display: grid;
+                gap: 4px;
+            }
+            .rec {
+                display: grid;
+                grid-template-columns: 20px 24px minmax(0, 1fr);
+                gap: 8px;
+                align-items: start;
+                width: 100%;
+                padding: 8px;
+                border: 0;
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                text-align: left;
+                cursor: pointer;
+            }
+            .rec:hover {
+                background: var(--c-studio-hover);
+            }
+            .rec[aria-current='true'] {
+                background: var(--c-studio-accent-surface);
+                box-shadow: var(--c-studio-selected-bar);
+            }
+            .rec .num {
+                width: 20px;
+                height: 20px;
+                margin-top: 2px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                font-size: var(--c-studio-fs-caption);
+                font-weight: var(--c-studio-fw-strong);
+                border: 1px solid var(--c-studio-border-strong);
+                color: var(--c-studio-text-weak);
+                background: var(--c-studio-surface);
+            }
+            .rec[aria-current='true'] .num {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+            }
+            .rec b {
+                display: block;
+                font-weight: var(--c-studio-fw-strong);
+                line-height: 24px;
+            }
+            .rec .sub {
+                display: block;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .rec .badge {
+                margin-top: 4px;
+            }
+
+            /* Badge (§5.22): 20px, 4px corners, 11px */
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                min-height: 20px;
+                padding: 2px 6px;
+                border-radius: var(--c-studio-radius-sm);
+                font-size: var(--c-studio-fs-caption);
+                font-weight: var(--c-studio-fw-strong);
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text-weak);
+            }
+            .badge.on {
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+            }
+            .badge.warn {
+                background: var(--c-studio-warning-surface);
+                color: var(--c-studio-warning-text);
+            }
+            .badge.ok {
+                background: var(--c-studio-success-surface);
+                color: var(--c-studio-success-text);
+            }
+            .badge.dest {
+                height: 20px;
+                background: var(--c-studio-surface);
+                color: var(--c-studio-text);
+                border: 1px solid var(--c-studio-border);
+                font-weight: 400;
+                padding: 2px 6px 2px 2px;
+            }
+
+            /* Add place (§5.12): dashed */
+            .addplace {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin: 4px 16px 16px;
+                height: 40px;
+                border: 1px dashed var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: transparent;
+                color: var(--c-studio-accent-text);
+                font-weight: var(--c-studio-fw-strong);
+                cursor: pointer;
+            }
+            .addplace:hover {
+                background: var(--c-studio-accent-surface);
+                border-color: var(--c-studio-accent);
+            }
+
+            /* Center pane body */
+            .c-body {
+                padding: 24px;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 24px;
+                align-content: start;
+            }
+            .summary {
+                display: flex;
+                gap: 8px;
+                padding: 12px 16px;
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface-subtle);
+                border: 1px solid var(--c-studio-border-subtle);
+            }
+            .summary svg {
+                flex: none;
+                margin-top: 2px;
+                color: var(--c-studio-text-weak);
+            }
+            .summary b {
+                font-weight: var(--c-studio-fw-strong);
+            }
+
+            /* Group (§5.5): title + hairline + optional action, no numbers, no boxes */
+            .group-h {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .group-h h3 {
+                margin: 0;
+                font-size: var(--c-studio-fs-body);
+                font-weight: var(--c-studio-fw-strong);
+                white-space: nowrap;
+            }
+            .group-h::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--c-studio-border);
+                order: 1;
+            }
+            .group-h .act {
+                order: 2;
+            }
+            .help {
+                margin: 4px 0 12px;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                max-width: 80ch;
+            }
+
+            /* Selectable cards (§5.11) */
+            .cards {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+                max-width: 760px;
+            }
+            .card {
+                position: relative;
+                display: grid;
+                grid-template-columns: 72px minmax(0, 1fr);
+                gap: 12px;
+                align-items: center;
+                padding: 12px;
+                text-align: left;
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface);
+                cursor: pointer;
+                transition: border-color var(--c-studio-duration) ease;
+            }
+            .card:hover {
+                border-color: var(--c-studio-border-strong);
+            }
+            .card[aria-checked='true'] {
+                border-color: var(--c-studio-accent);
+                box-shadow: var(--c-studio-selected-ring);
+                background: var(--c-studio-accent-surface);
+            }
+            .card .art {
+                width: 72px;
+                height: 48px;
+                border-radius: var(--c-studio-radius-sm);
+                background: var(--c-studio-surface-subtle);
+                border: 1px solid var(--c-studio-border-subtle);
+                display: grid;
+                place-items: center;
+            }
+            .card[aria-checked='true'] .art {
+                background: var(--c-studio-surface);
+            }
+            .card b {
+                display: block;
+                font-weight: var(--c-studio-fw-strong);
+                padding-right: 20px;
+            }
+            .card .d {
+                display: block;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .card[aria-checked='true'] .d {
+                color: var(--c-studio-accent-text);
+            }
+            .card .tick {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--c-studio-accent);
+                color: #fff;
+                display: none;
+                place-items: center;
+            }
+            .card[aria-checked='true'] .tick {
+                display: grid;
+            }
+
+            /* Segmented (§5.7 finalButtonGroup) */
+            .bgroup {
+                display: inline-flex;
+            }
+            .bgroup button {
+                height: var(--c-studio-control-h);
+                padding: 0 12px;
+                border: 1px solid var(--c-studio-border-strong);
+                background: var(--c-studio-surface);
+                color: var(--c-studio-text);
+                font-weight: var(--c-studio-fw-strong);
+                cursor: pointer;
+            }
+            .bgroup button:first-child {
+                border-radius: var(--c-studio-radius-md) 0 0
+                    var(--c-studio-radius-md);
+            }
+            .bgroup button:last-child {
+                border-radius: 0 var(--c-studio-radius-md)
+                    var(--c-studio-radius-md) 0;
+                border-left: 0;
+            }
+            .bgroup button[aria-pressed='true'] {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+            }
+
+            /* Controls (§5.3) */
+            .ctl {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                height: var(--c-studio-control-h);
+                padding: 0 32px 0 12px;
+                min-width: 0;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-surface)
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23526071' stroke-width='1.5'/%3E%3C/svg%3E")
+                    no-repeat right 12px center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .ctl.text {
+                background-image: none;
+                padding-right: 12px;
+            }
+            .ctl.ph {
+                color: var(--c-studio-text-weak);
+            }
+            .ctl.invalid {
+                border-color: var(--c-studio-error);
+                background-color: var(--c-studio-error-surface);
+            }
+            .err {
+                display: flex;
+                gap: 4px;
+                margin-top: 4px;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-error-text);
+            }
+            .err svg {
+                flex: none;
+                margin-top: 2px;
+            }
+            .inline {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 12px;
+            }
+
+            /* Data table (§5.21) */
+            .table {
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--c-studio-radius-md);
+                overflow: hidden;
+            }
+            .tr {
+                display: grid;
+                gap: 8px;
+                align-items: start;
+                padding: 8px 12px;
+                border-top: 1px solid var(--c-studio-border-subtle);
+            }
+            .tr:first-child {
+                border-top: 0;
+            }
+            .tr.th {
+                background: var(--c-studio-surface-subtle);
+                font-size: var(--c-studio-fs-small);
+                font-weight: var(--c-studio-fw-strong);
+                color: var(--c-studio-text-weak);
+                align-items: center;
+            }
+            .cond .tr {
+                grid-template-columns: 20px minmax(0, 1.4fr) minmax(
+                        0,
+                        0.8fr
+                    ) minmax(0, 1fr) minmax(0, 1fr) 24px;
+            }
+            .cond .n {
+                line-height: 32px;
+            }
+            .cond .n {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                text-align: center;
+            }
+            .fields .tr {
+                grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1.3fr) 24px;
+            }
+            .fname b {
+                font-weight: 400;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                line-height: 32px;
+            }
+            .api {
+                display: block;
+                font-family: var(--c-studio-font-mono);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                margin-top: -6px;
+            }
+            .req {
+                font-size: var(--c-studio-fs-caption);
+                font-weight: var(--c-studio-fw-strong);
+                color: var(--c-studio-error-text);
+            }
+            .arrow {
+                height: 32px;
+                display: grid;
+                place-items: center;
+                color: var(--c-studio-border-strong);
+            }
+            .fields .ibtn.remove,
+            .cond .ibtn.remove {
+                margin-top: 4px;
+            }
+            .src {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+            .src .ctl {
+                width: 100%;
+            }
+            .atag {
+                font-size: var(--c-studio-fs-caption);
+                font-weight: var(--c-studio-fw-strong);
+                padding: 1px 6px;
+                border-radius: var(--c-studio-radius-sm);
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+            }
+
+            /* Notice (§5.19 warning, with edge) */
+            .notice {
+                display: flex;
+                gap: 8px;
+                padding: 12px 16px;
+                margin-bottom: 12px;
+                max-width: 760px;
+                border: 1px solid var(--c-studio-warning-border);
+                border-radius: var(--c-studio-radius-md);
+                background: var(--c-studio-warning-surface);
+                color: var(--c-studio-warning-text);
+            }
+            .notice svg {
+                flex: none;
+                margin-top: 2px;
+            }
+
+            /* Answers list */
+            .answers {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                overflow: auto;
+            }
+            .ans {
+                padding: 12px 16px;
+                border-bottom: 1px solid var(--c-studio-border-subtle);
+            }
+            .ans .q {
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .ans .t {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                font-weight: 400;
+                margin-left: 4px;
+            }
+            .ans .dests {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-top: 4px;
+            }
+            .ans .dests .badge.dest .k {
+                color: var(--c-studio-text-weak);
+            }
+
+            /* Empty state (§5.20) */
+            .empty {
+                display: grid;
+                place-items: center;
+                align-content: center;
+                gap: 8px;
+                text-align: center;
+                padding: 48px 32px;
+                min-height: 100%;
+            }
+            .empty h3 {
+                margin: 8px 0 0;
+                font-size: var(--c-studio-fs-title);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .empty p {
+                margin: 0 0 8px;
+                color: var(--c-studio-text-weak);
+                max-width: 52ch;
+            }
+            body[data-state='empty'] .when-filled {
+                display: none !important;
+            }
+            body[data-state='filled'] .when-empty {
+                display: none !important;
+            }
+
+            /* Footer (§3: help left, buttons right, primary last) */
+            .d-foot {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 12px 24px;
+                border-top: 1px solid var(--c-studio-border);
+                position: relative;
+            }
+            .d-foot .help-l {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: var(--c-studio-fw-strong);
+                color: var(--c-studio-warning-text);
+            }
+            .d-foot .help-l.neutral {
+                color: var(--c-studio-text-weak);
+                font-weight: 400;
+            }
+            .d-foot .btns {
+                margin-left: auto;
+                display: flex;
+                gap: 8px;
+            }
+
+            /* Notes */
+            .pin {
+                position: absolute;
+                z-index: 5;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: var(--pin);
+                color: #fff;
+                font-size: var(--c-studio-fs-small);
+                font-weight: 700;
+                display: grid;
+                place-items: center;
+                box-shadow: 0 0 0 3px #fff;
+            }
+            body[data-notes='off'] .pin,
+            body[data-notes='off'] .notes {
+                display: none;
+            }
+            .notes {
+                max-width: 1440px;
+                margin: 24px auto 0;
+                background: var(--c-studio-surface);
+                border-radius: var(--c-studio-radius-lg);
+                padding: 24px;
+            }
+            .notes h2 {
+                margin: 0 0 4px;
+                font-size: var(--c-studio-fs-title);
+            }
+            .notes > p {
+                margin: 0 0 16px;
+                color: var(--c-studio-text-weak);
+            }
+            .notes ol {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                gap: 16px 24px;
+            }
+            .notes li {
+                display: grid;
+                grid-template-columns: 22px 1fr;
+                gap: 12px;
+            }
+            .notes li .pin {
+                position: static;
+                box-shadow: none;
+            }
+            .notes li b {
+                display: block;
+            }
+            .notes li > div > span {
+                color: var(--c-studio-text-weak);
+            }
+            .notes .ds {
+                font-family: var(--c-studio-font-mono);
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-accent-text);
+            }
+            .notes h3 {
+                margin: 24px 0 8px;
+                font-size: var(--c-studio-fs-subhead);
+            }
+            .notes ul {
+                margin: 0;
+                padding-left: 20px;
+                display: grid;
+                gap: 6px;
+            }
+            .notes ul li {
+                display: list-item;
+            }
+            .notes ul li b {
+                display: inline;
+            }
+
+            @media (max-width: 1100px) {
+                .d-body {
+                    grid-template-columns: 1fr;
+                }
+                .pane + .pane {
+                    border-left: 0;
+                    border-top: 1px solid var(--c-studio-border);
+                }
+                .intro {
+                    grid-template-columns: 1fr;
+                }
+                .cards {
+                    grid-template-columns: 1fr;
+                }
+                .cond .tr {
+                    grid-template-columns: 1fr;
+                }
+                .cond .tr.th,
+                .cond .n {
+                    display: none;
+                }
+                .fields .tr {
+                    grid-template-columns: 1fr;
+                }
+                .fields .tr.th,
+                .arrow {
+                    display: none;
+                }
+                .stage {
+                    padding: 16px 8px;
+                }
+                .d-head,
+                .d-foot,
+                .intro {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                }
+                .c-body {
+                    padding: 16px;
+                }
+                .group-h {
+                    flex-wrap: wrap;
+                }
+                .group-h h3 {
+                    white-space: normal;
+                }
+                .group-h::after {
+                    display: none;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    transition-duration: 0.01ms !important;
+                }
+            }
+        </style>
+    </head>
+    <body data-state="filled" data-notes="on">
+        <div class="mockbar" role="region" aria-label="Mock controls">
+            <strong>Mapping dialog v2 (design system)</strong>
+            <label
+                >Show
+                <span class="mseg" data-toggle="state">
+                    <button type="button" aria-pressed="true" data-v="filled">
+                        Two records
+                    </button>
+                    <button type="button" aria-pressed="false" data-v="empty">
+                        First time (empty)
+                    </button>
+                </span>
+            </label>
+            <label
+                >Notes
+                <span class="mseg" data-toggle="notes">
+                    <button type="button" aria-pressed="true" data-v="on">
+                        Show
+                    </button>
+                    <button type="button" aria-pressed="false" data-v="off">
+                        Hide
+                    </button>
+                </span>
+            </label>
+            <span>Click the cards: "Always create" hides the find groups.</span>
+        </div>
+
+        <!-- Reusable object icons (stand-ins for lightning-icon standard:account / standard:contact) -->
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <symbol id="i-account" viewBox="0 0 24 24">
+                <path
+                    d="M5 20V6.5L12 4v16M12 20V9l7 2.5V20M3.5 20h17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M7.5 9h2M7.5 12h2M7.5 15h2M14.5 13.5h2M14.5 16.5h2"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-contact" viewBox="0 0 24 24">
+                <rect
+                    x="3.5"
+                    y="5"
+                    width="17"
+                    height="14"
+                    rx="2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                />
+                <circle cx="9" cy="11" r="2.2" fill="currentColor" />
+                <path
+                    d="M5.8 16.2c.6-1.7 1.8-2.5 3.2-2.5s2.6.8 3.2 2.5"
+                    fill="currentColor"
+                />
+                <path
+                    d="M14.5 10h3.5M14.5 13.5h3.5"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-x" viewBox="0 0 16 16">
+                <path
+                    d="M4 4l8 8M12 4l-8 8"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-plus" viewBox="0 0 16 16">
+                <path
+                    d="M8 3v10M3 8h10"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-warn" viewBox="0 0 16 16">
+                <circle
+                    cx="8"
+                    cy="8"
+                    r="6.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                />
+                <path
+                    d="M8 4.6v4"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+                <circle cx="8" cy="11.2" r="1" fill="currentColor" />
+            </symbol>
+            <symbol id="i-check" viewBox="0 0 16 16">
+                <path
+                    d="M3.5 8.4l3 3 6-6.4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </symbol>
+            <symbol id="i-trash" viewBox="0 0 16 16">
+                <path
+                    d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linejoin="round"
+                />
+            </symbol>
+            <symbol id="i-info" viewBox="0 0 16 16">
+                <circle
+                    cx="8"
+                    cy="8"
+                    r="6.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                />
+                <path
+                    d="M8 7v4.2"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+                <circle cx="8" cy="4.8" r="1" fill="currentColor" />
+            </symbol>
+            <symbol id="i-lines" viewBox="0 0 16 16">
+                <path
+                    d="M2.5 4h11M2.5 8h11M2.5 12h7"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-search" viewBox="0 0 16 16">
+                <circle
+                    cx="7"
+                    cy="7"
+                    r="4.3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                />
+                <path
+                    d="M10.2 10.2l3.3 3.3"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-arrow" viewBox="0 0 22 12">
+                <path
+                    d="M21 6H3M7 2L3 6l4 4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </symbol>
+        </svg>
+
+        <div class="stage">
+            <div class="dialog" role="dialog" aria-labelledby="d-title">
+                <header class="d-head">
+                    <span class="pin" style="left: 104px; top: 12px">A</span>
+                    <div>
+                        <h1 id="d-title">Mapping</h1>
+                        <p>
+                            Send this form's answers into Salesforce records.
+                            Each record below is made or found in order, every
+                            time someone submits.
+                        </p>
+                    </div>
+                    <button
+                        class="ibtn"
+                        type="button"
+                        aria-label="Close mapping"
+                    >
+                        <svg width="16" height="16"><use href="#i-x" /></svg>
+                    </button>
+                </header>
+
+                <section class="intro" aria-label="How mapping works">
+                    <span class="pin" style="left: 4px; top: 4px">B</span>
+                    <div class="intro-item">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="7"
+                                y="5"
+                                width="26"
+                                height="30"
+                                rx="3"
+                                fill="#fff"
+                                stroke="#7c8999"
+                                stroke-width="1.5"
+                            />
+                            <rect
+                                x="11"
+                                y="10"
+                                width="12"
+                                height="2.5"
+                                rx="1"
+                                fill="#7c8999"
+                            />
+                            <rect
+                                x="11"
+                                y="15"
+                                width="18"
+                                height="4"
+                                rx="1.5"
+                                fill="#e8edf2"
+                                stroke="#b5bfcb"
+                            />
+                            <rect
+                                x="11"
+                                y="22"
+                                width="12"
+                                height="2.5"
+                                rx="1"
+                                fill="#7c8999"
+                            />
+                            <rect
+                                x="11"
+                                y="27"
+                                width="18"
+                                height="4"
+                                rx="1.5"
+                                fill="#e8f5f2"
+                                stroke="#0f766e"
+                            />
+                        </svg>
+                        <div>
+                            <b>Someone submits</b
+                            ><span
+                                >Their answers are always kept on the
+                                submission.</span
+                            >
+                        </div>
+                    </div>
+                    <div class="intro-item">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="4"
+                                y="6"
+                                width="14"
+                                height="14"
+                                rx="3"
+                                fill="#5867e8"
+                            />
+                            <path
+                                d="M8 17v-7l3-1v8M11 17v-5l3 1v4"
+                                fill="none"
+                                stroke="#fff"
+                                stroke-width="1.2"
+                            />
+                            <rect
+                                x="22"
+                                y="20"
+                                width="14"
+                                height="14"
+                                rx="3"
+                                fill="#9602c7"
+                            />
+                            <circle cx="27" cy="26" r="1.6" fill="#fff" />
+                            <path
+                                d="M24.6 30.4c.4-1.2 1.3-1.8 2.4-1.8s2 .6 2.4 1.8"
+                                fill="#fff"
+                            />
+                            <path
+                                d="M18 13h5a3 3 0 0 1 3 3v3"
+                                fill="none"
+                                stroke="#7c8999"
+                                stroke-width="1.5"
+                                stroke-dasharray="2 2"
+                            />
+                        </svg>
+                        <div>
+                            <b>Records are made in order</b
+                            ><span
+                                >Each one is found or created. A later record
+                                can point at an earlier one.</span
+                            >
+                        </div>
+                    </div>
+                    <div class="intro-item">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="5"
+                                y="8"
+                                width="30"
+                                height="24"
+                                rx="3"
+                                fill="#fff"
+                                stroke="#7c8999"
+                                stroke-width="1.5"
+                            />
+                            <rect
+                                x="9"
+                                y="14"
+                                width="9"
+                                height="2.5"
+                                rx="1"
+                                fill="#b5bfcb"
+                            />
+                            <rect
+                                x="21"
+                                y="13"
+                                width="11"
+                                height="4.5"
+                                rx="1.5"
+                                fill="#e8f5f2"
+                                stroke="#0f766e"
+                            />
+                            <rect
+                                x="9"
+                                y="22"
+                                width="9"
+                                height="2.5"
+                                rx="1"
+                                fill="#b5bfcb"
+                            />
+                            <rect
+                                x="21"
+                                y="21"
+                                width="11"
+                                height="4.5"
+                                rx="1.5"
+                                fill="#e8f5f2"
+                                stroke="#0f766e"
+                            />
+                        </svg>
+                        <div>
+                            <b>Answers fill the fields</b
+                            ><span
+                                >You pick which answer goes into each
+                                field.</span
+                            >
+                        </div>
+                    </div>
+                    <button class="btn quiet" type="button" data-hide-intro>
+                        Hide
+                    </button>
+                </section>
+
+                <div class="d-body">
+                    <!-- Records -->
+                    <section class="pane" aria-labelledby="rec-h">
+                        <span class="pin" style="right: 12px; top: 16px"
+                            >C</span
+                        >
+                        <div class="p-head">
+                            <div>
+                                <h2 id="rec-h">Records</h2>
+                                <span class="meta"
+                                    >Made in this order on every
+                                    submission</span
+                                >
+                            </div>
+                        </div>
+                        <ol class="records when-filled">
+                            <li>
+                                <button
+                                    class="rec"
+                                    type="button"
+                                    aria-current="true"
+                                >
+                                    <span class="num">1</span>
+                                    <span class="oicon o-account"
+                                        ><svg width="16" height="16">
+                                            <use href="#i-account" /></svg
+                                    ></span>
+                                    <span
+                                        ><b>Account</b
+                                        ><span class="sub"
+                                            >Find or create · 2 fields</span
+                                        >
+                                        <span class="badge warn"
+                                            ><svg width="12" height="12">
+                                                <use href="#i-warn" /></svg
+                                            >2 to fix</span
+                                        ></span
+                                    >
+                                </button>
+                            </li>
+                            <li>
+                                <button class="rec" type="button">
+                                    <span class="num">2</span>
+                                    <span class="oicon o-contact"
+                                        ><svg width="16" height="16">
+                                            <use href="#i-contact" /></svg
+                                    ></span>
+                                    <span
+                                        ><b>Contact</b
+                                        ><span class="sub"
+                                            >Find or create · 4 fields · points
+                                            at Account</span
+                                        >
+                                        <span class="badge ok"
+                                            ><svg width="12" height="12">
+                                                <use href="#i-check" /></svg
+                                            >Ready</span
+                                        ></span
+                                    >
+                                </button>
+                            </li>
+                        </ol>
+                        <button class="addplace when-filled" type="button">
+                            <svg width="14" height="14">
+                                <use href="#i-plus" /></svg
+                            >Add a record
+                        </button>
+                        <div class="p-foot">
+                            <svg width="14" height="14">
+                                <use href="#i-info" /></svg
+                            ><span
+                                ><b>All or nothing.</b> If any record fails,
+                                none are made. The answers are still kept.</span
+                            >
+                        </div>
+                    </section>
+
+                    <!-- The selected record -->
+                    <section class="pane" aria-labelledby="step-h">
+                        <div class="p-head when-filled">
+                            <span class="oicon lg o-account"
+                                ><svg width="20" height="20">
+                                    <use href="#i-account" /></svg
+                            ></span>
+                            <div>
+                                <h2 id="step-h">Account</h2>
+                                <span class="meta" id="step-meta"
+                                    >Record 1 of 2 · Find or create</span
+                                >
+                            </div>
+                            <button
+                                class="ibtn danger"
+                                type="button"
+                                aria-label="Remove the Account record"
+                            >
+                                <svg width="16" height="16">
+                                    <use href="#i-trash" />
+                                </svg>
+                            </button>
+                            <span class="pin" style="left: 4px; top: 4px"
+                                >D</span
+                            >
+                        </div>
+
+                        <div class="c-body when-filled">
+                            <div class="summary" style="position: relative">
+                                <span
+                                    class="pin"
+                                    style="right: -10px; top: -10px"
+                                    >E</span
+                                >
+                                <svg width="16" height="16">
+                                    <use href="#i-lines" />
+                                </svg>
+                                <span
+                                    ><b>In plain words: </b
+                                    ><span id="plain"
+                                        >Looks for an Account that matches the
+                                        conditions below. If it finds one, it
+                                        uses it and changes nothing. If not, it
+                                        creates a new one.</span
+                                    ></span
+                                >
+                            </div>
+
+                            <div style="position: relative">
+                                <span class="pin" style="left: -34px; top: 0"
+                                    >F</span
+                                >
+                                <div class="group-h">
+                                    <h3>What this record does</h3>
+                                </div>
+                                <p class="help">
+                                    Pick "Find or create" when the person may
+                                    already be in Salesforce, so you don't make
+                                    duplicates.
+                                </p>
+                                <div
+                                    class="cards"
+                                    role="radiogroup"
+                                    aria-label="What this record does"
+                                    data-group="mode"
+                                >
+                                    <button
+                                        class="card"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="false"
+                                        data-v="create"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="36"
+                                                viewBox="0 0 56 36"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="14"
+                                                    y="3"
+                                                    width="22"
+                                                    height="30"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="18"
+                                                    y="9"
+                                                    width="14"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="18"
+                                                    y="14"
+                                                    width="10"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <circle
+                                                    cx="38"
+                                                    cy="26"
+                                                    r="8"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M38 22v8M34 26h8"
+                                                    stroke="#fff"
+                                                    stroke-width="1.8"
+                                                    stroke-linecap="round"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Always create</b
+                                            ><span class="d"
+                                                >Makes a new Account on every
+                                                submission.</span
+                                            ></span
+                                        >
+                                        <span class="tick"
+                                            ><svg width="12" height="12">
+                                                <use href="#i-check" /></svg
+                                        ></span>
+                                    </button>
+                                    <button
+                                        class="card"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="true"
+                                        data-v="find"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="36"
+                                                viewBox="0 0 56 36"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="5"
+                                                    y="3"
+                                                    width="20"
+                                                    height="28"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="9"
+                                                    y="9"
+                                                    width="12"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="9"
+                                                    y="14"
+                                                    width="9"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <circle
+                                                    cx="19"
+                                                    cy="20"
+                                                    r="7"
+                                                    fill="#e8f5f2"
+                                                    stroke="#0f766e"
+                                                    stroke-width="2"
+                                                />
+                                                <path
+                                                    d="M24 25l5 5"
+                                                    stroke="#0f766e"
+                                                    stroke-width="2.4"
+                                                    stroke-linecap="round"
+                                                />
+                                                <path
+                                                    d="M32 17h7"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                    stroke-dasharray="2 2"
+                                                />
+                                                <rect
+                                                    x="40"
+                                                    y="9"
+                                                    width="12"
+                                                    height="16"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                    stroke-dasharray="3 2"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Find or create</b
+                                            ><span class="d"
+                                                >Uses a matching Account if
+                                                there is one, otherwise makes
+                                                one.</span
+                                            ></span
+                                        >
+                                        <span class="tick"
+                                            ><svg width="12" height="12">
+                                                <use href="#i-check" /></svg
+                                        ></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div data-find style="position: relative">
+                                <span class="pin" style="left: -34px; top: 0"
+                                    >G</span
+                                >
+                                <div class="group-h">
+                                    <h3>How to spot an existing Account</h3>
+                                    <span
+                                        class="bgroup act"
+                                        role="group"
+                                        aria-label="Write the match as"
+                                    >
+                                        <button
+                                            type="button"
+                                            aria-pressed="true"
+                                        >
+                                            Conditions</button
+                                        ><button
+                                            type="button"
+                                            aria-pressed="false"
+                                        >
+                                            SOQL
+                                        </button>
+                                    </span>
+                                </div>
+                                <p class="help">
+                                    Match on something unique, like a website or
+                                    account number. A name can match the wrong
+                                    Account.
+                                </p>
+                                <div class="inline">
+                                    Match
+                                    <span class="ctl" style="width: 200px"
+                                        >all of these conditions</span
+                                    >
+                                </div>
+                                <div
+                                    class="table cond"
+                                    role="table"
+                                    aria-label="Conditions"
+                                >
+                                    <div class="tr th" role="row">
+                                        <span></span
+                                        ><span>Field on Account</span
+                                        ><span>Is</span
+                                        ><span>Compared with</span
+                                        ><span>Value</span><span></span>
+                                    </div>
+                                    <div class="tr" role="row">
+                                        <span class="n">1</span>
+                                        <span class="src"
+                                            ><span
+                                                class="ctl ph invalid"
+                                                style="background-image: none"
+                                                ><svg width="14" height="14">
+                                                    <use
+                                                        href="#i-search"
+                                                    /></svg
+                                                >Search fields</span
+                                            ><span class="err"
+                                                ><svg width="14" height="14">
+                                                    <use href="#i-warn" /></svg
+                                                >Pick a field to match on.</span
+                                            ></span
+                                        >
+                                        <span class="ctl">equal to</span>
+                                        <span class="ctl">a fixed value</span>
+                                        <span class="ctl text ph"
+                                            >Enter a value</span
+                                        >
+                                        <button
+                                            class="ibtn remove"
+                                            type="button"
+                                            aria-label="Remove condition 1"
+                                        >
+                                            <svg width="14" height="14">
+                                                <use href="#i-x" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button
+                                    class="btn quiet"
+                                    type="button"
+                                    style="margin-top: 8px"
+                                >
+                                    <svg width="14" height="14">
+                                        <use href="#i-plus" /></svg
+                                    >Add a condition
+                                </button>
+                            </div>
+
+                            <div data-find style="position: relative">
+                                <span class="pin" style="left: -34px; top: 0"
+                                    >H</span
+                                >
+                                <div class="group-h">
+                                    <h3>If one is found</h3>
+                                </div>
+                                <p class="help">
+                                    Choose whether a match is only pointed at,
+                                    or changed by the answers.
+                                </p>
+                                <div class="notice" role="note">
+                                    <svg width="16" height="16">
+                                        <use href="#i-warn" />
+                                    </svg>
+                                    <span
+                                        ><b>This form is public.</b> Anyone who
+                                        guesses a real value reaches whatever
+                                        you allow here, without signing in. "Use
+                                        it, change nothing" is the safe
+                                        choice.</span
+                                    >
+                                </div>
+                                <div
+                                    class="cards"
+                                    role="radiogroup"
+                                    aria-label="If one is found"
+                                    data-group="found"
+                                >
+                                    <button
+                                        class="card"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="true"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="36"
+                                                viewBox="0 0 56 36"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="16"
+                                                    y="3"
+                                                    width="22"
+                                                    height="30"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="9"
+                                                    width="14"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="14"
+                                                    width="10"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="32"
+                                                    y="20"
+                                                    width="13"
+                                                    height="11"
+                                                    rx="2"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M35 20v-3a3.5 3.5 0 0 1 7 0v3"
+                                                    fill="none"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.8"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Use it, change nothing</b
+                                            ><span class="d"
+                                                >No duplicate is made. Later
+                                                records point at it.</span
+                                            ></span
+                                        >
+                                        <span class="tick"
+                                            ><svg width="12" height="12">
+                                                <use href="#i-check" /></svg
+                                        ></span>
+                                    </button>
+                                    <button
+                                        class="card"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="false"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="36"
+                                                viewBox="0 0 56 36"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="16"
+                                                    y="3"
+                                                    width="22"
+                                                    height="30"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="9"
+                                                    width="14"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="14"
+                                                    width="10"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M33 31l2-6 9-9 4 4-9 9z"
+                                                    fill="#e8f5f2"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.6"
+                                                    stroke-linejoin="round"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Update it with these answers</b
+                                            ><span class="d"
+                                                >You then tick each field to
+                                                update. Every one starts
+                                                off.</span
+                                            ></span
+                                        >
+                                        <span class="tick"
+                                            ><svg width="12" height="12">
+                                                <use href="#i-check" /></svg
+                                        ></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="position: relative">
+                                <span class="pin" style="left: -34px; top: 0"
+                                    >I</span
+                                >
+                                <div class="group-h">
+                                    <h3 id="create-h">
+                                        If none is found, create an Account with
+                                    </h3>
+                                </div>
+                                <p class="help">
+                                    Each field gets its value from an answer, or
+                                    from a fixed value you type.
+                                </p>
+                                <div
+                                    class="table fields"
+                                    role="table"
+                                    aria-labelledby="create-h"
+                                >
+                                    <div class="tr th" role="row">
+                                        <span>Field on Account</span
+                                        ><span></span
+                                        ><span>Gets its value from</span
+                                        ><span></span>
+                                    </div>
+                                    <div class="tr" role="row">
+                                        <span class="fname"
+                                            ><b
+                                                >Account Name
+                                                <span class="req"
+                                                    >Required</span
+                                                ></b
+                                            ><span class="api">Name</span></span
+                                        >
+                                        <span class="arrow"
+                                            ><svg width="22" height="12">
+                                                <use href="#i-arrow" /></svg
+                                        ></span>
+                                        <span class="src"
+                                            ><span class="ctl ph invalid"
+                                                >Choose an answer or a fixed
+                                                value</span
+                                            >
+                                            <span class="err"
+                                                ><svg width="14" height="14">
+                                                    <use href="#i-warn" /></svg
+                                                >Salesforce can't save an
+                                                Account without a name. Try the
+                                                answer "Company or
+                                                organization".</span
+                                            ></span
+                                        >
+                                        <button
+                                            class="ibtn remove"
+                                            type="button"
+                                            aria-label="Remove Account Name"
+                                        >
+                                            <svg width="14" height="14">
+                                                <use href="#i-x" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="tr" role="row">
+                                        <span class="fname"
+                                            ><b>Billing Street</b
+                                            ><span class="api"
+                                                >BillingStreet</span
+                                            ></span
+                                        >
+                                        <span class="arrow"
+                                            ><svg width="22" height="12">
+                                                <use href="#i-arrow" /></svg
+                                        ></span>
+                                        <span class="src"
+                                            ><span class="ctl"
+                                                ><span class="atag">Answer</span
+                                                >Choose one</span
+                                            ></span
+                                        >
+                                        <button
+                                            class="ibtn remove"
+                                            type="button"
+                                            aria-label="Remove Billing Street"
+                                        >
+                                            <svg width="14" height="14">
+                                                <use href="#i-x" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button
+                                    class="btn quiet"
+                                    type="button"
+                                    style="margin-top: 8px"
+                                >
+                                    <svg width="14" height="14">
+                                        <use href="#i-plus" /></svg
+                                    >Add a field
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="empty when-empty">
+                            <svg
+                                width="120"
+                                height="72"
+                                viewBox="0 0 120 72"
+                                aria-hidden="true"
+                            >
+                                <rect
+                                    x="6"
+                                    y="10"
+                                    width="34"
+                                    height="48"
+                                    rx="4"
+                                    fill="#fff"
+                                    stroke="#7c8999"
+                                    stroke-width="1.5"
+                                />
+                                <rect
+                                    x="12"
+                                    y="18"
+                                    width="16"
+                                    height="3"
+                                    rx="1.5"
+                                    fill="#b5bfcb"
+                                />
+                                <rect
+                                    x="12"
+                                    y="25"
+                                    width="22"
+                                    height="6"
+                                    rx="2"
+                                    fill="#e8f5f2"
+                                    stroke="#0f766e"
+                                />
+                                <rect
+                                    x="12"
+                                    y="36"
+                                    width="16"
+                                    height="3"
+                                    rx="1.5"
+                                    fill="#b5bfcb"
+                                />
+                                <rect
+                                    x="12"
+                                    y="43"
+                                    width="22"
+                                    height="6"
+                                    rx="2"
+                                    fill="#e8f5f2"
+                                    stroke="#0f766e"
+                                />
+                                <path
+                                    d="M46 34h22"
+                                    stroke="#7c8999"
+                                    stroke-width="1.5"
+                                    stroke-dasharray="3 3"
+                                />
+                                <path
+                                    d="M64 30l5 4-5 4"
+                                    fill="none"
+                                    stroke="#7c8999"
+                                    stroke-width="1.5"
+                                />
+                                <rect
+                                    x="76"
+                                    y="14"
+                                    width="38"
+                                    height="40"
+                                    rx="4"
+                                    fill="none"
+                                    stroke="#7c8999"
+                                    stroke-width="1.5"
+                                    stroke-dasharray="4 3"
+                                />
+                                <path
+                                    d="M95 28v12M89 34h12"
+                                    stroke="#0f766e"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+                            <h3>No records yet</h3>
+                            <p>
+                                Answers are already kept on every submission.
+                                Add a record to also send them into Salesforce,
+                                like a new Contact or Case.
+                            </p>
+                            <button class="btn primary" type="button">
+                                <svg width="14" height="14">
+                                    <use href="#i-plus" /></svg
+                                >Add a record
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Answers -->
+                    <section class="pane" aria-labelledby="ans-h">
+                        <span class="pin" style="right: 12px; top: 16px"
+                            >J</span
+                        >
+                        <div class="p-head">
+                            <div>
+                                <h2 id="ans-h">Answers</h2>
+                                <span class="meta">Where each one goes</span>
+                            </div>
+                        </div>
+                        <ul class="answers">
+                            <li class="ans">
+                                <span class="q">How would you rate it?</span
+                                ><span class="t">Rating</span>
+                                <div class="dests">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                            <li class="ans">
+                                <span class="q">Choose any that apply</span
+                                ><span class="t">Checkboxes</span>
+                                <div class="dests">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                            <li class="ans">
+                                <span class="q">Your email</span
+                                ><span class="t">Email</span>
+                                <div class="dests when-filled">
+                                    <span class="badge dest"
+                                        ><span class="oicon sm o-contact"
+                                            ><svg width="11" height="11">
+                                                <use
+                                                    href="#i-contact"
+                                                /></svg></span
+                                        >Contact
+                                        <span class="k">· Email</span></span
+                                    >
+                                    <span class="badge dest"
+                                        ><span class="oicon sm o-contact"
+                                            ><svg width="11" height="11">
+                                                <use
+                                                    href="#i-search"
+                                                /></svg></span
+                                        >Finds the Contact</span
+                                    >
+                                </div>
+                                <div class="dests when-empty">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                            <li class="ans">
+                                <span class="q">Choose one</span
+                                ><span class="t">Picklist</span>
+                                <div class="dests when-filled">
+                                    <span class="badge dest"
+                                        ><span class="oicon sm o-account"
+                                            ><svg width="11" height="11">
+                                                <use
+                                                    href="#i-account"
+                                                /></svg></span
+                                        >Account
+                                        <span class="k"
+                                            >· Billing Street</span
+                                        ></span
+                                    >
+                                    <span class="badge dest"
+                                        ><span class="oicon sm o-contact"
+                                            ><svg width="11" height="11">
+                                                <use
+                                                    href="#i-contact"
+                                                /></svg></span
+                                        >Contact
+                                        <span class="k">· Title</span></span
+                                    >
+                                </div>
+                                <div class="dests when-empty">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                            <li class="ans">
+                                <span class="q"
+                                    >How likely are you to recommend us?</span
+                                ><span class="t">Scale</span>
+                                <div class="dests">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                            <li class="ans">
+                                <span class="q">How much do you agree?</span
+                                ><span class="t">Scale</span>
+                                <div class="dests">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                            <li class="ans">
+                                <span class="q">How strongly do you agree?</span
+                                ><span class="t">Scale</span>
+                                <div class="dests">
+                                    <span class="badge">Submission only</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+
+                <footer class="d-foot">
+                    <span class="pin" style="left: 4px; top: -11px">K</span>
+                    <span class="help-l when-filled"
+                        ><svg width="16" height="16"><use href="#i-warn" /></svg
+                        >Account has 2 things to fix</span
+                    >
+                    <span class="help-l neutral when-empty"
+                        >Nothing is sent to Salesforce until you add a
+                        record.</span
+                    >
+                    <div class="btns">
+                        <button class="btn" type="button">Cancel</button>
+                        <button class="btn primary" type="button">Done</button>
+                    </div>
+                </footer>
+            </div>
+
+            <section class="notes" aria-labelledby="notes-h">
+                <h2 id="notes-h">What changed, and which rule it follows</h2>
+                <p>
+                    Same records, same choices, same order and same behavior as
+                    today. Every piece below uses an existing pattern from
+                    DESIGN_SYSTEM.md.
+                </p>
+                <ol>
+                    <li>
+                        <span class="pin">A</span>
+                        <div>
+                            <b>One line under the title</b
+                            ><span
+                                >Dialog header: 16px title, meta line, close.
+                                <span class="ds">§3</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">B</span>
+                        <div>
+                            <b>"How it works" strip</b
+                            ><span
+                                >Three small drawings, hidden with one click and
+                                stays hidden.
+                                <span class="ds">rule 10</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">C</span>
+                        <div>
+                            <b>Records as selectable rows</b
+                            ><span
+                                >Number + object icon + status badge; selected =
+                                teal leading bar. "Add a record" is a dashed add
+                                place.
+                                <span class="ds">§5.10 §5.12 §5.22</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">D</span>
+                        <div>
+                            <b>Pane header with the object's own icon</b
+                            ><span
+                                >56px header, meta line says the record's place
+                                and mode. <span class="ds">§3</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">E</span>
+                        <div>
+                            <b>"In plain words" summary</b
+                            ><span
+                                >One sentence that updates as you choose.
+                                <span class="ds">§7</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">F</span>
+                        <div>
+                            <b
+                                >Selectable cards for Always create / Find or
+                                create</b
+                            ><span
+                                >Cards with a drawing and a tick, like "What are
+                                you creating?".
+                                <span class="ds">§5.11</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">G</span>
+                        <div>
+                            <b
+                                >Group title + hairline; Conditions | SOQL as
+                                the group's action</b
+                            ><span
+                                >Sentence-case column headers; the error says
+                                how to fix it.
+                                <span class="ds"
+                                    >§5.5 §5.7 §5.19 §5.21</span
+                                ></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">H</span>
+                        <div>
+                            <b
+                                >Public-form warning as a notice, choices as
+                                cards</b
+                            ><span
+                                >Warning notice with an edge; it names the safe
+                                choice.
+                                <span class="ds">§5.19 §5.11</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">I</span>
+                        <div>
+                            <b
+                                >Field table: friendly name over API name, arrow
+                                from the answer</b
+                            ><span
+                                >Invalid control gets the error edge and a
+                                fix-it message.
+                                <span class="ds">§5.21 §6</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">J</span>
+                        <div>
+                            <b>Answers show where they go</b
+                            ><span
+                                >Badges carry the object's icon and name, so
+                                color is never the only clue.
+                                <span class="ds">§5.22 §9</span></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">K</span>
+                        <div>
+                            <b>Footer says what's left</b
+                            ><span
+                                >Help on the left, buttons on the right, primary
+                                last. <span class="ds">§3</span></span
+                            >
+                        </div>
+                    </li>
+                </ol>
+                <h3>Needs your call before building</h3>
+                <ul>
+                    <li>
+                        <b>Object colors</b> come from Salesforce (Account
+                        #5867E8, Contact #9602C7, a tab-less custom object =
+                        grey). They'd be a new §8 exception: Studio stays
+                        neutral, object icons wear their Salesforce color.
+                    </li>
+                    <li>
+                        <b>Cards replace today's radio buttons</b> in F and H.
+                        That changes a control type, which "restyle, never
+                        redesign" needs your OK for.
+                    </li>
+                    <li>
+                        <b>New badge colors</b> (warning "2 to fix", success
+                        "Ready") would be added to §5.22.
+                    </li>
+                    <li>
+                        <b>"Add a record"</b> is dashed here, as §2 says. PR 432
+                        made it a plain Salesforce button, so one of the two
+                        should change.
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <script>
+            (function () {
+                function wire(name) {
+                    var seg = document.querySelector(
+                        '[data-toggle="' + name + '"]'
+                    );
+                    seg.addEventListener('click', function (e) {
+                        var b = e.target.closest('button');
+                        if (!b) return;
+                        seg.querySelectorAll('button').forEach(function (x) {
+                            x.setAttribute('aria-pressed', String(x === b));
+                        });
+                        document.body.setAttribute('data-' + name, b.dataset.v);
+                    });
+                }
+                wire('state');
+                wire('notes');
+                var TEXT = {
+                    create: 'Makes a new Account from the answers below on every submission.',
+                    find: 'Looks for an Account that matches the conditions below. If it finds one, it uses it and changes nothing. If not, it creates a new one.'
+                };
+                document
+                    .querySelectorAll('[role="radiogroup"]')
+                    .forEach(function (g) {
+                        g.addEventListener('click', function (e) {
+                            var t = e.target.closest('[role="radio"]');
+                            if (!t) return;
+                            g.querySelectorAll('[role="radio"]').forEach(
+                                function (x) {
+                                    x.setAttribute(
+                                        'aria-checked',
+                                        String(x === t)
+                                    );
+                                }
+                            );
+                            if (g.dataset.group === 'mode') {
+                                var find = t.dataset.v === 'find';
+                                document
+                                    .querySelectorAll('[data-find]')
+                                    .forEach(function (b) {
+                                        b.hidden = !find;
+                                    });
+                                document.getElementById('plain').textContent =
+                                    TEXT[t.dataset.v];
+                                document.getElementById(
+                                    'step-meta'
+                                ).textContent =
+                                    'Record 1 of 2 · ' +
+                                    (find ? 'Find or create' : 'Always create');
+                                document.getElementById(
+                                    'create-h'
+                                ).textContent = find
+                                    ? 'If none is found, create an Account with'
+                                    : 'Create an Account with';
+                            }
+                        });
+                    });
+                document
+                    .querySelector('[data-hide-intro]')
+                    .addEventListener('click', function () {
+                        document.querySelector('.intro').hidden = true;
+                    });
+            })();
+        </script>
+    </body>
+</html>

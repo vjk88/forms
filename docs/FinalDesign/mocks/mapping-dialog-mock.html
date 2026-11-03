@@ -1,0 +1,2463 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Mapping dialog mock</title>
+        <style>
+            :root {
+                --surface: #ffffff;
+                --surface-subtle: #f8fafc;
+                --workspace: #f1f5f9;
+                --hover: #eef2f6;
+                --text: #1f2937;
+                --text-weak: #526071;
+                --border: #dce2e9;
+                --border-subtle: #e8edf2;
+                --border-strong: #7c8999;
+                --accent: #0f766e;
+                --accent-hover: #115e59;
+                --accent-text: #115e59;
+                --accent-surface: #e8f5f2;
+                --error: #b42318;
+                --error-text: #8e2018;
+                --error-surface: #fef1ee;
+                --warning-text: #73510d;
+                --warning-surface: #fff5df;
+                --warning-border: #caa24c;
+                --success-text: #21613f;
+                --success-surface: #eaf6ee;
+                --info-text: #364d6b;
+                --info-surface: #eef3fa;
+                --fs-caption: 11px;
+                --fs-small: 12px;
+                --fs-body: 13px;
+                --fs-subhead: 14px;
+                --fs-title: 16px;
+                --fs-display: 20px;
+                --radius-sm: 4px;
+                --radius-md: 8px;
+                --radius-lg: 12px;
+                --control-h: 32px;
+                --font:
+                    -apple-system, 'Segoe UI', system-ui, Roboto,
+                    'Helvetica Neue', Arial, sans-serif;
+
+                /* Record colors: one per object. Neutral mode points them all at grey. */
+                --obj-a: #4f5bd5;
+                --obj-a-surface: #eef0fd;
+                --obj-a-text: #3640a8;
+                --obj-b: #9a4fc4;
+                --obj-b-surface: #f6eefb;
+                --obj-b-text: #74359a;
+                --pin: #c2410c;
+            }
+            body[data-colors='neutral'] {
+                --obj-a: #526071;
+                --obj-a-surface: #eef2f6;
+                --obj-a-text: #1f2937;
+                --obj-b: #526071;
+                --obj-b-surface: #eef2f6;
+                --obj-b-text: #1f2937;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background-color: #5d6673;
+                font-family: var(--font);
+                font-size: var(--fs-body);
+                line-height: 1.45;
+                color: var(--text);
+            }
+
+            /* ---------- Mock-only controls ---------- */
+            .mockbar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+                align-items: center;
+                padding: 10px 16px;
+                background: #1f2937;
+                color: #e5e7eb;
+                font-size: var(--fs-small);
+            }
+            .mockbar strong {
+                color: #fff;
+                font-weight: 600;
+            }
+            .mockbar .grp {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .seg {
+                display: inline-flex;
+                border: 1px solid #4b5563;
+                border-radius: var(--radius-md);
+                overflow: hidden;
+            }
+            .seg button {
+                font: inherit;
+                color: #e5e7eb;
+                background: transparent;
+                border: 0;
+                padding: 4px 10px;
+                cursor: pointer;
+            }
+            .seg button + button {
+                border-left: 1px solid #4b5563;
+            }
+            .seg button[aria-pressed='true'] {
+                background: #e5e7eb;
+                color: #111827;
+            }
+
+            /* ---------- Dialog ---------- */
+            .stage {
+                padding: 24px 16px 40px;
+            }
+            .dialog {
+                max-width: 1400px;
+                margin: 0 auto;
+                background: var(--surface);
+                border-radius: var(--radius-lg);
+                box-shadow: 0 20px 48px rgb(0 0 0 / 28%);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .dlg-head {
+                display: flex;
+                gap: 16px;
+                align-items: flex-start;
+                padding: 16px 24px;
+                border-bottom: 1px solid var(--border);
+                position: relative;
+            }
+            .dlg-head h1 {
+                margin: 0;
+                font-size: var(--fs-display);
+                font-weight: 600;
+                line-height: 1.25;
+            }
+            .dlg-head p {
+                margin: 4px 0 0;
+                color: var(--text-weak);
+                max-width: 72ch;
+            }
+            .icon-btn {
+                margin-left: auto;
+                width: var(--control-h);
+                height: var(--control-h);
+                display: inline-grid;
+                place-items: center;
+                flex: none;
+                border: 1px solid transparent;
+                border-radius: var(--radius-md);
+                background: transparent;
+                color: var(--text-weak);
+                cursor: pointer;
+            }
+            .icon-btn:hover {
+                background: var(--hover);
+                color: var(--text);
+            }
+
+            /* How it works strip */
+            .how {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+                padding: 12px 64px 12px 24px;
+                background: var(--surface-subtle);
+                border-bottom: 1px solid var(--border);
+                position: relative;
+            }
+            .how-step {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .how-step svg {
+                flex: none;
+            }
+            .how-step b {
+                display: block;
+                font-weight: 600;
+            }
+            .how-step span {
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+            }
+            .how-step + .how-step {
+                position: relative;
+                padding-left: 20px;
+            }
+            .how-step + .how-step::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 50%;
+                width: 8px;
+                height: 8px;
+                margin-top: -4px;
+                border-top: 2px solid var(--border-strong);
+                border-right: 2px solid var(--border-strong);
+                transform: rotate(45deg);
+            }
+            .how-hide {
+                position: absolute;
+                right: 16px;
+                top: 10px;
+                font-size: var(--fs-small);
+            }
+
+            .dlg-body {
+                display: grid;
+                grid-template-columns: 280px minmax(0, 1fr) 300px;
+                gap: 16px;
+                padding: 16px;
+                background: var(--workspace);
+                min-height: 640px;
+            }
+            .panel {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                position: relative;
+            }
+            .panel-head {
+                padding: 14px 16px 8px;
+            }
+            .panel-head h2 {
+                margin: 0;
+                font-size: var(--fs-subhead);
+                font-weight: 600;
+            }
+            .panel-head p {
+                margin: 2px 0 0;
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+            }
+            .panel-foot {
+                margin-top: auto;
+                padding: 12px 16px;
+                border-top: 1px solid var(--border-subtle);
+                display: flex;
+                gap: 8px;
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+            }
+            .panel-foot svg {
+                flex: none;
+                margin-top: 2px;
+            }
+
+            /* Left: steps timeline */
+            .steps {
+                list-style: none;
+                margin: 0;
+                padding: 4px 16px 8px;
+            }
+            .step {
+                position: relative;
+                display: grid;
+                grid-template-columns: 28px minmax(0, 1fr);
+                gap: 10px;
+                padding-bottom: 14px;
+            }
+            .step:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                left: 13px;
+                top: 30px;
+                bottom: 0;
+                width: 2px;
+                background: var(--border);
+            }
+            .step-dot {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                font-weight: 600;
+                font-size: var(--fs-small);
+                background: var(--surface);
+                border: 2px solid var(--border-strong);
+                color: var(--text-weak);
+            }
+            .step.is-current .step-dot {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #fff;
+            }
+            .step-card {
+                display: block;
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                padding: 10px 12px;
+                background: var(--surface);
+                cursor: pointer;
+                text-align: left;
+                font: inherit;
+                color: inherit;
+                width: 100%;
+            }
+            .step-card:hover {
+                background: var(--surface-subtle);
+            }
+            .step.is-current .step-card {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 1px var(--accent);
+            }
+            .step-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 600;
+            }
+            .obj-badge {
+                width: 22px;
+                height: 22px;
+                border-radius: var(--radius-sm);
+                display: inline-grid;
+                place-items: center;
+                font-size: var(--fs-caption);
+                font-weight: 700;
+                color: #fff;
+                flex: none;
+            }
+            .obj-a {
+                background: var(--obj-a);
+            }
+            .obj-b {
+                background: var(--obj-b);
+            }
+            .step-meta {
+                display: block;
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+                margin-top: 2px;
+            }
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                margin-top: 6px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: var(--fs-small);
+                font-weight: 600;
+            }
+            .pill-warn {
+                background: var(--warning-surface);
+                color: var(--warning-text);
+            }
+            .pill-ok {
+                background: var(--success-surface);
+                color: var(--success-text);
+            }
+            .reorder {
+                margin-left: auto;
+                color: var(--text-weak);
+                font-weight: 400;
+            }
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                height: var(--control-h);
+                padding: 0 14px;
+                border-radius: var(--radius-md);
+                font: inherit;
+                font-weight: 600;
+                cursor: pointer;
+                border: 1px solid var(--border-strong);
+                background: var(--surface);
+                color: var(--accent-text);
+            }
+            .btn:hover {
+                background: var(--hover);
+            }
+            .btn-primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #fff;
+            }
+            .btn-primary:hover {
+                background: var(--accent-hover);
+            }
+            .btn-block {
+                width: calc(100% - 32px);
+                margin: 0 16px 12px;
+            }
+            .link {
+                color: var(--accent-text);
+                font-weight: 600;
+                cursor: pointer;
+                background: none;
+                border: 0;
+                font: inherit;
+                padding: 0;
+            }
+            .link:hover {
+                text-decoration: underline;
+            }
+
+            /* Center: the step */
+            .step-head {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--border-subtle);
+                position: relative;
+                background: linear-gradient(
+                    var(--obj-a-surface),
+                    var(--surface)
+                );
+                border-radius: var(--radius-md) var(--radius-md) 0 0;
+            }
+            .step-head .obj-badge {
+                width: 36px;
+                height: 36px;
+                font-size: var(--fs-subhead);
+                border-radius: var(--radius-md);
+            }
+            .step-head h2 {
+                margin: 0;
+                font-size: var(--fs-title);
+                font-weight: 600;
+            }
+            .step-head h2 small {
+                font-size: var(--fs-small);
+                font-weight: 400;
+                color: var(--text-weak);
+                margin-left: 6px;
+            }
+            .plain {
+                margin-top: 4px;
+                color: var(--obj-a-text);
+                max-width: 70ch;
+            }
+            .plain svg {
+                vertical-align: -2px;
+                margin-right: 4px;
+            }
+            .step-head .icon-btn {
+                border-color: var(--border);
+                background: var(--surface);
+            }
+
+            .flow {
+                padding: 8px 20px 20px;
+            }
+            .block {
+                position: relative;
+                padding: 16px 0 16px 40px;
+            }
+            .block::before {
+                content: '';
+                position: absolute;
+                left: 13px;
+                top: 46px;
+                bottom: -14px;
+                width: 2px;
+                background: var(--border-subtle);
+            }
+            .block:last-child::before {
+                display: none;
+            }
+            .block-icon {
+                position: absolute;
+                left: 0;
+                top: 14px;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--accent-surface);
+                color: var(--accent-text);
+            }
+            .block.is-warn .block-icon {
+                background: var(--warning-surface);
+                color: var(--warning-text);
+            }
+            .block h3 {
+                margin: 0;
+                font-size: var(--fs-subhead);
+                font-weight: 600;
+            }
+            .block .help {
+                margin: 2px 0 12px;
+                color: var(--text-weak);
+                max-width: 76ch;
+            }
+            [hidden] {
+                display: none !important;
+            }
+
+            /* Picture tiles (finalPictureChoice look) */
+            .tiles {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+                max-width: 720px;
+            }
+            .tile {
+                display: grid;
+                grid-template-columns: 76px minmax(0, 1fr);
+                gap: 12px;
+                align-items: center;
+                text-align: left;
+                font: inherit;
+                color: inherit;
+                padding: 12px;
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                background: var(--surface);
+                cursor: pointer;
+            }
+            .tile:hover {
+                border-color: var(--border-strong);
+            }
+            .tile[aria-checked='true'] {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 1px var(--accent);
+                background: var(--accent-surface);
+            }
+            .tile .art {
+                width: 76px;
+                height: 52px;
+                border-radius: var(--radius-sm);
+                background: var(--surface-subtle);
+                border: 1px solid var(--border-subtle);
+                display: grid;
+                place-items: center;
+            }
+            .tile[aria-checked='true'] .art {
+                background: #fff;
+            }
+            .tile b {
+                display: block;
+                font-weight: 600;
+            }
+            .tile span span {
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+            }
+            .tile[aria-checked='true'] span span,
+            .answer.is-hl .qtype {
+                color: var(--accent-text);
+            }
+
+            /* Conditions */
+            .cond-top {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin-bottom: 10px;
+            }
+            .sentence {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .select {
+                height: var(--control-h);
+                padding: 0 30px 0 10px;
+                border: 1px solid var(--border-strong);
+                border-radius: var(--radius-md);
+                background: var(--surface)
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23526071' stroke-width='1.5'/%3E%3C/svg%3E")
+                    no-repeat right 10px center;
+                display: inline-flex;
+                align-items: center;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .select.placeholder {
+                color: var(--text-weak);
+            }
+            .input {
+                height: var(--control-h);
+                padding: 0 10px;
+                border: 1px solid var(--border-strong);
+                border-radius: var(--radius-md);
+                display: inline-flex;
+                align-items: center;
+                color: var(--text-weak);
+                background: var(--surface);
+            }
+            .bgroup {
+                display: inline-flex;
+                margin-left: auto;
+            }
+            .bgroup button {
+                font: inherit;
+                height: 28px;
+                padding: 0 12px;
+                cursor: pointer;
+                border: 1px solid var(--border-strong);
+                background: var(--surface);
+                color: var(--text);
+            }
+            .bgroup button:first-child {
+                border-radius: var(--radius-md) 0 0 var(--radius-md);
+            }
+            .bgroup button:last-child {
+                border-radius: 0 var(--radius-md) var(--radius-md) 0;
+                border-left: 0;
+            }
+            .bgroup button[aria-pressed='true'] {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #fff;
+                font-weight: 600;
+            }
+            .cond-box {
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                background: var(--surface-subtle);
+                padding: 12px;
+            }
+            .cond-row {
+                display: grid;
+                grid-template-columns: 22px minmax(0, 1.3fr) minmax(
+                        0,
+                        0.8fr
+                    ) minmax(0, 1fr) minmax(0, 1fr) 32px;
+                gap: 8px;
+                align-items: center;
+            }
+            .cond-row.labels {
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+            .cond-row .n {
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+                text-align: center;
+            }
+            .tip {
+                display: flex;
+                gap: 8px;
+                margin-top: 10px;
+                padding: 8px 10px;
+                background: var(--info-surface);
+                color: var(--info-text);
+                border-radius: var(--radius-md);
+                font-size: var(--fs-small);
+            }
+            .tip svg {
+                flex: none;
+                margin-top: 1px;
+            }
+            .add-row {
+                margin-top: 10px;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            /* Public-form caution */
+            .caution {
+                display: flex;
+                gap: 8px;
+                padding: 10px 12px;
+                margin-bottom: 12px;
+                background: var(--warning-surface);
+                border: 1px solid var(--warning-border);
+                border-radius: var(--radius-md);
+                color: var(--warning-text);
+                max-width: 720px;
+            }
+            .caution svg {
+                flex: none;
+                margin-top: 1px;
+            }
+
+            /* Field mapping */
+            .map {
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                overflow: hidden;
+            }
+            .map-row {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1.2fr) 32px;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                border-top: 1px solid var(--border-subtle);
+            }
+            .map-row:first-child {
+                border-top: 0;
+            }
+            .map-row.labels {
+                background: var(--surface-subtle);
+                color: var(--text-weak);
+                font-size: var(--fs-small);
+                font-weight: 600;
+                padding-top: 6px;
+                padding-bottom: 6px;
+            }
+            .fieldname {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+            }
+            .req {
+                font-size: var(--fs-caption);
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: var(--error-surface);
+                color: var(--error-text);
+            }
+            .arrow {
+                color: var(--border-strong);
+                display: grid;
+                place-items: center;
+            }
+            .map-row.is-missing {
+                background: var(--error-surface);
+            }
+            .map-row.is-missing .req {
+                background: #fff;
+            }
+            .map-row.is-missing .select {
+                border-color: var(--error);
+            }
+            .map-row .err {
+                grid-column: 3 / 4;
+                color: var(--error-text);
+                font-size: var(--fs-small);
+                margin-top: -4px;
+            }
+            .source-chip {
+                gap: 6px;
+            }
+            .source-chip .q {
+                font-size: var(--fs-caption);
+                font-weight: 600;
+                padding: 2px 6px;
+                border-radius: var(--radius-sm);
+                background: var(--accent-surface);
+                color: var(--accent-text);
+            }
+
+            /* Right: answers */
+            .answers {
+                list-style: none;
+                margin: 0;
+                padding: 0 8px 8px;
+                overflow: auto;
+            }
+            .answer {
+                padding: 10px 8px;
+                border-bottom: 1px solid var(--border-subtle);
+                border-radius: var(--radius-sm);
+            }
+            .answer:hover {
+                background: var(--surface-subtle);
+            }
+            .answer .qt {
+                font-weight: 600;
+                display: flex;
+                gap: 6px;
+                align-items: baseline;
+                flex-wrap: wrap;
+            }
+            .answer .qtype {
+                color: var(--text-weak);
+                font-size: var(--fs-caption);
+                font-weight: 400;
+            }
+            .dest {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-top: 4px;
+            }
+            .chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: var(--fs-small);
+                border: 1px solid transparent;
+            }
+            .chip-a {
+                background: var(--obj-a-surface);
+                color: var(--obj-a-text);
+            }
+            .chip-b {
+                background: var(--obj-b-surface);
+                color: var(--obj-b-text);
+            }
+            .chip-kept {
+                color: var(--text-weak);
+                border-color: var(--border);
+                background: var(--surface);
+            }
+            .chip .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 2px;
+            }
+            .chip-a .dot {
+                background: var(--obj-a);
+            }
+            .chip-b .dot {
+                background: var(--obj-b);
+            }
+            .legend {
+                display: flex;
+                gap: 12px;
+                padding: 0 16px 8px;
+                font-size: var(--fs-small);
+                color: var(--text-weak);
+                flex-wrap: wrap;
+            }
+            .legend span {
+                display: inline-flex;
+                gap: 4px;
+                align-items: center;
+            }
+            .legend .obj-badge {
+                width: 14px;
+                height: 14px;
+                font-size: 9px;
+            }
+            .answer.is-hl {
+                background: var(--accent-surface);
+            }
+
+            .dlg-foot {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 24px;
+                border-top: 1px solid var(--border);
+                position: relative;
+            }
+            .status {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--warning-text);
+                font-weight: 600;
+            }
+            .dlg-foot .btns {
+                margin-left: auto;
+                display: flex;
+                gap: 8px;
+            }
+
+            /* ---------- Notes ---------- */
+            .pinmark {
+                position: absolute;
+                z-index: 5;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: var(--pin);
+                color: #fff;
+                font-size: var(--fs-small);
+                font-weight: 700;
+                display: grid;
+                place-items: center;
+                box-shadow: 0 0 0 3px #fff;
+            }
+            body[data-notes='off'] .pinmark,
+            body[data-notes='off'] .notes {
+                display: none;
+            }
+            .notes {
+                max-width: 1400px;
+                margin: 24px auto 0;
+                background: var(--surface);
+                border-radius: var(--radius-lg);
+                padding: 20px 24px;
+            }
+            .notes h2 {
+                margin: 0 0 4px;
+                font-size: var(--fs-title);
+            }
+            .notes > p {
+                margin: 0 0 12px;
+                color: var(--text-weak);
+            }
+            .notes ol {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 12px 24px;
+            }
+            .notes li {
+                display: grid;
+                grid-template-columns: 22px 1fr;
+                gap: 10px;
+            }
+            .notes li .pinmark {
+                position: static;
+                box-shadow: none;
+            }
+            .notes li b {
+                display: block;
+            }
+            .notes li > div > span {
+                color: var(--text-weak);
+            }
+            .notes .flag {
+                color: var(--warning-text);
+            }
+
+            @media (max-width: 1100px) {
+                .dlg-body {
+                    grid-template-columns: 1fr;
+                }
+                .how {
+                    grid-template-columns: 1fr;
+                    padding-right: 24px;
+                }
+                .how-step + .how-step {
+                    padding-left: 0;
+                }
+                .how-step + .how-step::before {
+                    display: none;
+                }
+                .tiles {
+                    grid-template-columns: 1fr;
+                }
+                .cond-row {
+                    grid-template-columns: 1fr;
+                }
+                .cond-row.labels {
+                    display: none;
+                }
+                .map-row {
+                    grid-template-columns: 1fr;
+                }
+                .map-row .err {
+                    grid-column: auto;
+                }
+                .arrow {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body data-colors="coded" data-notes="on">
+        <div class="mockbar" role="region" aria-label="Mock controls">
+            <strong>Mapping dialog, proposed</strong>
+            <span class="grp"
+                >Record colors
+                <span class="seg" data-toggle="colors">
+                    <button type="button" aria-pressed="true" data-v="coded">
+                        Color per record
+                    </button>
+                    <button type="button" aria-pressed="false" data-v="neutral">
+                        Neutral (today's rule)
+                    </button>
+                </span>
+            </span>
+            <span class="grp"
+                >Notes
+                <span class="seg" data-toggle="notes">
+                    <button type="button" aria-pressed="true" data-v="on">
+                        Show
+                    </button>
+                    <button type="button" aria-pressed="false" data-v="off">
+                        Hide
+                    </button>
+                </span>
+            </span>
+            <span>Try the tiles: "Always create" hides the find steps.</span>
+        </div>
+
+        <div class="stage">
+            <div class="dialog" role="dialog" aria-labelledby="dlg-title">
+                <header class="dlg-head">
+                    <div>
+                        <h1 id="dlg-title">Mapping</h1>
+                        <p>
+                            Send this form's answers into Salesforce records.
+                            Each step below makes or finds one record, in order,
+                            every time someone submits.
+                        </p>
+                    </div>
+                    <button class="icon-btn" type="button" aria-label="Close">
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M3 3l10 10M13 3L3 13"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                            />
+                        </svg>
+                    </button>
+                    <span class="pinmark" style="left: 120px; top: 16px"
+                        >A</span
+                    >
+                </header>
+
+                <section class="how" aria-label="How mapping works">
+                    <span class="pinmark" style="left: 6px; top: 6px">B</span>
+                    <div class="how-step">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="7"
+                                y="5"
+                                width="26"
+                                height="30"
+                                rx="3"
+                                fill="#fff"
+                                stroke="#7c8999"
+                                stroke-width="1.5"
+                            />
+                            <rect
+                                x="11"
+                                y="10"
+                                width="12"
+                                height="2.5"
+                                rx="1"
+                                fill="#7c8999"
+                            />
+                            <rect
+                                x="11"
+                                y="15"
+                                width="18"
+                                height="4"
+                                rx="1.5"
+                                fill="#e8edf2"
+                                stroke="#b5bfcb"
+                            />
+                            <rect
+                                x="11"
+                                y="22"
+                                width="12"
+                                height="2.5"
+                                rx="1"
+                                fill="#7c8999"
+                            />
+                            <rect
+                                x="11"
+                                y="27"
+                                width="18"
+                                height="4"
+                                rx="1.5"
+                                fill="#e8f5f2"
+                                stroke="#0f766e"
+                            />
+                        </svg>
+                        <div>
+                            <b>Someone submits</b
+                            ><span
+                                >Their answers are always kept on the
+                                submission.</span
+                            >
+                        </div>
+                    </div>
+                    <div class="how-step">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <circle cx="11" cy="12" r="6" fill="#0f766e" />
+                            <text
+                                x="11"
+                                y="15.5"
+                                font-size="9"
+                                text-anchor="middle"
+                                fill="#fff"
+                                font-family="Segoe UI, sans-serif"
+                                font-weight="700"
+                            >
+                                1
+                            </text>
+                            <circle
+                                cx="11"
+                                cy="29"
+                                r="6"
+                                fill="#fff"
+                                stroke="#7c8999"
+                                stroke-width="1.5"
+                            />
+                            <text
+                                x="11"
+                                y="32.5"
+                                font-size="9"
+                                text-anchor="middle"
+                                fill="#526071"
+                                font-family="Segoe UI, sans-serif"
+                                font-weight="700"
+                            >
+                                2
+                            </text>
+                            <path
+                                d="M11 18v5"
+                                stroke="#b5bfcb"
+                                stroke-width="2"
+                            />
+                            <rect
+                                x="21"
+                                y="8"
+                                width="15"
+                                height="8"
+                                rx="2"
+                                fill="#e8f5f2"
+                                stroke="#0f766e"
+                            />
+                            <rect
+                                x="21"
+                                y="25"
+                                width="15"
+                                height="8"
+                                rx="2"
+                                fill="#fff"
+                                stroke="#b5bfcb"
+                            />
+                        </svg>
+                        <div>
+                            <b>Steps run in order</b
+                            ><span
+                                >Each one finds or creates a record. A later
+                                step can point at an earlier one.</span
+                            >
+                        </div>
+                    </div>
+                    <div class="how-step">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="5"
+                                y="8"
+                                width="30"
+                                height="24"
+                                rx="3"
+                                fill="#fff"
+                                stroke="#7c8999"
+                                stroke-width="1.5"
+                            />
+                            <rect
+                                x="5"
+                                y="8"
+                                width="30"
+                                height="7"
+                                rx="3"
+                                fill="#4f5bd5"
+                            />
+                            <rect
+                                x="9"
+                                y="19"
+                                width="9"
+                                height="2.5"
+                                rx="1"
+                                fill="#b5bfcb"
+                            />
+                            <rect
+                                x="20"
+                                y="19"
+                                width="11"
+                                height="2.5"
+                                rx="1"
+                                fill="#0f766e"
+                            />
+                            <rect
+                                x="9"
+                                y="25"
+                                width="9"
+                                height="2.5"
+                                rx="1"
+                                fill="#b5bfcb"
+                            />
+                            <rect
+                                x="20"
+                                y="25"
+                                width="11"
+                                height="2.5"
+                                rx="1"
+                                fill="#0f766e"
+                            />
+                        </svg>
+                        <div>
+                            <b>Answers fill the fields</b
+                            ><span
+                                >You pick which answer goes into each
+                                field.</span
+                            >
+                        </div>
+                    </div>
+                    <button class="link how-hide" type="button">
+                        Hide this
+                    </button>
+                </section>
+
+                <div class="dlg-body">
+                    <!-- LEFT -->
+                    <section class="panel" aria-labelledby="steps-h">
+                        <span class="pinmark" style="right: 10px; top: 10px"
+                            >C</span
+                        >
+                        <div class="panel-head">
+                            <h2 id="steps-h">Steps</h2>
+                            <p>Run top to bottom on every submission.</p>
+                        </div>
+                        <ol class="steps">
+                            <li class="step is-current">
+                                <span class="step-dot">1</span>
+                                <button
+                                    class="step-card"
+                                    type="button"
+                                    aria-current="step"
+                                >
+                                    <span class="step-title"
+                                        ><span class="obj-badge obj-a">A</span
+                                        >Account<span
+                                            class="reorder"
+                                            aria-hidden="true"
+                                            >&#9662;</span
+                                        ></span
+                                    >
+                                    <span class="step-meta"
+                                        >Find or create · 2 fields</span
+                                    >
+                                    <span class="pill pill-warn">
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 12 12"
+                                            aria-hidden="true"
+                                        >
+                                            <circle
+                                                cx="6"
+                                                cy="6"
+                                                r="5.5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                            />
+                                            <path
+                                                d="M6 3v3.5"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                                stroke-linecap="round"
+                                            />
+                                            <circle
+                                                cx="6"
+                                                cy="8.7"
+                                                r=".9"
+                                                fill="currentColor"
+                                            />
+                                        </svg>
+                                        2 things to fix</span
+                                    >
+                                </button>
+                            </li>
+                            <li class="step">
+                                <span class="step-dot">2</span>
+                                <button class="step-card" type="button">
+                                    <span class="step-title"
+                                        ><span class="obj-badge obj-b">C</span
+                                        >Contact<span
+                                            class="reorder"
+                                            aria-hidden="true"
+                                            >&#9652;</span
+                                        ></span
+                                    >
+                                    <span class="step-meta"
+                                        >Find or create · 4 fields · points at
+                                        step 1</span
+                                    >
+                                    <span class="pill pill-ok">
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 12 12"
+                                            aria-hidden="true"
+                                        >
+                                            <path
+                                                d="M2.5 6.2l2.3 2.3 4.7-5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            />
+                                        </svg>
+                                        Ready</span
+                                    >
+                                </button>
+                            </li>
+                        </ol>
+                        <button class="btn btn-block" type="button">
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 14 14"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M7 2v10M2 7h10"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+                            Add a record
+                        </button>
+                        <div class="panel-foot">
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 14 14"
+                                aria-hidden="true"
+                            >
+                                <circle
+                                    cx="7"
+                                    cy="7"
+                                    r="6.2"
+                                    fill="none"
+                                    stroke="currentColor"
+                                />
+                                <path
+                                    d="M7 6v4"
+                                    stroke="currentColor"
+                                    stroke-width="1.4"
+                                    stroke-linecap="round"
+                                />
+                                <circle
+                                    cx="7"
+                                    cy="4"
+                                    r=".9"
+                                    fill="currentColor"
+                                />
+                            </svg>
+                            <span
+                                ><b>All or nothing.</b> If any step fails, none
+                                of the records are made. The answers are still
+                                kept.</span
+                            >
+                        </div>
+                    </section>
+
+                    <!-- CENTER -->
+                    <section class="panel" aria-labelledby="step-h">
+                        <div class="step-head">
+                            <span class="obj-badge obj-a">A</span>
+                            <div>
+                                <h2 id="step-h">
+                                    Account <small>Step 1 of 2</small>
+                                </h2>
+                                <div class="plain">
+                                    <svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M2 3h10M2 7h10M2 11h6"
+                                            stroke="currentColor"
+                                            stroke-width="1.5"
+                                            stroke-linecap="round"
+                                        />
+                                    </svg>
+                                    <span id="plain-text"
+                                        >Looks for an Account that matches the
+                                        conditions. If it finds one, it uses it
+                                        as is. If not, it creates a new
+                                        one.</span
+                                    >
+                                </div>
+                            </div>
+                            <button
+                                class="icon-btn"
+                                type="button"
+                                aria-label="Remove this step"
+                            >
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.4"
+                                        stroke-linejoin="round"
+                                    />
+                                </svg>
+                            </button>
+                            <span class="pinmark" style="left: 8px; top: 8px"
+                                >D</span
+                            >
+                        </div>
+
+                        <div class="flow">
+                            <div class="block">
+                                <span class="block-icon"
+                                    ><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M2 7h8M7 4l3 3-3 3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.6"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        /></svg
+                                ></span>
+                                <span
+                                    class="pinmark"
+                                    style="right: 0; top: 14px"
+                                    >E</span
+                                >
+                                <h3>What should this step do?</h3>
+                                <p class="help">
+                                    Pick "Find or create" when the person may
+                                    already be in Salesforce, so you don't make
+                                    duplicates.
+                                </p>
+                                <div
+                                    class="tiles"
+                                    role="radiogroup"
+                                    aria-label="What this step does"
+                                    data-group="mode"
+                                >
+                                    <button
+                                        class="tile"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="false"
+                                        data-v="create"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="40"
+                                                viewBox="0 0 56 40"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="14"
+                                                    y="5"
+                                                    width="22"
+                                                    height="30"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="18"
+                                                    y="11"
+                                                    width="14"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="18"
+                                                    y="16"
+                                                    width="10"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <circle
+                                                    cx="38"
+                                                    cy="29"
+                                                    r="8"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M38 25v8M34 29h8"
+                                                    stroke="#fff"
+                                                    stroke-width="1.8"
+                                                    stroke-linecap="round"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Always create</b
+                                            ><span
+                                                >Makes a new Account on every
+                                                submission.</span
+                                            ></span
+                                        >
+                                    </button>
+                                    <button
+                                        class="tile"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="true"
+                                        data-v="find"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="40"
+                                                viewBox="0 0 56 40"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="6"
+                                                    y="5"
+                                                    width="20"
+                                                    height="28"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="11"
+                                                    width="12"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="16"
+                                                    width="9"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <circle
+                                                    cx="20"
+                                                    cy="22"
+                                                    r="7"
+                                                    fill="#e8f5f2"
+                                                    stroke="#0f766e"
+                                                    stroke-width="2"
+                                                />
+                                                <path
+                                                    d="M25 27l5 5"
+                                                    stroke="#0f766e"
+                                                    stroke-width="2.4"
+                                                    stroke-linecap="round"
+                                                />
+                                                <path
+                                                    d="M33 20h7"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                    stroke-dasharray="2 2"
+                                                />
+                                                <rect
+                                                    x="40"
+                                                    y="12"
+                                                    width="12"
+                                                    height="16"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                    stroke-dasharray="3 2"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Find or create</b
+                                            ><span
+                                                >Uses a matching Account if
+                                                there is one, otherwise makes
+                                                one.</span
+                                            ></span
+                                        >
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="block" data-find>
+                                <span class="block-icon"
+                                    ><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <circle
+                                            cx="6"
+                                            cy="6"
+                                            r="4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.6"
+                                        />
+                                        <path
+                                            d="M9 9l3 3"
+                                            stroke="currentColor"
+                                            stroke-width="1.6"
+                                            stroke-linecap="round"
+                                        /></svg
+                                ></span>
+                                <span
+                                    class="pinmark"
+                                    style="right: 0; top: 14px"
+                                    >F</span
+                                >
+                                <h3>How do we spot an existing Account?</h3>
+                                <p class="help">
+                                    When the form is submitted, we look for an
+                                    Account that matches these conditions.
+                                </p>
+                                <div class="cond-top">
+                                    <div class="sentence">
+                                        Find an Account where
+                                        <span
+                                            class="select"
+                                            style="width: 190px"
+                                            >all conditions match</span
+                                        >
+                                    </div>
+                                    <span
+                                        class="bgroup"
+                                        role="group"
+                                        aria-label="Write conditions as"
+                                    >
+                                        <button
+                                            type="button"
+                                            aria-pressed="true"
+                                        >
+                                            Conditions
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-pressed="false"
+                                        >
+                                            SOQL
+                                        </button>
+                                    </span>
+                                </div>
+                                <div class="cond-box">
+                                    <div class="cond-row labels">
+                                        <span></span
+                                        ><span>Field on Account</span
+                                        ><span>Is</span
+                                        ><span>Compared with</span
+                                        ><span>Value</span><span></span>
+                                    </div>
+                                    <div class="cond-row">
+                                        <span class="n">1</span>
+                                        <span class="select placeholder"
+                                            >Search fields</span
+                                        >
+                                        <span class="select">equal to</span>
+                                        <span class="select"
+                                            >a fixed value</span
+                                        >
+                                        <span class="input">Enter value</span>
+                                        <button
+                                            class="icon-btn"
+                                            type="button"
+                                            aria-label="Remove condition 1"
+                                            style="margin: 0"
+                                        >
+                                            <svg
+                                                width="14"
+                                                height="14"
+                                                viewBox="0 0 16 16"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                    d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.4"
+                                                    stroke-linejoin="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <button class="link add-row" type="button">
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 14 14"
+                                            aria-hidden="true"
+                                        >
+                                            <path
+                                                d="M7 2v10M2 7h10"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                            /></svg
+                                        >Add condition
+                                    </button>
+                                </div>
+                                <div class="tip">
+                                    <svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M7 1.5a4 4 0 0 0-2.4 7.2V10h4.8V8.7A4 4 0 0 0 7 1.5zM5.2 12h3.6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.3"
+                                            stroke-linecap="round"
+                                        />
+                                    </svg>
+                                    <span
+                                        >Match on something unique, like a
+                                        website or account number. Matching on a
+                                        name can pick the wrong Account.</span
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="block is-warn" data-find>
+                                <span class="block-icon"
+                                    ><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M3 7.2l2.6 2.6L11 4.3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.7"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        /></svg
+                                ></span>
+                                <span
+                                    class="pinmark"
+                                    style="right: 0; top: 14px"
+                                    >G</span
+                                >
+                                <h3>If we find one</h3>
+                                <p class="help">
+                                    Decide whether a match is only pointed at,
+                                    or changed by the answers.
+                                </p>
+                                <div class="caution">
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 16 16"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M8 1.8L15 14H1z"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.4"
+                                            stroke-linejoin="round"
+                                        />
+                                        <path
+                                            d="M8 6v3.5"
+                                            stroke="currentColor"
+                                            stroke-width="1.5"
+                                            stroke-linecap="round"
+                                        />
+                                        <circle
+                                            cx="8"
+                                            cy="11.6"
+                                            r=".9"
+                                            fill="currentColor"
+                                        />
+                                    </svg>
+                                    <span
+                                        ><b>This form is public.</b> Anyone who
+                                        guesses a real value can reach whatever
+                                        you allow here, without signing in. "Use
+                                        it, don't change it" is the safe
+                                        choice.</span
+                                    >
+                                </div>
+                                <div
+                                    class="tiles"
+                                    role="radiogroup"
+                                    aria-label="When one is found"
+                                    data-group="found"
+                                >
+                                    <button
+                                        class="tile"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="true"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="40"
+                                                viewBox="0 0 56 40"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="16"
+                                                    y="5"
+                                                    width="22"
+                                                    height="30"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="11"
+                                                    width="14"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="16"
+                                                    width="10"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="32"
+                                                    y="22"
+                                                    width="13"
+                                                    height="11"
+                                                    rx="2"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M35 22v-3a3.5 3.5 0 0 1 7 0v3"
+                                                    fill="none"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.8"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Use it, don't change it</b
+                                            ><span
+                                                >No duplicate is made. Later
+                                                steps point at it. Nothing is
+                                                written to it.</span
+                                            ></span
+                                        >
+                                    </button>
+                                    <button
+                                        class="tile"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="false"
+                                    >
+                                        <span class="art"
+                                            ><svg
+                                                width="56"
+                                                height="40"
+                                                viewBox="0 0 56 40"
+                                                aria-hidden="true"
+                                            >
+                                                <rect
+                                                    x="16"
+                                                    y="5"
+                                                    width="22"
+                                                    height="30"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="11"
+                                                    width="14"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="20"
+                                                    y="16"
+                                                    width="10"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M33 33l2-6 9-9 4 4-9 9z"
+                                                    fill="#e8f5f2"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.6"
+                                                    stroke-linejoin="round"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            ><b>Update it with these answers</b
+                                            ><span
+                                                >You then tick each field to
+                                                update. Every one starts
+                                                off.</span
+                                            ></span
+                                        >
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="block">
+                                <span class="block-icon"
+                                    ><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M7 2v10M2 7h10"
+                                            stroke="currentColor"
+                                            stroke-width="1.7"
+                                            stroke-linecap="round"
+                                        /></svg
+                                ></span>
+                                <span
+                                    class="pinmark"
+                                    style="right: 0; top: 14px"
+                                    >H</span
+                                >
+                                <h3 id="create-h">
+                                    If none is found, create an Account with
+                                </h3>
+                                <p class="help">
+                                    Pick where each field gets its value: an
+                                    answer from the form, or a fixed value you
+                                    type.
+                                </p>
+                                <div
+                                    class="map"
+                                    role="table"
+                                    aria-labelledby="create-h"
+                                >
+                                    <div class="map-row labels" role="row">
+                                        <span role="columnheader"
+                                            >Field on Account</span
+                                        ><span></span
+                                        ><span role="columnheader"
+                                            >Gets its value from</span
+                                        ><span></span>
+                                    </div>
+                                    <div class="map-row is-missing" role="row">
+                                        <span class="fieldname" role="cell"
+                                            >Account Name
+                                            <span class="req"
+                                                >Required</span
+                                            ></span
+                                        >
+                                        <span class="arrow" aria-hidden="true"
+                                            ><svg
+                                                width="22"
+                                                height="12"
+                                                viewBox="0 0 22 12"
+                                            >
+                                                <path
+                                                    d="M21 6H3M7 2L3 6l4 4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.6"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            class="select placeholder"
+                                            role="cell"
+                                            >Choose a source</span
+                                        >
+                                        <button
+                                            class="icon-btn"
+                                            type="button"
+                                            aria-label="Remove Account Name"
+                                            style="margin: 0"
+                                        >
+                                            <svg
+                                                width="12"
+                                                height="12"
+                                                viewBox="0 0 16 16"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                    d="M3 3l10 10M13 3L3 13"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.8"
+                                                    stroke-linecap="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                        <span class="err"
+                                            >Salesforce won't save an Account
+                                            without a name. Pick an answer, like
+                                            "Company or organization".</span
+                                        >
+                                    </div>
+                                    <div class="map-row" role="row">
+                                        <span class="fieldname" role="cell"
+                                            >Billing Street</span
+                                        >
+                                        <span class="arrow" aria-hidden="true"
+                                            ><svg
+                                                width="22"
+                                                height="12"
+                                                viewBox="0 0 22 12"
+                                            >
+                                                <path
+                                                    d="M21 6H3M7 2L3 6l4 4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.6"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                /></svg
+                                        ></span>
+                                        <span
+                                            class="select source-chip"
+                                            role="cell"
+                                            ><span class="q">Answer</span>Choose
+                                            one</span
+                                        >
+                                        <button
+                                            class="icon-btn"
+                                            type="button"
+                                            aria-label="Remove Billing Street"
+                                            style="margin: 0"
+                                        >
+                                            <svg
+                                                width="12"
+                                                height="12"
+                                                viewBox="0 0 16 16"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                    d="M3 3l10 10M13 3L3 13"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.8"
+                                                    stroke-linecap="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button class="link add-row" type="button">
+                                    <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 14 14"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M7 2v10M2 7h10"
+                                            stroke="currentColor"
+                                            stroke-width="1.8"
+                                            stroke-linecap="round"
+                                        /></svg
+                                    >Add a field
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- RIGHT -->
+                    <section class="panel" aria-labelledby="ans-h">
+                        <span class="pinmark" style="right: 10px; top: 10px"
+                            >I</span
+                        >
+                        <div class="panel-head">
+                            <h2 id="ans-h">Where each answer goes</h2>
+                            <p>
+                                Every answer is kept on the submission. Colored
+                                tags show the records it also fills.
+                            </p>
+                        </div>
+                        <div class="legend">
+                            <span
+                                ><span class="obj-badge obj-a">A</span
+                                >Account</span
+                            >
+                            <span
+                                ><span class="obj-badge obj-b">C</span
+                                >Contact</span
+                            >
+                        </div>
+                        <ul class="answers">
+                            <li class="answer">
+                                <div class="qt">
+                                    How would you rate it?
+                                    <span class="qtype">Rating</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-kept"
+                                        >Kept on the submission only</span
+                                    >
+                                </div>
+                            </li>
+                            <li class="answer">
+                                <div class="qt">
+                                    Choose any that apply
+                                    <span class="qtype">Checkboxes</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-kept"
+                                        >Kept on the submission only</span
+                                    >
+                                </div>
+                            </li>
+                            <li class="answer">
+                                <div class="qt">
+                                    Your email <span class="qtype">Email</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-b"
+                                        ><span class="dot"></span>Contact ·
+                                        Email</span
+                                    >
+                                    <span class="chip chip-b"
+                                        ><svg
+                                            width="11"
+                                            height="11"
+                                            viewBox="0 0 14 14"
+                                            aria-hidden="true"
+                                        >
+                                            <circle
+                                                cx="6"
+                                                cy="6"
+                                                r="4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            />
+                                            <path
+                                                d="M9 9l3 3"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                                stroke-linecap="round"
+                                            /></svg
+                                        >Finds the Contact</span
+                                    >
+                                </div>
+                            </li>
+                            <li class="answer">
+                                <div class="qt">
+                                    Choose one
+                                    <span class="qtype">Picklist</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-a"
+                                        ><span class="dot"></span>Account ·
+                                        Billing Street</span
+                                    >
+                                    <span class="chip chip-b"
+                                        ><span class="dot"></span>Contact ·
+                                        Title</span
+                                    >
+                                </div>
+                            </li>
+                            <li class="answer">
+                                <div class="qt">
+                                    How likely are you to recommend us?
+                                    <span class="qtype">Scale</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-kept"
+                                        >Kept on the submission only</span
+                                    >
+                                </div>
+                            </li>
+                            <li class="answer">
+                                <div class="qt">
+                                    How much do you agree?
+                                    <span class="qtype">Scale</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-kept"
+                                        >Kept on the submission only</span
+                                    >
+                                </div>
+                            </li>
+                            <li class="answer">
+                                <div class="qt">
+                                    How strongly do you agree?
+                                    <span class="qtype">Scale</span>
+                                </div>
+                                <div class="dest">
+                                    <span class="chip chip-kept"
+                                        >Kept on the submission only</span
+                                    >
+                                </div>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+
+                <footer class="dlg-foot">
+                    <span class="pinmark" style="left: 6px; top: -11px">J</span>
+                    <span class="status">
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 12 12"
+                            aria-hidden="true"
+                        >
+                            <circle
+                                cx="6"
+                                cy="6"
+                                r="5.5"
+                                fill="none"
+                                stroke="currentColor"
+                            />
+                            <path
+                                d="M6 3v3.5"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                            />
+                            <circle
+                                cx="6"
+                                cy="8.7"
+                                r=".9"
+                                fill="currentColor"
+                            />
+                        </svg>
+                        Step 1 has 2 things to fix
+                    </span>
+                    <div class="btns">
+                        <button class="btn" type="button">Cancel</button>
+                        <button class="btn btn-primary" type="button">
+                            Done
+                        </button>
+                    </div>
+                </footer>
+            </div>
+
+            <section class="notes" aria-labelledby="notes-h">
+                <h2 id="notes-h">What changed, and why</h2>
+                <p>
+                    Same data, same choices and same steps as today. The changes
+                    are words, pictures, color and order.
+                </p>
+                <ol>
+                    <li>
+                        <span class="pinmark">A</span>
+                        <div>
+                            <b>One sentence under the title</b
+                            ><span
+                                >Says what Mapping is for before you read
+                                anything else.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">B</span>
+                        <div>
+                            <b>"How it works" strip</b
+                            ><span
+                                >Three pictures: submit, steps run in order,
+                                answers fill fields. Can be hidden, and stays
+                                hidden.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">C</span>
+                        <div>
+                            <b>Steps read as a sequence</b
+                            ><span
+                                >Numbered dots on a line, because order really
+                                matters here. "Not finished" becomes "2 things
+                                to fix" or "Ready".</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">D</span>
+                        <div>
+                            <b>"In plain words" summary</b
+                            ><span
+                                >Each step says what it will do in one sentence,
+                                and it updates as you change the choices.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">E</span>
+                        <div>
+                            <b
+                                >Picture tiles for "Always create / Find or
+                                create"</b
+                            ><span
+                                >Replaces the button pair at the top right.
+                                <span class="flag"
+                                    >Changes a control type, so it needs your
+                                    OK.</span
+                                ></span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">F</span>
+                        <div>
+                            <b>Questions as headings</b
+                            ><span
+                                >"How do we spot an existing Account?" plus a
+                                tip on what to match on. Column labels in
+                                sentence case.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">G</span>
+                        <div>
+                            <b>"If we find one" as picture tiles</b
+                            ><span
+                                >Same two choices, with a lock and a pencil. The
+                                public-form caution shrinks to a strip that
+                                names the safe choice.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">H</span>
+                        <div>
+                            <b>Field ← answer arrows, missing required in red</b
+                            ><span
+                                >Says why Account Name matters and suggests an
+                                answer that fits.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">I</span>
+                        <div>
+                            <b>"Where each answer goes" with colored tags</b
+                            ><span
+                                >Each record gets a color, so you see at a
+                                glance which answers feed which record. Unmapped
+                                answers say "Kept on the submission only".</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pinmark">J</span>
+                        <div>
+                            <b>Footer says what's left</b
+                            ><span
+                                >"Step 1 has 2 things to fix" next to
+                                Done.</span
+                            >
+                        </div>
+                    </li>
+                </ol>
+                <p class="flag" style="margin-top: 12px">
+                    Record colors bend design rule 6 ("Studio chrome stays
+                    neutral; teal only for action, selection, focus"). Flip the
+                    switch at the top to compare with neutral.
+                </p>
+            </section>
+        </div>
+
+        <script>
+            (function () {
+                function wireToggle(name) {
+                    var seg = document.querySelector(
+                        '[data-toggle="' + name + '"]'
+                    );
+                    seg.addEventListener('click', function (e) {
+                        var b = e.target.closest('button');
+                        if (!b) return;
+                        seg.querySelectorAll('button').forEach(function (x) {
+                            x.setAttribute('aria-pressed', String(x === b));
+                        });
+                        document.body.setAttribute('data-' + name, b.dataset.v);
+                    });
+                }
+                wireToggle('colors');
+                wireToggle('notes');
+
+                var plain = document.getElementById('plain-text');
+                var TEXT = {
+                    create: 'Always creates a new Account from the answers below, on every submission.',
+                    find: 'Looks for an Account that matches the conditions. If it finds one, it uses it as is. If not, it creates a new one.'
+                };
+                document
+                    .querySelectorAll('[role="radiogroup"]')
+                    .forEach(function (g) {
+                        g.addEventListener('click', function (e) {
+                            var t = e.target.closest('[role="radio"]');
+                            if (!t) return;
+                            g.querySelectorAll('[role="radio"]').forEach(
+                                function (x) {
+                                    x.setAttribute(
+                                        'aria-checked',
+                                        String(x === t)
+                                    );
+                                }
+                            );
+                            if (g.dataset.group === 'mode') {
+                                var find = t.dataset.v === 'find';
+                                document
+                                    .querySelectorAll('[data-find]')
+                                    .forEach(function (b) {
+                                        b.hidden = !find;
+                                    });
+                                plain.textContent = TEXT[t.dataset.v];
+                                document.getElementById(
+                                    'create-h'
+                                ).textContent = find
+                                    ? 'If none is found, create an Account with'
+                                    : 'Create an Account with';
+                            }
+                        });
+                    });
+                document
+                    .querySelector('.how-hide')
+                    .addEventListener('click', function () {
+                        document.querySelector('.how').hidden = true;
+                    });
+            })();
+        </script>
+    </body>
+</html>
