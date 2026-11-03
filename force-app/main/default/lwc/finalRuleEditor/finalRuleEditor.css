@@ -58,10 +58,8 @@
 }
 
 .re-col {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 
@@ -88,10 +86,8 @@
    hidden there, so without it every box would be unlabelled). */
 .re-cell-label {
     display: none;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 

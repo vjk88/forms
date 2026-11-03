@@ -728,3 +728,14 @@ button.st-mode.on:focus-visible {
     background: var(--c-studio-accent-hover);
     border-color: var(--c-studio-accent-hover);
 }
+
+/* The Mapping dialog's footer says what's left (DESIGN_SYSTEM 3). */
+.st-map-status {
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text-weak);
+}
+
+.st-map-status--warn {
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-warning-text);
+}

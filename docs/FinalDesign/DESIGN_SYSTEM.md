@@ -46,7 +46,7 @@ and `mocks/STUDIO_FORMWORK_DIRECTION.md` (the proposal this adopts).
     components, styled only through their `--slds-c-*` hooks. Button groups are always our `finalButtonGroup`
     and picture tiles our `finalPictureChoice`. Hand-build a control only for what's on the swap plan's
     Keep list (cards and tiles, list rows, drag and drop, custom search lists, specimens, the top bar,
-    color pickers with live recolor, the rule date & time box, grouped font dropdowns, the SOQL box).
+    color pickers with live recolor, the rule date & time box, grouped font dropdowns, the SOQL box, dashed add places).
 13. **Done means deployed and looked at** on `/apex/FinalStudio` and the LEX tab, with a respondent
     theme switched to prove the wall held (§10).
 
@@ -230,7 +230,7 @@ markup **and** behavior repeat. New components stay in the `final*` family.
 | 5.9 | **Rail** | `finalStudioRail` only. 72px wide, 20px icon over a 12px label, never smaller. Selected: accent surface + 3px leading bar, `aria-current`. | Build, Design |
 | 5.10 | **Selectable row** | 32px row, icon + label, radius-md. Selected = accent surface + 3px leading bar + accent icon. | Palette, structure, mapping records, menus |
 | 5.11 | **Selectable card** | Surface, `border`, radius-md; hover → `border-strong`; selected = accent edge + 1px inset accent ring + check badge top-right. Art inside is a specimen (§8). | Themes, layouts, templates, "What are you creating?" |
-| 5.12 | **Add place** | Dashed `border-strong`, accent-text label with a plus. Drop targets use the same outline while dragging. | Structure, mapping, uploads |
+| 5.12 | **Add place** | Dashed `border-strong`, accent-text label with a plus. Hand-built (a `lightning-button` can't be dashed), so it is on the Keep list. Drop targets use the same outline while dragging. | Structure, mapping, uploads |
 | 5.13 | **Structure pane** | Today's structure pane, restyled only (§5.0): dashed question cards with their grey bar, page chips, section headers, always-visible ×, drag and drop. Reads the shared Studio tokens (the private `--c-studio-canvas*` set is retired); section titles in sentence case. Its dashed cards are a kept exception to "dashed = add or drop". | Build |
 | 5.14 | **Preview stage** | Pane header with title, device segmented, expand icon. Body on `workspace` grey, 24px padding, form sheet centered. "Test answers stay in the preview." | Build, Design |
 | 5.16 | **Picker** | `finalTypeahead` is the one searchable select. Visible label; keyboard-active option looks different from the chosen one; loading, empty and error states; Escape closes the list before the dialog. | Object, field, font pickers, mapping |
@@ -239,8 +239,8 @@ markup **and** behavior repeat. New components stay in the `final*` family.
 | 5.19 | **Feedback** | **Field error**: under the control, keeps the typed value, says how to fix it. **Notice**: success (no edge), warning and failure (with edge), with an action when there is one. **Page error**: top of the area, with Retry. Toast only for things that happened off-screen. Applies to new messages; existing messages keep their wording. | All |
 | 5.20 | **Loading / empty / failed** | Loading: spinner + "Loading Contact fields…" + skeleton lines. Empty: heading + one line + the action that fills it ("No conditions yet / Add a condition"). Failed: what went wrong + Retry. Three different messages, always. | Every list and panel that loads |
 | 5.21 | **Data table** | Header: subtle surface, 12px strong weak text, sentence case. Rows: body, `border-subtle` between. Technical names in mono 12px weak under the friendly name. Row actions right-aligned, quiet. Long text wraps, never clips; the table scrolls sideways inside its own frame. | Library, mapping, submission reader |
-| 5.22 | **Badge** | 20px tall, 4px corners, 11px. Neutral (workspace grey) or on (accent surface + accent text). Sentence case ("Added", "2 columns", "Live: version 2"). | Palette, structure, library |
-| 5.24 | **Picture tiles** | Shared component `finalPictureChoice` (extracted from the Appearance picker, no visual change). `role=radiogroup`, one tab stop, arrow keys move. Each tile: drawing (64×32, weak lines, accent for the part that changes) over a 13px strong name; optional 12px description; selected = accent edge + accent surface + tick badge. Grid of 2 (inspector), 3 (short sets) or auto-fill cards (large pickers like layouts and themes). Falls back to a select above about 6 options or when an option has no look to draw. | Appearance, Design dropdowns with a look (5.24 list), layouts, themes |
+| 5.22 | **Badge** | 20px tall, 4px corners, 11px. Neutral (workspace grey), on (accent surface + accent text), warning (warning surface + text: "Not finished") or success (success surface + text: "Ready"), the last two for a thing's status only (owner 2026-11-02). Sentence case ("Added", "2 columns", "Live: version 2"). | Palette, structure, library |
+| 5.24 | **Picture tiles** | Shared component `finalPictureChoice` (extracted from the Appearance picker, no visual change). `role=radiogroup`, one tab stop, arrow keys move. Each tile: drawing (64×32, weak lines, accent for the part that changes) over a 13px strong name; optional 12px description; selected = accent edge + accent surface + tick badge. Grid of 2 (inspector), 3 (short sets) or auto-fill cards (large pickers like layouts and themes). Wide tiles (drawing beside a name and a description) sit side by side when each gets 240px; they also carry choices about **what something does** when a drawing explains it, like Mapping's Always create / Find or create and Use it / Update it (owner 2026-11-02). Falls back to a select above about 6 options or when an option has no look to draw. | Appearance, Design dropdowns with a look (5.24 list), layouts, themes |
 | 5.25 | **Plain summary** | One sentence that says what the selected thing will do, written from its current settings and rewritten as they change ("Looks for an Account that matches… If not, it creates a new one."). Box: `surface-subtle` fill, `border-subtle` edge, radius-md, 12px 16px padding, 16px weak lines icon, body text with a strong lead-in ("In plain words:"). First thing in the pane body, 24px above the first group. Neutral only: it describes, never warns (warnings are notices, 5.19). | Mapping record |
 | 5.26 | **How it works strip** | Up to 3 items that explain a screen in order, shown once under a dialog or page header. Strip: `surface-subtle` fill, soft line below, 12px 24px padding. Item: 40px drawing (weak lines, accent for the part that matters) + 13px strong title over a 12px weak line, 12px apart, items 16px apart. Quiet "Hide" button at the end; once hidden it stays hidden for that user. Only for screens whose idea isn't obvious; never a substitute for clear labels. | Mapping |
 
@@ -283,6 +283,7 @@ Listed by selector, never by whole file, so the chrome around them still follows
 | Font samples | Sample text in `finalFontPicker` | Uses the font it shows; caption and frame are Studio. |
 | The preview | The form inside `finalPreviewStage` | Respondent system. The stage header and grey surround are Studio. |
 | Submission reader answers | `finalSubmissionReader` | May use a larger reading size for answers; chrome is Studio. |
+| Salesforce object icons | `finalObjectIcon` | Shows the object's own Salesforce icon and color (`getObjectInfo` `themeInfo`), or its first letter on that color when it has no tab. The color is the object's identity, so it never stands alone: a name always sits beside it (owner 2026-11-02). |
 
 Adding an exception = one row here + a comment on the selector naming this section.
 
@@ -340,6 +341,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-02 v2.8.** Owner, for the Mapping redesign: object icons wear their Salesforce color (8); wide picture tiles also carry what-it-does choices (5.24); badges gain warning and success for status (5.22); "Add a record" stays a dashed add place (5.12).
 - **2026-11-02 v2.7.** Owner: two new patterns from the Mapping mock: plain summary (5.25) and how it works strip (5.26).
 - **2026-11-02 v2.6.** Owner: button groups are joined with the chosen one solid teal (5.7). A lone solid teal button is the main action; teal inside a joined group is the chosen value.
 - **2026-11-01 v2.5.** Owner: swap hand-built controls to Salesforce components first, then restyle

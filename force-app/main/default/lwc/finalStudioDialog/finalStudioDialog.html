@@ -12,7 +12,14 @@
         <span class="sd-edge" tabindex="0" onfocus={handleFocusStart}></span>
         <div class="sd-container">
             <header class="sd-header">
-                <h1 id="sd-heading" class="sd-title" tabindex="-1">{label}</h1>
+                <div class="sd-heading-text">
+                    <h1 id="sd-heading" class="sd-title" tabindex="-1">
+                        {label}
+                    </h1>
+                    <template lwc:if={description}>
+                        <p class="sd-description">{description}</p>
+                    </template>
+                </div>
                 <lightning-button-icon
                     class="sd-close"
                     icon-name="utility:close"
