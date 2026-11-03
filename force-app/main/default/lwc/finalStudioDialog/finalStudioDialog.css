@@ -69,15 +69,6 @@
     color: var(--c-studio-text-weak);
 }
 
-/* Close is a quiet grey icon, never Salesforce blue (DESIGN_SYSTEM 5.2).
-   VF reads the component hook; the LEX tab's newer SLDS reads the global. */
-.sd-close {
-    --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
-    --slds-g-color-accent-1: var(--c-studio-text-weak);
-    --slds-g-color-accent-2: var(--c-studio-text-weak);
-    --slds-g-color-accent-3: var(--c-studio-text);
-}
-
 .sd-body {
     flex: 1;
     min-height: 0;
