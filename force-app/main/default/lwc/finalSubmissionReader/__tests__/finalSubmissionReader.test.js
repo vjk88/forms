@@ -429,7 +429,8 @@ describe('c/finalSubmissionReader', () => {
             ]
         });
         const open = el.shadowRoot.querySelector('.sr-file-open');
-        expect(open.textContent.trim()).toBe('CV.pdf');
+        // a lightning-button: its words are the label
+        expect(open.label).toBe('CV.pdf');
         expect(open.dataset.id).toBe('069000000000001');
         expect(
             el.shadowRoot.querySelector('.sr-file-detail').textContent.trim()

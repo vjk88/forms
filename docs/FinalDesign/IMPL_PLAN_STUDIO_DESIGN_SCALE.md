@@ -127,9 +127,14 @@ Components: `finalFormStudio` (shell, top bar, save status), `finalStudioRail`, 
 - **"ADDED" badges** become "Added" (`finalFieldPalette.html:101`, `finalPropertyPanel.html:1387`).
 - **The preview stage header: styling only.** Desktop / Tablet / Mobile, phone widths and zoom keep their options and behavior and are drawn with the segmented recipe.
 
-## Step 3: Mapping
+## Step 3: Mapping: BUILT 2026-11-02, PR open
 
-Branch `feat/studio-mapping-consistency`.
+Branch `feat/mapping-swap-restyle`. The Mapping swap and this restyle ship in one PR because the swap is only 4 buttons.
+
+- Built: 9 Mapping style files moved onto Studio tokens; ALL CAPS removed; the picker box now matches Studio inputs (32px tall, 8px corners).
+- `finalFieldPicker` and `finalObjectPicker` had nothing to restyle: they draw through `finalTypeahead`.
+- Salesforce radio and checkbox groups now get the teal hooks too (on LEX, a Mapping radio was still Salesforce blue).
+- Guard allowlist 723 → 576. Left on purpose: 4 focus and error ring shadows (`finalTypeahead`, `finalMappingSoql`, `finalConnectedObjectCard`).
 Components: `finalMappingEditor`, `finalMappingAction`, `finalMappingSoql`, `finalMappingSummary`, `finalTypeahead`, `finalFieldPicker`, `finalObjectPicker`, `finalLookupFilter`, `finalRelationshipPicker`, `finalConnectedObjectCard`, `finalSubmissionReader`.
 
 - **Colors:** Salesforce blue and greys become Studio tokens.

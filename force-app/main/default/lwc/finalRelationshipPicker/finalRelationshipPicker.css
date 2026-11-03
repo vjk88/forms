@@ -7,7 +7,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9000;
+    z-index: var(--c-studio-z-backdrop);
 }
 
 .rp-dialog {
@@ -16,10 +16,9 @@
     display: flex;
     flex-direction: column;
     background: var(--c-studio-surface);
-    border-radius: 14px;
-    box-shadow: 0 24px 64px rgb(0 0 0 / 28%);
-    font-family:
-        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    border-radius: var(--c-studio-radius-lg);
+    box-shadow: var(--c-studio-shadow-3);
+    font-family: var(--c-studio-font);
     color: var(--c-studio-text);
     overflow: hidden;
 }
@@ -30,13 +29,13 @@
 
 .rp-title {
     margin: 0;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .rp-sub {
     margin: 4px 0 0;
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text-weak);
 }
 
@@ -55,10 +54,10 @@
     margin-top: 6px;
     padding: 10px 12px;
     border: 1px solid var(--c-studio-border);
-    border-radius: 10px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
     font: inherit;
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
     text-align: left;
     cursor: pointer;
 }
@@ -71,7 +70,7 @@
 .rp-item-label {
     flex: 1;
     min-width: 0;
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -79,14 +78,14 @@
 
 .rp-item-via {
     flex: none;
-    font-size: 11px;
+    font-size: var(--c-studio-fs-caption);
     color: var(--c-studio-text-weak);
 }
 
 .rp-note,
 .rp-error {
     margin: 8px 20px 12px;
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-body);
     line-height: 1.5;
     color: var(--c-studio-text-weak);
 }
@@ -100,19 +99,4 @@
     justify-content: flex-end;
     padding: 10px 16px 14px;
     border-top: 1px solid var(--c-studio-border-subtle);
-}
-
-.rp-cancel {
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    padding: 7px 14px;
-    cursor: pointer;
-}
-
-.rp-cancel:hover {
-    background: var(--c-studio-hover);
 }

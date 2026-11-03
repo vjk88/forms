@@ -106,6 +106,8 @@ Jest uses stand-ins for Lightning components, so it can't prove how the real one
 - **Build swap: built 2026-11-02 on `feat/swap-build`** (PR open, deployed to `revclouddev`, checked on both hosts).
   - It adds `finalButtonGroup` and `finalPictureChoice`.
   - It also keeps the topic box native: its suggestions are a `<datalist>`.
+- **Mapping swap: built 2026-11-02 on `feat/mapping-swap-restyle`** (shipped together with the Mapping restyle).
+  - "Add a record", "Change", the relationship picker's Cancel and the submission file link are now `lightning-button`.
 
 ## Order of work (one swap PR per screen, then its restyle PR)
 

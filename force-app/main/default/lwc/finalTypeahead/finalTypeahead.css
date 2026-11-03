@@ -1,22 +1,21 @@
+@import 'c/finalStudioStyles';
+
 /* Sized and coloured like a lightning-combobox, so it sits in a row of them
    without standing out. */
 :host {
     display: block;
 }
 
-/* SLDS styling hooks, with the SLDS values as fallbacks. The fallbacks used to
-   name the property itself (an invalid cycle), which would have left the box
-   with no border or focus colour on a host without the SLDS globals. Both
-   Studio hosts define them today (measured 2026-11-02), so the fallbacks are
-   the VF host's values and nothing changes on screen. */
+/* Studio tokens (DESIGN_SYSTEM §4), matching the lightning-combobox boxes
+   beside it, which get the same colours and corners through their hooks. */
 :host {
-    --ta-border: var(--slds-g-color-border-2, #747474);
-    --ta-surface: var(--slds-g-color-neutral-base-100, #fff);
-    --ta-brand: var(--slds-g-color-brand-base-50, #0176d3);
-    --ta-error: var(--slds-g-color-error-base-40, #ba0517);
-    --ta-weak: var(--slds-g-color-neutral-base-50, #747474);
-    --ta-rule: var(--slds-g-color-border-1, #c9c9c9);
-    --ta-active: var(--slds-g-color-brand-base-95, #eef4ff);
+    --ta-border: var(--c-studio-border-strong);
+    --ta-surface: var(--c-studio-surface);
+    --ta-brand: var(--c-studio-accent);
+    --ta-error: var(--c-studio-error);
+    --ta-weak: var(--c-studio-text-weak);
+    --ta-rule: var(--c-studio-border-subtle);
+    --ta-active: var(--c-studio-accent-surface);
 }
 
 /* The box, its magnifier and its dropdown: the dropdown hangs off the box,
@@ -39,19 +38,19 @@
 .ta-label {
     display: block;
     margin-bottom: 0.25rem;
-    font-size: 0.75rem;
-    color: var(--slds-g-color-neutral-base-30, #444);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text);
 }
 
 .ta-input {
     width: 100%;
     box-sizing: border-box;
-    height: 2rem;
+    height: var(--c-studio-control-h);
     padding: 0 1.75rem 0 0.625rem;
     font: inherit;
-    font-size: 0.8125rem;
+    font-size: var(--c-studio-fs-body);
     border: 1px solid var(--ta-border);
-    border-radius: 0.25rem;
+    border-radius: var(--c-studio-radius-md);
     background: var(--ta-surface);
 }
 
@@ -68,7 +67,7 @@
 }
 
 .ta-error {
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     color: var(--ta-error);
 }
 
@@ -82,7 +81,7 @@
    9000). */
 .ta-pop {
     position: fixed;
-    z-index: 9500;
+    z-index: var(--c-studio-z-popover);
     top: 0;
     left: 0;
     display: flex;
@@ -90,8 +89,8 @@
     max-height: 20rem;
     background: var(--ta-surface);
     border: 1px solid var(--ta-border);
-    border-radius: 0.25rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    border-radius: var(--c-studio-radius-md);
+    box-shadow: var(--c-studio-shadow-2);
 }
 
 .ta-list {
@@ -116,7 +115,7 @@
 }
 
 .ta-item--on .ta-item-label {
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .ta-item--back {
@@ -125,7 +124,7 @@
 }
 
 .ta-item-label {
-    font-size: 0.8125rem;
+    font-size: var(--c-studio-fs-body);
 }
 
 .ta-chevron-back {
@@ -138,14 +137,14 @@
 }
 
 .ta-item-meta {
-    font-size: 0.6875rem;
+    font-size: var(--c-studio-fs-caption);
     color: var(--ta-weak);
 }
 
 .ta-empty,
 .ta-hint {
     padding: 0.5rem 0.625rem;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     color: var(--ta-weak);
 }
 

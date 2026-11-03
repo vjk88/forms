@@ -84,18 +84,14 @@
                 <p class="me-note">A form can create at most 10 records.</p>
             </template>
             <template lwc:else>
-                <button
-                    type="button"
+                <lightning-button
                     class="me-add-start"
+                    stretch
+                    icon-name="utility:add"
+                    label="Add a record"
                     disabled={readOnly}
                     onclick={handleStartAdd}
-                >
-                    <lightning-icon
-                        icon-name="utility:add"
-                        size="x-small"
-                    ></lightning-icon>
-                    Add a record
-                </button>
+                ></lightning-button>
             </template>
 
             <p class="me-footer">
