@@ -329,7 +329,9 @@ describe('find or create', () => {
         await flush();
         const q = el.shadowRoot.querySelector('.ma-question');
         expect(q.textContent).toContain('When we find one');
-        expect(q.textContent).toContain('without signing in');
+        expect(el.shadowRoot.querySelector('.ma-notice').textContent).toContain(
+            'without signing in'
+        );
     });
 
     it('answering "use it" emits reuse and hides the question', async () => {
@@ -347,7 +349,11 @@ describe('find or create', () => {
         await flush();
         const handler = jest.fn();
         el.addEventListener('specchange', handler);
-        el.shadowRoot.querySelector('[data-on-match="reuse"]').click();
+        el.shadowRoot
+            .querySelector('c-final-picture-choice.ma-on-match')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'reuse' } })
+            );
         expect(
             handler.mock.calls[0][0].detail.spec.mapping.actions[0].match
                 .onMatch
@@ -522,20 +528,32 @@ describe('the step reads as its branches (S5)', () => {
             'act_1'
         );
         await flush();
-        expect(headings(el)).toEqual(['Create a Contact with']);
+        expect(headings(el)).toEqual([
+            'What this record does',
+            'Create a Contact with'
+        ]);
+        expect(
+            el.shadowRoot.querySelector('.ma-summary').textContent
+        ).toContain('Makes a new Contact on every submission');
     });
 
     it('a find-or-create step reads find / if found / if none', async () => {
         const el = mount([findStep('reuse')], 'act_1');
         await flush();
         expect(headings(el)).toEqual([
+            'What this record does',
             'Find an existing Contact where',
             'If one is found',
             'If none is found, create a Contact with'
         ]);
+        // The plain summary (DESIGN_SYSTEM 5.25) says it in one sentence.
         expect(
-            el.shadowRoot.querySelector('.ma-match-summary').textContent
-        ).toContain('It’s used as-is. Nothing is written to it.');
+            el.shadowRoot.querySelector('.ma-summary').textContent
+        ).toContain('If it finds one, it uses it and changes nothing.');
+        expect(
+            el.shadowRoot.querySelector('c-final-picture-choice.ma-on-match')
+                .value
+        ).toBe('reuse');
     });
 
     it('update mode names the column it relies on', async () => {
@@ -590,7 +608,10 @@ describe('the step reads as its branches (S5)', () => {
         );
         el.objects = [{ label: 'Account', value: 'Account' }];
         await flush();
-        expect(headings(el)).toEqual(['Create an Account with']);
+        expect(headings(el)).toEqual([
+            'What this record does',
+            'Create an Account with'
+        ]);
     });
 });
 

@@ -132,6 +132,14 @@ lightning-button-menu {
     --slds-g-color-accent-container-1: var(--c-studio-accent);
 }
 
+/* Icon buttons are a quiet grey icon (DESIGN_SYSTEM 5.2), never Salesforce
+   blue. VF reads the component hook; the LEX tab's newer SLDS colors them
+   with the shared button hook. */
+lightning-button-icon {
+    --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
+    --slds-s-button-color: var(--c-studio-text-weak);
+}
+
 lightning-input,
 lightning-combobox,
 lightning-textarea,

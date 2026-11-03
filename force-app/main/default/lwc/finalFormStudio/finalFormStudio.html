@@ -612,6 +612,7 @@
             <c-final-studio-dialog
                 size="full"
                 label="Mapping"
+                description="Send this form's answers into Salesforce records. Each record is made or found in order, every time someone submits."
                 confirm-label="Done"
                 discard-text="Your mapping changes haven’t been applied to the form yet."
                 dirty={mappingDirty}
@@ -625,7 +626,13 @@
                     is-public={isPublic}
                     focus-action={mappingFocus}
                     onspecchange={handleMappingDraft}
+                    onstatuschange={handleMappingStatus}
                 ></c-final-mapping-editor>
+                <template lwc:if={mappingStatus}>
+                    <span slot="footer-start" class={mappingStatusClass}
+                        >{mappingStatus}</span
+                    >
+                </template>
             </c-final-studio-dialog>
         </template>
 

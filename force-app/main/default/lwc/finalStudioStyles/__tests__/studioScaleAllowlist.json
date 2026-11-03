@@ -408,12 +408,6 @@
     ".rl-stop-title || raw font weight": 1
   },
   "finalRuleEditor": {
-    ".re-cell-label || ALL CAPS": 1,
-    ".re-cell-label || raw font size": 1,
-    ".re-cell-label || raw font weight": 1,
-    ".re-col || ALL CAPS": 1,
-    ".re-col || raw font size": 1,
-    ".re-col || raw font weight": 1,
     ".re-empty || raw font size": 1,
     ".re-grid--4 .re-row, .re-grid--3 .re-row || raw radius": 1,
     ".re-lint || raw font size": 1,
@@ -449,9 +443,7 @@
     ".sd-ask-text || raw font size": 1,
     ".sd-ask-title || raw font size": 1,
     ".sd-ask-title || raw font weight": 1,
-    ".sd-backdrop || raw z-index": 1,
-    ".sd-title || raw font size": 1,
-    ".sd-title || raw font weight": 1
+    ".sd-backdrop || raw z-index": 1
   },
   "finalStudioSettingsPanel": {
     ".sp-access-row || raw radius": 1,

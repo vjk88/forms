@@ -75,9 +75,13 @@ describe('c-final-mapping-editor', () => {
     it('invites the first record when there are none', async () => {
         const el = mount({ pages: [] });
         await flush();
+        expect(el.shadowRoot.querySelector('.me-empty-title').textContent).toBe(
+            'No records yet'
+        );
+        // The empty pane offers the one action that fills it (5.20).
         expect(
-            el.shadowRoot.querySelector('.me-empty-title').textContent
-        ).toContain('Send answers');
+            el.shadowRoot.querySelector('lightning-button.me-empty-add').label
+        ).toBe('Add a record');
     });
 
     it('lists steps in order and marks an unfinished one', async () => {
@@ -103,7 +107,7 @@ describe('c-final-mapping-editor', () => {
         await flush();
         const card = el.shadowRoot.querySelector('.me-card');
         expect(card.textContent).toContain('1');
-        expect(card.querySelector('.me-card-state').textContent).toBe(
+        expect(card.querySelector('.me-badge--warn').textContent).toBe(
             'Not finished'
         );
     });
@@ -132,7 +136,7 @@ describe('c-final-mapping-editor', () => {
             (r) => r.textContent
         );
         expect(rows[0]).toContain('Contact · Email');
-        expect(rows[1]).toContain('Stored only');
+        expect(rows[1]).toContain('Submission only');
     });
 
     it('moving a step emits the reordered spec', async () => {
@@ -233,7 +237,7 @@ describe('c-final-mapping-editor wording', () => {
         });
         await flush();
         expect(el.shadowRoot.querySelector('.me-card-detail').textContent).toBe(
-            'Create · 1 field'
+            'Always create · 1 field'
         );
     });
 });

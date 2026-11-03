@@ -50,6 +50,14 @@
     background: var(--c-studio-accent-surface);
 }
 
+/* Wide tiles fill the row, side by side when each can be 240px or more
+   (one wide tile, as in Appearance, still spans the whole row). */
+.pc-wides {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--c-studio-space-3);
+}
+
 .pc-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -224,4 +232,50 @@
 
 .pc-tile.on .pc-art {
     color: var(--c-studio-accent-text);
+}
+
+/* What a record step does (Mapping): a page with the part that changes in
+   accent. */
+.pc-art-record {
+    width: 64px;
+    height: 40px;
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pc-svg-paper {
+    fill: var(--c-studio-surface);
+    stroke: var(--c-studio-border-strong);
+}
+
+.pc-svg-weak {
+    stroke: var(--c-studio-border-strong);
+    stroke-width: 2.5;
+}
+
+.pc-svg-accent {
+    stroke: var(--c-studio-accent);
+    stroke-width: 2.2;
+}
+
+.pc-svg-accent-soft {
+    fill: var(--c-studio-accent-surface);
+    stroke: var(--c-studio-accent);
+    stroke-width: 2;
+}
+
+.pc-svg-accent-fill {
+    fill: var(--c-studio-accent);
+    stroke: var(--c-studio-accent);
+}
+
+.pc-svg-on-accent {
+    stroke: var(--c-studio-on-accent);
+    stroke-width: 1.8;
+}
+
+.pc[aria-disabled='true'] .pc-tile {
+    cursor: default;
 }

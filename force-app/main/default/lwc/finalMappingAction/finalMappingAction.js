@@ -88,7 +88,67 @@ export default class FinalMappingAction extends LightningElement {
     }
 
     get stepText() {
-        return `step ${this.index + 1} of ${actionsOf(this.spec).length}`;
+        const mode = this.isFindOrCreate ? 'Find or create' : 'Always create';
+        return `Record ${this.index + 1} of ${actionsOf(this.spec).length} · ${mode}`;
+    }
+
+    /** What this record will do, in one sentence (DESIGN_SYSTEM 5.25). */
+    get plainSummary() {
+        if (!this.isFindOrCreate) {
+            return `Makes a new ${this.objectLabel} on every submission, filled from the fields below.`;
+        }
+        const look = `Looks for ${withArticle(this.objectLabel)} that matches the conditions below.`;
+        if (this.onMatch === 'reuse') {
+            return `${look} If it finds one, it uses it and changes nothing. If not, it creates a new one.`;
+        }
+        if (this.onMatch === 'update') {
+            return `${look} If it finds one, it updates the fields ticked below. If not, it creates a new one.`;
+        }
+        return `${look} If none is found, it creates a new one. Choose what happens when one is found.`;
+    }
+
+    /** Picture tiles for the two things a record step can do. */
+    get operationTiles() {
+        const one = this.objectLabel;
+        return [
+            {
+                value: 'create',
+                label: 'Always create',
+                desc: `Makes a new ${one} on every submission.`,
+                art: 'create',
+                wide: true
+            },
+            {
+                value: 'findOrCreate',
+                label: 'Find or create',
+                desc: `Uses a matching ${one} if there is one, otherwise makes one.`,
+                art: 'find',
+                wide: true
+            }
+        ];
+    }
+
+    get onMatchTiles() {
+        return [
+            {
+                value: 'reuse',
+                label: 'Use it, leave it alone',
+                desc: 'No duplicate is made and later records point at it. Nothing is written to it.',
+                art: 'reuse',
+                wide: true
+            },
+            {
+                value: 'update',
+                label: 'Update it with these answers',
+                desc: 'You then tick each field to update. Every one starts off.',
+                art: 'update',
+                wide: true
+            }
+        ];
+    }
+
+    get onMatchValue() {
+        return this.onMatch || '';
     }
 
     get operationOptions() {
@@ -123,6 +183,11 @@ export default class FinalMappingAction extends LightningElement {
                 key: entry.field,
                 label: f.label,
                 required: Boolean(f.required),
+                // A required field with nothing feeding it, said where it is.
+                missing:
+                    f.required && !entry.source
+                        ? `Salesforce can’t save ${withArticle(this.objectLabel)} without ${f.label}. Pick an answer or a fixed value.`
+                        : '',
                 options: this._sourceOptions(f),
                 value: this._sourceValue(entry.source),
                 isLiteral: entry.source && entry.source.kind === 'literal',
@@ -380,21 +445,7 @@ export default class FinalMappingAction extends LightningElement {
     }
 
     handleOnMatch(event) {
-        this._emit(
-            setOnMatch(
-                this.spec,
-                this.actionId,
-                event.currentTarget.dataset.onMatch
-            )
-        );
-    }
-
-    handleChangeOnMatch() {
-        const next = JSON.parse(JSON.stringify(this.spec));
-        const a = actionsOf(next).find((x) => x.id === this.actionId);
-        delete a.match.onMatch;
-        a.fields.forEach((f) => delete f.writeOnMatch);
-        this._emit(next);
+        this._emit(setOnMatch(this.spec, this.actionId, event.detail.value));
     }
 
     handleOverwrite(event) {
